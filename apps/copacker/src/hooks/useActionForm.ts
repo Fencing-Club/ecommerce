@@ -20,10 +20,11 @@ export function useActionForm<Schema extends z.ZodType<FieldValues, FieldValues>
     run: (data) => run({ action, data }).unwrap(),
     onSuccess: async (result) => {
       if (result.redirect) {
-        router.navigate({ href: result.redirect })
+        await router.navigate({ href: result.redirect })
       }
+      // Keep the form pending until the saved data is visible, before closing a dialog or starting another action.
+      await router.invalidate({ sync: true })
       await onSuccess?.(result)
-      router.invalidate()
     }
   })
 }

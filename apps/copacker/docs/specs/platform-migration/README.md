@@ -1,9 +1,9 @@
 # TanStack Start and Cloudflare migration specification
 
-Status: the web conversion is implemented and deployed for staging qualification on `codex/tanstack-start`, October 15,
-2026. [Compatibility evidence](compatibility.md) records local/deployed checks, storage rehearsal and release gates.
-The full local browser suite passes. Production cutover and the separate background-executor migration remain open.
-This specification does not authorize a production cutover.
+Status, October 16, 2026: TanStack Start, Neon integration, hosted PR previews and infrastructure ownership are merged.
+The final web release is being qualified on an isolated hosted preview before staging and exact-commit production
+promotion. [Architecture](architecture.md) now shows the verified state before cutover and the release target;
+[compatibility evidence](compatibility.md) retains the earlier trials. The background-executor migration remains separate.
 
 Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
 Retain WorkOS, Resend and the commerce integrations. **TanStack Start is the selected replacement for Next.js.**
@@ -14,7 +14,8 @@ Cloudflare wake signals for the retained Node executor. This branch incorporates
 Railway-only database assumptions in the planning articles. [Neon operations](../../neon.md),
 [background jobs](../../background-jobs.md), and the updated [cutover requirements](cutover.md) describe the current
 contracts. Earlier deployed qualification against Railway is historical evidence; Neon Hyperdrive and queue delivery
-must be qualified before release. Hosted application previews and full Cloudflare execution remain separate work.
+must be qualified before release. Hosted application previews are implemented; full Cloudflare job execution remains
+separate work. Private storage has been transferred and verified in R2, including the retained Node readers/writers.
 
 - [Current and proposed architecture](architecture.md)
 - [Implementation decisions and compatibility evidence](compatibility.md)

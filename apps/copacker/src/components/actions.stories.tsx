@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw"
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
@@ -62,16 +62,37 @@ export const Pending = meta.story({
   }
 })
 
+export const WaitsForRefresh = meta.story({
+  play: async ({ canvas, msw }) => {
+    recordActions(msw)
+    const refresh = Promise.withResolvers<void>()
+    getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
+    const button = canvas.getByRole("button", { name: "Send reminder" })
+    try {
+      await userEvent.click(button)
+      await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
+      await expect(button).toBeDisabled()
+      await expect(canvas.queryByText("Reminder sent")).toBeNull()
+      refresh.resolve()
+      await expect(await canvas.findByText("Reminder sent")).toBeVisible()
+      await expect(button).toBeEnabled()
+    } finally {
+      refresh.resolve()
+    }
+  }
+})
+
 const supplierSchema = z.object({ name: z.string().trim().min(1) })
 
 // A form as pages build them with useActionForm: a supplier's name, saved with supplier.rename.
-function SupplierForm({ dialog = false }: { dialog?: boolean }) {
+function SupplierForm({ dialog = false, onSuccess }: { dialog?: boolean; onSuccess?: () => void }) {
   const { form, submit } = useActionForm({
     schema: supplierSchema,
     action: "supplier.rename",
     defaultValues: { name: "Lotus Manufacturing" },
     toPayload: (values) => ({ id: "supplier-lotus", name: values.name }),
-    keepSaved: true
+    keepSaved: true,
+    onSuccess
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Save" dialog={dialog}>
@@ -112,6 +133,31 @@ export const FormServerError = meta.story({
     await userEvent.type(canvas.getByLabelText(/Supplier name/), " Ltd")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("A supplier with this name exists")
+  }
+})
+
+const formSucceeded = fn()
+export const FormWaitsForRefresh = meta.story({
+  render: () => <SupplierForm onSuccess={formSucceeded} />,
+  play: async ({ canvas, msw }) => {
+    recordActions(msw)
+    formSucceeded.mockClear()
+    const refresh = Promise.withResolvers<void>()
+    getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
+    const save = canvas.getByRole("button", { name: "Save" })
+    try {
+      await userEvent.type(canvas.getByLabelText(/Supplier name/), " Ltd")
+      await userEvent.click(save)
+      await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
+      await expect(save).toBeDisabled()
+      await expect(save).toHaveAttribute("aria-busy", "true")
+      await expect(formSucceeded).not.toHaveBeenCalled()
+      refresh.resolve()
+      await waitFor(() => expect(formSucceeded).toHaveBeenCalledOnce())
+      await expect(save).not.toHaveAttribute("aria-busy", "true")
+    } finally {
+      refresh.resolve()
+    }
   }
 })
 

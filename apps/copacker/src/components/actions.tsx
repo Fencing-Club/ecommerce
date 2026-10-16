@@ -22,29 +22,33 @@ export function ActionButton({
   successMessage?: string
 }) {
   const router = useRouter()
-  const [run, { isLoading }] = useActionMutation()
+  const [run] = useActionMutation()
+  const [isPending, setIsPending] = useState(false)
   const errorMessage = useErrorMessage()
   const [error, setError] = useState("")
   const [succeeded, setSucceeded] = useState(false)
 
   async function click() {
+    setIsPending(true)
     setError("")
     setSucceeded(false)
     try {
       const result = await run({ action, data }).unwrap()
       if (result.redirect) {
-        router.navigate({ href: result.redirect })
+        await router.navigate({ href: result.redirect })
       }
+      await router.invalidate({ sync: true })
       setSucceeded(true)
-      router.invalidate()
     } catch (e) {
       setError(errorMessage(e))
+    } finally {
+      setIsPending(false)
     }
   }
 
   return (
     <div className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-      <SubmitButton variant={variant} size={size} pending={isLoading} onClick={click}>
+      <SubmitButton variant={variant} size={size} pending={isPending} onClick={click}>
         {children}
       </SubmitButton>
       {succeeded && successMessage && <output className={sx({ text: "xs", color: "muted" })}>{successMessage}</output>}

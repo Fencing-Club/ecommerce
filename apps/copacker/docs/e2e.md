@@ -24,6 +24,8 @@ that call. On staging a worker runs; specs that only make sense locally skip the
 - The test account is `copacker-e2e@example.net` (Casey Tester) in the WorkOS staging environment. It's created on
   first use with a confirmed email, and its password is derived from `WORKOS_API_KEY` (`scripts/e2e-user.ts`), so no
   password is stored anywhere.
+- For a hosted PR qualification, set a dedicated `E2E_EMAIL` for both seeding and testing, and confirm the database is
+  that PR's isolated branch. Assertions use that same identity; do not reset the shared staging account's workspaces.
 - It owns three workspaces: **E2E Buyer**, with the demo Shopify store from `pnpm db:seed` (`scripts/demo-store.ts`),
   **E2E Supplier**, joined as the buyer's "Demo supplier", and **E2E Forwarder**, joined as its forwarder. The buyer
   also has "Offline supplier", which isn't on Copacker, and draft purchase orders for the specs to send, one per

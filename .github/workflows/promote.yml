@@ -2,6 +2,11 @@ name: Promote to production
 # The manually approved release uses the exact commit staging reports after CI and browser qualification.
 on:
   workflow_dispatch:
+    inputs:
+      commit:
+        type: string
+        required: true
+        description: Exact 40-character commit tested on staging and approved for production
 concurrency:
   group: promote-production
   cancel-in-progress: false
@@ -22,6 +27,10 @@ jobs:
             echo "::error::Staging does not report a release commit"
             exit 1
           fi
+          if [ "$sha" != "$APPROVED_COMMIT" ]; then
+            echo "::error::Staging no longer serves the explicitly approved commit. Test and approve its current release."
+            exit 1
+          fi
           runs=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
             -f head_sha="$sha" -f branch=main -f status=success --jq '.workflow_runs[].id')
           qualified=false
@@ -40,6 +49,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           STAGING_URL: ${{ vars.STAGING_URL }}
+          APPROVED_COMMIT: ${{ inputs.commit }}
   promote:
     needs: staging
     uses: ./.github/workflows/release.yml

@@ -35,12 +35,13 @@ export function useSubmissionForm<Schema extends z.ZodType<FieldValues, FieldVal
   const submit = form.handleSubmit(async (values) => {
     try {
       const result = await run(toPayload ? toPayload(values) : values)
+      // reset() clears isSubmitting too, so keep it after the awaited refresh/completion callback.
+      await onSuccess?.(result)
       if (!result.redirect && typeof keepSaved === "function") {
         form.reset(keepSaved(values))
       } else if (!result.redirect) {
         form.reset(keepSaved ? form.getValues() : defaultValues)
       }
-      await onSuccess?.(result)
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error) })
     }

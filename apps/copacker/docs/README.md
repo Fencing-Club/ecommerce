@@ -19,7 +19,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Shared preview Storybook server](../preview-assets/docs/README.md)
 - [Background jobs and Cloudflare wake signals](background-jobs.md)
 - [Cloudflare runtime, releases and private-storage migration](cloudflare.md)
-- [Terraform adoption, resource tags and infrastructure ownership](infrastructure.md)
+- [Terraform ownership, reviewed applies and verified state backups](infrastructure.md)
 - [Domains and provider configuration across environments](domains.md)
 - [Local development domains with Buildkit and Portless](development.md)
 - [End-to-end tests: the Playwright suite](e2e.md)

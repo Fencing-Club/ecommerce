@@ -1,237 +1,210 @@
 # Current and proposed platform architecture
 
-Part of the [migration specification](README.md). This is a repository-derived inventory as of October 15, 2026, including
-the current working tree. It is not a live audit of provider accounts. Resource sizes, traffic, configured CDN cache
-rules, account entitlements and deployed revision drift remain to be measured. In particular, Storybook is present in
-the deployment script and domain inventory but absent from the older operations resource-ID table.
+Part of the [migration specification](README.md). The first diagram captures the live state immediately before the
+final web cutover on October 16, 2026. The second is the release target. It incorporates the separately completed Neon
+and private R2 transfers; the original Railway-only database plan is superseded. The deployment checks and final
+acceptance record determine whether a target has been activated.
 
-## Current runtime
+## State before the web cutover
 
-The Railway group is repeated independently for staging and production. Public media and the Turbo cache are shared
-Cloudflare services. External provider configuration differs by environment; do not infer staging notification
-subscriptions from production's topology.
-
-```mermaid
-flowchart TB
-  people["Buyers, suppliers and forwarders"]
-  subgraph cf["Cloudflare today"]
-    edge["Registrar, DNS, TLS and proxied app domains"]
-    media["Public R2 media<br/>media.copacker.ai"]
-    turbo["Turbo remote cache<br/>turbo.copacker.ai"]
-  end
-  subgraph railway["Railway - separate staging and production"]
-    web["Next.js 16 / React 19<br/>Node 24 web container<br/>Pages, APIs, OAuth, private downloads"]
-    worker["Node 24 worker container<br/>3 Postgres job loops<br/>SQS readers and reconciliation timer"]
-    pg[("Postgres<br/>Business records, encrypted tokens<br/>Jobs, leases and sync state")]
-    files[("Private S3-compatible bucket<br/>Documents, labels and imports")]
-    stories["Static Storybook container<br/>Fixtures and MSW"]
-    recovery["Scheduled Postgres volume backups"]
-    logs["Service logs and health endpoints"]
-  end
-  subgraph aws["AWS us-east-1"]
-    bus["EventBridge<br/>Shopify partner bus and eBay events"]
-    sqs["SQS queues<br/>Amazon, Shopify and eBay"]
-    dlq["Dead-letter queues"]
-  end
-  identity["WorkOS<br/>Identity, sessions, feature flags and waitlist"]
-  commerce["Shopify, Amazon SP-API / Ads, eBay<br/>OAuth, reads and commerce writes"]
-  shopify["Shopify event delivery"]
-  amazon["Amazon notification delivery"]
-  ebay["eBay HTTPS notifications"]
-  email["Resend transactional email"]
-  ai["OpenRouter<br/>Document import model"]
-  trace["Langfuse<br/>Import prompt and operational traces"]
-  fx["Frankfurter exchange rates"]
-  maps["Google Maps Places<br/>Browser address entry"]
-  ci["GitHub Actions"]
-
-  people --> edge
-  edge --> web
-  edge --> stories
-  people --> media
-  people --> maps
-  people <--> identity
-  web <--> identity
-  web <--> pg
-  worker <--> pg
-  web <--> files
-  worker <--> files
-  pg --> recovery
-  web <--> commerce
-  worker <--> commerce
-  web --> email
-  worker --> email
-  worker --> ai
-  worker <--> trace
-  worker --> fx
-  shopify --> bus
-  amazon --> sqs
-  ebay --> edge
-  web -->|"Verified eBay events"| bus
-  bus --> sqs
-  sqs -->|"Long polling"| worker
-  sqs --> dlq
-  web --> logs
-  worker --> logs
-  ci <--> turbo
-  ci -->|"Web predeploy migrates, then worker and stories deploy"| railway
-```
-
-Important current behavior:
-
-- The web service and worker share each environment's Postgres and private bucket. The web service authorizes private
-  downloads and rechecks document revision, access and release status before returning bytes with `private, no-store`.
-- Jobs are already durable Postgres records. Claims use row locking, ten-minute leases and thirty-second heartbeats;
-  job attempts fence stale workers. Some provider polling reschedules work through `PollAgain`.
-- A ten-minute scheduler ensures one daily reconciliation job at 07:00 UTC. The worker also renews provider
-  subscriptions. Web maintenance mode does **not** stop this worker.
-- Shopify delivers through EventBridge, Amazon to SQS, and eBay through a verified web endpoint into EventBridge.
-  Production and staging have separate queues; staging Shopify event delivery and eBay subscriptions are incomplete
-  or disabled per the current notification inventory.
-- WorkOS's staging environment currently serves both deployed environments. Database memberships and document access
-  remain Copacker's responsibility. A hosting move must not silently change identity behavior.
-- `@repo/aisle` is an in-process commerce/document library used by web and jobs; `@repo/copacker-emails` supplies email
-  templates. Neither is an independently hosted service. Google/Microsoft sign-in is brokered through WorkOS.
-
-Evidence: [operations](../../operations.md), [domains](../../domains.md), [notification topology](../../notifications.md),
-[deployment](../../../../../.github/scripts/deploy.sh), [worker](../../../src/server/worker.ts),
-[queue](../../../src/server/queue.ts), [database](../../../src/db/index.ts), [storage](../../../src/server/storage.ts),
-[document download](../../../src/app/api/documents/[id]/route.ts), [import](../../../src/server/import-job.ts),
-[tracing](../../../src/server/import-trace.ts) and [address entry](../../../src/components/address-fields.tsx).
-
-## Proposed runtime
-
-This effort moves compute and object storage while retaining the existing Railway Postgres databases and scheduled
-backups. A database migration and Neon branching are deferred to a separate effort. TanStack Start is selected; its
-implementation must pass framework, database-connectivity and document-runtime gates. Each environment has separate data, secrets, queues and
-bindings. The optional processing service remains available if Workers cannot support existing file workloads.
-
-```mermaid
-flowchart TB
-  people["Buyers, suppliers and forwarders"]
-  subgraph cf["Cloudflare - isolated staging and production"]
-    edge["Existing DNS / TLS<br/>CDN and scoped request protection"]
-    static["Workers Static Assets<br/>App assets and static Storybook"]
-    media["Existing public R2 media<br/>media.copacker.ai"]
-    web["Web Worker<br/>TanStack Start<br/>SSR, APIs, OAuth and authorized downloads"]
-    ingest["Authenticated event ingress<br/>Verified eBay webhook / signed AWS bridge"]
-    relay["Outbox dispatcher<br/>Immediate wakeup plus scheduled recovery"]
-    queues["Cloudflare Queues<br/>Job IDs / object references and DLQ"]
-    jobs["Consumer Workers<br/>Short bounded jobs"]
-    flows["Cloudflare Workflows<br/>Sync pages, reports, imports and shipment steps"]
-    cron["Cron<br/>Reconciliation and outbox recovery"]
-    hyper["Hyperdrive<br/>Query cache disabled initially"]
-    files[("Private R2<br/>Documents and processing artifacts")]
-    obs["Workers logs / traces<br/>Queue, workflow and app alerts"]
-  end
-  subgraph railwaydb["Railway retained - separate staging and production"]
-    proxy["Public TCP proxy<br/>Verified TLS with Railway CA"]
-    pg[("Existing Postgres<br/>Business records, credentials<br/>Inbox, outbox and job ledger")]
-    recovery["Existing scheduled backups<br/>Tested recovery policy"]
-  end
-  subgraph aws["Retained provider transport in AWS"]
-    incoming["Shopify EventBridge / Amazon notifications"]
-    sqs["Existing SQS and DLQs"]
-    bridge["Small SQS-triggered Lambda bridge<br/>Partial-batch failures and authenticated HTTPS"]
-  end
-  identity["WorkOS identity and flags"]
-  external["Shopify, Amazon SP-API / Ads, eBay<br/>Resend, OpenRouter and Frankfurter"]
-  trace["Langfuse prompts and import traces"]
-  maps["Google Maps Places"]
-  ebay["eBay HTTPS notifications"]
-  fallback["Conditional container processing service<br/>Only workloads that fail Workers gates"]
-
-  people --> edge
-  edge --> web
-  edge --> static
-  people --> media
-  people --> maps
-  people <--> identity
-  web <--> identity
-  web --> hyper
-  ingest -->|"Commit inbox and outbox before acknowledging"| hyper
-  hyper <--> proxy
-  proxy <--> pg
-  pg --> recovery
-  web <--> files
-  web -->|"Best-effort wakeup after DB commit"| relay
-  ingest --> relay
-  cron --> relay
-  cron -->|"Durable daily job"| hyper
-  relay <--> hyper
-  relay --> queues
-  queues --> jobs
-  jobs --> flows
-  jobs <--> hyper
-  flows <--> hyper
-  jobs <--> files
-  flows <--> files
-  web <--> external
-  jobs <--> external
-  flows <--> external
-  flows <--> trace
-  flows -.-> fallback
-  fallback -.-> files
-  incoming --> sqs
-  sqs --> bridge
-  bridge --> ingest
-  ebay --> edge
-  edge --> ingest
-  web --> obs
-  jobs --> obs
-  flows --> obs
-  relay --> obs
-```
-
-Runtime decisions:
-
-1. **Keep one source of truth.** Railway Postgres owns business state and job/audit records throughout this effort.
-   Hyperdrive uses a separately verified external connection; retained Node services can keep Railway's private path.
-   Queue messages carry identifiers.
-   Domain changes and outbox inserts commit together. The dispatcher marks publication only after queue acceptance;
-   retries can duplicate delivery, so consumers deduplicate by stable job/event identity and check revisions.
-2. **Match execution to work.** Short emails and event handling can use consumers. Multi-page syncs and Amazon
-   create/poll/download operations use durable steps and sleeps, with existing provider idempotency and reconciliation.
-   Preserve job-key semantics, delayed runs, manual retries, cancellation and per-provider concurrency limits.
-3. **Keep necessary AWS transport.** The current Amazon subscription path uses AWS destinations. Retain that boundary
-   and initially preserve Shopify EventBridge. A small Lambda bridge returns success only after Cloudflare ingress
-   durably records the event; failed items retry in SQS. eBay can enter Cloudflare directly. A bounded scheduled Worker
-   that polls SQS is an alternative if a minute of ingestion latency is acceptable; choose one bridge, not both.
-   [AWS documents SQS-triggered Lambda behavior](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).
-4. **Separate public and private files.** Keep public media behind its existing custom domain/CDN. Move private
-   documents to a separate R2 bucket; no public bucket URL. Preserve authenticated downloads and withdrawal checks.
-   Initially bypass shared caching for authenticated pages/APIs and documents. Cache fingerprinted static assets and
-   explicitly public responses. [R2 custom-domain caching](https://developers.cloudflare.com/cache/interaction-cloudflare-products/r2/).
-5. **Make operational state explicit.** Move per-process throttling and long-lived feature-flag polling out of assumptions
-   about a permanent server. Use edge rate limits for request abuse and database-backed coordination where correctness
-   requires it. A Durable Object is optional if measured per-merchant coordination needs justify it; neither KV nor D1
-   is required by the proposed architecture.
-6. **Observe the whole path.** Correlate ingress ID, job ID, workspace, deployment and workflow. Alert on event age,
-   outbox lag, DLQs, stuck work, repeated token failures, DB contention, memory/CPU errors and import failures. Continue
-   Langfuse's allowlisted metadata approach; never log credentials or document contents.
-
-## Delivery and environment topology
+Staging and production have separate databases, private buckets, queues and secrets. Their public application and
+Storybook domains still route to Railway. TanStack Start is merged and the Cloudflare PR preview is deployed; the
+existing Railway web deployments still run the previous Next.js artifacts.
 
 ```mermaid
 flowchart LR
-  git["GitHub PR / worktree"] --> checks["pnpm verify<br/>Stories and Playwright<br/>Workers runtime tests"]
-  local[("Local Docker / isolated CI Postgres<br/>Fixtures and committed migrations")]
-  local <--> checks
-  checks --> staging["Stable staging Worker<br/>Own R2 and job bindings"]
-  staging --> stageDb[("Existing Railway staging Postgres<br/>Verified Hyperdrive connection")]
-  staging --> promote["Manual production promotion<br/>Same tested commit / artifact"]
-  promote --> migrate["Single migration runner<br/>Verified Railway connection"]
-  migrate --> prod["Production Workers and jobs<br/>Versioned code rollback"]
-  prod --> prodDb[("Existing Railway production Postgres<br/>Verified Hyperdrive connection")]
-  migrate --> prodDb
-  turbo["Existing Cloudflare Turbo cache"] <--> checks
+  users["Buyers, suppliers and forwarders"]
+  subgraph cloudflare["Cloudflare"]
+    edge["DNS, TLS and proxied application domains"]
+    media["Public R2 media and CDN: media.copacker.ai"]
+    preview["TanStack Start PR Worker and static assets"]
+    previewStories["Shared preview Storybook asset Worker"]
+    hyperdrive["Preview Hyperdrive: verified TLS, caching off"]
+    privateFiles[("Private R2: separate staging and production buckets")]
+    previewFiles[("PR app and Storybook prefixes in staging R2")]
+    queue["Environment job wake queues and dead-letter queues"]
+    turbo["Turbo remote cache: turbo.copacker.ai"]
+  end
+  subgraph railway["Railway: retained services"]
+    web["Next.js web containers: pages, APIs, OAuth and private downloads"]
+    stories["Static Storybook containers"]
+    executor["Node background executor: three job slots and SQS readers"]
+    recovery["Old Postgres and object store retained for recovery"]
+  end
+  subgraph neon["Neon Postgres"]
+    database[("Separate staging and production branches: business data, jobs, leases and tokens")]
+    branch[("Isolated PR database branch")]
+    history["Restore history and frozen cutover recovery branches"]
+  end
+  subgraph providers["Retained providers"]
+    identity["WorkOS: Google and Microsoft sign-in, sessions, feature flags"]
+    commerce["Shopify, Amazon SP-API and Ads, eBay"]
+    events["AWS EventBridge, SQS and dead-letter queues"]
+    processing["Resend, OpenRouter, Langfuse and Frankfurter"]
+    maps["Google Maps Places"]
+    ci["GitHub Actions"]
+  end
+  users --> edge
+  edge --> web
+  users --> stories
+  users --> media
+  users --> maps
+  users --> preview
+  users --> previewStories
+  previewStories --> previewFiles
+  preview --> hyperdrive --> branch
+  preview --> previewFiles
+  preview --> identity
+  web --> identity
+  web --> database
+  executor --> database
+  web --> privateFiles
+  executor --> privateFiles
+  web --> commerce
+  executor --> commerce
+  commerce --> events --> executor
+  web -->|"Verified eBay events"| events
+  web -->|"Wake after commit"| queue
+  queue -->|"HTTP pull and acknowledgement"| executor
+  executor --> processing
+  database --> history
+  database -->|"Isolated copy for each trusted PR"| branch
+  ci --> preview
+  ci --> previewStories
+  ci <--> turbo
 ```
 
-Today local development uses Portless and Docker Postgres, CI uses isolated Postgres and browser tests, staging deploys
-automatically after CI, and production uses a promotion workflow. Preserve those controls. Database branching is deferred.
-Optional writable cloud previews need their own isolated nonproduction Postgres database, storage, secrets and job
-bindings; they must not write to production or compete over the staging dataset. They are not a prerequisite for this
-migration. A later database-provider migration will define and provision its own branching workflow.
-Keep the existing public domains and callback paths wherever possible. Update [domains](../../domains.md) when
-configuration actually changes; this specification does not declare any future endpoint provisioned. See
-[framework boundaries](framework.md) and [backend execution contracts](backend.md) for the implementation requirements.
+Live evidence includes Railway service configuration, Cloudflare DNS and Hyperdrive readback, database migration
+inventories and the verified storage manifests. Old Railway databases are recovery material, not an alternative
+writable source of truth. The retained web and executor already use Neon and R2; no second database or file transfer
+is required for the web runtime switch. WorkOS's shared staging identity environment remains intentional.
+
+## Release target: Cloudflare web, files and CDN
+
+Keep the same public application, Storybook and integration callback URLs. Each release builds web and Storybook from
+one tested commit, applies any pending migrations through one direct Neon connection, and deploys the retained Node
+executor from that commit. Application responses and private downloads remain authenticated and uncached.
+
+```mermaid
+flowchart LR
+  users["Buyers, suppliers and forwarders"]
+  subgraph cloudflare["Cloudflare: separate staging and production"]
+    edge["Existing custom domains: DNS, TLS and CDN"]
+    web["TanStack Start Worker: SSR, APIs, OAuth and authorized downloads"]
+    assets["Workers Static Assets: application bundles"]
+    stories["Assets-only Storybook Worker"]
+    media["Existing public R2 media and CDN"]
+    hyperdrive["Hyperdrive: verified TLS, query caching disabled"]
+    files[("Private R2 documents, labels and imports")]
+    queues["Queues: wake and reconcile messages, retries and DLQ"]
+    cron["Scheduled Worker: hourly recovery and daily reconciliation"]
+    telemetry["Workers logs, traces and release health"]
+  end
+  subgraph neon["Neon"]
+    database[("Postgres: business records, durable job ledger, leases and encrypted tokens")]
+    history["Verified restore history and recovery branches"]
+  end
+  subgraph railway["Retained execution and recovery"]
+    executor["Node executor: claims SQL jobs, processes files and polls providers"]
+    oldOrigins["Previous web and Storybook artifacts retained for rollback"]
+    oldStorage["Previous storage retained through observation"]
+  end
+  subgraph external["Retained integrations"]
+    identity["WorkOS identity and sessions"]
+    commerce["Shopify, Amazon SP-API and Ads, eBay"]
+    events["AWS EventBridge, SQS and DLQs"]
+    email["Resend transactional email"]
+    imports["OpenRouter document extraction and Langfuse traces"]
+    rates["Frankfurter exchange rates"]
+    maps["Google Maps Places"]
+  end
+  users --> edge
+  edge --> web
+  edge --> assets
+  edge --> stories
+  users --> media
+  users --> maps
+  web --> identity
+  web --> hyperdrive --> database
+  web --> files
+  web --> commerce
+  web -->|"Commit job, then publish wake"| queues
+  cron --> queues
+  queues -->|"HTTP pull"| executor
+  executor -->|"Claim, lease, retry and finish"| database
+  executor -->|"Scoped S3 credentials"| files
+  executor --> commerce
+  executor --> email
+  executor --> imports
+  executor --> rates
+  commerce --> events --> executor
+  web -->|"Verified eBay notifications"| events
+  database --> history
+  web --> telemetry
+  cron --> telemetry
+```
+
+The SQL job ledger owns work and retries; queue messages are delivery signals. Only the Railway executor claims jobs.
+Startup recovery and hourly wake signals cover missed publication; reconciliation retains its daily identity. This
+release does not introduce a second executor or move live shipment creation into a new retry model. See
+[background-job contracts](../../background-jobs.md).
+
+Private R2 has no public document origin. Downloads recheck workspace membership, document revision and release state.
+The web uses native R2 bindings; the retained executor uses credentials limited to its environment's bucket. Public
+media keeps its existing CDN origin. Returning to an old object store after new writes requires a verified reverse
+delta; changing an endpoint alone is insufficient.
+
+Hyperdrive has separate configurations for staging, production and each PR, with query caching disabled and certificate
+and hostname verification enabled. Migrations use a verified direct Neon endpoint with an advisory lock. The Node
+executor uses Neon's pooled endpoint. Request language is resolved before action transactions so a nested profile
+lookup cannot exhaust the small connection pool. See [database operations](../../neon.md).
+
+## Delivery, previews and recovery
+
+```mermaid
+flowchart LR
+  change["Pull request"] --> checks["Format, lint, types, unused code, unit coverage, Storybook and browser journeys"]
+  checks --> preview["PR Worker, isolated Neon branch and isolated R2 prefix"]
+  preview --> qualify["Hosted functional and integrated-browser qualification"]
+  qualify --> merge["Merge tested source"]
+  merge --> staging["Serialized staging release: migrate, web, Storybook, executor and scheduler"]
+  staging --> acceptance["Custom-domain, role, file, integration and job checks"]
+  acceptance --> promote["Manual promotion of the exact tested staging commit"]
+  promote --> production["Serialized production release and smoke checks"]
+  production --> observe["Observe live behavior; keep previous origins and recovery data"]
+  infra["Manual infrastructure plan"] --> review["Review saved plan and exact commit"]
+  review --> apply["Apply that unexpired plan with unchanged state"]
+  apply --> backup["Private R2 state backups before and after; verify bytes and restore readability"]
+  scheduled["Six-hour state backup schedule"] --> backup
+```
+
+The GitHub plan does not support required reviewers for this private repository. Manual dispatch with an explicit
+commit and saved-plan checks supplies the current approval mechanism. See [infrastructure operations](../../infrastructure.md)
+and [release procedure](../../cloudflare.md). Terraform state backups are not database or document backups.
+
+PR previews copy staging into an isolated Neon branch, use a private R2 prefix and receive no merchant integration
+secrets. They have no background executor. Their static Storybook files are served through the shared preview asset
+Worker. Preview expiration and closed-PR cleanup are independent of production retention.
+
+Production acceptance includes existing sessions, role boundaries, authorized and unauthorized file access, immutable
+file checksums, current provider callbacks, queue delivery, and matching web/Storybook commit metadata. Observe at least
+one daily reconciliation cycle before retiring recovery services. Restore history and frozen recovery branches have
+explicit expiry; record their actual retention in the release evidence.
+
+## Later background execution migration
+
+Moving the remaining Node executor to Cloudflare is a separate milestone. Short bounded jobs can move to Queue
+consumers; long syncs, report polling and shipment preparation need durable Workflow checkpoints. Preserve provider
+idempotency, SQL leases, ownership fencing, delayed retries and recovery of ambiguous external creates. Keep AWS
+notification transport until a separately verified bridge replaces the current SQS readers. Any file workload that
+fails Workers runtime limits needs an explicit processing exception.
+
+The final executor migration requires one owner per job family and duplicate-delivery, restart and rollback drills.
+Until those gates pass, Railway remains part of the deployed architecture. No D1, KV or Durable Object is required for
+this web release.
+
+Sources: [runtime entry](../../../src/server.ts), [database context](../../../src/db/index.ts),
+[private storage](../../../src/server/storage.ts), [document authorization](../../../src/server/http/api/documents/$id.ts),
+[executor](../../../src/server/worker.ts), [job delivery](../../../src/server/job-delivery.ts),
+[release workflow](../../../../../.github/workflows/release.yml), [preview lifecycle](../../neon.md#pr-previews),
+[domain inventory](../../domains.md), and [cutover and recovery](cutover.md).

@@ -953,11 +953,20 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
 type Sort = "urgency" | "quantity" | "name"
 const sorts: readonly Sort[] = ["urgency", "quantity", "name"]
 
-function Results({ report, filters }: { report: Report; filters: LinkFilters }) {
+function Results({
+  report,
+  filters,
+  search,
+  setSearch
+}: {
+  report: Report
+  filters: LinkFilters
+  search: string
+  setSearch: (value: string) => void
+}) {
   const text = useText()
   const { t } = text
   const sortOptions = sorts.map((value) => ({ value, label: t(`sort.${value}`) }))
-  const [search, setSearch] = useState(filters.q)
   const [cover, setCover] = useState(filters.cover)
   const [onlyOrders, setOnlyOrders] = useState(filters.onlyOrders)
   const [query] = useDebouncedValue(search.trim().toLocaleLowerCase(), 200)
@@ -1256,6 +1265,8 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
   const { data: suppliers = [] } = useSuppliersQuery()
   const params = new URLSearchParams(useLocation({ select: (location) => location.searchStr }))
   const [filters] = useState(() => linkFilters(params))
+  // Keep the typed search when a setting replaces the report; order selections still reset with each result.
+  const [search, setSearch] = useState(filters.q)
   // The linked channel wins until another is chosen.
   const [linkedChannel, setLinkedChannel] = useState(filters.channel)
   const channel = channels.find((item) => item.key === (linkedChannel ?? channelKey)) ?? channels[0]
@@ -1353,7 +1364,9 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
         </Alert>
       )}
       {calculating && <Loading />}
-      {result.currentData && <Results key={shownKey} report={result.currentData} filters={filters} />}
+      {result.currentData && (
+        <Results key={shownKey} report={result.currentData} filters={filters} search={search} setSearch={setSearch} />
+      )}
     </div>
   )
 }

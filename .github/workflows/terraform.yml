@@ -1,10 +1,10 @@
 name: Terraform
 on:
   pull_request:
-    paths: ["apps/copacker/infra/**", ".github/workflows/terraform.yml"]
+    paths: ["apps/copacker/infra/**", "apps/copacker/scripts/terraform-*.ts", ".github/workflows/terraform*.yml"]
   push:
     branches: [main]
-    paths: ["apps/copacker/infra/**", ".github/workflows/terraform.yml"]
+    paths: ["apps/copacker/infra/**", "apps/copacker/scripts/terraform-*.ts", ".github/workflows/terraform*.yml"]
 permissions:
   contents: read
 jobs:

@@ -189,6 +189,19 @@ export const ChooseLocationAndSupplier = meta.story({
   }
 })
 
+export const KeepsSearchWhenSettingsChange = meta.story({
+  play: async ({ canvas }) => {
+    await lotusGroup()
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search products" }), "wool")
+    await expect(await canvas.findByText("No products match")).toBeVisible()
+    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
+    await waitFor(() => expect(plans.at(-1)).toMatchObject({ supplier: suppliers[1]!.id }), loaded)
+    await expect(await canvas.findByRole("searchbox", { name: "Search products" }, loaded)).toHaveValue("wool")
+    await expect(await canvas.findByText("No products match")).toBeVisible()
+  }
+})
+
 // The page recalculates once the typed settings are whole days again.
 export const ChangeSettings = meta.story({
   play: async ({ canvas }) => {

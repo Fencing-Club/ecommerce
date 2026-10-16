@@ -13,8 +13,10 @@ and `src/server/http` retain the existing authorization and HTTP contracts. `src
 authentication, localization, database, private-storage and queue-publisher contexts. A router is created per request. Database sockets
 close before the request finishes; Hyperdrive query caching is disabled. Mutations recheck current database permissions.
 
-The application retains Redux Toolkit Query and nuqs. Router invalidation refreshes loader data after changes; edits
-wait for fresh data before remounting. Authentication and workspace changes load a new document to discard old caches.
+The application retains Redux Toolkit Query and nuqs. Forms and action buttons await synchronous router invalidation
+before completing; form reset also waits so pending state covers the refresh. Authenticated actions resolve the request
+language before holding a domain transaction, avoiding a second profile connection inside a small Hyperdrive pool.
+Restock search survives report replacement while order selections reset. Authentication and workspace changes load a new document to discard old caches.
 Start's import protection rejects server dependencies in browser bundles. Client environment variables use the `VITE_`
 prefix only for deliberately public values, currently the restricted Google Maps browser key.
 
@@ -40,8 +42,9 @@ the web Worker. It retains direct PostgreSQL access. Never point a local job wor
 The earlier qualification deployment is at `copacker-staging.hoa-preview.workers.dev`; its source was an uncommitted
 working tree and its release SHA is deliberately blank. It predates the Neon integration. On October 16, a read-only
 check confirmed its Hyperdrive now targets Neon with `verify-full`, caching disabled and five origin connections.
-Its original staging worker used the original object store. Recheck both storage endpoints before further writes.
-Use this deployment for qualification reads until the final storage delta and both readers/writers switch together.
+Its original staging worker used the original object store. The October 16 storage transfer subsequently moved both
+retained web and executor readers/writers to R2 and verified the transferred bytes and references. Replace this early
+qualification artifact with the tested release before routing the stable staging domain to it.
 See the [qualification record](specs/platform-migration/compatibility.md#main-application-qualification).
 
 Required Worker secrets and optional integration secrets/settings are allowlisted in `scripts/cloudflare-environment.ts`.
@@ -66,9 +69,11 @@ For retained Railway database recovery access, `DATABASE_CA_CERT` is required ov
 holds an advisory lock around Drizzle migrations, with a two-minute lock timeout. Disable the old Railway web
 predeploy migration command before enabling the new release workflow.
 
-GitHub's protected `staging` and `production` environments supply the variables above, `CLOUDFLARE_ACCOUNT_ID`,
+GitHub's `staging` and `production` environments supply the variables above, `CLOUDFLARE_ACCOUNT_ID`,
 `STORIES_URL`, optional domain lists, and `CLOUDFLARE_API_TOKEN`, `DATABASE_MIGRATION_URL`, optional `DATABASE_CA_CERT`,
-`CLOUDFLARE_WORKER_SECRETS` and `RAILWAY_WORKER_TOKEN` secrets. `CLOUDFLARE_WORKER_SETTINGS` is a JSON variable.
+`CLOUDFLARE_WORKER_SECRETS` secrets. The retained executor uses the existing repository secrets
+`RAILWAY_STAGING_TOKEN` or `RAILWAY_PRODUCTION_TOKEN` for its selected environment.
+`CLOUDFLARE_WORKER_SETTINGS` is a JSON variable.
 The repository's `CLOUDFLARE_RELEASE_ENABLED` stays off until resource, storage, callback and rollback gates pass.
 Each environment's deploys are serialized. Older main commits cannot replace newer staging. The retained worker is
 released after the web and Storybook, followed by its queue scheduler; both HTTP health endpoints must report the expected commit.
@@ -78,7 +83,9 @@ receives the queue HTTP token.
 
 Both web and Storybook HTTPS origins are validated before any build, migration, or deployment. Production also requires each origin in its respective Worker custom-domain configuration.
 
-Promotion reads staging's served SHA and requires a successful CI run that actually completed staging deployment.
+Promotion requires an explicitly entered 40-character approved commit, compares it with staging's served SHA, and
+requires a successful CI run that actually completed staging deployment. The manual dispatch is the production
+approval mechanism; this private repository's current GitHub billing plan does not support required environment reviewers.
 Production uses that exact commit and runs signed-out smoke checks. Full browser qualification uses isolated test
 workspaces; never seed production. Passing builds and dry runs do not replace deployed qualification, data reconciliation,
 or the agreed observation window. Keep the previous web artifact and storage available through that window.

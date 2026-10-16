@@ -43,6 +43,7 @@
     "build:stories-release": "node --import tsx scripts/build-stories-release.ts",
     "storage:transfer": "node --import tsx scripts/storage-transfer.ts",
     "infra:tags": "node --import tsx scripts/terraform-tags.ts",
+    "infra:operate": "node --import tsx scripts/terraform-runner.ts",
     "dev:doctor": "dev-domains doctor",
     "preview:deploy": "node --import tsx scripts/preview.ts deploy",
     "preview:remove": "node --import tsx scripts/preview.ts remove",

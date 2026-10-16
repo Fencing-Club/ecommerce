@@ -146,6 +146,7 @@ import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
 import { amazonJob, emailJob } from "../src/server/job-handlers"
 import { orderLandedCosts } from "../src/server/landed-costs"
+import { resolveLocalization, withLocalization } from "../src/server/localization"
 import {
   approveProposal,
   declineProposal,
@@ -3930,6 +3931,24 @@ describe("PO to a released FBA shipment", () => {
 })
 
 describe("fluid packing handoff", () => {
+  it("resolves the request language before holding a purchase order transaction", async () => {
+    await database.update(tables.orders).set({ status: "draft" })
+    const transaction = vi.spyOn(database, "transaction")
+    const resolve = vi.fn<() => ReturnType<typeof resolveLocalization>>(async () => {
+      // The profile lookup cannot borrow a second connection while the domain transaction holds the first one.
+      expect(transaction).not.toHaveBeenCalled()
+      return resolveLocalization({ acceptLanguage: "en" })
+    })
+    try {
+      const response = await withLocalization(resolve, () => post("order.submit", { id: orderId, revision: 1 }))
+      expect(response.status).toBe(200)
+      expect(resolve).toHaveBeenCalledOnce()
+      expect(transaction).toHaveBeenCalled()
+      expect((await database.select().from(tables.orders))[0]?.status).toBe("submitted")
+    } finally {
+      transaction.mockRestore()
+    }
+  })
   it("starts independent AWD and FBA drafts and prevents packing a product into the wrong network", async () => {
     const fbaItem = { ...orderData.items[0]!, id: randomUUID(), buyerSku: "foil-fba", amazonNetwork: "fba" as const }
     const data = { ...orderData, items: [...orderData.items, fbaItem] }
