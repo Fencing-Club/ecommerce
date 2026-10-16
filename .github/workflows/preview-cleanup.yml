@@ -32,9 +32,6 @@ jobs:
       NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
       NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
       NEON_ROLE_NAME: ${{ vars.NEON_ROLE_NAME }}
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PREVIEW_TOKEN }}
-      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
-      RAILWAY_PREVIEW_ENVIRONMENT_ID: ${{ vars.RAILWAY_PREVIEW_ENVIRONMENT_ID }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
@@ -44,7 +41,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --global pnpm@12.10.1 @railway/cli@5.68.0
+      - run: npm install --global pnpm@12.10.1
       - run: pnpm install --frozen-lockfile
       - if: github.event_name != 'schedule'
         run: pnpm --filter copacker preview:remove

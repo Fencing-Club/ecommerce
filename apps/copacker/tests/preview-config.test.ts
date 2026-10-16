@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { assertPreviewBranch, previewSettings, previewSource } from "../scripts/preview-config"
+import { assertPreviewBranch, previewSettings } from "../scripts/preview-config"
 
 describe("PR preview boundaries", () => {
   it.each([
@@ -19,24 +19,6 @@ describe("PR preview boundaries", () => {
         "br-staging"
       )
     ).not.toThrow()
-  })
-
-  it("does not pass integration credentials through the preview allowlist", () => {
-    const parsed = previewSource.parse({
-      WORKOS_API_KEY: "test",
-      WORKOS_CLIENT_ID: "client",
-      TOKEN_ENCRYPTION_KEY: "test",
-      S3_ENDPOINT: "https://storage.example.com",
-      S3_BUCKET: "staging",
-      S3_ACCESS_KEY_ID: "test",
-      S3_SECRET_ACCESS_KEY: "test",
-      SHOPIFY_CLIENT_SECRET: "never-copy",
-      AWS_SECRET_ACCESS_KEY: "never-copy",
-      EMAIL_API_KEY: "never-copy"
-    })
-    expect(parsed).not.toHaveProperty("SHOPIFY_CLIENT_SECRET")
-    expect(parsed).not.toHaveProperty("AWS_SECRET_ACCESS_KEY")
-    expect(parsed).not.toHaveProperty("EMAIL_API_KEY")
   })
 
   it.each(["production", "0", "../staging", "42;echo secret"])("rejects unsafe resource identifiers: %s", (number) => {

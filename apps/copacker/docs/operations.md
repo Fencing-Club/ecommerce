@@ -121,7 +121,6 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 | Staging environment     | `b822ecad-68dd-4f4f-89e0-d9db00485545` |
 | Web service (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
 | Worker (`copacker-worker`) | `08c1edb8-c309-4fe4-b71e-14b54065a0fc` |
-| Preview environment     | `de1aa7b4-2824-47e8-a15f-e0fe081a669b` |
 | Documents bucket        | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
 
 Each deployed environment has its own web/worker services and document bucket, and an independent [Neon database branch](neon.md). Production answers on
@@ -176,6 +175,6 @@ See [Neon connections and releases](neon.md).
 
 ## Preview scope
 
-Trusted PRs receive isolated Neon staging copies and Railway app/document resources after CI passes. Existing
-Storybook fixture previews remain available. See [Neon PR previews](neon.md) for scope, credentials, expiry, and
-cleanup; previews never use production data or run background integration workers.
+Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Hosted app previews
+are deferred to the Cloudflare web migration; no new Railway resources are provisioned. Existing Storybook fixture
+previews remain available. See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.

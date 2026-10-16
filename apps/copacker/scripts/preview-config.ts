@@ -2,23 +2,10 @@ import { z } from "zod"
 
 export const previewSettings = z.object({
   PR_NUMBER: z.string().regex(/^[1-9]\d*$/),
-  NEON_PROJECT_ID: z.string().min(1),
+  NEON_PROJECT_ID: z.string().regex(/^[a-z0-9-]+$/),
   NEON_STAGING_BRANCH_ID: z.string().startsWith("br-"),
   NEON_DATABASE_NAME: z.string().min(1),
-  NEON_ROLE_NAME: z.string().min(1),
-  RAILWAY_PROJECT_ID: z.string().uuid(),
-  RAILWAY_PREVIEW_ENVIRONMENT_ID: z.string().uuid()
-})
-
-// Deliberately do not propagate commerce, queues, email, webhook, or production credentials into previews.
-export const previewSource = z.object({
-  WORKOS_API_KEY: z.string().min(1),
-  WORKOS_CLIENT_ID: z.string().min(1),
-  TOKEN_ENCRYPTION_KEY: z.string().min(1),
-  S3_ENDPOINT: z.url(),
-  S3_BUCKET: z.string().min(1),
-  S3_ACCESS_KEY_ID: z.string().min(1),
-  S3_SECRET_ACCESS_KEY: z.string().min(1)
+  NEON_ROLE_NAME: z.string().min(1)
 })
 
 export const neonBranch = z.object({

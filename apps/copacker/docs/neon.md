@@ -7,7 +7,7 @@ Neon project `Copacker` (`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon 
 | --- | --- | --- |
 | Production | `production` (`br-small-fire-ar4lfkps`) | `production` |
 | Staging | `staging` (`br-quiet-shape-ar6l2pe6`) | `staging` |
-| Pull request | `pr-<number>`, copied from staging | One `pr-<number>` web service in `previews` |
+| Pull request | `pr-<number>`, copied from staging | None |
 | Local development | Local Docker Postgres | None |
 
 ## Connections and releases
@@ -27,32 +27,27 @@ the worker starts after the web deployment succeeds. Staging also seeds its desi
 
 ## PR previews
 
-After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging,
-a Railway web service, and a separate private bucket initially copied from staging. Forks and Dependabot do not
-receive credentials. The GitHub deployment and Actions summary link to the generated Railway HTTPS address.
+After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging.
+CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
+test edits. Forks and Dependabot do not receive credentials. The Actions summary identifies the database branch;
+it does not link to a running application. Copied integration records remain encrypted; the job receives no
+decryption key, commerce credentials, storage credentials, or background worker configuration.
 
-Subsequent pushes apply pending migrations to the same PR database and preserve its test edits and documents.
-Previews use staging's test identity provider and token encryption key, with their own session cookie secret.
-They receive no commerce application credentials, queue credentials, outgoing email credentials, or background worker.
-Copied integration records remain visible; synchronization and external side effects are outside preview scope.
-Use email/password sign-in. Provider OAuth needs the preview's exact `/callback` registered in WorkOS; never allow
-the shared `*.up.railway.app` wildcard. Staging and production keep their existing callback registrations.
+Hosted app previews are deferred until the web runtime moves to Cloudflare. This migration does not create Railway
+preview services or buckets. New app and storage resources belong in Cloudflare; preview documents will use a private
+R2 bucket with a separate prefix per PR when hosted previews are implemented.
 
-The close workflow runs trusted default-branch code to remove the web service, document bucket, and Neon branch.
-Branches expire seven days after the latest deployment. A six-hour sweep removes closed-PR resources and services
-whose database expired. Pushing to an expired preview recreates it from current staging. All preview provisioning
-and cleanup runs serialize to avoid deletion races. Cleanup can also be dispatched with a PR number.
+The close workflow runs trusted default-branch code to remove the Neon branch. Branches expire seven days after
+the latest successful provisioning attempt. A six-hour sweep removes branches for PRs GitHub explicitly reports as
+closed. Pushing after expiration recreates the branch from current staging. All preview provisioning and cleanup
+runs serialize to avoid deletion races. Cleanup can also be dispatched with a PR number.
 
 Required repository configuration:
 
 | Kind | Names |
 | --- | --- |
-| Secrets | `NEON_API_KEY` (project-scoped), `RAILWAY_PREVIEW_TOKEN` (only the `previews` environment), `COPACKER_PREVIEW_CONFIG` |
-| Variables | `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `NEON_DATABASE_NAME`, `NEON_ROLE_NAME`, `RAILWAY_PROJECT_ID`, `RAILWAY_PREVIEW_ENVIRONMENT_ID` |
-
-`COPACKER_PREVIEW_CONFIG` is JSON containing staging's `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `TOKEN_ENCRYPTION_KEY`,
-`S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY`. These are used to initialize isolated previews;
-source storage credentials are not installed in the preview service. Update this secret after rotating staging keys.
+| Secrets | `NEON_API_KEY` (project-scoped) |
+| Variables | `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `NEON_DATABASE_NAME`, `NEON_ROLE_NAME` |
 
 ## Transfer and acceptance
 
