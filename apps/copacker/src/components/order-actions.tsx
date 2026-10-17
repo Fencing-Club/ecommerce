@@ -86,8 +86,9 @@ export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }:
     setError("")
     try {
       const result = await run({ action: "order.delete", data: { id } }).unwrap()
+      await router.navigate({ href: result.redirect ?? "/orders" })
+      await router.invalidate({ sync: true })
       setOpen(false)
-      router.navigate({ href: result.redirect ?? "/orders" })
     } catch (e) {
       setError(errorMessage(e, t("deleteFailed", { reference })))
       setPending(false)

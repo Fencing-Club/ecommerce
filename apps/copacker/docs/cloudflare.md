@@ -18,6 +18,7 @@ close before the request finishes; Hyperdrive query caching is disabled. Mutatio
 The application retains Redux Toolkit Query and nuqs. Forms and action buttons await synchronous router invalidation
 before completing; form reset also waits so pending state covers the refresh. Authenticated actions resolve the request
 language before holding a domain transaction, avoiding a second profile connection inside a small Hyperdrive pool.
+Draft deletion waits for navigation and invalidates the destination list, including a still-fresh cached visit.
 Restock search survives report replacement while order selections reset. Authentication and workspace changes load a new document to discard old caches.
 Start's import protection rejects server dependencies in browser bundles. Client environment variables use the `VITE_`
 prefix only for deliberately public values, currently the restricted Google Maps browser key.
