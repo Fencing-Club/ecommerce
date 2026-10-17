@@ -19,7 +19,7 @@ import type { PreviewTimings } from "./preview-timings"
 function storageSession(config: HostingSettings) {
   const parent = z
     .object({ id: z.string().min(1), status: z.literal("active") })
-    .parse(cloudflareJson(config, ["accounts", "tokens", "verify"]))
+    .parse(cloudflareJson(config, ["user", "tokens", "verify"]))
   return (
     scope:
       | { permission: "object-read-only"; objects: string[] }
@@ -59,9 +59,12 @@ export async function copyPreviewDocuments(
   const marker = `${prefix}.preview-ready`
   let source: S3Client | undefined
   let target: S3Client | undefined
+  let stage = "token verification"
   try {
     const session = storageSession(config)
+    stage = "destination credentials"
     target = session({ permission: "object-read-write", prefixes: [prefix] })
+    stage = "ready marker lookup"
     try {
       await target.send(new HeadObjectCommand({ Bucket: config.bucket, Key: marker }))
       timings.count({ documentsReused: 1, documentFiles: 0, documentBytes: 0 })
@@ -71,10 +74,11 @@ export async function copyPreviewDocuments(
         throw error
       }
     }
+    stage = "database references"
     const client = new Client(databaseConfig("migration", { ...process.env, DIRECT_DATABASE_URL: databaseUrl.href }))
-    await client.connect()
     let keys: string[]
     try {
+      await client.connect()
       keys = [
         ...new Set(
           z
@@ -91,8 +95,10 @@ export async function copyPreviewDocuments(
       "Invalid staging document reference"
     )
     if (keys.length) {
+      stage = "source credentials"
       source = session({ permission: "object-read-only", objects: keys })
     }
+    stage = "document transfer and verification"
     let totalBytes = 0
     for (let offset = 0; offset < keys.length; offset += 4) {
       const results = await Promise.allSettled(
@@ -159,10 +165,12 @@ export async function copyPreviewDocuments(
         "Incomplete document batch"
       )
     }
+    stage = "ready marker write"
     await target.send(new PutObjectCommand({ Bucket: config.bucket, Key: marker, Body: "ready" }))
     timings.count({ documentsReused: 0, documentFiles: keys.length, documentBytes: totalBytes })
   } catch {
-    throw new Error("Preview document copy incomplete; no ready marker was written. Retry the preview workflow.")
+    // Only our fixed stage names reach logs; provider errors can contain credentials or document keys.
+    throw new Error(`Preview document copy incomplete; failed during ${stage}; no ready marker was confirmed.`)
   } finally {
     source?.destroy()
     target?.destroy()

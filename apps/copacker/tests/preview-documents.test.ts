@@ -72,7 +72,7 @@ beforeEach(() => {
   uploaded = new Map()
   database.query.mockResolvedValue({ rows: [...source.keys(), "documents/0.pdf"].map((key) => ({ key })) })
   provider.cloudflareJson.mockImplementation((_config, args) =>
-    args[0] === "accounts"
+    args[0] === "user"
       ? { id: "parent", status: "active" }
       : { accessKeyId: "temporary", secretAccessKey: "private", sessionToken: "private" }
   )
@@ -150,6 +150,7 @@ it("streams four copies at a time with scoped credentials and verifies bytes bef
   }
   expect(readdirSync(folder)).toEqual([])
   expect(provider.cloudflareJson).toHaveBeenCalledTimes(3)
+  expect(provider.cloudflareJson.mock.calls[0]).toEqual([config, ["user", "tokens", "verify"]])
   expect(provider.cloudflareJson.mock.calls[1]![2]).toEqual({
     bucket: config.bucket,
     parentAccessKeyId: "parent",
@@ -243,4 +244,24 @@ it("can initialize an empty fixture database without unscoped source access", as
   await copyPreviewDocuments(config, "42", url, folder, new PreviewTimings())
   expect(provider.cloudflareJson).toHaveBeenCalledTimes(2)
   expect(ready).toBe(true)
+})
+
+it.each([
+  [1, "token verification"],
+  [2, "destination credentials"],
+  [3, "source credentials"]
+])("identifies credential failure %i without exposing provider details", async (call, stage) => {
+  const implementation = provider.cloudflareJson.getMockImplementation()!
+  let calls = 0
+  provider.cloudflareJson.mockImplementation((...args) => {
+    if (++calls === call) {
+      throw new Error("private provider token")
+    }
+    return implementation(...args)
+  })
+  await expect(copyPreviewDocuments(config, "42", url, folder, new PreviewTimings())).rejects.toThrow(
+    `Preview document copy incomplete; failed during ${stage}; no ready marker was confirmed.`
+  )
+  expect(ready).toBe(false)
+  expect(uploaded.size).toBe(0)
 })
