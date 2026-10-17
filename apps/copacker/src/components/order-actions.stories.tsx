@@ -49,6 +49,7 @@ export const DeleteDraft = meta.story({
     await userEvent.click(screen.getByRole("button", { name: "Delete draft" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
     await expect(actions).toHaveBeenCalledWith({ action: "order.delete", data: { id: orderId } })
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
   }
 })
 

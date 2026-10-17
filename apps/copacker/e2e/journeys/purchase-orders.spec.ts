@@ -183,6 +183,8 @@ test("editing a draft opens the builder with its values", async ({ page }) => {
 })
 
 test("deleting a draft asks first, then removes it from the list", async ({ page }) => {
+  // Keep the router's visited list fresh: the mutation must invalidate it even before its cache age changes.
+  await page.clock.setFixedTime(new Date())
   await openOrder(page, "E2E-DELETE")
   const actions = page.getByRole("button", { name: "More actions for E2E-DELETE" })
   const dialog = page.getByRole("alertdialog", { name: "Delete E2E-DELETE?" })
