@@ -46,7 +46,7 @@ it ([Amazon inbound shipments](amazon-inbound.md)).
 - TanStack Start and Router with shadcn/ui; every read and write is authorized on the server.
 - Postgres on Neon with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
 - One private bucket per environment for uploaded and generated documents, downloaded only through authorized routes.
-  The Cloudflare release uses R2; moving the existing Railway files requires the verified storage cutover.
+  The Cloudflare release uses private R2; the verified storage cutover preserved existing documents.
 - Store credentials are encrypted per workspace; OAuth state is single-use and expires; supplier invitations match the
   exact email.
 - Durable Postgres jobs run Amazon, eBay, email and Shopify work

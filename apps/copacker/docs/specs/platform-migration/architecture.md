@@ -1,7 +1,8 @@
 # Previous and current platform architecture
 
 Part of the [migration specification](README.md). The first diagram captures the live state immediately before the
-final web cutover on October 16, 2026. The second is the final migration target; deployment status is recorded in acceptance. It incorporates the separately completed Neon
+final web cutover on October 16, 2026. The second shows the deployed Cloudflare architecture.
+It incorporates the separately completed Neon
 and private R2 transfers; the original Railway-only database plan is superseded. The deployment checks and final
 [acceptance record](acceptance.md) identify the deployed commits and verification evidence.
 
@@ -188,17 +189,15 @@ file checksums, current provider callbacks, queue delivery, and matching web/Sto
 one daily reconciliation cycle before retiring recovery services. Restore history and frozen recovery branches have
 explicit expiry; record their actual retention in the release evidence.
 
-## Remaining background execution migration
+## Background execution boundary
 
-The first stage moves three bounded families to the native Queue consumer. Remaining long syncs, report polling and
-shipment preparation need durable checkpoints before moving to Cloudflare. Preserve provider
-idempotency, SQL leases, ownership fencing, delayed retries and recovery of ambiguous external creates. Keep AWS
-notification transport until a separately verified bridge replaces the current SQS readers. Any file workload that
-fails Workers runtime limits needs an explicit processing exception.
+Cloudflare Queues executes bounded jobs and dispatches longer jobs to Workflows. Sales imports checkpoint each
+14-day period and each follow-up operation. SQL retains job status, leases, retries and domain idempotency; native R2
+serves documents in both web requests and Workflow steps. The scheduler reads AWS notification queues in bounded
+batches. AWS EventBridge/SQS remains the external transport, with the existing reader credentials and permissions.
 
-The final executor migration requires one owner per job family and duplicate-delivery, restart and rollback drills.
-Until those gates pass, Railway remains part of the deployed architecture. No D1, KV or Durable Object is required for
-this web release.
+No D1, KV, Durable Object or separately hosted Node processor is required. Local development still runs a Node worker
+against local Postgres. Deployed verification and Railway retirement are recorded in [acceptance](acceptance.md).
 
 Sources: [runtime entry](../../../src/server.ts), [database context](../../../src/db/index.ts),
 [private storage](../../../src/server/storage.ts), [document authorization](../../../src/server/http/api/documents/$id.ts),

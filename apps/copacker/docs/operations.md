@@ -6,9 +6,9 @@ encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Ne
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
 `pnpm --filter copacker worker:dev` in a second process. Set up [Portless](development.md) before `pnpm dev`.
 The [domain inventory](domains.md) lists every environment address and provider setting.
-The worker runs the durable jobs queued in Postgres. Staging and
-production run it as a second Railway service built from `Dockerfile.worker`, which runs the
-worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
+Postgres owns durable job state. Hosted jobs execute through Cloudflare Queues and Workflows; the Node worker is
+for local development only. See [background jobs](background-jobs.md) for dispatch, checkpoints and recovery.
+The web service exposes `/api/health`.
 
 ## External setup
 
@@ -34,18 +34,17 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    ([Landing page](landing-page.md)). The contact page's messages and a notice of each new waitlist signup go to
    `CONTACT_EMAIL`. `copacker.ai` is verified in Resend for sending only (us-east-1, no open or click tracking). Its DKIM (`resend._domainkey`), return
    path (`send`, `rsend`) and DMARC (`_dmarc`, `p=none`) records are DNS-only in Cloudflare; none sit at the root, which
-   stays free for a mail provider. Production's `EMAIL_FROM` is `Copacker <hello@copacker.ai>`, on both services. Local
+   stays free for a mail provider. Production's `EMAIL_FROM` is `Copacker <hello@copacker.ai>`, shared by web and Workflow execution. Local
    and staging keep `onboarding@resend.dev`, which reaches only the Resend account's owner, so their tests can't email
    anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
    Nothing receives `@copacker.ai` mail. Invitations, purchase orders, label notices and password resets set no
    reply-to, so replies to them go to `hello@copacker.ai` and bounce.
-5. Storage: native private R2 bindings for web requests and Workflow steps. Existing Railway
-   files move only after the verified [storage cutover](cloudflare.md#private-storage-transfer-and-recovery). Objects
+5. Storage: native private R2 bindings for web requests and Workflow steps. The [verified storage cutover](cloudflare.md#private-storage-transfer-and-recovery) preserved the original objects. Objects
    are read only through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)).
 7. Amazon Ads: a separate approved Login with Amazon profile, with `AMAZON_ADS_CLIENT_ID` and
-   `AMAZON_ADS_CLIENT_SECRET` on both the web and worker services. Register
+   `AMAZON_ADS_CLIENT_SECRET` in the application Worker, including its Workflow entrypoint. Register
    `<APP_URL>/api/connections/amazon-ads` as an allowed return URL, then connect Ads from Amazon's settings sheet.
    See [Amazon Ads expenses](amazon-ads.md) for reporting coverage and the expense calculation.
 
@@ -72,7 +71,8 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
   feature-flag API with a two-second deadline and a ten-second cache. No background poller runs in the web process.
   If WorkOS cannot be reached on a cold process, Copacker stays up; after a successful read it retains that setting
   during an outage and retries on the next request after ten seconds. A deleted flag means maintenance is off.
-- `/maintenance` is a 404 while Copacker is up. The worker keeps running; stop it in Railway if the work needs it idle.
+- `/maintenance` is a 404 while Copacker is up. Background work continues. Use Cloudflare queue delivery controls
+  and pause active Workflow instances when maintenance requires jobs to be idle; also pause scheduled publications.
 - The rules are in `src/server/maintenance.ts`. `src/server.ts` and `server/start-maintenance.ts` establish the
   invocation context before authentication; Router rewriting renders the maintenance screen at the requested URL.
   The page and API status policy is shared with the deployed compatibility proof.
@@ -116,7 +116,8 @@ The [acceptance record](specs/platform-migration/acceptance.md) records activati
 | Staging | `copacker-staging` | `copacker-stories-staging` | `copacker-staging-private` | Neon staging through its own Hyperdrive |
 | Production | `copacker` | `copacker-stories` | `copacker-production-private` | Neon production through its own Hyperdrive |
 
-Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
+Historical Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`): all web, worker and Storybook
+deployments are offline. Project deletion is accepted, with final removal scheduled for October 19, 2026 at 23:16 UTC.
 
 | Resource                | ID                                     |
 | ----------------------- | -------------------------------------- |
@@ -128,13 +129,12 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 
 Each environment has its own Worker, executor, private bucket and independent [Neon database branch](neon.md).
 Production's canonical origin is `https://copacker.ai`; staging's is `https://staging.copacker.ai`.
-The previous `copacker-production.up.railway.app` and `copacker-staging.up.railway.app` web artifacts are retained for
-rollback against the same authoritative Neon/R2 data. Both environments sign in through WorkOS's staging
+The previous Railway aliases no longer serve running deployments. Both environments sign in through WorkOS's staging
 environment ([WorkOS settings](auth.md#workos-settings)).
 
 `copacker.ai` is registered with Cloudflare Registrar and uses Cloudflare DNS. Worker custom domains manage the
 application and Storybook DNS/TLS after handoff; `www` redirects to the root. Retain old Railway verification records
-and recovery origins through observation. The landing film is in the `copacker-media` R2 bucket, served from
+until the retired resources and provider aliases are removed. The landing film is in the `copacker-media` R2 bucket, served from
 `media.copacker.ai` ([Landing page](landing-page.md#assets)).
 
 Staging was duplicated from production. It has its own `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses

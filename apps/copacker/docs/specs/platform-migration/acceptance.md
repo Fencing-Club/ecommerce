@@ -1,6 +1,67 @@
 # Cloudflare cutover acceptance
 
-Final accepted production source: `713bbcca2130f093bfc02fb1521ea8397be4b16b`, merged in [PR 26](https://github.com/AndrewCraswell/ecommerce/pull/26).
+## Background execution acceptance, October 17
+
+[PR 40](https://github.com/AndrewCraswell/ecommerce/pull/40) merged as
+`b14203f34a200c18ba16de876b84daba4225b12e`. Its complete repository verification passed, including 341 Copacker test
+files and 2,696 tests. [PR CI](https://github.com/AndrewCraswell/ecommerce/actions/runs/39073976069) and
+[main CI with staging deployment](https://github.com/AndrewCraswell/ecommerce/actions/runs/39074708197) passed.
+
+The workspace-recovery release incorporated the migration as `ba4460c79b5ad2d6e2c1d2c1d9f3ed3a38949303`.
+[Its staging CI](https://github.com/AndrewCraswell/ecommerce/actions/runs/39075418246) and
+[production promotion](https://github.com/AndrewCraswell/ecommerce/actions/runs/39076274703) passed. Both application
+health endpoints reported that source at qualification. Later product releases may advance the served commit.
+
+| Check | Result |
+| --- | --- |
+| Exact built Worker | Real Workflow execution, native R2 PDF generation and reuse, intercepted rendered email, signed AWS SQS reads, delayed retry, duplicate delivery, expired lease and database failure/recovery passed |
+| Live staging, Railway stopped | Five isolated jobs completed across all three bounded families; expired lease reclaimed on attempt two; delayed job completed; downstream stock Workflow completed with an idle snapshot and incremented revision |
+| Combined release | The staging job qualification passed again against `ba4460c`; only the completed qualification jobs and their isolated workspace were removed |
+| Live production, Railway stopped | Native analytics progressed through saved pages; real stock job `63fc0be0-be7f-44bd-a1b9-10831a8d010c` completed through `copacker-jobs` Workflow |
+| Notification schedule | Minute cron and native queue invocations succeeded; all five configured AWS primary queues returned zero available/in-flight messages after consumption |
+| Production browser | Existing session, catalogue, product search, PO36 page and private PDF download passed; PO36 remains 67,707 bytes with SHA-256 `31c5a7d62c1fc8378625c0d94fae8d65fa20b4c568aa306b3e01ffd4cb6da7b8` |
+| Storage retirement audit | Original staging 30 objects / 103,331 bytes and production 1,116 objects / 234,313,194 bytes match verified manifests; every R2 copy matches its verified SHA-256; all 108 staging and 601 production database references are present |
+| Reconciliation observation | Both environments have a completed daily reconciliation within the preceding 36 hours |
+| Railway runtime | Web, worker and Storybook report offline in both environments, with no volumes; no Railway release target remains |
+
+The production Workflow probe used a nonexistent SQL claim, creating no production business records. The first CLI
+probe encoded its payload as a string and failed before job execution; it was removed. The corrected object-payload
+probe completed. Native binding dispatch also completed the real stock job above.
+
+Staging's older `DEMO-1` fixture has no order revision, so its PDF endpoint returns 500. Read-only inspection confirmed
+that missing fixture data; the filed `E2E-REVISE` PDF downloaded successfully (6,487 bytes, SHA-256
+`de053c11cf08324fcf31503ad2cfb4d9d3556a0bfe1f4abc25c92a4789acf015`). Existing failed SQL jobs were not replayed.
+No live production email or merchant write was generated for acceptance. AWS reader credentials cannot inspect AWS
+DLQs; their administrative inspection remains a verification limitation. Cloudflare executor DLQs were empty.
+
+All Railway compute is stopped. The user deleted project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6` in Railway's UI.
+Railway records `deletedAt: 2026-10-19T23:16:54.627Z`, its two-day recovery window; both environment lookups now return
+“Project not found.” The project list retains recovery metadata until final deletion. This scheduled deletion covers
+all three services and the original document buckets in both environments. There were no database services or volumes.
+
+The original plugin permission setting, **Use my default**, was verified after the connector connection failure;
+no elevated Railway permission remains. Unused GitHub repository secrets `RAILWAY_STAGING_TOKEN` and
+`RAILWAY_PRODUCTION_TOKEN` were removed. Post-retirement production and staging app/Storybook health checks passed.
+Both apps subsequently advanced to `05a88c4bd6d9286d13d0e34c3a23da9e7bee5d54` through the normal release process.
+
+### Obsolete Cloudflare queues removed
+
+The old HTTP-pull wake queues and their DLQs are removed in both environments. Native executor queues, their DLQs,
+private R2 buckets and Hyperdrive remain. Initial reviewed applies removed the parent queues but Cloudflare rejected
+concurrent DLQ deletion while their consumers still existed (error 11005). Verified post-operation backups preserved
+that partial progress. Fresh reviewed plans then removed the unreferenced DLQs and reconciled resource tags:
+
+| Environment | Saved plan | SHA-256 | Successful apply |
+| --- | --- | --- | --- |
+| Staging | [39077510820](https://github.com/AndrewCraswell/ecommerce/actions/runs/39077510820) | `3a5b6d8510f8b66565a2f090dd494e6f397b7aefe15ecf1d912afda0348362a0` | [39077608191](https://github.com/AndrewCraswell/ecommerce/actions/runs/39077608191) |
+| Production | [39077512847](https://github.com/AndrewCraswell/ecommerce/actions/runs/39077512847) | `446831a05354a826985bdd6ff8028a2bbb9bb773b9138f2c52e5b669af77bd76` | [39077610057](https://github.com/AndrewCraswell/ecommerce/actions/runs/39077610057) |
+
+Both final applies used `05a88c4bd6d9286d13d0e34c3a23da9e7bee5d54` and verified state backups before and after.
+The superseded apply dispatches were cancelled when main advanced; stale plans were not used for the final applies.
+
+## Original web and storage cutover
+
+Accepted web/storage source: `713bbcca2130f093bfc02fb1521ea8397be4b16b`, merged in [PR 26](https://github.com/AndrewCraswell/ecommerce/pull/26).
 The successful web cutover began with `1c54fdf22ddea8d03d25db60fd6b3b9409094f12` from [PR 24](https://github.com/AndrewCraswell/ecommerce/pull/24).
 The initial release was `52183dec13baa80029a8788dd58f3a25a4365fc2` from [PR 23](https://github.com/AndrewCraswell/ecommerce/pull/23).
 Qualification and cutover took place October 16–17, 2026, America/Los_Angeles; provider timestamps use UTC.
@@ -144,11 +205,10 @@ releases use the existing Cloudflare custom-domain bindings. After the first rol
 validated the corrected Worker and removed the recreated Railway record. Production now routes to the Worker; the
 old DNS record IDs are historical evidence and must not be reused for a future operation.
 
-Keep the previous Railway web/Storybook artifacts, original document objects and database recovery material through
-at least one daily reconciliation cycle. Do not retire them automatically. Frozen database recovery branches expire
+The original web/storage cutover required retaining Railway artifacts and objects through one daily reconciliation
+cycle. That observation gate has now passed; current retirement status is recorded above. Frozen database recovery branches expire
 October 23, 2026 at 21:00 UTC; normal Neon history was six hours at verification. Returning to old storage requires
-reconciling new R2 writes. The retained Node executor remains on Railway; moving it to Cloudflare execution is separate
-work. The deferred `pr-999999` Railway bucket is also untouched.
+reconciling new R2 writes. The Node executor has since moved to Cloudflare. The final live inventory contains no `pr-999999` bucket.
 
 Private state, plans, credentials, logs and recovery evidence are kept outside the repository. PR 23's temporary
 Cloudflare/Neon/R2 preview resources were removed by its successful cleanup rerun. PR 24's preview cleanup also passed

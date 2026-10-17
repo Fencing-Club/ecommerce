@@ -20,7 +20,7 @@ Expense rows require sourceReference, sourceLine, occurredAt, category, signed d
 
 ## Execution and runtime
 
-The API handlers use TanStack Start's server route registration and current workspace sessions. They retain the analytics JSON error, authorization and private-cache contract. Long collections run in the retained Node worker, not inside a web request. Shopify financial jobs publish the Cloudflare wake signal after the durable job insert and checkpoint each successful page before yielding. Failed pages retain their cursor and retry with a delay; a superseded sales revision or disconnected account cannot publish evidence.
+The API handlers use TanStack Start's server route registration and current workspace sessions. They retain the analytics JSON error, authorization and private-cache contract. Long collections run in Cloudflare Workflows, outside web requests. Shopify financial jobs publish the Cloudflare wake signal after the durable job insert and checkpoint each successful page before yielding. Failed pages retain their cursor and retry with a delay; a superseded sales revision or disconnected account cannot publish evidence.
 
 ## Provider evidence
 
