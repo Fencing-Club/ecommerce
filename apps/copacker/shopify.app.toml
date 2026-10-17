@@ -18,8 +18,7 @@ use_legacy_install_flow = true
 redirect_urls = [
   "https://copacker.ai/api/connections/shopify",
   "https://staging.copacker.ai/api/connections/shopify",
-  "https://copacker-production.up.railway.app/api/connections/shopify",
-  "http://localhost:3000/api/connections/shopify"
+  "https://local.copacker.ai/api/connections/shopify"
 ]
 
 [webhooks]
