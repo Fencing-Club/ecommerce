@@ -32,7 +32,9 @@ Vite's SSR target is `webworker`, matching Cloudflare's browser export condition
 The AWS EventBridge browser client receives explicit region and credentials; it cannot use Node's environment
 provider chain. `pnpm test:worker-webhooks` runs the built application in workerd with synthetic bindings and
 intercepted outbound requests, checking eBay signatures, signed EventBridge forwarding, rejection and recovery.
-CI and the staging/production release runner require this check before deployment.
+The same check verifies actual WorkOS flag fetching, maintenance rejection, a missing flag and redirect rejection.
+Cloudflare accepts `manual` redirect handling; non-success responses retain the last maintenance setting without
+following a redirect or forwarding credentials. CI and the staging/production release runner require this check before deployment.
 
 | Environment | Web | Database | Files |
 | --- | --- | --- | --- |

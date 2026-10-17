@@ -25,7 +25,8 @@ export function maintenanceReader(apiKey: string) {
       const response = await fetch("https://api.workos.com/feature-flags/maintenance", {
         headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
         signal: controller.signal,
-        redirect: "error"
+        // Workers supports manual/follow redirects. Reject 3xx below without sending credentials elsewhere.
+        redirect: "manual"
       })
       let active = false
       if (response.status === 404) {

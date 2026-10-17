@@ -45,7 +45,7 @@ describe("the maintenance flag", () => {
       "https://api.workos.com/feature-flags/maintenance",
       expect.objectContaining({
         headers: { Authorization: "Bearer sk_example", Accept: "application/json" },
-        redirect: "error"
+        redirect: "manual"
       })
     )
     expect(vi.getTimerCount()).toBe(0)
@@ -87,6 +87,17 @@ describe("the maintenance flag", () => {
     expect(await read()).toBe(true)
     await vi.advanceTimersByTimeAsync(10_000)
     expect(await read()).toBe(false)
+  })
+
+  it("retains maintenance on a provider redirect without following its destination", async () => {
+    const read = maintenanceReader("sk_example")
+    fetcher
+      .mockResolvedValueOnce(value(true, true))
+      .mockResolvedValueOnce(new Response(null, { status: 302, headers: { Location: "https://elsewhere.test" } }))
+    expect(await read()).toBe(true)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(await read()).toBe(true)
+    expect(fetcher).toHaveBeenCalledTimes(2)
   })
 
   it("aborts both a stalled request and a stalled response body within two seconds", async () => {
