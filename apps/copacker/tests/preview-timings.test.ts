@@ -44,3 +44,25 @@ it("records failed phases without leaking provider errors, and preserves the fai
   expect(output.mock.calls.flat().join("")).not.toContain("private")
   expect(readFileSync(path.join(directory, "timings.json"), "utf8")).not.toContain("private")
 })
+
+it.each(["hit", "miss"])("reports a build cache %s without replaying build output", (status) => {
+  const output = vi.spyOn(process.stdout, "write").mockReturnValue(true)
+  const timings = new PreviewTimings()
+  timings.buildCache(
+    `Remote caching enabled\nprivate build output\n\u001b[32mcopacker:build:preview: cache ${status}, suppressing logs abcdef0123456789\u001b[0m\n`
+  )
+  expect(output).toHaveBeenCalledWith(
+    `${JSON.stringify({ event: "preview-build-cache", status, hash: "abcdef0123456789", remote: "enabled" })}\n`
+  )
+  expect(timings.finish().counts.appBuildCacheHits).toBe(status === "hit" ? 1 : 0)
+})
+
+it("reports unknown cache output without inventing a hit or exposing the output", () => {
+  const output = vi.spyOn(process.stdout, "write").mockReturnValue(true)
+  const timings = new PreviewTimings()
+  timings.buildCache("private unknown output")
+  expect(output).toHaveBeenCalledWith(
+    `${JSON.stringify({ event: "preview-build-cache", status: "unknown", remote: "unknown" })}\n`
+  )
+  expect(timings.finish().counts.appBuildCacheHits).toBeUndefined()
+})

@@ -61,25 +61,29 @@ export async function deployHostedPreview(
     }
     const run = (args: string[], cwd = root) => {
       try {
-        execFileSync(process.execPath, args, {
+        return execFileSync(process.execPath, args, {
           cwd,
           env: environment,
           stdio: "pipe",
           timeout: 600000,
           maxBuffer: 32 * 1024 * 1024
-        })
+        }).toString()
       } catch {
         throw new Error("Preview build or deployment failed; no credentials or copied data were logged")
       }
     }
-    await timings.measure("app-build", () =>
-      run([
+    await timings.measure("app-build", () => {
+      const output = run([
         fileURLToPath(new URL("../../../node_modules/turbo/bin/turbo", import.meta.url)),
         "run",
         "build:preview",
-        "--filter=copacker"
+        "--filter=copacker",
+        "--log-order=stream",
+        "--log-prefix=task",
+        "--output-logs=hash-only"
       ])
-    )
+      timings.buildCache(output)
+    })
     await timings.measure("worker-regression", () => run(["--import", "tsx", "scripts/test-worker-webhooks.ts"]))
     const deploy = [
       fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))),
