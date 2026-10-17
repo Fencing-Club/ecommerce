@@ -5,10 +5,10 @@ Staging and production have separate root modules and state keys. They share one
 
 ## Background executor queues
 
-Terraform also provisions `copacker-executor-<environment>` and its `-dlq`, separate from the retained Node worker's
-HTTP pull queue. Review and apply these resources before releasing the native Cloudflare consumer. Set the resulting
-`executor_queue_id` as `CLOUDFLARE_EXECUTOR_QUEUE_ID` on that environment's Railway worker. The app's `cf` configuration
-owns the native consumer and bindings; Terraform owns the queues and their tags. No existing queue is replaced.
+Terraform provisions `copacker-executor-<environment>` and its `-dlq`. The app's `cf` configuration owns the native
+consumer, Workflow export and bindings; Terraform owns queues and tags. The obsolete `copacker-jobs-<environment>`
+HTTP-pull queues are removed by a reviewed plan after the Railway readers have stopped and Cloudflare execution has
+passed acceptance. Queue messages contain only wake signals; SQL remains the durable job ledger.
 
 ## First adoption
 

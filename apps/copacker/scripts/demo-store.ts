@@ -19,14 +19,10 @@ import { demoShopDomain } from "../src/server/demo-shopify"
 import { salesDataVersion } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
 
-// Railway names the environment it runs in, so this also seeds staging: `railway ssh --environment staging
-// --service copacker-worker -- pnpm --filter copacker db:seed`.
+// Staging administration must explicitly select its environment and database; never seed production.
 export function requireDemoDatabase() {
   const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid")
-  if (
-    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
-    process.env.RAILWAY_ENVIRONMENT_NAME !== "staging"
-  ) {
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && process.env.DEPLOYMENT_ENV !== "staging") {
     throw new Error("Seeding only runs against a local or staging database")
   }
 }

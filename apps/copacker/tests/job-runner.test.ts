@@ -101,17 +101,16 @@ describe("signal-driven jobs", () => {
   })
   it("publishes recovery and daily reconciliation signals without a database connection", async () => {
     const send = vi.fn<(body: string, options: { contentType: string }) => Promise<void>>()
-    const executorSend = vi.fn<(body: string, options: { contentType: string }) => Promise<void>>()
-    const env = { JOBS: { send }, EXECUTOR_JOBS: { send: executorSend } }
+    const env = { EXECUTOR_JOBS: { send } }
     await scheduler.scheduled({ cron: "17 * * * *" }, env)
     await scheduler.scheduled({ cron: "0 7 * * *" }, env)
-    expect(send.mock.calls).toEqual([
-      [JSON.stringify({ kind: "wake" }), { contentType: "text" }],
-      [JSON.stringify({ kind: "reconcile" }), { contentType: "text" }]
-    ])
-    expect(executorSend.mock.calls).toEqual([
-      [JSON.stringify({ kind: "wake" }), { contentType: "text" }],
-      [JSON.stringify({ kind: "wake" }), { contentType: "text" }]
+    await scheduler.scheduled({ cron: "* * * * *" }, env)
+    expect(send.mock.calls.map(([body]) => JSON.parse(body))).toEqual([
+      { kind: "wake" },
+      { kind: "reconcile" },
+      { kind: "notifications", provider: "amazon" },
+      { kind: "notifications", provider: "shopify" },
+      { kind: "notifications", provider: "ebay" }
     ])
   })
 })

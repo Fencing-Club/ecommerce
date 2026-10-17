@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { bindings, defineConfig, triggers } from "cf/config"
+import { bindings, defineConfig, exports, triggers } from "cf/config"
 import { z } from "zod"
 import { optionalSecrets, workerSettings } from "./scripts/cloudflare-environment.ts"
 import { localStorage } from "./scripts/local-storage.ts"
@@ -45,6 +45,8 @@ export default defineConfig(({ mode }) => {
         .filter(Boolean),
       compatibilityDate: "2026-10-15",
       compatibilityFlags: ["nodejs_compat"],
+      limits: { cpuMs: 300000 },
+      exports: preview ? undefined : { JobWorkflow: exports.workflow({ name: `${defaults.name}-jobs` }) },
       observability: { enabled: true, traces: { enabled: true }, redactQueryString: true },
       triggers: executor
         ? [
@@ -68,8 +70,15 @@ export default defineConfig(({ mode }) => {
         APP_URL: bindings.text(new URL(origin).origin),
         DEPLOYMENT_ENV: bindings.text(environment),
         COPACKER_LOCAL: bindings.text(deployed ? "" : "1"),
-        JOBS: bindings.queue<string>({ name: preview?.queue || `copacker-jobs-${environment}` }),
+        JOBS: preview ? bindings.queue<string>({ name: preview.queue }) : undefined,
         EXECUTOR_JOBS: executor ? bindings.queue<string>({ name: executorQueue }) : undefined,
+        JOB_WORKFLOW: preview
+          ? undefined
+          : bindings.workflow({
+              name: `${defaults.name}-jobs`,
+              worker: defaults.name,
+              exportName: "JobWorkflow"
+            }),
         DOCUMENTS_PREFIX: bindings.text(preview?.documentsPrefix || ""),
         DOCUMENTS: bindings.r2({
           name: bucket,

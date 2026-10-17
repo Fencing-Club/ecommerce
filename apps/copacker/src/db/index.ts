@@ -31,7 +31,7 @@ export async function closeDatabase() {
   instance = undefined
   await open?.pool.end()
 }
-// A Worker invocation owns its sockets. Domain queries stay shared with the retained Node worker, whose pool is
+// A Worker invocation owns its sockets. Domain queries stay shared with local Node tools, whose pool is
 // process-scoped. Await every query in `run`; never return a deferred query or use this context from background work.
 export async function withDatabase<T>(config: PoolConfig, run: () => Promise<T>): Promise<T> {
   const pool = new Pool({ ...config, max: 2, connectionTimeoutMillis: 10_000, idleTimeoutMillis: 10_000 })

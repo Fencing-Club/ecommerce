@@ -1,11 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import {
-  acknowledgeJobSignal,
-  receiveJobSignals,
-  signalJobs,
-  withJobPublisher,
-  withJobWake
-} from "../src/server/job-delivery"
+import { signalJobs, withJobPublisher, withJobWake } from "../src/server/job-delivery"
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -15,7 +9,6 @@ afterEach(() => {
 function setup(result: unknown = {}) {
   vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "a".repeat(32))
   vi.stubEnv("CLOUDFLARE_JOBS_QUEUE_ID", "b".repeat(32))
-  vi.stubEnv("CLOUDFLARE_EXECUTOR_QUEUE_ID", "")
   vi.stubEnv("CLOUDFLARE_JOBS_TOKEN", "secret")
   const fetcher = vi
     .fn<(url: string, options: { body: string }) => Promise<Response>>()
@@ -25,17 +18,15 @@ function setup(result: unknown = {}) {
 }
 
 describe("Cloudflare job delivery", () => {
-  it("wakes both executors after a Node commit and reports either publication failure", async () => {
+  it("publishes one wake after an administrative commit and reports failure", async () => {
     const fetcher = setup()
-    vi.stubEnv("CLOUDFLARE_EXECUTOR_QUEUE_ID", "c".repeat(32))
     await signalJobs(12)
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
-      `https://api.cloudflare.com/client/v4/accounts/${"a".repeat(32)}/queues/${"b".repeat(32)}/messages`,
-      `https://api.cloudflare.com/client/v4/accounts/${"a".repeat(32)}/queues/${"c".repeat(32)}/messages`
+      `https://api.cloudflare.com/client/v4/accounts/${"a".repeat(32)}/queues/${"b".repeat(32)}/messages`
     ])
     fetcher.mockRejectedValueOnce(new Error("publication failed"))
     await expect(signalJobs()).rejects.toThrow("publication failed")
-    expect(fetcher).toHaveBeenCalledTimes(4)
+    expect(fetcher).toHaveBeenCalledTimes(2)
   })
   it("uses the invocation's binding without HTTP credentials", async () => {
     const fetcher = setup()
@@ -46,24 +37,6 @@ describe("Cloudflare job delivery", () => {
     await withJobPublisher(publish, () => signalJobs(1.2))
     expect(publish.mock.calls).toEqual([[0], [2]])
     expect(fetcher).not.toHaveBeenCalled()
-  })
-  it("finishes the other publication before reporting a queue failure", async () => {
-    const fetcher = setup()
-    vi.stubEnv("CLOUDFLARE_EXECUTOR_QUEUE_ID", "c".repeat(32))
-    const second = Promise.withResolvers<Response>()
-    fetcher.mockRejectedValueOnce(new Error("first queue failed")).mockReturnValueOnce(second.promise)
-    const settled = vi.fn<() => void>()
-    const result = signalJobs()
-      .then(
-        () => null,
-        (error: unknown) => error
-      )
-      .finally(settled)
-    await new Promise<void>((resolve) => setImmediate(resolve))
-    expect(settled).not.toHaveBeenCalled()
-    second.resolve(Response.json({ success: true }))
-    expect(await result).toEqual(new Error("first queue failed"))
-    expect(settled).toHaveBeenCalledOnce()
   })
   it("isolates publishers between overlapping invocations and restores the Node transport", async () => {
     const fetcher = setup()
@@ -111,12 +84,6 @@ describe("Cloudflare job delivery", () => {
     expect(JSON.parse(fetcher.mock.calls[0]![1].body).delay_seconds).toBe(2)
     await signalJobs(90000)
     expect(JSON.parse(fetcher.mock.calls[1]![1].body).delay_seconds).toBe(86400)
-  })
-  it("pulls one signal and acknowledges its lease", async () => {
-    const fetcher = setup({ messages: [{ lease_id: "lease", body: { kind: "wake" } }] })
-    expect(await receiveJobSignals()).toEqual([{ lease_id: "lease", body: { kind: "wake" } }])
-    await acknowledgeJobSignal("lease")
-    expect(JSON.parse(fetcher.mock.calls[1]![1].body)).toEqual({ acks: [{ lease_id: "lease" }], retries: [] })
   })
   it("rejects a failed API envelope even with an HTTP success response", async () => {
     setup().mockResolvedValue(Response.json({ success: false }))

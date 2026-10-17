@@ -9,7 +9,7 @@ import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { consumeJobSignal } from "../src/server/cloudflare-jobs"
-import { runNextJob, nextJobDelay } from "../src/server/queue"
+import { runNextJob, runClaimedJob, type JobClaim } from "../src/server/queue"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -30,24 +30,37 @@ const eventJob = () => ({
 })
 
 describe("Cloudflare background execution", () => {
-  it("routes each job family to one deployed executor", async () => {
+  it("executes bounded jobs without starting a Workflow", async () => {
+    const dispatch = vi.fn<(claim: JobClaim) => Promise<void>>().mockResolvedValue()
     await database.insert(tables.jobs).values(eventJob())
-    expect(await runNextJob("railway")).toBe(false)
-    expect(await nextJobDelay("railway")).toBeNull()
-    expect(await runNextJob("cloudflare")).toBe(true)
-    expect(await runNextJob("cloudflare")).toBe(false)
-    const [job] = await database.select().from(tables.jobs)
-    expect(job).toMatchObject({ status: "complete", attempts: 1 })
+    expect(await runNextJob("cloudflare", dispatch)).toBe(true)
+    expect(dispatch).not.toHaveBeenCalled()
+    expect((await database.select().from(tables.jobs))[0]).toMatchObject({ status: "complete", attempts: 1 })
   })
-  it("keeps unsupported jobs on Railway and runs every family locally", async () => {
+  it("dispatches long jobs and rejects stale claims before executing", async () => {
+    const dispatch = vi.fn<(claim: JobClaim) => Promise<void>>().mockResolvedValue()
     await database.insert(tables.jobs).values({ ...eventJob(), kind: "email" })
-    expect(await runNextJob("cloudflare")).toBe(false)
-    expect(await nextJobDelay("cloudflare")).toBeNull()
-    await database.delete(tables.jobs)
-    await database.insert(tables.jobs).values(eventJob())
-    expect(await runNextJob("local")).toBe(true)
+    expect(await runNextJob("cloudflare", dispatch)).toBe(true)
+    const claim = dispatch.mock.calls[0]![0]
+    await runClaimedJob({ ...claim, leaseAt: new Date(0).toISOString() })
+    expect((await database.select().from(tables.jobs))[0]?.status).toBe("running")
+    // Invalid email payload fails in the Workflow, proving the claim reaches its handler.
+    await runClaimedJob(claim)
+    expect((await database.select().from(tables.jobs))[0]?.status).toBe("failed")
+    await runClaimedJob(claim)
+    expect((await database.select().from(tables.jobs))[0]?.attempts).toBe(1)
   })
-  it("shares a three-job limit with retained Node work", async () => {
+  it("preserves an ambiguous dispatch lease until recovery", async () => {
+    await database.insert(tables.jobs).values({ ...eventJob(), kind: "email" })
+    const dispatch = vi.fn<(claim: JobClaim) => Promise<void>>().mockRejectedValue(new Error("timeout"))
+    await expect(runNextJob("cloudflare", dispatch)).rejects.toThrow("timeout")
+    expect(await runNextJob("cloudflare", dispatch)).toBe(false)
+    await database.update(tables.jobs).set({ leaseAt: new Date(Date.now() - 660000) })
+    dispatch.mockResolvedValue()
+    expect(await runNextJob("cloudflare", dispatch)).toBe(true)
+    expect(dispatch.mock.calls[1]![0].attempt).toBe(2)
+  })
+  it("shares a three-job limit across Queues and Workflows", async () => {
     await database.insert(tables.jobs).values(
       Array.from({ length: 3 }, () => ({
         ...eventJob(),

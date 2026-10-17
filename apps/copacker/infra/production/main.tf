@@ -32,16 +32,6 @@ import {
   id = "544b5bfd594cd02a5da4b79a2038cc9f/copacker-production-private/default"
 }
 
-import {
-  to = module.environment.cloudflare_queue.jobs["jobs"]
-  id = "544b5bfd594cd02a5da4b79a2038cc9f/3a7d526f41404476a7e7e331d927f417"
-}
-
-import {
-  to = module.environment.cloudflare_queue.jobs["dead_letter"]
-  id = "544b5bfd594cd02a5da4b79a2038cc9f/9a6b5d80de18475c8f8b623b19061633"
-}
-
 output "release_resources" {
   value = module.environment
 }

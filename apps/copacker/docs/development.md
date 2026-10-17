@@ -86,4 +86,4 @@ following the [package guide](https://github.com/AndrewCraswell/buildkit/tree/ma
 The gateway permits configured POST paths only: eBay's GET challenge verification needs a separately configured
 receiver or tunnel that supports that handshake. Set the same `WEBHOOK_BASE_URL` for the app and worker.
 
-The Start web server uses the Cloudflare local runtime and native R2 emulation. `worker:dev` connects the retained Node executor to that same local bucket through the emulator’s S3 endpoint; local storage credentials are generated in ignored files. Database-provider migration and preview resource isolation remain separate work. See [Cloudflare runtime and releases](cloudflare.md).
+The Start web server uses the Cloudflare local runtime and native R2 emulation. `worker:dev` connects the local Node executor to that same local bucket through the emulator’s S3 endpoint; local storage credentials are generated in ignored files. Database-provider migration and preview resource isolation remain separate work. See [Cloudflare runtime and releases](cloudflare.md).

@@ -7,11 +7,14 @@ const configuration = z.object({
   token: z.string().min(1)
 })
 const envelope = z.object({ success: z.literal(true), result: z.unknown().optional() })
-const messages = z.object({ messages: z.array(z.object({ lease_id: z.string(), body: z.unknown() })) })
-export const jobSignal = z.object({ kind: z.enum(["wake", "reconcile"]) })
+export const jobSignal = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("wake") }),
+  z.object({ kind: z.literal("reconcile") }),
+  z.object({ kind: z.literal("notifications"), provider: z.enum(["amazon", "shopify", "ebay"]) })
+])
 const publisher = new AsyncLocalStorage<(delaySeconds: number) => Promise<void>>()
 
-// Each Worker invocation owns its binding. Node producers and consumers use the scoped HTTP credentials below.
+// Each Worker invocation owns its binding. Administrative producers use the scoped HTTP credentials below.
 export function withJobPublisher<T>(publish: (delaySeconds: number) => Promise<void>, run: () => T): T {
   return publisher.run(publish, run)
 }
@@ -57,14 +60,7 @@ export async function signalJobs(delaySeconds = 0) {
     content_type: "text",
     delay_seconds: delay
   }
-  const results = await Promise.allSettled([
-    request("", body),
-    ...(process.env.CLOUDFLARE_EXECUTOR_QUEUE_ID ? [request("", body, process.env.CLOUDFLARE_EXECUTOR_QUEUE_ID)] : [])
-  ])
-  const failed = results.find((result) => result.status === "rejected")
-  if (failed?.status === "rejected") {
-    throw failed.reason
-  }
+  await request("", body)
 }
 
 // Publish only after the transaction has committed. Jobs remain durable if publishing fails; the scheduled recovery
@@ -77,12 +73,4 @@ export async function withJobWake<T>(work: PromiseLike<T>): Promise<T> {
     console.error(JSON.stringify({ event: "job_signal_failed", recovery: "hourly" }))
   }
   return result
-}
-
-export async function receiveJobSignals() {
-  return messages.parse(await request("/pull", { batch_size: 1, visibility_timeout_ms: 600000 })).messages
-}
-
-export async function acknowledgeJobSignal(lease: string) {
-  await request("/ack", { acks: [{ lease_id: lease }], retries: [] })
 }
