@@ -2,10 +2,9 @@
 
 The TanStack Start web runtime uses Cloudflare Workers, Hyperdrive and private R2 storage. The Node job executor
 remains on Railway. The database migration merged in PR 17 selects the existing Neon project `Copacker`
-(`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon (`aws-us-west-2`). Verify each live service and Hyperdrive
-origin before cutover. On October 16, a read-only Cloudflare check confirmed staging Hyperdrive targets Neon with
-`verify-full`, caching disabled and five origin connections. The earlier application qualification ran against Railway;
-repeat deployed acceptance against the new origin before release.
+(`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon (`aws-us-west-2`). Read-only Cloudflare checks confirmed both
+environments' Hyperdrive configurations target Neon with `verify-full`, caching disabled and five origin connections.
+The web cutover was qualified against Neon; see the [acceptance record](specs/platform-migration/acceptance.md).
 
 | Environment | Neon branch | Railway environment |
 | --- | --- | --- |
@@ -28,10 +27,37 @@ Staging and production remain independent; never reset staging from production.
 
 CI continues to validate migrations on an empty local Postgres 18. The gated Cloudflare release workflow migrates
 through one dedicated session with an advisory lock before deploying web, Storybook, the retained worker and scheduler.
-Disable the old Railway web pre-deploy step before enabling this runner. Production promotion releases the exact
+The old Railway web pre-deploy steps are disabled. Production promotion releases the exact
 tested staging commit. See the [release gates](cloudflare.md#release-procedure); tests never seed production.
 
 ## PR previews
+
+### Provisioning performance
+
+The October 16 [PR 25 run](https://github.com/AndrewCraswell/ecommerce/actions/runs/38993225040) took 20m 12s from
+workflow creation to preview-job completion: 7m 21s waiting for verification, 41s runner/dependency setup, 21s through
+preflight, Neon branch creation and migrations, 11m 47s in hosting preparation, builds, publication and health checks,
+and two seconds of job cleanup. The same run's verification job built the app in 32 seconds and Storybook in 28
+seconds. This makes file-transfer and publication overhead a stronger suspect than build time, but individual hosting
+phases are not timed yet, so the preview duration cannot be attributed precisely.
+
+The implementation currently rebuilds app and Storybook outside Turbo after CI builds them; copies initial referenced
+documents serially with download/upload/read-back checks; uploads all Storybook files on every push through separate
+CLI processes in batches of eight; and inventories other previews repeatedly. The initial document copy is skipped
+after the ready marker exists. All preview lifecycle jobs also share one lock, which can delay unrelated PRs.
+During the next staging qualification, a read-only inventory found 78 referenced files: the current first-copy
+algorithm needs 234 sequential CLI calls for those files alone. This is a later snapshot, not the PR 25 copy count.
+
+Prioritize phase timings and object counts, bounded concurrent document copying with unchanged checksum checks, and
+targeted inventories. Reuse compatible exact-commit build artifacts; Worker bindings are environment-specific, so a
+staging Worker artifact must not be reused as a preview artifact. Evaluate Workers Static Assets for preview
+Storybook and publish app readiness independently of Storybook. Starting trusted previews alongside verification can
+remove the initial wait while keeping all tests required for merging. Per-PR deployment locks need coordinated sweep
+and cleanup ownership before replacing the global lock. A maintained small preview fixture baseline would prevent
+accumulated staging qualification data from increasing every new preview's copy cost. These are follow-up
+improvements, not completed changes.
+
+### Isolation and lifecycle
 
 After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging.
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
@@ -82,9 +108,9 @@ Register the test WorkOS callback/sign-out patterns listed in [domains](domains.
 
 Deploy and verify the shared assets Worker with `pnpm --filter copacker preview:assets:deploy` before enabling hosted previews. Its dedicated workflow maintains it after changes on main.
 
-Enable the configuration only after this cleanup implementation is on the default branch and staging's R2 files
-match its database references. Until then, existing database-only previews continue; do not claim hosted previews
-are active from a build or dry run alone.
+Hosted previews are enabled and verified; see [cutover acceptance](specs/platform-migration/acceptance.md).
+When recreating this setup, enable it only after cleanup is on the default branch and staging's R2 files match its
+database references. A successful build or dry run alone is not proof of a working hosted preview.
 
 ## Transfer and acceptance
 

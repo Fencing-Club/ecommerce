@@ -1,7 +1,8 @@
 # Migration cutover and acceptance
 
-Part of the [TanStack Start and Cloudflare specification](README.md). These are future runbook requirements, not commands already run
-or authorization to change production.
+Part of the [TanStack Start and Cloudflare specification](README.md). This is the reusable cutover runbook. The
+[acceptance record](acceptance.md) identifies operations actually completed and their evidence; this page alone does
+not authorize a production change.
 
 Use the task IDs in [delivery.md](delivery.md) and evidence gates in [verification.md](verification.md). M6 is deliberately
 split into storage/static, web and job-family transitions. The Start web release may proceed with the existing Node

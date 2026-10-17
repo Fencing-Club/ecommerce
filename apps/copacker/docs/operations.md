@@ -86,17 +86,20 @@ design files don't count. A pull request is compared with its target branch, and
 Then, side by side:
 
 - `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always; Copacker's unit
-  tests with coverage, its build and every migration on an empty Postgres 18 when Copacker is affected.
+  tests with coverage, its build, the built-Worker webhook regression and every migration on an empty Postgres 18 when Copacker is affected.
 - `stories`: the Storybook tests, in four shards, when Copacker is affected.
 - `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
 
 Turbo replays tasks whose inputs have not changed. `ci-ok` is the required aggregate check. The Cloudflare release
-workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the protected environment's `RELEASE_CUTOVER_READY`; neither
-should be enabled before storage, callback, database and rollback qualification.
+workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the environment's `RELEASE_CUTOVER_READY`. These gates are enabled
+following storage, callback, database and rollback qualification. Production promotion is a manual dispatch of an exact
+tested staging commit; GitHub required reviewers are not configured.
 
 The [Cloudflare release guide](cloudflare.md#release-procedure) describes exact-commit promotion, scoped secrets,
 static Storybook, the retained Railway worker, serialized migrations and deployed health checks. The old web container
-and predeploy path are removed from this branch. Existing live services remain in place until the authorized cutover.
+and predeploy path are removed from the source. Previous Railway artifacts remain available for recovery; their old
+predeploy migration commands remain disabled. See the [cutover acceptance record](specs/platform-migration/acceptance.md)
+for the currently accepted release and recovery window.
 
 Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
 A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
@@ -106,7 +109,14 @@ the former Railway retention does not apply to Neon.
 
 ## Infrastructure
 
-This is the last verified **pre-cutover live inventory**; the migration branch has not changed these domains.
+Cloudflare owns the web target, static assets, private R2 storage, wake queues and scheduled recovery. Neon owns the
+authoritative Postgres databases. Railway retains the sole background executor and previous artifacts for recovery.
+The [acceptance record](specs/platform-migration/acceptance.md) records activation and any rollback of the web target.
+
+| Environment | Application Worker | Storybook Worker | Private R2 bucket | Database |
+| --- | --- | --- | --- | --- |
+| Staging | `copacker-staging` | `copacker-stories-staging` | `copacker-staging-private` | Neon staging through its own Hyperdrive |
+| Production | `copacker` | `copacker-stories` | `copacker-production-private` | Neon production through its own Hyperdrive |
 
 Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 
@@ -114,18 +124,19 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 | ----------------------- | -------------------------------------- |
 | Production environment  | `3fdd8f47-c9ad-44c5-b554-78b64818b4e5` |
 | Staging environment     | `b822ecad-68dd-4f4f-89e0-d9db00485545` |
-| Web service (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
+| Previous web (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
 | Worker (`copacker-worker`) | `08c1edb8-c309-4fe4-b71e-14b54065a0fc` |
-| Documents bucket        | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
+| Previous documents bucket | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
 
-Each deployed environment has its own web/worker services and document bucket, and an independent [Neon database branch](neon.md). Production answers on
-`https://copacker.ai` (`APP_URL`) and `https://copacker-production.up.railway.app`; staging on
-`https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both sign in through WorkOS's staging
+Each environment has its own Worker, executor, private bucket and independent [Neon database branch](neon.md).
+Production's canonical origin is `https://copacker.ai`; staging's is `https://staging.copacker.ai`.
+The previous `copacker-production.up.railway.app` and `copacker-staging.up.railway.app` web artifacts are retained for
+rollback against the same authoritative Neon/R2 data. Both environments sign in through WorkOS's staging
 environment ([WorkOS settings](auth.md#workos-settings)).
 
-`copacker.ai` is registered with Cloudflare Registrar and uses Cloudflare DNS. The root and `staging` are proxied CNAMEs
-to their environment's web service, each with a `_railway-verify` TXT record; `www` redirects to the root. SSL/TLS is
-Full, since Railway doesn't work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served from
+`copacker.ai` is registered with Cloudflare Registrar and uses Cloudflare DNS. Worker custom domains manage the
+application and Storybook DNS/TLS after handoff; `www` redirects to the root. Retain old Railway verification records
+and recovery origins through observation. The landing film is in the `copacker-media` R2 bucket, served from
 `media.copacker.ai` ([Landing page](landing-page.md#assets)).
 
 Staging was duplicated from production. It has its own `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses
@@ -156,7 +167,7 @@ Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copac
 under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied
 migration is edited (record each migration's hash there once it's deployed), or when migrations are numbered out of the
 order they were made. The release runner uses one direct connection and an advisory lock to apply pending migrations
-before deployment. Disable the old Railway predeploy migration command before activating the new release workflow.
+before deployment. The old Railway predeploy migration commands are disabled; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.

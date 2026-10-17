@@ -1,10 +1,10 @@
 # TanStack Start and Cloudflare migration specification
 
-Status, October 16, 2026: TanStack Start, Neon, private R2 and hosted PR previews are active. The final release passed
-145 browser tests on both its preview and stable staging domain. The first production web cutover was rolled back
-after exposing an eBay EventBridge runtime failure; the corrected release must pass qualification again.
+Status, October 17, 2026: web hosting, private storage and CDN cutover is complete. TanStack Start web and Storybook
+are live on Cloudflare, with Neon, private R2 and isolated hosted PR previews. The corrected release passed
+145 staging browser tests; production session continuity, private downloads and live eBay forwarding were verified.
 [Acceptance](acceptance.md) records the exact release, verification, infrastructure applies and recovery window.
-[Architecture](architecture.md) shows the state before cutover and the release target; [compatibility evidence](compatibility.md)
+[Architecture](architecture.md) shows the state before cutover and the accepted current architecture; [compatibility evidence](compatibility.md)
 retains the earlier trials. The background-executor migration remains separate.
 
 Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
@@ -15,11 +15,11 @@ Keep Railway's worker until its replacement passes recovery and duplicate-delive
 Cloudflare wake signals for the retained Node executor. This branch incorporates that work. It supersedes the original
 Railway-only database assumptions in the planning articles. [Neon operations](../../neon.md),
 [background jobs](../../background-jobs.md), and the updated [cutover requirements](cutover.md) describe the current
-contracts. Earlier deployed qualification against Railway is historical evidence; Neon Hyperdrive and queue delivery
-must be qualified before release. Hosted application previews are implemented; full Cloudflare job execution remains
+contracts. Earlier deployed qualification against Railway is historical evidence; current Neon Hyperdrive and queue
+qualification is recorded in acceptance. Hosted application previews are implemented; full Cloudflare job execution remains
 separate work. Private storage has been transferred and verified in R2, including the retained Node readers/writers.
 
-- [Current and proposed architecture](architecture.md)
+- [Previous and current architecture](architecture.md)
 - [Cutover acceptance and recovery window](acceptance.md)
 - [Implementation decisions and compatibility evidence](compatibility.md)
 - [Framework, authentication and frontend migration](framework.md)
@@ -71,7 +71,7 @@ Postgres independently of branching. See [schema](../../../src/db/schema.ts), [q
 
 | Area | Current contract |
 | --- | --- |
-| Database hosting | Neon staging and production branches from PR 17; verify live origins before cutover |
+| Database hosting | Neon staging and production branches from PR 17; both live Hyperdrive origins verified |
 | SQL and schema | Retain Drizzle, `pg`, transactions and committed migrations |
 | Connectivity | Web uses uncached Hyperdrive to the direct Neon endpoint; Node executor uses pooled Neon |
 | Database branching | Keep local Docker and isolated CI databases; trusted PRs receive a private Neon database branch |
@@ -175,15 +175,15 @@ the inspected checkout. Verify beta CLI capabilities and configuration support a
 ## Environments, database previews and cost
 
 Keep local Docker Postgres and isolated CI databases. PR 17 supplies separate Neon staging and production branches
-and automatic isolated PR database branches. The preview job applies migrations without application, commerce or
-storage credentials. Hosted app previews remain deferred; never bind one to production or share a writable staging dataset.
+and automatic isolated PR database branches. Hosted application previews use their own Hyperdrive binding and private
+R2 prefix, with no merchant integration secrets or background executor. Never bind one to production or share a writable staging dataset.
 
-Database isolation must precede binding any preview runtime. Give each preview its own database role/Hyperdrive binding,
-private storage namespace or bucket, jobs, secrets and allowed origins. Disable live subscriptions, scheduled sync,
+Database isolation precedes binding any preview runtime. Each preview has its own database role/Hyperdrive binding,
+private storage namespace, secrets and allowed origins. Disable live subscriptions, scheduled sync,
 real email and commerce writes by default. Copied production connection tokens and pending jobs are unsafe: even a
 database-isolated preview can rotate Shopify tokens or create real shipments. R2 objects, WorkOS users, AWS queues and
-merchant accounts require their own environment isolation. Database-only previews do not qualify these future
-application resources; their lifecycle and isolation need separate implementation and acceptance.
+merchant accounts require their own environment isolation. The hosted lifecycle and closed-PR cleanup are implemented;
+see [preview operations](../../neon.md#pr-previews) and [acceptance](acceptance.md) for deployed evidence.
 
 Do not promise savings without a baseline. Capture Railway's web/worker/DB/bucket spend, request CPU, DB size and active
 hours, object operations, event rates, workflow steps and peak file memory. Model Neon compute/storage/recovery and

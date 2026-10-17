@@ -1,9 +1,9 @@
-# Current and proposed platform architecture
+# Previous and current platform architecture
 
 Part of the [migration specification](README.md). The first diagram captures the live state immediately before the
-final web cutover on October 16, 2026. The second is the release target. It incorporates the separately completed Neon
+final web cutover on October 16, 2026. The second is the accepted current architecture. It incorporates the separately completed Neon
 and private R2 transfers; the original Railway-only database plan is superseded. The deployment checks and final
-acceptance record determine whether a target has been activated.
+[acceptance record](acceptance.md) identify the deployed commits and verification evidence.
 
 ## State before the web cutover
 
@@ -79,7 +79,7 @@ inventories and the verified storage manifests. Old Railway databases are recove
 writable source of truth. The retained web and executor already use Neon and R2; no second database or file transfer
 is required for the web runtime switch. WorkOS's shared staging identity environment remains intentional.
 
-## Release target: Cloudflare web, files and CDN
+## Accepted current state: Cloudflare web, files and CDN
 
 Keep the same public application, Storybook and integration callback URLs. Each release builds web and Storybook from
 one tested commit, applies any pending migrations through one direct Neon connection, and deploys the retained Node

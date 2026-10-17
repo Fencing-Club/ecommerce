@@ -5,10 +5,11 @@ Staging and production have separate root modules and state keys. They share one
 
 ## First adoption
 
-This PR adopts each environment's existing private document bucket and two queues. Declarative import blocks identify
-the exact resources. The first plan must show three Cloudflare imports and **zero Cloudflare creates, updates or deletes** per environment,
+Terraform owns each environment's existing private document bucket and two queues. Declarative import blocks identify
+the exact resources. The original adoption required three Cloudflare imports and **zero Cloudflare creates, updates or deletes** per environment,
 plus one local `terraform_data.tags` creation that reconciles resource tags through the pinned `cf` CLI.
-Stop and investigate any other result. `prevent_destroy` protects buckets and queues while their resource blocks exist;
+That adoption is complete; subsequent reviewed operations are recorded in [cutover acceptance](specs/platform-migration/acceptance.md).
+`prevent_destroy` protects buckets and queues while their resource blocks exist;
 removing a block also removes that protection, so review plans even for apparently small edits.
 
 The configuration does not yet own queue consumers, Hyperdrive, DNS, Workers, Neon, runtime secrets or preview resources.
@@ -125,7 +126,7 @@ The rehearsal namespace was removed and unrelated staging objects preserved.
 Document storage switched to R2 on October 16, 2026. Writers were stopped for the final reconciliation. Staging copied
 and verified 30 objects (103,331 bytes); production copied and independently verified 1,116 objects (234,313,194 bytes).
 Every referenced key was present and every copied object's bytes and content type matched. Existing target-only staging
-objects were preserved. Both environments' Railway web and Node executor now use bucket-scoped R2 credentials, also saved
+objects were preserved. Both environments' retained Railway web and Node executor use bucket-scoped R2 credentials, also saved
 in their GitHub environment secrets as `R2_DOCUMENTS_CREDENTIALS`. Production services restarted successfully and its
 public health endpoint returned HTTP 200.
 
