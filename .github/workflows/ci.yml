@@ -33,20 +33,25 @@ jobs:
             signal: AbortSignal.timeout(30000)
           });
           const body = Buffer.from(await response.arrayBuffer());
-          const mac = createHmac('sha256', process.env.TURBO_REMOTE_CACHE_SIGNATURE_KEY);
-          for (const field of ['artifact-signature:v2', hash, '', body]) {
-            const bytes = Buffer.from(field);
-            const length = Buffer.alloc(8);
-            length.writeBigUInt64LE(BigInt(bytes.length));
-            mac.update(length).update(bytes);
-          }
           const tag = response.headers.get('x-artifact-tag');
+          const signatures = [];
+          for (const team of ['', process.env.TURBO_TEAM]) {
+            const mac = createHmac('sha256', process.env.TURBO_REMOTE_CACHE_SIGNATURE_KEY);
+            for (const field of ['artifact-signature:v2', hash, team, body]) {
+              const bytes = Buffer.from(field);
+              const length = Buffer.alloc(8);
+              length.writeBigUInt64LE(BigInt(bytes.length));
+              mac.update(length).update(bytes);
+            }
+            signatures.push({ version: 2, teamPresent: Boolean(team), valid: tag === mac.digest('base64') });
+            signatures.push({ version: 1, teamPresent: Boolean(team), valid: tag === createHmac('sha256', process.env.TURBO_REMOTE_CACHE_SIGNATURE_KEY).update(hash).update(team).update(body).digest('base64') });
+          }
           console.log(JSON.stringify({
             status: response.status,
             bytes: body.length,
             headers: Object.fromEntries(['content-length', 'content-type', 'content-encoding', 'cache-control', 'cf-cache-status', 'cf-mitigated'].map(name => [name, response.headers.get(name)])),
             tagPresent: Boolean(tag),
-            signatureValid: tag === mac.digest('base64')
+            signatures
           }));
           NODE
   # Which apps this change affects (.github/scripts/affected.mjs), so a change to one app, a package it doesn't use or
