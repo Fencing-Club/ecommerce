@@ -1,9 +1,11 @@
 # TanStack Start and Cloudflare migration specification
 
-Status, October 16, 2026: TanStack Start, Neon integration, hosted PR previews and infrastructure ownership are merged.
-The final web release is being qualified on an isolated hosted preview before staging and exact-commit production
-promotion. [Architecture](architecture.md) now shows the verified state before cutover and the release target;
-[compatibility evidence](compatibility.md) retains the earlier trials. The background-executor migration remains separate.
+Status, October 16, 2026: TanStack Start, Neon, private R2 and hosted PR previews are active. The final release passed
+145 browser tests on both its preview and stable staging domain. The first production web cutover was rolled back
+after exposing an eBay EventBridge runtime failure; the corrected release must pass qualification again.
+[Acceptance](acceptance.md) records the exact release, verification, infrastructure applies and recovery window.
+[Architecture](architecture.md) shows the state before cutover and the release target; [compatibility evidence](compatibility.md)
+retains the earlier trials. The background-executor migration remains separate.
 
 Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
 Retain WorkOS, Resend and the commerce integrations. **TanStack Start is the selected replacement for Next.js.**
@@ -18,6 +20,7 @@ must be qualified before release. Hosted application previews are implemented; f
 separate work. Private storage has been transferred and verified in R2, including the retained Node readers/writers.
 
 - [Current and proposed architecture](architecture.md)
+- [Cutover acceptance and recovery window](acceptance.md)
 - [Implementation decisions and compatibility evidence](compatibility.md)
 - [Framework, authentication and frontend migration](framework.md)
 - [Database, storage and background execution](backend.md)

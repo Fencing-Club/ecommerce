@@ -90,9 +90,19 @@ export async function forwardEbayNotification(notification: EbayNotification, se
   await send(bus, notification)
   return "forwarded"
 }
-let eventBridge: EventBridgeClient | null = null
 async function sendToEventBridge(bus: string, notification: EbayNotification) {
-  eventBridge ??= new EventBridgeClient({})
+  // The Workers/browser SDK uses fetch and does not read Node's environment credential/region providers.
+  // Keep each invocation's client and request lifecycle separate.
+  const {
+    AWS_REGION: region,
+    AWS_ACCESS_KEY_ID: accessKeyId,
+    AWS_SECRET_ACCESS_KEY: secretAccessKey,
+    AWS_SESSION_TOKEN: sessionToken
+  } = process.env
+  if (!region || !accessKeyId || !secretAccessKey) {
+    throw new Error("AWS credentials and region are required to forward eBay notifications")
+  }
+  const eventBridge = new EventBridgeClient({ region, credentials: { accessKeyId, secretAccessKey, sessionToken } })
   const result = await eventBridge.send(
     new PutEventsCommand({
       Entries: [
