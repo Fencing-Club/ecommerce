@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
@@ -11,9 +11,8 @@ vi.mock("../src/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => context.actor
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { GET } from "../src/app/api/analytics/amazon/reconciliation/route"
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
+import { GET } from "../src/server/http/api/analytics/amazon/reconciliation"
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),

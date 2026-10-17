@@ -1,5 +1,5 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { actionRecorder, errors, failWith, redirectTo } from "@/stories/fixtures/auth"
 import { SignInForm } from "./sign-in-form"
@@ -50,7 +50,7 @@ export const SignsIn = meta.story({
     await userEvent.type(canvas.getByLabelText("Email"), "alex@example.com")
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders"))
     await expect(actions.sent).toEqual([
       {
         action: "auth.signIn",
@@ -72,7 +72,7 @@ export const WrongPassword = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "wrong password")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent(errors.incorrectCredentials)
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(finishSignIn).not.toHaveBeenCalled()
     await expect(canvas.getByRole("button", { name: "Sign in" })).toBeEnabled()
     // What was typed stays for another try.
     await expect(canvas.getByLabelText("Email")).toHaveValue("alex@example.com")

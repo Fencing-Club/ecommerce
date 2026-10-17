@@ -9,8 +9,8 @@ const client = vi.hoisted(() => ({
 }))
 vi.mock("../src/server/workos", () => ({ workos: () => ({ userManagement: client }), workosClientId: () => "client" }))
 
-import { POST } from "../src/app/api/mailing-list/route"
-import { POST as unsubscribe } from "../src/app/api/mailing-list/unsubscribe/route"
+import { POST } from "../src/server/http/api/mailing-list"
+import { POST as unsubscribe } from "../src/server/http/api/mailing-list/unsubscribe"
 import { canUnsubscribe, joinWaitlist, unsubscribeLinks } from "../src/server/mailing-list"
 
 // A waitlist entry as WorkOS returns it, created now unless it says otherwise.
@@ -58,7 +58,7 @@ const signup = (body: unknown, address = "203.0.113.1", language = "en-US") =>
   POST(
     new Request("http://localhost/api/mailing-list", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-forwarded-for": address, "accept-language": language },
+      headers: { "content-type": "application/json", "cf-connecting-ip": address, "accept-language": language },
       body: JSON.stringify(body)
     })
   )

@@ -1,14 +1,13 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { amazonNetworkNames, amazonNetworks, type PrepCategory, prepCategories } from "@repo/aisle"
+import type { PrepCategory } from "@repo/aisle"
+import { amazonNetworkNames, amazonNetworks, prepCategories } from "@repo/aisle"
 import { ImageOff, Plus, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Image from "next/image"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -28,15 +27,15 @@ import { prepOptions } from "@/lib/prep"
 import { productLabels } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { ProductDefaults } from "@/server/product-defaults"
-import { FormError, SubmitButton } from "./actions"
 import { FormCheckbox, FormInput, FormNumber, FormTextarea } from "./form-controls"
 import { FormSelect } from "./form-select"
-import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
+import type { BarcodeVariation } from "./product-barcodes"
+import { ProductBarcodes } from "./product-barcodes"
+import type { VariationFields } from "./variation-details"
 import {
   sameVariation,
   useSaveVariationDetailsMutation,
   VariationDetails,
-  type VariationFields,
   variationInput,
   variationSchema,
   variationValues
@@ -84,7 +83,7 @@ export type EditableProduct = {
   variants: (BarcodeVariation & VariationFields & { sku: string | null })[]
 }
 
-// A product's Shopify photo, or a placeholder. Shopify's CDN already serves a thumbnail, so Next's optimizer is skipped.
+// A product's Shopify photo, or a placeholder. Shopify's CDN already serves a thumbnail.
 export function ProductImage({ url, small = false }: { url: string | null; small?: boolean }) {
   const size = small ? "size-8" : "size-10"
   if (!url) {
@@ -102,12 +101,11 @@ export function ProductImage({ url, small = false }: { url: string | null; small
   }
   const pixels = small ? 32 : 40
   return (
-    <Image
+    <img
       src={url}
       alt=""
       width={pixels}
       height={pixels}
-      unoptimized
       className={cn("shrink-0 rounded-md border bg-muted object-cover", size)}
     />
   )

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { delay, http, HttpResponse } from "msw"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { importId, importList } from "@/stories/fixtures/purchase-orders"
 import urdu from "../../messages/ur/orders.json"
 import { ImportIntake } from "./import-intake"
@@ -55,7 +55,7 @@ export const Imports = meta.story({
     await expect(row(canvas, "northwind-invoice.pdf").getByRole("button", { name: "Open draft" })).toBeVisible()
     await expect(row(canvas, "scan-0921.pdf").queryByRole("link")).toBeNull()
     await userEvent.click(row(canvas, "lotus-po-118.pdf").getByText("Ready for review"))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/orders/import/${importId}`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/import/${importId}` })
   }
 })
 

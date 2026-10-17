@@ -1,5 +1,5 @@
 import { Check, Ship, TrendingDown } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
+import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 import { BrandMark, Stage } from "./stage"
 

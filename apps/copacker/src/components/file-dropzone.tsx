@@ -1,5 +1,3 @@
-"use client"
-
 // One file, dropped on the zone or chosen with its browse button. Presentational: it checks the file's type and size,
 // hands it to `onFileChange` and shows it as a row with its name, its size and a remove button. The parent keeps the
 // file and uploads it or submits it with its form. For example, a CSV import:
@@ -22,8 +20,8 @@
 import { useMergedRef } from "@mantine/hooks"
 import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { FileText, UploadCloud, X } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useId, useRef, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { fileName } from "./common"

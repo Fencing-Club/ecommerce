@@ -7,7 +7,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 const storage = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ vi.mock("../src/server/storage", async (original) => ({
   getFile: async (key: string) => storage.files.get(key)!,
   deleteFile: async (key: string) => void storage.files.delete(key)
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+
 // Shopify records the test variations as made in Pakistan, except CORD-1 (China). Variation 3 stands in for a bundle
 // of CORD-1 and GLOVE-6, with no country of its own.
 type TestVariant = {
@@ -68,11 +68,11 @@ vi.mock("../src/server/connections", async (original) => ({
   amazonFor: async () => amazon
 }))
 
-import { DELETE, GET, POST } from "../src/app/api/inventory/barcodes/route"
-import { POST as downloadLabels } from "../src/app/api/inventory/labels/route"
-import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/app/api/inventory/product-labels/route"
-import { GET as lineLabel } from "../src/app/api/orders/[id]/labels/[itemId]/route"
-import { GET as orderLabels } from "../src/app/api/orders/[id]/labels/route"
+import { DELETE, GET, POST } from "../src/server/http/api/inventory/barcodes"
+import { POST as downloadLabels } from "../src/server/http/api/inventory/labels"
+import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/server/http/api/inventory/product-labels"
+import { GET as orderLabels } from "../src/server/http/api/orders/$id/labels"
+import { GET as lineLabel } from "../src/server/http/api/orders/$id/labels/$itemId"
 import { deleteDraftOrder } from "../src/server/orders"
 import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
@@ -188,7 +188,7 @@ const states = async (po: Awaited<ReturnType<typeof order>>) =>
 
 const downloadLine = (orderId: string, itemId: string) =>
   lineLabel(new Request(`${appUrl()}/api/orders/${orderId}/labels/${itemId}`), {
-    params: Promise.resolve({ id: orderId, itemId })
+    params: { id: orderId, itemId }
   })
 
 beforeAll(async () => {
@@ -482,7 +482,7 @@ describe("labels in bulk", () => {
     const po = await order([{ ...item(standard, variantA), fnsku: "X00CORD001" }, item(uploaded, variantB)])
     await upload(variantB)
     const combined = await orderLabels(new Request(`${appUrl()}/api/orders/${po.id}/labels`), {
-      params: Promise.resolve({ id: po.id })
+      params: { id: po.id }
     })
     expect(combined.status).toBe(200)
     expect(await pages(combined)).toBe(2)
@@ -490,7 +490,7 @@ describe("labels in bulk", () => {
 
     const unlabelled = await order([item(randomUUID(), variantA)], "amazon")
     const none = await orderLabels(new Request(`${appUrl()}/api/orders/${unlabelled.id}/labels`), {
-      params: Promise.resolve({ id: unlabelled.id })
+      params: { id: unlabelled.id }
     })
     expect(none.status).toBe(404)
   })

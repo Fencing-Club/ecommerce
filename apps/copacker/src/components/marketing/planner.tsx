@@ -1,14 +1,12 @@
-"use client"
-
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
-import { Caveat } from "next/font/google"
 import { useEffect, useRef, useState } from "react"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { handwritingCss, handwritingFamily } from "@/styles/handwriting"
 import { usePageIdle } from "./use-page-idle"
 
 // The forecast, for the visitor to play with: one product's stock, sold through Amazon, Shopify and eBay, with the
@@ -18,7 +16,6 @@ import { usePageIdle } from "./use-page-idle"
 // The hand the chart's note is written in. It's only for the note, well down the page and hidden until the chart is
 // seen, so the note takes it on once the page is idle, and the font loads then, through a preload, rather than with the
 // page's first paint.
-const hand = Caveat({ subsets: ["latin"], preload: false })
 
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
 type Inputs = { lead: number; amazon: number; shopify: number; ebay: number; rush: number }
@@ -215,7 +212,7 @@ export function Planner() {
   const result = plan(shown)
   const final = plan(inputs)
   const idle = usePageIdle({
-    family: hand.style.fontFamily,
+    family: handwritingFamily,
     text: `${t("restock")} ${t("restockUnits", { count: final.units })}`
   })
   const stock = (day: number) => product.stock - result.soldBy(day)
@@ -264,6 +261,7 @@ export function Planner() {
       ref={figure}
       className="relative rounded-[1.75rem] bg-background shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_40px_90px_-40px_rgb(90_45_10/0.35)]"
     >
+      <style>{handwritingCss}</style>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4 border-b px-5 py-4 sm:px-7">
         <span className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-xl border bg-muted/60 text-muted-foreground">
@@ -451,7 +449,7 @@ export function Planner() {
                   transform={`rotate(-4 ${noteRight} ${noteTop})`}
                   textAnchor="end"
                   className="fill-foreground/85"
-                  style={{ fontFamily: idle ? hand.style.fontFamily : undefined, fontSize: noteSize }}
+                  style={{ fontFamily: idle ? handwritingFamily : undefined, fontSize: noteSize }}
                 >
                   <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
                     {t("restock")}

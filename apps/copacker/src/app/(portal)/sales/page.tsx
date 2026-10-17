@@ -1,26 +1,7 @@
-import { getTranslations } from "next-intl/server"
-import { redirect } from "next/navigation"
-import { PageHeader } from "@/components/common"
-import { SalesOrders } from "@/components/sales-orders"
-import { requirePage, session, titleFor } from "@/server/auth"
+import { SalesPageView } from "@/components/sales-page"
+import type { readSales } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("sales.title", "sales")
-
-// `?q=` starts the list filtered, such as a header search for an order number. The orders API takes up to 100
-// characters.
-export default async function SalesPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
-  const s = await session()
-  const raw = (await searchParams).q
-  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 100)
-  if (s.org.kind !== "buyer") {
-    redirect("/orders")
-  }
-  requirePage(s, "sales")
-  const t = await getTranslations("sales")
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <SalesOrders initialSearch={q} />
-    </>
-  )
+type Data = Extract<Awaited<ReturnType<typeof readSales>>, { forbidden: false }>["page"]
+export default function SalesPage({ page }: { page: Data["data"] }) {
+  return <SalesPageView {...page} />
 }

@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router"
 import { CheckIcon } from "lucide-react"
-import Link from "next/link"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Badge } from "./badge"
@@ -51,7 +51,7 @@ export const WithIcon = meta.story({
 // A badge that links somewhere, rendered as the link itself.
 export const AsLink = meta.story({
   render: () => (
-    <Badge variant="outline" render={<Link href="/orders?status=draft" />}>
+    <Badge variant="outline" render={<Link to="/orders" search={{ status: "draft" }} />}>
       3 drafts
     </Badge>
   ),

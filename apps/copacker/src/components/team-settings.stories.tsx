@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError, team } from "@/stories/fixtures/logistics"
 import { person } from "@/stories/workspace"
 import { TeamSettings } from "./team-settings"
@@ -180,7 +180,7 @@ export const ChangeMemberAccess = meta.story({
       ])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -272,7 +272,7 @@ export const CancelInvitation = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "More for jordan@harbor.example.com" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Cancel invitation" }))
     await waitFor(() => expect(sent).toEqual([{ action: "team.cancel", data: { email: "jordan@harbor.example.com" } }]))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

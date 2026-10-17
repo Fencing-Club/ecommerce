@@ -1,9 +1,8 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { Ellipsis } from "lucide-react"
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
-import Link from "next/link"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { LinkRow } from "@/components/link-row"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
-import { FormError, SubmitButton } from "./actions"
 import { fileName, StatusBadge, type StatusTone } from "./common"
 import { FileDropzone, pdfFiles } from "./file-dropzone"
 
@@ -143,7 +141,7 @@ export function ImportIntake() {
                 <>
                   <TableCell className="w-full max-w-0">
                     {href ? (
-                      <Link href={href} className="block truncate font-medium hover:underline">
+                      <Link to="." href={href} className="block truncate font-medium hover:underline">
                         {fileName(item.filename, { title: item.filename })}
                       </Link>
                     ) : (
@@ -168,7 +166,7 @@ export function ImportIntake() {
                           variant="outline"
                           size="sm"
                           nativeButton={false}
-                          render={<Link href={href} />}
+                          render={<Link to="." href={href} />}
                           className="hidden @md:inline-flex"
                         >
                           {item.status === "saved" ? t("openDraft") : t("review")}

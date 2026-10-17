@@ -1,8 +1,6 @@
-"use client"
-
 import { ChevronDown, Circle, CircleAlert, CircleCheck, CircleDot } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
 // Done, someone is working on it, the viewer's move, or not started: the status tones' meanings.

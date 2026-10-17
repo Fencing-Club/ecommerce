@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { expect, test, unique } from "../fixtures"
+import { e2eEmail, expect, test, unique } from "../fixtures"
 
 test.use({ role: "supplier" })
 
@@ -32,7 +32,7 @@ test("edits the supplier profile and puts it back", async ({ page }) => {
   // What the seed gives the supplier, which the test puts back.
   const before = {
     contactName: "Casey Tester",
-    contactEmail: "copacker-e2e@example.net",
+    contactEmail: e2eEmail,
     phone: "+1 206 555 0100",
     website: ""
   }

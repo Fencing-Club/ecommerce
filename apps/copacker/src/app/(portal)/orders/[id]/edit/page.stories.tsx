@@ -1,8 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { OrderBuilder } from "@/components/order-builder"
+import { getStoryRouter } from "#.storybook/router"
 import type { orders, suppliers } from "@/db/schema"
 import type { ForwarderAddress } from "@/server/forwarders"
 import {
@@ -16,6 +15,7 @@ import {
   supplierRecord
 } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 type Args = {
   // The draft, and what the page reads for the editor: the buyer's suppliers, delivery addresses, the variations that
@@ -30,25 +30,27 @@ type Args = {
 // The draft's edit page (page.tsx) with what its queries would return. A purchase order that isn't a draft redirects
 // to its page instead.
 async function EditOrder({ order, suppliers: rows, deliveries: addresses, needsBarcode, forwarding: stops }: Args) {
-  const t = await getTranslations("orders")
+  const t = await translateStory("orders")
   const id = order.id
   return (
-    <OrderBuilder
-      title={t("builder.edit")}
-      parents={[
-        { label: t("index.title"), href: "/orders" },
-        { label: order.data.reference, href: `/orders/${id}` }
-      ]}
-      suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
-      deliveries={addresses}
-      forwarderAddresses={stops.map((row) => ({
-        addressId: row.addressId,
-        forwarderId: row.forwarderId,
-        label: `${row.forwarderName}, ${row.addressName}`,
-        hasPhone: Boolean(row.address.phoneNumber)
-      }))}
-      needsBarcodeVariantIds={needsBarcode}
-      draft={{ id, revision: order.revision, data: order.data }}
+    <PageView
+      page={{
+        title: t("builder.edit"),
+        parents: [
+          { label: t("index.title"), href: "/orders" },
+          { label: order.data.reference, href: `/orders/${id}` }
+        ],
+        suppliers: rows.map((row) => ({ id: row.id, name: row.name })),
+        deliveries: addresses,
+        forwarderAddresses: stops.map((row) => ({
+          addressId: row.addressId,
+          forwarderId: row.forwarderId,
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
+        })),
+        needsBarcodeVariantIds: needsBarcode,
+        draft: { id, revision: order.revision, data: order.data }
+      }}
     />
   )
 }
@@ -88,7 +90,7 @@ export const Default = meta.story({
     await userEvent.type(quantity, "0", { initialSelectionStart: 3, initialSelectionEnd: 3 })
     await expect(quantity).toHaveValue(1200)
     await userEvent.click(save)
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.update",
       data: {

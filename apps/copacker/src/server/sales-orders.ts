@@ -1,13 +1,14 @@
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import type { Amazon } from "@repo/aisle/amazon"
+import { ProviderError } from "@repo/aisle/amazon"
+import type { AmazonSale } from "@repo/aisle/sales"
+import type { EbaySale } from "@repo/aisle/sales"
+import type { ShopifySale } from "@repo/aisle/sales"
 import {
-  type AmazonSale,
   collectAmazonSales,
   collectAmazonSalesReport,
   collectEbaySales,
   collectShopifySales,
-  type EbaySale,
   collectShopifySalesBulk,
-  type ShopifySale,
   shopifyPaymentFees
 } from "@repo/aisle/sales"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
@@ -15,8 +16,12 @@ import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import type { ServerKey } from "@/i18n/server-text"
+import type { ServerText } from "@/i18n/server-text"
+import { serverTextInEnglish } from "@/i18n/server-text"
 import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
+import { withJobWake } from "@/server/job-delivery"
 import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncAmazonFulfillmentShipments } from "./amazon-fulfillment-shipments"
@@ -28,7 +33,6 @@ import { amazonReturnsStatus, syncAmazonReturns } from "./amazon-returns"
 import { syncInboundShipments } from "./amazon-shipments"
 import { amazonStorageFeesStatus, syncAmazonStorageFees } from "./amazon-storage-fees"
 import { queueShopifyEconomics } from "./analytics-jobs"
-import type { Session } from "./auth"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { ReconnectRequiredError } from "./errors"
@@ -37,13 +41,16 @@ import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
+import type { DemandGap } from "./sales-attribution"
+import type { DemandRow } from "./sales-attribution"
 import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
-import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
+import { summarizeDemandGaps } from "./sales-attribution"
 import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
 import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
-import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
+import { serverText } from "./text"
+import type { Session } from "./workspace-session"
 
 export const salesSources = ["shopify", "amazon", "ebay"] as const
 export type SalesSource = (typeof salesSources)[number]
@@ -144,60 +151,66 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
   if (org.kind !== "buyer") {
     throw new SalesSyncError("buyerWorkspaceRequired")
   }
-  return db().transaction(async (tx) => {
-    const [account] = await tx
-      .select({ externalId: connections.externalId, scopes: connections.scopes })
-      .from(connections)
-      .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
-    if (!account) {
-      throw new SalesSyncError("connectInSettings", { provider: source })
-    }
-    if (source === "shopify") {
-      const scopes = new Set(account.scopes.split(/[,\s]+/))
-      if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
-        throw new SalesSyncError("reconnectShopifyOrders")
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [account] = await tx
+        .select({ externalId: connections.externalId, scopes: connections.scopes })
+        .from(connections)
+        .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
+      if (!account) {
+        throw new SalesSyncError("connectInSettings", { provider: source })
       }
-    }
-    const [current] = await tx
-      .select()
-      .from(salesSyncs)
-      .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
-      .for("update")
-    if (current && ["queued", "running"].includes(current.status) && current.externalAccountId === account.externalId) {
-      // A sync whose job failed or went missing (such as one a worker couldn't run) would wait forever; it starts again.
-      const [job] = await tx
-        .select({ status: jobs.status })
-        .from(jobs)
-        .where(eq(jobs.key, `sales:${org.id}:${source}:${current.revision}`))
-      if (job && ["pending", "running"].includes(job.status)) {
-        return { status: current.status }
+      if (source === "shopify") {
+        const scopes = new Set(account.scopes.split(/[,\s]+/))
+        if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
+          throw new SalesSyncError("reconnectShopifyOrders")
+        }
       }
-    }
-    // A different account starts over; its orders don't belong to the new one.
-    const sameAccount = current?.externalAccountId === account.externalId
-    const revision = (current?.revision ?? 0) + 1
-    const values = {
-      externalAccountId: account.externalId,
-      status: "queued" as const,
-      revision,
-      requestedAt: new Date(),
-      errorCode: null,
-      ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null })
-    }
-    await tx
-      .insert(salesSyncs)
-      .values({ orgId: org.id, source, ...values })
-      .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
-    await tx
-      .insert(jobs)
-      .values({
-        key: `sales:${org.id}:${source}:${revision}`,
-        kind: "sales",
-        payload: { orgId: org.id, source, revision }
-      })
-      .onConflictDoNothing()
-    return { status: "queued" }
-  })
+      const [current] = await tx
+        .select()
+        .from(salesSyncs)
+        .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
+        .for("update")
+      if (
+        current &&
+        ["queued", "running"].includes(current.status) &&
+        current.externalAccountId === account.externalId
+      ) {
+        // A sync whose job failed or went missing (such as one a worker couldn't run) would wait forever; it starts again.
+        const [job] = await tx
+          .select({ status: jobs.status })
+          .from(jobs)
+          .where(eq(jobs.key, `sales:${org.id}:${source}:${current.revision}`))
+        if (job && ["pending", "running"].includes(job.status)) {
+          return { status: current.status }
+        }
+      }
+      // A different account starts over; its orders don't belong to the new one.
+      const sameAccount = current?.externalAccountId === account.externalId
+      const revision = (current?.revision ?? 0) + 1
+      const values = {
+        externalAccountId: account.externalId,
+        status: "queued" as const,
+        revision,
+        requestedAt: new Date(),
+        errorCode: null,
+        ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null })
+      }
+      await tx
+        .insert(salesSyncs)
+        .values({ orgId: org.id, source, ...values })
+        .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
+      await tx
+        .insert(jobs)
+        .values({
+          key: `sales:${org.id}:${source}:${revision}`,
+          kind: "sales",
+          payload: { orgId: org.id, source, revision }
+        })
+        .onConflictDoNothing()
+      return { status: "queued" }
+    })
+  )
 }
 
 // The periods a sync reads, in order. Each touches the stored range, so the range stays unbroken and grows as the sync

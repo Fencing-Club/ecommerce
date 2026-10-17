@@ -38,12 +38,12 @@ export function inventoryBasisCollection(kind: InventoryBasisKind) {
 }
 export function inventoryBasisResource(kind: InventoryBasisKind) {
   return {
-    GET: (request: Request, context: { params: Promise<{ id: string }> }) =>
+    GET: (request: Request, context: { params: { id: string } }) =>
       analyticsRoute(request, false, async (s) => {
         const id = z.uuid().parse((await context.params).id)
         return Response.json({ record: await getInventoryBasis(s.org.id, kind, id) }, { headers: analyticsHeaders })
       }),
-    DELETE: (request: Request, context: { params: Promise<{ id: string }> }) =>
+    DELETE: (request: Request, context: { params: { id: string } }) =>
       analyticsRoute(request, true, async (s) => {
         const id = z.uuid().parse((await context.params).id)
         await retireInventoryBasis(s.org.id, s.user.id, kind, id)

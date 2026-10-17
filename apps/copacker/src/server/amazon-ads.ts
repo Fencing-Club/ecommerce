@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { amazonAdsConnections, amazonAdsDays, connections, jobs, analyticsEvidence } from "@/db/schema"
 import { addDays, zonedDay } from "@/lib/time-zone"
+import { withJobWake } from "@/server/job-delivery"
 import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "./amazon-ads-client"
 import { syncExchangeRates } from "./exchange-rates"
 import { PollAgain } from "./job-handlers"
@@ -39,52 +40,54 @@ export async function saveAdsConnection(orgId: string, sellerId: string, refresh
 }
 
 export async function queueAdsSync(orgId: string, now = new Date()) {
-  await db().transaction(async (tx) => {
-    const [grant] = await tx.select().from(amazonAdsConnections).where(connectionScope(orgId)).for("update")
-    if (!grant) {
-      return
-    }
-    // A manual retry can restart failed work, but never race an active generation.
-    const active = await tx
-      .select({ id: jobs.id })
-      .from(jobs)
-      .where(
-        and(
-          eq(jobs.kind, "amazon-ads"),
-          sql`${jobs.payload}->>'orgId' = ${orgId}`,
-          sql`${jobs.payload}->>'generation' = ${grant.generation}`,
-          inArray(jobs.status, ["pending", "running"])
+  await withJobWake(
+    db().transaction(async (tx) => {
+      const [grant] = await tx.select().from(amazonAdsConnections).where(connectionScope(orgId)).for("update")
+      if (!grant) {
+        return
+      }
+      // A manual retry can restart failed work, but never race an active generation.
+      const active = await tx
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(
+          and(
+            eq(jobs.kind, "amazon-ads"),
+            sql`${jobs.payload}->>'orgId' = ${orgId}`,
+            sql`${jobs.payload}->>'generation' = ${grant.generation}`,
+            inArray(jobs.status, ["pending", "running"])
+          )
         )
-      )
-    if (active.length) {
-      return
-    }
-    await tx
-      .delete(jobs)
-      .where(
-        and(
-          eq(jobs.kind, "amazon-ads"),
-          eq(jobs.status, "failed"),
-          sql`${jobs.payload}->>'orgId' = ${orgId}`,
-          sql`${jobs.payload}->>'generation' = ${grant.generation}`
+      if (active.length) {
+        return
+      }
+      await tx
+        .delete(jobs)
+        .where(
+          and(
+            eq(jobs.kind, "amazon-ads"),
+            eq(jobs.status, "failed"),
+            sql`${jobs.payload}->>'orgId' = ${orgId}`,
+            sql`${jobs.payload}->>'generation' = ${grant.generation}`
+          )
         )
-      )
-    const run = randomUUID()
-    const work: (typeof jobs.$inferInsert)[] = []
-    for (const profile of grant.profiles) {
-      const end = zonedDay(now, profile.timezone)
-      // A single small daily-spend report stays below the 120-day range limit and avoids concurrent reports per advertiser.
-      const from = addDays(end, -89)
-      work.push({
-        key: `amazon-ads:${run}:${profile.profileId}:${from}`,
-        kind: "amazon-ads",
-        payload: { orgId, generation: grant.generation, profileId: profile.profileId, from, to: end }
-      })
-    }
-    if (work.length) {
-      await tx.insert(jobs).values(work)
-    }
-  })
+      const run = randomUUID()
+      const work: (typeof jobs.$inferInsert)[] = []
+      for (const profile of grant.profiles) {
+        const end = zonedDay(now, profile.timezone)
+        // A single small daily-spend report stays below the 120-day range limit and avoids concurrent reports per advertiser.
+        const from = addDays(end, -89)
+        work.push({
+          key: `amazon-ads:${run}:${profile.profileId}:${from}`,
+          kind: "amazon-ads",
+          payload: { orgId, generation: grant.generation, profileId: profile.profileId, from, to: end }
+        })
+      }
+      if (work.length) {
+        await tx.insert(jobs).values(work)
+      }
+    })
+  )
 }
 const jobInput = z.object({
   orgId: z.uuid(),

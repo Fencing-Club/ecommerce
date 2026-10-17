@@ -1,8 +1,7 @@
-"use client"
-
-import Link from "next/link"
 import { createContext, use } from "react"
-import { type AccessLevel, can, canOpen, type Grant, isAdmin, type Permissions } from "@/lib/access"
+import type { AccessLevel } from "@/lib/access"
+import type { Grant } from "@/lib/access"
+import { can, canOpen, isAdmin, type Permissions } from "@/lib/access"
 import { cn } from "@/lib/utils"
 
 // What the signed-in person can do in the open workspace, for the portal's client components: the sidebar, the header's
@@ -59,9 +58,9 @@ export function PageLink({
     )
   }
   return (
-    <Link href={href} title={title} className={className}>
+    <a href={href} title={title} className={className}>
       {children}
-    </Link>
+    </a>
   )
 }
 

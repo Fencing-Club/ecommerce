@@ -1,15 +1,13 @@
-"use client"
-
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
+import { responseError } from "@/lib/response-data"
 import { Amounts, IndexToolbar, matches } from "./shared"
 
 type CatalogOption = { id: string; title: string; status: "active" | "draft" | "archived" }
@@ -63,9 +61,9 @@ export function CatalogPicker({
         body: JSON.stringify({ catalogId: next === none ? null : next })
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? shared("couldNotSave"))
+        throw new Error(responseError(await response.json(), shared("couldNotSave")))
       }
-      router.refresh()
+      router.invalidate()
     } catch (caught) {
       setCurrent(previous)
       setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
@@ -164,7 +162,11 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
             {shown.map((customer) => (
               <LinkRow key={customer.id} href={`/customers/${customer.id}`}>
                 <TableCell>
-                  <Link href={`/customers/${customer.id}`} className="font-medium underline-offset-4 hover:underline">
+                  <Link
+                    to="/customers/$id"
+                    params={{ id: customer.id }}
+                    className="font-medium underline-offset-4 hover:underline"
+                  >
                     {customer.name}
                   </Link>
                   <p className="text-xs text-muted-foreground">

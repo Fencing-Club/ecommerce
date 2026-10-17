@@ -3,6 +3,8 @@ import path from "node:path"
 import { type Browser, type BrowserContext, expect, type Page, test as base } from "@playwright/test"
 import { e2eEmail, e2ePassword, e2eUser } from "../scripts/e2e-user"
 
+export { e2eEmail }
+
 // The seeded workspaces the test account owns (scripts/seed-e2e.ts).
 export const workspaces = {
   buyer: "E2E Buyer",
@@ -12,7 +14,12 @@ export const workspaces = {
 export type Role = keyof typeof workspaces
 
 // Whether the suite runs against a deployed site, where a worker runs jobs and the stores are real services.
-export const deployed = Boolean(process.env.E2E_BASE_URL)
+const target = process.env.E2E_BASE_URL ? new URL(process.env.E2E_BASE_URL) : undefined
+export const deployed = Boolean(
+  target &&
+  !["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) &&
+  !target.hostname.endsWith(".local.copacker.ai")
+)
 
 // A name no other run or test uses, for records a test makes.
 export function unique(prefix: string) {
@@ -21,6 +28,7 @@ export function unique(prefix: string) {
 
 // Opens the top bar's workspace menu and switches to the role's workspace, which reloads the portal.
 export async function switchWorkspace(page: Page, role: Role) {
+  await expect(page.locator("[data-slot=sidebar-wrapper]")).toHaveAttribute("data-portal-hydrated", "true")
   const switcher = page.getByRole("button", { name: /, switch workspace$/ })
   await switcher.click()
   await Promise.all([
@@ -33,6 +41,7 @@ export async function switchWorkspace(page: Page, role: Role) {
 }
 
 export async function signIn(page: Page, password = e2ePassword()) {
+  await waitForHydration(page)
   await page.goto("/login")
   await page.getByLabel("Email").fill(e2eEmail)
   await page.getByLabel("Password", { exact: true }).fill(password)
@@ -73,7 +82,24 @@ type Fixtures = {
   pageFor: (role: Role) => Promise<Page>
 }
 
+// Browser actions can otherwise beat streamed SSR hydration. Wait for the app's readiness signal on every document,
+// including auth redirects and reloads, without arbitrary delays or waiting for unrelated network activity.
+async function waitForHydration(page: Page) {
+  await page.addLocatorHandler(
+    page.locator("html:not([data-hydrated]), [data-slot=sidebar-wrapper]:not([data-portal-hydrated])").first(),
+    async () => {
+      await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true")
+      await expect(page.locator("[data-slot=sidebar-wrapper]:not([data-portal-hydrated])")).toHaveCount(0)
+    },
+    { noWaitAfter: true }
+  )
+}
+
 export const test = base.extend<Fixtures>({
+  page: async ({ page }, provide) => {
+    await waitForHydration(page)
+    await provide(page)
+  },
   role: [null, { option: true }],
   stateFile: async ({ role, browser, baseURL }, provide, testInfo) => {
     if (!role) {
@@ -112,7 +138,9 @@ export const test = base.extend<Fixtures>({
         storageState: file
       })
       opened.push({ context, file })
-      return context.newPage()
+      const page = await context.newPage()
+      await waitForHydration(page)
+      return page
     })
     for (const { context, file } of opened) {
       await context.storageState({ path: file })

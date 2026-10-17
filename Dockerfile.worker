@@ -1,4 +1,4 @@
-# The worker runs its TypeScript through tsx, so unlike the web image it skips next build.
+# The retained background executor runs TypeScript through tsx. Web and Storybook run on Cloudflare.
 FROM node:24-bookworm-slim
 WORKDIR /app
 ARG NPM_REGISTRY=https://registry.npmjs.org/

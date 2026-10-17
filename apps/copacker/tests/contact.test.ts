@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { POST } from "../src/app/api/contact/route"
+import { POST } from "../src/server/http/api/contact"
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -26,7 +26,7 @@ const send = (body: unknown, address = "198.51.100.1") =>
   POST(
     new Request("http://localhost/api/contact", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-forwarded-for": address },
+      headers: { "content-type": "application/json", "cf-connecting-ip": address },
       body: JSON.stringify(body)
     })
   )

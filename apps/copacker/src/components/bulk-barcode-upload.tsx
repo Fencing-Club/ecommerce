@@ -1,9 +1,7 @@
-"use client"
-
 import { CircleCheck, UploadCloud } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"

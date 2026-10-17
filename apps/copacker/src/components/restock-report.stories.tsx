@@ -26,7 +26,7 @@ const lotusGroup = () => screen.findByRole("region", { name: "Lotus Manufacturin
 const meta = preview.meta({
   component: RestockReport,
   args: { settings: { days: 60, leadTimeDays: 60 } },
-  parameters: { nextjs: { navigation: { pathname: "/restock" } } },
+  parameters: { router: { navigation: { pathname: "/restock" } } },
   beforeEach: ({ msw }) => {
     plans = []
     // The page remembers its channel, supplier and sort between visits.
@@ -146,7 +146,7 @@ export const SearchAndSort = meta.story({
 // Opened from an Overview link: a channel, a days-of-cover group and only the items to reorder.
 export const FromOverview = meta.story({
   parameters: {
-    nextjs: {
+    router: {
       navigation: { pathname: "/restock", query: { channel: "shopify:81234", cover: "out", status: "order" } }
     }
   },
@@ -186,6 +186,19 @@ export const ChooseLocationAndSupplier = meta.story({
     await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
     await expect(await canvas.findByText("No products linked to Northwind Textiles", undefined, loaded)).toBeVisible()
     await expect(plans.at(-1)).toMatchObject({ supplier: suppliers[1]!.id })
+  }
+})
+
+export const KeepsSearchWhenSettingsChange = meta.story({
+  play: async ({ canvas }) => {
+    await lotusGroup()
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search products" }), "wool")
+    await expect(await canvas.findByText("No products match")).toBeVisible()
+    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
+    await waitFor(() => expect(plans.at(-1)).toMatchObject({ supplier: suppliers[1]!.id }), loaded)
+    await expect(await canvas.findByRole("searchbox", { name: "Search products" }, loaded)).toHaveValue("wool")
+    await expect(await canvas.findByText("No products match")).toBeVisible()
   }
 })
 

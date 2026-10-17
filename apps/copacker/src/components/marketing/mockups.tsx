@@ -12,7 +12,7 @@ import {
   Search,
   TrendingDown
 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
+import { useFormatter, useTranslations } from "use-intl"
 import { Status } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"

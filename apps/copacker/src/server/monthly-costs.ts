@@ -3,7 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { monthlyCosts } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import type { Session } from "./auth"
+import type { Session } from "./workspace-session"
 
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {

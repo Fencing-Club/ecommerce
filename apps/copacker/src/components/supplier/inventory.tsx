@@ -1,13 +1,12 @@
-"use client"
-
-import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { responseError } from "@/lib/response-data"
 import { cn } from "@/lib/utils"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar } from "./shared"
@@ -20,7 +19,7 @@ async function post(url: string, body: unknown, fallback: string) {
     body: JSON.stringify(body)
   })
   if (!response.ok) {
-    throw new Error((await response.json()).error ?? fallback)
+    throw new Error(responseError(await response.json(), fallback))
   }
 }
 
@@ -113,7 +112,7 @@ function Toggle({
         setFailed(false)
         try {
           await post("/api/supplier-catalog/tracking", { id: row.id, [field]: checked }, shared("couldNotSave"))
-          router.refresh()
+          router.invalidate()
         } catch {
           setFailed(true)
         } finally {
@@ -168,7 +167,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     try {
       await post("/api/supplier-catalog/stock", { counts: changes }, shared("couldNotSave"))
       setEdits({})
-      router.refresh()
+      router.invalidate()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {

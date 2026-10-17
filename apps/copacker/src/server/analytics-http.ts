@@ -1,8 +1,9 @@
 import { z } from "zod"
 import { can } from "@/lib/access"
 import { AnalyticsProblem } from "./analytics-contract"
-import { ApiSessionError, session, type Session } from "./auth"
+import { ApiSessionError, session } from "./auth"
 import { isAppOrigin } from "./security"
+import type { Session } from "./workspace-session"
 export const analyticsHeaders = { "Cache-Control": "private, no-store" }
 export async function analyticsRoute(request: Request, write: boolean, action: (s: Session) => Promise<Response>) {
   try {

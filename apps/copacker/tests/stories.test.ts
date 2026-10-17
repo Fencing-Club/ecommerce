@@ -8,16 +8,12 @@ const app = fileURLToPath(new URL("..", import.meta.url))
 const withoutStories = new Set([
   "src/components/access.tsx",
   "src/components/app-providers.tsx",
-  "src/components/client-messages.tsx",
-  "src/components/localization-provider.tsx",
   "src/components/providers.tsx",
   "src/components/refresh-while.tsx",
   "src/components/reload-when-back.tsx",
   "src/components/system-time-zone.tsx",
   "src/components/theme-provider.tsx",
-  "src/components/workspace-watch.tsx",
-  // Forwarders are listed with the other partners; the page only redirects there.
-  "src/app/(portal)/forwarders/page.tsx"
+  "src/components/workspace-watch.tsx"
 ])
 
 function files(pattern: string) {

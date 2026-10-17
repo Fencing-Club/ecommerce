@@ -18,7 +18,7 @@ export function rateLimit({ period, allowed }: { period: number; allowed: number
   }
 }
 
-// The address a request came from, as the proxy in front of the app reports it.
+// Cloudflare supplies the connecting address. Forwarded chains can contain client-supplied values.
 export function clientAddress(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  return request.headers.get("cf-connecting-ip") || "unknown"
 }

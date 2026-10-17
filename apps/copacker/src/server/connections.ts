@@ -6,8 +6,9 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { AccessError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
-import { AccessError, ReconnectRequiredError } from "./errors"
+import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
 export const shopifyTokenResponse = z.object({

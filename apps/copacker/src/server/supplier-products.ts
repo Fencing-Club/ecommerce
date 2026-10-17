@@ -1,13 +1,15 @@
 import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { catalogProducts, catalogs, supplierProductGroups, supplierProducts } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { imageTypes, variantsProblem, variantTitle } from "@/lib/supplier-product"
-import { requireSupplier, type Session } from "./auth"
+import { requireSupplier } from "./authorization"
 import { addToCatalogs } from "./catalogs"
 import { pricingText } from "./text"
+import type { Session } from "./workspace-session"
 
 const count = z.number().int().positive().max(2_147_483_647)
 const variantSchema = z.object({
@@ -233,14 +235,6 @@ export async function productList(orgId: string) {
       }
     ]
   })
-}
-
-// Products for someone who doesn't see prices, without their variants' prices and price breaks.
-export function withoutPrices(list: Awaited<ReturnType<typeof productList>>) {
-  return list.map((product) => ({
-    ...product,
-    variants: product.variants.map((variant) => ({ ...variant, priceMinor: null, priceBreaks: [] }))
-  }))
 }
 
 // A product and its active variants, for its page.

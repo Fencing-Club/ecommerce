@@ -1,14 +1,18 @@
 import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { jobs, memberships, profiles, teamInvitations } from "@/db/schema"
-import { LocalizedError, type ErrorKey } from "@/i18n/errors"
-import { type Access, accessSchema, highestLevel } from "@/lib/access"
+import type { ErrorKey } from "@/i18n/errors"
+import { LocalizedError } from "@/i18n/errors"
+import { AccessError } from "@/i18n/errors"
+import type { Access } from "@/lib/access"
+import { accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
-import type { Session } from "./auth"
-import { AccessError } from "./errors"
+import { withJobWake } from "@/server/job-delivery"
+import { requestLocale } from "@/server/localization"
 import { hash, token } from "./security"
-import { requestLocale } from "./text"
+import type { Session } from "./workspace-session"
 
 const week = 7 * 86400000
 const emailSchema = z.object({ email: z.email("errors.enterEmail").max(254) })
@@ -111,25 +115,27 @@ export async function inviteColleague(org: Pick<Session["org"], "id" | "name" | 
   if (member) {
     throw new LocalizedError("alreadyInWorkspace", { email })
   }
-  await db().transaction((tx) => send(tx, org, email, grant))
+  await withJobWake(db().transaction((tx) => send(tx, org, email, grant)))
   return { ok: true, email }
 }
 
 // Sends an invitation again with a new link, keeping what it gives.
 export async function resendInvitation(org: Pick<Session["org"], "id" | "name">, raw: unknown) {
   const email = emailSchema.parse(raw).email.toLowerCase()
-  await db().transaction(async (tx) => {
-    const [waiting] = await tx
-      .select({ role: teamInvitations.role, access: teamInvitations.access })
-      .from(teamInvitations)
-      .where(and(eq(teamInvitations.orgId, org.id), eq(teamInvitations.email, email)))
-      .orderBy(desc(teamInvitations.createdAt))
-      .for("update")
-    if (!waiting) {
-      throw new LocalizedError("invitationAnswered")
-    }
-    await send(tx, org, email, waiting)
-  })
+  await withJobWake(
+    db().transaction(async (tx) => {
+      const [waiting] = await tx
+        .select({ role: teamInvitations.role, access: teamInvitations.access })
+        .from(teamInvitations)
+        .where(and(eq(teamInvitations.orgId, org.id), eq(teamInvitations.email, email)))
+        .orderBy(desc(teamInvitations.createdAt))
+        .for("update")
+      if (!waiting) {
+        throw new LocalizedError("invitationAnswered")
+      }
+      await send(tx, org, email, waiting)
+    })
+  )
   return { ok: true, email }
 }
 

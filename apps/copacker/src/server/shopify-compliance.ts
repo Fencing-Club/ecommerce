@@ -14,8 +14,10 @@ import {
   stockDays,
   stockSnapshots
 } from "@/db/schema"
-import { defaultLocale, isLocale, type Locale } from "@/i18n/locales"
+import type { Locale } from "@/i18n/locales"
+import { defaultLocale, isLocale } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
+import { withJobWake } from "@/server/job-delivery"
 import { summarizeSalesOrder } from "./sales-orders"
 
 // Shopify's mandatory privacy webhooks. Copacker copies orders for restock planning and sales figures: order numbers,
@@ -76,10 +78,12 @@ export async function receiveShopifyCompliance(topic: string, body: string, deli
       orders: input.data.orders_to_redact
     }
   }
-  await db()
-    .insert(jobs)
-    .values({ key: `shopify-compliance:${deliveryId}`, kind: "shopify-compliance", payload })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `shopify-compliance:${deliveryId}`, kind: "shopify-compliance", payload })
+      .onConflictDoNothing()
+  )
   return true
 }
 
@@ -161,7 +165,7 @@ async function reportCustomerData(shop: string, orders: number[], requestId: num
     })
   )
   if (emails.length) {
-    await db().insert(jobs).values(emails).onConflictDoNothing()
+    await withJobWake(db().insert(jobs).values(emails).onConflictDoNothing())
   }
 }
 

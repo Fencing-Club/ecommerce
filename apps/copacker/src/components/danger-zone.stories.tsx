@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { held, recordActions } from "@/stories/fixtures/shared"
 import { person, workspaces } from "@/stories/workspace"
 import { DangerZone } from "./danger-zone"
@@ -72,7 +72,7 @@ export const DeleteFails = meta.story({
       "Transfer ownership of Harbor Goods EU first."
     )
     await expect(within(dialog).getByRole("button", { name: "Delete workspace" })).toBeEnabled()
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
 

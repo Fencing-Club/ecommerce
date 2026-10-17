@@ -1,7 +1,8 @@
 import { money } from "@repo/aisle"
 import { drawableText } from "@repo/aisle/documents"
 import ExcelJS from "exceljs"
-import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib"
+import type { PDFFont } from "pdf-lib"
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 import type { PriceList } from "./catalog-export"
 
 const volume = (row: PriceList["rows"][number]) => row.breaks.map((item) => `${item.label} ${item.price}`).join("; ")

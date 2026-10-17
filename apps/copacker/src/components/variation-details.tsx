@@ -1,8 +1,6 @@
-"use client"
-
-import { useTranslations } from "next-intl"
 import { useId } from "react"
 import { useController } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

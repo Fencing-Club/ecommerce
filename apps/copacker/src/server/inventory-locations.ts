@@ -1,4 +1,5 @@
-import type { Shopify, ShopifyLocationKind } from "@repo/aisle/shopify"
+import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import type { Shopify } from "@repo/aisle/shopify"
 import { z } from "zod"
 
 export const locationMappingSchema = z.strictObject({

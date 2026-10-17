@@ -28,6 +28,11 @@ test.describe("site routes", () => {
     expect(response.ok()).toBe(true)
     const text = await response.text()
     expect(text).toMatch(/User-Agent: \*/i)
+    if (response.headers()["x-robots-tag"]?.includes("noindex")) {
+      expect(text).toContain("Disallow: /\n")
+      expect(text).not.toContain("Allow: /")
+      return
+    }
     expect(text).toContain("Allow: /")
     for (const closed of ["/api/", "/overview", "/orders", "/settings", "/onboarding", "/invite", "/unsubscribe"]) {
       expect(text).toContain(`Disallow: ${closed}\n`)

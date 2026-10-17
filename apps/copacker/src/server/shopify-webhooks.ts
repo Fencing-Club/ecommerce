@@ -4,12 +4,14 @@ import { objectEntries, objectKeys } from "ts-extras"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations } from "@/db/schema"
+import { withJobWake } from "@/server/job-delivery"
 import { disconnect, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { PollAgain } from "./job-handlers"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-compliance"
-import { type NotificationQueue, pollQueue } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { pollQueue } from "./sqs"
 import { refreshStock } from "./stock"
 
 // What Shopify tells Copacker about: every change to data Copacker copies. The events only say that something changed;
@@ -78,17 +80,19 @@ export async function receiveShopifyWebhook(topic: string, shop: string, now = D
     return 0
   }
   const batch = Math.floor(now / batchMs)
-  await db()
-    .insert(jobs)
-    .values(
-      accounts.map(({ orgId }) => ({
-        key: `shopify-event:${orgId}:${target}:${batch}`,
-        kind: "shopify-event" as const,
-        payload: { orgId, shop, target },
-        runAt: new Date(target === "uninstalled" ? now : (batch + 1) * batchMs + settleMs)
-      }))
-    )
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values(
+        accounts.map(({ orgId }) => ({
+          key: `shopify-event:${orgId}:${target}:${batch}`,
+          kind: "shopify-event" as const,
+          payload: { orgId, shop, target },
+          runAt: new Date(target === "uninstalled" ? now : (batch + 1) * batchMs + settleMs)
+        }))
+      )
+      .onConflictDoNothing()
+  )
   return accounts.length
 }
 
@@ -154,10 +158,12 @@ async function authorizationRevoked(orgId: string) {
 // Queues subscribing the workspace's store to Copacker's webhooks. Runs after connecting and daily, which also repairs
 // subscriptions Shopify removed after failed deliveries.
 export async function queueShopifySubscription(orgId: string, key: string) {
-  await db()
-    .insert(jobs)
-    .values({ key: `shopify-subscribe:${orgId}:${key}`, kind: "shopify-subscribe", payload: { orgId } })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `shopify-subscribe:${orgId}:${key}`, kind: "shopify-subscribe", payload: { orgId } })
+      .onConflictDoNothing()
+  )
 }
 
 // Worker job: subscribes the connected store to each topic it isn't subscribed to yet, at the EventBridge source.

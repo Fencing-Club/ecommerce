@@ -1,95 +1,38 @@
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
-import { Suspense } from "react"
 import { expect, within } from "storybook/test"
+import { createTranslator } from "use-intl"
+import { storyIntl } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { EmptyState, PageHeader } from "@/components/common"
-import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "@/components/overview"
-import { SetupChecklist } from "@/components/overview-sections"
-import { PeriodPicker } from "@/components/period-picker"
-import { SupplierOverview } from "@/components/supplier/overview"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { OverviewPagePending } from "@/components/overview-page"
 import { canOpen, isAdmin, type Permissions } from "@/lib/access"
 import type { Overview } from "@/server/overview"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 import { buyerOverview, supplierOverviewData, unconnectedOverview } from "@/stories/fixtures/overview"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 type Args = { permissions: Permissions; data: Overview; supplier: SupplierOverviewData }
 
-// The page's Dashboard: the overview's cards, or connecting a store when there's none.
-async function Dashboard({ data: pending, admin }: { data: Promise<Overview>; admin: boolean }) {
-  const [data, t] = await Promise.all([pending, getTranslations("overview.noStores")])
-  if (!data.connected.length) {
-    return (
-      <div className="flex flex-col gap-6">
-        {admin && <SetupChecklist steps={data.setup} />}
-        <Card>
-          <CardContent>
-            <EmptyState title={t("title")} description={admin ? t("connectDescription") : t("askAdmin")}>
-              {admin && (
-                <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-                  {t("connect")}
-                </Button>
-              )}
-            </EmptyState>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-  return <OverviewDashboard data={data} />
-}
-
-// A buyer's Overview (page.tsx): what needs attention on the pages the person can open, and setting up the workspace
-// for its owner and admins.
-async function BuyerOverviewPage({ permissions, data }: Args) {
-  const t = await getTranslations("overview")
-  const shown = Promise.resolve({
-    ...data,
-    attention: data.attention.filter((item) => canOpen(permissions, item.href)),
-    setup: isAdmin(permissions) ? data.setup : []
-  })
+// The production view renders the same permission-filtered DTO as the server loader. These stories supply fixtures;
+// the loader's authorization and field selection have separate server tests.
+function BuyerOverviewPage({ permissions, data }: Args) {
   return (
-    <>
-      <PageHeader title={t("title")}>
-        <Suspense fallback={<OverviewFiltersSkeleton />}>
-          <OverviewFilters data={shown} />
-        </Suspense>
-      </PageHeader>
-      <Suspense fallback={<OverviewSkeleton />}>
-        <Dashboard data={shown} admin={isAdmin(permissions)} />
-      </Suspense>
-    </>
+    <PageView
+      page={{
+        kind: "buyer",
+        admin: isAdmin(permissions),
+        data: {
+          ...data,
+          attention: data.attention.filter((item) => canOpen(permissions, item.href)),
+          setup: isAdmin(permissions) ? data.setup : []
+        }
+      }}
+      query={{}}
+    />
   )
 }
-
-// What the buyer's Overview shows while its data loads: the Suspense fallbacks.
-async function LoadingOverviewPage() {
-  const t = await getTranslations("overview")
-  return (
-    <>
-      <PageHeader title={t("title")}>
-        <OverviewFiltersSkeleton />
-      </PageHeader>
-      <OverviewSkeleton />
-    </>
-  )
-}
-
-// A supplier's Overview (page.tsx): orders, stock and what needs doing, for the chosen period.
-async function SupplierOverviewPage({ permissions, supplier }: Args) {
-  const t = await getTranslations("overview")
-  return (
-    <>
-      <PageHeader title={t("title")}>
-        <PeriodPicker period={supplier.period} />
-      </PageHeader>
-      <SupplierOverview data={supplier} permissions={permissions} />
-    </>
-  )
+function SupplierOverviewPage({ permissions, supplier }: Args) {
+  return <PageView page={{ kind: "supplier", data: supplier, permissions }} query={{}} />
 }
 
 // A member with the Overview (which needs prices) and purchase orders, but not Restock or Shipments.
@@ -168,7 +111,7 @@ export const NoStoresForMember = meta.story({
 })
 
 export const Loading = meta.story({
-  ...pageStory("/overview", LoadingOverviewPage, "buyer"),
+  ...pageStory("/overview", () => <OverviewPagePending />, "buyer"),
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("Loading overview")).toHaveAttribute("aria-busy", "true")
   }
@@ -177,11 +120,12 @@ export const Loading = meta.story({
 export const Supplier = meta.story({
   ...pageStory("/overview", SupplierOverviewPage, "supplier"),
   play: async ({ canvas }) => {
+    const t = createTranslator(storyIntl())
     const page = within(canvas.getByRole("main"))
-    await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible()
-    await expect(page.getByRole("button", { name: /Last 30 days/ })).toBeVisible()
-    await expect(page.getAllByText("Orders received")[0]).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: t("overview.title") })).toBeVisible()
+    await expect(page.getByRole("button", { name: t("overview.period.presets.last30") })).toBeVisible()
+    await expect(page.getAllByText(t("supplier.overview.ordersReceived"))[0]).toBeVisible()
     await expect(page.getAllByText("Harbor Goods")[0]).toBeVisible()
-    await expect(page.getByText("2 orders to pack")).toBeVisible()
+    await expect(page.getByText(t("supplier.overview.tasks.pack", { count: 2 }))).toBeVisible()
   }
 })

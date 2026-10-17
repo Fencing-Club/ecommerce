@@ -1,4 +1,3 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
@@ -23,6 +22,7 @@ const importPreview = {
 
 const meta = preview.meta({
   component: ProductActions,
+  args: { onImported: fn() },
   beforeEach: ({ msw }) => {
     imported.mockClear()
     msw.use(
@@ -73,7 +73,7 @@ export const Menu = meta.story({
 
 // The top bar's Create > Import products lands here with ?import=true, which opens the import.
 export const OpenedFromCreate = meta.story({
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/products", query: { import: "true" } } } },
+  parameters: { router: { navigation: { pathname: "/products", query: { import: "true" } } } },
   play: async () => {
     const dialog = await screen.findByRole("dialog", { name: "Import products" })
     await waitFor(() => expect(dialog).toBeVisible())
@@ -81,7 +81,7 @@ export const OpenedFromCreate = meta.story({
 })
 
 export const Import = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const dialog = await openImport(canvas)
     await expect(dialog.getByRole("link", { name: "Excel template" })).toHaveAttribute(
       "href",
@@ -115,7 +115,7 @@ export const Import = meta.story({
       })
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(args.onImported).toHaveBeenCalled()
   }
 })
 
@@ -160,13 +160,27 @@ export const AlreadyImported = meta.story({
       )
     )
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const dialog = await openImport(canvas)
     await userEvent.upload(dialog.getByLabelText("Product file"), spreadsheet)
     await userEvent.click(dialog.getByRole("button", { name: "Preview" }))
     await userEvent.click(await dialog.findByRole("button", { name: "Import 8 variants" }))
     await expect(await dialog.findByRole("alert")).toHaveTextContent("You already imported this file.")
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(args.onImported).not.toHaveBeenCalled()
+  }
+})
+
+export const MalformedPreview = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(http.post("/api/supplier-catalog/import", () => HttpResponse.json({ products: "invalid" })))
+  },
+  play: async ({ canvas, args }) => {
+    const dialog = await openImport(canvas)
+    await userEvent.upload(dialog.getByLabelText("Product file"), spreadsheet)
+    await userEvent.click(dialog.getByRole("button", { name: "Preview" }))
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn’t import. Try again.")
+    await expect(args.onImported).not.toHaveBeenCalled()
+    await expect(dialog.queryByText("New variants")).toBeNull()
   }
 })
 

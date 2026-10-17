@@ -1,7 +1,5 @@
-"use client"
-
 import { Check, Copy } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
 // A copy button that says when it worked: the copy icon spins out as a check spins in, and "Copy" rolls over to

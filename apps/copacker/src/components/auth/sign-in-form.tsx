@@ -1,12 +1,9 @@
-"use client"
-
-import { useTranslations } from "next-intl"
-import Link from "next/link"
 import { FormProvider, useWatch } from "react-hook-form"
-import { FormError, SubmitButton } from "@/components/actions"
+import { useTranslations } from "use-intl"
 import { FormInput } from "@/components/form-controls"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useAuthForm } from "@/hooks/use-auth-form"
 import { signInSchema } from "@/lib/sign-in"
 import { PasswordField } from "./password-field"
 
@@ -23,7 +20,7 @@ export function leaving(state: { isSubmitting: boolean; isSubmitSuccessful: bool
 // Email and password. `email` fills in the address, such as an invitation's; `locked` keeps it to that address.
 export function SignInForm({ next, email = "", locked = false }: { next: string; email?: string; locked?: boolean }) {
   const t = useTranslations("auth")
-  const { form, submit } = useActionForm({
+  const { form, submit } = useAuthForm({
     schema: signInSchema,
     action: "auth.signIn",
     defaultValues: { email, password: "" },
@@ -50,12 +47,12 @@ export function SignInForm({ next, email = "", locked = false }: { next: string;
             label={t("fields.password")}
             autoComplete="current-password"
             action={
-              <Link
+              <a
                 href={reset}
                 className="text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {t("fields.forgotPassword")}
-              </Link>
+              </a>
             }
           />
         </FieldGroup>

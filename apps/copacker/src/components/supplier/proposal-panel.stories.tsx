@@ -1,8 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import type { ComponentProps } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import type { Permissions } from "@/lib/access"
 import { proposedChanges } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
@@ -74,7 +74,7 @@ export const Approve = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
     await waitFor(() => expect(answered).toHaveBeenCalledWith(proposalId, { action: "approve" }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -90,7 +90,7 @@ export const ApproveFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("Lotus Manufacturing withdrew these changes.")
     await expect(canvas.getByRole("button", { name: "Approve changes" })).toBeEnabled()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
@@ -107,7 +107,7 @@ export const Decline = meta.story({
       expect(answered).toHaveBeenCalledWith(proposalId, { action: "decline", reason: "We need the aprons." })
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
 

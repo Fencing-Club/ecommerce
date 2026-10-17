@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { actionHandler, order, orderId } from "@/stories/fixtures/purchase-orders"
 import { member } from "@/stories/workspace"
 import { LineMenu, OrderMenu } from "./order-actions"
@@ -36,7 +36,7 @@ export const Draft = meta.story({
       `/api/orders/${orderId}/labels`
     )
     await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}/edit`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}/edit` })
   }
 })
 
@@ -47,8 +47,9 @@ export const DeleteDraft = meta.story({
     const dialog = await screen.findByRole("alertdialog", { name: "Delete PO-1042?" })
     await expect(dialog).toHaveTextContent("Your supplier hasn’t seen it.")
     await userEvent.click(screen.getByRole("button", { name: "Delete draft" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
     await expect(actions).toHaveBeenCalledWith({ action: "order.delete", data: { id: orderId } })
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
   }
 })
 
@@ -64,7 +65,7 @@ export const Close = meta.story({
     await userEvent.click(screen.getByRole("button", { name: "Close purchase order" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(actions).toHaveBeenCalledWith({ action: "order.close", data: { id: orderId } })
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -80,7 +81,7 @@ export const CloseFails = meta.story({
     await waitFor(() => expect(screen.getByText("Couldn’t close PO-1042")).toBeVisible())
     // The dialog stays open to try again.
     await expect(screen.getByRole("alertdialog")).toBeVisible()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
@@ -141,6 +142,6 @@ export const LineMenus = meta.story({
       `/api/orders/${orderId}/labels/warning`
     )
     await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}/edit`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}/edit` })
   }
 })

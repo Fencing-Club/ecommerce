@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import {
   actionRecorder,
   blankWizard,
@@ -124,8 +124,8 @@ export const NewBuyer = meta.story({
     await expect(actions.sent).toHaveLength(0)
     await fillStreet(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
     await expect(actions.sent).toHaveLength(1)
     await expect(actions.sent[0]).toMatchObject({
       action: "onboarding.workspace",
@@ -163,7 +163,7 @@ export const SkipAddress = meta.story({
     await userEvent.type(canvas.getByLabelText(/Company name/), "Bayline Freight")
     await continueTo(canvas, "Warehouse address")
     await userEvent.click(canvas.getByRole("button", { name: "Skip for now" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     await expect(actions.sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: { kind: "forwarder", company: { name: "Bayline Freight" }, address: null, invitation: null }
@@ -264,7 +264,7 @@ export const JoinTeam = meta.story({
     await userEvent.type(canvas.getByLabelText(/Last name/), "Lee")
     await choose(canvas, /Position/, "Buyer")
     await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     await expect(actions.sent).toEqual([
       {
         action: "onboarding.join",
@@ -290,7 +290,7 @@ export const ProfileOnly = meta.story({
   play: async ({ canvas }) => {
     await fillAbout(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
     await expect(actions.sent).toEqual([
       {
         action: "profile.update",
@@ -314,7 +314,7 @@ export const Fails = meta.story({
     await userEvent.click(join)
     await expect(await canvas.findByRole("alert")).toHaveTextContent(errors.invitationInvalid)
     await expect(join).toBeEnabled()
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 

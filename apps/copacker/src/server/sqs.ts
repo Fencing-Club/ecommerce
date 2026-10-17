@@ -1,4 +1,5 @@
-import { DeleteMessageCommand, ReceiveMessageCommand, type SQSClient } from "@aws-sdk/client-sqs"
+import type { SQSClient } from "@aws-sdk/client-sqs"
+import { DeleteMessageCommand, ReceiveMessageCommand } from "@aws-sdk/client-sqs"
 
 // Amazon notifications and Shopify's EventBridge deliveries both arrive in SQS queues that the worker reads.
 export type NotificationQueue = {

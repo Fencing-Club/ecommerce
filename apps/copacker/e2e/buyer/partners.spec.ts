@@ -45,6 +45,8 @@ test("lists the seeded partners by type and finds them by name", { tag: "@mobile
 
   await tabs.getByRole("link", { name: "All" }).click()
   await expect(page).not.toHaveURL(/type=/)
+  await expect(tabs.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page")
+  await expect(rowFor(page, "Offline supplier")).toBeVisible()
   await page.getByRole("searchbox", { name: "Search partners" }).fill("offline")
   await page.getByRole("searchbox", { name: "Search partners" }).press("Enter")
   await expect(page).toHaveURL(/q=offline/)

@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
@@ -18,15 +18,14 @@ vi.mock("../src/server/auth", async (original) => ({
     return context.actor
   }
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { POST as previewCosts } from "../src/app/api/analytics/cost-import-previews/route"
-import { POST as openingRoute } from "../src/app/api/analytics/opening-balances/route"
-import { GET as purchaseGet, DELETE as purchaseDelete } from "../src/app/api/analytics/purchase-costs/[id]/route"
-import { GET as listPurchases, POST as purchaseRoute } from "../src/app/api/analytics/purchase-costs/route"
-import { DELETE as receiptDelete } from "../src/app/api/analytics/receipts/[id]/route"
-import { POST as receiptRoute } from "../src/app/api/analytics/receipts/route"
 import { multiplyInventoryCost } from "../src/lib/inventory-basis"
 import { ApiSessionError } from "../src/server/auth"
+import { POST as previewCosts } from "../src/server/http/api/analytics/cost-import-previews"
+import { POST as openingRoute } from "../src/server/http/api/analytics/opening-balances"
+import { GET as listPurchases, POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
+import { GET as purchaseGet, DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
+import { POST as receiptRoute } from "../src/server/http/api/analytics/receipts"
+import { DELETE as receiptDelete } from "../src/server/http/api/analytics/receipts/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
 const pg = new PGlite()
@@ -102,7 +101,7 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
     headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": key },
     body: JSON.stringify(body)
   })
-const resource = (id: string) => ({ params: Promise.resolve({ id }) })
+const resource = (id: string) => ({ params: { id } })
 const save = (body: unknown = purchase, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
 beforeAll(async () => {
   context.database = database

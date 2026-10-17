@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
@@ -16,14 +16,13 @@ vi.mock("../src/server/auth", async (original) => ({
     return context.actor
   }
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { GET as allocationsRoute } from "../src/app/api/analytics/amazon/allocations/route"
-import { DELETE, GET as mappingRoute } from "../src/app/api/analytics/amazon/product-mappings/[id]/route"
-import { POST, GET as mappingsRoute } from "../src/app/api/analytics/amazon/product-mappings/route"
 import { amazonAllocations } from "../src/server/amazon-allocation-data"
 import { saveAmazonProductMapping, productMappingInput } from "../src/server/amazon-product-mappings"
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
 import { ApiSessionError } from "../src/server/auth"
+import { GET as allocationsRoute } from "../src/server/http/api/analytics/amazon/allocations"
+import { POST, GET as mappingsRoute } from "../src/server/http/api/analytics/amazon/product-mappings"
+import { DELETE, GET as mappingRoute } from "../src/server/http/api/analytics/amazon/product-mappings/$id"
 import { appUrl } from "../src/server/security"
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -133,10 +132,10 @@ describe("historical identity writes and allocation read", () => {
     await POST(request(input))
     const [saved] = await database.select().from(tables.amazonProductMappings)
     context.actor = actor(otherId, "buyer")
-    expect((await DELETE(request(null, "DELETE"), { params: Promise.resolve({ id: saved!.id }) })).status).toBe(404)
+    expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(404)
     context.actor = actor(orgId, "buyer")
-    expect((await DELETE(request(null, "DELETE"), { params: Promise.resolve({ id: saved!.id }) })).status).toBe(204)
-    expect((await DELETE(request(null, "DELETE"), { params: Promise.resolve({ id: saved!.id }) })).status).toBe(204)
+    expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(204)
+    expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(204)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
   })
   it("rejects a replaced seller account and conflicts on FNSKU as well as SKU", async () => {
@@ -253,7 +252,7 @@ describe("analytics HTTP contract", () => {
     expect(response.status).toBe(201)
     const location = response.headers.get("location")!
     const id = location.split("/").at(-1)!
-    const resource = { params: Promise.resolve({ id }) }
+    const resource = { params: { id } }
     expect((await mappingRoute(new Request(`${appUrl()}${location}`), resource)).status).toBe(200)
     expect((await POST(original.clone())).status).toBe(200)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
@@ -299,7 +298,7 @@ describe("analytics HTTP contract", () => {
     const nextUrl = `${url}?page=1&snapshot=${first.snapshot}`
     const next = await (await mappingsRoute(new Request(nextUrl))).json()
     expect(next.mappings).toHaveLength(1)
-    await DELETE(request(null, "DELETE"), { params: Promise.resolve({ id: first.mappings[0].id }) })
+    await DELETE(request(null, "DELETE"), { params: { id: first.mappings[0].id } })
     const stale = await mappingsRoute(new Request(nextUrl))
     expect(stale.status).toBe(409)
     expect(await stale.json()).toMatchObject({ code: "snapshot_changed" })
@@ -313,7 +312,7 @@ it("replays corrections after retirement and never changes their audit history",
   const correction = request({ ...input, supersedes: original.mapping.id, variantId: "v2" })
   const created = await (await POST(correction.clone())).json()
   expect((await POST(correction.clone())).status).toBe(200)
-  const resource = { params: Promise.resolve({ id: created.mapping.id }) }
+  const resource = { params: { id: created.mapping.id } }
   await DELETE(request(null, "DELETE"), resource)
   const before = await (await mappingRoute(request(null), resource)).json()
   expect((await POST(correction.clone())).status).toBe(200)

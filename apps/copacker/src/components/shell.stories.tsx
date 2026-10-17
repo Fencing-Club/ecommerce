@@ -1,6 +1,6 @@
-import { cookies } from "next/headers"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { EmptyState, PageHeader } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { serverStory } from "@/stories/server"
@@ -18,41 +18,46 @@ async function ShellStory({
   collapsed: boolean
   actions?: boolean
 }) {
-  const store = await cookies()
-  if (collapsed) {
-    store.set("sidebar_state", "false")
-  }
   const workspace = workspaces[kind]
-  const shell = await Shell({
-    name: workspace.name,
-    userName: person.name,
-    email: person.email,
-    kind: workspace.kind,
-    active: workspace.id,
-    workspaces: Object.values(workspaces),
-    children: (
-      <>
-        <PageHeader title="Shipments">
-          {actions && (
-            <>
-              <Button variant="outline">Import</Button>
-              <Button>Create purchase order</Button>
-            </>
-          )}
-        </PageHeader>
-        <EmptyState title="No shipments yet" description="Shipments show here once a supplier packs a purchase order" />
-      </>
-    )
-  })
+  const shell = (
+    <Shell
+      {...{
+        defaultOpen: !collapsed,
+        pathname: "/shipments",
+        navigate: (href) => getStoryRouter().navigate({ href }),
+        name: workspace.name,
+        userName: person.name,
+        email: person.email,
+        kind: workspace.kind,
+        active: workspace.id,
+        workspaces: Object.values(workspaces),
+        children: (
+          <>
+            <PageHeader title="Shipments">
+              {actions && (
+                <>
+                  <Button variant="outline">Import</Button>
+                  <Button>Create purchase order</Button>
+                </>
+              )}
+            </PageHeader>
+            <EmptyState
+              title="No shipments yet"
+              description="Shipments show here once a supplier packs a purchase order"
+            />
+          </>
+        )
+      }}
+    />
+  )
   // Later stories start with the sidebar open.
-  store.delete("sidebar_state")
   return shell
 }
 
 const meta = preview.meta({
   ...serverStory(ShellStory),
   args: { kind: "buyer", collapsed: false } satisfies Parameters<typeof ShellStory>[0],
-  parameters: { layout: "fullscreen", nextjs: { appDirectory: true, navigation: { pathname: "/shipments" } } }
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/shipments" } } }
 })
 
 function byId(id: string) {

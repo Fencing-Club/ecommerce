@@ -1,9 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { OrderBuilder } from "@/components/order-builder"
+import { getStoryRouter } from "#.storybook/router"
 import type { suppliers } from "@/db/schema"
 import type { orderLine } from "@/lib/order-lines"
 import type { ForwarderAddress } from "@/server/forwarders"
@@ -19,6 +18,7 @@ import {
   supplierRecord
 } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 type Args = {
   // The URL's search parameters, which Restock and Reorder links set.
@@ -41,26 +41,28 @@ async function NewOrder({
   forwarding: stops,
   deliveries: addresses
 }: Args) {
-  const t = await getTranslations("orders")
+  const t = await translateStory("orders")
   const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = addresses.filter((delivery) => delivery.shopifyLocationId === params.locationId)
   return (
-    <OrderBuilder
-      title={t("builder.newTitle")}
-      parents={[{ label: t("index.title"), href: "/orders" }]}
-      suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
-      deliveries={addresses}
-      forwarderAddresses={stops.map((row) => ({
-        addressId: row.addressId,
-        forwarderId: row.forwarderId,
-        label: `${row.forwarderName}, ${row.addressName}`,
-        hasPhone: Boolean(row.address.phoneNumber)
-      }))}
-      initialItems={initialItems}
-      needsBarcodeVariantIds={needsBarcode}
-      initialDestination={initialDestination}
-      initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
-      initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
+    <PageView
+      page={{
+        title: t("builder.newTitle"),
+        parents: [{ label: t("index.title"), href: "/orders" }],
+        suppliers: rows.map((r) => ({ id: r.id, name: r.name })),
+        deliveries: addresses,
+        forwarderAddresses: stops.map((row) => ({
+          addressId: row.addressId,
+          forwarderId: row.forwarderId,
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
+        })),
+        initialItems: initialItems,
+        needsBarcodeVariantIds: needsBarcode,
+        initialDestination: initialDestination,
+        initialSupplierId: rows.find((row) => row.id === params.supplierId)?.id,
+        initialDeliveryId: initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined
+      }}
     />
   )
 }
@@ -117,7 +119,7 @@ export const FromRestock = meta.story({
 
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1047")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.create",
       data: expect.objectContaining({ reference: "PO-1047", supplierId, destination: "warehouse", deliveryId })

@@ -7,8 +7,7 @@ import * as tables from "../src/db/schema"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, orgId: "", userId: "user-1", role: "owner" }))
 vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }), headers: async () => new Headers() }))
+
 vi.mock("@/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => ({
@@ -18,7 +17,7 @@ vi.mock("@/server/auth", async (original) => ({
     access: {}
   })
 }))
-import { GET, POST } from "../src/app/api/connections/amazon-ads/route"
+import { GET, POST } from "../src/server/http/api/connections/amazon-ads"
 vi.mock("../src/server/exchange-rates", () => ({ syncExchangeRates: vi.fn<() => Promise<void>>() }))
 import {
   adsCharge,

@@ -1,6 +1,7 @@
 import { waitlistWelcomeEmail } from "@repo/copacker-emails"
 import { UnprocessableEntityException } from "@workos-inc/node"
-import { type Locale, localeNames } from "@/i18n/locales"
+import type { Locale } from "@/i18n/locales"
+import { localeNames } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
 import { sendEmail } from "./email"
 import { appUrl, hash, sign, verifySignature } from "./security"

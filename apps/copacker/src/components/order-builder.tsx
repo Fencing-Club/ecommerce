@@ -1,5 +1,3 @@
-"use client"
-
 import {
   amazonNetworkNames,
   adjustmentTypes,
@@ -12,6 +10,7 @@ import {
   type OrderInput,
   orderInputSchema
 } from "@repo/aisle"
+import { Link, useRouter } from "@tanstack/react-router"
 import {
   ArrowRight,
   Building2,
@@ -24,13 +23,12 @@ import {
   Warehouse,
   X
 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { PageHeader, WarningNote } from "@/components/common"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -54,14 +52,16 @@ import { Separator } from "@/components/ui/separator"
 import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { CatalogProduct } from "@/lib/api"
-import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
-import { quantityProblem, type QuantityRules } from "@/lib/catalog-pricing"
+import type { BundleQuoteStatus } from "@/lib/bundle-quote"
+import { bundleQuote } from "@/lib/bundle-quote"
+import type { QuantityRules } from "@/lib/catalog-pricing"
+import { quantityProblem } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
 import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
-import { FormError, SubmitButton } from "./actions"
-import { AddProductsDialog, type StockAt } from "./add-products-dialog"
+import type { StockAt } from "./add-products-dialog"
+import { AddProductsDialog } from "./add-products-dialog"
 import { DateInput, FormCheckbox, FormInput, FormLabel, FormTextarea } from "./form-controls"
 import { FormSelect } from "./form-select"
 
@@ -156,7 +156,7 @@ export function OrderBuilder({
     action: draft ? "order.update" : "order.create",
     toPayload: draft ? (order) => ({ id: draft.id, revision: draft.revision, order }) : undefined,
     // Saving an edit goes back to the PO.
-    onSuccess: draft ? () => router.push(`/orders/${draft.id}`) : undefined,
+    onSuccess: draft ? () => router.navigate({ href: `/orders/${draft.id}` }) : undefined,
     defaultValues: draft?.data ?? {
       reference: "",
       supplierId: initialSupplierId ?? "",
@@ -363,7 +363,7 @@ export function OrderBuilder({
       <PageHeader title={title} parents={parents}>
         <Button
           variant="outline"
-          render={<Link href={draft ? `/orders/${draft.id}` : "/orders"} />}
+          render={<Link to="." href={draft ? `/orders/${draft.id}` : "/orders"} />}
           nativeButton={false}
         >
           {tb("discard")}

@@ -1,20 +1,14 @@
-import { Search } from "lucide-react"
-import { getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { EmptyState, PageHeader } from "@/components/common"
-import { AddPartner, ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import type { PartnerAddress } from "@/components/partner-address"
-import { TabLinks } from "@/components/tab-links"
-import { Card } from "@/components/ui/card"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { can, type Permissions } from "@/lib/access"
 import type { PartnerForwarder, PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 import { forwarderRecordId, partnerAddresses, supplierRecordId } from "@/stories/fixtures/logistics"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 // What the page reads of each partner from listPartners.
 type Supplier = Pick<
@@ -73,14 +67,9 @@ function forwarderDetails(row: Forwarder) {
   }
 }
 
-function tabHref(tab: string, q: string) {
-  const params = new URLSearchParams({ ...(tab !== "all" && { type: tab }), ...(q && { q }) })
-  return params.size ? `/partners?${params}` : "/partners"
-}
-
 // The Partners page (page.tsx) with the partners the database would return.
 async function PartnersPage({ permissions, type, q: query, partners, restockLeadTimeDays }: Args) {
-  const t = await getTranslations("partners.page")
+  const t = await translateStory("partners.page")
   const editable = can(permissions, "partners", "edit")
   const tab = tabs.find((candidate) => candidate.key === type)?.key ?? "all"
   const q = (query ?? "").trim().slice(0, 200)
@@ -100,77 +89,21 @@ async function PartnersPage({ permissions, type, q: query, partners, restockLead
   const showType = tab === "all"
 
   return (
-    <>
-      <PageHeader title={t("title")}>{editable && <AddPartner />}</PageHeader>
-      <Card className="gap-0 overflow-hidden py-0">
-        <div className="flex flex-wrap items-center gap-2 border-b p-2">
-          <TabLinks
-            label={t("tabsLabel")}
-            tabs={tabs.map((candidate) => ({
-              label: t(`tabs.${candidate.key}`),
-              href: tabHref(candidate.key, q),
-              current: candidate.key === tab
-            }))}
-          />
-          <form action="/partners" className="ms-auto w-full sm:w-64">
-            {tab !== "all" && <input type="hidden" name="type" value={tab} />}
-            <InputGroup className="h-8">
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupInput
-                key={q}
-                type="search"
-                name="q"
-                defaultValue={q}
-                placeholder={t("search")}
-                aria-label={t("search")}
-              />
-            </InputGroup>
-          </form>
-        </div>
-        {shown.length ? (
-          <div className="@container">
-            {/* On a phone each row stacks, as its row says. */}
-            <Table framed={false} className="@max-md:block">
-              <TableHeader className="@max-md:hidden">
-                <TableRow>
-                  <TableHead className="ps-4">{t("columns.name")}</TableHead>
-                  {showType && <TableHead className="hidden @2xl:table-cell">{t("columns.type")}</TableHead>}
-                  <TableHead>{t("columns.status")}</TableHead>
-                  <TableHead className="hidden @2xl:table-cell">{t("columns.details")}</TableHead>
-                  <TableHead className="w-12 pe-4">
-                    <span className="sr-only">{t("columns.actions")}</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="@max-md:block">
-                {shown.map((row) =>
-                  row.type === "supplier" ? (
-                    <SupplierRow
-                      key={`s-${row.id}`}
-                      supplier={supplierDetails(row.supplier)}
-                      editable={editable}
-                      showType={showType}
-                      defaultLeadTimeDays={defaultLeadTimeDays}
-                    />
-                  ) : (
-                    <ForwarderRow
-                      key={`f-${row.id}`}
-                      forwarder={forwarderDetails(row.forwarder)}
-                      editable={editable}
-                      showType={showType}
-                    />
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <EmptyState title={q ? t("empty.noMatch", { query: q }) : t(`empty.${tab}`)} description={emptyHint} />
-        )}
-      </Card>
-    </>
+    <PageView
+      page={{
+        editable,
+        tab,
+        q,
+        defaultLeadTimeDays,
+        emptyHint,
+        showType,
+        shown: shown.map((row) =>
+          row.type === "supplier"
+            ? { type: "supplier" as const, id: row.id, supplier: supplierDetails(row.supplier) }
+            : { type: "forwarder" as const, id: row.id, forwarder: forwarderDetails(row.forwarder) }
+        )
+      }}
+    />
   )
 }
 

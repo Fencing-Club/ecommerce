@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { importProposalSchema, validateProposal } from "./import-proposal"
-import { observeImportOperation, type ImportObservation } from "./import-trace"
+import type { ImportObservation } from "./import-trace"
+import { observeImportOperation } from "./import-trace"
 
 const callSchema = z.object({
   id: z.string(),

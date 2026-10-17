@@ -3,14 +3,7 @@ import preview from "#.storybook/preview"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { type ActionRequest, pickupAddress, recordActions, serverError } from "@/stories/fixtures/logistics"
-import {
-  ContactForm,
-  LanguageForm,
-  RestockSettingsForm,
-  SupplierForm,
-  SupplierProfileForm,
-  TimeZoneForm
-} from "./settings-forms"
+import { ContactForm, LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "./settings-forms"
 
 const sent: ActionRequest[] = []
 
@@ -182,33 +175,6 @@ export const TimeZoneSavedAlias = meta.story({
   }
 })
 
-export const AddSupplier = meta.story({
-  render: () => (
-    <Dialog open>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add a supplier</DialogTitle>
-        </DialogHeader>
-        <SupplierForm />
-      </DialogContent>
-    </Dialog>
-  ),
-  play: async () => {
-    const dialog = await screen.findByRole("dialog")
-    await expect(within(dialog).getByRole("textbox", { name: "Supplier company" })).toHaveAttribute(
-      "placeholder",
-      "Northwind Textiles"
-    )
-    await expect(dialog).toHaveTextContent("Add one to invite them now.")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
-    await waitFor(() =>
-      expect(sent).toEqual([{ action: "supplier.create", data: { name: "Northwind Textiles", email: "" } }])
-    )
-  }
-})
-
-// A supplier's address is always a pickup, with no Shopify location to link.
 export const PickupAddress = meta.story({
   render: () => (
     <Dialog open>

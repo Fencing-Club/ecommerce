@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
@@ -18,10 +18,9 @@ vi.mock("../src/server/auth", async (original) => ({
     return context.actor
   }
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { DELETE as purchaseDelete } from "../src/app/api/analytics/purchase-costs/[id]/route"
-import { POST as purchaseRoute } from "../src/app/api/analytics/purchase-costs/route"
 import { ApiSessionError } from "../src/server/auth"
+import { POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
+import { DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
 const pg = new PGlite()
@@ -97,7 +96,7 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
     headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": key },
     body: JSON.stringify(body)
   })
-const resource = (id: string) => ({ params: Promise.resolve({ id }) })
+const resource = (id: string) => ({ params: { id } })
 const save = (body: unknown = purchase, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
 beforeAll(async () => {
   context.database = database
@@ -118,12 +117,12 @@ beforeEach(async () => {
   ])
   context.actor = actor(orgId, "buyer")
 })
-import { POST as depletionPost } from "../src/app/api/analytics/depletions/route"
-import { GET as fifoGet } from "../src/app/api/analytics/fifo/route"
-import { DELETE as landedDelete, GET as landedGet } from "../src/app/api/analytics/landed-charges/[id]/route"
-import { POST as landedPost, GET as landedList } from "../src/app/api/analytics/landed-charges/route"
 import { inventoryMicros } from "../src/lib/inventory-money"
 import { allocateLandedCharge } from "../src/lib/landed-allocation"
+import { POST as depletionPost } from "../src/server/http/api/analytics/depletions"
+import { GET as fifoGet } from "../src/server/http/api/analytics/fifo"
+import { POST as landedPost, GET as landedList } from "../src/server/http/api/analytics/landed-charges"
+import { DELETE as landedDelete, GET as landedGet } from "../src/server/http/api/analytics/landed-charges/$id"
 import { inventoryFifo } from "../src/server/inventory-fifo"
 const range = {
   shopifyDomain: "store",

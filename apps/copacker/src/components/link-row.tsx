@@ -1,6 +1,3 @@
-"use client"
-
-import { useRouter } from "next/navigation"
 import { useCanOpen } from "@/components/access"
 import { TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -20,7 +17,6 @@ export function isRowClick(event: React.MouseEvent<HTMLElement>) {
 // A table row that opens `href` from anywhere on it, like Shopify's lists. The link inside the row stays the way in
 // for keyboards and screen readers; Ctrl or Cmd, or the middle button, opens a new tab as a link would.
 export function LinkRow({ href, className, ...props }: React.ComponentProps<typeof TableRow> & { href: string }) {
-  const router = useRouter()
   // A row that leads to a page the person can't open stays a plain row.
   if (!useCanOpen(href)) {
     return <TableRow {...props} className={className} />
@@ -36,7 +32,14 @@ export function LinkRow({ href, className, ...props }: React.ComponentProps<type
         if (event.metaKey || event.ctrlKey) {
           window.open(href, "_blank", "noopener")
         } else {
-          router.push(href)
+          const link = Array.from(event.currentTarget.querySelectorAll("a")).find(
+            (anchor) => anchor.getAttribute("href") === href
+          )
+          if (link) {
+            link.click()
+          } else {
+            window.location.assign(href)
+          }
         }
       }}
       onAuxClick={(event) => {

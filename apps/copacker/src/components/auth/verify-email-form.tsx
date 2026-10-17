@@ -1,13 +1,11 @@
-"use client"
-
 import { useInterval } from "@mantine/hooks"
-import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
-import { FormError, SubmitButton } from "@/components/actions"
+import { useTranslations } from "use-intl"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
+import { useAuthForm } from "@/hooks/use-auth-form"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
 import { codeSchema } from "@/lib/sign-in"
 import { CodeField } from "./code-field"
@@ -19,7 +17,7 @@ const cooldown = 30
 // The code WorkOS emailed. It sends itself once all six digits are in; a wrong one clears for another try.
 export function VerifyEmailForm() {
   const t = useTranslations("auth")
-  const { form, submit } = useActionForm({
+  const { form, submit } = useAuthForm({
     schema: codeSchema,
     action: "auth.verifyEmail",
     defaultValues: { code: "" }

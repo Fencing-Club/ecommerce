@@ -6,8 +6,7 @@ import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ current: null as unknown, role: "owner", orgId: "" }))
 vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }), headers: async () => new Headers() }))
+
 vi.mock("@/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => ({
@@ -21,14 +20,14 @@ vi.mock("@/server/amazon-notifications", () => ({
   queueAmazonSubscription: vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
 vi.mock("@/server/first-sync", () => ({ startFirstSync: vi.fn<() => Promise<void>>().mockResolvedValue(undefined) }))
-import { GET } from "../src/app/api/connections/[provider]/route"
+import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
-const params = { params: Promise.resolve({ provider: "amazon" }) }
+const params = { params: { provider: "amazon" } }
 const fetchMock = vi.fn<typeof fetch>()
 beforeAll(async () => {
   context.current = database

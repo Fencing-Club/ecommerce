@@ -1,8 +1,6 @@
-"use client"
-
 import { useMediaQuery } from "@mantine/hooks"
 import { Bot, Box, Check } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
+import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 import { Scaled } from "./scaled"
 import { Ticker } from "./ticker"

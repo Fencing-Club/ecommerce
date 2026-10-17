@@ -1,7 +1,8 @@
 # Roles and page access
 
 Everyone in a workspace has one of three roles, kept on their membership (`memberships.role` and `memberships.access`).
-The model is in `src/lib/access.ts`; the server's checks are in `src/server/auth.ts`.
+The model is in `src/lib/access.ts`; operation guards are in `src/server/authorization.ts` and current membership lookup
+is in `src/server/workspace-session.ts`. Start's page and redirect boundary is in `src/server/auth.ts`.
 
 | Role   | Who                                                  | Can do                                                                                   |
 | ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -89,10 +90,16 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
 ## How it's enforced
 
 - Every page calls `requirePage(s, area, level)`, which renders the portal's `forbidden.tsx` ("No access") through
-  Next's `forbidden()` (`experimental.authInterrupts`). The Overview and `/` send someone to their first page instead.
+  the portal's forbidden response. The Overview and `/` send someone to their first page instead.
   A page's title goes through the same check (`titleFor`), so No access keeps its own tab title.
 - Every request checks too: `requireAccess`, `requireAdmin` and `requireOwner` throw an `AccessError`, which routes
   answer with 403 and its message, and read-only routes call `requirePage`.
+- Catalog pages, downloads and mutations explicitly require price access as well as their catalog grant. This also
+  protects existing memberships whose saved grants no longer match the team editor's constraints.
+- `server/workspace-pages.ts` prepares products, catalogs, customers, inventory, sales and restock data before rendering.
+  It rechecks operation permissions, omits internal organization fields, removes unit prices and volume pricing when
+  unavailable, and excludes customer order rows unless the member can open orders. Hiding a table in the browser does
+  not protect the data sent to that browser.
 - The sidebar, the header's search and the pages hide what someone can't use; `components/access.tsx` gives client
   components `useCan` and `useIsAdmin`, `ForAdmins` shows admins' controls, and `PageLink` keeps a link to a page
   someone can't open as plain text.

@@ -1,12 +1,9 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter } from "@tanstack/react-router"
 import { FormProvider, useForm } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,48 +12,13 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from "@/components/ui/dialog"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import { FormError } from "./actions"
 import { FormInput, FormNumber } from "./form-controls"
-import { SupplierForm } from "./settings-forms"
 import { sx } from "@/styles/sprinkles.css"
-
-export function InviteSupplier({
-  open: shown,
-  onOpenChange,
-  finalFocus
-}: {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  finalFocus?: React.RefObject<HTMLElement | null>
-}) {
-  const t = useTranslations("partners.supplier.add")
-  const [own, setOwn] = useState(false)
-  const open = shown ?? own
-  const setOpen = onOpenChange ?? setOwn
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {shown === undefined && (
-        <DialogTrigger render={<Button />}>
-          <Plus data-icon="inline-start" />
-          {t("trigger")}
-        </DialogTrigger>
-      )}
-      <DialogContent finalFocus={finalFocus}>
-        <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
-        </DialogHeader>
-        <SupplierForm onSuccess={() => setOpen(false)} />
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 const supplierSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -141,7 +103,7 @@ export function EditSupplier({
         }
       }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error, t("failed")) })
     }
@@ -235,7 +197,7 @@ export function InviteSupplierByEmail({
     try {
       await run({ action: "supplier.invite", data: { id, email: values.email } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error, t("failed", { name })) })
     }

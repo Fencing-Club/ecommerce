@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { held, recordActions } from "@/stories/fixtures/shared"
 import { TimelineComment } from "./timeline-comment"
 
@@ -30,7 +30,7 @@ export const Post = meta.story({
     )
     // The box clears for the next comment.
     await waitFor(() => expect(box).toHaveValue(""))
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
 

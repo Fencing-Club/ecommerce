@@ -1,5 +1,4 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { expect, fireEvent, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, fireEvent, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { presetRange } from "@/lib/date-range"
 import { type PickerPeriod, PeriodPicker } from "./period-picker"
@@ -19,8 +18,8 @@ const last30: PickerPeriod = {
 
 const meta = preview.meta({
   component: PeriodPicker,
-  args: { period: last30 },
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/overview" } } }
+  args: { period: last30, onChange: fn() },
+  parameters: { router: { navigation: { pathname: "/overview" } } }
 })
 
 async function open(canvas: { getByRole: typeof screen.getByRole }) {
@@ -29,7 +28,7 @@ async function open(canvas: { getByRole: typeof screen.getByRole }) {
 }
 
 export const Preset = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const picker = await open(canvas)
     // The period is in the "Last" group, which shows as chosen.
     await expect(within(picker).getByRole("button", { name: "Last" })).toHaveAttribute("aria-pressed", "true")
@@ -39,7 +38,11 @@ export const Preset = meta.story({
     await expect(within(picker).getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true")
     await expect(within(picker).getByLabelText("Start date")).toHaveValue(today)
     await userEvent.click(within(picker).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/overview?period=today")
+    await expect(args.onChange).toHaveBeenCalledWith({
+      key: "today",
+      range: { from: today, to: today },
+      comparison: "previousPeriod"
+    })
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })
@@ -47,8 +50,8 @@ export const Preset = meta.story({
 // The groups of presets, with the channel and comparison kept.
 export const PresetGroups = meta.story({
   args: { period: { ...last30, comparison: "previousYear" } },
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/overview", query: { channel: "shopify" } } } },
-  play: async ({ canvas }) => {
+  parameters: { router: { navigation: { pathname: "/overview", query: { channel: "shopify" } } } },
+  play: async ({ canvas, args }) => {
     const picker = await open(canvas)
     await userEvent.click(within(picker).getByRole("button", { name: "Last" }))
     await expect(within(picker).getByRole("button", { name: "Last 30 days" })).toHaveAttribute("aria-pressed", "true")
@@ -62,14 +65,16 @@ export const PresetGroups = meta.story({
     await userEvent.click(within(picker).getByRole("button", { name: "Period to date" }))
     await expect(within(picker).getByRole("button", { name: "Today" })).toBeInTheDocument()
     await userEvent.click(within(picker).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith(
-      "/overview?period=lastWeek&compare=previousYear&channel=shopify"
-    )
+    await expect(args.onChange).toHaveBeenCalledWith({
+      key: "lastWeek",
+      range: { from: "2026-09-20", to: "2026-09-26" },
+      comparison: "previousYear"
+    })
   }
 })
 
 export const CalendarRange = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const picker = await open(canvas)
     await expect(within(picker).getByRole("grid", { name: "September 2026" })).toBeInTheDocument()
     // Days after today can't be picked, nor can next month.
@@ -91,12 +96,16 @@ export const CalendarRange = meta.story({
     await expect(within(picker).getByRole("grid", { name: "August 2026" })).toBeInTheDocument()
     await expect(within(picker).getByRole("button", { name: "Next month" })).toBeEnabled()
     await userEvent.click(within(picker).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/overview?from=2026-09-03&to=2026-09-08")
+    await expect(args.onChange).toHaveBeenCalledWith({
+      key: "custom",
+      range: { from: "2026-09-03", to: "2026-09-08" },
+      comparison: "previousPeriod"
+    })
   }
 })
 
 export const TypeDates = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const picker = await open(canvas)
     fireEvent.change(within(picker).getByLabelText("Start date"), { target: { value: "2026-07-01" } })
     // The calendar follows the typed day.
@@ -105,17 +114,21 @@ export const TypeDates = meta.story({
     fireEvent.change(within(picker).getByLabelText("End date"), { target: { value: "2026-10-05" } })
     await expect(within(picker).getByLabelText("End date")).toHaveValue("2026-09-27")
     await userEvent.click(within(picker).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/overview?from=2026-07-01&to=2026-09-27")
+    await expect(args.onChange).toHaveBeenCalledWith({
+      key: "custom",
+      range: { from: "2026-07-01", to: "2026-09-27" },
+      comparison: "previousPeriod"
+    })
   }
 })
 
 export const Cancel = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     let picker = await open(canvas)
     await userEvent.click(within(picker).getByRole("button", { name: "Yesterday" }))
     await userEvent.click(within(picker).getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(args.onChange).not.toHaveBeenCalled()
     // Opening it again starts from the period on the page.
     picker = await open(canvas)
     await expect(within(picker).getByRole("button", { name: "Yesterday" })).toHaveAttribute("aria-pressed", "false")
@@ -127,7 +140,7 @@ export const CustomPeriod = meta.story({
   args: {
     period: { ...last30, key: "custom", range: { from: "2026-09-03", to: "2026-09-08" }, label: "Sep 3 – Sep 8, 2026" }
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     await expect(canvas.getByRole("button", { name: "Sep 3 – Sep 8, 2026" })).toBeVisible()
     const picker = await open(canvas)
     await expect(within(picker).getByRole("button", { name: "Custom range" })).toHaveAttribute("aria-pressed", "true")
@@ -139,6 +152,10 @@ export const CustomPeriod = meta.story({
     await userEvent.click(within(picker).getByRole("button", { name: "Last" }))
     await userEvent.click(within(picker).getByRole("button", { name: "Last 30 days" }))
     await userEvent.click(within(picker).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/overview")
+    await expect(args.onChange).toHaveBeenCalledWith({
+      key: "last30",
+      range: last30.range,
+      comparison: "previousPeriod"
+    })
   }
 })

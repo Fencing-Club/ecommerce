@@ -16,7 +16,13 @@ each hook.
 ## Copacker hooks (`apps/copacker/src/hooks`)
 
 - `useActionForm` (`useActionForm.ts`): React Hook Form + Zod form that posts to `/api/action`, shows server errors on
-  `root.server`, then redirects or resets and refreshes. Use it for every form that submits an action.
+  `root.server`, then redirects or resets and refreshes. Use it for portal forms while their routes remain on Next.
+- `useAuthForm` (`use-auth-form.ts`): the same validated action submission for sign-in and recovery screens. A successful
+  authentication opens a fresh document so the previous session's router/API caches cannot survive; recovery confirmation
+  stays on the page.
+- `useSubmissionForm` (`use-submission-form.ts`): the shared validation, reset and error lifecycle behind those two hooks.
+  It receives a submit operation and completion callback, and imports no router. Prefer the action-specific hooks above
+  when submitting to `/api/action`.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import {
   catalogIds,
   catalogProducts,
@@ -113,7 +113,7 @@ export const RenameAndSave = meta.story({
         }
       ]
     })
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     // Saved, the form has nothing left to save.
     await waitFor(() => expect(screen.queryByRole("region", { name: "Unsaved changes" })).toBeNull())
   }
@@ -327,7 +327,7 @@ export const SaveFails = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: /Title/ }), "!")
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await expect(await saveBar().findByText("Another catalog is called Wholesale 2027")).toBeVisible()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
     // Discarding clears the error with the changes.
     await userEvent.click(saveBar().getByRole("button", { name: "Discard" }))
     await expect(screen.queryByRole("region", { name: "Unsaved changes" })).toBeNull()
@@ -352,7 +352,7 @@ export const Delete = meta.story({
     ).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "Delete catalog" }))
     await waitFor(() => expect(deleted).toHaveBeenCalledWith(catalogIds.wholesale))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/catalogs"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/catalogs" }))
   }
 })
 
@@ -378,7 +378,7 @@ export const DeleteFails = meta.story({
     )
     await expect(await screen.findByText("Couldn’t delete the catalog. Try again.")).toBeVisible()
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 
@@ -424,7 +424,9 @@ export const New = meta.story({
       ids.apron,
       ids.basket
     ])
-    await waitFor(() => expect(getRouter().replace).toHaveBeenCalledWith(`/catalogs/${newId}`))
+    await waitFor(() =>
+      expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/catalogs/${newId}`, replace: true })
+    )
   }
 })
 
@@ -432,7 +434,7 @@ export const NewDiscard = meta.story({
   args: { data: newCatalog },
   play: async () => {
     await userEvent.click(saveBar().getByRole("button", { name: "Discard" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/catalogs")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/catalogs" })
   }
 })
 

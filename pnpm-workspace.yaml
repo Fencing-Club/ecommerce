@@ -1,5 +1,6 @@
 packages:
   - "apps/*"
+  - "apps/copacker/scheduler"
   - "packages/*"
 nodeLinker: hoisted
 verifyDepsBeforeRun: error
@@ -12,7 +13,10 @@ overrides:
   react: 19.2.7
   react-dom: 19.2.7
   react-is: 19.2.7
+  # Copacker uses nuqs' TanStack adapter. Do not attach the optional Next peer from the email preview tools.
+  "nuqs>next": "-"
 allowBuilds:
+  workerd: true
   esbuild: true
   lefthook: true
   sharp: true
@@ -20,3 +24,15 @@ allowBuilds:
   "@swc/core": true
   "@parcel/watcher": false
   msw: false
+minimumReleaseAgeExclude:
+  - "@tanstack/react-start-rsc@0.1.63"
+  - "@tanstack/react-start-server@1.167.50"
+  - "@tanstack/react-start@1.169.2"
+  - "@tanstack/router-generator@1.167.44"
+  - "@tanstack/router-plugin@1.168.46"
+  - "@tanstack/router-utils@1.162.4"
+  - "@tanstack/start-plugin-core@1.171.53"
+  - "@tanstack/start-server-core@1.169.43"
+  - cf@1.0.0-beta.17
+  - "@buildkitgg/dev-domains@0.1.0"
+  - "@cloudflare/vite-plugin@2.0.0-beta.v.0"

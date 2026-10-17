@@ -1,10 +1,9 @@
-"use client"
-
 import { CircleAlert, CircleCheck, Clock3, RefreshCw } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import { useId } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
-import { StatusBadge, type StatusTone } from "./common"
+import type { StatusTone } from "./common"
+import { StatusBadge } from "./common"
 import { Button, buttonVariants } from "./ui/button"
 import { Spinner } from "./ui/spinner"
 

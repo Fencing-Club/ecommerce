@@ -1,4 +1,5 @@
-import type { Overview, SetupStep } from "@/server/overview"
+import type { Overview } from "@/server/overview"
+import type { SetupStep } from "@/server/overview"
 import type { DailySales } from "@/server/overview-sales"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 import { daysAgo } from "./orders"

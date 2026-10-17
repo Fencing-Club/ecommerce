@@ -1,6 +1,7 @@
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { JoinWaitlist, Site, stage } from "./site"
+import { JoinWaitlist, Site } from "./site"
+import { stage } from "./site-styles"
 
 // The frame with a dark stage at the top of the page, as the home and contact pages open.
 const meta = preview.meta({

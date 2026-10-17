@@ -1,12 +1,11 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type Address, addressSchema, originSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import { addressSchema, originSchema } from "@repo/aisle"
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -17,7 +16,7 @@ import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { formatPhone } from "@/lib/phone"
 import { cn } from "@/lib/utils"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput } from "./form-controls"
 
@@ -148,7 +147,7 @@ function AddressForm({
         }
       }).unwrap()
       onSaved({ id: result.id ?? contact?.id, name: values.name, address: values.address })
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error) })
     }
@@ -264,7 +263,7 @@ function AddressItem({
         action: "supplier.address",
         data: { supplierId: partner.id, id: contact.id, remove: true }
       }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("removeFailed", { name: contact.name })))
       setRemoving(false)

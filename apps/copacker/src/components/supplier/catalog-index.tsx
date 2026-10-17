@@ -1,8 +1,6 @@
-"use client"
-
-import { useLocale, useTranslations } from "next-intl"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -44,7 +42,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
     return (
       <EmptyState title={t("emptyTitle")} description={t("emptyDescription")}>
         {editable && (
-          <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
+          <Button nativeButton={false} render={<Link to="/catalogs/new" />}>
             {t("create")}
           </Button>
         )}
@@ -86,7 +84,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
             {shown.map((catalog) => (
               <TableRow key={catalog.id} className="relative">
                 <TableCell className="whitespace-normal">
-                  <Link href={`/catalogs/${catalog.id}`} className={cn("font-medium", rowLink)}>
+                  <Link to="/catalogs/$id" params={{ id: catalog.id }} className={cn("font-medium", rowLink)}>
                     {catalog.title}
                   </Link>
                 </TableCell>

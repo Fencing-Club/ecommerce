@@ -1,8 +1,6 @@
-"use client"
-
 import { useLocalStorage } from "@mantine/hooks"
 import { CircleAlert, Info, TriangleAlert, X } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
 type BannerTone = "warning" | "info" | "destructive"

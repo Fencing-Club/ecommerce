@@ -1,12 +1,11 @@
-"use client"
-
 import type { CatalogVariant } from "@repo/aisle/shopify"
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { Fragment, useId, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
+import { useLocale, useTranslations } from "use-intl"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
@@ -14,11 +13,10 @@ import { currencySymbol } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { useCan } from "./access"
-import { FormError, SubmitButton } from "./actions"
 import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
-import { InviteSupplier } from "./supplier-actions"
+import { InviteSupplier } from "./invite-supplier"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
@@ -402,8 +400,8 @@ export function ImportReview({
     try {
       const current = await readState(id, false).unwrap()
       if (current.status === "saved" && current.orderId) {
-        router.push(`/orders/${current.orderId}`)
-        router.refresh()
+        router.navigate({ href: `/orders/${current.orderId}` })
+        router.invalidate()
         return
       }
       const corrected = await correct({ id, revision, proposal }).unwrap()
@@ -415,8 +413,8 @@ export function ImportReview({
         reference: proposal.reference ?? "",
         dueDate: dueDate || undefined
       }).unwrap()
-      router.push(result.redirect)
-      router.refresh()
+      router.navigate({ href: result.redirect })
+      router.invalidate()
     } catch (failure) {
       setError(errorMessage(failure))
     }
@@ -939,7 +937,12 @@ export function ImportReview({
         </fieldset>
       </form>
       {canAddSupplier && (
-        <InviteSupplier open={addingSupplier} onOpenChange={setAddingSupplier} finalFocus={supplierButton} />
+        <InviteSupplier
+          onCreated={router.invalidate}
+          open={addingSupplier}
+          onOpenChange={setAddingSupplier}
+          finalFocus={supplierButton}
+        />
       )}
       <Dialog
         open={sourceDetails !== null}

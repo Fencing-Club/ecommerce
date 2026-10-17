@@ -1,18 +1,12 @@
-"use client"
-
-import { type Address, addressSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import { addressSchema } from "@repo/aisle"
 import { Check } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useId, useSyncExternalStore } from "react"
-import {
-  type FieldValues,
-  FormProvider,
-  type UseFormReturn,
-  useController,
-  useFormState,
-  useWatch
-} from "react-hook-form"
+import type { UseFormReturn } from "react-hook-form"
+import { type FieldValues, FormProvider, useController, useFormState, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
@@ -26,12 +20,14 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { useActionForm } from "@/hooks/useActionForm"
-import { type Locale, localeNames, locales } from "@/i18n/locales"
+import type { Locale } from "@/i18n/locales"
+import { localeNames, locales } from "@/i18n/locales"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import { type ContactKind, contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
+import type { ContactKind } from "@/lib/contacts"
+import { contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
-import { ActionForm, FormError, SubmitButton } from "./actions"
+import { ActionForm } from "./action-form"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput, FormNumber } from "./form-controls"
 import { FormSelect } from "./form-select"
@@ -77,34 +73,6 @@ export function SettingsForm<Values extends FieldValues>({ form, onSubmit, child
         </Card>
       </form>
     </FormProvider>
-  )
-}
-
-const supplierSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  email: z.union([z.email().max(254), z.literal("")])
-})
-
-export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
-  const t = useTranslations("settings.supplierForm")
-  const { form, submit } = useActionForm({
-    schema: supplierSchema,
-    action: "supplier.create",
-    defaultValues: { name: "", email: "" },
-    onSuccess
-  })
-  return (
-    <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
-      <FormInput name="name" required label={t("company")} placeholder="Northwind Textiles" autoComplete="off" />
-      <FormInput
-        name="email"
-        label={t("email")}
-        type="email"
-        placeholder="supplier@example.com"
-        autoComplete="off"
-        description={t("emailDescription")}
-      />
-    </ActionForm>
   )
 }
 

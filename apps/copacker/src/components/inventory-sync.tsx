@@ -1,8 +1,6 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { CircleAlert, Package } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { useIsAdmin } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { InventoryProducts, ProductsSkeleton } from "@/components/inventory-products"
@@ -13,7 +11,8 @@ import { Card } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
-import { IntegrationSyncCard, type IntegrationSyncState } from "./integration-sync-card"
+import type { IntegrationSyncState } from "./integration-sync-card"
+import { IntegrationSyncCard } from "./integration-sync-card"
 import { SyncedAt } from "./sync-status"
 
 type Selection = { source: "shopify" | "awd" | "fba"; marketplaceId?: string }
@@ -179,7 +178,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
       <Card>
         <EmptyState title={t("noStore")} description={admin ? t("noStoreHint") : t("noStoreAskAdmin")}>
           {admin && (
-            <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
+            <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
               {t("openSettings")}
             </Button>
           )}
@@ -243,7 +242,7 @@ function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] 
       <AlertDescription>{t(`failures.${problem.reason}`)}</AlertDescription>
       {admin && (
         <AlertAction>
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
             {t("openSettings")}
           </Button>
         </AlertAction>

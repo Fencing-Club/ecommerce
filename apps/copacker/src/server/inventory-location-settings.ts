@@ -3,9 +3,9 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, inventoryLocationMappings, stockSnapshots } from "@/db/schema"
-import type { Session } from "./auth"
 import { StatusError } from "./errors"
 import { automaticClassification, locationClassifications, locationMappingSchema } from "./inventory-locations"
+import type { Session } from "./workspace-session"
 
 export class LocationSettingsError extends StatusError {}
 

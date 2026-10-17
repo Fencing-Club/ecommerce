@@ -1,6 +1,10 @@
-import { packingSchema, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
-import type { documents, shipments, ShipmentState } from "../db/schema"
-import { type ServerText, serverTextInEnglish } from "./text"
+import type { OrderInput } from "@repo/aisle"
+import type { Packing } from "@repo/aisle"
+import { packingSchema, validatePacking } from "@repo/aisle"
+import type { ServerText } from "@/i18n/server-text"
+import { serverTextInEnglish } from "@/i18n/server-text"
+import type { ShipmentState } from "../db/schema"
+import type { documents, shipments } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect

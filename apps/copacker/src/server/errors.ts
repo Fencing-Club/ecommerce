@@ -1,16 +1,15 @@
-import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
-import { getTranslations } from "next-intl/server"
+import { isNotFound, isRedirect } from "@tanstack/react-router"
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
-import { type ErrorKey, LocalizedError } from "@/i18n/errors"
+import type { ErrorKey } from "@/i18n/errors"
+import { AccessError, LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
+import { localization } from "@/server/localization"
 
 type Values = Record<string, string | number>
 
 // The saved authorization can no longer be used; only reconnecting in Settings fixes it.
 export class ReconnectRequiredError extends Error {}
-
-// The person's role or page access doesn't allow what they asked for.
-export class AccessError extends LocalizedError {}
 
 // A failure to show the person, with the HTTP status a route answers it with.
 export class StatusError extends LocalizedError {
@@ -33,18 +32,10 @@ type MessageKey = MessageKeys<Messages, NestedKeyOf<Messages>>
 // The request's "errors" messages, and all messages, or English outside a request (the worker, and tests that call
 // routes directly).
 export async function errorText(): Promise<(key: ErrorKey, values?: Values) => string> {
-  try {
-    return await getTranslations("errors")
-  } catch {
-    return createTranslator({ locale: "en", messages: english, namespace: "errors" })
-  }
+  return createTranslator({ ...(await localization()), namespace: "errors" })
 }
 async function messagesText(): Promise<(key: MessageKey) => string> {
-  try {
-    return await getTranslations()
-  } catch {
-    return createTranslator({ locale: "en", messages: english })
-  }
+  return createTranslator(await localization())
 }
 
 // Whether a message, such as a zod issue's, is the full key of a message ("orders.builder.chooseSupplier") rather than
@@ -60,6 +51,9 @@ function isMessageKey(message: string): message is MessageKey {
 // The text of a failure in the request's language: a LocalizedError's message, each zod issue (translated when its
 // message is a key), another error's own message, or the fallback. A failed database query shows a generic message.
 export async function failureMessage(error: unknown, fallback: ErrorKey = "requestFailed") {
+  if (isRedirect(error) || isNotFound(error)) {
+    throw error
+  }
   const t = await errorText()
   if (error instanceof LocalizedError) {
     return t(error.key, error.values)

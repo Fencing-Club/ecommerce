@@ -1,6 +1,4 @@
-"use client"
-
-import { useMessages, useTranslations } from "next-intl"
+import { useMessages, useTranslations } from "use-intl"
 import { errorMessage } from "@/lib/error-message"
 import { formErrorMapFor, isMessageKey } from "@/lib/form-errors"
 

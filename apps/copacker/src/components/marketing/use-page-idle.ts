@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useEffectEvent, useState } from "react"
 
 // Runs `callback` once the page has loaded and the browser has a moment to spare, for work the first view doesn't need,

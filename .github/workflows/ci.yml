@@ -83,9 +83,11 @@ jobs:
       # Copacker's own checks, when the change affects it.
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm --filter copacker exec vitest run --project unit --coverage
-      # The Docker build on Railway builds it again, so this is the pull request's check.
+      # Build the Worker artifact for pull requests; releases rebuild with their environment configuration.
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm turbo run build --filter=copacker
+      - if: needs.changes.outputs.copacker == 'true'
+        run: pnpm --filter copacker test:worker-webhooks
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm --filter copacker build-storybook
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
@@ -123,13 +125,13 @@ jobs:
       - run: pnpm --filter copacker exec playwright install --with-deps chromium-headless-shell
       - run: pnpm --filter copacker exec vitest run --project 'storybook*' --shard=${{ matrix.shard }}/4
 
-  # The Playwright suite (apps/copacker/e2e) against a production build, with the E2E seed in a fresh Postgres and an
-  # S3 mock for uploads. It signs in through the WorkOS environment staging uses. See apps/copacker/docs/e2e.md.
+  # The Playwright suite (apps/copacker/e2e) against a production build, with the E2E seed in a fresh Postgres and the
+  # local R2 emulator for uploads. It signs in through the WorkOS environment staging uses. See apps/copacker/docs/e2e.md.
   e2e:
     needs: changes
     if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
-    # Split in two, each with its own build, database and S3 mock.
+    # Split in two, each with its own Worker build, database and R2 emulator.
     strategy:
       fail-fast: false
       matrix:
@@ -142,22 +144,13 @@ jobs:
           POSTGRES_DB: copacker_e2e
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      s3:
-        image: adobe/s3mock:5.2.3
-        env:
-          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: copacker-e2e
-        ports: ["9090:9090"]
     env:
       APP_URL: http://127.0.0.1:3005
-      NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://127.0.0.1:3005/callback
+      WORKOS_REDIRECT_URI: http://127.0.0.1:3005/callback
       DATABASE_URL: postgresql://postgres:copacker_e2e@localhost:5432/copacker_e2e
       # WorkOS's client ID is public; the API key is the repository secret.
       WORKOS_CLIENT_ID: client_01M4WPTK4JK0HKFZA7ZSMQBVYD
       WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
-      S3_ENDPOINT: http://127.0.0.1:9090
-      S3_BUCKET: copacker-e2e
-      S3_ACCESS_KEY_ID: e2e
-      S3_SECRET_ACCESS_KEY: e2e
     steps:
       - name: Check the WorkOS secret
         run: |
@@ -182,8 +175,8 @@ jobs:
       - run: |
           echo "WORKOS_COOKIE_PASSWORD=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-      # Through Turbo, so an unchanged build replays from the cache.
-      - run: pnpm turbo run build --filter=copacker
+      # Local Workers output is environment-specific and never restored from a staging build.
+      - run: pnpm --filter copacker exec vite build --mode e2e
       - run: pnpm --filter copacker db:migrate
       - run: pnpm --filter copacker db:seed:e2e
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
@@ -199,67 +192,69 @@ jobs:
           # The report folders start with a dot, which upload-artifact skips unless told otherwise.
           include-hidden-files: true
 
-  deploy-staging:
+  preview:
     needs: [changes, verify, stories, e2e]
-    if: github.event_name == 'push' && needs.changes.outputs.copacker == 'true'
+    if: >-
+      github.event_name == 'pull_request' && needs.changes.outputs.copacker == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    environment:
-      name: staging
-      url: ${{ vars.STAGING_URL }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
     concurrency:
-      group: deploy-staging
+      group: copacker-previews
       cancel-in-progress: false
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
+      NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+      NEON_ROLE_NAME: ${{ vars.NEON_ROLE_NAME }}
+      CLOUDFLARE_PREVIEW_CONFIG: ${{ vars.CLOUDFLARE_PREVIEW_CONFIG }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
+      CLOUDFLARE_PREVIEW_SECRETS: ${{ secrets.CLOUDFLARE_PREVIEW_SECRETS }}
+      APP_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      PREVIEW_TIMINGS_FILE: .cloudflare/preview-timings.json
+      GH_TOKEN: ${{ github.token }}
     steps:
-      # Pushes run side by side, so a newer one may have deployed already; staging then keeps the newer commit.
-      - id: tip
-        run: |
-          tip=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" --jq .sha)
-          if [ "$tip" = "$GITHUB_SHA" ]; then echo "latest=true" >> "$GITHUB_OUTPUT"; else echo "Skipped: $tip is newer"; fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - if: steps.tip.outputs.latest == 'true'
-        uses: actions/checkout@v7
-      - if: steps.tip.outputs.latest == 'true'
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-      - if: steps.tip.outputs.latest == 'true'
-        run: npm install --global @railway/cli
-      # The web service's pre-deploy step on staging migrates and then runs the E2E seed (pnpm db:seed:e2e).
-      - if: steps.tip.outputs.latest == 'true'
-        run:
-          bash .github/scripts/deploy.sh "$GITHUB_SHA" "${{ vars.STAGING_URL }}" "https://stories.staging.copacker.ai"
-      # Then the whole Playwright suite runs against what was just deployed.
-      - if: steps.tip.outputs.latest == 'true'
-        run: npm install --global pnpm@12.10.1
-      - if: steps.tip.outputs.latest == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.tip.outputs.latest == 'true'
-        run: pnpm --filter copacker exec playwright install --with-deps chromium
-      - if: steps.tip.outputs.latest == 'true'
-        run: pnpm --filter copacker test:e2e
-        env:
-          E2E_BASE_URL: ${{ vars.STAGING_URL }}
-          WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
+      - run: npm install --global pnpm@12.10.1
+      - run: pnpm install --frozen-lockfile
+      - id: deploy
+        run: pnpm --filter copacker preview:deploy
       - uses: actions/upload-artifact@v7
-        if: failure() && steps.tip.outputs.latest == 'true'
+        if: always()
         with:
-          name: playwright-report-staging
-          path: |
-            apps/copacker/e2e/.report
-            apps/copacker/e2e/.results
-          retention-days: 14
-          # The report folders start with a dot, which upload-artifact skips unless told otherwise.
+          name: preview-timings-${{ github.run_attempt }}
+          path: apps/copacker/.cloudflare/preview-timings.json
           include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 30
+
+  deploy-staging:
+    needs: [changes, verify, stories, e2e]
+    if:
+      github.event_name == 'push' && needs.changes.outputs.copacker == 'true' && vars.CLOUDFLARE_RELEASE_ENABLED ==
+      'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      mode: staging
+      commit: ${{ github.sha }}
+    secrets: inherit
 
   # One check for the whole run, passed when nothing failed or was cancelled; a job skipped because the change didn't
   # affect it counts as passed. It's the check to require in branch protection.
   ci-ok:
     if: always()
-    needs: [changes, verify, stories, e2e, deploy-staging]
+    needs: [changes, verify, stories, e2e, preview, deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - run: |

@@ -1,5 +1,5 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { actionRecorder, failWith, redirectTo } from "@/stories/fixtures/auth"
 import { SignUpForm } from "./sign-up-form"
@@ -56,7 +56,7 @@ export const CreatesAccount = meta.story({
     await userEvent.type(canvas.getByLabelText("Work email"), "alex@example.com")
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/verify-email"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/verify-email"))
     await expect(actions.sent).toEqual([
       {
         action: "auth.signUp",
@@ -77,7 +77,7 @@ export const ServerError = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "password1234")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("This password is too common. Choose another.")
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(finishSignIn).not.toHaveBeenCalled()
     await expect(canvas.getByRole("button", { name: "Create account" })).toBeEnabled()
   }
 })

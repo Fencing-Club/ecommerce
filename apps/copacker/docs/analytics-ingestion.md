@@ -18,6 +18,10 @@ Inventory and landed rows use the existing [cost inputs](historical-inventory-ba
 
 Expense rows require sourceReference, sourceLine, occurredAt, category, signed decimal amount, currency, actual/estimated costBasis, evidence and attribution. Attribution is an order UUID, a workspace product identity, or shared with a reason. Categories cover outbound/return shipping, pick-and-pack, packaging, warehouse, gateway/dispute fees, advertising, AWD storage/processing/transport and other bills. Credits are negative. Corrections name supersedes and retain retired history. GET /api/analytics/operating-costs lists active costs. Import only bills not already counted from financial feeds; automatic cross-provider invoice matching is not implemented.
 
+## Execution and runtime
+
+The API handlers use TanStack Start's server route registration and current workspace sessions. They retain the analytics JSON error, authorization and private-cache contract. Long collections run in the retained Node worker, not inside a web request. Shopify financial jobs publish the Cloudflare wake signal after the durable job insert and checkpoint each successful page before yielding. Failed pages retain their cursor and retry with a delay; a superseded sales revision or disconnected account cannot publish evidence.
+
 ## Provider evidence
 
 `GET /api/analytics/evidence?source=shopify&externalAccountId=...&dataset=order_economics` lists evidence in 100-record snapshot pages. `GET /api/analytics/ingestion-status` exposes observed feed state and connected accounts; absent feeds mean not imported. Permissions and workspace isolation match the analytics contract. Marketplace-tagged Shopify copies and test orders are excluded from evidence lists.

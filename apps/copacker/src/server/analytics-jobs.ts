@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, salesSyncs } from "@/db/schema"
+import { withJobWake } from "./job-delivery"
 import { PollAgain } from "./job-handlers"
 import { syncShopifyEconomics } from "./shopify-economics"
 const inputSchema = z.strictObject({
@@ -10,14 +11,16 @@ const inputSchema = z.strictObject({
   revision: z.number().int().positive()
 })
 export async function queueShopifyEconomics(input: z.infer<typeof inputSchema>) {
-  await db()
-    .insert(jobs)
-    .values({
-      key: `analytics:shopify:${input.orgId}:${input.revision}`,
-      kind: "analytics",
-      payload: input
-    })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({
+        key: `analytics:shopify:${input.orgId}:${input.revision}`,
+        kind: "analytics",
+        payload: input
+      })
+      .onConflictDoNothing()
+  )
 }
 // The sales sync queues this independent job. Each successful page checkpoints before yielding,
 // so a restart resumes without re-reading orders or waiting for tomorrow's sales reconciliation.

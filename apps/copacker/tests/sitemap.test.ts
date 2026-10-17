@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import sitemap from "../src/app/sitemap"
+import sitemap from "../src/server/sitemap"
 
 afterEach(() => {
   vi.unstubAllEnvs()

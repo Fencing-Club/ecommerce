@@ -1,45 +1,24 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthPage, AuthShell, AuthSwitch } from "@/components/auth/auth-shell"
-import { VerifyEmailForm } from "@/components/auth/verify-email-form"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
-import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
-// Bold text inside a translated sentence, such as an email address.
-function strong(chunks: React.ReactNode) {
-  return <span className="font-medium text-foreground">{chunks}</span>
-}
-
-// The verify-email page (page.tsx) in the auth layout, with the sign-up or sign-in waiting on the code. Without one,
-// the page redirects to sign-in. The layout's AppProviders is the story frame's own providers.
-async function VerifyEmail({ email }: { email: string }) {
-  const t = await getTranslations("auth")
+function VerifyEmail({ email }: { email: string }) {
   return (
     <AuthShell>
-      <AuthPage
-        title={t("verifyEmail.title")}
-        description={t.rich("verifyEmail.description", {
-          email,
-          strong
-        })}
-      >
-        <VerifyEmailForm />
-        <AuthSwitch prompt={t("verifyEmail.wrongEmail")} href="/signup">
-          {t("verifyEmail.startAgain")}
-        </AuthSwitch>
-      </AuthPage>
+      <PageView page={{ kind: "verify-email", email }} />
     </AuthShell>
   )
 }
 
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Verify email",
-  ...serverStory(VerifyEmail),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/verify-email" } } },
+  component: VerifyEmail,
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/verify-email" } } },
   args: { email: "alex@example.com" },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/onboarding")))
@@ -55,7 +34,7 @@ export const Default = meta.story({
     await expect(canvas.getByRole("link", { name: "Start again" })).toHaveAttribute("href", "/signup")
     await expect(canvas.getByRole("button", { name: /Send again in \d+s/ })).toBeDisabled()
     await userEvent.type(canvas.getByLabelText("Verification code"), "482913")
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/onboarding"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/onboarding"))
     await expect(actions.sent).toEqual([{ action: "auth.verifyEmail", data: { code: "482913" } }])
   }
 })

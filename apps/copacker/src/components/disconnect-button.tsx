@@ -1,9 +1,8 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Unplug } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { FormError } from "./actions"
 
 const names = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
@@ -40,7 +38,7 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
     try {
       await run({ action: "connection.delete", data: { provider } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("failed", { name })))
     } finally {

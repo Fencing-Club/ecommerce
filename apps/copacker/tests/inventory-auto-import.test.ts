@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
@@ -17,7 +17,6 @@ vi.mock("../src/server/auth", async (original) => ({
     return context.actor
   }
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 import { ApiSessionError } from "../src/server/auth"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
@@ -170,9 +169,9 @@ async function amazonOrder() {
   })
   return { id, mappingId, data }
 }
-import { GET as importList } from "../src/app/api/analytics/depletion-imports/route"
-import { DELETE as mappingDelete, GET as mappingGet } from "../src/app/api/analytics/unit-mappings/[id]/route"
-import { POST as mappingPost, GET as mappingList } from "../src/app/api/analytics/unit-mappings/route"
+import { GET as importList } from "../src/server/http/api/analytics/depletion-imports"
+import { POST as mappingPost, GET as mappingList } from "../src/server/http/api/analytics/unit-mappings"
+import { DELETE as mappingDelete, GET as mappingGet } from "../src/server/http/api/analytics/unit-mappings/$id"
 import { syncAutomaticDepletions, listImportResults } from "../src/server/inventory-auto-import"
 import { retireInventoryBasis } from "../src/server/inventory-basis"
 import { saveUnitMapping, retireUnitMapping } from "../src/server/inventory-unit-mappings"
@@ -253,10 +252,10 @@ it("rejects overlap, allows adjacent periods, and enforces idempotent mapping wr
   expect((await mappingPost(request(body, key))).status).toBe(201)
   expect((await mappingPost(request(body, key))).status).toBe(200)
   expect((await mappingPost(request({ ...body, piecesPerUnit: 3 }, key))).status).toBe(409)
-  expect((await mappingGet(request(null), { params: Promise.resolve({ id: mapping.id }) })).status).toBe(200)
+  expect((await mappingGet(request(null), { params: { id: mapping.id } })).status).toBe(200)
   context.actor = actor(otherId, "buyer")
-  expect((await mappingDelete(request(null), { params: Promise.resolve({ id: mapping.id }) })).status).toBe(404)
-  expect((await mappingGet(request(null), { params: Promise.resolve({ id: mapping.id }) })).status).toBe(404)
+  expect((await mappingDelete(request(null), { params: { id: mapping.id } })).status).toBe(404)
+  expect((await mappingGet(request(null), { params: { id: mapping.id } })).status).toBe(404)
 })
 it("mapping retirement blocks historical FIFO and an explicit correction permits recalculation", async () => {
   const { mapping } = await configure()

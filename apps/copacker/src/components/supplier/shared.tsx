@@ -1,15 +1,14 @@
-"use client"
-
 import { useWindowEvent } from "@mantine/hooks"
 import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { StatusBadge as ToneBadge, type StatusTone } from "@/components/common"
 import { StatCard } from "@/components/stat-card"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMoney } from "@/hooks/use-money"
-import { type ProductImage, imageUrl } from "@/lib/supplier-product"
+import type { ProductImage } from "@/lib/supplier-product"
+import { imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 
 // A product's main photo, or a placeholder in the same frame so rows line up.
@@ -28,7 +27,7 @@ export function ProductThumb({
       )}
     >
       {image ? (
-        // Stored photos come from our own authenticated route, which next/image can't fetch.
+        // Stored photos come from our own authenticated route using the browser's session cookie.
         <img src={imageUrl(image)} alt="" className="size-full object-contain" loading="lazy" />
       ) : (
         <ImageIcon className="size-4 text-muted-foreground" aria-hidden />

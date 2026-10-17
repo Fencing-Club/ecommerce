@@ -1,8 +1,5 @@
-"use client"
-
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,13 +114,13 @@ export function WorkspaceMenu({
         ))}
         <DropdownMenuSeparator className="mx-1 my-1" />
         {/* Another company, or another role for this one, such as a buyer that also supplies. */}
-        <DropdownMenuItem render={<Link href="/workspaces/new" />} className={item}>
+        <DropdownMenuItem render={<a href="/workspaces/new" aria-label={t("newWorkspace")} />} className={item}>
           <span className={cn(tile, "border bg-background text-muted-foreground")} aria-hidden>
             <Plus className="size-3.5" />
           </span>
           {t("newWorkspace")}
         </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/settings" />} className={item}>
+        <DropdownMenuItem render={<a href="/settings" aria-label={t("workspaceSettings")} />} className={item}>
           <span className={cn(tile, "border bg-background text-muted-foreground")} aria-hidden>
             <Settings className="size-3.5" />
           </span>

@@ -4,12 +4,14 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
+import { withJobWake } from "@/server/job-delivery"
 import { ebayApp, ebayFor } from "./connections"
 import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
-import { type NotificationQueue, pollQueue } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { pollQueue } from "./sqs"
 
 // The order topics each seller is subscribed to. A confirmed order starts the order sync, which also reads the last
 // 30 days again, so shipments and cancellations arrive with the next order or the daily reconciliation.
@@ -88,9 +90,19 @@ export async function forwardEbayNotification(notification: EbayNotification, se
   await send(bus, notification)
   return "forwarded"
 }
-let eventBridge: EventBridgeClient | null = null
 async function sendToEventBridge(bus: string, notification: EbayNotification) {
-  eventBridge ??= new EventBridgeClient({})
+  // The Workers/browser SDK uses fetch and does not read Node's environment credential/region providers.
+  // Keep each invocation's client and request lifecycle separate.
+  const {
+    AWS_REGION: region,
+    AWS_ACCESS_KEY_ID: accessKeyId,
+    AWS_SECRET_ACCESS_KEY: secretAccessKey,
+    AWS_SESSION_TOKEN: sessionToken
+  } = process.env
+  if (!region || !accessKeyId || !secretAccessKey) {
+    throw new Error("AWS credentials and region are required to forward eBay notifications")
+  }
+  const eventBridge = new EventBridgeClient({ region, credentials: { accessKeyId, secretAccessKey, sessionToken } })
   const result = await eventBridge.send(
     new PutEventsCommand({
       Entries: [
@@ -130,17 +142,19 @@ export async function receiveEbayNotification(notification: EbayNotification, no
     return 0
   }
   const batch = Math.floor(now / batchMs)
-  await db()
-    .insert(jobs)
-    .values(
-      accounts.map(({ orgId }) => ({
-        key: `ebay-event:${orgId}:${batch}`,
-        kind: "ebay-event" as const,
-        payload: { orgId, userId: seller.data },
-        runAt: new Date((batch + 1) * batchMs + settleMs)
-      }))
-    )
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values(
+        accounts.map(({ orgId }) => ({
+          key: `ebay-event:${orgId}:${batch}`,
+          kind: "ebay-event" as const,
+          payload: { orgId, userId: seller.data },
+          runAt: new Date((batch + 1) * batchMs + settleMs)
+        }))
+      )
+      .onConflictDoNothing()
+  )
   return accounts.length
 }
 
@@ -188,10 +202,12 @@ export async function ebayEventJob(payload: Record<string, unknown>) {
 // Queues subscribing the workspace's seller to Copacker's order notifications. Runs after connecting and daily, which
 // also turns back on subscriptions eBay disabled after failed deliveries.
 export async function queueEbaySubscription(orgId: string, key: string) {
-  await db()
-    .insert(jobs)
-    .values({ key: `ebay-subscribe:${orgId}:${key}`, kind: "ebay-subscribe", payload: { orgId } })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `ebay-subscribe:${orgId}:${key}`, kind: "ebay-subscribe", payload: { orgId } })
+      .onConflictDoNothing()
+  )
 }
 
 // Worker job: makes sure the app's notification destination points at the webhook, then subscribes the seller to each

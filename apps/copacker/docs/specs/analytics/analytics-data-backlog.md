@@ -62,7 +62,10 @@ See [automatic depletion imports](../../automatic-depletion-imports.md). Live ac
 - [x] Validate cost batches through a rollback-only preview using the same rules as commit; preserve corrections and dependent rows without saving preview data.
 - [x] Collect independent FBA/AWD inbound quantity snapshots.
 - [x] Collect Shopify refund/payment/shipping evidence and permission-gated returns/exchanges/dispositions, using updated-order checkpoints.
-- [x] Add FBM return report rotation, stored AWD finance evidence and a separate product advertising report stage.
+- [x] Add FBM return reports, stored AWD finance evidence and a separate product advertising report stage.
+- [x] Resume Shopify financial pages in an independent durable job; discover earliest accessible history with all-orders permission.
+- [x] Backfill all missing FBM monthly windows and preserve prior coverage on failed refreshes.
+- [x] Integrate analytics API handlers with TanStack Start and financial jobs with Cloudflare wake signals; no UX changes.
 
 See [expanded ingestion](../../analytics-ingestion.md) for bounds, scopes and remaining acceptance. This delivery is ingestion-only. Spreadsheet uploads and all other UX work are deferred and are not ingestion release blockers. Automatic invoice matching, source reconciliation and live account validation remain open.
 

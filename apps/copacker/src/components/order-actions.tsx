@@ -1,10 +1,9 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +26,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { FormError } from "./actions"
 
 // Opened from the PO's actions menu.
 type Controlled = { id: string; reference: string; open: boolean; onOpenChange: (open: boolean) => void }
@@ -46,7 +44,7 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
     try {
       await run({ action: "order.close", data: { id } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("closeFailed", { reference })))
     } finally {
@@ -88,8 +86,9 @@ export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }:
     setError("")
     try {
       const result = await run({ action: "order.delete", data: { id } }).unwrap()
+      await router.navigate({ href: result.redirect ?? "/orders" })
+      await router.invalidate({ sync: true })
       setOpen(false)
-      router.push(result.redirect ?? "/orders")
     } catch (e) {
       setError(errorMessage(e, t("deleteFailed", { reference })))
       setPending(false)
@@ -148,7 +147,7 @@ export function OrderMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           {draft && (
-            <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>
+            <DropdownMenuItem onClick={() => router.navigate({ href: `/orders/${id}/edit` })}>
               <Pencil />
               {t("edit")}
             </DropdownMenuItem>
@@ -256,7 +255,7 @@ export function LineMenu({
               </DropdownMenuItem>
             )}
             {editable && (
-              <DropdownMenuItem onClick={() => router.push(`/orders/${orderId}/edit`)}>
+              <DropdownMenuItem onClick={() => router.navigate({ href: `/orders/${orderId}/edit` })}>
                 <Pencil />
                 {t("edit")}
               </DropdownMenuItem>

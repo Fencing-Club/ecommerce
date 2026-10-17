@@ -1,19 +1,20 @@
 import { buildAwdRequest, money, orderTotal } from "@repo/aisle"
 import { downloadAmazonLabels } from "@repo/aisle/amazon"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/aisle/labels"
+import type { Email } from "@repo/copacker-emails"
 import {
   customerDataRequestEmail,
   invitationEmail,
   labelsReadyEmail,
   purchaseOrderEmail,
-  shownLines,
-  type Email
+  shownLines
 } from "@repo/copacker-emails"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
 import { shipments, orders, orderRevisions, organizations, memberships, profiles } from "../db/schema"
-import { defaultLocale, isLocale, type Locale } from "../i18n/locales"
+import type { Locale } from "../i18n/locales"
+import { defaultLocale, isLocale } from "../i18n/locales"
 import { translatorFor } from "../i18n/translator"
 import { checkLinkedAwd } from "./awd-packing"
 import { amazonFor, shopifyFor } from "./connections"

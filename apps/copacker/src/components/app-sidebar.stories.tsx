@@ -8,6 +8,7 @@ import { AppSidebar } from "./app-sidebar"
 function inWorkspace(kind: WorkspaceKind) {
   const workspace = workspaces[kind]
   return {
+    pathname: "/orders/order-1045",
     kind: workspace.kind,
     active: workspace.id,
     name: workspace.name,
@@ -22,7 +23,7 @@ const meta = preview.meta({
   args: inWorkspace("buyer"),
   parameters: {
     layout: "fullscreen",
-    nextjs: { appDirectory: true, navigation: { pathname: "/orders/order-1045" } }
+    router: { navigation: { pathname: "/orders/order-1045" } }
   },
   // The sidebar lives in the shell's provider, beside the page, whose top bar has its button.
   decorators: [
@@ -103,8 +104,8 @@ export const BuyerMember = meta.story({
 })
 
 export const Supplier = meta.story({
-  args: inWorkspace("supplier"),
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/inventory" } } },
+  args: { ...inWorkspace("supplier"), pathname: "/inventory" },
+  parameters: { router: { navigation: { pathname: "/inventory" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual([
       "Overview",
@@ -123,7 +124,7 @@ export const Supplier = meta.story({
 
 export const SupplierMember = meta.story({
   args: inWorkspace("supplier"),
-  parameters: { permissions: member, nextjs: { appDirectory: true, navigation: { pathname: "/orders" } } },
+  parameters: { permissions: member, router: { navigation: { pathname: "/orders" } } },
   play: async ({ canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Orders", "Shipments", "Products", "Inventory", "Settings"])
   }
@@ -131,8 +132,8 @@ export const SupplierMember = meta.story({
 
 // A forwarder's freight: the purchase orders coming through it, and Settings.
 export const Forwarder = meta.story({
-  args: inWorkspace("forwarder"),
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/settings" } } },
+  args: { ...inWorkspace("forwarder"), pathname: "/settings" },
+  parameters: { router: { navigation: { pathname: "/settings" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Purchase orders", "Settings"])
     await expect(canvas.getByText("Freight")).toBeVisible()

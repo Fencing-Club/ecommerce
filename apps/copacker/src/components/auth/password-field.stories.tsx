@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
@@ -116,7 +116,7 @@ export const TooShort = meta.story({
 export const WithAction = meta.story({
   args: {
     action: (
-      <Link href="/forgot-password" className="text-sm">
+      <Link to="/forgot-password" className="text-sm">
         Forgot password?
       </Link>
     )

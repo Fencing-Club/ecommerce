@@ -2,7 +2,8 @@ import { http, HttpResponse } from "msw"
 import type { WizardValues } from "@/components/onboarding/onboarding-wizard"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
-import type { Invitation, InvitationKind } from "@/server/invitations"
+import type { Invitation } from "@/server/invitations"
+import type { InvitationKind } from "@/server/invitations"
 
 // Sign-in, invitations and getting started, for stories.
 
@@ -11,7 +12,7 @@ import type { Invitation, InvitationKind } from "@/server/invitations"
 export function skipAnimations() {
   const style = document.createElement("style")
   style.textContent = "*, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; }"
-  document.head.append(style)
+  document.head.appendChild(style)
   return () => style.remove()
 }
 
