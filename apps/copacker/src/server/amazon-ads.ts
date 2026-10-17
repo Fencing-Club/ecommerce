@@ -164,17 +164,18 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
     const seen = new Set<string>()
     for (const part of report.completedReportParts) {
       for (const row of await downloadAdsReport(part.url)) {
-        if (
-          !totals.has(row.date) ||
-          row.country !== profile.countryCode ||
-          row.currency !== profile.currencyCode ||
-          !(
-            input.productDetail
-              ? ["SPONSORED_PRODUCTS", "SPONSORED_DISPLAY"]
-              : ["SPONSORED_PRODUCTS", "SPONSORED_BRANDS", "SPONSORED_DISPLAY"]
-          ).includes(row.product)
-        ) {
-          throw new Error("Amazon Ads report is outside the requested scope")
+        const products = input.productDetail
+          ? ["SPONSORED_PRODUCTS", "SPONSORED_DISPLAY"]
+          : ["SPONSORED_PRODUCTS", "SPONSORED_BRANDS", "SPONSORED_DISPLAY"]
+        const mismatches = [
+          ...(!totals.has(row.date) ? ["date"] : []),
+          ...(row.country !== profile.countryCode ? ["country"] : []),
+          ...(row.currency !== profile.currencyCode ? ["currency"] : []),
+          ...(!products.includes(row.product) ? ["ad product"] : [])
+        ]
+        if (mismatches.length) {
+          // Report only field names, never source values, signed URLs or campaign identifiers.
+          throw new Error(`Amazon Ads report is outside the requested scope: ${mismatches.join(", ")}`)
         }
         const key = JSON.stringify([row.date, row.product, row.campaignId, ...(input.productDetail ? [row.sku] : [])])
         if (seen.has(key)) {

@@ -34,3 +34,11 @@ The API handlers use TanStack Start's server route registration and current work
 - Amazon advertising_products: a second durable report stage captures Sponsored Products/Display SKU spend after the existing all-product daily total. Detail never overwrites the total. Sponsored Brands and missing SKU spend remain unallocated; failures remain visible in Ads job status. Live field compatibility and total reconciliation must be accepted before product-profit reporting.
 
 Source references: [Shopify Refund](https://shopify.dev/docs/api/admin-graphql/2026-07/objects/Refund), [Return](https://shopify.dev/docs/api/admin-graphql/2026-07/objects/Return), [Amazon returns report](https://developer-docs.amazon/sp-api/docs/report-type-values-returns), [AWD API model](https://github.com/amzn/selling-partner-api-models/blob/main/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json), [Amazon advertising dimensions](https://advertising.amazon.com/API/docs/en-us/guides/amazon-marketing-stream/v2/datasets/ads-performance).
+
+## Amazon report retry diagnostics
+
+FBM cancellation records `report_cancelled`, without claiming an empty month. FBM requests stop for the current run
+on access denial or throttling, leaving unattempted older months missing; independent AWD finance evidence still runs.
+FBM and shared monthly FBA importers distinguish document parsing (`report_invalid_document`) from date-window
+validation (`report_outside_period`) and provider requests (`report_failed`). No source rows or validation messages
+are exposed in these failure codes. Failed refreshes preserve previously imported evidence and coverage bounds.

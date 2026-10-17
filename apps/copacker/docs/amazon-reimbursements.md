@@ -44,7 +44,9 @@ malformed, or cancelled reports do not. Parsing/date errors reject the entire mo
 - `not_imported`: no attempt recorded; row count and coverage are null.
 - `imported`: last attempt succeeded; `complete` also requires coverage through the currently requested end.
 - `unavailable` / `report_cancelled`: Amazon cancelled the report; this does not establish zero reimbursements.
-- `failed` / `report_failed`: request or document validation failed.
+- `failed` / `report_failed`: provider request or report download failed.
+- `failed` / `report_invalid_document`: the downloaded document failed parsing.
+- `failed` / `report_outside_period`: parsed rows fall outside the requested month.
 - `failed` / `report_access_denied` or `report_throttled`: access/rate limit failure; stop this source's remaining
   requests until the next sync. Other monthly failures continue backfilling older windows.
 

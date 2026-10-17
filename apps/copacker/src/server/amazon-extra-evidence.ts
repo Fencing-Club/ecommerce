@@ -2,7 +2,12 @@ import { parseFbmReturns } from "@repo/aisle/fbm-returns"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsFeeds, amazonTransactions } from "@/db/schema"
-import { monthlyReportWindows, type AmazonReportInput, fbaReportMarketplace } from "./amazon-report-sync"
+import {
+  amazonReportFailure,
+  monthlyReportWindows,
+  type AmazonReportInput,
+  fbaReportMarketplace
+} from "./amazon-report-sync"
 import { publishAnalyticsFeed } from "./analytics-feed-store"
 export async function syncAmazonExtraEvidence(
   input: AmazonReportInput,
@@ -20,7 +25,7 @@ export async function syncAmazonExtraEvidence(
       )
     )
   const windows = monthlyReportWindows(now)
-  let failed = false
+  let failure: string | null = null
   for (const [index, window] of windows.entries()) {
     const periodDataset = `fbm_returns:${window.from.toISOString().slice(0, 7)}`
     const prior = feeds.find((feed) => feed.dataset === periodDataset)
@@ -34,6 +39,8 @@ export async function syncAmazonExtraEvidence(
     ) {
       continue
     }
+    let errorCode: string | null = null
+    let stage: "request" | "parse" | "period" = "request"
     try {
       await assertOwned()
       const text = await input.amazon.report(
@@ -46,12 +53,16 @@ export async function syncAmazonExtraEvidence(
         { deadline: Date.now() + 20 * 60000, assertActive: assertOwned, retryCreate: false }
       )
       if (text === null) {
+        errorCode = "report_cancelled"
         throw new Error("FBM report unavailable")
       }
+      stage = "parse"
       const rows = parseFbmReturns(text)
+      stage = "period"
       if (rows.some((r) => new Date(r.occurredAt) < window.from || new Date(r.occurredAt) >= window.to)) {
         throw new Error("FBM report outside window")
       }
+      stage = "request"
       await publishAnalyticsFeed(
         input,
         "fbm_returns",
@@ -75,21 +86,25 @@ export async function syncAmazonExtraEvidence(
         },
         assertOwned
       )
-    } catch {
-      failed = true
+    } catch (error) {
+      errorCode ??= amazonReportFailure(error, stage)
+      failure = errorCode
       await publishAnalyticsFeed(
         input,
         periodDataset,
         [],
         {
           ...prior?.state,
-          error: "report_failed"
+          error: errorCode
         },
         assertOwned
       )
+      if (errorCode === "report_throttled" || errorCode === "report_access_denied") {
+        break
+      }
     }
   }
-  await publishAnalyticsFeed(input, "fbm_returns", [], { error: failed ? "report_failed" : null }, assertOwned)
+  await publishAnalyticsFeed(input, "fbm_returns", [], { error: failure }, assertOwned)
   // Reuse signed finance records. These are evidence references, not additional expense postings.
   const rows = await db()
     .select()

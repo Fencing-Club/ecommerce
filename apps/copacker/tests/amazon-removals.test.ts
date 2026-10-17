@@ -143,7 +143,11 @@ describe("Amazon removal evidence", () => {
         complete: false,
         rows: 2,
         coveredTo: "2026-10-16T00:00:00.000Z",
-        status: response === null ? "unavailable" : "failed"
+        status: response === null ? "unavailable" : "failed",
+        errorCode:
+          response === null
+            ? "report_cancelled"
+            : "report_" + (response.includes("bad") ? "invalid_document" : "outside_period")
       })
     }
     report.mockResolvedValue(removalReport("shipments"))
