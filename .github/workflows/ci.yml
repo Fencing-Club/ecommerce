@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          import { createHmac } from 'node:crypto';
+          import { createHash, createHmac, randomBytes } from 'node:crypto';
           const hash = 'a507a8738e6fb97a';
           const url = new URL(`/v8/artifacts/${hash}`, process.env.TURBO_API);
           url.searchParams.set('slug', process.env.TURBO_TEAM);
@@ -53,6 +53,26 @@ jobs:
             tagPresent: Boolean(tag),
             signatures
           }));
+          for (const size of [64, 13 * 1024 * 1024]) {
+            const payload = randomBytes(size);
+            const probeHash = createHash('sha256').update(payload).digest('hex');
+            const probeUrl = new URL(`/v8/artifacts/${probeHash}`, process.env.TURBO_API);
+            probeUrl.searchParams.set('slug', process.env.TURBO_TEAM);
+            const signer = createHmac('sha256', process.env.TURBO_REMOTE_CACHE_SIGNATURE_KEY);
+            for (const field of ['artifact-signature:v2', probeHash, '', payload]) {
+              const bytes = Buffer.from(field);
+              const length = Buffer.alloc(8);
+              length.writeBigUInt64LE(BigInt(bytes.length));
+              signer.update(length).update(bytes);
+            }
+            const sentTag = signer.digest('base64');
+            const headers = { authorization: `Bearer ${process.env.TURBO_TOKEN}` };
+            const put = await fetch(probeUrl, { method: 'PUT', headers: { ...headers, 'content-type': 'application/octet-stream', 'x-artifact-tag': sentTag, 'x-artifact-duration': '1' }, body: payload, signal: AbortSignal.timeout(30000) });
+            await put.arrayBuffer();
+            const get = await fetch(probeUrl, { headers, signal: AbortSignal.timeout(30000) });
+            const downloaded = Buffer.from(await get.arrayBuffer());
+            console.log(JSON.stringify({ roundtrip: true, size, put: put.status, get: get.status, bytesMatch: payload.equals(downloaded), tagMatches: sentTag === get.headers.get('x-artifact-tag') }));
+          }
           NODE
   # Which apps this change affects (.github/scripts/affected.mjs), so a change to one app, a package it doesn't use or
   # the docs skips another app's tests and deploy. A pull request is compared with its target branch; a push to main
