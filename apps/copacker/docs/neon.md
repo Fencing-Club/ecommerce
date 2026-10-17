@@ -45,7 +45,7 @@ downloads its source, uploads to its PR prefix, reads it back and compares SHA-2
 the ready marker can be written. Batches drain on failure before scratch files and clients are removed. Later pushes
 check the marker directly and preserve preview edits.
 
-The `cf` CLI verifies the existing account API token and issues temporary credentials lasting 30 minutes. Source
+The `cf` CLI verifies the existing account-scoped user API token and issues temporary credentials lasting 30 minutes. Source
 credentials allow only reads of the database's exact reference keys; destination credentials allow reads/writes
 only inside this PR's document prefix. They stay in memory, are never added to artifacts/logs, and require no new
 long-lived secret. See [R2 temporary credentials](https://developers.cloudflare.com/r2/api/s3/temporary-credentials/).

@@ -16,6 +16,10 @@ any CI runner or machine that has its repo's token.
   `TURBO_REMOTE_CACHE_SIGNATURE_KEY` and rejects any it can't verify. The Worker never sees the keys.
 - **Retention:** the bucket deletes artifacts 30 days after they're written.
 
+Use Turbo 2.11.9 or later. Version 2.10.13 can sign large disk-backed artifacts incorrectly after writing the local
+cache, making remote restores miss despite successful uploads. The updated client uses independent readers for
+signing, local copies and uploads; keep signature verification enabled.
+
 ## Using it
 
 A repo's CI sets `TURBO_API=https://turbo.copacker.ai`, `TURBO_TEAM`, `TURBO_TOKEN` and
