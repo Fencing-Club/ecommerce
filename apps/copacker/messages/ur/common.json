@@ -91,6 +91,7 @@
     "syncing": "سنک ہو رہا ہے…",
     "syncNow": "ابھی سنک کریں",
     "reconnect": "دوبارہ منسلک کریں",
+    "reconnectHint": "مطابقت پذیری دوبارہ شروع کرنے کے لیے دوبارہ جڑیں۔",
     "synced": "<time></time> سنک ہوا",
     "syncingProgress": "سنک ہو رہا ہے… {progress, number, percent}"
   },
