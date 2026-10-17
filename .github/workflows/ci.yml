@@ -12,6 +12,43 @@ env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 jobs:
+  cache-diagnostic:
+    if:
+      github.event_name == 'pull_request' && github.event.pull_request.number == 30 &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Inspect existing signed cache artifact without exposing credentials
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHmac } from 'node:crypto';
+          const hash = 'a507a8738e6fb97a';
+          const url = new URL(`/v8/artifacts/${hash}`, process.env.TURBO_API);
+          url.searchParams.set('slug', process.env.TURBO_TEAM);
+          const response = await fetch(url, {
+            headers: { authorization: `Bearer ${process.env.TURBO_TOKEN}` },
+            signal: AbortSignal.timeout(30000)
+          });
+          const body = Buffer.from(await response.arrayBuffer());
+          const mac = createHmac('sha256', process.env.TURBO_REMOTE_CACHE_SIGNATURE_KEY);
+          for (const field of ['artifact-signature:v2', hash, '', body]) {
+            const bytes = Buffer.from(field);
+            const length = Buffer.alloc(8);
+            length.writeBigUInt64LE(BigInt(bytes.length));
+            mac.update(length).update(bytes);
+          }
+          const tag = response.headers.get('x-artifact-tag');
+          console.log(JSON.stringify({
+            status: response.status,
+            bytes: body.length,
+            headers: Object.fromEntries(['content-length', 'content-type', 'content-encoding', 'cache-control', 'cf-cache-status', 'cf-mitigated'].map(name => [name, response.headers.get(name)])),
+            tagPresent: Boolean(tag),
+            signatureValid: tag === mac.digest('base64')
+          }));
+          NODE
   # Which apps this change affects (.github/scripts/affected.mjs), so a change to one app, a package it doesn't use or
   # the docs skips another app's tests and deploy. A pull request is compared with its target branch; a push to main
   # with the commit staging serves, so a change an earlier failed run didn't deploy still counts.
