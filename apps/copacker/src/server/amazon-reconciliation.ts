@@ -26,6 +26,13 @@ export type ReconciliationPosting = {
 }
 const keys = ["sku", "asin", "fnsku"] as const
 
+export function preferredPostingType(source: string) {
+  if (source === "reimbursements") {
+    return "FBAInventoryReimbursement"
+  }
+  return source === "returns" ? "Refund" : null
+}
+
 // Current inventory identity is an observation, not a historical product/batch assignment.
 function productMatch(row: AmazonEvidence, products: Product[]) {
   const supplied = keys.filter((key) => row[key] !== null)
@@ -164,6 +171,9 @@ export function reconcileAmazonEvidence(
       .sort(
         (a, b) =>
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
+          Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
+          Math.abs(Date.parse(a.postedAt) - Date.parse(row.occurredAt)) -
+            Math.abs(Date.parse(b.postedAt) - Date.parse(row.occurredAt)) ||
           a.transactionId.localeCompare(b.transactionId)
       )
     return {

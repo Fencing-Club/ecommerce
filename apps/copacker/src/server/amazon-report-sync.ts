@@ -175,7 +175,15 @@ export async function syncMonthlyAmazonReport<Row>(
           dataStartTime: window.from.toISOString(),
           dataEndTime: new Date(window.to.getTime() - (source.wholeMonths ? 0 : 1000)).toISOString()
         },
-        { deadline: Date.now() + 20 * 60 * 1000, assertActive: assertOwned, retryCreate: source.retryCreate }
+        {
+          deadline: Date.now() + 20 * 60 * 1000,
+          assertActive: assertOwned,
+          retryCreate: source.retryCreate,
+          reuseCreatedSince:
+            !previous?.coveredTo || previous.coveredTo < window.to
+              ? new Date(now.getTime() - day).toISOString()
+              : undefined
+        }
       )
       if (text === null) {
         errorCode = "report_cancelled"

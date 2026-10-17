@@ -3,7 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, amazonProductMappings, connections, salesSyncs, stockSnapshots } from "@/db/schema"
 import { historicalProductMatch } from "./amazon-product-mappings"
-import { reconcileAmazonEvidence } from "./amazon-reconciliation"
+import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconciliation"
 import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsPagination } from "./analytics-contract"
 import { analyticsSnapshot } from "./analytics-snapshot"
@@ -99,6 +99,8 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         )
         .orderBy(
           sql`case when ${orderMatch} then 0 else 1 end`,
+          sql`case when ${amazonTransactions.type}=${preferredPostingType(input.source)} then 0 else 1 end`,
+          sql`case when ${amazonTransactions.postedAt} < ${input.from}::timestamptz then extract(epoch from (${input.from}::timestamptz - ${amazonTransactions.postedAt})) when ${amazonTransactions.postedAt} >= ${input.to}::timestamptz then extract(epoch from (${amazonTransactions.postedAt} - ${input.to}::timestamptz)) else 0 end`,
           desc(amazonTransactions.postedAt),
           amazonTransactions.transactionId
         )

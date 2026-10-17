@@ -365,6 +365,7 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>) {
 }
 export class Amazon {
   private access?: { token: string; expires: number }
+  private reportLookups = new Map<string, Promise<unknown[]>>()
   constructor(
     private credentials: AmazonCredentials,
     private transport: typeof fetch = fetch.bind(globalThis)
@@ -1040,27 +1041,102 @@ export class Amazon {
       dataEndTime: string
       reportOptions?: Record<string, string>
     },
-    options: { deadline: number; pollMs?: number; assertActive?: () => Promise<void>; retryCreate?: boolean }
+    options: {
+      deadline: number
+      pollMs?: number
+      assertActive?: () => Promise<void>
+      retryCreate?: boolean
+      reuseCreatedSince?: string
+    }
   ) {
     const read = stockReader(options.deadline, options.assertActive)
-    const created = z
-      .object({ reportId: z.string().min(1) })
-      .parse(
-        await read(
-          () => this.request("POST", "/reports/2021-06-30/reports", input),
-          options.deadline,
-          options.retryCreate !== false
-        )
-      )
+    let reportId: string | undefined
+    // Only callers recovering incomplete imports opt in. Normal refreshes always request fresh evidence.
+    // getReports does not expose reportOptions, so their equivalence cannot be established here.
+    if (options.reuseCreatedSince && !input.reportOptions) {
+      await options.assertActive?.()
+      const since = z.iso.datetime({ offset: true }).parse(options.reuseCreatedSince)
+      const query = new URLSearchParams({
+        reportTypes: input.reportType,
+        marketplaceIds: [...input.marketplaceIds].sort().join(","),
+        processingStatuses: "DONE",
+        createdSince: since,
+        pageSize: "100"
+      })
+      const key = query.toString()
+      let lookup = this.reportLookups.get(key)
+      if (!lookup) {
+        lookup = (async () => {
+          const reports: unknown[] = []
+          let next: string | undefined
+          const seen = new Set<string>()
+          for (let page = 0; page < 10; page++) {
+            const params = next ? new URLSearchParams({ nextToken: next }) : query
+            const result = z
+              .object({ reports: z.array(z.unknown()), nextToken: z.string().optional() })
+              .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports?${params}`)))
+            reports.push(...result.reports)
+            next = result.nextToken
+            if (!next) {
+              return reports
+            }
+            if (seen.has(next)) {
+              throw new Error("Amazon report pagination did not advance")
+            }
+            seen.add(next)
+          }
+          throw new Error("Amazon report lookup exceeded its page limit")
+        })()
+        this.reportLookups.set(key, lookup)
+      }
+      const matching = (await lookup)
+        .flatMap((value) => {
+          const parsed = z
+            .object({
+              reportId: z.string().min(1),
+              reportType: z.string(),
+              marketplaceIds: z.array(z.string()),
+              processingStatus: z.literal("DONE"),
+              reportDocumentId: z.string().min(1),
+              createdTime: z.iso.datetime({ offset: true }),
+              dataStartTime: z.iso.datetime({ offset: true }),
+              dataEndTime: z.iso.datetime({ offset: true })
+            })
+            .safeParse(value)
+          if (!parsed.success) {
+            return []
+          }
+          const report = parsed.data
+          return report.reportType === input.reportType &&
+            JSON.stringify([...new Set(report.marketplaceIds)].sort()) ===
+              JSON.stringify([...new Set(input.marketplaceIds)].sort()) &&
+            Date.parse(report.createdTime) >= Date.parse(since) &&
+            Date.parse(report.dataStartTime) === Date.parse(input.dataStartTime) &&
+            Date.parse(report.dataEndTime) === Date.parse(input.dataEndTime)
+            ? [report]
+            : []
+        })
+        .sort((a, b) => Date.parse(b.createdTime) - Date.parse(a.createdTime))
+      reportId = matching[0]?.reportId
+    }
+    if (!reportId) {
+      reportId = z
+        .object({ reportId: z.string().min(1) })
+        .parse(
+          await read(
+            () => this.request("POST", "/reports/2021-06-30/reports", input),
+            options.deadline,
+            options.retryCreate !== false
+          )
+        ).reportId
+    }
     for (;;) {
       const report = z
         .object({
           processingStatus: z.enum(["IN_QUEUE", "IN_PROGRESS", "DONE", "CANCELLED", "FATAL"]),
           reportDocumentId: z.string().min(1).optional()
         })
-        .parse(
-          await read(() => this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(created.reportId)}`))
-        )
+        .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(reportId)}`)))
       if (report.processingStatus === "CANCELLED") {
         return null
       }

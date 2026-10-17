@@ -53,6 +53,11 @@ Financial searches filter by the current evidence page's exact order, SKU and AS
 longer hide historical matches. Marketplace/account isolation and search truncation remain explicit; candidates
 still require source-specific allocation checks and are not additional costs.
 
+Within reference priority, return candidates prefer `Refund` postings and reimbursement candidates prefer
+`FBAInventoryReimbursement` postings before both the database bound and the per-row display bound. Nearby posting
+dates rank ahead of distant ones. Ranking is an investigation aid, not proof of a financial relationship; ordinary
+sales, release-linked postings and mismatched currencies remain visible as candidates where their identifiers match.
+
 Report status/coverage intersecting the requested period and the financial sync's successful bounds/error/status accompany
 the result. Empty report coverage or zero rows does not establish zero cost. Candidates can span posting dates to allow late postings; a `truncated` flag identifies excluded candidates.
 The existing `amazon_transaction_posted` index begins with workspace and external account, supporting the search scope.

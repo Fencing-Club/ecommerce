@@ -597,3 +597,79 @@ it("does not repeat report creation when the caller budgets individual attempts"
   ).rejects.toMatchObject({ status: 429 })
   expect(calls).toHaveLength(1)
 })
+
+describe("recovering completed reports", () => {
+  const input = {
+    reportType: "GET_FBA_STORAGE_FEE_CHARGES_DATA",
+    marketplaceIds: ["US"],
+    dataStartTime: "2026-09-01T00:00:00.000Z",
+    dataEndTime: "2026-10-01T00:00:00.000Z"
+  }
+  const existing = {
+    ...input,
+    reportId: "existing",
+    processingStatus: "DONE",
+    reportDocumentId: "document",
+    createdTime: "2026-10-17T10:00:00Z"
+  }
+  const options = () => ({ deadline: Date.now() + 60000, reuseCreatedSince: "2026-10-17T00:00:00Z" })
+  const download = () => [
+    { processingStatus: "DONE", reportDocumentId: "document" },
+    { url: "https://reports.example.com/report" },
+    new Response("report text")
+  ]
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
+  afterEach(() => vi.useRealTimers())
+
+  it("reuses the newest exact report across pages and caches the listing for other months", async () => {
+    const { api, calls } = client([
+      { reports: [{ ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" }], nextToken: "page2" },
+      {
+        reports: [
+          existing,
+          { ...existing, reportId: "august", dataStartTime: "2026-08-01T00:00:00Z", dataEndTime: input.dataStartTime }
+        ]
+      },
+      ...download(),
+      ...download()
+    ])
+    await expect(api.report(input, options())).resolves.toBe("report text")
+    await expect(
+      api.report({ ...input, dataStartTime: "2026-08-01T00:00:00Z", dataEndTime: input.dataStartTime }, options())
+    ).resolves.toBe("report text")
+    expect(calls[1]?.search).toBe("?nextToken=page2")
+    expect(calls[2]?.pathname).toMatch(/\/existing$/)
+    expect(calls[5]?.pathname).toMatch(/\/august$/)
+    expect(calls.filter((url) => url.pathname === "/reports/2021-06-30/reports")).toHaveLength(2)
+  })
+
+  it.each([
+    { marketplaceIds: ["US", "CA"] },
+    { reportType: "another-type" },
+    { dataStartTime: "2026-08-01T00:00:00Z" },
+    { dataEndTime: "2026-09-30T23:59:59Z" },
+    { createdTime: "2026-10-16T23:59:59Z" },
+    { processingStatus: "FATAL" },
+    { reportDocumentId: undefined }
+  ])("creates fresh evidence when a previous report differs: %j", async (different) => {
+    const { api, calls } = client([{ reports: [{ ...existing, ...different }] }, { reportId: "new" }, ...download()])
+    await expect(api.report(input, options())).resolves.toBe("report text")
+    expect(calls[2]?.pathname).toMatch(/\/new$/)
+  })
+
+  it("does not reuse option-specific reports whose options cannot be verified", async () => {
+    const { api, calls } = client([{ reportId: "new" }, ...download()])
+    await api.report({ ...input, reportOptions: { view: "different" } }, options())
+    expect(calls[0]?.search).toBe("")
+    expect(calls[1]?.pathname).toMatch(/\/new$/)
+  })
+
+  it("rejects repeated pagination without silently creating duplicate reports", async () => {
+    const { api, calls } = client([
+      { reports: [], nextToken: "same" },
+      { reports: [], nextToken: "same" }
+    ])
+    await expect(api.report(input, options())).rejects.toThrow("pagination did not advance")
+    expect(calls).toHaveLength(2)
+  })
+})
