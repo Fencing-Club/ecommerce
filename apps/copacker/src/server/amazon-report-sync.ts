@@ -6,6 +6,24 @@ import { connections, salesSyncs } from "@/db/schema"
 // Request scope, not proof of a row's sales marketplace. Matches the app's US FBA inventory scope.
 export const fbaReportMarketplace = "ATVPDKIKX0DER"
 const day = 86400000
+export function amazonReportFailure(error: unknown, stage: "request" | "parse" | "period") {
+  if (error instanceof ProviderError) {
+    if ([401, 403].includes(error.status)) {
+      return "report_access_denied"
+    }
+    if ([429, 503].includes(error.status)) {
+      return "report_throttled"
+    }
+  }
+  if (stage === "parse") {
+    return "report_invalid_document"
+  }
+  if (stage === "period") {
+    return "report_outside_period"
+  }
+  return "report_failed"
+}
+
 type Window = { from: Date; to: Date }
 type ReportState = {
   from: Date
@@ -136,6 +154,7 @@ export async function syncMonthlyAmazonReport<Row>(
     }
     let rows: Row[] | null = null
     let errorCode: string | null = null
+    let stage: "request" | "parse" | "period" = "request"
     try {
       const text = await input.amazon.report(
         {
@@ -149,7 +168,9 @@ export async function syncMonthlyAmazonReport<Row>(
       if (text === null) {
         errorCode = "report_cancelled"
       } else {
+        stage = "parse"
         rows = source.parse(text)
+        stage = "period"
         if (rows.some((row) => source.timestamp(row) < window.from || source.timestamp(row) >= window.to)) {
           throw new Error("Report contains dates outside the requested month")
         }
@@ -157,13 +178,7 @@ export async function syncMonthlyAmazonReport<Row>(
     } catch (error) {
       // Do not log source rows or input-bearing validation errors.
       rows = null
-      errorCode = "report_failed"
-      if (error instanceof ProviderError && [401, 403].includes(error.status)) {
-        errorCode = "report_access_denied"
-      }
-      if (error instanceof ProviderError && [429, 503].includes(error.status)) {
-        errorCode = "report_throttled"
-      }
+      errorCode = amazonReportFailure(error, stage)
     }
     await assertOwned()
     await db().transaction(async (tx) => {

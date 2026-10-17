@@ -1,8 +1,10 @@
 # Amazon FBA reimbursement ingestion
 
 The Amazon sales worker requests `GET_FBA_REIMBURSEMENTS_DATA` after returns, on the existing first-connection,
-manual and daily sales sync paths. This implements report acquisition for analytics backlog A03. Deployment and
-live-account access/history validation remain pending; this is not a completed recovery or profitability feature.
+manual and daily sales sync paths. This implements report acquisition for analytics backlog A03 and is deployed in production as of
+[release 02eeb1c](https://github.com/AndrewCraswell/ecommerce/actions/runs/39068570712), 2026-10-17. Fencing Club has
+102 reimbursement rows across all 13 target windows at the [live acceptance checkpoint](specs/analytics/analytics-data-backlog.md#live-acceptance-checkpoint-2026-10-17).
+Other accounts, older history and financial reconciliation remain unverified; this is not a completed recovery or profitability feature.
 
 ## Scope and refresh
 
@@ -44,7 +46,9 @@ malformed, or cancelled reports do not. Parsing/date errors reject the entire mo
 - `not_imported`: no attempt recorded; row count and coverage are null.
 - `imported`: last attempt succeeded; `complete` also requires coverage through the currently requested end.
 - `unavailable` / `report_cancelled`: Amazon cancelled the report; this does not establish zero reimbursements.
-- `failed` / `report_failed`: request or document validation failed.
+- `failed` / `report_failed`: provider request or report download failed.
+- `failed` / `report_invalid_document`: the downloaded document failed parsing.
+- `failed` / `report_outside_period`: parsed rows fall outside the requested month.
 - `failed` / `report_access_denied` or `report_throttled`: access/rate limit failure; stop this source's remaining
   requests until the next sync. Other monthly failures continue backfilling older windows.
 

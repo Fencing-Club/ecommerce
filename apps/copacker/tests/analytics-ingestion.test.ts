@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
+import { ProviderError } from "@repo/aisle/amazon"
 import { drizzle } from "drizzle-orm/pglite"
 import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -345,7 +346,33 @@ it("attempts every missing FBM month and preserves prior coverage when refresh f
   const feeds = await database.select().from(tables.analyticsFeeds)
   expect(feeds.find((r) => r.dataset === "fbm_returns:2026-01")?.state).toMatchObject({
     coveredTo: "2026-01-02T00:00:00Z",
-    error: "report_failed"
+    error: "report_cancelled"
   })
   expect(feeds.filter((r) => r.dataset.startsWith("fbm_returns:"))).toHaveLength(13)
 })
+
+it.each([401, 403, 429, 503])(
+  "stops FBM requests after provider status %s without claiming older coverage",
+  async (status) => {
+    await database
+      .insert(tables.connections)
+      .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+    await database
+      .insert(tables.salesSyncs)
+      .values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+    const report = vi
+      .fn<() => Promise<string | null>>()
+      .mockRejectedValue(new ProviderError(status, null, "private provider detail"))
+    await syncAmazonExtraEvidence(
+      { orgId, externalAccountId: "seller", revision: 1, amazon: { report } },
+      async () => undefined,
+      new Date("2026-01-05T00:00:00Z")
+    )
+    expect(report).toHaveBeenCalledTimes(1)
+    const feeds = await database.select().from(tables.analyticsFeeds)
+    const periods = feeds.filter((row) => row.dataset.startsWith("fbm_returns:"))
+    expect(periods).toHaveLength(1)
+    expect(periods[0]?.state).toEqual({ error: status < 429 ? "report_access_denied" : "report_throttled" })
+    expect(feeds.find((row) => row.dataset === "awd_costs")?.state.error).toBeNull()
+  }
+)
