@@ -33,6 +33,13 @@ export function PortalError({ retry }: { retry: () => void }) {
               {t("goToOverview")}
             </Button>
           </div>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<a href="/workspaces" aria-label={t("switchWorkspace")} />}
+          >
+            {t("switchWorkspace")}
+          </Button>
         </EmptyContent>
       </Empty>
     </>

@@ -150,7 +150,8 @@
       "didntLoad": "Diese Seite wurde nicht geladen",
       "dataUnchanged": "Ihre Daten sind unverändert",
       "tryAgain": "Erneut versuchen",
-      "goToOverview": "Zur Übersicht"
+      "goToOverview": "Zur Übersicht",
+      "switchWorkspace": "Arbeitsbereich wechseln"
     },
     "notFound": {
       "title": "Seite nicht gefunden",

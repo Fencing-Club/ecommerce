@@ -80,5 +80,9 @@
     "product": "Product",
     "catalog": "Catalog",
     "importProducts": "Import products"
+  },
+  "workspacePicker": {
+    "title": "Choose a workspace",
+    "unavailable": "Your previous workspace is no longer available. Choose another to continue."
   }
 }

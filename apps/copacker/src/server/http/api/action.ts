@@ -99,6 +99,14 @@ export async function POST(request: Request) {
     if (action === "onboarding.join") {
       return Response.json(await joinWorkspace(await identity(), data))
     }
+    // Recovery must not depend on a workspace that has disappeared.
+    if (action === "workspace.switch") {
+      const user = await identity("/workspaces")
+      const workspaceId = z.uuid().parse(data.id)
+      await requireMembership(user.id, workspaceId)
+      setWorkspace(workspaceId)
+      return Response.json({ redirect: "/" })
+    }
     const s = await session()
     const id = () => z.uuid().parse(data.id),
       revision = () => z.number().int().positive().parse(data.revision)
@@ -133,11 +141,6 @@ export async function POST(request: Request) {
     if (action === "team.remove") {
       requireAdmin(s)
       return Response.json(await removeColleague(s, data))
-    }
-    if (action === "workspace.switch") {
-      await requireMembership(s.user.id, id())
-      await setWorkspace(id())
-      return Response.json({ redirect: "/" })
     }
     if (action === "supplier.create") {
       requireBuyer(s)

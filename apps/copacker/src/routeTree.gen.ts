@@ -57,7 +57,9 @@ import { Route as ApiSalesRouteImport } from './routes/api.sales'
 import { Route as ApiSearchRouteImport } from './routes/api.search'
 import { Route as ApiWorkspaceRouteImport } from './routes/api.workspace'
 import { Route as LoginProviderRouteImport } from './routes/login.$provider'
+import { Route as WorkspacesIndexRouteImport } from './routes/workspaces.index'
 import { Route as WorkspacesNewRouteImport } from './routes/workspaces.new'
+import { Route as WorkspacesRecoverRouteImport } from './routes/workspaces.recover'
 import { Route as PortalCatalogsIdRouteImport } from './routes/_portal.catalogs_.$id'
 import { Route as PortalCatalogsNewRouteImport } from './routes/_portal.catalogs_.new'
 import { Route as PortalCustomersIdRouteImport } from './routes/_portal.customers_.$id'
@@ -380,9 +382,19 @@ const LoginProviderRoute = LoginProviderRouteImport.update({
   path: '/login/$provider',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkspacesIndexRoute = WorkspacesIndexRouteImport.update({
+  id: '/workspaces/',
+  path: '/workspaces/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkspacesNewRoute = WorkspacesNewRouteImport.update({
   id: '/workspaces/new',
   path: '/workspaces/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkspacesRecoverRoute = WorkspacesRecoverRouteImport.update({
+  id: '/workspaces/recover',
+  path: '/workspaces/recover',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalCatalogsIdRoute = PortalCatalogsIdRouteImport.update({
@@ -881,6 +893,8 @@ export interface FileRoutesByFullPath {
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
   '/workspaces/new': typeof WorkspacesNewRoute
+  '/workspaces/recover': typeof WorkspacesRecoverRoute
+  '/workspaces/': typeof WorkspacesIndexRoute
   '/catalogs/$id': typeof PortalCatalogsIdRoute
   '/catalogs/new': typeof PortalCatalogsNewRoute
   '/customers/$id': typeof PortalCustomersIdRoute
@@ -1013,6 +1027,8 @@ export interface FileRoutesByTo {
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
   '/workspaces/new': typeof WorkspacesNewRoute
+  '/workspaces/recover': typeof WorkspacesRecoverRoute
+  '/workspaces': typeof WorkspacesIndexRoute
   '/catalogs/$id': typeof PortalCatalogsIdRoute
   '/catalogs/new': typeof PortalCatalogsNewRoute
   '/customers/$id': typeof PortalCustomersIdRoute
@@ -1148,6 +1164,8 @@ export interface FileRoutesById {
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
   '/workspaces/new': typeof WorkspacesNewRoute
+  '/workspaces/recover': typeof WorkspacesRecoverRoute
+  '/workspaces/': typeof WorkspacesIndexRoute
   '/_portal/catalogs_/$id': typeof PortalCatalogsIdRoute
   '/_portal/catalogs_/new': typeof PortalCatalogsNewRoute
   '/_portal/customers_/$id': typeof PortalCustomersIdRoute
@@ -1282,6 +1300,8 @@ export interface FileRouteTypes {
     | '/api/workspace'
     | '/login/$provider'
     | '/workspaces/new'
+    | '/workspaces/recover'
+    | '/workspaces/'
     | '/catalogs/$id'
     | '/catalogs/new'
     | '/customers/$id'
@@ -1414,6 +1434,8 @@ export interface FileRouteTypes {
     | '/api/workspace'
     | '/login/$provider'
     | '/workspaces/new'
+    | '/workspaces/recover'
+    | '/workspaces'
     | '/catalogs/$id'
     | '/catalogs/new'
     | '/customers/$id'
@@ -1548,6 +1570,8 @@ export interface FileRouteTypes {
     | '/api/workspace'
     | '/login/$provider'
     | '/workspaces/new'
+    | '/workspaces/recover'
+    | '/workspaces/'
     | '/_portal/catalogs_/$id'
     | '/_portal/catalogs_/new'
     | '/_portal/customers_/$id'
@@ -1664,6 +1688,8 @@ export interface RootRouteChildren {
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
   LoginProviderRoute: typeof LoginProviderRoute
   WorkspacesNewRoute: typeof WorkspacesNewRoute
+  WorkspacesRecoverRoute: typeof WorkspacesRecoverRoute
+  WorkspacesIndexRoute: typeof WorkspacesIndexRoute
   ApiAnalyticsCostImportPreviewsRoute: typeof ApiAnalyticsCostImportPreviewsRoute
   ApiAnalyticsCostImportsRoute: typeof ApiAnalyticsCostImportsRouteWithChildren
   ApiAnalyticsDepletionImportsRoute: typeof ApiAnalyticsDepletionImportsRoute
@@ -2046,11 +2072,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workspaces/': {
+      id: '/workspaces/'
+      path: '/workspaces'
+      fullPath: '/workspaces/'
+      preLoaderRoute: typeof WorkspacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workspaces/new': {
       id: '/workspaces/new'
       path: '/workspaces/new'
       fullPath: '/workspaces/new'
       preLoaderRoute: typeof WorkspacesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workspaces/recover': {
+      id: '/workspaces/recover'
+      path: '/workspaces/recover'
+      fullPath: '/workspaces/recover'
+      preLoaderRoute: typeof WorkspacesRecoverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_portal/catalogs_/$id': {
@@ -2988,6 +3028,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspaceRoute: ApiWorkspaceRoute,
   LoginProviderRoute: LoginProviderRoute,
   WorkspacesNewRoute: WorkspacesNewRoute,
+  WorkspacesRecoverRoute: WorkspacesRecoverRoute,
+  WorkspacesIndexRoute: WorkspacesIndexRoute,
   ApiAnalyticsCostImportPreviewsRoute: ApiAnalyticsCostImportPreviewsRoute,
   ApiAnalyticsCostImportsRoute: ApiAnalyticsCostImportsRouteWithChildren,
   ApiAnalyticsDepletionImportsRoute: ApiAnalyticsDepletionImportsRoute,

@@ -150,7 +150,8 @@
       "didntLoad": "This page didn’t load",
       "dataUnchanged": "Your data hasn’t changed",
       "tryAgain": "Try again",
-      "goToOverview": "Go to Overview"
+      "goToOverview": "Go to Overview",
+      "switchWorkspace": "Switch workspace"
     },
     "notFound": {
       "title": "Page not found",

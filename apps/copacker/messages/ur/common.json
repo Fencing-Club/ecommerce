@@ -150,7 +150,8 @@
       "didntLoad": "یہ صفحہ لوڈ نہیں ہوا",
       "dataUnchanged": "آپ کا ڈیٹا تبدیل نہیں ہوا",
       "tryAgain": "دوبارہ کوشش کریں",
-      "goToOverview": "جائزہ پر جائیں"
+      "goToOverview": "جائزہ پر جائیں",
+      "switchWorkspace": "ورک اسپیس تبدیل کریں"
     },
     "notFound": {
       "title": "صفحہ نہیں ملا",

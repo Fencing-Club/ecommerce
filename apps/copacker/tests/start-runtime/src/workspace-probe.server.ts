@@ -52,7 +52,7 @@ export async function workspaceProbe() {
       }
       invariant(denied, "A read-only membership must not authorize writes")
       const forged = await workspaceSession(user, foreign, tx)
-      invariant(forged?.org.id === buyer, "A foreign workspace cookie must not grant membership")
+      invariant(forged === null, "A foreign workspace cookie must not grant membership")
       await tx
         .update(memberships)
         .set({ access: { orders: "edit" } })
@@ -62,7 +62,7 @@ export async function workspaceProbe() {
       requireAccess(updated, "orders", "edit")
       await tx.delete(memberships).where(and(eq(memberships.orgId, supplier), eq(memberships.userId, user.id)))
       const revoked = await workspaceSession(user, supplier, tx)
-      invariant(revoked?.org.id === buyer && revoked.workspaces.length === 1, "Revoked membership was retained")
+      invariant(revoked === null, "Revoked membership was retained")
       return {
         selectedRole: selected.role,
         deniedEdit: denied,

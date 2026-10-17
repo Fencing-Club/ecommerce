@@ -1,7 +1,19 @@
-import { session } from "@/server/auth"
+import { getCookie } from "@tanstack/react-start/server"
+import { identity } from "@/server/auth"
+import { workspaceCookie, workspaceMemberships } from "@/server/workspace-session"
 
-// The workspace this browser is signed in to now, which another tab may have switched.
+// Available even when the portal cannot resolve its saved workspace.
 export async function GET() {
-  const s = await session()
-  return Response.json({ id: s.org.id }, { headers: { "Cache-Control": "no-store" } })
+  const user = await identity("/workspaces")
+  const active = getCookie(workspaceCookie)
+  const available = await workspaceMemberships(user.id)
+  const current = available.find(({ org }) => org.id === active)
+  const headers = { "Cache-Control": "no-store" }
+  if (current) {
+    return Response.json({ id: current.org.id }, { headers })
+  }
+  if (!available.length) {
+    return Response.json({ redirect: "/onboarding" }, { headers })
+  }
+  return Response.json({ redirect: active ? "/workspaces?unavailable=1" : "/workspaces" }, { headers })
 }

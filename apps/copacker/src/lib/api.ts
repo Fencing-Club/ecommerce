@@ -25,9 +25,21 @@ export type SupplierOption = {
 // Server-rendered pages refresh with router.refresh(). Data cached here is tagged, so a change made anywhere re-renders
 // every view that shows it: "Supplier" for supplier names and lead times, "Restock" for restock results, and
 // "ProductSupplier" for which products have a supplier, and "InventoryLocation" for which Shopify locations count.
+// Follow session redirects as document navigation, never inside a background request. In particular, fetching
+// through recovery could change the workspace cookie while leaving the old company's screen and caches visible.
+const fetchQuery = fetchBaseQuery({ baseUrl: "/api", redirect: "manual" })
+
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
+  baseQuery: async (args, api, extraOptions) => {
+    const result = await fetchQuery(args, api, extraOptions)
+    // Browser fetch intentionally hides the target of a manual redirect. The independent recovery route can
+    // resolve sign-in, onboarding and workspace selection without retrying the original request.
+    if (result.meta?.response?.type === "opaqueredirect") {
+      window.location.assign("/workspaces?unavailable=1")
+    }
+    return result
+  },
   tagTypes: ["Supplier", "Restock", "ProductSupplier", "InventoryLocation"],
   endpoints: (build) => ({
     action: build.mutation<ActionResult, { action: string; data: Record<string, unknown> }>({

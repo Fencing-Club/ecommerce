@@ -2,7 +2,7 @@ import { can } from "@/lib/access"
 import { homeFor } from "@/lib/navigation"
 import { ownProfile } from "./profile"
 import { returnPath } from "./security"
-import { workspaceSession } from "./workspace-session"
+import { workspaceRecoveryPath, workspaceSession } from "./workspace-session"
 
 type User = Parameters<typeof workspaceSession>[0]
 
@@ -14,7 +14,7 @@ export async function portalSession(user: User | null, active: string | undefine
   }
   const session = await workspaceSession(user, active)
   if (!session) {
-    return { redirect: "/onboarding" } as const
+    return { redirect: await workspaceRecoveryPath(user.id, active) } as const
   }
   if (!(await ownProfile(user.id)).complete) {
     return { redirect: `/onboarding?next=${encodeURIComponent(next)}` } as const

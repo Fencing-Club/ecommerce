@@ -66,14 +66,10 @@ describe("request workspace resolution", () => {
     expect(() => requireAdmin(current!)).toThrow(AccessError)
   })
 
-  it.each([undefined, "malformed", foreign])(
-    "falls back only to an authorized, stable workspace for %s",
-    async (active) => {
-      const current = await workspaceSession(user, active)
-      expect(current).toMatchObject({ org: { id: first, restockLeadTimeDays: 30 }, role: "owner" })
-      expect(current?.workspaces.map(({ id }) => id)).not.toContain(foreign)
-    }
-  )
+  it.each([undefined, "malformed", foreign])("requires a fresh workspace selection for %s", async (active) => {
+    const current = await workspaceSession(user, active)
+    expect(current).toBeNull()
+  })
 
   it("reads permission changes on the next operation", async () => {
     const before = await workspaceSession(user, second)
@@ -93,8 +89,7 @@ describe("request workspace resolution", () => {
       .delete(tables.memberships)
       .where(and(eq(tables.memberships.orgId, second), eq(tables.memberships.userId, user.id)))
     const after = await workspaceSession(user, second)
-    expect(after?.org.id).toBe(first)
-    expect(after?.workspaces.map(({ id }) => id)).toEqual([first])
+    expect(after).toBeNull()
     await expect(requireMembership(user.id, second)).rejects.toThrow(LocalizedError)
   })
 
@@ -106,8 +101,8 @@ describe("request workspace resolution", () => {
 
   it("keeps overlapping callers in their own memberships", async () => {
     const [member, other] = await Promise.all([
-      workspaceSession(user, foreign),
-      workspaceSession({ id: "user_other", email: "other@example.invalid", emailVerified: true }, first)
+      workspaceSession(user, first),
+      workspaceSession({ id: "user_other", email: "other@example.invalid", emailVerified: true }, foreign)
     ])
     expect(member?.workspaces.map(({ id }) => id)).toEqual([first, second])
     expect(other?.workspaces).toEqual([{ id: foreign, name: "Someone else's workspace", kind: "buyer" }])
@@ -151,6 +146,11 @@ describe("portal entry and shell data", () => {
     expect(overviewDestination(result.session!)).toBeNull()
     const restricted = await workspaceSession(user, second)
     expect(overviewDestination(restricted!)).toBe("/orders")
+  })
+  it.each([undefined, "malformed", foreign])("recovers unavailable portal selections (%s)", async (active) => {
+    expect(await portalSession(user, active, "/orders/old-order")).toEqual({
+      redirect: active ? "/workspaces?unavailable=1" : "/workspaces"
+    })
   })
   it("requires onboarding after every membership is revoked", async () => {
     await database.delete(tables.memberships).where(eq(tables.memberships.userId, user.id))

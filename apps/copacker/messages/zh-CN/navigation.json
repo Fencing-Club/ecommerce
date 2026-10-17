@@ -80,5 +80,9 @@
     "product": "产品",
     "catalog": "目录",
     "importProducts": "导入产品"
+  },
+  "workspacePicker": {
+    "title": "选择工作区",
+    "unavailable": "之前的工作区已不可用。请选择其他工作区以继续。"
   }
 }

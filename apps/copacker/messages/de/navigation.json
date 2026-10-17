@@ -80,5 +80,9 @@
     "product": "Produkt",
     "catalog": "Katalog",
     "importProducts": "Produkte importieren"
+  },
+  "workspacePicker": {
+    "title": "Arbeitsbereich auswählen",
+    "unavailable": "Dein bisheriger Arbeitsbereich ist nicht mehr verfügbar. Wähle einen anderen aus, um fortzufahren."
   }
 }

@@ -150,7 +150,8 @@
       "didntLoad": "Cette page ne s’est pas chargée",
       "dataUnchanged": "Vos données n’ont pas été modifiées",
       "tryAgain": "Réessayer",
-      "goToOverview": "Aller à la Vue d’ensemble"
+      "goToOverview": "Aller à la Vue d’ensemble",
+      "switchWorkspace": "Changer d’espace de travail"
     },
     "notFound": {
       "title": "Page introuvable",
