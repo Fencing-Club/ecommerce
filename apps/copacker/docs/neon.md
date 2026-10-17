@@ -30,6 +30,27 @@ through one dedicated session with an advisory lock before deploying web, Storyb
 The old Railway web pre-deploy steps are disabled. Production promotion releases the exact
 tested staging commit. See the [release gates](cloudflare.md#release-procedure); tests never seed production.
 
+## Database transfer
+
+Neon meters data returned over the database connection, independently of the final HTTP response size. A paginated
+response can still be expensive if its query fetches a whole JSON snapshot and slices it in JavaScript.
+
+Inventory status polling uses `/api/inventory/status`, which selects only account, timestamp and refresh metadata.
+Sales status aggregates order counts and units inside Postgres using the Overview's quantity rules. Stock refresh
+coordination selects only the fields needed to claim and fence a job, without returning the previous snapshot.
+The `sync-status-egress` regression suite measures serialized database results with large fixtures and enforces a
+small result budget. These measurements exclude PostgreSQL protocol and TLS overhead; they are not billed usage.
+
+During the October 17, 2026 quota investigation, the Neon API reported 6.18 GB transferred: 6.03 GB from production
+and 120 MB from staging. Cloudflare telemetry for October 16–17 showed roughly 10,000 inventory requests while the
+old status poll read complete snapshots every five seconds. Continuous provider syncs also ran without visitors.
+The available logs do not attribute all transferred bytes to individual queries. Check the project and branch
+`data_transfer_bytes` counters before and after a comparable deployment window to verify the live reduction;
+hourly consumption history is unavailable on the Free plan. Query fixes do not reset already consumed allowances.
+
+See [Neon's transfer guidance](https://neon.com/blog/how-to-make-the-most-of-neons-free-plan) for projection and
+`RETURNING` pitfalls. Diagnose oversized reads before increasing the plan allowance.
+
 ## PR previews
 
 ### Provisioning performance

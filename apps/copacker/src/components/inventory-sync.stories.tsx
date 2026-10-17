@@ -139,7 +139,7 @@ export const NeverSynced = meta.story({
 export const Loading = meta.story({
   args: { providers: ["shopify"] },
   beforeEach: ({ msw }) => {
-    msw.use(http.get("/api/inventory", () => delay("infinite")))
+    msw.use(http.get("/api/inventory/status", () => delay("infinite")))
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Loading products")).toBeInTheDocument()
@@ -227,7 +227,7 @@ export const RowNeverSynced = meta.story({
 export const RowStatusUnavailable = meta.story({
   render: () => <InventorySyncRow provider="shopify" />,
   beforeEach: ({ msw }) => {
-    msw.use(http.get("/api/inventory", () => new HttpResponse(null, { status: 500 })))
+    msw.use(http.get("/api/inventory/status", () => new HttpResponse(null, { status: 500 })))
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Status unavailable")).toBeVisible()

@@ -12,6 +12,7 @@ import {
   shopifyPaymentFees
 } from "@repo/aisle/sales"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
+import { alias } from "drizzle-orm/pg-core"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
@@ -41,6 +42,7 @@ import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
+import { orderUnits } from "./overview-sales"
 import type { DemandGap } from "./sales-attribution"
 import type { DemandRow } from "./sales-attribution"
 import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
@@ -548,13 +550,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
 
 // Each connected source's sync state and the orders stored for it, without Shopify orders that have an excluded tag.
 export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new Date()) {
-  const t = await serverText()
   // The Overview's "Last 30 days": the 30 days before today in the store's time zone.
   const recentRange = presetRange("last30", zonedDay(now, timeZone))
   const since = zonedStart(recentRange.from, timeZone)
   const until = zonedStart(addDays(recentRange.to, 1), timeZone)
   // The orders the Overview counts: see counted-orders.
-  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))} and ${countedOrder(sql`${salesOrders.data}`)}`
+  const tags = await excludedShopifyTags(orgId)
+  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, tags)} and ${countedOrder(sql`${salesOrders.data}`)}`
+  const recentOrders = alias(salesOrders, "o")
   const [accounts, syncs, stored, recent] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId, scopes: connections.scopes })
@@ -572,15 +575,21 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
       .groupBy(salesOrders.source, salesOrders.externalAccountId),
     db()
       .select({
-        source: salesOrders.source,
-        externalAccountId: salesOrders.externalAccountId,
-        orderedAt: salesOrders.orderedAt,
-        data: salesOrders.data
+        source: recentOrders.source,
+        externalAccountId: recentOrders.externalAccountId,
+        orders: count(),
+        units: sql<number>`coalesce(sum(${orderUnits}), 0)`.mapWith(Number)
       })
-      .from(salesOrders)
+      .from(recentOrders)
       .where(
-        and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since), lt(salesOrders.orderedAt, until), included)
+        and(
+          eq(recentOrders.orgId, orgId),
+          gte(recentOrders.orderedAt, since),
+          lt(recentOrders.orderedAt, until),
+          sql`not ${taggedWith(sql`${recentOrders.data}`, tags)} and ${countedOrder(sql`${recentOrders.data}`)}`
+        )
       )
+      .groupBy(recentOrders.source, recentOrders.externalAccountId)
   ])
   const amazonAccount = accounts.find((account) => account.provider === "amazon")
   const removals = amazonAccount
@@ -607,9 +616,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
     }
     const sync = syncs.find((row) => row.source === source && row.externalAccountId === account.externalId)
     const orders = stored.find((row) => row.source === source && row.externalAccountId === account.externalId)
-    const last30 = recent
-      .filter((row) => row.source === source && row.externalAccountId === account.externalId)
-      .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId, t))
+    const last30 = recent.find((row) => row.source === source && row.externalAccountId === account.externalId)
     return [
       {
         source,
@@ -623,7 +630,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
         progress: sync ? orderSyncProgress(sync, historyDaysFor(source, account.scopes)) : null,
         orders: orders?.orders ?? 0,
         // Orders and units in the last 30 days.
-        recent: { orders: last30.length, units: last30.reduce((sum, order) => sum + order.units, 0) }
+        recent: { orders: last30?.orders ?? 0, units: last30?.units ?? 0 }
       }
     ]
   })

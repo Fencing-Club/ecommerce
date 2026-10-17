@@ -69,7 +69,8 @@ const ebayLineRevenue = sql.raw(`(${ebayLineSales} * (case when ${ebayOrderLines
   then greatest(0, 1 - ${ebayOrderRefund} / ${ebayOrderLines}) else 1 end))`)
 const ebayLineUnits = `(case when ${ebayLineGone} then 0 else (ebay->>'quantity')::int end)`
 
-const orderUnits = sql.raw(`case when o.source = 'amazon' then
+// Shared with sync-status totals. The order table must be aliased as `o`.
+export const orderUnits = sql.raw(`case when o.source = 'amazon' then
   (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(o.data->'orderItems') item)
 when o.source = 'ebay' then
   (select coalesce(sum(${ebayLineUnits}), 0) from jsonb_array_elements(o.data->'lineItems') ebay)

@@ -395,7 +395,7 @@ export function storeSyncHandlers({
       HttpResponse.json({ connected: false, active: false, failed: false })
     ),
     http.get("/api/sales", () => HttpResponse.json({ sources: sales })),
-    http.get("/api/inventory", ({ request }) => {
+    http.get("/api/inventory/status", ({ request }) => {
       const source = new URL(request.url).searchParams.get("source")
       const status =
         source === "shopify" || source === "fba" || source === "awd"

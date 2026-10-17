@@ -95,7 +95,11 @@ export async function refreshStock(
         .insert(stockSnapshots)
         .values({ orgId: org.id, source, externalAccountId: account.externalId, scopeKey })
         .onConflictDoNothing()
-      const [current] = await tx.select().from(stockSnapshots).where(scope).for("update")
+      const [current] = await tx
+        .select({ id: stockSnapshots.id, revision: stockSnapshots.revision, status: stockSnapshots.status })
+        .from(stockSnapshots)
+        .where(scope)
+        .for("update")
       if (!current) {
         throw new Error("Stock scope could not be created")
       }
@@ -150,7 +154,12 @@ export async function stockJob(
           inArray(stockSnapshots.status, ["queued", "running"])
         )
       )
-      .returning()
+      .returning({
+        orgId: stockSnapshots.orgId,
+        externalAccountId: stockSnapshots.externalAccountId,
+        source: stockSnapshots.source,
+        scopeKey: stockSnapshots.scopeKey
+      })
     return row
   })
   if (!claimed) {
