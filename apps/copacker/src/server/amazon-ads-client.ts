@@ -29,8 +29,8 @@ const reportResponse = z.object({
         report: z.object({
           reportId: z.string().min(1),
           status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
-          completedReportParts: z.array(z.object({ url: z.url() })).optional(),
-          warnings: z.array(z.unknown()).optional()
+          completedReportParts: z.array(z.object({ url: z.url() })).nullish(),
+          warnings: z.array(z.unknown()).nullish()
         })
       })
     )

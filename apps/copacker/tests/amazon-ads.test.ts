@@ -59,7 +59,8 @@ const reportResponse = (status = "COMPLETED") =>
         report: {
           reportId: "report",
           status,
-          completedReportParts: [{ url: "https://reports.s3.amazonaws.com/report" }]
+          completedReportParts: status === "COMPLETED" ? [{ url: "https://reports.s3.amazonaws.com/report" }] : null,
+          warnings: null
         }
       }
     ]
@@ -364,6 +365,24 @@ describe("durable ad spend imports", () => {
       }
     })
   })
+  it.each(["PENDING", "PROCESSING"])("keeps polling a %s report with null files and warnings", async (status) => {
+    await connect()
+    fetchMock.mockImplementation(async (url) =>
+      String(url).includes("auth/o2") ? Response.json({ access_token: "access" }) : reportResponse(status)
+    )
+    await expect(
+      amazonAdsJob(
+        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
+        async () => undefined
+      )
+    ).rejects.toMatchObject({
+      message: "Waiting for Amazon Ads report",
+      options: { delayMs: 300000 }
+    })
+    expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
+    expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/create/"))).toBe(false)
+  })
   it("atomically imports all products, writes zero days and replaces corrections without adding twice", async () => {
     await connect()
     let cost = 1.25
@@ -446,33 +465,38 @@ describe("durable ad spend imports", () => {
     ).rejects.toThrow("generation failed")
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
   })
-  it("rejects completed reports without downloads instead of erasing spend", async () => {
-    await connect()
-    await database.insert(tables.amazonAdsDays).values({
-      orgId,
-      sellerId: "SELLER1",
-      profileId: "1234",
-      marketplaceId: "ATVPDKIKX0DER",
-      day: "2026-10-12",
-      currency: "USD",
-      cost: "12.500000",
-      syncedAt: new Date()
-    })
-    fetchMock.mockImplementation(async (url) =>
-      String(url).includes("auth/o2")
-        ? Response.json({ access_token: "access" })
-        : Response.json({
-            success: [{ report: { reportId: "report", status: "COMPLETED", completedReportParts: [] } }]
-          })
-    )
-    await expect(
-      amazonAdsJob(
-        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-        async () => undefined
+  it.each([{ parts: [] }, { parts: null }, { parts: undefined }])(
+    "rejects completed reports with $parts downloads without erasing spend",
+    async ({ parts }) => {
+      await connect()
+      await database.insert(tables.amazonAdsDays).values({
+        orgId,
+        sellerId: "SELLER1",
+        profileId: "1234",
+        marketplaceId: "ATVPDKIKX0DER",
+        day: "2026-10-12",
+        currency: "USD",
+        cost: "12.500000",
+        syncedAt: new Date()
+      })
+      fetchMock.mockImplementation(async (url) =>
+        String(url).includes("auth/o2")
+          ? Response.json({ access_token: "access" })
+          : Response.json({
+              success: [
+                { report: { reportId: "report", status: "COMPLETED", completedReportParts: parts, warnings: null } }
+              ]
+            })
       )
-    ).rejects.toThrow("download is missing")
-    expect((await database.select().from(tables.amazonAdsDays)).map((day) => day.cost)).toEqual(["12.500000"])
-  })
+      await expect(
+        amazonAdsJob(
+          { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
+          async () => undefined
+        )
+      ).rejects.toThrow("download is missing")
+      expect((await database.select().from(tables.amazonAdsDays)).map((day) => day.cost)).toEqual(["12.500000"])
+    }
+  )
   it.each(["token", "report", "download"])("retries a %s network failure without writing spend", async (stage) => {
     await connect()
     fetchMock.mockImplementation(async (url) => {
