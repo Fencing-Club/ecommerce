@@ -244,8 +244,8 @@ describe("Restock sales availability", () => {
 
 describe("eBay orders beside Shopify's copies of them", () => {
   // Shopify's eBay sales channel copies each eBay order into Shopify, tagged eBay. With eBay connected, those copies
-  // are left out by excluding the tag in Settings, so each sale counts once.
-  it("counts each eBay sale once when Shopify's tagged copies are excluded", async () => {
+  // are excluded by default, so each sale counts once.
+  it("excludes Shopify copies by default while retaining native eBay sales", async () => {
     await database
       .insert(tables.connections)
       .values({ orgId, provider: "shopify", externalId: "club.myshopify.com", encryptedToken: "x" })
@@ -291,11 +291,6 @@ describe("eBay orders beside Shopify's copies of them", () => {
     })
     const sources = async () =>
       Object.fromEntries((await salesSyncStatus(orgId)).map((state) => [state.source, state.recent.orders]))
-    // Before the tag is excluded, the eBay sale shows twice: once from eBay and once as Shopify's copy.
-    expect(await sources()).toEqual({ shopify: 2, ebay: 1 })
-    expect((await listSalesOrders(orgId, { page: 0 })).total).toBe(3)
-
-    await pg.exec(`UPDATE organizations SET "excludedShopifyTags" = '{Amazon,ebay}'`)
     expect(await sources()).toEqual({ shopify: 1, ebay: 1 })
     const listed = await listSalesOrders(orgId, { page: 0 })
     expect(listed.orders.map((order) => `${order.source}:${order.orderId}`).toSorted()).toEqual([

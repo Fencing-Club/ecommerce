@@ -9,6 +9,15 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)
 - [Amazon Ads expense reporting](amazon-ads.md)
+- [Amazon FBA returns ingestion](amazon-returns.md)
+- [Amazon FBA reimbursement ingestion](amazon-reimbursements.md)
+- [Detailed Amazon inventory movements](amazon-inventory-movements.md)
+- [Amazon storage and aged-inventory fees](amazon-storage-fees.md)
+- [Amazon removal and disposal evidence](amazon-removals.md)
+- [Amazon reconciliation evidence](amazon-reconciliation.md)
+- [Historical inventory cost inputs](historical-inventory-basis.md)
+- [Analytics HTTP contract](analytics-api.md)
+- [Historical product mappings and Amazon allocations](amazon-cost-allocation.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
@@ -25,6 +34,17 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 
 Specs (planned work; the purchase order flow also maps how orders work today):
 
+- [Analytics: profitability reporting and analytics data backlog](specs/analytics/README.md)
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)
 - [Inventory sync](specs/inventory-sync/README.md)
 - [Purchase order flow](specs/purchase-order-flow/README.md)
+
+See [historical landed costs and FIFO](inventory-costing.md) for landed charges, depletion records and calculation resources.
+
+See [sales-linked FIFO imports](sales-cost-imports.md) for importing stored Shopify and Amazon fulfillment evidence.
+
+See [shipment-date evidence](shipment-date-evidence.md) for Shopify fulfillment timestamps and the Amazon FBA outbound-shipment report integration.
+
+[Dated conversions and automatic depletion imports](automatic-depletion-imports.md) now provide opt-in processing after sales sync; live coverage and return-to-stock accounting remain pending.
+
+- [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events and additional Amazon evidence.

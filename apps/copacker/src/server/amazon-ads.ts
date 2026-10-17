@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { amazonAdsConnections, amazonAdsDays, connections, jobs } from "@/db/schema"
+import { amazonAdsConnections, amazonAdsDays, connections, jobs, analyticsEvidence } from "@/db/schema"
 import { addDays, zonedDay } from "@/lib/time-zone"
 import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "./amazon-ads-client"
 import { syncExchangeRates } from "./exchange-rates"
@@ -92,7 +92,8 @@ const jobInput = z.object({
   profileId: z.string(),
   from: z.iso.date(),
   to: z.iso.date(),
-  reportId: z.string().optional()
+  reportId: z.string().optional(),
+  productDetail: z.boolean().optional()
 })
 
 export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
@@ -128,7 +129,7 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
     }
     const ads = new AmazonAds(token.access_token)
     if (!input.reportId) {
-      const reportId = await ads.createReport(profile, from, to)
+      const reportId = await ads.createReport(profile, from, to, input.productDetail)
       throw new PollAgain("Amazon Ads report requested", {
         payload: { ...input, reportId },
         delayMs: 60000,
@@ -149,6 +150,14 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
     for (let day = from; day <= to; day = addDays(day, 1)) {
       totals.set(day, 0)
     }
+    const details: {
+      date: string
+      campaignId: string
+      product: string
+      sku: string | null
+      cost: number
+      currency: string
+    }[] = []
     const seen = new Set<string>()
     for (const part of report.completedReportParts) {
       for (const row of await downloadAdsReport(part.url)) {
@@ -156,15 +165,22 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
           !totals.has(row.date) ||
           row.country !== profile.countryCode ||
           row.currency !== profile.currencyCode ||
-          !["SPONSORED_PRODUCTS", "SPONSORED_BRANDS", "SPONSORED_DISPLAY"].includes(row.product)
+          !(
+            input.productDetail
+              ? ["SPONSORED_PRODUCTS", "SPONSORED_DISPLAY"]
+              : ["SPONSORED_PRODUCTS", "SPONSORED_BRANDS", "SPONSORED_DISPLAY"]
+          ).includes(row.product)
         ) {
           throw new Error("Amazon Ads report is outside the requested scope")
         }
-        const key = `${row.date}:${row.product}:${row.campaignId}`
+        const key = JSON.stringify([row.date, row.product, row.campaignId, ...(input.productDetail ? [row.sku] : [])])
         if (seen.has(key)) {
           throw new Error("Duplicate campaign in Amazon Ads report")
         }
         seen.add(key)
+        if (input.productDetail) {
+          details.push(row)
+        }
         const micros = Math.round(row.cost * 1000000) + totals.get(row.date)!
         if (!Number.isSafeInteger(micros)) {
           throw new Error("Amazon Ads spend exceeds supported precision")
@@ -184,6 +200,39 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
       }
       const [current] = await tx.select().from(amazonAdsConnections).where(scope).for("update")
       if (!current) {
+        return
+      }
+      if (input.productDetail) {
+        for (const day of totals.keys()) {
+          await tx
+            .insert(analyticsEvidence)
+            .values({
+              orgId,
+              source: "amazon",
+              externalAccountId: grant.sellerId,
+              dataset: "advertising_products",
+              sourceId: `${profileId}:${day}`,
+              data: {
+                profileId,
+                day,
+                currency: profile.currencyCode,
+                marketplaceId: profile.accountInfo.marketplaceStringId,
+                rows: details.filter((r) => r.date === day),
+                sharedSpend: "Sponsored Brands and unmatched SKU spend remain unallocated",
+                accountingBasis: "detail_of_advertising_spend"
+              }
+            })
+            .onConflictDoUpdate({
+              target: [
+                analyticsEvidence.orgId,
+                analyticsEvidence.source,
+                analyticsEvidence.externalAccountId,
+                analyticsEvidence.dataset,
+                analyticsEvidence.sourceId
+              ],
+              set: { data: sql`excluded.data`, observedAt: new Date() }
+            })
+        }
         return
       }
       await tx
@@ -206,6 +255,13 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
         })
     })
     await syncExchangeRates(orgId)
+    if (!input.productDetail) {
+      throw new PollAgain("Collecting product advertising costs", {
+        payload: { ...input, productDetail: true, reportId: undefined },
+        delayMs: 60000,
+        progressed: true
+      })
+    }
   } catch (error) {
     if (error instanceof AdsRequestError && (error.status === 429 || error.status >= 500)) {
       throw new PollAgain(error.message, { delayMs: 60000 })

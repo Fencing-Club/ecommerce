@@ -1,0 +1,351 @@
+import { randomUUID } from "node:crypto"
+import { PGlite } from "@electric-sql/pglite"
+import { drizzle } from "drizzle-orm/pglite"
+import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
+import * as tables from "../src/db/schema"
+import { applyMigrations } from "./migrations"
+const context = vi.hoisted(() => ({ database: null as unknown, graphql: vi.fn<(query: string) => Promise<unknown>>() }))
+vi.mock("@/db", () => ({ db: () => context.database }))
+import { syncAmazonExtraEvidence } from "../src/server/amazon-extra-evidence"
+import { syncAmazonReceipts } from "../src/server/amazon-receipts"
+import { analyticsJob, queueShopifyEconomics } from "../src/server/analytics-jobs"
+vi.mock("../src/server/connections", () => ({ shopifyFor: async () => ({ graphql: context.graphql }) }))
+import { economicsQueries } from "@repo/aisle/shopify-economics"
+import { importAnalyticsCosts, getCostImport, previewAnalyticsCosts } from "../src/server/analytics-cost-imports"
+import { listIngestionEvidence } from "../src/server/analytics-ingestion"
+import { syncShopifyEconomics } from "../src/server/shopify-economics"
+const pg = new PGlite(),
+  database = drizzle(pg, { schema: tables }),
+  orgId = randomUUID(),
+  otherId = randomUUID()
+beforeAll(async () => {
+  context.database = database
+  await applyMigrations(pg)
+})
+afterAll(async () => {
+  await pg.close()
+})
+beforeEach(async () => {
+  await pg.exec("TRUNCATE organizations CASCADE")
+  await database.delete(tables.jobs)
+  await database.insert(tables.organizations).values([
+    { id: orgId, kind: "buyer", name: "Buyer" },
+    { id: otherId, kind: "buyer", name: "Other" }
+  ])
+})
+const expense = {
+  sourceReference: "invoice-1",
+  sourceLine: "1",
+  occurredAt: "2026-01-01T00:00:00Z",
+  category: "return_shipping",
+  amount: "12.34",
+  currency: "USD",
+  costBasis: "actual",
+  evidence: "Carrier invoice",
+  attribution: { kind: "shared", reason: "No order reference" }
+}
+it("imports atomically, replays safely and rejects other workspaces", async () => {
+  const key = randomUUID(),
+    id = randomUUID(),
+    body = { rows: [{ id, kind: "expense", data: expense }] }
+  expect((await importAnalyticsCosts(orgId, "owner", key, body)).replayed).toBe(false)
+  expect((await importAnalyticsCosts(orgId, "owner", key, body)).replayed).toBe(true)
+  await expect(getCostImport(otherId, key)).rejects.toMatchObject({ status: 404 })
+  await expect(
+    importAnalyticsCosts(orgId, "owner", randomUUID(), {
+      rows: [
+        { id: randomUUID(), kind: "expense", data: { ...expense, sourceLine: "2" } },
+        { id: randomUUID(), kind: "expense", data: expense }
+      ]
+    })
+  ).rejects.toMatchObject({ code: "duplicate_source" })
+  expect(await database.select().from(tables.operatingCosts)).toHaveLength(1)
+  await importAnalyticsCosts(orgId, "owner", randomUUID(), {
+    rows: [{ id: randomUUID(), kind: "expense", data: { ...expense, amount: "10", supersedes: id } }]
+  })
+  const costs = await database.select().from(tables.operatingCosts)
+  expect(costs.filter((r) => r.retiredAt)).toHaveLength(1)
+})
+it("filters marketplace copies and scopes paginated financial evidence", async () => {
+  await database.insert(tables.analyticsEvidence).values([
+    {
+      orgId,
+      source: "shopify",
+      externalAccountId: "shop",
+      dataset: "order_economics",
+      sourceId: "1",
+      data: { tags: ["eBay"], test: false }
+    },
+    {
+      orgId,
+      source: "shopify",
+      externalAccountId: "shop",
+      dataset: "order_economics",
+      sourceId: "2",
+      data: { tags: [], test: false }
+    },
+    {
+      orgId: otherId,
+      source: "shopify",
+      externalAccountId: "shop",
+      dataset: "order_economics",
+      sourceId: "3",
+      data: { tags: [], test: false }
+    }
+  ])
+  const result = await listIngestionEvidence(orgId, {
+    source: "shopify",
+    externalAccountId: "shop",
+    dataset: "order_economics",
+    page: 0
+  })
+  expect(result.rows.map((r) => r.sourceId)).toEqual(["2"])
+})
+it("preserves missing receipt quantities and isolates network failures", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  await syncAmazonReceipts(
+    {
+      orgId,
+      externalAccountId: "seller",
+      revision: 1,
+      amazon: {
+        fbaShipments: async () => [{ shipmentId: "FBA1", name: null, status: "CLOSED" }],
+        fbaReceiptItems: async () => [{ sku: "SKU", sent: 12, received: null, unit: "UNITS" }],
+        awdShipments: async () => {
+          throw new Error("No access")
+        },
+        awdReceiptItems: async () => {
+          throw new Error("No access")
+        }
+      }
+    },
+    async () => undefined
+  )
+  const rows = await database.select().from(tables.analyticsEvidence)
+  expect(rows[0]?.data.items).toEqual([{ sku: "SKU", sent: 12, received: null, unit: "UNITS", difference: null }])
+  expect(
+    (await database.select().from(tables.analyticsFeeds)).find((r) => r.dataset === "awd_inbound_receipts")?.state.error
+  ).toBe("collection_failed")
+})
+
+it("checkpoints Shopify updated-order scans and preserves progress on a failed page", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "shopify", externalId: "shop", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "shopify", externalAccountId: "shop", revision: 1 })
+  context.graphql.mockImplementation(async (query) =>
+    query === economicsQueries.orders
+      ? {
+          shop: { myshopifyDomain: "shop" },
+          orders: {
+            nodes: [{ id: "order", updatedAt: "2026-01-02T00:00:00Z" }],
+            pageInfo: { hasNextPage: true, endCursor: "next" }
+          }
+        }
+      : {
+          order: {
+            id: "order",
+            updatedAt: "2026-01-02T00:00:00Z",
+            tags: [],
+            test: false,
+            transactions: [],
+            refunds: []
+          }
+        }
+  )
+  const input = { orgId, externalAccountId: "shop", revision: 1, scopes: "read_orders" }
+  await syncShopifyEconomics(input, async () => undefined, new Date("2026-01-05T00:00:00Z"))
+  expect((await database.select().from(tables.analyticsFeeds))[0]?.state).toMatchObject({ after: "next", error: null })
+  expect((await database.select().from(tables.analyticsEvidence))[0]?.data).toMatchObject({
+    returns: null,
+    returnsCoverage: "missing_scope"
+  })
+  context.graphql.mockRejectedValue(new Error("Source unavailable"))
+  await syncShopifyEconomics(input, async () => undefined, new Date("2026-01-06T00:00:00Z"))
+  expect((await database.select().from(tables.analyticsFeeds))[0]?.state).toMatchObject({
+    after: "next",
+    error: "collection_failed"
+  })
+  expect(await database.select().from(tables.analyticsEvidence)).toHaveLength(1)
+})
+
+it("previews corrections without retiring costs or reserving row IDs, then revalidates on import", async () => {
+  const oldId = randomUUID(),
+    replacementId = randomUUID()
+  await importAnalyticsCosts(orgId, "owner", randomUUID(), {
+    rows: [{ id: oldId, kind: "expense", data: expense }]
+  })
+  const body = { rows: [{ id: replacementId, kind: "expense", data: { ...expense, amount: "10", supersedes: oldId } }] }
+  const before = await database.select().from(tables.operatingCosts)
+  const preview = await previewAnalyticsCosts(orgId, "owner", body)
+  expect(preview).toMatchObject({ count: 1, rows: [{ id: replacementId }] })
+  expect(await database.select().from(tables.operatingCosts)).toEqual(before)
+  expect(await database.select().from(tables.analyticsCostImports)).toHaveLength(1)
+  await expect(previewAnalyticsCosts(otherId, "owner", body)).rejects.toMatchObject({ code: "record_changed" })
+  await importAnalyticsCosts(orgId, "owner", randomUUID(), {
+    rows: [{ id: randomUUID(), kind: "expense", data: { ...expense, amount: "11", supersedes: oldId } }]
+  })
+  await expect(importAnalyticsCosts(orgId, "owner", randomUUID(), { rows: preview.rows })).rejects.toMatchObject({
+    code: "record_changed"
+  })
+})
+it("rolls back an entire failed preview and leaves IDs available for a valid import", async () => {
+  const id = randomUUID()
+  const row = { id, kind: "expense", data: expense }
+  await expect(
+    previewAnalyticsCosts(orgId, "owner", { rows: [row, { ...row, id: randomUUID() }] })
+  ).rejects.toMatchObject({ code: "duplicate_source" })
+  expect(await database.select().from(tables.operatingCosts)).toHaveLength(0)
+  expect(await database.select().from(tables.analyticsCostImports)).toHaveLength(0)
+  const preview = await previewAnalyticsCosts(orgId, "owner", { rows: [row] })
+  expect(preview.rows[0]?.data.occurredAt).toBe("2026-01-01T00:00:00.000Z")
+  await importAnalyticsCosts(orgId, "owner", randomUUID(), { rows: preview.rows })
+  expect(await database.select().from(tables.operatingCosts)).toHaveLength(1)
+})
+
+it("previews linked purchases, receipts and landed charges together without retaining any records", async () => {
+  await database.insert(tables.variantFields).values({ orgId, shopifyDomain: "store", variantId: "v1" })
+  const purchaseId = randomUUID()
+  const common = {
+    sourceReference: "invoice",
+    sourceLine: "1",
+    occurredAt: "2020-01-01T00:00:00Z",
+    evidence: "Historical invoice"
+  }
+  const rows = [
+    {
+      id: purchaseId,
+      kind: "inventory",
+      data: {
+        ...common,
+        kind: "purchase",
+        source: {
+          type: "manual",
+          shopifyDomain: "store",
+          variantId: "v1",
+          quantity: 10,
+          piecesPerUnit: 1,
+          unitCost: { amount: "1.123456", currency: "USD" },
+          supplierReference: "supplier",
+          invoiceReference: "invoice",
+          batchReference: "batch"
+        }
+      }
+    },
+    {
+      id: randomUUID(),
+      kind: "inventory",
+      data: {
+        ...common,
+        sourceReference: "receipt",
+        kind: "receipt",
+        purchaseId,
+        quantity: 10,
+        location: "warehouse",
+        condition: "sellable"
+      }
+    },
+    {
+      id: randomUUID(),
+      kind: "landed",
+      data: {
+        ...common,
+        sourceReference: "freight",
+        category: "freight",
+        costBasis: "actual",
+        amount: "3.123456",
+        currency: "USD",
+        basis: "pieces",
+        targets: [{ purchaseId }]
+      }
+    }
+  ]
+  const preview = await previewAnalyticsCosts(orgId, "owner", { rows })
+  expect(preview.count).toBe(3)
+  expect(await database.select().from(tables.inventoryBasisRecords)).toHaveLength(0)
+  expect(await database.select().from(tables.inventoryLandedCharges)).toHaveLength(0)
+  expect(await database.select().from(tables.analyticsCostImports)).toHaveLength(0)
+  await importAnalyticsCosts(orgId, "owner", randomUUID(), { rows: preview.rows })
+  expect(await database.select().from(tables.inventoryBasisRecords)).toHaveLength(2)
+  expect((await database.select().from(tables.inventoryLandedCharges))[0]?.allocations).toEqual([
+    { purchaseId, amount: "3.123456" }
+  ])
+})
+
+it("discovers Shopify financial history older than two years and continues bounded windows", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "shopify", externalId: "shop", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "shopify", externalAccountId: "shop", revision: 1 })
+  context.graphql.mockImplementation(async (query) =>
+    query === economicsQueries.earliest
+      ? { shop: { myshopifyDomain: "shop" }, orders: { nodes: [{ updatedAt: "2010-01-01T00:00:00Z" }] } }
+      : { shop: { myshopifyDomain: "shop" }, orders: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } } }
+  )
+  const input = { orgId, externalAccountId: "shop", revision: 1, scopes: "read_orders,read_all_orders" }
+  expect(await syncShopifyEconomics(input, async () => undefined, new Date("2026-01-05T00:00:00Z"))).toEqual({
+    hasMore: true,
+    failed: false
+  })
+  expect((await database.select().from(tables.analyticsFeeds))[0]?.state).toMatchObject({
+    coveredFrom: "2010-01-01T00:00:00.000Z",
+    coveredTo: "2010-02-01T00:00:00.000Z",
+    history: "available"
+  })
+  await syncShopifyEconomics(input, async () => undefined, new Date("2026-01-05T00:00:00Z"))
+  expect((await database.select().from(tables.analyticsFeeds))[0]?.state.coveredTo).toBe("2010-03-03T00:00:00.000Z")
+})
+it("queues financial backfills once and retries failures independently of completed sales", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "shopify", externalId: "shop", encryptedToken: "x", scopes: "read_orders" })
+  await database
+    .insert(tables.salesSyncs)
+    .values({ orgId, source: "shopify", externalAccountId: "shop", revision: 1, status: "idle" })
+  const input = { orgId, externalAccountId: "shop", revision: 1 }
+  await queueShopifyEconomics(input)
+  await queueShopifyEconomics(input)
+  expect(await database.select().from(tables.jobs)).toHaveLength(1)
+  context.graphql.mockRejectedValue(new Error("Throttled"))
+  await expect(analyticsJob(input, async () => undefined)).rejects.toMatchObject({ options: { delayMs: 60000 } })
+  expect((await database.select().from(tables.salesSyncs))[0]?.status).toBe("idle")
+  context.graphql.mockResolvedValue({
+    shop: { myshopifyDomain: "shop" },
+    orders: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }
+  })
+  await analyticsJob(input, async () => undefined)
+  expect((await database.select().from(tables.analyticsFeeds))[0]?.state.error).toBeNull()
+  context.graphql.mockClear()
+  await analyticsJob({ ...input, revision: 2 }, async () => undefined)
+  expect(context.graphql).not.toHaveBeenCalled()
+})
+it("attempts every missing FBM month and preserves prior coverage when refresh fails", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  await database.insert(tables.analyticsFeeds).values({
+    orgId,
+    source: "amazon",
+    externalAccountId: "seller",
+    dataset: "fbm_returns:2026-01",
+    checkedAt: new Date("2026-01-01T00:00:00Z"),
+    state: { coveredFrom: "2026-01-01T00:00:00Z", coveredTo: "2026-01-02T00:00:00Z" }
+  })
+  const report = vi.fn<() => Promise<null>>(async () => null)
+  await syncAmazonExtraEvidence(
+    { orgId, externalAccountId: "seller", revision: 1, amazon: { report } },
+    async () => undefined,
+    new Date("2026-01-05T00:00:00Z")
+  )
+  expect(report).toHaveBeenCalledTimes(13)
+  const feeds = await database.select().from(tables.analyticsFeeds)
+  expect(feeds.find((r) => r.dataset === "fbm_returns:2026-01")?.state).toMatchObject({
+    coveredTo: "2026-01-02T00:00:00Z",
+    error: "report_failed"
+  })
+  expect(feeds.filter((r) => r.dataset.startsWith("fbm_returns:"))).toHaveLength(13)
+})

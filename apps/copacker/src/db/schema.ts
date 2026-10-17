@@ -30,6 +30,9 @@ import type { Access } from "../lib/access"
 import type { CasePack } from "../lib/case-packs"
 import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../lib/catalog-pricing"
 import { contactKinds } from "../lib/contacts"
+import type { UnitMappingInput } from "../lib/inventory-unit-mapping"
+import type { LandedChargeInput, LandedAllocation } from "../lib/landed-allocation"
+import type { OperatingCostInput } from "../lib/operating-cost"
 import type { ProductImage } from "../lib/supplier-product"
 import { revisionReasons, type TimelineEvent, type TimelineEventKey } from "../lib/timeline-events"
 import type { AdsProfile } from "../server/amazon-ads-client"
@@ -46,7 +49,7 @@ export const organizations = pgTable("organizations", {
   // Shopify order tags whose orders are left out of Copacker's order counts, lists, Overview and Restock, compared
   // without regard to case. Shopify's Amazon sales channel tags its copies of Amazon's orders "Amazon"; those are
   // counted from Amazon itself.
-  excludedShopifyTags: text().array().notNull().default(["Amazon"]),
+  excludedShopifyTags: text().array().notNull().default(["Amazon", "eBay"]),
   // Restock's sales period and default lead time in days, used by Restock and the Overview. Null uses 60 days.
   restockSalesDays: integer(),
   restockLeadTimeDays: integer(),
@@ -549,6 +552,7 @@ export const jobs = pgTable(
         "import",
         "stock",
         "sales",
+        "analytics",
         "shopify-event",
         "shopify-subscribe",
         "shopify-compliance",
@@ -792,8 +796,394 @@ export const stockDays = pgTable(
   },
   (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.pool, t.scope, t.itemKey, t.day] })]
 )
-// Amazon transactions (order payments, refunds and their fees) copied from the Finances API, so margins can include
-// Amazon's fees. Each is linked to the order it belongs to, when Amazon names one.
+// Physical FBA return receipts. Order and SKU references remain usable even when an order/product isn't mapped yet.
+export const amazonReturns = pgTable(
+  "amazon_returns",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    // Report request scope, not proof of the order's sales marketplace.
+    marketplaceId: text().notNull(),
+    returnedAt: timestamp({ withTimezone: true }).notNull(),
+    orderId: text().notNull(),
+    sku: text().notNull(),
+    asin: text(),
+    fnsku: text(),
+    quantity: integer().notNull(),
+    fulfillmentCenterId: text(),
+    disposition: text(),
+    reason: text(),
+    status: text(),
+    licensePlateNumber: text(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("amazon_returns_period").on(t.orgId, t.externalAccountId, t.marketplaceId, t.returnedAt),
+    index("amazon_returns_order").on(t.orgId, t.externalAccountId, t.orderId)
+  ]
+)
+
+// Per-month evidence: an unavailable report must never turn into a verified zero-return month.
+export const amazonReturnReports = pgTable(
+  "amazon_return_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })]
+)
+
+// Shipment events are evidence, not additional sales or inventory postings.
+export const amazonFulfillmentShipments = pgTable(
+  "amazon_fulfillment_shipments",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    shipmentId: text().notNull(),
+    shipmentItemId: text().notNull(),
+    orderId: text().notNull(),
+    orderItemId: text(),
+    shippedAt: timestamp({ withTimezone: true }).notNull(),
+    sku: text().notNull(),
+    quantity: integer().notNull(),
+    fulfillmentCenterId: text(),
+    fulfillmentChannel: text(),
+    salesChannel: text(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    primaryKey({ columns: [t.orgId, t.externalAccountId, t.shipmentId, t.shipmentItemId] }),
+    index("amazon_fulfillment_shipments_period").on(t.orgId, t.externalAccountId, t.shippedAt)
+  ]
+)
+export const amazonShipmentRequests = pgTable(
+  "amazon_shipment_requests",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    requestedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [index("amazon_shipment_request_period").on(t.orgId, t.externalAccountId, t.requestedAt)]
+)
+export const amazonShipmentReports = pgTable(
+  "amazon_shipment_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })]
+)
+
+// Itemized recovery evidence, kept separate from the financial ledger to avoid recognizing the same money twice.
+export const amazonReimbursements = pgTable(
+  "amazon_reimbursements",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    approvedAt: timestamp({ withTimezone: true }).notNull(),
+    reimbursementId: text().notNull(),
+    caseId: text(),
+    orderId: text(),
+    reason: text(),
+    sku: text(),
+    fnsku: text(),
+    asin: text(),
+    condition: text(),
+    currency: text(),
+    // Unscaled numeric retains source precision; missing amounts and quantities remain null, not zero.
+    amountPerUnit: numeric(),
+    amountTotal: numeric(),
+    quantityCash: integer(),
+    quantityInventory: integer(),
+    quantityTotal: integer(),
+    originalReimbursementId: text(),
+    originalReimbursementType: text(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("amazon_reimbursements_period").on(t.orgId, t.externalAccountId, t.marketplaceId, t.approvedAt),
+    index("amazon_reimbursements_reference").on(t.orgId, t.externalAccountId, t.reimbursementId),
+    index("amazon_reimbursements_original").on(t.orgId, t.externalAccountId, t.originalReimbursementId),
+    index("amazon_reimbursements_order").on(t.orgId, t.externalAccountId, t.orderId)
+  ]
+)
+
+export const amazonReimbursementReports = pgTable(
+  "amazon_reimbursement_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [
+    primaryKey({
+      name: "amazon_reimbursement_reports_identity",
+      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
+    })
+  ]
+)
+
+// Detailed FBA movements are reconciliation evidence, separate from the stock snapshots used for availability.
+export const amazonInventoryMovements = pgTable(
+  "amazon_inventory_movements",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    eventDay: date({ mode: "string" }).notNull(),
+    sku: text(),
+    fnsku: text(),
+    asin: text(),
+    eventType: text().notNull(),
+    referenceId: text(),
+    quantity: integer().notNull(),
+    fulfillmentCenterId: text(),
+    disposition: text(),
+    reason: text(),
+    country: text(),
+    reconciledQuantity: integer(),
+    unreconciledQuantity: integer(),
+    dateAndTime: text(),
+    store: text(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("amazon_movements_period").on(t.orgId, t.externalAccountId, t.marketplaceId, t.eventDay),
+    index("amazon_movements_reference").on(t.orgId, t.externalAccountId, t.referenceId),
+    index("amazon_movements_product").on(t.orgId, t.externalAccountId, t.sku, t.eventDay)
+  ]
+)
+
+export const amazonMovementReports = pgTable(
+  "amazon_movement_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [
+    primaryKey({
+      name: "amazon_movement_reports_identity",
+      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
+    })
+  ]
+)
+
+// Removal order totals and shipment evidence are separate, overlapping sources, not additive stock or money postings.
+export const amazonRemovals = pgTable(
+  "amazon_removals",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    kind: text({ enum: ["orders", "shipments"] }).notNull(),
+    requestedAt: timestamp({ withTimezone: true }).notNull(),
+    orderId: text().notNull(),
+    orderType: text(),
+    orderSource: text(),
+    serviceSpeed: text(),
+    status: text(),
+    updatedAt: timestamp({ withTimezone: true }),
+    shippedAt: timestamp({ withTimezone: true }),
+    sku: text(),
+    fnsku: text(),
+    disposition: text(),
+    requestedQuantity: integer(),
+    cancelledQuantity: integer(),
+    disposedQuantity: integer(),
+    shippedQuantity: integer(),
+    inProcessQuantity: integer(),
+    removalFee: numeric(),
+    currency: text(),
+    carrier: text(),
+    trackingNumber: text(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("amazon_removals_requests").on(t.orgId, t.externalAccountId, t.marketplaceId, t.kind, t.requestedAt),
+    index("amazon_removals_shipments").on(t.orgId, t.externalAccountId, t.marketplaceId, t.kind, t.shippedAt),
+    index("amazon_removals_orders").on(t.orgId, t.externalAccountId, t.orderId)
+  ]
+)
+
+export const amazonRemovalReports = pgTable(
+  "amazon_removal_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    kind: text({ enum: ["orders", "shipments"] }).notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [
+    primaryKey({
+      name: "amazon_removal_reports_identity",
+      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.kind, t.from]
+    })
+  ]
+)
+
+// Explicit historical identity assertions. Corrections retire a row; audit evidence is never overwritten.
+export const amazonProductMappings = pgTable(
+  "amazon_product_mappings",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    sku: text().notNull(),
+    asin: text(),
+    fnsku: text(),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    validFrom: timestamp({ withTimezone: true }).notNull(),
+    validTo: timestamp({ withTimezone: true }).notNull(),
+    evidence: text().notNull(),
+    createdBy: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    retiredAt: timestamp({ withTimezone: true }),
+    retiredBy: text(),
+    supersedes: uuid()
+  },
+  (t) => [
+    index("amazon_product_mapping_scope").on(t.orgId, t.externalAccountId, t.marketplaceId, t.sku, t.validFrom),
+    check("amazon_product_mapping_period", sql`${t.validFrom} < ${t.validTo}`)
+  ]
+)
+
+// Monthly estimates and aged-inventory assessments remain separate from financial postings until reconciled.
+export const amazonStorageFees = pgTable(
+  "amazon_storage_fees",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    kind: text({ enum: ["monthly", "aged"] }).notNull(),
+    basis: text({ enum: ["estimate", "reported_charge"] }).notNull(),
+    periodDay: date({ mode: "string" }).notNull(),
+    sku: text(),
+    asin: text(),
+    fnsku: text(),
+    fulfillmentCenterId: text(),
+    country: text(),
+    currency: text(),
+    amount: numeric(),
+    quantity: numeric(),
+    volume: numeric(),
+    volumeUnit: text(),
+    rate: numeric(),
+    ageTier: text(),
+    data: jsonb().$type<Record<string, string>>().notNull(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    index("amazon_storage_fees_period").on(t.orgId, t.externalAccountId, t.marketplaceId, t.kind, t.periodDay),
+    index("amazon_storage_fees_product").on(t.orgId, t.externalAccountId, t.asin, t.fnsku)
+  ]
+)
+
+export const amazonStorageFeeReports = pgTable(
+  "amazon_storage_fee_reports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    externalAccountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    kind: text({ enum: ["monthly", "aged"] }).notNull(),
+    from: timestamp({ withTimezone: true }).notNull(),
+    requestedTo: timestamp({ withTimezone: true }).notNull(),
+    coveredTo: timestamp({ withTimezone: true }),
+    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+    errorCode: text(),
+    rowCount: integer(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    importedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [
+    primaryKey({
+      name: "amazon_storage_fee_reports_identity",
+      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.kind, t.from]
+    })
+  ]
+)
+
+// Amazon transactions (order payments, refunds and their fees) copied from the Finances API.
 export const amazonTransactions = pgTable(
   "amazon_transactions",
   {
@@ -910,4 +1300,198 @@ export const amazonInboundShipments = pgTable(
     fetchedAt: timestamp({ withTimezone: true }).notNull()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.shipmentId] })]
+)
+
+// Immutable, merchant-confirmed inputs for historical inventory costing. Revisions retain their original evidence.
+export const inventoryBasisRecords = pgTable(
+  "inventory_basis_records",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    kind: text({ enum: ["purchase", "opening", "receipt", "depletion"] }).notNull(),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    occurredAt: timestamp({ withTimezone: true }).notNull(),
+    sourceKey: text().notNull(),
+    quantity: integer().notNull(),
+    piecesPerUnit: integer().notNull(),
+    purchaseId: uuid(),
+    location: text(),
+    data: jsonb().$type<import("../lib/inventory-basis").InventoryBasisData>().notNull(),
+    request: jsonb().$type<import("../lib/inventory-basis").InventoryBasisInput>().notNull(),
+    createdBy: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    retiredAt: timestamp({ withTimezone: true }),
+    retiredBy: text(),
+    supersedes: uuid()
+  },
+  (t) => [
+    index("inventory_basis_product").on(t.orgId, t.kind, t.shopifyDomain, t.variantId, t.occurredAt),
+    index("inventory_basis_purchase").on(t.orgId, t.purchaseId),
+    uniqueIndex("inventory_basis_active_source")
+      .on(t.orgId, t.kind, t.sourceKey)
+      .where(sql`${t.retiredAt} is null`),
+    uniqueIndex("inventory_basis_opening")
+      .on(t.orgId, t.shopifyDomain, t.variantId, t.location)
+      .where(sql`${t.retiredAt} is null and ${t.kind} = 'opening'`),
+    check("inventory_basis_quantity", sql`${t.quantity} >= 0 and ${t.piecesPerUnit} > 0`),
+    check("inventory_basis_receipt", sql`(${t.kind} = 'receipt') = (${t.purchaseId} is not null)`)
+  ]
+)
+
+export const inventoryLandedCharges = pgTable(
+  "inventory_landed_charges",
+  {
+    id: uuid().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sourceKey: text().notNull(),
+    occurredAt: timestamp({ withTimezone: true }).notNull(),
+    data: jsonb().$type<LandedChargeInput>().notNull(),
+    allocations: jsonb().$type<LandedAllocation[]>().notNull(),
+    createdBy: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    retiredAt: timestamp({ withTimezone: true }),
+    retiredBy: text(),
+    supersedes: uuid()
+  },
+  (t) => [
+    index("inventory_landed_scope").on(t.orgId, t.occurredAt),
+    uniqueIndex("inventory_landed_source")
+      .on(t.orgId, t.sourceKey)
+      .where(sql`${t.retiredAt} is null`)
+  ]
+)
+
+// Explicit dated homogeneous-unit conversions. Automatic imports are opt-in per source identity and period.
+export const inventoryUnitMappings = pgTable(
+  "inventory_unit_mappings",
+  {
+    id: uuid().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    externalAccountId: text().notNull(),
+    sourceProductId: text().notNull(),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    piecesPerUnit: integer().notNull(),
+    automatic: boolean().notNull(),
+    validFrom: timestamp({ withTimezone: true }).notNull(),
+    validTo: timestamp({ withTimezone: true }).notNull(),
+    evidence: text().notNull(),
+    request: jsonb().$type<UnitMappingInput>().notNull(),
+    createdBy: text().notNull(),
+    createdAt: createdAt(),
+    retiredAt: timestamp({ withTimezone: true }),
+    retiredBy: text(),
+    supersedes: uuid()
+  },
+  (t) => [index("inventory_unit_mapping_scope").on(t.orgId, t.source, t.externalAccountId, t.sourceProductId)]
+)
+export const inventoryImportCursors = pgTable(
+  "inventory_import_cursors",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    externalAccountId: text().notNull(),
+    afterOrderId: text(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.source, t.externalAccountId] })]
+)
+export const inventoryImportResults = pgTable(
+  "inventory_import_results",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    externalAccountId: text().notNull(),
+    orderId: text().notNull(),
+    status: text({ enum: ["processed", "blocked"] }).notNull(),
+    createdCount: integer().notNull(),
+    unchangedCount: integer().notNull(),
+    gaps: jsonb().$type<{ code: string; eventId: string }[]>().notNull(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    primaryKey({ columns: [t.orgId, t.source, t.externalAccountId, t.orderId] }),
+    index("inventory_import_results_scope").on(t.orgId, t.source, t.externalAccountId, t.checkedAt)
+  ]
+)
+
+export const analyticsCostImports = pgTable("analytics_cost_imports", {
+  id: uuid().primaryKey(),
+  orgId: uuid()
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  createdBy: text().notNull(),
+  createdAt: createdAt(),
+  request: jsonb().$type<unknown>().notNull(),
+  results: jsonb().$type<{ id: string; kind: string }[]>().notNull()
+})
+export const operatingCosts = pgTable(
+  "operating_costs",
+  {
+    id: uuid().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sourceReference: text().notNull(),
+    sourceLine: text().notNull(),
+    data: jsonb().$type<OperatingCostInput>().notNull(),
+    createdBy: text().notNull(),
+    createdAt: createdAt(),
+    retiredAt: timestamp({ withTimezone: true }),
+    retiredBy: text()
+  },
+  (t) => [index("operating_cost_scope").on(t.orgId, t.sourceReference, t.sourceLine)]
+)
+
+export const analyticsFeeds = pgTable(
+  "analytics_feeds",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text().notNull(),
+    externalAccountId: text().notNull(),
+    dataset: text().notNull(),
+    state: jsonb()
+      .$type<{
+        from?: string
+        to?: string
+        after?: string | null
+        coveredTo?: string
+        history?: "available"
+        coveredFrom?: string
+        error?: string | null
+        scopes?: string
+      }>()
+      .notNull(),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.source, t.externalAccountId, t.dataset] })]
+)
+export const analyticsEvidence = pgTable(
+  "analytics_evidence",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text().notNull(),
+    externalAccountId: text().notNull(),
+    dataset: text().notNull(),
+    sourceId: text().notNull(),
+    data: jsonb().$type<Record<string, unknown>>().notNull(),
+    observedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.source, t.externalAccountId, t.dataset, t.sourceId] })]
 )

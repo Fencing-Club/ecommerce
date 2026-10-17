@@ -48,8 +48,16 @@ export async function identity(returnTo?: string) {
   }
   return user
 }
-export async function session() {
-  const user = await identity()
+export class ApiSessionError extends Error {
+  constructor(readonly status: 401 | 403) {
+    super("API session unavailable")
+  }
+}
+export async function session(mode: "page" | "api" = "page") {
+  const user = mode === "api" ? await signedInUser() : await identity()
+  if (!user) {
+    throw new ApiSessionError(401)
+  }
   const [available, profile] = await Promise.all([
     db()
       .select({ org: organizations, member: memberships })
@@ -59,6 +67,9 @@ export async function session() {
     profileFor(user)
   ])
   if (!available.length) {
+    if (mode === "api") {
+      throw new ApiSessionError(403)
+    }
     redirect("/onboarding")
   }
   const active = (await cookies()).get(workspaceCookie)?.value

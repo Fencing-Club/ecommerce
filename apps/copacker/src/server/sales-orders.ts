@@ -10,20 +10,30 @@ import {
   type ShopifySale,
   shopifyPaymentFees
 } from "@repo/aisle/sales"
-import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
+import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
+import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
 import { syncAmazonFees } from "./amazon-fees"
+import { syncAmazonFulfillmentShipments } from "./amazon-fulfillment-shipments"
+import { amazonInventoryMovementsStatus, syncAmazonInventoryMovements } from "./amazon-inventory-movements"
+import { syncAmazonReceipts } from "./amazon-receipts"
+import { amazonReimbursementsStatus, syncAmazonReimbursements } from "./amazon-reimbursements"
+import { amazonRemovalsStatus, syncAmazonRemovals } from "./amazon-removals"
+import { amazonReturnsStatus, syncAmazonReturns } from "./amazon-returns"
 import { syncInboundShipments } from "./amazon-shipments"
+import { amazonStorageFeesStatus, syncAmazonStorageFees } from "./amazon-storage-fees"
+import { queueShopifyEconomics } from "./analytics-jobs"
 import type { Session } from "./auth"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
+import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
@@ -49,9 +59,10 @@ export const salesHistoryDays = 2 * 365 - 1
 // 3: Amazon orders from Canada, Mexico and Brazil as well as the US.
 // 5: Shopify order tags, so orders with excluded tags can be left out.
 export const salesDataVersion = 3
-const shopifyTagsVersion = 5
+const shopifyTagsVersion = 7
+// 7/8 also retain fulfillment creation and in-transit timestamps; older orders are backfilled.
 // Shopify orders with tags and each order's customer ID, once the store grants read_customers.
-export const customerDataVersion = 6
+export const customerDataVersion = 8
 // Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
 export const amazonDataVersion = 4
 // 2: eBay orders' refunds made on the order rather than a line.
@@ -290,7 +301,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     let afterOrders: (() => Promise<void>) | null = null
     if (source === "shopify") {
       // Shopify Payments' labels, bills and dispute fees are copied after the orders.
-      afterOrders = () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
+      afterOrders = async () => {
+        await syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
+        await queueShopifyEconomics({ orgId, externalAccountId: account, revision })
+      }
       // Shopify access tokens last about an hour and two years of orders can take longer, so each period gets a current
       // token (renewed when it's about to expire) instead of one from the start of the sync.
       const customers = hasCustomerScope(scopes)
@@ -344,6 +358,29 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         }) as typeof client.request
       }
       afterOrders = async () => {
+        await syncAmazonFulfillmentShipments(
+          { orgId, externalAccountId: account, revision, amazon: client },
+          assertOwned
+        )
+        await syncAmazonReturns({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        await syncAmazonReimbursements({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        await syncAmazonInventoryMovements({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        await syncAmazonStorageFees(
+          { orgId, externalAccountId: account, revision, amazon: client },
+          "monthly",
+          assertOwned
+        )
+        await syncAmazonStorageFees(
+          { orgId, externalAccountId: account, revision, amazon: client },
+          "aged",
+          assertOwned
+        )
+        await syncAmazonRemovals({ orgId, externalAccountId: account, revision, amazon: client }, "orders", assertOwned)
+        await syncAmazonRemovals(
+          { orgId, externalAccountId: account, revision, amazon: client },
+          "shipments",
+          assertOwned
+        )
         await syncLedger({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
         await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
         // Neither fails the order sync: freight without its shipments' contents is spread over every unit, and amounts
@@ -351,6 +388,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         await syncInboundShipments({ orgId, externalAccountId: account, amazon: client }, assertOwned).catch((error) =>
           console.error(JSON.stringify({ event: "inbound_shipments_failed", orgId, error: describeError(error) }))
         )
+        await syncAmazonReceipts({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        await syncAmazonExtraEvidence({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
         await syncExchangeRates(orgId).catch((error) =>
           console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
         )
@@ -443,7 +482,17 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           gte(salesOrders.orderedAt, chunk.from),
           lt(salesOrders.orderedAt, chunk.to)
         )
-        await tx.delete(salesOrders).where(stored)
+        await tx.delete(salesOrders).where(
+          and(
+            stored,
+            orders.length
+              ? notInArray(
+                  salesOrders.orderId,
+                  orders.map((order) => order.orderId)
+                )
+              : undefined
+          )
+        )
         for (let index = 0; index < orders.length; index += 200) {
           await tx
             .insert(salesOrders)
@@ -465,6 +514,9 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       })
     }
     await afterOrders?.()
+    if (source === "shopify" || source === "amazon") {
+      await syncAutomaticDepletions(orgId, source, account, assertOwned)
+    }
     await db()
       .update(salesSyncs)
       .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: version })
@@ -517,6 +569,24 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
         and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since), lt(salesOrders.orderedAt, until), included)
       )
   ])
+  const amazonAccount = accounts.find((account) => account.provider === "amazon")
+  const removals = amazonAccount
+    ? {
+        orders: await amazonRemovalsStatus(orgId, amazonAccount.externalId, "orders", now),
+        shipments: await amazonRemovalsStatus(orgId, amazonAccount.externalId, "shipments", now)
+      }
+    : null
+  const storageFees = amazonAccount
+    ? {
+        monthly: await amazonStorageFeesStatus(orgId, amazonAccount.externalId, "monthly", now),
+        aged: await amazonStorageFeesStatus(orgId, amazonAccount.externalId, "aged", now)
+      }
+    : null
+  const returns = amazonAccount ? await amazonReturnsStatus(orgId, amazonAccount.externalId, now) : null
+  const reimbursements = amazonAccount ? await amazonReimbursementsStatus(orgId, amazonAccount.externalId, now) : null
+  const inventoryMovements = amazonAccount
+    ? await amazonInventoryMovementsStatus(orgId, amazonAccount.externalId, now)
+    : null
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
     if (!account) {
@@ -531,6 +601,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
       {
         source,
         externalAccountId: account.externalId,
+        ...(source === "amazon" ? { returns, reimbursements, inventoryMovements, storageFees, removals } : {}),
         status: sync?.status ?? "idle",
         errorCode: sync?.errorCode ?? null,
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,

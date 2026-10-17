@@ -33,7 +33,15 @@ function shopify() {
         lineItems: { nodes: [line], pageInfo },
         fulfillmentsCount: { count: 1, precision: "EXACT" },
         transactions: [],
-        fulfillments: [{ id: "fulfillment1", status: "SUCCESS", location: { id: "location1" } }]
+        fulfillments: [
+          {
+            id: "fulfillment1",
+            status: "SUCCESS",
+            createdAt: "2026-08-20T01:00:00Z",
+            inTransitAt: "2026-08-21T01:00:00Z",
+            location: { id: "location1" }
+          }
+        ]
       }
     })
     .mockResolvedValueOnce({
@@ -64,6 +72,10 @@ describe("complete sales readers", () => {
       active = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const result = await collectShopifySales(api, "test.myshopify.com", window, active)
     expect(result[0]?.fulfillments[0]?.lines[0]?.quantity).toBe(2)
+    expect(result[0]?.fulfillments[0]).toMatchObject({
+      createdAt: "2026-08-20T01:00:00Z",
+      inTransitAt: "2026-08-21T01:00:00Z"
+    })
     expect(result[0]?.tags).toEqual(["Wholesale"])
     expect(api.graphql).toHaveBeenCalledWith(shopifySalesQueries.orders, {
       query: `created_at:>='${window.from}' created_at:<'${window.to}'`,

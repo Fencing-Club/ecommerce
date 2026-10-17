@@ -225,7 +225,13 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 - `GET /api/products/without-supplier`: Products. Products with no known supplier, for the Products page warning.
 - `POST /api/inventory/demand`: Sales. Sales demand for a date range ([Sales demand](sales-demand.md)); 409 when a
   source can't be read, 503 when the refresh fails.
-- `GET /api/sales`: Sales. Each connected source's order sync and how much history is stored.
+- `GET /api/sales`: Sales. Each connected source's order sync and how much history is stored. Amazon also includes
+  independent monthly `returns`, `reimbursements` and `inventoryMovements` coverage ([returns](amazon-returns.md),
+  [reimbursements](amazon-reimbursements.md), [movements](amazon-inventory-movements.md)).
+  Amazon also exposes `storageFees.monthly` (estimate) and `storageFees.aged` (reported charge), each with independent
+  twelve-completed-month coverage and an explicit `basis`; see [storage fees](amazon-storage-fees.md).
+  `removals.orders` and `removals.shipments` expose separate monthly windows with `dateBasis` (request or shipment);
+  see [removal/disposal evidence](amazon-removals.md). Status responses do not include source rows or tracking.
 - `GET /api/sales/orders?source=&page=&q=`: Sales. Stored sales orders, newest first.
 - `POST /api/sales/sync` `{source: shopify | amazon | ebay}`: Sales. Queues an order sync; 202.
 - `GET /api/restock/channels`: Restock. Amazon and each counted Shopify location.
@@ -375,7 +381,7 @@ POs only; drafts and closed POs are excluded. It never calls Shopify or Amazon o
 | --- | --- |
 | `supplierId` | A buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
 | `destination` | `amazon` or `warehouse`. |
-| `limit` | Orders per page, 1–50, default 20. |
+| `limit` | Orders per page, 1â€“50, default 20. |
 | `cursor` | The previous page's `nextCursor`; omit on the first page. |
 
 Unknown, duplicate or invalid parameters return 400. Orders come in ID order, not creation time. Keep filters unchanged
@@ -413,7 +419,7 @@ The 60 uncertain pieces stay reserved. If assignments totalled 180, it would rep
   daily reconciliation at 07:00 UTC for every stock scope already in use.
 - `GET /api/inventory?source=...&limit=100&cursor=...` (buyer, Products) returns source, scope and account identity,
   `snapshotId`, `startedAt`/`observedAt`, the latest `refresh` state (`status`, `revision`, `requestedAt`,
-  `errorCode`), `locations`, `rows` and `nextCursor`. Limit is 1–200. FBA requires `marketplaceId=ATVPDKIKX0DER`;
+  `errorCode`), `locations`, `rows` and `nextCursor`. Limit is 1â€“200. FBA requires `marketplaceId=ATVPDKIKX0DER`;
   Shopify and AWD reject it. Unknown or duplicate parameters and malformed cursors return 400. A replaced snapshot or a
   changed location filter under a cursor returns 409; restart pagination. Without prices, rows omit cost and price.
 - Before the first successful collection, snapshot ID and timestamps are null and rows are empty: unknown stock, not
@@ -456,7 +462,7 @@ barcode, label setting, title and FNSKU:
    Amazon, which label every unit.
 3. Otherwise, for a product set to `uploaded` (such as uniforms whose labels show size measurements), nothing yet: the
    line is flagged until a barcode is uploaded.
-4. Otherwise the standard label (`standard`, the default): a US Letter sheet of 30 labels (2 5/8 × 1 in) with a Code 128
+4. Otherwise the standard label (`standard`, the default): a US Letter sheet of 30 labels (2 5/8 Ã— 1 in) with a Code 128
    barcode of the code, the code under it, the Shopify title with the variant's options in parentheses, and "Made in
    {country}" from Shopify's country of origin (left out when none is recorded). The code is the line's FNSKU; on a PO
    not to Amazon without one, the Shopify SKU. A line on a PO to Amazon gets its FNSKU when the PO is sent.
@@ -573,3 +579,35 @@ with `shipment.reconcile`, and a correction is refused until the original order 
 fresh job identity with the same business key, so an expired worker can't regain ownership. Reconciled orders are
 re-read and matched against reference, carton contents and origin before confirmation. Reconciliation and cancellation
 use the Amazon account pinned to the PO.
+
+## Amazon reconciliation evidence
+
+`GET /api/analytics/amazon/reconciliation` requires a buyer workspace with Sales and Prices access. Query `source`, `from`, `to`
+and optional zero-based `page`; ranges use UTC dates and are limited to 31 days. Returns paginated source evidence,
+observed product matches, financial candidates, independent transaction arithmetic checks and explicit coverage/search
+limits. It does not write matches or change accounting totals. See [reconciliation](amazon-reconciliation.md).
+
+## Historical Amazon mappings and allocations
+
+`GET /api/analytics/amazon/product-mappings` lists the connected seller's dated mappings, including retired audit records, with
+buyer Sales/Prices access. POST creates or atomically supersedes a mapping; DELETE retires it. Writes require Products
+edit, Prices, app Origin and current seller identity; targets must be known locally in the workspace. Overlap/stale
+conflicts return 409, invalid input 400. See [mapping contract](amazon-cost-allocation.md).
+
+`GET /api/analytics/amazon/allocations` takes UTC `from`, `to` (maximum 31 days) and optional zero-based `page`. Buyer Sales/Prices
+access is required. Returns at most 100 transaction allocations with explicit net/recognized-fee remainders and coverage.
+It does not change Overview profit or COGS. Reconciliation source rows now include `historicalProduct`.
+
+## Analytics HTTP resources
+
+The Amazon analytics routes use the [analytics HTTP contract](analytics-api.md): individual mapping URLs, bounded
+collections with change-detecting pagination, idempotent creation retries, and JSON Problem Details errors. These rules
+apply to `/api/analytics/amazon`; the existing action and sales-status contracts above remain separate.
+
+## Historical inventory cost inputs
+
+The [historical inventory basis contract](historical-inventory-basis.md) defines purchase-cost, opening-balance and
+receipt resources under `/api/analytics`, including audited revisions, exact money, source deduplication and receipt
+quantity limits. These records do not yet change Overview or calculate historical COGS.
+
+See [historical landed costs and FIFO](inventory-costing.md) for landed charges, depletion records and calculation resources.
