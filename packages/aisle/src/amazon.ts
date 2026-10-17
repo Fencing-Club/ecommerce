@@ -1089,7 +1089,16 @@ export class Amazon {
         })()
         this.reportLookups.set(key, lookup)
       }
-      const matching = (await lookup)
+      let reports: unknown[]
+      try {
+        reports = await lookup
+      } catch (error) {
+        if (this.reportLookups.get(key) === lookup) {
+          this.reportLookups.delete(key)
+        }
+        throw error
+      }
+      const matching = reports
         .flatMap((value) => {
           const parsed = z
             .object({

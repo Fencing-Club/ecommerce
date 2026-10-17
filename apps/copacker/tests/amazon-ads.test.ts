@@ -557,4 +557,45 @@ describe("durable ad spend imports", () => {
     })
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
   })
+  it.each(["token", "report", "download"])(
+    "retries a %s response-body failure without logging its contents",
+    async (stage) => {
+      await connect()
+      fetchMock.mockImplementation(async (url) => {
+        const location = String(url)
+        let current = "report"
+        if (location.includes("auth/o2")) {
+          current = "token"
+        } else if (location.includes("amazonaws.com")) {
+          current = "download"
+        }
+        if (current === stage) {
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.error(new TypeError("signed-url?secret=private"))
+              }
+            })
+          )
+        }
+        return current === "token" ? Response.json({ access_token: "access" }) : reportResponse()
+      })
+      await expect(
+        amazonAdsJob(
+          { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
+          async () => undefined
+        )
+      ).rejects.toMatchObject({
+        message: `Amazon Ads ${stage} transport_TypeError failure (503)`,
+        options: { delayMs: 60000 }
+      })
+      expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
+    }
+  )
+  it("does not convert invalid JSON into a transport retry", async () => {
+    fetchMock.mockImplementation(async () => new Response("not json"))
+    await expect(adsToken({ grant_type: "refresh_token", refresh_token: "test" })).rejects.toBeInstanceOf(SyntaxError)
+    await expect(new AmazonAds("access").report("report")).rejects.toBeInstanceOf(SyntaxError)
+    await expect(downloadAdsReport("https://test.s3.amazonaws.com/report")).rejects.toBeInstanceOf(SyntaxError)
+  })
 })

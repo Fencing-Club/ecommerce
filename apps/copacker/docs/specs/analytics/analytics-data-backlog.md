@@ -244,7 +244,7 @@ Do not turn these candidates into additional costs, recovery income or claim rec
 
 At 23:45 UTC Shopify completed its final window through `2026-10-17T23:33:11.192Z` without errors. A consistent,
 six-page evidence audit found 505 native orders, 58 refund objects, 11 returns, 835 payment transactions and 393 fee
-entries. No test orders or Amazon/eBay-tagged copies leaked into this evidence set, and all rows had imported returns
+entries. No test orders or Amazon/eBay-tagged copies leaked into this evidence set, and all included orders had imported returns
 coverage. There were 38 refund-payment references also present in order transactions; those must be counted once by
 transaction ID. These are evidence counts, not recognized revenue or profit, and ordinary sales-order history has
 different coverage. Shopify historical economics acquisition is accepted through this cutoff; accounting remains open.

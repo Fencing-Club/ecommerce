@@ -76,9 +76,9 @@ export class AdsRequestError extends Error {
   }
 }
 // Normalize transport failures so the durable worker retries without logging request credentials.
-async function adsFetch(input: string | URL, init: RequestInit, stage: "token" | "report" | "download") {
+async function adsTransport<T>(stage: "token" | "report" | "download", read: () => Promise<T>) {
   try {
-    return await fetch(input, init)
+    return await read()
   } catch (error) {
     const failure =
       error instanceof Error && ["TimeoutError", "AbortError", "TypeError"].includes(error.name)
@@ -86,6 +86,9 @@ async function adsFetch(input: string | URL, init: RequestInit, stage: "token" |
         : "transport"
     throw new AdsRequestError(503, stage, failure)
   }
+}
+function adsFetch(input: string | URL, init: RequestInit, stage: "token" | "report" | "download") {
+  return adsTransport(stage, () => fetch(input, init))
 }
 export async function adsToken(grant: Record<string, string>) {
   const app = amazonAdsApp()
@@ -107,7 +110,7 @@ export async function adsToken(grant: Record<string, string>) {
   }
   return z
     .object({ access_token: z.string().min(1), refresh_token: z.string().min(1).optional() })
-    .parse(await response.json())
+    .parse(JSON.parse(await adsTransport("token", () => response.text())))
 }
 export class AmazonAds {
   constructor(private readonly accessToken: string) {}
@@ -135,7 +138,7 @@ export class AmazonAds {
     if (!response.ok) {
       throw new AdsRequestError(response.status)
     }
-    return response.json()
+    return JSON.parse(await adsTransport("report", () => response.text()))
   }
   async profiles(sellerId: string): Promise<AdsProfile[]> {
     const profiles = z
@@ -285,12 +288,22 @@ export async function downloadAdsReport(url: string) {
   }
   const chunks: Uint8Array[] = []
   let bytes = 0
-  for await (const chunk of response.body) {
-    bytes += chunk.length
-    if (bytes > limit) {
-      throw new Error("Amazon Ads report exceeds download limit")
+  const reader = response.body.getReader()
+  try {
+    for (;;) {
+      const chunk = await adsTransport("download", () => reader.read())
+      if (chunk.done) {
+        break
+      }
+      bytes += chunk.value.length
+      if (bytes > limit) {
+        throw new Error("Amazon Ads report exceeds download limit")
+      }
+      chunks.push(chunk.value)
     }
-    chunks.push(chunk)
+  } finally {
+    await reader.cancel().catch(() => undefined)
+    reader.releaseLock()
   }
   const buffer = Buffer.concat(chunks)
   const decoded = buffer[0] === 0x1f && buffer[1] === 0x8b ? gunzipSync(buffer, { maxOutputLength: limit }) : buffer

@@ -672,4 +672,11 @@ describe("recovering completed reports", () => {
     await expect(api.report(input, options())).rejects.toThrow("pagination did not advance")
     expect(calls).toHaveLength(2)
   })
+  it("retries a failed lookup instead of caching its rejection", async () => {
+    const { api, calls } = client([new Response(null, { status: 403 }), { reports: [existing] }, ...download()])
+    await expect(api.report(input, options())).rejects.toMatchObject({ status: 403 })
+    await expect(api.report(input, options())).resolves.toBe("report text")
+    expect(calls[1]?.pathname).toBe("/reports/2021-06-30/reports")
+    expect(calls[2]?.pathname).toMatch(/\/existing$/)
+  })
 })

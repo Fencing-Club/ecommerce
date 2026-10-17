@@ -100,7 +100,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         .orderBy(
           sql`case when ${orderMatch} then 0 else 1 end`,
           sql`case when ${amazonTransactions.type}=${preferredPostingType(input.source)} then 0 else 1 end`,
-          sql`case when ${amazonTransactions.postedAt} < ${input.from}::timestamptz then extract(epoch from (${input.from}::timestamptz - ${amazonTransactions.postedAt})) when ${amazonTransactions.postedAt} >= ${input.to}::timestamptz then extract(epoch from (${amazonTransactions.postedAt} - ${input.to}::timestamptz)) else 0 end`,
+          sql`case when ${amazonTransactions.postedAt} < ${`${input.from}T00:00:00Z`}::timestamptz then extract(epoch from (${`${input.from}T00:00:00Z`}::timestamptz - ${amazonTransactions.postedAt})) when ${amazonTransactions.postedAt} >= ${`${input.to}T00:00:00Z`}::timestamptz then extract(epoch from (${amazonTransactions.postedAt} - ${`${input.to}T00:00:00Z`}::timestamptz)) else 0 end`,
           desc(amazonTransactions.postedAt),
           amazonTransactions.transactionId
         )
