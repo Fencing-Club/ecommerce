@@ -542,7 +542,7 @@ describe("durable ad spend imports", () => {
         current = "download"
       }
       if (current === stage) {
-        throw new TypeError("fetch failed")
+        throw new TypeError("fetch failed: signed-url?secret=private")
       }
       return current === "token" ? Response.json({ access_token: "access" }) : reportResponse()
     })
@@ -551,7 +551,10 @@ describe("durable ad spend imports", () => {
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
         async () => undefined
       )
-    ).rejects.toMatchObject({ options: { delayMs: 60000 } })
+    ).rejects.toMatchObject({
+      message: `Amazon Ads ${stage} transport_TypeError failure (503)`,
+      options: { delayMs: 60000 }
+    })
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
   })
 })
