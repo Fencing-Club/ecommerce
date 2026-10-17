@@ -144,14 +144,14 @@ session, loaded and searched its real products, and downloaded the existing PO36
 its bytes exactly matched the pre-cutover checksum. No production test accounts or test documents were created.
 
 Recovery branches `recovery-staging-r2-20261016` and `recovery-production-r2-20261016` preserve the database at the writer
-pause, without compute, until October 23, 2026 at 21:00 UTC. Original Railway document objects remain for recovery.
+pause, without compute, until October 23, 2026 at 21:00 UTC. Original Railway objects remain only until the project's scheduled deletion on October 19, 2026 at 23:16 UTC.
 New R2 writes mean rollback requires reconciling the object delta, not merely restoring old endpoint variables.
 Staging's old pre-deploy seed command was disabled during the restart; keep migrations under the serialized release
 runner and do not re-enable automatic reseeding. Unrelated staged WorkOS settings were left untouched.
 
-Hosted preview and release configuration are enabled. The Railway Node executor remains required; previous web and
-Storybook artifacts and original document storage remain recovery material through the observation window.
-The user deferred deletion of the unprovisioned `pr-999999` bucket until final Railway retirement.
+Hosted previews and releases run on Cloudflare. Web requests and Workflow steps use native R2 bindings. All six
+Railway compute deployments are stopped; the project deletion is accepted and final removal is scheduled for October 19, 2026 at 23:16 UTC.
+The final inventory found only the staging and production `documents` buckets, with no `pr-999999` bucket or volumes.
 Follow [the cutover runbook](specs/platform-migration/cutover.md) for recovery and retirement. The
 [acceptance record](specs/platform-migration/acceptance.md) links the successful saved-plan applies and verified state
 backups for both environments and records the release's remaining limits.

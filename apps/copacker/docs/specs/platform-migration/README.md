@@ -1,23 +1,19 @@
 # TanStack Start and Cloudflare migration specification
 
-Status, October 17, 2026: web hosting, private storage and CDN cutover is complete. TanStack Start web and Storybook
-are live on Cloudflare, with Neon, private R2 and isolated hosted PR previews. The corrected release passed
-145 staging browser tests; production session continuity, private downloads and live eBay forwarding were verified.
-[Acceptance](acceptance.md) records the exact release, verification, infrastructure applies and recovery window.
-[Architecture](architecture.md) shows the state before cutover and the accepted current architecture; [compatibility evidence](compatibility.md)
-retains the earlier trials. The background-executor migration remains separate.
+Status, October 17, 2026: web hosting, background execution, private storage and CDN have moved to Cloudflare.
+TanStack Start web, Storybook, Queues, Workflows and the scheduler are live with Neon, private R2 and isolated PR previews.
+Railway's web, worker and Storybook deployments are stopped in staging and production. Project deletion is accepted,
+with final removal scheduled for October 19 at 23:16 UTC after Railway's recovery window. There is no Railway runtime dependency.
 
-Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
-Retain WorkOS, Resend and the commerce integrations. **TanStack Start is the selected replacement for Next.js.**
-Keep Railway's worker until its replacement passes recovery and duplicate-delivery tests.
+[Acceptance](acceptance.md) records deployed commits, live job recovery, document checks and retirement status.
+[Architecture](architecture.md) shows the previous platform and current Cloudflare deployment;
+[compatibility evidence](compatibility.md) preserves the earlier trials. WorkOS, Resend and commerce integrations
+remain in place. AWS EventBridge/SQS remains the notification transport, consumed by bounded Cloudflare readers.
 
-**October 16 integration update:** PR 17 separately introduced Neon databases, isolated PR database branches and
-Cloudflare wake signals for the retained Node executor. This branch incorporates that work. It supersedes the original
-Railway-only database assumptions in the planning articles. [Neon operations](../../neon.md),
-[background jobs](../../background-jobs.md), and the updated [cutover requirements](cutover.md) describe the current
-contracts. Earlier deployed qualification against Railway is historical evidence; current Neon Hyperdrive and queue
-qualification is recorded in acceptance. Hosted application previews are implemented; full Cloudflare job execution remains
-separate work. Private storage has been transferred and verified in R2, including the retained Node readers/writers.
+PR 17 separately introduced Neon databases and isolated PR branches, superseding the original Railway-only database
+assumptions below. PR 40 completes Cloudflare background execution. The planning articles retain their original
+estimates and acceptance criteria; [background jobs](../../background-jobs.md), [Neon operations](../../neon.md) and
+[operations](../../operations.md) define the current operating contracts.
 
 - [Previous and current architecture](architecture.md)
 - [Cutover acceptance and recovery window](acceptance.md)

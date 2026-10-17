@@ -7,12 +7,14 @@ Without it, local subscription jobs skip eBay. The challenge response hashes thi
 Use separate provider apps/destinations and queues for a slot; never repoint staging or production subscriptions.
 
 Copacker learns about order and stock changes as they happen: Shopify, Amazon and eBay deliver events to SQS queues
-that the worker reads (eBay's through Copacker's web service), so events wait through outages instead of depending on
-Copacker answering. A daily reconciliation reads everything again to catch anything missed.
+that Cloudflare's scheduled notification reader consumes (eBay's through Copacker's web service), so events wait through
+outages instead of depending on Copacker answering. A daily reconciliation reads everything again to catch anything missed.
 
 The queue settings (`SHOPIFY_EVENTS_QUEUE_URL`, `SHOPIFY_EVENTBRIDGE_SOURCE_ARN`, `AMAZON_NOTIFICATIONS_QUEUE_URL` and
-`EBAY_EVENTS_QUEUE_URL`) are deploy-only, set on the Railway services and left out of `.env.example`. Without them the
-local worker reads no queue and subscribes to nothing; syncs and the daily reconciliation still copy orders.
+`EBAY_EVENTS_QUEUE_URL`) are deploy-only, set in the Cloudflare release settings and left out of `.env.example`.
+The reader uses separate
+`AWS_NOTIFICATION_*` credentials; see [background jobs](background-jobs.md). The local Node worker does not poll AWS.
+Syncs and daily reconciliation still copy orders.
 
 ## Shopify events through Amazon EventBridge
 
@@ -58,7 +60,7 @@ Amazon delivers notifications only to Amazon SQS or EventBridge, not to HTTPS.
   Amazon's notification account `437568002678` send messages. A message that fails five times moves to
   `copacker-amazon-notifications-dlq`, which keeps it for 14 days.
 - The worker reads the queue as IAM user `copacker-worker`, which can only receive, delete, change the visibility of
-  and read attributes on that queue. The worker service needs `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+  and read attributes on that queue. The notification reader needs `AWS_NOTIFICATION_ACCESS_KEY_ID`, `AWS_NOTIFICATION_SECRET_ACCESS_KEY`,
   `AWS_REGION=us-east-1` and `AMAZON_NOTIFICATIONS_QUEUE_URL`. Without the queue URL the worker doesn't read the queue
   and subscribing is skipped.
 - When a seller connects, and daily, a job registers the queue as the app's notification destination (a grantless

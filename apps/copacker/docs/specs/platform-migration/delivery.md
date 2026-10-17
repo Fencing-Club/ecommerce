@@ -1,9 +1,9 @@
 # Tasks, milestones and delivery plan
 
 Part of the [migration specification](README.md). The web, private-storage and CDN milestone is live in staging and
-production; [cutover acceptance](acceptance.md) records its tested release and operational evidence. The Node background
-executor remains on Railway. The broader milestones below retain unfinished load, cost, recovery, job-execution and
-retirement work: their checkboxes require complete exit evidence, not only the completed web cutover. See
+production; [cutover acceptance](acceptance.md) records its tested release and operational evidence. Background execution now runs on Cloudflare Queues and Workflows; Railway compute is stopped. The original milestones
+below retain their full load, cost, recovery and retirement criteria: checkboxes require complete exit evidence,
+including explicit approval for permanent resource deletion. See
 [compatibility evidence](compatibility.md) for the earlier implementation trials. This document does not create issues
 or schedule releases.
 

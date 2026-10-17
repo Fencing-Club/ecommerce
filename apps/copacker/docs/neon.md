@@ -1,12 +1,12 @@
 # Neon database operations and PR previews
 
-The TanStack Start web runtime uses Cloudflare Workers, Hyperdrive and private R2 storage. The Node job executor
-remains on Railway. The database migration merged in PR 17 selects the existing Neon project `Copacker`
+The TanStack Start web runtime and background jobs use Cloudflare Workers, Workflows, Hyperdrive and private R2 storage.
+The database migration merged in PR 17 selects the existing Neon project `Copacker`
 (`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon (`aws-us-west-2`). Read-only Cloudflare checks confirmed both
 environments' Hyperdrive configurations target Neon with `verify-full`, caching disabled and five origin connections.
 The web cutover was qualified against Neon; see the [acceptance record](specs/platform-migration/acceptance.md).
 
-| Environment | Neon branch | Railway environment |
+| Environment | Neon branch | Deployment environment |
 | --- | --- | --- |
 | Production | `production` (`br-small-fire-ar4lfkps`) | `production` |
 | Staging | `staging` (`br-quiet-shape-ar6l2pe6`) | `staging` |
@@ -15,9 +15,10 @@ The web cutover was qualified against Neon; see the [acceptance record](specs/pl
 
 ## Connections and releases
 
-Set `DATABASE_URL` to the pooled Neon connection on the Node worker. Point each web environment's Hyperdrive at its
-direct Neon endpoint with query caching disabled and verified TLS. The protected release environment's
-`DATABASE_MIGRATION_URL` secret supplies `DIRECT_DATABASE_URL` to the serialized migration runner. Both Node URLs use `sslmode=verify-full`.
+Point each environment's Hyperdrive at its direct Neon endpoint with query caching disabled and verified TLS.
+Both web requests and Workflow steps use invocation-scoped connections. The protected release environment's
+`DATABASE_MIGRATION_URL` secret supplies `DIRECT_DATABASE_URL` to the serialized migration runner.
+Administrative Node connections use `sslmode=verify-full`.
 The runtime verifies Neon's public certificate and does not reuse a Railway CA. Never disable TLS verification.
 Migrations reject a Neon pooler endpoint. Local Docker can leave `DIRECT_DATABASE_URL` unset.
 
