@@ -115,10 +115,10 @@ notification of a new order starts another, and the daily reconciliation reads t
   - Staging: `Andrew_Craswell-AndrewCr-Copack-vwdjyakxd`, returning to
     `https://staging.copacker.ai/api/connections/ebay`, declined to `https://staging.copacker.ai/settings#integrations`.
   - Main local checkout: `Andrew_Craswell-AndrewCr-Copack-kmslwycva` (display title Copacker Local), returning to
-    `https://main.local.copacker.ai/api/connections/ebay`, declined to
-    `https://main.local.copacker.ai/settings#integrations`. Registered October 15, 2026. Local `.env` uses this RuName. Before switching the primary origin, update this
-    registration to `https://local.copacker.ai/api/connections/ebay` and
-    `https://local.copacker.ai/settings#integrations`; this external change is pending.
+    `https://local.copacker.ai/api/connections/ebay`, declined to
+    `https://local.copacker.ai/settings#integrations`. Registered October 15, 2026; updated from `main.local.copacker.ai`
+    on October 17 and verified after a dashboard reload. Local `.env` keeps the same RuName. Production and staging
+    callbacks, branding, scopes and the portal's selected production RuName were preserved.
     A worktree needs its own RuName with the exact origin printed by `dev:urls`; these registrations do not use wildcards.
   The portal's "OAuth Enabled" choice (one RuName at a time) only picks the RuName its own token tool uses; eBay's
   sign-in accepts any of the keyset's RuNames. Production's stays selected.
