@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { readdirSync } from "node:fs"
+import { readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import invariant from "tiny-invariant"
 import { cloudflare, previewObjects, uploadPreviewFile, type HostingSettings } from "./preview-cloudflare"
 import { previewResources } from "./preview-config"
+import type { PreviewTimings } from "./preview-timings"
 
 const contentTypes: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -37,7 +38,8 @@ export async function publishPreviewStories(
   config: HostingSettings,
   number: string,
   commit: string,
-  directory: string
+  directory: string,
+  timings?: PreviewTimings
 ) {
   invariant(/^[a-f0-9]{40}$/.test(commit), "Invalid Storybook commit")
   const { storiesPrefix } = previewResources(number)
@@ -55,6 +57,10 @@ export async function publishPreviewStories(
     files.some((file) => file.relative === "index.html"),
     "Storybook build is missing index.html"
   )
+  timings?.count({
+    storybookFiles: files.length,
+    storybookBytes: files.reduce((total, item) => total + statSync(item.file).size, 0)
+  })
   // Finish each bounded batch even on failure. Never publish a partially uploaded build.
   for (let offset = 0; offset < files.length; offset += 8) {
     const results = await Promise.allSettled(

@@ -20,6 +20,7 @@ import {
 } from "./preview-cloudflare"
 import { previewAssetsHostname, previewResources } from "./preview-config"
 import { publishPreviewStories } from "./preview-stories"
+import { PreviewTimings } from "./preview-timings"
 import { reconcileResourceTags } from "./resource-tags"
 
 function fingerprint(bytes: Buffer) {
@@ -27,11 +28,18 @@ function fingerprint(bytes: Buffer) {
 }
 
 // Copy the referenced staging documents once. Further pushes preserve the PR's own document edits.
-async function copyDocuments(config: HostingSettings, number: string, databaseUrl: URL, folder: string) {
+async function copyDocuments(
+  config: HostingSettings,
+  number: string,
+  databaseUrl: URL,
+  folder: string,
+  timings: PreviewTimings
+) {
   const prefix = previewResources(number).documentsPrefix
   const marker = `${prefix}.preview-ready`
   const existing = new Set(previewObjects(config, config.bucket, prefix).map((item) => item.key))
   if (existing.has(marker)) {
+    timings.count({ documentsReused: 1, documentFiles: 0, documentBytes: 0 })
     return
   }
   const client = new Client(databaseConfig("migration", { ...process.env, DIRECT_DATABASE_URL: databaseUrl.href }))
@@ -51,6 +59,7 @@ async function copyDocuments(config: HostingSettings, number: string, databaseUr
     "Referenced staging files are missing from R2; synchronize staging storage before deploying previews"
   )
   const file = path.join(folder, "document")
+  let totalBytes = 0
   for (const key of new Set(keys)) {
     const bytes = Buffer.from(
       cloudflare(config, ["r2", "objects", "get", key, "--bucket-name", config.bucket], { binary: true })
@@ -72,11 +81,18 @@ async function copyDocuments(config: HostingSettings, number: string, databaseUr
       cloudflare(config, ["r2", "objects", "get", `${prefix}${key}`, "--bucket-name", config.bucket], { binary: true })
     )
     invariant(fingerprint(copied) === fingerprint(bytes), "Preview file copy did not match staging")
+    totalBytes += bytes.length
   }
   cloudflare(config, ["r2", "objects", "put", marker, "--bucket-name", config.bucket, "--body", "ready"])
+  timings.count({ documentsReused: 0, documentFiles: new Set(keys).size, documentBytes: totalBytes })
 }
 
-export async function deployHostedPreview(config: HostingSettings, number: string, databaseUrl: URL) {
+export async function deployHostedPreview(
+  config: HostingSettings,
+  number: string,
+  databaseUrl: URL,
+  timings = new PreviewTimings()
+) {
   const names = previewResources(number)
   const sha = z
     .string()
@@ -101,8 +117,8 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
   const app = `https://${names.app}.${config.subdomain}.workers.dev`
   const stories = `https://${previewAssetsHostname}/pr-${number}/storybook/`
   try {
-    const hyperdrive = provisionHostedPreview(config, number, databaseUrl)
-    await copyDocuments(config, number, databaseUrl, folder)
+    const hyperdrive = await timings.measure("resources", () => provisionHostedPreview(config, number, databaseUrl))
+    await timings.measure("documents", () => copyDocuments(config, number, databaseUrl, folder, timings))
     const secretFile = path.join(folder, "secrets.json")
     writeFileSync(secretFile, JSON.stringify(secrets), { mode: 0o600 })
     const environment = {
@@ -128,14 +144,18 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
         throw new Error("Preview build or deployment failed; no credentials or copied data were logged")
       }
     }
-    run([
-      fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json"))),
-      "build",
-      "--mode",
-      "preview"
-    ])
-    run(["--import", "tsx", "scripts/test-worker-webhooks.ts"])
-    run([fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json"))), "build"])
+    await timings.measure("app-build", () =>
+      run([
+        fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json"))),
+        "build",
+        "--mode",
+        "preview"
+      ])
+    )
+    await timings.measure("worker-regression", () => run(["--import", "tsx", "scripts/test-worker-webhooks.ts"]))
+    await timings.measure("storybook-build", () =>
+      run([fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json"))), "build"])
+    )
     const deploy = [
       fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))),
       "deploy",
@@ -148,23 +168,32 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
       "--message",
       sha
     ]
-    run([...deploy, "--dry-run", "--secrets-file", secretFile])
-    run([...deploy, "--secrets-file", secretFile])
-    const inventory = previewInventory(config)
-    const worker = inventory.workers.find((item) => item.name === names.app)
-    const queue = inventory.queues.find((item) => item.queue_name === names.queue)
-    invariant(worker && queue, "Preview resources missing before tagging")
-    const tags = { app: "copacker", environment: "preview", lifecycle: "ephemeral", pr: number }
-    const tag = (args: string[], body?: unknown) => cloudflareJson(config, args, body)
-    reconcileResourceTags({ type: "worker", id: worker.id, tags: { ...tags, component: "web" } }, tag)
-    reconcileResourceTags({ type: "queue", id: queue.queue_id, tags: { ...tags, component: "jobs" } }, tag)
-    await publishPreviewStories(config, number, sha, path.join(root, "storybook-static"))
-    for (const url of [`${app}/api/health`, `${stories}health.json`]) {
-      const response = await fetch(url, { signal: AbortSignal.timeout(30000) })
-      invariant(
-        response.ok && z.object({ commit: z.string() }).parse(await response.json()).commit === sha,
-        "Preview did not serve the tested commit"
-      )
+    await timings.measure("app-validate", () => run([...deploy, "--dry-run", "--secrets-file", secretFile]))
+    await timings.measure("app-deploy", () => run([...deploy, "--secrets-file", secretFile]))
+    await timings.measure("resource-tags", () => {
+      const inventory = previewInventory(config)
+      const worker = inventory.workers.find((item) => item.name === names.app)
+      const queue = inventory.queues.find((item) => item.queue_name === names.queue)
+      invariant(worker && queue, "Preview resources missing before tagging")
+      const tags = { app: "copacker", environment: "preview", lifecycle: "ephemeral", pr: number }
+      const tag = (args: string[], body?: unknown) => cloudflareJson(config, args, body)
+      reconcileResourceTags({ type: "worker", id: worker.id, tags: { ...tags, component: "web" } }, tag)
+      reconcileResourceTags({ type: "queue", id: queue.queue_id, tags: { ...tags, component: "jobs" } }, tag)
+    })
+    await timings.measure("storybook-publish", () =>
+      publishPreviewStories(config, number, sha, path.join(root, "storybook-static"), timings)
+    )
+    for (const [phase, url] of [
+      ["app-health", `${app}/api/health`],
+      ["storybook-health", `${stories}health.json`]
+    ] as const) {
+      await timings.measure(phase, async () => {
+        const response = await fetch(url, { signal: AbortSignal.timeout(30000) })
+        invariant(
+          response.ok && z.object({ commit: z.string() }).parse(await response.json()).commit === sha,
+          "Preview did not serve the tested commit"
+        )
+      })
     }
     return { app, stories }
   } finally {

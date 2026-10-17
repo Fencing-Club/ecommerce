@@ -34,6 +34,11 @@ tested staging commit. See the [release gates](cloudflare.md#release-procedure);
 
 ### Provisioning performance
 
+Preview commands report each provisioning phase as structured timing events. CI also uploads the aggregate
+`preview-timings` artifact and writes a phase table to the job summary, including document and Storybook file counts
+and bytes. Reports exclude credentials, file names and copied contents. The measured command total excludes waiting
+for earlier CI checks and runner setup; compare those separately using the workflow's job timestamps.
+
 The October 16 [PR 25 run](https://github.com/AndrewCraswell/ecommerce/actions/runs/38993225040) took 20m 12s from
 workflow creation to preview-job completion: 7m 21s waiting for verification, 41s runner/dependency setup, 21s through
 preflight, Neon branch creation and migrations, 11m 47s in hosting preparation, builds, publication and health checks,

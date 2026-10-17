@@ -6,8 +6,18 @@ import { z } from "zod"
 import { hostedPreviewNumbers, hostingSettings, previewInventory, removeHostedPreview } from "./preview-cloudflare"
 import { assertPreviewBranch, neonBranch, previewSettings } from "./preview-config"
 import { deployHostedPreview } from "./preview-hosting"
+import { PreviewTimings } from "./preview-timings"
 
 export async function runPreview(mode: "deploy" | "remove" | "sweep") {
+  const timings = new PreviewTimings()
+  try {
+    return await timings.measure("total", () => executePreview(mode, timings))
+  } finally {
+    timings.finish()
+  }
+}
+
+async function executePreview(mode: "deploy" | "remove" | "sweep", timings: PreviewTimings) {
   const settings = previewSettings.parse({ ...process.env, ...(mode === "sweep" ? { PR_NUMBER: "1" } : {}) })
   const name = `pr-${settings.PR_NUMBER}`
   const key = z.string().trim().min(1).parse(process.env.NEON_API_KEY)
@@ -133,44 +143,48 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
         }
         // An expired database must not be paired with old PR files or a live app pointed at its old endpoint.
         if (!branch) {
-          removeHostedPreview(hosting, settings.PR_NUMBER)
+          await timings.measure("preflight", () => removeHostedPreview(hosting, settings.PR_NUMBER))
         }
       }
-      const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString().replace(/\.\d{3}Z$/, "Z")
-      if (!branch) {
-        branch = z.object({ branch: neonBranch }).parse(
-          await neon("/branches", "POST", {
-            branch: { name, parent_id: settings.NEON_STAGING_BRANCH_ID, expires_at: expiresAt },
-            endpoints: [{ type: "read_write", autoscaling_limit_min_cu: 0.25, autoscaling_limit_max_cu: 1 }]
-          })
-        ).branch
-        assertPreviewBranch(branch, name, settings.NEON_STAGING_BRANCH_ID)
-      } else {
-        await neon(`/branches/${branch.id}`, "PATCH", { branch: { expires_at: expiresAt } })
-      }
-      const params = new URLSearchParams({
-        branch_id: branch.id,
-        database_name: settings.NEON_DATABASE_NAME,
-        role_name: settings.NEON_ROLE_NAME,
-        pooled: "false"
-      })
-      const result = z.object({ uri: z.string() }).parse(await neon(`/connection_uri?${params}`))
-      const url = new URL(result.uri)
-      url.searchParams.set("sslmode", "verify-full")
-      try {
-        execFileSync(process.execPath, ["--import", "tsx", "scripts/migrate.ts"], {
-          cwd: fileURLToPath(new URL("..", import.meta.url)),
-          env: { ...process.env, DATABASE_URL: url.toString(), DIRECT_DATABASE_URL: url.toString() },
-          stdio: "pipe",
-          timeout: 300000
+      const { url, expiresAt, readyBranch } = await timings.measure("database", async () => {
+        const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString().replace(/\.\d{3}Z$/, "Z")
+        if (!branch) {
+          branch = z.object({ branch: neonBranch }).parse(
+            await neon("/branches", "POST", {
+              branch: { name, parent_id: settings.NEON_STAGING_BRANCH_ID, expires_at: expiresAt },
+              endpoints: [{ type: "read_write", autoscaling_limit_min_cu: 0.25, autoscaling_limit_max_cu: 1 }]
+            })
+          ).branch
+          assertPreviewBranch(branch, name, settings.NEON_STAGING_BRANCH_ID)
+        } else {
+          await neon(`/branches/${branch.id}`, "PATCH", { branch: { expires_at: expiresAt } })
+        }
+        const params = new URLSearchParams({
+          branch_id: branch.id,
+          database_name: settings.NEON_DATABASE_NAME,
+          role_name: settings.NEON_ROLE_NAME,
+          pooled: "false"
         })
-      } catch {
-        // Migration errors can include copied data. Keep connection strings and database contents out of CI logs.
-        throw new Error(`Migrations failed on Neon branch ${branch.id}; inspect this isolated PR database`)
-      }
-      log(`Neon branch ${name} (${branch.id}) is ready; migrations applied; expires ${expiresAt}`)
-      const urls = hosting ? await deployHostedPreview(hosting, settings.PR_NUMBER, url) : undefined
-      if (hosting && (await pullRequest(settings.PR_NUMBER)).state === "closed") {
+        const result = z.object({ uri: z.string() }).parse(await neon(`/connection_uri?${params}`))
+        const url = new URL(result.uri)
+        url.searchParams.set("sslmode", "verify-full")
+        try {
+          execFileSync(process.execPath, ["--import", "tsx", "scripts/migrate.ts"], {
+            cwd: fileURLToPath(new URL("..", import.meta.url)),
+            env: { ...process.env, DATABASE_URL: url.toString(), DIRECT_DATABASE_URL: url.toString() },
+            stdio: "pipe",
+            timeout: 300000
+          })
+        } catch {
+          // Migration errors can include copied data. Keep connection strings and database contents out of CI logs.
+          throw new Error(`Migrations failed on Neon branch ${branch.id}; inspect this isolated PR database`)
+        }
+        log(`Neon branch ${name} (${branch.id}) is ready; migrations applied; expires ${expiresAt}`)
+        return { url, expiresAt, readyBranch: branch }
+      })
+      branch = readyBranch
+      const urls = hosting ? await deployHostedPreview(hosting, settings.PR_NUMBER, url, timings) : undefined
+      if (hosting && (await timings.measure("postflight", () => pullRequest(settings.PR_NUMBER))).state === "closed") {
         await remove(settings.PR_NUMBER, branch)
         return
       }
