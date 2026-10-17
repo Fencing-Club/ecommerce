@@ -5,7 +5,10 @@ any hostname, authentication provider, integration callback or webhook. Never pu
 Local launchers implement the development addresses; provider registrations and public DNS are separate changes.
 See [local development](development.md) for commands and [operations](operations.md) for releases.
 
-The table records the existing custom-domain deployments. The migration also has separate qualification deployments at `copacker-staging.hoa-preview.workers.dev` and `copacker-stories-staging.hoa-preview.workers.dev`; neither changes the existing DNS or provider registrations. Their evidence and remaining coordinated storage/worker gates are in [compatibility](specs/platform-migration/compatibility.md).
+Staging and both Storybook domains serve Cloudflare Workers. Production web was restored to its retained Railway
+artifact after the first cutover exposed an eBay forwarding failure. Staging's `workers.dev` aliases address the same
+deployments; the production target disables `workers.dev` and preview URLs. Public URLs and provider callbacks are unchanged. See the
+[cutover acceptance record](specs/platform-migration/acceptance.md) for release and recovery evidence.
 
 ## Environment addresses
 
@@ -16,11 +19,11 @@ The naming change is implemented in the launcher; external activation is tracked
 
 | Surface | Development | Staging | Production | Configuration / status |
 | --- | --- | --- | --- | --- |
-| Application and API | `local.copacker.ai`; `<worktree>.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Local: Portless. Deployed: Railway web service and Cloudflare DNS; existing app domains |
-| Storybook | `stories.local.copacker.ai`; `<worktree>.stories.local.copacker.ai` | `stories.staging.copacker.ai` | `stories.copacker.ai` | Local: Portless. Deployed: separate `copacker-stories` static service; provisioned with this rollout |
+| Application and API | `local.copacker.ai`; `<worktree>.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Local: Portless. Staging: TanStack Start Worker. Production: retained Railway artifact pending corrected cutover |
+| Storybook | `stories.local.copacker.ai`; `<worktree>.stories.local.copacker.ai` | `stories.staging.copacker.ai` | `stories.copacker.ai` | Local: Portless. Cloudflare assets-only Workers live in both environments |
 | E2E target | `e2e.local.copacker.ai`; `<worktree>.e2e.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Dedicated local process; full staging suite; production read-only smoke suite |
 | CI E2E target | `http://127.0.0.1:3005` inside each isolated CI job | Not applicable | Not applicable | No public DNS or local CA in CI |
-| Railway application alias | None | `copacker-staging.up.railway.app` | `copacker-production.up.railway.app` | Existing aliases; keep callbacks/origin restrictions while aliases remain usable |
+| Railway application alias | None | `copacker-staging.up.railway.app` | `copacker-production.up.railway.app` | Previous artifacts retained for rollback; keep callbacks/origin restrictions while aliases remain usable |
 | Public webhook delivery | Owned tunnel-issued HTTPS URL | Application origin | Application origin | Opt-in public tunnel or receiver forwarding to app paths; no extra local server or default subdomain |
 | WorkOS-to-app callback | App origin + `/callback` | App origin + `/callback` | App origin + `/callback` | Different from Google's callback into WorkOS |
 | Google/Microsoft-to-auth-provider callback | Exact URI shown in WorkOS provider settings | Exact URI shown in WorkOS provider settings | Exact URI shown in WorkOS provider settings | Currently shared WorkOS staging environment; no invented `auth.copacker.ai` hostname |
@@ -28,8 +31,8 @@ The naming change is implemented in the launcher; external activation is tracked
 | Marketing media | `media.copacker.ai` | `media.copacker.ai` | `media.copacker.ai` | Existing shared public R2 assets |
 | Turbo remote cache | `turbo.copacker.ai` | `turbo.copacker.ai` in CI | `turbo.copacker.ai` in CI | Existing Cloudflare service; not a browser OAuth origin |
 | Email sender domain | `resend.dev` | `resend.dev` | `copacker.ai` | Existing Resend setup; dev/staging restricted to account owner |
-| Database | Local Docker loopback | Neon staging branch | Neon production branch | Staging Hyperdrive verified on Neon October 16, with full TLS and caching off; repeat app acceptance after the origin change |
-| Document storage | Native local R2 emulator | Railway documents bucket | Separate Railway documents bucket | `S3_ENDPOINT` is provider-issued; do not invent a vanity domain |
+| Database | Local Docker loopback | Neon staging branch | Neon production branch | Separate Hyperdrive configurations, verified TLS and caching off; retained Node executor uses the pooled Neon endpoint |
+| Document storage | Native local R2 emulator | `copacker-staging-private` | `copacker-production-private` | Private R2 bindings in web Workers; bucket-scoped S3 credentials in the retained executor. No public document origin |
 | Shopify events | Fixtures or owned development EventBridge/SQS resources | Staging EventBridge/SQS | Production EventBridge/SQS | No Copacker HTTP webhook hostname |
 | Amazon notifications | Fixtures or owned development SQS resources | Staging SQS | Production SQS | No HTTP webhook hostname |
 | Observability | `us.cloud.langfuse.com` when configured | `LANGFUSE_BASE_URL` | `LANGFUSE_BASE_URL` | Separate project keys; exact deployed endpoints must be read from service configuration |
@@ -95,11 +98,11 @@ Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript
 | Key name / resource ID | Allowed website referrers | Configuration destination |
 | --- | --- | --- |
 | Copacker Maps Local / `f2ae7042-d129-4240-8a95-941b9aaffed8` | `https://*.local.copacker.ai/*`, `http://localhost:3000/*`, `http://localhost:3001/*`, `http://localhost:3010/*` | Primary checkout's ignored `.env`: `VITE_GOOGLE_MAPS_API_KEY`; refresh other checkouts from this local key |
-| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | Staging Railway web service: `VITE_GOOGLE_MAPS_API_KEY` |
-| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | Production Railway web service: `VITE_GOOGLE_MAPS_API_KEY` |
+| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | GitHub staging `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY`; retained Railway rollback artifact |
+| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | GitHub production `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY`; retained Railway rollback artifact |
 
-Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
-through Docker's build argument. Do not add these keys to workers or fixture Storybook previews.
+The Cloudflare release embeds the environment's restricted browser key during its web build. Do not add these keys to
+the background executor or fixture Storybook previews.
 Address autocomplete uses the key embedded in each environment's web build.
 The Maps loader resolves only after SDK initialization, including the first mount. Preserve that readiness contract
 when changing the script loading mode.

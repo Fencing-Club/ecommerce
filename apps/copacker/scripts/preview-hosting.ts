@@ -134,6 +134,7 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
       "--mode",
       "preview"
     ])
+    run(["--import", "tsx", "scripts/test-worker-webhooks.ts"])
     run([fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json"))), "build"])
     const deploy = [
       fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))),

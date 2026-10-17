@@ -1,10 +1,12 @@
 # Cloudflare runtime and releases
 
-The migration branch runs Copacker on TanStack Start and Cloudflare Workers. It integrates the separately merged
+Copacker's TanStack Start application is deployed to Cloudflare Workers on staging. Production web is temporarily
+back on its retained Railway artifact after the first cutover exposed an eBay forwarding failure. Storybook is live
+on Cloudflare in both environments. It integrates the separately completed
 [Neon database migration](neon.md). The retained Railway Node worker remains the only background executor;
 [Cloudflare Queues and Cron](background-jobs.md) deliver wake signals and scheduled reconciliation. Workflows and
-Cloudflare job execution remain a later milestone. Existing
-production hostnames and services remain live until the separately reviewed [cutover](specs/platform-migration/cutover.md).
+Cloudflare job execution remain a later milestone. The existing public hostnames are retained; the previous Railway
+origins remain available for rollback. See [cutover acceptance](specs/platform-migration/acceptance.md).
 
 ## Request boundaries
 
@@ -26,6 +28,12 @@ Use the pinned `cf` CLI and `cloudflare.config.ts`; there is no Wrangler configu
 and binding types. `pnpm build` builds staging; `vite build --mode production` requires explicit production resources.
 Build output is `.cloudflare/output/v0`. The build contains binding declarations, never database admin credentials.
 
+Vite's SSR target is `webworker`, matching Cloudflare's browser export conditions with package `browser` mappings.
+The AWS EventBridge browser client receives explicit region and credentials; it cannot use Node's environment
+provider chain. `pnpm test:worker-webhooks` runs the built application in workerd with synthetic bindings and
+intercepted outbound requests, checking eBay signatures, signed EventBridge forwarding, rejection and recovery.
+CI and the staging/production release runner require this check before deployment.
+
 | Environment | Web | Database | Files |
 | --- | --- | --- | --- |
 | Development | Vite and local workerd, exact Portless origin | Local PostgreSQL | `.cloudflare/state/development/v3/r2` |
@@ -39,13 +47,11 @@ owns its storage. Local credentials live in ignored `.cloudflare/storage-credent
 cutover, configure the deployed Node worker with environment-scoped R2 S3 credentials for the exact bucket bound to
 the web Worker. It retains direct PostgreSQL access. Never point a local job worker at staging provider queues.
 
-The earlier qualification deployment is at `copacker-staging.hoa-preview.workers.dev`; its source was an uncommitted
-working tree and its release SHA is deliberately blank. It predates the Neon integration. On October 16, a read-only
-check confirmed its Hyperdrive now targets Neon with `verify-full`, caching disabled and five origin connections.
-Its original staging worker used the original object store. The October 16 storage transfer subsequently moved both
-retained web and executor readers/writers to R2 and verified the transferred bytes and references. Replace this early
-qualification artifact with the tested release before routing the stable staging domain to it.
-See the [qualification record](specs/platform-migration/compatibility.md#main-application-qualification).
+The October 16 release replaced the early qualification artifact with the tested commit recorded in
+[acceptance](specs/platform-migration/acceptance.md). The stable staging domain and its `workers.dev` alias address the
+same deployment. Both environments use verified Neon Hyperdrive connections, caching disabled and five origin
+connections. Private storage was transferred to R2 and verified before the web cutover. The original trials remain in
+the historical [qualification record](specs/platform-migration/compatibility.md#main-application-qualification).
 
 Required Worker secrets and optional integration secrets/settings are allowlisted in `scripts/cloudflare-environment.ts`.
 The release requires a 32-byte base64 token encryption key and a session password of at least 32 characters. Preserve
@@ -74,7 +80,8 @@ GitHub's `staging` and `production` environments supply the variables above, `CL
 `CLOUDFLARE_WORKER_SECRETS` secrets. The retained executor uses the existing repository secrets
 `RAILWAY_STAGING_TOKEN` or `RAILWAY_PRODUCTION_TOKEN` for its selected environment.
 `CLOUDFLARE_WORKER_SETTINGS` is a JSON variable.
-The repository's `CLOUDFLARE_RELEASE_ENABLED` stays off until resource, storage, callback and rollback gates pass.
+The repository's `CLOUDFLARE_RELEASE_ENABLED` and both environments' `RELEASE_CUTOVER_READY` gates were enabled for the
+qualified October 16 cutover. A new environment must pass resource, storage, callback and rollback gates before enabling them.
 Each environment's deploys are serialized. Older main commits cannot replace newer staging. The retained worker is
 released after the web and Storybook, followed by its queue scheduler; both HTTP health endpoints must report the expected commit.
 Provision the environment's `copacker-jobs-<environment>` queue and HTTP consumer before release. Verify wake,

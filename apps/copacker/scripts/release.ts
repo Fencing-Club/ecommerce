@@ -74,6 +74,7 @@ function run(args: string[], cwd = root) {
   execFileSync(process.execPath, args, { cwd, env: environment, stdio: "inherit" })
 }
 run([vite, "build", "--mode", mode])
+run(["--import", "tsx", "scripts/test-worker-webhooks.ts"])
 run([storybook, "build"])
 run(["--import", "tsx", "scripts/build-stories-release.ts", mode])
 const deploy = [

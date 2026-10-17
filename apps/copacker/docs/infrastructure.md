@@ -130,9 +130,10 @@ in their GitHub environment secrets as `R2_DOCUMENTS_CREDENTIALS`. Production se
 public health endpoint returned HTTP 200.
 
 Staging authenticated HTTP checks verified an existing document checksum, denied signed-out and unauthorized access,
-and uploaded/downloaded a new test product label through R2. That test label remains in staging. Browser sign-in could
-not be completed because the browser tool masks password values; production authenticated document acceptance remains
-an outstanding check. No production test accounts or test documents were created.
+and uploaded/downloaded a new test product label through R2. That test label remains in staging. The final hosted
+qualification also passed 145 browser tests on preview and staging. Production retained the existing signed-in browser
+session, loaded and searched its real products, and downloaded the existing PO36 PDF through the Cloudflare Worker;
+its bytes exactly matched the pre-cutover checksum. No production test accounts or test documents were created.
 
 Recovery branches `recovery-staging-r2-20261016` and `recovery-production-r2-20261016` preserve the database at the writer
 pause, without compute, until October 23, 2026 at 21:00 UTC. Original Railway document objects remain for recovery.
@@ -140,10 +141,12 @@ New R2 writes mean rollback requires reconciling the object delta, not merely re
 Staging's old pre-deploy seed command was disabled during the restart; keep migrations under the serialized release
 runner and do not re-enable automatic reseeding. Unrelated staged WorkOS settings were left untouched.
 
-Hosted preview and release configuration remain gated. Railway web, Storybook and the Node executor remain required;
-retire original document storage only after authenticated production acceptance and the observation/recovery gates pass.
+Hosted preview and release configuration are enabled. The Railway Node executor remains required; previous web and
+Storybook artifacts and original document storage remain recovery material through the observation window.
 The user deferred deletion of the unprovisioned `pr-999999` bucket until final Railway retirement.
-Follow [the cutover runbook](specs/platform-migration/cutover.md) for recovery and retirement.
+Follow [the cutover runbook](specs/platform-migration/cutover.md) for recovery and retirement. The
+[acceptance record](specs/platform-migration/acceptance.md) links the successful saved-plan applies and verified state
+backups for both environments and records the release's remaining limits.
 
 References: [Cloudflare R2 backend](https://developers.cloudflare.com/terraform/advanced-topics/remote-backend/),
 [resource tags](https://developers.cloudflare.com/resource-tagging/how-to/manage-tags/),

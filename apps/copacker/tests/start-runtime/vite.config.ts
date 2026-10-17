@@ -10,6 +10,7 @@ export default defineConfig({
   // Let the Worker own OPTIONS and origin policy instead of Vite's automatic preflight response.
   server: { cors: false },
   preview: { cors: false },
+  ssr: { target: "webworker" },
   resolve: { alias: { "@": fileURLToPath(new URL("../../src", import.meta.url)) } },
   plugins: [
     workerStyles(),

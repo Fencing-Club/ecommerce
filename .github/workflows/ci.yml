@@ -87,6 +87,8 @@ jobs:
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm turbo run build --filter=copacker
       - if: needs.changes.outputs.copacker == 'true'
+        run: pnpm --filter copacker test:worker-webhooks
+      - if: needs.changes.outputs.copacker == 'true'
         run: pnpm --filter copacker build-storybook
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
       - if: needs.changes.outputs.copacker == 'true'
