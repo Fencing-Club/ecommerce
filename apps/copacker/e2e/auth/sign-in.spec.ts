@@ -1,12 +1,12 @@
 import { e2eEmail, e2ePassword } from "../../scripts/e2e-user"
-import { expect, test } from "../fixtures"
+import { expect, switchWorkspace, test } from "../fixtures"
 import { formReady } from "./hydrated"
 
 // An address with no account, so a failed attempt never counts against the test account.
 const nobody = () => `copacker-e2e+nobody-${Date.now().toString(36)}@example.net`
 
 test.describe("signed out", () => {
-  test("a protected page sends you to sign in and back again", async ({ page }) => {
+  test("a fresh sign-in asks which workspace to open before entering a protected page", async ({ page }) => {
     await page.goto("/orders?status=draft")
     await expect(page).toHaveURL(
       (url) => url.pathname === "/login" && url.searchParams.get("next") === "/orders?status=draft"
@@ -22,8 +22,11 @@ test.describe("signed out", () => {
     await page.getByLabel("Email").fill(e2eEmail)
     await page.getByLabel("Password", { exact: true }).fill(e2ePassword())
     await page.getByRole("button", { name: "Sign in", exact: true }).click()
-    await expect(page).toHaveURL((url) => url.pathname === "/orders" && url.search === "?status=draft")
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+    await expect(page).toHaveURL(/\/workspaces$/)
+    await expect(page.getByRole("heading", { name: "Choose a workspace" })).toBeVisible()
+    await switchWorkspace(page, "buyer")
+    // A workspace choice starts at its home, never at a deep link from an unknown company.
+    await expect(page).toHaveURL(/\/overview$/)
   })
 
   test("every portal page asks you to sign in", { tag: "@smoke" }, async ({ page }) => {

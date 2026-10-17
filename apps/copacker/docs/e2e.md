@@ -63,6 +63,9 @@ Never run the full mutating suite against production.
   for a scenario that goes back and forth between partners.
 - Each worker signs in once per role and carries the cookies from test to test, because AuthKit rotates the refresh
   token. Don't sign out or switch workspaces on a role's page; use a fresh context for that.
+- A fresh session has no workspace selection. The shared `switchWorkspace` helper handles both the initial workspace
+  picker and the portal menu. Recovery tests use their own context and assert that choosing a workspace opens its home
+  instead of replaying a deep link belonging to an unavailable workspace.
 - Specs run in parallel against one database: name what a test creates with `unique()`, assert within its row or
   dialog, and give a scenario that changes a seeded purchase order its own draft.
 - `e2e/support/files.ts` makes PDFs, images and CSV files to upload and reads downloaded PDFs and workbooks.
