@@ -178,12 +178,14 @@ describe("Amazon reconciliation endpoint", () => {
     ])
   })
   it("explicitly flags the bounded financial search instead of treating unseen postings as absent", async () => {
+    await database.insert(tables.amazonReturns).values({ ...baseRow, orgId })
     for (let batch = 0; batch < 6; batch++) {
       await database.insert(tables.amazonTransactions).values(
         Array.from({ length: batch === 5 ? 1 : 1000 }, (_, index) => ({
           orgId,
           externalAccountId: "SELLER1",
           transactionId: `T${batch}-${index}`,
+          orderId: "ORDER1",
           postedAt: new Date("2026-10-03"),
           type: "Refund",
           currency: "USD",
@@ -195,6 +197,48 @@ describe("Amazon reconciliation endpoint", () => {
     }
     const result = await amazonReconciliation(orgId, input)
     expect(result.coverage?.financialSearch).toMatchObject({ limit: 5000, truncated: true })
+  })
+  it("finds historical references despite more than 5000 newer unrelated postings", async () => {
+    await database.insert(tables.amazonReturns).values({ ...baseRow, orgId })
+    await pg.query(
+      `insert into amazon_transactions ("orgId","externalAccountId","transactionId","orderId","postedAt",type,currency,"totalMinor","feesMinor",data)
+      select $1,'SELLER1','UNRELATED-'||i,'OTHER','2026-10-16','Refund','USD',10,0,'{}'::jsonb from generate_series(1,5001) i`,
+      [orgId]
+    )
+    await database.insert(tables.amazonTransactions).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      transactionId: "HISTORICAL",
+      orderId: null,
+      postedAt: new Date("2026-01-01"),
+      type: "Refund",
+      currency: "USD",
+      totalMinor: 10,
+      feesMinor: 0,
+      data: { relatedIdentifiers: [{ relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "ORDER1" }] }
+    })
+    const result = await amazonReconciliation(orgId, input)
+    expect(result.rows[0]?.finance.candidates.map((candidate) => candidate.transactionId)).toEqual(["HISTORICAL"])
+    expect(result.coverage?.financialSearch.truncated).toBe(false)
+  })
+  it("searches product contexts with null references and ignores other context types", async () => {
+    await database.insert(tables.amazonReturns).values({ ...baseRow, orgId, orderId: "UNMATCHED" })
+    await database.insert(tables.amazonTransactions).values(
+      ["ProductContext", "OtherContext"].map((contextType) => ({
+        orgId,
+        externalAccountId: "SELLER1",
+        transactionId: contextType,
+        orderId: null,
+        postedAt: new Date("2026-01-01"),
+        type: "Refund",
+        currency: "USD",
+        totalMinor: 10,
+        feesMinor: 0,
+        data: { relatedIdentifiers: null, items: [{ contexts: [{ contextType, sku: "SKU1", asin: "A1" }] }] }
+      }))
+    )
+    const result = await amazonReconciliation(orgId, input)
+    expect(result.rows[0]?.finance.candidates.map((candidate) => candidate.transactionId)).toEqual(["ProductContext"])
   })
   it("paginates without claiming empty evidence means complete coverage", async () => {
     await database.insert(tables.amazonReturns).values(Array.from({ length: 101 }, () => ({ ...baseRow, orgId })))

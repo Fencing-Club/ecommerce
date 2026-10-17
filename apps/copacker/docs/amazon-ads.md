@@ -85,3 +85,7 @@ for reconnecting the same seller. Deleting the workspace removes grants, jobs an
 
 Scope validation failures identify the mismatched field (date, country, currency or ad product) without logging
 source values or campaign identifiers. Rejected reports do not publish spend or product evidence.
+
+Report output labels (`Sponsored Products`, `Sponsored Brands`, `Sponsored Display`) are normalized to the internal
+uppercase ad-product identifiers. Request filters retain the API enum values. Unknown labels remain unsupported and
+fail scope validation; normalization does not admit DSP or weaken date, country or currency checks.

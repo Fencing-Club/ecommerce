@@ -194,3 +194,30 @@ removal and FBM return feeds still have failed or unavailable periods, so those 
 Shopify financial history starts 2024-01-10 and was still backfilling at this checkpoint; ordinary orders and inventory
 synced successfully. Amazon Ads report requests succeeded after the polling fix, but one downloaded report was rejected by scope validation; completed spend imports remain unverified. Historical purchase-cost, opening-balance and receipt collections are empty and require merchant evidence.
 These observations are account-specific and do not establish reconciliation or complete P0 readiness.
+
+### Provider investigation and reconciliation: 2026-10-17
+
+- Confirmed the failed Ads download contains 90 daily campaign rows labeled `Sponsored Products`; request enums and
+  report output labels differ. The importer now normalizes the three supported labels; live acceptance awaits release.
+- Monthly storage reports exist for all twelve requested months. An actual report contains `8.0E-4`, which the strict
+  decimal parser rejected. Exact scientific-notation expansion is implemented; imported coverage awaits release.
+- Amazon returned genuine `FATAL` status for recent reimbursement and aged-storage requests, without diagnostic
+  documents. Earlier aged-storage requests were `CANCELLED`. These remain failed/unavailable, never zero-cost evidence.
+- FBM October, September and August 2026 imported; July hit throttling and older windows remain incomplete. The shared
+  monthly report importer now attempts untouched history before failed windows and covered refreshes.
+- Shopify's financial backfill is actively scanning June 2026, with completed coverage from 2024-01-10 through
+  2026-05-30. At the read-only checkpoint, excluding marketplace-tagged copies and test orders left 353 orders,
+  45 refund objects, six returns and 260 transaction fee entries. All included orders had return-scope coverage.
+  There were 30 refund-payment references also present in order transactions: downstream totals must deduplicate
+  by transaction ID, separate authorization from capture, and exclude failed/pending transactions from paid amounts.
+- All 17,277 stored Amazon postings balanced against their top-level breakdowns. Item totals balanced for 16,893;
+  384 lacked usable item totals. There were 6,650 release-linked postings and 193 order references absent from stored
+  sales. These are coverage/accounting review items, not evidence of lost revenue.
+- None of the 102 reimbursement rows' reimbursement IDs appeared in stored transaction/item related identifiers.
+  Do not invent direct ID matching or mark recoveries reconciled based on amounts alone. Financial candidates remain
+  unresolved; report amounts, inventory recoveries, release events and settlement cash must not be added twice.
+- Reconciliation search now filters by evidence identifiers before its bounded result limit, so unrelated recent
+  postings cannot crowd out historical order matches. Product-only matches remain candidates, not allocations.
+
+The parser and search fixes require deployment and live verification. Shopify completion, provider-side report
+failures, storage/Ads acceptance and source-to-posting allocations remain open. No reporting UX was added.

@@ -7,7 +7,26 @@ export const storageFeeReportTypes = {
 } as const
 const decimal = z
   .string()
-  .regex(/^-?\d+(\.\d+)?$/)
+  .max(100)
+  .regex(/^-?\d+(\.\d+)?([eE][+-]?\d{1,2})?$/)
+  .transform((value) => {
+    // Amazon emits small fees as e.g. 8.0E-4. Expand digits without floating-point rounding.
+    const [mantissa, exponent] = value.toLowerCase().split("e")
+    if (exponent === undefined) {
+      return value
+    }
+    const sign = mantissa!.startsWith("-") ? "-" : ""
+    const [whole, fraction = ""] = mantissa!.replace(/^-/, "").split(".")
+    const digits = whole! + fraction
+    const point = whole!.length + Number(exponent)
+    if (point <= 0) {
+      return `${sign}0.${"0".repeat(-point)}${digits}`
+    }
+    if (point >= digits.length) {
+      return sign + digits + "0".repeat(point - digits.length)
+    }
+    return `${sign}${digits.slice(0, point)}.${digits.slice(point)}`
+  })
   .nullable()
 const fee = z.object({
   periodDay: z.iso.date(),

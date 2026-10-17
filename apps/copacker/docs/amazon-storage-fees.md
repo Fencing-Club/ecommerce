@@ -3,7 +3,7 @@
 The Amazon sales worker imports monthly storage estimates (`GET_FBA_STORAGE_FEE_CHARGES_DATA`) and assessed
 aged-inventory charges (`GET_FBA_FULFILLMENT_LONGTERM_STORAGE_FEE_CHARGES_DATA`) after inventory movements on first
 connection, manual sync and the daily schedule. This implements analytics A04 acquisition for US FBA requests.
-Deployment, live-account validation and reconciliation remain pending; this is not completed profitability reporting.
+Live-account acceptance and reconciliation remain incomplete; this is not completed profitability reporting.
 
 ## Scope and periods
 
@@ -52,3 +52,8 @@ Account, workspace, sync revision and worker lease guard publication. See the sh
 separate deliverables.
 
 Source: [Amazon FBA report catalog](https://developer-docs.amazon/sp-api/docs/report-type-values-fba).
+
+Scientific-notation decimals emitted by Amazon (for example `8.0E-4`) expand to exact decimal strings without using
+floating-point arithmetic. Raw source values remain in evidence. Unknown/malformed values still reject the document.
+The shared monthly importer requests untouched windows first, then incomplete windows, then covered refreshes,
+so a limited provider budget does not repeatedly prevent older history from being attempted.

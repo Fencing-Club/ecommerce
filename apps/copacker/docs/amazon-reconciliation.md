@@ -49,8 +49,8 @@ to financial postings. Multiple source records may point to the same posting wit
 ## Coverage and limits
 
 Report status/coverage intersecting the requested period and the financial sync's successful bounds/error/status accompany
-the result. Empty report coverage or zero rows does not establish zero cost. The candidate search scans the latest 5,000
-stored account postings across dates to allow late postings; a `truncated` flag identifies excluded older postings.
+the result. Empty report coverage or zero rows does not establish zero cost. The candidate search retains at most 5,000 matching
+stored account postings across dates to allow late postings; a `truncated` flag identifies excluded candidates.
 Only 20 candidates per source row are returned, with the full count within that search. Missing candidates never prove
 missing recovery. Review the bounds and truncation before drawing conclusions. Live-account validation remains pending.
 
@@ -61,3 +61,8 @@ The analytics data-readiness criteria remain open. Historical COGS, opening inve
 remain separate P0 dependencies.
 
 Reference: [Amazon Finances model](https://github.com/amzn/selling-partner-api-models/blob/main/models/finances-api-model/finances_2024-06-19.json).
+
+Financial searches filter by the current evidence page’s exact order, SKU and ASIN identifiers before applying the
+5,000-posting limit. Explicit order references rank ahead of product-only candidates. Unrelated recent postings no
+longer hide historical matches. Marketplace/account isolation and search truncation remain explicit; candidates
+still require source-specific allocation checks and are not additional costs.

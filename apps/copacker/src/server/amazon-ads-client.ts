@@ -21,6 +21,12 @@ const profileSchema = z.object({
 })
 export type AdsProfile = z.infer<typeof profileSchema> & { adsAccountId: string }
 const adProducts = ["SPONSORED_PRODUCTS", "SPONSORED_BRANDS", "SPONSORED_DISPLAY"]
+// Report dimensions use display labels, unlike the request filter's enum values.
+const reportAdProducts = new Map([
+  ["Sponsored Products", "SPONSORED_PRODUCTS"],
+  ["Sponsored Brands", "SPONSORED_BRANDS"],
+  ["Sponsored Display", "SPONSORED_DISPLAY"]
+])
 const reportResponse = z.object({
   error: z.array(z.object({ errors: z.array(z.object({ code: z.string() })) })).nullish(),
   success: z
@@ -236,7 +242,7 @@ const reportRows = z.array(
       date: row["date.value"],
       campaignId: row["campaign.id"],
       country: row["campaign.country"],
-      product: row["adProduct.value"],
+      product: reportAdProducts.get(row["adProduct.value"]) ?? row["adProduct.value"],
       currency: row["budgetCurrency.value"],
       cost: row["metric.totalCost"],
       sku: row["advertisedProductSku.value"] ?? null
