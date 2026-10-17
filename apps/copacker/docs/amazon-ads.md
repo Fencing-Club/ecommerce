@@ -57,6 +57,10 @@ include date, campaign ID, campaign country, ad product, budget currency and tot
 temporary server failures are retried through the queue; permanent failures appear in Settings. Sync again retries
 failed work. Amazon may revise recent spend, so repeated imports replace daily totals rather than adding them.
 
+Amazon can return null report parts and warnings while reports are pending or processing. The collector accepts
+these absent values, saves the report ID and keeps polling. A completed report still requires download parts, and
+nonempty warnings still reject the report without overwriting stored spend.
+
 All report parts must complete before any days in a window are stored in `amazon_ads_days`. Reports with warnings,
 missing costs, unexpected countries or currencies are rejected instead of counted as complete. Empty completed reports
 produce zero-spend days. Downloads are size-limited, use only Amazon S3 HTTPS URLs, and receive no authorization headers.
