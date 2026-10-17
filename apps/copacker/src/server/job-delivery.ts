@@ -20,10 +20,10 @@ export function jobDeliveryConfigured() {
   return Boolean(publisher.getStore() || process.env.CLOUDFLARE_JOBS_QUEUE_ID)
 }
 
-async function request(action: string, body: unknown) {
+async function request(action: string, body: unknown, queue = process.env.CLOUDFLARE_JOBS_QUEUE_ID) {
   const config = configuration.parse({
     account: process.env.CLOUDFLARE_ACCOUNT_ID,
-    queue: process.env.CLOUDFLARE_JOBS_QUEUE_ID,
+    queue,
     token: process.env.CLOUDFLARE_JOBS_TOKEN
   })
   const response = await fetch(
@@ -52,11 +52,19 @@ export async function signalJobs(delaySeconds = 0) {
   if (!jobDeliveryConfigured()) {
     return
   }
-  await request("", {
+  const body = {
     body: JSON.stringify({ kind: "wake" }),
     content_type: "text",
     delay_seconds: delay
-  })
+  }
+  const results = await Promise.allSettled([
+    request("", body),
+    ...(process.env.CLOUDFLARE_EXECUTOR_QUEUE_ID ? [request("", body, process.env.CLOUDFLARE_EXECUTOR_QUEUE_ID)] : [])
+  ])
+  const failed = results.find((result) => result.status === "rejected")
+  if (failed?.status === "rejected") {
+    throw failed.reason
+  }
 }
 
 // Publish only after the transaction has committed. Jobs remain durable if publishing fails; the scheduled recovery

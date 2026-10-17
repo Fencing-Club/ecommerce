@@ -3,9 +3,10 @@
 Copacker's TanStack Start application and Storybook are live on Cloudflare Workers in staging and production.
 The corrected production cutover completed October 16, 2026, after a live eBay forwarding regression was repaired
 and verified through the retained executor. It integrates the separately completed
-[Neon database migration](neon.md). The retained Railway Node worker remains the only background executor;
-[Cloudflare Queues and Cron](background-jobs.md) deliver wake signals and scheduled reconciliation. Workflows and
-Cloudflare job execution remain a later milestone. The existing public hostnames are retained; the previous Railway
+[Neon database migration](neon.md). The first background migration assigns analytics pages and Shopify/eBay event jobs
+to the web Worker's native queue handler. Railway retains long imports, other job families and AWS readers;
+[background jobs](background-jobs.md) documents the canonical split and cutover checks. Workflows and the remaining
+job families follow after checkpointing. The existing public hostnames are retained; the previous Railway
 origins remain available for rollback. See [cutover acceptance](specs/platform-migration/acceptance.md).
 
 ## Request boundaries
@@ -36,6 +37,10 @@ intercepted outbound requests, checking eBay signatures, signed EventBridge forw
 The same check verifies actual WorkOS flag fetching, maintenance rejection, a missing flag and redirect rejection.
 Cloudflare accepts `manual` redirect handling; non-success responses retain the last maintenance setting without
 following a redirect or forwarding credentials. CI and the staging/production release runner require this check before deployment.
+
+`pnpm test:worker-jobs` runs the same artifact against a fresh local PostgreSQL database using `TEST_DATABASE_URL`.
+It applies the real migrations and tests each assigned job family, duplicate delivery, abandoned leases, failure and
+recovery. It refuses remote databases, destroys only its randomly named test database, and is required in PR CI.
 
 | Environment | Web | Database | Files |
 | --- | --- | --- | --- |

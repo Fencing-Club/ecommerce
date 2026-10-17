@@ -12,8 +12,10 @@ import {
   salesOrders,
   salesSyncs,
   stockSnapshots,
+  variantFields,
   suppliers
 } from "../src/db/schema"
+import { demoShopDomain } from "../src/server/demo-shopify"
 import { salesDataVersion } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
 
@@ -29,7 +31,7 @@ export function requireDemoDatabase() {
   }
 }
 
-const shop = "copacker-demo.myshopify.com"
+const shop = demoShopDomain
 const location = (id: number) => `gid://shopify/Location/${id}`
 const locations = {
   warehouse: { locationId: location(1), locationName: "Warehouse", locationKind: "merchant" as const },
@@ -209,6 +211,16 @@ export async function seedDemoStore(org: { id: string; name: string }) {
     .insert(connections)
     .values({ orgId: org.id, provider: "shopify", externalId: shop, encryptedToken: token, scopes: "read_products" })
     .onConflictDoNothing()
+  for (const [id, supplierSku] of [
+    [1, "GRIP-L"],
+    [2, "GRIP-R"],
+    [4, "CORD"]
+  ] as const) {
+    await db()
+      .insert(variantFields)
+      .values({ orgId: org.id, shopifyDomain: shop, variantId: `gid://shopify/ProductVariant/${id}`, supplierSku })
+      .onConflictDoNothing()
+  }
   const now = new Date().toISOString()
   const data = {
     source: "shopify" as const,

@@ -96,7 +96,9 @@ flowchart LR
     media["Existing public R2 media and CDN"]
     hyperdrive["Hyperdrive: verified TLS, query caching disabled"]
     files[("Private R2 documents, labels and imports")]
-    queues["Queues: wake and reconcile messages, retries and DLQ"]
+    queues["Node wake and reconcile queue with DLQ"]
+    boundedQueue["Native executor wake queue with DLQ"]
+    bounded["Queue handler in web Worker: analytics pages and Shopify/eBay events"]
     cron["Scheduled Worker: hourly recovery and daily reconciliation"]
     telemetry["Workers logs, traces and release health"]
   end
@@ -129,7 +131,11 @@ flowchart LR
   web --> files
   web --> commerce
   web -->|"Commit job, then publish wake"| queues
+  web -->|"Wake bounded work"| boundedQueue
   cron --> queues
+  cron --> boundedQueue --> bounded --> hyperdrive
+  bounded -->|"Publish downstream work after commit"| queues
+  bounded --> commerce
   queues -->|"HTTP pull"| executor
   executor -->|"Claim, lease, retry and finish"| database
   executor -->|"Scoped S3 credentials"| files
@@ -144,10 +150,11 @@ flowchart LR
   cron --> telemetry
 ```
 
-The SQL job ledger owns work and retries; queue messages are delivery signals. Only the Railway executor claims jobs.
-Startup recovery and hourly wake signals cover missed publication; reconciliation retains its daily identity. This
-release does not introduce a second executor or move live shipment creation into a new retry model. See
-[background-job contracts](../../background-jobs.md).
+The SQL job ledger owns work and retries; queue messages are delivery signals. Cloudflare claims `analytics`,
+`shopify-event` and `ebay-event`; Railway claims the remaining families. Both share three SQL execution slots and
+attempt fencing. Startup recovery and hourly wake signals cover missed publication; reconciliation retains its daily
+identity. Shipment creation remains on Railway. See [background-job contracts](../../background-jobs.md) for cutover
+and live acceptance requirements.
 
 Private R2 has no public document origin. Downloads recheck workspace membership, document revision and release state.
 The web uses native R2 bindings; the retained executor uses credentials limited to its environment's bucket. Public
@@ -190,10 +197,10 @@ file checksums, current provider callbacks, queue delivery, and matching web/Sto
 one daily reconciliation cycle before retiring recovery services. Restore history and frozen recovery branches have
 explicit expiry; record their actual retention in the release evidence.
 
-## Later background execution migration
+## Remaining background execution migration
 
-Moving the remaining Node executor to Cloudflare is a separate milestone. Short bounded jobs can move to Queue
-consumers; long syncs, report polling and shipment preparation need durable Workflow checkpoints. Preserve provider
+The first stage moves three bounded families to the native Queue consumer. Remaining long syncs, report polling and
+shipment preparation need durable checkpoints before moving to Cloudflare. Preserve provider
 idempotency, SQL leases, ownership fencing, delayed retries and recovery of ambiguous external creates. Keep AWS
 notification transport until a separately verified bridge replaces the current SQS readers. Any file workload that
 fails Workers runtime limits needs an explicit processing exception.

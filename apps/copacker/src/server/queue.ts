@@ -7,6 +7,8 @@ import { analyticsJob } from "./analytics-jobs"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
+import { jobExecutorCondition, lockJobClaims, type JobExecutor } from "./job-ownership"
+import { jobConcurrency } from "./job-runner"
 import { logLine } from "./log"
 import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
@@ -15,7 +17,7 @@ import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
 import { describeError, stockJob } from "./stock"
 
 // Read once after draining, then let the external queue wake us when the next retry or abandoned lease is due.
-export async function nextJobDelay() {
+export async function nextJobDelay(runtime: JobExecutor = "local") {
   const [row] = await db()
     .select({
       due: sql<
@@ -23,20 +25,34 @@ export async function nextJobDelay() {
       >`min(case when ${jobs.status} = 'running' then ${jobs.leaseAt} + interval '10 minutes' else ${jobs.runAt} end)`
     })
     .from(jobs)
-    .where(inArray(jobs.status, ["pending", "running"]))
+    .where(and(inArray(jobs.status, ["pending", "running"]), jobExecutorCondition(runtime)))
   return row?.due ? Math.max(1, Math.ceil((new Date(row.due).getTime() - Date.now()) / 1000)) : null
 }
 
-export async function runNextJob() {
+export async function runNextJob(runtime: JobExecutor = "local") {
   const job = await db().transaction(async (tx) => {
+    await lockJobClaims(tx)
     await tx
       .update(jobs)
       .set({ status: "pending" })
-      .where(and(eq(jobs.status, "running"), lt(jobs.leaseAt, new Date(Date.now() - 10 * 60 * 1000))))
+      .where(
+        and(
+          eq(jobs.status, "running"),
+          lt(jobs.leaseAt, new Date(Date.now() - 10 * 60 * 1000)),
+          jobExecutorCondition(runtime)
+        )
+      )
+    const [active] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobs)
+      .where(eq(jobs.status, "running"))
+    if ((active?.count ?? 0) >= jobConcurrency) {
+      return null
+    }
     const [next] = await tx
       .select()
       .from(jobs)
-      .where(and(eq(jobs.status, "pending"), lte(jobs.runAt, new Date())))
+      .where(and(eq(jobs.status, "pending"), lte(jobs.runAt, new Date()), jobExecutorCondition(runtime)))
       .orderBy(jobs.createdAt)
       .limit(1)
       .for("update", { skipLocked: true })
@@ -56,7 +72,7 @@ export async function runNextJob() {
 
   // One line when a job starts and one when it ends, so the worker's output shows what it's doing.
   const started = Date.now()
-  logLine(`Started ${job.kind} job ${job.key} (attempt ${job.attempts})`)
+  logLine(`Started ${job.kind} job ${job.key} on ${runtime} (attempt ${job.attempts})`)
   const took = () => Math.round((Date.now() - started) / 1000)
   // Attempt numbers prevent a worker with an expired lease from changing a newer attempt.
   const owned = and(eq(jobs.id, job.id), eq(jobs.attempts, job.attempts), eq(jobs.status, "running"))
@@ -67,6 +83,7 @@ export async function runNextJob() {
     }
   }
   let stopped = false
+  let pendingHeartbeat: Promise<void> | undefined
   const heartbeat = async () => {
     try {
       await assertOwned()
@@ -75,12 +92,12 @@ export async function runNextJob() {
     }
     if (!stopped) {
       timer = setTimeout(() => {
-        void heartbeat()
+        pendingHeartbeat = heartbeat()
       }, 30000)
     }
   }
   let timer = setTimeout(() => {
-    void heartbeat()
+    pendingHeartbeat = heartbeat()
   }, 30000)
   try {
     if (job.kind === "amazon-ads") {
@@ -131,6 +148,7 @@ export async function runNextJob() {
       console.error(
         JSON.stringify({
           event: "job_failed",
+          executor: runtime,
           kind: job.kind,
           key: job.key,
           attempt: job.attempts,
@@ -172,6 +190,7 @@ export async function runNextJob() {
   } finally {
     stopped = true
     clearTimeout(timer)
+    await pendingHeartbeat
   }
   return true
 }

@@ -5,6 +5,7 @@ import { connections, jobs, organizations, stockSnapshots } from "@/db/schema"
 import { withJobWake } from "@/server/job-delivery"
 import { queueAdsSync } from "./amazon-ads"
 import { queueAmazonSubscription } from "./amazon-notifications"
+import { demoShopDomain } from "./demo-shopify"
 import { queueEbaySubscription } from "./ebay-events"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { queueShopifySubscription } from "./shopify-webhooks"
@@ -46,6 +47,10 @@ export async function reconcileJob(payload: Record<string, unknown>, assertOwned
     })
     .from(stockSnapshots)
   for (const account of accounts) {
+    // Seeded demonstrations have no remote subscriptions or sales history to reconcile.
+    if (account.provider === "shopify" && account.externalId === demoShopDomain) {
+      continue
+    }
     await assertOwned()
     const org = { id: account.orgId, kind: account.kind }
     try {

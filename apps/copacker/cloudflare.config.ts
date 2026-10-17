@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { bindings, defineConfig } from "cf/config"
+import { bindings, defineConfig, triggers } from "cf/config"
 import { z } from "zod"
 import { optionalSecrets, workerSettings } from "./scripts/cloudflare-environment.ts"
 import { localStorage } from "./scripts/local-storage.ts"
@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   const preview = mode === "preview" ? previewResources(process.env.PR_NUMBER || "") : undefined
   const deployed = mode === "staging" || mode === "production" || Boolean(preview)
   const production = mode === "production"
+  const executor = mode === "staging" || mode === "production"
+  const executorQueue = `copacker-executor-${production ? "production" : "staging"}`
   const environment = deployed ? z.enum(["preview", "production", "staging"]).parse(mode) : "local"
   const defaults = {
     preview: { name: preview?.app || "", origin: "" },
@@ -44,6 +46,18 @@ export default defineConfig(({ mode }) => {
       compatibilityDate: "2026-10-15",
       compatibilityFlags: ["nodejs_compat"],
       observability: { enabled: true, traces: { enabled: true }, redactQueryString: true },
+      triggers: executor
+        ? [
+            triggers.queue({
+              name: executorQueue,
+              deadLetterQueue: `${executorQueue}-dlq`,
+              maxBatchSize: 1,
+              maxConcurrency: 3,
+              maxRetries: 5,
+              retryDelay: 30
+            })
+          ]
+        : [],
       env: {
         ...Object.fromEntries(
           [...workerSettings, "APP_COMMIT_SHA"].map((name) => [name, bindings.text(process.env[name] || "")])
@@ -55,6 +69,7 @@ export default defineConfig(({ mode }) => {
         DEPLOYMENT_ENV: bindings.text(environment),
         COPACKER_LOCAL: bindings.text(deployed ? "" : "1"),
         JOBS: bindings.queue<string>({ name: preview?.queue || `copacker-jobs-${environment}` }),
+        EXECUTOR_JOBS: executor ? bindings.queue<string>({ name: executorQueue }) : undefined,
         DOCUMENTS_PREFIX: bindings.text(preview?.documentsPrefix || ""),
         DOCUMENTS: bindings.r2({
           name: bucket,

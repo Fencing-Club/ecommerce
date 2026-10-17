@@ -64,7 +64,7 @@ jobs:
           node-version-file: .nvmrc
           # The pnpm store has its own cache step below, and pnpm isn't installed yet.
           package-manager-cache: false
-      # npm, not pnpm/action-setup: that reads .npmrc's private registry, which CI can't sign in to.
+      # Bootstrap the pinned pnpm release from the public registry.
       - run: npm install --global pnpm@12.10.1
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
       - uses: actions/cache@v6
@@ -87,6 +87,8 @@ jobs:
         run: pnpm turbo run build --filter=copacker
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm --filter copacker test:worker-webhooks
+      - if: needs.changes.outputs.copacker == 'true'
+        run: pnpm --filter copacker test:worker-jobs
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
       - if: needs.changes.outputs.copacker == 'true'
         run: |
