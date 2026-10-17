@@ -581,3 +581,19 @@ describe("AWD inbound eligibility", () => {
     expect(details.get("b")).toEqual({ prepCategory: "TEXTILE" })
   })
 })
+
+it("does not repeat report creation when the caller budgets individual attempts", async () => {
+  const { api, calls } = client([new Response(null, { status: 429 })])
+  await expect(
+    api.report(
+      {
+        reportType: "GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL",
+        marketplaceIds: ["ATVPDKIKX0DER"],
+        dataStartTime: "2026-01-01T00:00:00Z",
+        dataEndTime: "2026-02-01T00:00:00Z"
+      },
+      { deadline: Date.now() + 60000, retryCreate: false }
+    )
+  ).rejects.toMatchObject({ status: 429 })
+  expect(calls).toHaveLength(1)
+})

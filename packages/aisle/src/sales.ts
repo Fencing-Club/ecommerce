@@ -34,7 +34,13 @@ const line = z.object({
 const lines = z.object({ nodes: z.array(line).max(250), pageInfo })
 const fulfillmentLine = z.object({ id, quantity: quantity.nullable(), lineItem: z.object({ id }) })
 const fulfillmentLines = z.object({ nodes: z.array(fulfillmentLine).max(250), pageInfo })
-const fulfillment = z.object({ id, status: z.string(), location: z.object({ id }).nullable() })
+const fulfillment = z.object({
+  id,
+  status: z.string(),
+  location: z.object({ id }).nullable(),
+  createdAt: z.iso.datetime({ offset: true }).optional(),
+  inTransitAt: z.iso.datetime({ offset: true }).nullable().optional()
+})
 const feeMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
 // A payment on the order. Shopify Payments lists its processing fees (and the tax on them); other gateways list none.
 const payment = z.object({
@@ -61,7 +67,7 @@ const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
 const fulfillmentPage = "nodes{id quantity lineItem{id}} pageInfo{hasNextPage endCursor}"
 export const shopifySalesQueries = {
   orders: `query SalesOrders($query:String!,$after:String){shop{myshopifyDomain} orders(first:100,after:$after,query:$query,sortKey:CREATED_AT){nodes{${headers}} pageInfo{hasNextPage endCursor}}}`,
-  order: `query SalesOrder($id:ID!,$after:String){order(id:$id){${headers} lineItems(first:250,after:$after){${linePage}} fulfillmentsCount{count precision} fulfillments(first:250){id status location{id}} transactions(first:100){id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}`,
+  order: `query SalesOrder($id:ID!,$after:String){order(id:$id){${headers} lineItems(first:250,after:$after){${linePage}} fulfillmentsCount{count precision} fulfillments(first:250){id status createdAt inTransitAt location{id}} transactions(first:100){id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}`,
   fulfillment: `query SalesFulfillment($id:ID!,$after:String){fulfillment(id:$id){id fulfillmentLineItems(first:250,after:$after){${fulfillmentPage}}}}`
 }
 // The order query with the order's customer, by ID only: never a name, email or address. Used only when the store
@@ -280,7 +286,7 @@ const bulkPollMs = 5000
 const bulkDeadlineMs = 30 * 60000
 function bulkOrdersQuery(window: SalesWindow, customers: boolean) {
   const search = `created_at:>='${window.from}' created_at:<'${window.to}'`
-  return `{orders(query:${JSON.stringify(search)}){edges{node{${headers}${customers ? " customer{id}" : ""} lineItems{edges{node{${lineFields}}}} fulfillments{id status location{id}} transactions{id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}}}`
+  return `{orders(query:${JSON.stringify(search)}){edges{node{${headers}${customers ? " customer{id}" : ""} lineItems{edges{node{${lineFields}}}} fulfillments{id status createdAt inTransitAt location{id}} transactions{id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}}}`
 }
 export const shopifyBulkQueries = {
   run: `mutation SalesBulk($query:String!){bulkOperationRunQuery(query:$query){bulkOperation{id status} userErrors{field message}}}`,

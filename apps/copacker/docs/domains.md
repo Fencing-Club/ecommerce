@@ -203,3 +203,7 @@ provider-issued URLs and identifiers belong here after they have been inspected;
 - [Google OAuth redirect validation](https://developers.google.com/identity/protocols/oauth2/web-server)
 - [Google API-key restrictions](https://docs.cloud.google.com/docs/authentication/api-keys)
 - [WorkOS public webhook requirements](https://workos.com/docs/events/data-syncing/webhooks)
+
+See [shipment-date evidence](shipment-date-evidence.md) for Shopify fulfillment timestamps and the Amazon FBA outbound-shipment report integration.
+
+Analytics source expansion: [ingestion contracts and permission changes](analytics-ingestion.md). Shopify adds read_returns; no new provider host or live configuration release.

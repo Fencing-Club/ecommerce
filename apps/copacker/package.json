@@ -32,6 +32,7 @@
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
+    "analytics:audit:amazon": "node --import tsx scripts/audit-amazon-finances.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts",

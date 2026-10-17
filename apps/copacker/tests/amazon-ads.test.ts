@@ -253,7 +253,15 @@ describe("Amazon Ads authorization and transport", () => {
   it("downloads bounded gzip without authorization headers", async () => {
     fetchMock.mockResolvedValue(new Response(gzipSync(JSON.stringify([reportRow(1.25)]))))
     expect(await downloadAdsReport("https://reports.s3.amazonaws.com/report")).toEqual([
-      { date: "2026-10-12", campaignId: "1", country: "US", currency: "USD", product: "SPONSORED_PRODUCTS", cost: 1.25 }
+      {
+        date: "2026-10-12",
+        campaignId: "1",
+        country: "US",
+        currency: "USD",
+        product: "SPONSORED_PRODUCTS",
+        cost: 1.25,
+        sku: null
+      }
     ])
     expect(fetchMock.mock.calls[0]![1]!.headers).toBeUndefined()
     await expect(downloadAdsReport("https://example.com/report")).rejects.toThrow("Unexpected")
@@ -309,6 +317,34 @@ describe("durable ad spend imports", () => {
     )
     expect(fetchMock).not.toHaveBeenCalled()
   })
+  it("stores SKU advertising detail without overwriting all-product totals", async () => {
+    await connect()
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("auth/o2")) {
+        return Response.json({ access_token: "access" })
+      }
+      if (String(url).includes("amazonaws.com")) {
+        return Response.json([{ ...reportRow(1.25), "advertisedProductSku.value": "SKU1" }])
+      }
+      return reportResponse()
+    })
+    await amazonAdsJob(
+      {
+        orgId,
+        generation,
+        profileId: "1234",
+        from: "2026-10-12",
+        to: "2026-10-13",
+        reportId: "report",
+        productDetail: true
+      },
+      async () => undefined
+    )
+    expect(await database.select().from(tables.amazonAdsDays)).toHaveLength(0)
+    const evidence = await database.select().from(tables.analyticsEvidence)
+    expect(evidence).toHaveLength(2)
+    expect(evidence[0]?.data.rows).toEqual([expect.objectContaining({ sku: "SKU1", cost: 1.25 })])
+  })
   it("persists report IDs before polling", async () => {
     await connect()
     fetchMock.mockImplementation(async (url) =>
@@ -352,10 +388,14 @@ describe("durable ad spend imports", () => {
       to: "2026-10-13",
       reportId: "report"
     }
-    await amazonAdsJob(payload, async () => undefined)
+    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+      options: { payload: expect.objectContaining({ productDetail: true }) }
+    })
     expect((await database.select().from(tables.amazonAdsDays)).map((d) => d.cost)).toEqual(["3.750000", "0.000000"])
     cost = 2
-    await amazonAdsJob(payload, async () => undefined)
+    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+      options: { payload: expect.objectContaining({ productDetail: true }) }
+    })
     const from = new Date("2026-10-12T07:00:00Z"),
       to = new Date("2026-10-14T07:00:00Z")
     expect(await adsCharge(orgId, "SELLER1", undefined, from, to, "USD")).toBe(-600)

@@ -17,6 +17,10 @@ import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
+import { inventoryMovementReport } from "./fixtures/amazon-inventory-movements"
+import { reimbursementReport } from "./fixtures/amazon-reimbursements"
+import { removalReport } from "./fixtures/amazon-removals"
+import { monthlyStorageReport, agedStorageReport } from "./fixtures/amazon-storage-fees"
 
 const provider = vi.hoisted(() => ({
   amazonFor: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -4830,7 +4834,7 @@ describe("stored sales orders", () => {
       .where(and(eq(tables.salesSyncs.orgId, buyerId), eq(tables.salesSyncs.source, "shopify")))
     expect(sync?.status).toBe("idle")
     // 60 days of history (no read_all_orders) is five 14-day periods. The bulk export gets no answer here, so each
-    // period is read directly, each with its own client.
+    // period is read directly, each with its own client; financial evidence is queued independently.
     expect(graphql).toHaveBeenCalledTimes(6)
     expect(provider.shopifyFor).toHaveBeenCalledTimes(6)
     // Without the payouts permission, labels and Shopify charges wait for the store to reconnect.
@@ -4938,6 +4942,97 @@ describe("stored sales orders", () => {
         })
         .from(tables.amazonTransactions)
     ).toEqual([{ transactionId: "t1", orderId: "111-1", totalMinor: 1200, feesMinor: 300 }])
+  })
+  it("imports reimbursement evidence through the sales worker and exposes its independent coverage", async () => {
+    amazonOrders([])
+    const approvedAt = new Date(Date.now() - 86400000).toISOString()
+    provider.api.report.mockImplementation(
+      async (input: { reportType: string; dataStartTime: string; dataEndTime: string }) => {
+        if (input.reportType !== "GET_FBA_REIMBURSEMENTS_DATA") {
+          return null
+        }
+        const included = approvedAt >= input.dataStartTime && approvedAt <= input.dataEndTime
+        return reimbursementReport(included ? [{ "approval-date": approvedAt }] : [])
+      }
+    )
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    expect(await database.select().from(tables.amazonReimbursements)).toMatchObject([
+      { reimbursementId: "R1", amountTotal: "6.246912", externalAccountId: "A123456789" }
+    ])
+    const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
+    expect(state?.status).toBe("idle")
+    expect(state?.reimbursements?.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.returns?.windows.every((window) => !window.complete)).toBe(true)
+    expect(await database.select().from(tables.amazonTransactions)).toEqual([])
+  })
+  it("imports detailed inventory movements through the worker independently of returns and reimbursements", async () => {
+    amazonOrders([])
+    const eventDay = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    provider.api.report.mockImplementation(
+      async (input: { reportType: string; dataStartTime: string; dataEndTime: string }) => {
+        if (input.reportType !== "GET_LEDGER_DETAIL_VIEW_DATA") {
+          return null
+        }
+        const included = eventDay >= input.dataStartTime.slice(0, 10) && eventDay <= input.dataEndTime.slice(0, 10)
+        return inventoryMovementReport(included ? [{ Date: eventDay }] : [])
+      }
+    )
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    expect(await database.select().from(tables.amazonInventoryMovements)).toMatchObject([
+      { eventDay, quantity: -3, referenceId: "REF1", externalAccountId: "A123456789" }
+    ])
+    const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
+    expect(state?.status).toBe("idle")
+    expect(state?.inventoryMovements?.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.reimbursements?.windows.every((window) => !window.complete)).toBe(true)
+    expect(await database.select().from(tables.stockDays)).toEqual([])
+  })
+  it("imports both storage sources through the worker with independent coverage and no financial postings", async () => {
+    amazonOrders([])
+    provider.api.report.mockImplementation(async (input: { reportType: string; dataStartTime: string }) => {
+      if (input.reportType === "GET_FBA_STORAGE_FEE_CHARGES_DATA") {
+        return monthlyStorageReport([{ month_of_charge: input.dataStartTime.slice(0, 7) }])
+      }
+      if (input.reportType === "GET_FBA_FULFILLMENT_LONGTERM_STORAGE_FEE_CHARGES_DATA") {
+        return agedStorageReport([{ "snapshot-date": input.dataStartTime.slice(0, 10) }])
+      }
+      return null
+    })
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    expect(await database.select().from(tables.amazonStorageFees)).toHaveLength(24)
+    const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
+    expect(state?.status).toBe("idle")
+    expect(state?.storageFees?.monthly.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.storageFees?.aged.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.returns?.windows.every((window) => !window.complete)).toBe(true)
+    expect(await database.select().from(tables.amazonTransactions)).toEqual([])
+  })
+  it("imports removal orders and shipments through the worker without duplicate stock or money postings", async () => {
+    amazonOrders([])
+    provider.api.report.mockImplementation(async (input: { reportType: string; dataStartTime: string }) => {
+      if (input.reportType === "GET_FBA_FULFILLMENT_REMOVAL_ORDER_DETAIL_DATA") {
+        return removalReport("orders", [{ "request-date": input.dataStartTime }])
+      }
+      if (input.reportType === "GET_FBA_FULFILLMENT_REMOVAL_SHIPMENT_DETAIL_DATA") {
+        return removalReport("shipments", [{ "shipment-date": input.dataStartTime }])
+      }
+      return null
+    })
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
+    expect(state?.status).toBe("idle")
+    expect(state?.removals?.orders.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.removals?.shipments.windows.every((window) => window.complete)).toBe(true)
+    expect(state?.storageFees?.monthly.windows.every((window) => !window.complete)).toBe(true)
+    expect(await database.select().from(tables.amazonRemovals)).toHaveLength(
+      (state?.removals?.orders.windows.length ?? 0) * 2
+    )
+    expect(await database.select().from(tables.amazonTransactions)).toEqual([])
+    expect(await database.select().from(tables.stockDays)).toEqual([])
   })
   it("copies daily FBA stock from Amazon's ledger and counts stockout days, except days the item sold", async () => {
     const dayMs = 86400000
