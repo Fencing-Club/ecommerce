@@ -3,6 +3,7 @@ import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
 import { amazonAdsJob } from "./amazon-ads"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
+import { analyticsJob } from "./analytics-jobs"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
@@ -86,6 +87,8 @@ export async function runNextJob() {
       await amazonAdsJob(job.payload, assertOwned)
     } else if (job.kind === "stock") {
       await stockJob(job.payload, assertOwned, job)
+    } else if (job.kind === "analytics") {
+      await analyticsJob(job.payload, assertOwned)
     } else if (job.kind === "sales") {
       await salesJob(job.payload, assertOwned)
     } else if (job.kind === "import") {

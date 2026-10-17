@@ -9,11 +9,19 @@
     "./amazon": "./src/amazon.ts",
     "./shopify": "./src/shopify.ts",
     "./sales": "./src/sales.ts",
+    "./shopify-economics": "./src/shopify-economics.ts",
     "./ledger": "./src/ledger.ts",
+    "./ledger-detail": "./src/ledger-detail.ts",
+    "./storage-fees": "./src/storage-fees.ts",
+    "./fbm-returns": "./src/fbm-returns.ts",
+    "./returns": "./src/returns.ts",
+    "./reimbursements": "./src/reimbursements.ts",
     "./documents": "./src/documents.ts",
     "./product-labels": "./src/product-labels.ts",
     "./requirements": "./src/requirements.ts",
-    "./ebay": "./src/ebay.ts"
+    "./ebay": "./src/ebay.ts",
+    "./removals": "./src/removals.ts",
+    "./fulfillment-shipments": "./src/fulfillment-shipments.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

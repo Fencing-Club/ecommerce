@@ -327,7 +327,7 @@ export class ProviderError extends Error {
 // Each collection owns its pacing and deadline; mutations never use these retries.
 function stockReader(deadline: number, assertActive?: () => Promise<void>) {
   let nextRequestAt = 0
-  return async <T>(read: () => Promise<T>, pageDeadline = deadline): Promise<T> => {
+  return async <T>(read: () => Promise<T>, pageDeadline = deadline, retry = true): Promise<T> => {
     const check = async () => {
       await assertActive?.()
       if (Date.now() >= Math.min(deadline, pageDeadline)) {
@@ -350,7 +350,12 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>) {
         await check()
         return response
       } catch (error) {
-        if (!(error instanceof ProviderError) || ![429, 500, 502, 503, 504].includes(error.status) || attempt >= 2) {
+        if (
+          !retry ||
+          !(error instanceof ProviderError) ||
+          ![429, 500, 502, 503, 504].includes(error.status) ||
+          attempt >= 2
+        ) {
           throw error
         }
         nextRequestAt = Math.max(nextRequestAt, Date.now() + (error.retryAfterMs ?? 1000 * 2 ** attempt))
@@ -878,6 +883,58 @@ export class Amazon {
     }
     throw new Error("FBA shipment items exceed the supported page limit")
   }
+  /** Received quantities stay separate from sent quantities; absence never becomes zero. */
+  async fbaReceiptItems(shipmentId: string) {
+    const rows: { sku: string; sent: number | null; received: number | null; unit: string }[] = []
+    const seen = new Set<string>()
+    let path = `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentId)}/items?MarketplaceId=ATVPDKIKX0DER`
+    for (let n = 0; n < 50; n++) {
+      const page = fbaShipmentItemsPage.parse(await this.request("GET", path)).payload
+      if (!page?.ItemData) {
+        throw new Error("Missing FBA receipt items")
+      }
+      for (const row of page.ItemData) {
+        if (row.ShipmentId && row.ShipmentId !== shipmentId) {
+          throw new Error("FBA receipt shipment mismatch")
+        }
+        rows.push({
+          sku: row.SellerSKU,
+          sent: row.QuantityShipped ?? null,
+          received: row.QuantityReceived ?? null,
+          unit: "UNITS"
+        })
+      }
+      if (!page.NextToken) {
+        return rows
+      }
+      if (seen.has(page.NextToken)) {
+        throw new Error("FBA receipt cursor stalled")
+      }
+      seen.add(page.NextToken)
+      path = `/fba/inbound/v0/shipmentItems?${new URLSearchParams({ MarketplaceId: "ATVPDKIKX0DER", QueryType: "NEXT_TOKEN", NextToken: page.NextToken })}`
+    }
+    throw new Error("FBA receipt page limit")
+  }
+  async awdReceiptItems(shipmentId: string) {
+    const quantity = z.object({ quantity: z.number().int().nonnegative().safe(), unitOfMeasurement: z.string() })
+    return z
+      .object({
+        shipmentId: z.literal(shipmentId),
+        shipmentStatus: z.string(),
+        updatedAt: z.string().optional(),
+        shipmentSkuQuantities: z
+          .array(
+            z.object({ sku: z.string().min(1), expectedQuantity: quantity, receivedQuantity: quantity.optional() })
+          )
+          .optional()
+      })
+      .parse(
+        await this.request(
+          "GET",
+          `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}?skuQuantities=SHOW`
+        )
+      )
+  }
   /** Every FBA inbound shipment to the US marketplace, whoever created it, in Amazon's order. */
   async fbaShipments() {
     const shipments: Array<{ shipmentId: string; name: string | null; status: string }> = []
@@ -983,12 +1040,18 @@ export class Amazon {
       dataEndTime: string
       reportOptions?: Record<string, string>
     },
-    options: { deadline: number; pollMs?: number; assertActive?: () => Promise<void> }
+    options: { deadline: number; pollMs?: number; assertActive?: () => Promise<void>; retryCreate?: boolean }
   ) {
     const read = stockReader(options.deadline, options.assertActive)
     const created = z
       .object({ reportId: z.string().min(1) })
-      .parse(await read(() => this.request("POST", "/reports/2021-06-30/reports", input)))
+      .parse(
+        await read(
+          () => this.request("POST", "/reports/2021-06-30/reports", input),
+          options.deadline,
+          options.retryCreate !== false
+        )
+      )
     for (;;) {
       const report = z
         .object({

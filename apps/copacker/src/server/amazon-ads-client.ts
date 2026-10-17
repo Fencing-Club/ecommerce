@@ -166,7 +166,7 @@ export class AmazonAds {
       return { ...profile, adsAccountId: matches[0]!.adsAccountId }
     })
   }
-  async createReport(profile: AdsProfile, from: string, to: string) {
+  async createReport(profile: AdsProfile, from: string, to: string, productDetail = false) {
     return readReport(
       await this.request("/adsApi/v1/create/reports", {
         accessRequestedAccounts: [{ advertiserAccountId: profile.adsAccountId }],
@@ -181,7 +181,8 @@ export class AmazonAds {
                 "campaign.country",
                 "adProduct.value",
                 "budgetCurrency.value",
-                "metric.totalCost"
+                "metric.totalCost",
+                ...(productDetail ? ["advertisedProductSku.value"] : [])
               ],
               filter: {
                 and: {
@@ -194,7 +195,14 @@ export class AmazonAds {
                         values: [profile.countryCode]
                       }
                     },
-                    { on: { field: "adProduct.value", comparisonOperator: "IN", not: false, values: adProducts } }
+                    {
+                      on: {
+                        field: "adProduct.value",
+                        comparisonOperator: "IN",
+                        not: false,
+                        values: productDetail ? ["SPONSORED_PRODUCTS", "SPONSORED_DISPLAY"] : adProducts
+                      }
+                    }
                   ]
                 }
               }
@@ -221,6 +229,7 @@ const reportRows = z.array(
       "campaign.country": z.string(),
       "adProduct.value": z.string(),
       "budgetCurrency.value": z.string().length(3),
+      "advertisedProductSku.value": z.string().nullable().optional(),
       "metric.totalCost": z.number().finite().nonnegative()
     })
     .transform((row) => ({
@@ -229,7 +238,8 @@ const reportRows = z.array(
       country: row["campaign.country"],
       product: row["adProduct.value"],
       currency: row["budgetCurrency.value"],
-      cost: row["metric.totalCost"]
+      cost: row["metric.totalCost"],
+      sku: row["advertisedProductSku.value"] ?? null
     }))
 )
 export async function downloadAdsReport(url: string) {

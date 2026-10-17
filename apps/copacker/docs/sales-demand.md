@@ -17,6 +17,13 @@ every fee or commission category in a transaction's breakdown once, positive whe
 
 ## Restock
 
+The Amazon job also imports [physical FBA returns](amazon-returns.md), with independent monthly coverage in the sales
+status API. These receipts do not subtract from gross demand or financial totals.
+It also imports [FBA reimbursement detail](amazon-reimbursements.md), keeping cash/inventory quantities, signed amounts
+and reversal references separate from the financial ledger until reconciled.
+The [detailed inventory ledger](amazon-inventory-movements.md) is also imported as separate movement evidence; it does
+not change demand or the summary-ledger balances used for stockout days.
+
 Missing connections and incomplete order history are expected availability states: Restock and Overview retain their actionable source messages without logging a read failure. Unexpected read failures are logged and shown with a retry message; unavailable demand never becomes zero sales.
 
 The Restock page (`POST /api/restock/plan`) works per channel: Amazon as a whole, or one Shopify location counted in inventory. Amazon combines FBA fulfillable and AWD distributable stock, FBA and AWD inbound, open POs to Amazon destinations (the larger of Amazon's inbound and the POs, since a shipped PO appears in both), FBA and FBM sales, and the variation's Amazon stock target, kept in Copacker (0 means not stocked there). Which Amazon warehouse stock goes to is decided on the PO: each line to the `amazon` destination ships to FBA (the default) or AWD US ([Amazon inbound shipments](amazon-inbound.md)). Each variation's supplier is its product's supplier, else the one chosen for it in Copacker, the one it was last ordered from, or the one linked supplier whose active catalog holds its supplier SKU (kept in Copacker). The supplier's lead time (to the buyer's locations, or to Amazon) replaces the page default. Quantities cover the lead time at the sales period's rate plus the stock target, minus available and incoming stock, then rise to the minimum order and round up to whole cases. Suggestions are grouped by supplier; each group opens a new PO with the ticked lines and edited quantities. Restock never suggests moving the buyer's own stock to Amazon.
@@ -104,3 +111,13 @@ The Shopify sync also copies Shopify Payments balance transactions (`shopify_bal
 Shopify bill paid from payouts, dispute fees; payouts hidden) with the same period and refresh rules, using the
 `read_shopify_payments_payouts` permission. Without it, the sync records `feesErrorCode = "reconnect"` and the Overview
 asks the buyer to reconnect Shopify.
+
+[Storage and aged-inventory reports](amazon-storage-fees.md) are imported independently for twelve completed months.
+Monthly estimates and assessed aged charges remain separate evidence; neither changes demand, stock or profit totals.
+
+[Removal orders and shipments](amazon-removals.md) supply separate disposal, removal-fee and tracking evidence.
+Their overlapping quantities never change summary stock, demand or profit during acquisition.
+
+## Marketplace copies in Shopify
+
+The default excluded Shopify tags are `Amazon` and `eBay` (case-insensitive). Tagged copies remain stored as source evidence but are excluded from Shopify order lists, reporting, demand and automatic inventory depletion. Native Amazon and eBay orders remain included. Settings can customize exclusions, including wildcard tags such as `eBay*` for integrations that use suffixed tags. The migration adds eBay only to workspaces whose exclusion list still exactly matches the original Amazon-only default; custom lists are preserved.

@@ -4,6 +4,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import {
   connections,
+  analyticsEvidence,
+  analyticsFeeds,
   jobs,
   memberships,
   profiles,
@@ -228,6 +230,24 @@ async function redactShop(shop: string) {
       .where(and(eq(connections.provider, "shopify"), eq(connections.externalId, shop)))
   ).map((row) => row.orgId)
   await db().transaction(async (tx) => {
+    await tx
+      .delete(analyticsEvidence)
+      .where(
+        and(
+          eq(analyticsEvidence.source, "shopify"),
+          eq(analyticsEvidence.externalAccountId, shop),
+          notInArray(analyticsEvidence.orgId, connected)
+        )
+      )
+    await tx
+      .delete(analyticsFeeds)
+      .where(
+        and(
+          eq(analyticsFeeds.source, "shopify"),
+          eq(analyticsFeeds.externalAccountId, shop),
+          notInArray(analyticsFeeds.orgId, connected)
+        )
+      )
     await tx
       .delete(salesOrders)
       .where(

@@ -67,6 +67,20 @@ import { Route as PortalOrdersNewRouteImport } from './routes/_portal.orders_.ne
 import { Route as PortalProductsIdRouteImport } from './routes/_portal.products_.$id'
 import { Route as PortalProductsNewRouteImport } from './routes/_portal.products_.new'
 import { Route as PortalShipmentsIdRouteImport } from './routes/_portal.shipments_.$id'
+import { Route as ApiAnalyticsCostImportPreviewsRouteImport } from './routes/api.analytics.cost-import-previews'
+import { Route as ApiAnalyticsCostImportsRouteImport } from './routes/api.analytics.cost-imports'
+import { Route as ApiAnalyticsDepletionImportsRouteImport } from './routes/api.analytics.depletion-imports'
+import { Route as ApiAnalyticsDepletionsRouteImport } from './routes/api.analytics.depletions'
+import { Route as ApiAnalyticsEvidenceRouteImport } from './routes/api.analytics.evidence'
+import { Route as ApiAnalyticsFifoRouteImport } from './routes/api.analytics.fifo'
+import { Route as ApiAnalyticsIngestionStatusRouteImport } from './routes/api.analytics.ingestion-status'
+import { Route as ApiAnalyticsLandedChargesRouteImport } from './routes/api.analytics.landed-charges'
+import { Route as ApiAnalyticsOpeningBalancesRouteImport } from './routes/api.analytics.opening-balances'
+import { Route as ApiAnalyticsOperatingCostsRouteImport } from './routes/api.analytics.operating-costs'
+import { Route as ApiAnalyticsPurchaseCostsRouteImport } from './routes/api.analytics.purchase-costs'
+import { Route as ApiAnalyticsReceiptsRouteImport } from './routes/api.analytics.receipts'
+import { Route as ApiAnalyticsSalesOrdersRouteImport } from './routes/api.analytics.sales-orders'
+import { Route as ApiAnalyticsUnitMappingsRouteImport } from './routes/api.analytics.unit-mappings'
 import { Route as ApiCatalogsIdRouteImport } from './routes/api.catalogs.$id'
 import { Route as ApiConnectionsProviderRouteImport } from './routes/api.connections.$provider'
 import { Route as ApiConnectionsAmazonAdsRouteImport } from './routes/api.connections.amazon-ads'
@@ -103,6 +117,17 @@ import { Route as ApiWebhooksEbayRouteImport } from './routes/api.webhooks.ebay'
 import { Route as PortalOrdersIdEditRouteImport } from './routes/_portal.orders_.$id_.edit'
 import { Route as PortalOrdersIdReviseRouteImport } from './routes/_portal.orders_.$id_.revise'
 import { Route as PortalOrdersImportIdRouteImport } from './routes/_portal.orders_.import_.$id'
+import { Route as ApiAnalyticsAmazonAllocationsRouteImport } from './routes/api.analytics.amazon.allocations'
+import { Route as ApiAnalyticsAmazonFulfillmentShipmentsRouteImport } from './routes/api.analytics.amazon.fulfillment-shipments'
+import { Route as ApiAnalyticsAmazonProductMappingsRouteImport } from './routes/api.analytics.amazon.product-mappings'
+import { Route as ApiAnalyticsAmazonReconciliationRouteImport } from './routes/api.analytics.amazon.reconciliation'
+import { Route as ApiAnalyticsCostImportsIdRouteImport } from './routes/api.analytics.cost-imports.$id'
+import { Route as ApiAnalyticsDepletionsIdRouteImport } from './routes/api.analytics.depletions.$id'
+import { Route as ApiAnalyticsLandedChargesIdRouteImport } from './routes/api.analytics.landed-charges.$id'
+import { Route as ApiAnalyticsOpeningBalancesIdRouteImport } from './routes/api.analytics.opening-balances.$id'
+import { Route as ApiAnalyticsPurchaseCostsIdRouteImport } from './routes/api.analytics.purchase-costs.$id'
+import { Route as ApiAnalyticsReceiptsIdRouteImport } from './routes/api.analytics.receipts.$id'
+import { Route as ApiAnalyticsUnitMappingsIdRouteImport } from './routes/api.analytics.unit-mappings.$id'
 import { Route as ApiCatalogsIdExportRouteImport } from './routes/api.catalogs.$id.export'
 import { Route as ApiCustomersIdCatalogRouteImport } from './routes/api.customers.$id.catalog'
 import { Route as ApiImportsIdCatalogRouteImport } from './routes/api.imports.$id.catalog'
@@ -113,6 +138,7 @@ import { Route as ApiOrdersIdPoRouteImport } from './routes/api.orders.$id.po'
 import { Route as ApiOrdersIdProposalRouteImport } from './routes/api.orders.$id.proposal'
 import { Route as ApiOrdersIdWorkflowRouteImport } from './routes/api.orders.$id.workflow'
 import { Route as ApiShipmentsIdPacketRouteImport } from './routes/api.shipments.$id.packet'
+import { Route as ApiAnalyticsAmazonProductMappingsIdRouteImport } from './routes/api.analytics.amazon.product-mappings.$id'
 import { Route as ApiOrdersIdLabelsItemIdRouteImport } from './routes/api.orders.$id.labels.$itemId'
 import { Route as ApiOrdersIdLabelsWarningRouteImport } from './routes/api.orders.$id.labels.warning'
 
@@ -404,6 +430,84 @@ const PortalShipmentsIdRoute = PortalShipmentsIdRouteImport.update({
   path: '/shipments/$id',
   getParentRoute: () => PortalRoute,
 } as any)
+const ApiAnalyticsCostImportPreviewsRoute =
+  ApiAnalyticsCostImportPreviewsRouteImport.update({
+    id: '/api/analytics/cost-import-previews',
+    path: '/api/analytics/cost-import-previews',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsCostImportsRoute = ApiAnalyticsCostImportsRouteImport.update({
+  id: '/api/analytics/cost-imports',
+  path: '/api/analytics/cost-imports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsDepletionImportsRoute =
+  ApiAnalyticsDepletionImportsRouteImport.update({
+    id: '/api/analytics/depletion-imports',
+    path: '/api/analytics/depletion-imports',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsDepletionsRoute = ApiAnalyticsDepletionsRouteImport.update({
+  id: '/api/analytics/depletions',
+  path: '/api/analytics/depletions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsEvidenceRoute = ApiAnalyticsEvidenceRouteImport.update({
+  id: '/api/analytics/evidence',
+  path: '/api/analytics/evidence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsFifoRoute = ApiAnalyticsFifoRouteImport.update({
+  id: '/api/analytics/fifo',
+  path: '/api/analytics/fifo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsIngestionStatusRoute =
+  ApiAnalyticsIngestionStatusRouteImport.update({
+    id: '/api/analytics/ingestion-status',
+    path: '/api/analytics/ingestion-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsLandedChargesRoute =
+  ApiAnalyticsLandedChargesRouteImport.update({
+    id: '/api/analytics/landed-charges',
+    path: '/api/analytics/landed-charges',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsOpeningBalancesRoute =
+  ApiAnalyticsOpeningBalancesRouteImport.update({
+    id: '/api/analytics/opening-balances',
+    path: '/api/analytics/opening-balances',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsOperatingCostsRoute =
+  ApiAnalyticsOperatingCostsRouteImport.update({
+    id: '/api/analytics/operating-costs',
+    path: '/api/analytics/operating-costs',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsPurchaseCostsRoute =
+  ApiAnalyticsPurchaseCostsRouteImport.update({
+    id: '/api/analytics/purchase-costs',
+    path: '/api/analytics/purchase-costs',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsReceiptsRoute = ApiAnalyticsReceiptsRouteImport.update({
+  id: '/api/analytics/receipts',
+  path: '/api/analytics/receipts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsSalesOrdersRoute = ApiAnalyticsSalesOrdersRouteImport.update({
+  id: '/api/analytics/sales-orders',
+  path: '/api/analytics/sales-orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsUnitMappingsRoute =
+  ApiAnalyticsUnitMappingsRouteImport.update({
+    id: '/api/analytics/unit-mappings',
+    path: '/api/analytics/unit-mappings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCatalogsIdRoute = ApiCatalogsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -596,6 +700,71 @@ const PortalOrdersImportIdRoute = PortalOrdersImportIdRouteImport.update({
   path: '/orders/import/$id',
   getParentRoute: () => PortalRoute,
 } as any)
+const ApiAnalyticsAmazonAllocationsRoute =
+  ApiAnalyticsAmazonAllocationsRouteImport.update({
+    id: '/api/analytics/amazon/allocations',
+    path: '/api/analytics/amazon/allocations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsAmazonFulfillmentShipmentsRoute =
+  ApiAnalyticsAmazonFulfillmentShipmentsRouteImport.update({
+    id: '/api/analytics/amazon/fulfillment-shipments',
+    path: '/api/analytics/amazon/fulfillment-shipments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsAmazonProductMappingsRoute =
+  ApiAnalyticsAmazonProductMappingsRouteImport.update({
+    id: '/api/analytics/amazon/product-mappings',
+    path: '/api/analytics/amazon/product-mappings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsAmazonReconciliationRoute =
+  ApiAnalyticsAmazonReconciliationRouteImport.update({
+    id: '/api/analytics/amazon/reconciliation',
+    path: '/api/analytics/amazon/reconciliation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAnalyticsCostImportsIdRoute =
+  ApiAnalyticsCostImportsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsCostImportsRoute,
+  } as any)
+const ApiAnalyticsDepletionsIdRoute =
+  ApiAnalyticsDepletionsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsDepletionsRoute,
+  } as any)
+const ApiAnalyticsLandedChargesIdRoute =
+  ApiAnalyticsLandedChargesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsLandedChargesRoute,
+  } as any)
+const ApiAnalyticsOpeningBalancesIdRoute =
+  ApiAnalyticsOpeningBalancesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsOpeningBalancesRoute,
+  } as any)
+const ApiAnalyticsPurchaseCostsIdRoute =
+  ApiAnalyticsPurchaseCostsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsPurchaseCostsRoute,
+  } as any)
+const ApiAnalyticsReceiptsIdRoute = ApiAnalyticsReceiptsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAnalyticsReceiptsRoute,
+} as any)
+const ApiAnalyticsUnitMappingsIdRoute =
+  ApiAnalyticsUnitMappingsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsUnitMappingsRoute,
+  } as any)
 const ApiCatalogsIdExportRoute = ApiCatalogsIdExportRouteImport.update({
   id: '/export',
   path: '/export',
@@ -646,6 +815,12 @@ const ApiShipmentsIdPacketRoute = ApiShipmentsIdPacketRouteImport.update({
   path: '/api/shipments/$id/packet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAnalyticsAmazonProductMappingsIdRoute =
+  ApiAnalyticsAmazonProductMappingsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAnalyticsAmazonProductMappingsRoute,
+  } as any)
 const ApiOrdersIdLabelsItemIdRoute = ApiOrdersIdLabelsItemIdRouteImport.update({
   id: '/$itemId',
   path: '/$itemId',
@@ -715,6 +890,20 @@ export interface FileRoutesByFullPath {
   '/products/$id': typeof PortalProductsIdRoute
   '/products/new': typeof PortalProductsNewRoute
   '/shipments/$id': typeof PortalShipmentsIdRoute
+  '/api/analytics/cost-import-previews': typeof ApiAnalyticsCostImportPreviewsRoute
+  '/api/analytics/cost-imports': typeof ApiAnalyticsCostImportsRouteWithChildren
+  '/api/analytics/depletion-imports': typeof ApiAnalyticsDepletionImportsRoute
+  '/api/analytics/depletions': typeof ApiAnalyticsDepletionsRouteWithChildren
+  '/api/analytics/evidence': typeof ApiAnalyticsEvidenceRoute
+  '/api/analytics/fifo': typeof ApiAnalyticsFifoRoute
+  '/api/analytics/ingestion-status': typeof ApiAnalyticsIngestionStatusRoute
+  '/api/analytics/landed-charges': typeof ApiAnalyticsLandedChargesRouteWithChildren
+  '/api/analytics/opening-balances': typeof ApiAnalyticsOpeningBalancesRouteWithChildren
+  '/api/analytics/operating-costs': typeof ApiAnalyticsOperatingCostsRoute
+  '/api/analytics/purchase-costs': typeof ApiAnalyticsPurchaseCostsRouteWithChildren
+  '/api/analytics/receipts': typeof ApiAnalyticsReceiptsRouteWithChildren
+  '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
+  '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
@@ -751,6 +940,17 @@ export interface FileRoutesByFullPath {
   '/orders/$id/edit': typeof PortalOrdersIdEditRoute
   '/orders/$id/revise': typeof PortalOrdersIdReviseRoute
   '/orders/import/$id': typeof PortalOrdersImportIdRoute
+  '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
+  '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
+  '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
+  '/api/analytics/amazon/reconciliation': typeof ApiAnalyticsAmazonReconciliationRoute
+  '/api/analytics/cost-imports/$id': typeof ApiAnalyticsCostImportsIdRoute
+  '/api/analytics/depletions/$id': typeof ApiAnalyticsDepletionsIdRoute
+  '/api/analytics/landed-charges/$id': typeof ApiAnalyticsLandedChargesIdRoute
+  '/api/analytics/opening-balances/$id': typeof ApiAnalyticsOpeningBalancesIdRoute
+  '/api/analytics/purchase-costs/$id': typeof ApiAnalyticsPurchaseCostsIdRoute
+  '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
+  '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
@@ -761,6 +961,7 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
 }
@@ -821,6 +1022,20 @@ export interface FileRoutesByTo {
   '/products/$id': typeof PortalProductsIdRoute
   '/products/new': typeof PortalProductsNewRoute
   '/shipments/$id': typeof PortalShipmentsIdRoute
+  '/api/analytics/cost-import-previews': typeof ApiAnalyticsCostImportPreviewsRoute
+  '/api/analytics/cost-imports': typeof ApiAnalyticsCostImportsRouteWithChildren
+  '/api/analytics/depletion-imports': typeof ApiAnalyticsDepletionImportsRoute
+  '/api/analytics/depletions': typeof ApiAnalyticsDepletionsRouteWithChildren
+  '/api/analytics/evidence': typeof ApiAnalyticsEvidenceRoute
+  '/api/analytics/fifo': typeof ApiAnalyticsFifoRoute
+  '/api/analytics/ingestion-status': typeof ApiAnalyticsIngestionStatusRoute
+  '/api/analytics/landed-charges': typeof ApiAnalyticsLandedChargesRouteWithChildren
+  '/api/analytics/opening-balances': typeof ApiAnalyticsOpeningBalancesRouteWithChildren
+  '/api/analytics/operating-costs': typeof ApiAnalyticsOperatingCostsRoute
+  '/api/analytics/purchase-costs': typeof ApiAnalyticsPurchaseCostsRouteWithChildren
+  '/api/analytics/receipts': typeof ApiAnalyticsReceiptsRouteWithChildren
+  '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
+  '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
@@ -857,6 +1072,17 @@ export interface FileRoutesByTo {
   '/orders/$id/edit': typeof PortalOrdersIdEditRoute
   '/orders/$id/revise': typeof PortalOrdersIdReviseRoute
   '/orders/import/$id': typeof PortalOrdersImportIdRoute
+  '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
+  '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
+  '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
+  '/api/analytics/amazon/reconciliation': typeof ApiAnalyticsAmazonReconciliationRoute
+  '/api/analytics/cost-imports/$id': typeof ApiAnalyticsCostImportsIdRoute
+  '/api/analytics/depletions/$id': typeof ApiAnalyticsDepletionsIdRoute
+  '/api/analytics/landed-charges/$id': typeof ApiAnalyticsLandedChargesIdRoute
+  '/api/analytics/opening-balances/$id': typeof ApiAnalyticsOpeningBalancesIdRoute
+  '/api/analytics/purchase-costs/$id': typeof ApiAnalyticsPurchaseCostsIdRoute
+  '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
+  '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
@@ -867,6 +1093,7 @@ export interface FileRoutesByTo {
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
 }
@@ -930,6 +1157,20 @@ export interface FileRoutesById {
   '/_portal/products_/$id': typeof PortalProductsIdRoute
   '/_portal/products_/new': typeof PortalProductsNewRoute
   '/_portal/shipments_/$id': typeof PortalShipmentsIdRoute
+  '/api/analytics/cost-import-previews': typeof ApiAnalyticsCostImportPreviewsRoute
+  '/api/analytics/cost-imports': typeof ApiAnalyticsCostImportsRouteWithChildren
+  '/api/analytics/depletion-imports': typeof ApiAnalyticsDepletionImportsRoute
+  '/api/analytics/depletions': typeof ApiAnalyticsDepletionsRouteWithChildren
+  '/api/analytics/evidence': typeof ApiAnalyticsEvidenceRoute
+  '/api/analytics/fifo': typeof ApiAnalyticsFifoRoute
+  '/api/analytics/ingestion-status': typeof ApiAnalyticsIngestionStatusRoute
+  '/api/analytics/landed-charges': typeof ApiAnalyticsLandedChargesRouteWithChildren
+  '/api/analytics/opening-balances': typeof ApiAnalyticsOpeningBalancesRouteWithChildren
+  '/api/analytics/operating-costs': typeof ApiAnalyticsOperatingCostsRoute
+  '/api/analytics/purchase-costs': typeof ApiAnalyticsPurchaseCostsRouteWithChildren
+  '/api/analytics/receipts': typeof ApiAnalyticsReceiptsRouteWithChildren
+  '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
+  '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
@@ -966,6 +1207,17 @@ export interface FileRoutesById {
   '/_portal/orders_/$id_/edit': typeof PortalOrdersIdEditRoute
   '/_portal/orders_/$id_/revise': typeof PortalOrdersIdReviseRoute
   '/_portal/orders_/import_/$id': typeof PortalOrdersImportIdRoute
+  '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
+  '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
+  '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
+  '/api/analytics/amazon/reconciliation': typeof ApiAnalyticsAmazonReconciliationRoute
+  '/api/analytics/cost-imports/$id': typeof ApiAnalyticsCostImportsIdRoute
+  '/api/analytics/depletions/$id': typeof ApiAnalyticsDepletionsIdRoute
+  '/api/analytics/landed-charges/$id': typeof ApiAnalyticsLandedChargesIdRoute
+  '/api/analytics/opening-balances/$id': typeof ApiAnalyticsOpeningBalancesIdRoute
+  '/api/analytics/purchase-costs/$id': typeof ApiAnalyticsPurchaseCostsIdRoute
+  '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
+  '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
@@ -976,6 +1228,7 @@ export interface FileRoutesById {
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
 }
@@ -1038,6 +1291,20 @@ export interface FileRouteTypes {
     | '/products/$id'
     | '/products/new'
     | '/shipments/$id'
+    | '/api/analytics/cost-import-previews'
+    | '/api/analytics/cost-imports'
+    | '/api/analytics/depletion-imports'
+    | '/api/analytics/depletions'
+    | '/api/analytics/evidence'
+    | '/api/analytics/fifo'
+    | '/api/analytics/ingestion-status'
+    | '/api/analytics/landed-charges'
+    | '/api/analytics/opening-balances'
+    | '/api/analytics/operating-costs'
+    | '/api/analytics/purchase-costs'
+    | '/api/analytics/receipts'
+    | '/api/analytics/sales-orders'
+    | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
@@ -1074,6 +1341,17 @@ export interface FileRouteTypes {
     | '/orders/$id/edit'
     | '/orders/$id/revise'
     | '/orders/import/$id'
+    | '/api/analytics/amazon/allocations'
+    | '/api/analytics/amazon/fulfillment-shipments'
+    | '/api/analytics/amazon/product-mappings'
+    | '/api/analytics/amazon/reconciliation'
+    | '/api/analytics/cost-imports/$id'
+    | '/api/analytics/depletions/$id'
+    | '/api/analytics/landed-charges/$id'
+    | '/api/analytics/opening-balances/$id'
+    | '/api/analytics/purchase-costs/$id'
+    | '/api/analytics/receipts/$id'
+    | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
@@ -1084,6 +1362,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
     | '/api/shipments/$id/packet'
+    | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
   fileRoutesByTo: FileRoutesByTo
@@ -1144,6 +1423,20 @@ export interface FileRouteTypes {
     | '/products/$id'
     | '/products/new'
     | '/shipments/$id'
+    | '/api/analytics/cost-import-previews'
+    | '/api/analytics/cost-imports'
+    | '/api/analytics/depletion-imports'
+    | '/api/analytics/depletions'
+    | '/api/analytics/evidence'
+    | '/api/analytics/fifo'
+    | '/api/analytics/ingestion-status'
+    | '/api/analytics/landed-charges'
+    | '/api/analytics/opening-balances'
+    | '/api/analytics/operating-costs'
+    | '/api/analytics/purchase-costs'
+    | '/api/analytics/receipts'
+    | '/api/analytics/sales-orders'
+    | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
@@ -1180,6 +1473,17 @@ export interface FileRouteTypes {
     | '/orders/$id/edit'
     | '/orders/$id/revise'
     | '/orders/import/$id'
+    | '/api/analytics/amazon/allocations'
+    | '/api/analytics/amazon/fulfillment-shipments'
+    | '/api/analytics/amazon/product-mappings'
+    | '/api/analytics/amazon/reconciliation'
+    | '/api/analytics/cost-imports/$id'
+    | '/api/analytics/depletions/$id'
+    | '/api/analytics/landed-charges/$id'
+    | '/api/analytics/opening-balances/$id'
+    | '/api/analytics/purchase-costs/$id'
+    | '/api/analytics/receipts/$id'
+    | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
@@ -1190,6 +1494,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
     | '/api/shipments/$id/packet'
+    | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
   id:
@@ -1252,6 +1557,20 @@ export interface FileRouteTypes {
     | '/_portal/products_/$id'
     | '/_portal/products_/new'
     | '/_portal/shipments_/$id'
+    | '/api/analytics/cost-import-previews'
+    | '/api/analytics/cost-imports'
+    | '/api/analytics/depletion-imports'
+    | '/api/analytics/depletions'
+    | '/api/analytics/evidence'
+    | '/api/analytics/fifo'
+    | '/api/analytics/ingestion-status'
+    | '/api/analytics/landed-charges'
+    | '/api/analytics/opening-balances'
+    | '/api/analytics/operating-costs'
+    | '/api/analytics/purchase-costs'
+    | '/api/analytics/receipts'
+    | '/api/analytics/sales-orders'
+    | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
@@ -1288,6 +1607,17 @@ export interface FileRouteTypes {
     | '/_portal/orders_/$id_/edit'
     | '/_portal/orders_/$id_/revise'
     | '/_portal/orders_/import_/$id'
+    | '/api/analytics/amazon/allocations'
+    | '/api/analytics/amazon/fulfillment-shipments'
+    | '/api/analytics/amazon/product-mappings'
+    | '/api/analytics/amazon/reconciliation'
+    | '/api/analytics/cost-imports/$id'
+    | '/api/analytics/depletions/$id'
+    | '/api/analytics/landed-charges/$id'
+    | '/api/analytics/opening-balances/$id'
+    | '/api/analytics/purchase-costs/$id'
+    | '/api/analytics/receipts/$id'
+    | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
@@ -1298,6 +1628,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
     | '/api/shipments/$id/packet'
+    | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
   fileRoutesById: FileRoutesById
@@ -1333,6 +1664,20 @@ export interface RootRouteChildren {
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
   LoginProviderRoute: typeof LoginProviderRoute
   WorkspacesNewRoute: typeof WorkspacesNewRoute
+  ApiAnalyticsCostImportPreviewsRoute: typeof ApiAnalyticsCostImportPreviewsRoute
+  ApiAnalyticsCostImportsRoute: typeof ApiAnalyticsCostImportsRouteWithChildren
+  ApiAnalyticsDepletionImportsRoute: typeof ApiAnalyticsDepletionImportsRoute
+  ApiAnalyticsDepletionsRoute: typeof ApiAnalyticsDepletionsRouteWithChildren
+  ApiAnalyticsEvidenceRoute: typeof ApiAnalyticsEvidenceRoute
+  ApiAnalyticsFifoRoute: typeof ApiAnalyticsFifoRoute
+  ApiAnalyticsIngestionStatusRoute: typeof ApiAnalyticsIngestionStatusRoute
+  ApiAnalyticsLandedChargesRoute: typeof ApiAnalyticsLandedChargesRouteWithChildren
+  ApiAnalyticsOpeningBalancesRoute: typeof ApiAnalyticsOpeningBalancesRouteWithChildren
+  ApiAnalyticsOperatingCostsRoute: typeof ApiAnalyticsOperatingCostsRoute
+  ApiAnalyticsPurchaseCostsRoute: typeof ApiAnalyticsPurchaseCostsRouteWithChildren
+  ApiAnalyticsReceiptsRoute: typeof ApiAnalyticsReceiptsRouteWithChildren
+  ApiAnalyticsSalesOrdersRoute: typeof ApiAnalyticsSalesOrdersRoute
+  ApiAnalyticsUnitMappingsRoute: typeof ApiAnalyticsUnitMappingsRouteWithChildren
   ApiConnectionsProviderRoute: typeof ApiConnectionsProviderRoute
   ApiConnectionsAmazonAdsRoute: typeof ApiConnectionsAmazonAdsRoute
   ApiOrdersSummaryRoute: typeof ApiOrdersSummaryRoute
@@ -1351,6 +1696,10 @@ export interface RootRouteChildren {
   ApiSupplierCatalogTemplateRoute: typeof ApiSupplierCatalogTemplateRoute
   ApiSupplierCatalogTrackingRoute: typeof ApiSupplierCatalogTrackingRoute
   ApiWebhooksEbayRoute: typeof ApiWebhooksEbayRoute
+  ApiAnalyticsAmazonAllocationsRoute: typeof ApiAnalyticsAmazonAllocationsRoute
+  ApiAnalyticsAmazonFulfillmentShipmentsRoute: typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
+  ApiAnalyticsAmazonProductMappingsRoute: typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
+  ApiAnalyticsAmazonReconciliationRoute: typeof ApiAnalyticsAmazonReconciliationRoute
   ApiCustomersIdCatalogRoute: typeof ApiCustomersIdCatalogRoute
   ApiOrdersIdLabelsRoute: typeof ApiOrdersIdLabelsRouteWithChildren
   ApiOrdersIdPoRoute: typeof ApiOrdersIdPoRoute
@@ -1767,6 +2116,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalShipmentsIdRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/api/analytics/cost-import-previews': {
+      id: '/api/analytics/cost-import-previews'
+      path: '/api/analytics/cost-import-previews'
+      fullPath: '/api/analytics/cost-import-previews'
+      preLoaderRoute: typeof ApiAnalyticsCostImportPreviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/cost-imports': {
+      id: '/api/analytics/cost-imports'
+      path: '/api/analytics/cost-imports'
+      fullPath: '/api/analytics/cost-imports'
+      preLoaderRoute: typeof ApiAnalyticsCostImportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/depletion-imports': {
+      id: '/api/analytics/depletion-imports'
+      path: '/api/analytics/depletion-imports'
+      fullPath: '/api/analytics/depletion-imports'
+      preLoaderRoute: typeof ApiAnalyticsDepletionImportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/depletions': {
+      id: '/api/analytics/depletions'
+      path: '/api/analytics/depletions'
+      fullPath: '/api/analytics/depletions'
+      preLoaderRoute: typeof ApiAnalyticsDepletionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/evidence': {
+      id: '/api/analytics/evidence'
+      path: '/api/analytics/evidence'
+      fullPath: '/api/analytics/evidence'
+      preLoaderRoute: typeof ApiAnalyticsEvidenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/fifo': {
+      id: '/api/analytics/fifo'
+      path: '/api/analytics/fifo'
+      fullPath: '/api/analytics/fifo'
+      preLoaderRoute: typeof ApiAnalyticsFifoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/ingestion-status': {
+      id: '/api/analytics/ingestion-status'
+      path: '/api/analytics/ingestion-status'
+      fullPath: '/api/analytics/ingestion-status'
+      preLoaderRoute: typeof ApiAnalyticsIngestionStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/landed-charges': {
+      id: '/api/analytics/landed-charges'
+      path: '/api/analytics/landed-charges'
+      fullPath: '/api/analytics/landed-charges'
+      preLoaderRoute: typeof ApiAnalyticsLandedChargesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/opening-balances': {
+      id: '/api/analytics/opening-balances'
+      path: '/api/analytics/opening-balances'
+      fullPath: '/api/analytics/opening-balances'
+      preLoaderRoute: typeof ApiAnalyticsOpeningBalancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/operating-costs': {
+      id: '/api/analytics/operating-costs'
+      path: '/api/analytics/operating-costs'
+      fullPath: '/api/analytics/operating-costs'
+      preLoaderRoute: typeof ApiAnalyticsOperatingCostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/purchase-costs': {
+      id: '/api/analytics/purchase-costs'
+      path: '/api/analytics/purchase-costs'
+      fullPath: '/api/analytics/purchase-costs'
+      preLoaderRoute: typeof ApiAnalyticsPurchaseCostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/receipts': {
+      id: '/api/analytics/receipts'
+      path: '/api/analytics/receipts'
+      fullPath: '/api/analytics/receipts'
+      preLoaderRoute: typeof ApiAnalyticsReceiptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/sales-orders': {
+      id: '/api/analytics/sales-orders'
+      path: '/api/analytics/sales-orders'
+      fullPath: '/api/analytics/sales-orders'
+      preLoaderRoute: typeof ApiAnalyticsSalesOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/unit-mappings': {
+      id: '/api/analytics/unit-mappings'
+      path: '/api/analytics/unit-mappings'
+      fullPath: '/api/analytics/unit-mappings'
+      preLoaderRoute: typeof ApiAnalyticsUnitMappingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/catalogs/$id': {
       id: '/api/catalogs/$id'
       path: '/$id'
@@ -2019,6 +2466,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalOrdersImportIdRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/api/analytics/amazon/allocations': {
+      id: '/api/analytics/amazon/allocations'
+      path: '/api/analytics/amazon/allocations'
+      fullPath: '/api/analytics/amazon/allocations'
+      preLoaderRoute: typeof ApiAnalyticsAmazonAllocationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/amazon/fulfillment-shipments': {
+      id: '/api/analytics/amazon/fulfillment-shipments'
+      path: '/api/analytics/amazon/fulfillment-shipments'
+      fullPath: '/api/analytics/amazon/fulfillment-shipments'
+      preLoaderRoute: typeof ApiAnalyticsAmazonFulfillmentShipmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/amazon/product-mappings': {
+      id: '/api/analytics/amazon/product-mappings'
+      path: '/api/analytics/amazon/product-mappings'
+      fullPath: '/api/analytics/amazon/product-mappings'
+      preLoaderRoute: typeof ApiAnalyticsAmazonProductMappingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/amazon/reconciliation': {
+      id: '/api/analytics/amazon/reconciliation'
+      path: '/api/analytics/amazon/reconciliation'
+      fullPath: '/api/analytics/amazon/reconciliation'
+      preLoaderRoute: typeof ApiAnalyticsAmazonReconciliationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/cost-imports/$id': {
+      id: '/api/analytics/cost-imports/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/cost-imports/$id'
+      preLoaderRoute: typeof ApiAnalyticsCostImportsIdRouteImport
+      parentRoute: typeof ApiAnalyticsCostImportsRoute
+    }
+    '/api/analytics/depletions/$id': {
+      id: '/api/analytics/depletions/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/depletions/$id'
+      preLoaderRoute: typeof ApiAnalyticsDepletionsIdRouteImport
+      parentRoute: typeof ApiAnalyticsDepletionsRoute
+    }
+    '/api/analytics/landed-charges/$id': {
+      id: '/api/analytics/landed-charges/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/landed-charges/$id'
+      preLoaderRoute: typeof ApiAnalyticsLandedChargesIdRouteImport
+      parentRoute: typeof ApiAnalyticsLandedChargesRoute
+    }
+    '/api/analytics/opening-balances/$id': {
+      id: '/api/analytics/opening-balances/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/opening-balances/$id'
+      preLoaderRoute: typeof ApiAnalyticsOpeningBalancesIdRouteImport
+      parentRoute: typeof ApiAnalyticsOpeningBalancesRoute
+    }
+    '/api/analytics/purchase-costs/$id': {
+      id: '/api/analytics/purchase-costs/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/purchase-costs/$id'
+      preLoaderRoute: typeof ApiAnalyticsPurchaseCostsIdRouteImport
+      parentRoute: typeof ApiAnalyticsPurchaseCostsRoute
+    }
+    '/api/analytics/receipts/$id': {
+      id: '/api/analytics/receipts/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/receipts/$id'
+      preLoaderRoute: typeof ApiAnalyticsReceiptsIdRouteImport
+      parentRoute: typeof ApiAnalyticsReceiptsRoute
+    }
+    '/api/analytics/unit-mappings/$id': {
+      id: '/api/analytics/unit-mappings/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/unit-mappings/$id'
+      preLoaderRoute: typeof ApiAnalyticsUnitMappingsIdRouteImport
+      parentRoute: typeof ApiAnalyticsUnitMappingsRoute
+    }
     '/api/catalogs/$id/export': {
       id: '/api/catalogs/$id/export'
       path: '/export'
@@ -2088,6 +2612,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/shipments/$id/packet'
       preLoaderRoute: typeof ApiShipmentsIdPacketRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics/amazon/product-mappings/$id': {
+      id: '/api/analytics/amazon/product-mappings/$id'
+      path: '/$id'
+      fullPath: '/api/analytics/amazon/product-mappings/$id'
+      preLoaderRoute: typeof ApiAnalyticsAmazonProductMappingsIdRouteImport
+      parentRoute: typeof ApiAnalyticsAmazonProductMappingsRoute
     }
     '/api/orders/$id/labels/$itemId': {
       id: '/api/orders/$id/labels/$itemId'
@@ -2303,6 +2834,116 @@ const ApiSalesRouteWithChildren = ApiSalesRoute._addFileChildren(
   ApiSalesRouteChildren,
 )
 
+interface ApiAnalyticsCostImportsRouteChildren {
+  ApiAnalyticsCostImportsIdRoute: typeof ApiAnalyticsCostImportsIdRoute
+}
+
+const ApiAnalyticsCostImportsRouteChildren: ApiAnalyticsCostImportsRouteChildren =
+  {
+    ApiAnalyticsCostImportsIdRoute: ApiAnalyticsCostImportsIdRoute,
+  }
+
+const ApiAnalyticsCostImportsRouteWithChildren =
+  ApiAnalyticsCostImportsRoute._addFileChildren(
+    ApiAnalyticsCostImportsRouteChildren,
+  )
+
+interface ApiAnalyticsDepletionsRouteChildren {
+  ApiAnalyticsDepletionsIdRoute: typeof ApiAnalyticsDepletionsIdRoute
+}
+
+const ApiAnalyticsDepletionsRouteChildren: ApiAnalyticsDepletionsRouteChildren =
+  {
+    ApiAnalyticsDepletionsIdRoute: ApiAnalyticsDepletionsIdRoute,
+  }
+
+const ApiAnalyticsDepletionsRouteWithChildren =
+  ApiAnalyticsDepletionsRoute._addFileChildren(
+    ApiAnalyticsDepletionsRouteChildren,
+  )
+
+interface ApiAnalyticsLandedChargesRouteChildren {
+  ApiAnalyticsLandedChargesIdRoute: typeof ApiAnalyticsLandedChargesIdRoute
+}
+
+const ApiAnalyticsLandedChargesRouteChildren: ApiAnalyticsLandedChargesRouteChildren =
+  {
+    ApiAnalyticsLandedChargesIdRoute: ApiAnalyticsLandedChargesIdRoute,
+  }
+
+const ApiAnalyticsLandedChargesRouteWithChildren =
+  ApiAnalyticsLandedChargesRoute._addFileChildren(
+    ApiAnalyticsLandedChargesRouteChildren,
+  )
+
+interface ApiAnalyticsOpeningBalancesRouteChildren {
+  ApiAnalyticsOpeningBalancesIdRoute: typeof ApiAnalyticsOpeningBalancesIdRoute
+}
+
+const ApiAnalyticsOpeningBalancesRouteChildren: ApiAnalyticsOpeningBalancesRouteChildren =
+  {
+    ApiAnalyticsOpeningBalancesIdRoute: ApiAnalyticsOpeningBalancesIdRoute,
+  }
+
+const ApiAnalyticsOpeningBalancesRouteWithChildren =
+  ApiAnalyticsOpeningBalancesRoute._addFileChildren(
+    ApiAnalyticsOpeningBalancesRouteChildren,
+  )
+
+interface ApiAnalyticsPurchaseCostsRouteChildren {
+  ApiAnalyticsPurchaseCostsIdRoute: typeof ApiAnalyticsPurchaseCostsIdRoute
+}
+
+const ApiAnalyticsPurchaseCostsRouteChildren: ApiAnalyticsPurchaseCostsRouteChildren =
+  {
+    ApiAnalyticsPurchaseCostsIdRoute: ApiAnalyticsPurchaseCostsIdRoute,
+  }
+
+const ApiAnalyticsPurchaseCostsRouteWithChildren =
+  ApiAnalyticsPurchaseCostsRoute._addFileChildren(
+    ApiAnalyticsPurchaseCostsRouteChildren,
+  )
+
+interface ApiAnalyticsReceiptsRouteChildren {
+  ApiAnalyticsReceiptsIdRoute: typeof ApiAnalyticsReceiptsIdRoute
+}
+
+const ApiAnalyticsReceiptsRouteChildren: ApiAnalyticsReceiptsRouteChildren = {
+  ApiAnalyticsReceiptsIdRoute: ApiAnalyticsReceiptsIdRoute,
+}
+
+const ApiAnalyticsReceiptsRouteWithChildren =
+  ApiAnalyticsReceiptsRoute._addFileChildren(ApiAnalyticsReceiptsRouteChildren)
+
+interface ApiAnalyticsUnitMappingsRouteChildren {
+  ApiAnalyticsUnitMappingsIdRoute: typeof ApiAnalyticsUnitMappingsIdRoute
+}
+
+const ApiAnalyticsUnitMappingsRouteChildren: ApiAnalyticsUnitMappingsRouteChildren =
+  {
+    ApiAnalyticsUnitMappingsIdRoute: ApiAnalyticsUnitMappingsIdRoute,
+  }
+
+const ApiAnalyticsUnitMappingsRouteWithChildren =
+  ApiAnalyticsUnitMappingsRoute._addFileChildren(
+    ApiAnalyticsUnitMappingsRouteChildren,
+  )
+
+interface ApiAnalyticsAmazonProductMappingsRouteChildren {
+  ApiAnalyticsAmazonProductMappingsIdRoute: typeof ApiAnalyticsAmazonProductMappingsIdRoute
+}
+
+const ApiAnalyticsAmazonProductMappingsRouteChildren: ApiAnalyticsAmazonProductMappingsRouteChildren =
+  {
+    ApiAnalyticsAmazonProductMappingsIdRoute:
+      ApiAnalyticsAmazonProductMappingsIdRoute,
+  }
+
+const ApiAnalyticsAmazonProductMappingsRouteWithChildren =
+  ApiAnalyticsAmazonProductMappingsRoute._addFileChildren(
+    ApiAnalyticsAmazonProductMappingsRouteChildren,
+  )
+
 interface ApiOrdersIdLabelsRouteChildren {
   ApiOrdersIdLabelsItemIdRoute: typeof ApiOrdersIdLabelsItemIdRoute
   ApiOrdersIdLabelsWarningRoute: typeof ApiOrdersIdLabelsWarningRoute
@@ -2347,6 +2988,21 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspaceRoute: ApiWorkspaceRoute,
   LoginProviderRoute: LoginProviderRoute,
   WorkspacesNewRoute: WorkspacesNewRoute,
+  ApiAnalyticsCostImportPreviewsRoute: ApiAnalyticsCostImportPreviewsRoute,
+  ApiAnalyticsCostImportsRoute: ApiAnalyticsCostImportsRouteWithChildren,
+  ApiAnalyticsDepletionImportsRoute: ApiAnalyticsDepletionImportsRoute,
+  ApiAnalyticsDepletionsRoute: ApiAnalyticsDepletionsRouteWithChildren,
+  ApiAnalyticsEvidenceRoute: ApiAnalyticsEvidenceRoute,
+  ApiAnalyticsFifoRoute: ApiAnalyticsFifoRoute,
+  ApiAnalyticsIngestionStatusRoute: ApiAnalyticsIngestionStatusRoute,
+  ApiAnalyticsLandedChargesRoute: ApiAnalyticsLandedChargesRouteWithChildren,
+  ApiAnalyticsOpeningBalancesRoute:
+    ApiAnalyticsOpeningBalancesRouteWithChildren,
+  ApiAnalyticsOperatingCostsRoute: ApiAnalyticsOperatingCostsRoute,
+  ApiAnalyticsPurchaseCostsRoute: ApiAnalyticsPurchaseCostsRouteWithChildren,
+  ApiAnalyticsReceiptsRoute: ApiAnalyticsReceiptsRouteWithChildren,
+  ApiAnalyticsSalesOrdersRoute: ApiAnalyticsSalesOrdersRoute,
+  ApiAnalyticsUnitMappingsRoute: ApiAnalyticsUnitMappingsRouteWithChildren,
   ApiConnectionsProviderRoute: ApiConnectionsProviderRoute,
   ApiConnectionsAmazonAdsRoute: ApiConnectionsAmazonAdsRoute,
   ApiOrdersSummaryRoute: ApiOrdersSummaryRoute,
@@ -2365,6 +3021,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSupplierCatalogTemplateRoute: ApiSupplierCatalogTemplateRoute,
   ApiSupplierCatalogTrackingRoute: ApiSupplierCatalogTrackingRoute,
   ApiWebhooksEbayRoute: ApiWebhooksEbayRoute,
+  ApiAnalyticsAmazonAllocationsRoute: ApiAnalyticsAmazonAllocationsRoute,
+  ApiAnalyticsAmazonFulfillmentShipmentsRoute:
+    ApiAnalyticsAmazonFulfillmentShipmentsRoute,
+  ApiAnalyticsAmazonProductMappingsRoute:
+    ApiAnalyticsAmazonProductMappingsRouteWithChildren,
+  ApiAnalyticsAmazonReconciliationRoute: ApiAnalyticsAmazonReconciliationRoute,
   ApiCustomersIdCatalogRoute: ApiCustomersIdCatalogRoute,
   ApiOrdersIdLabelsRoute: ApiOrdersIdLabelsRouteWithChildren,
   ApiOrdersIdPoRoute: ApiOrdersIdPoRoute,

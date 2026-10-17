@@ -11,7 +11,7 @@ embedded = false
 
 [access_scopes]
 # Matches the scopes the connect route requests (src/app/api/connections/[provider]/route.ts).
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders,read_shopify_payments_accounts,read_shopify_payments_payouts,read_customers,read_fulfillments"
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders,read_shopify_payments_accounts,read_shopify_payments_payouts,read_customers,read_fulfillments,read_returns"
 use_legacy_install_flow = true
 
 [auth]
