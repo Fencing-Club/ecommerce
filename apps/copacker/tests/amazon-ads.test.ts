@@ -404,7 +404,7 @@ describe("durable ad spend imports", () => {
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
         async () => undefined
       )
-    ).rejects.toThrow(`Amazon Ads report is outside the requested scope: ${label}`)
+    ).rejects.toMatchObject({ message: `Amazon Ads report is outside the requested scope: ${label}` })
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
     expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
   })

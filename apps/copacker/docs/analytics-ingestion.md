@@ -1,6 +1,6 @@
 # Expanded analytics ingestion
 
-Implemented locally; migration 0057 and Shopify scope configuration are not deployed. Live source coverage and account acceptance remain required. This delivery is ingestion-only; upload screens and other UX work are out of scope. These imports preserve evidence; they do not replace Overview or automatically recognize profit or claim receivables.
+Deployed to production, including migration 0057, in [release 02eeb1c](https://github.com/AndrewCraswell/ecommerce/actions/runs/39068570712) on 2026-10-17. The Shopify scope configuration has also been released; existing accounts still require their own grants. Live source coverage and account acceptance remain incomplete; see the [account checkpoint](specs/analytics/analytics-data-backlog.md#live-acceptance-checkpoint-2026-10-17). This delivery is ingestion-only; upload screens and other UX work are out of scope. These imports preserve evidence; they do not replace Overview or automatically recognize profit or claim receivables.
 
 ## History target
 
