@@ -383,6 +383,31 @@ describe("durable ad spend imports", () => {
     expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/create/"))).toBe(false)
   })
+  it.each([
+    ["date.value", "2020-01-01", "date"],
+    ["campaign.country", "PRIVATE", "country"],
+    ["budgetCurrency.value", "EUR", "currency"],
+    ["adProduct.value", "PRIVATE", "ad product"]
+  ])("identifies the mismatched %s field without exposing report values", async (field, value, label) => {
+    await connect()
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("auth/o2")) {
+        return Response.json({ access_token: "access" })
+      }
+      if (String(url).includes("amazonaws.com")) {
+        return Response.json([{ ...reportRow(1), [field]: value }])
+      }
+      return reportResponse()
+    })
+    await expect(
+      amazonAdsJob(
+        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
+        async () => undefined
+      )
+    ).rejects.toMatchObject({ message: `Amazon Ads report is outside the requested scope: ${label}` })
+    expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
+    expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
+  })
   it("atomically imports all products, writes zero days and replaces corrections without adding twice", async () => {
     await connect()
     let cost = 1.25

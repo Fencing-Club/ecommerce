@@ -71,7 +71,7 @@ See [expanded ingestion](../../analytics-ingestion.md) for bounds, scopes and re
 
 ## Remaining acceptance for implemented work
 
-- [ ] Deploy the local implementation and its migrations.
+- [x] Deploy the ingestion implementation and migrations (production release `02eeb1c`, 2026-10-17).
 - [ ] Validate report formats, permissions, retention and coverage against a connected seller account.
 - [ ] Validate financial classifications and allocation behavior against real-account evidence.
 - [ ] Reconcile report records to financial postings, including reversals and duplicate-counting protection.
@@ -185,3 +185,12 @@ behavior when expanding history. Shopify connection alone does not imply access 
 - [ ] Record verification evidence and remaining limitations before marking ready.
 
 Permission approval and historical availability remain account-level unknowns. A successful connection is not readiness.
+
+## Live acceptance checkpoint: 2026-10-17
+
+Fencing Club's connected workspace has 478 FBA return rows and 102 reimbursement rows across all 13 target windows.
+Inventory movements have 10 of 13 windows imported (10,050 rows); older windows remain incomplete. Storage,
+removal and FBM return feeds still have failed or unavailable periods, so those datasets are not ready.
+Shopify financial history starts 2024-01-10 and was still backfilling at this checkpoint; ordinary orders and inventory
+synced successfully. Amazon Ads report requests succeeded after the polling fix, but one downloaded report was rejected by scope validation; completed spend imports remain unverified. Historical purchase-cost, opening-balance and receipt collections are empty and require merchant evidence.
+These observations are account-specific and do not establish reconciliation or complete P0 readiness.

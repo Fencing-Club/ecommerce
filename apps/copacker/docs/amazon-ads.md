@@ -82,3 +82,6 @@ for reconnecting the same seller. Deleting the workspace removes grants, jobs an
 - [Reporting API v1](https://advertising.amazon.com/API/docs/en-us/guides/reporting/ads-v1/quickstart)
 - [Dates and history](https://advertising.amazon.com/API/docs/en-us/guides/reporting/ads-v1/dates)
 - [Profiles](https://advertising.amazon.com/API/docs/en-us/reference/2/profiles)
+
+Scope validation failures identify the mismatched field (date, country, currency or ad product) without logging
+source values or campaign identifiers. Rejected reports do not publish spend or product evidence.
