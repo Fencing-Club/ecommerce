@@ -91,6 +91,7 @@
     "syncing": "Wird synchronisiert…",
     "syncNow": "Jetzt synchronisieren",
     "reconnect": "Erneut verbinden",
+    "reconnectHint": "Erneut verbinden, um die Synchronisierung fortzusetzen.",
     "synced": "Synchronisiert <time></time>",
     "syncingProgress": "Wird synchronisiert… {progress, number, percent}"
   },

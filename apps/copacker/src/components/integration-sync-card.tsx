@@ -86,6 +86,7 @@ export function IntegrationSyncCard({
       </div>
       <div className="mt-3 flex flex-1 flex-col gap-3" aria-live="polite">
         {detail && <div className="text-xs leading-relaxed text-muted-foreground">{detail}</div>}
+        {reconnect && <p className="text-xs text-muted-foreground">{common("reconnectHint")}</p>}
         {showProgress && (
           <div className="flex items-center gap-3">
             <progress
@@ -101,24 +102,25 @@ export function IntegrationSyncCard({
         )}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        {reconnect && (
+        {reconnect ? (
           <a
             href={reconnect}
             className={cn(buttonVariants({ variant: "outline", className: "h-11 flex-1 sm:h-[34px]" }))}
           >
             {common("reconnect")}
           </a>
+        ) : (
+          <Button
+            variant="outline"
+            className="h-11 flex-1 sm:h-[34px]"
+            disabled={disabled || active}
+            onClick={onSync}
+            aria-label={actionLabel ?? t("syncAction", { label })}
+          >
+            <RefreshCw className="size-3.5" aria-hidden />
+            {actionLabel ?? common("syncNow")}
+          </Button>
         )}
-        <Button
-          variant="outline"
-          className="h-11 flex-1 sm:h-[34px]"
-          disabled={disabled || active}
-          onClick={onSync}
-          aria-label={actionLabel ?? t("syncAction", { label })}
-        >
-          <RefreshCw className="size-3.5" aria-hidden />
-          {actionLabel ?? common("syncNow")}
-        </Button>
       </div>
     </section>
   )
