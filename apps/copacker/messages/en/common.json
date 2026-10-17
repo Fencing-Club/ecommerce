@@ -91,6 +91,7 @@
     "syncing": "Syncing…",
     "syncNow": "Sync now",
     "reconnect": "Reconnect",
+    "reconnectHint": "Reconnect to resume syncing.",
     "synced": "Synced <time></time>",
     "syncingProgress": "Syncing… {progress, number, percent}"
   },

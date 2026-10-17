@@ -46,5 +46,8 @@ export const Reconnect = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Needs attention")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Reconnect" })).toHaveAttribute("href", "/api/connections/amazon")
+    await expect(canvas.queryByRole("button", { name: "Sync Amazon orders" })).toBeNull()
+    await userEvent.tab()
+    await expect(canvas.getByRole("link", { name: "Reconnect" })).toHaveFocus()
   }
 })

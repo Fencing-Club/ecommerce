@@ -12,6 +12,8 @@ import {
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
 import { Integrations } from "./integrations"
+import { InventorySyncRow } from "./inventory-sync"
+import { OrdersSyncRow } from "./sales-orders"
 
 const sent: ActionRequest[] = []
 // The Shopify address a valid Connect form sends to Shopify's approval, kept instead of leaving the story.
@@ -170,6 +172,37 @@ export const EbaySyncFailed = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Last sync failed")).toBeVisible()
+  }
+})
+
+export const ShopifySignInExpired = meta.story({
+  args: {
+    shopify,
+    shopifySettings: (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <OrdersSyncRow source="shopify" />
+        <InventorySyncRow provider="shopify" />
+      </div>
+    )
+  },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      ...storeSyncHandlers({
+        sales: [salesSync("shopify", { status: "failed", errorCode: "reconnect" })],
+        stock: { shopify: stockSync({ refresh: { status: "failed", errorCode: "reconnect" } }) }
+      })
+    )
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Shopify" }))
+    const sheet = await screen.findByRole("dialog", { name: "Shopify" })
+    await waitFor(() => expect(within(sheet).getAllByRole("link", { name: "Reconnect" })).toHaveLength(2))
+    for (const link of within(sheet).getAllByRole("link", { name: "Reconnect" })) {
+      await expect(link).toHaveAttribute("href", `/api/connections/shopify?shop=${shopifyAccount}`)
+    }
+    await expect(within(sheet).queryByRole("button", { name: "Sync Shopify orders" })).toBeNull()
+    await expect(within(sheet).queryByRole("button", { name: "Sync Shopify inventory" })).toBeNull()
+    await expect(within(sheet).getAllByText("Reconnect to resume syncing.")).toHaveLength(2)
   }
 })
 

@@ -91,6 +91,7 @@
     "syncing": "Синхронізація…",
     "syncNow": "Синхронізувати",
     "reconnect": "Підключити повторно",
+    "reconnectHint": "Підключіться знову, щоб відновити синхронізацію.",
     "synced": "Синхронізовано <time></time>",
     "syncingProgress": "Синхронізація… {progress, number, percent}"
   },
