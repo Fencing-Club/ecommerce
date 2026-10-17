@@ -45,6 +45,20 @@ resource "cloudflare_queue" "jobs" {
   }
 }
 
+resource "cloudflare_queue" "executor" {
+  for_each   = toset(["jobs", "dead_letter"])
+  account_id = var.account_id
+  queue_name = "copacker-executor-${var.environment}${each.key == "dead_letter" ? "-dlq" : ""}"
+  settings = {
+    delivery_delay           = 0
+    message_retention_period = 345600
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 output "documents_bucket" {
   value = cloudflare_r2_bucket.documents.name
 }
@@ -59,6 +73,8 @@ locals {
     { type = "r2_bucket", id = cloudflare_r2_bucket.documents.name, tags = merge(local.tags, { component = "documents" }) }
     ], [for key, queue in cloudflare_queue.jobs : {
       type = "queue", id = queue.id, tags = merge(local.tags, { component = key == "jobs" ? "jobs" : "dead-letter" })
+      }], [for key, queue in cloudflare_queue.executor : {
+      type = "queue", id = queue.id, tags = merge(local.tags, { component = key == "jobs" ? "executor" : "executor-dead-letter" })
   }])
 }
 
@@ -82,4 +98,12 @@ output "jobs_queue_id" {
 
 output "dead_letter_queue_id" {
   value = cloudflare_queue.jobs["dead_letter"].id
+}
+
+output "executor_queue_id" {
+  value = cloudflare_queue.executor["jobs"].id
+}
+
+output "executor_dead_letter_queue_id" {
+  value = cloudflare_queue.executor["dead_letter"].id
 }

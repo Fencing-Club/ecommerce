@@ -3,6 +3,13 @@
 Terraform configuration lives in `apps/copacker/infra`. Terraform 1.16.6 and Cloudflare provider 5.28.0 are pinned.
 Staging and production have separate root modules and state keys. They share one small module.
 
+## Background executor queues
+
+Terraform also provisions `copacker-executor-<environment>` and its `-dlq`, separate from the retained Node worker's
+HTTP pull queue. Review and apply these resources before releasing the native Cloudflare consumer. Set the resulting
+`executor_queue_id` as `CLOUDFLARE_EXECUTOR_QUEUE_ID` on that environment's Railway worker. The app's `cf` configuration
+owns the native consumer and bindings; Terraform owns the queues and their tags. No existing queue is replaced.
+
 ## First adoption
 
 Terraform owns each environment's existing private document bucket and two queues. Declarative import blocks identify
