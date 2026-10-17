@@ -10,7 +10,7 @@ export function demoShopConnection(domain: string, token: string) {
   if (domain !== demoShopDomain && token !== "demo") {
     return false
   }
-  const environment = process.env.DEPLOYMENT_ENV || process.env.RAILWAY_ENVIRONMENT_NAME
+  const environment = process.env.DEPLOYMENT_ENV
   const local =
     process.env.NODE_ENV !== "production" &&
     URL.canParse(process.env.DATABASE_URL || "") &&

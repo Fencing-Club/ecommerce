@@ -1,7 +1,7 @@
 # Previous and current platform architecture
 
 Part of the [migration specification](README.md). The first diagram captures the live state immediately before the
-final web cutover on October 16, 2026. The second is the accepted current architecture. It incorporates the separately completed Neon
+final web cutover on October 16, 2026. The second is the final migration target; deployment status is recorded in acceptance. It incorporates the separately completed Neon
 and private R2 transfers; the original Railway-only database plan is superseded. The deployment checks and final
 [acceptance record](acceptance.md) identify the deployed commits and verification evidence.
 
@@ -79,11 +79,10 @@ inventories and the verified storage manifests. Old Railway databases are recove
 writable source of truth. The retained web and executor already use Neon and R2; no second database or file transfer
 is required for the web runtime switch. WorkOS's shared staging identity environment remains intentional.
 
-## Accepted current state: Cloudflare web, files and CDN
+## Final state: Cloudflare web, jobs, files and CDN
 
 Keep the same public application, Storybook and integration callback URLs. Each release builds web and Storybook from
-one tested commit, applies any pending migrations through one direct Neon connection, and deploys the retained Node
-executor from that commit. Application responses and private downloads remain authenticated and uncached.
+one tested commit, applies any pending migrations through one direct Neon connection, and deploys Workflows and the scheduler from that commit. Application responses and private downloads remain authenticated and uncached.
 
 ```mermaid
 flowchart LR
@@ -96,20 +95,15 @@ flowchart LR
     media["Existing public R2 media and CDN"]
     hyperdrive["Hyperdrive: verified TLS, query caching disabled"]
     files[("Private R2 documents, labels and imports")]
-    queues["Node wake and reconcile queue with DLQ"]
-    boundedQueue["Native executor wake queue with DLQ"]
-    bounded["Queue handler in web Worker: analytics pages and Shopify/eBay events"]
-    cron["Scheduled Worker: hourly recovery and daily reconciliation"]
+    boundedQueue["Native executor signals and DLQ"]
+    bounded["Queue handler: bounded jobs and AWS notification batches"]
+    executor["Workflows: imports, sales checkpoints, shipments, documents and email"]
+    cron["Scheduled Worker: minute AWS reads, hourly recovery, daily reconciliation"]
     telemetry["Workers logs, traces and release health"]
   end
   subgraph neon["Neon"]
     database[("Postgres: business records, durable job ledger, leases and encrypted tokens")]
     history["Verified restore history and recovery branches"]
-  end
-  subgraph railway["Retained execution and recovery"]
-    executor["Node executor: claims SQL jobs, processes files and polls providers"]
-    oldOrigins["Previous web and Storybook artifacts retained for rollback"]
-    oldStorage["Previous storage retained through observation"]
   end
   subgraph external["Retained integrations"]
     identity["WorkOS identity and sessions"]
@@ -130,40 +124,37 @@ flowchart LR
   web --> hyperdrive --> database
   web --> files
   web --> commerce
-  web -->|"Commit job, then publish wake"| queues
-  web -->|"Wake bounded work"| boundedQueue
-  cron --> queues
+  web -->|"Commit job, then publish wake"| boundedQueue
   cron --> boundedQueue --> bounded --> hyperdrive
-  bounded -->|"Publish downstream work after commit"| queues
+  bounded -->|"Dispatch SQL claim"| executor
+  executor -->|"Wake after checkpoint or completion"| boundedQueue
   bounded --> commerce
-  queues -->|"HTTP pull"| executor
-  executor -->|"Claim, lease, retry and finish"| database
-  executor -->|"Scoped S3 credentials"| files
+  executor -->|"Claim, lease, retry and finish"| hyperdrive
+  executor -->|"Native R2 binding"| files
   executor --> commerce
   executor --> email
   executor --> imports
   executor --> rates
-  commerce --> events --> executor
+  commerce --> events --> bounded
   web -->|"Verified eBay notifications"| events
   database --> history
   web --> telemetry
   cron --> telemetry
 ```
 
-The SQL job ledger owns work and retries; queue messages are delivery signals. Cloudflare claims `analytics`,
-`shopify-event` and `ebay-event`; Railway claims the remaining families. Both share three SQL execution slots and
-attempt fencing. Startup recovery and hourly wake signals cover missed publication; reconciliation retains its daily
-identity. Shipment creation remains on Railway. See [background-job contracts](../../background-jobs.md) for cutover
-and live acceptance requirements.
+The SQL job ledger owns work and retries; queues carry delivery signals. Bounded jobs execute directly in the queue
+handler; long jobs use Workflows. Both share three SQL slots and the same domain handlers. Sales progress checkpoints
+create separate attempts, while active jobs heartbeat. The hourly signal recovers missed publication and abandoned
+leases; daily reconciliation retains its job identity. Scheduled SQS reads do not query Neon when empty.
+See [background-job contracts](../../background-jobs.md) for cutover and live acceptance requirements.
 
 Private R2 has no public document origin. Downloads recheck workspace membership, document revision and release state.
-The web uses native R2 bindings; the retained executor uses credentials limited to its environment's bucket. Public
+The web and Workflow steps use native R2 bindings. Public
 media keeps its existing CDN origin. Returning to an old object store after new writes requires a verified reverse
 delta; changing an endpoint alone is insufficient.
 
 Hyperdrive has separate configurations for staging, production and each PR, with query caching disabled and certificate
-and hostname verification enabled. Migrations use a verified direct Neon endpoint with an advisory lock. The Node
-executor uses Neon's pooled endpoint. Request language is resolved before action transactions so a nested profile
+and hostname verification enabled. Migrations use a verified direct Neon endpoint with an advisory lock. Local administrative tools use an explicitly selected database connection. Request language is resolved before action transactions so a nested profile
 lookup cannot exhaust the small connection pool. See [database operations](../../neon.md).
 
 ## Delivery, previews and recovery
@@ -174,7 +165,7 @@ flowchart LR
   checks --> preview["PR Worker, isolated Neon branch and isolated R2 prefix"]
   preview --> qualify["Hosted functional and integrated-browser qualification"]
   qualify --> merge["Merge tested source"]
-  merge --> staging["Serialized staging release: migrate, web, Storybook, executor and scheduler"]
+  merge --> staging["Serialized staging release: migrate, web, Workflows, Storybook and scheduler"]
   staging --> acceptance["Custom-domain, role, file, integration and job checks"]
   acceptance --> promote["Manual promotion of the exact tested staging commit"]
   promote --> production["Serialized production release and smoke checks"]

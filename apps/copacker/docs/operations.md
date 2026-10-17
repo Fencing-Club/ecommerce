@@ -39,7 +39,7 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
    Nothing receives `@copacker.ai` mail. Invitations, purchase orders, label notices and password resets set no
    reply-to, so replies to them go to `hello@copacker.ai` and bounce.
-5. Storage: a private R2 binding for the web and matching R2 `S3_*` settings for the retained worker. Existing Railway
+5. Storage: native private R2 bindings for web requests and Workflow steps. Existing Railway
    files move only after the verified [storage cutover](cloudflare.md#private-storage-transfer-and-recovery). Objects
    are read only through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
@@ -96,10 +96,8 @@ following storage, callback, database and rollback qualification. Production pro
 tested staging commit; GitHub required reviewers are not configured.
 
 The [Cloudflare release guide](cloudflare.md#release-procedure) describes exact-commit promotion, scoped secrets,
-static Storybook, the retained Railway worker, serialized migrations and deployed health checks. The old web container
-and predeploy path are removed from the source. Previous Railway artifacts remain available for recovery; their old
-predeploy migration commands remain disabled. See the [cutover acceptance record](specs/platform-migration/acceptance.md)
-for the currently accepted release and recovery window.
+static Storybook, Cloudflare Workflows, serialized migrations and deployed health checks. Railway is no longer a release
+target. See the [cutover acceptance record](specs/platform-migration/acceptance.md) for deployment and retirement status.
 
 Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
 A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
@@ -110,7 +108,7 @@ the former Railway retention does not apply to Neon.
 ## Infrastructure
 
 Cloudflare owns the web target, static assets, private R2 storage, wake queues and scheduled recovery. Neon owns the
-authoritative Postgres databases. Railway retains the sole background executor and previous artifacts for recovery.
+authoritative Postgres databases. Cloudflare Workflows executes long jobs; native Queues handles bounded jobs and scheduled AWS reads.
 The [acceptance record](specs/platform-migration/acceptance.md) records activation and any rollback of the web target.
 
 | Environment | Application Worker | Storybook Worker | Private R2 bucket | Database |
@@ -142,8 +140,7 @@ and recovery origins through observation. The landing film is in the `copacker-m
 Staging was duplicated from production. It has its own `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses
 the development apps (Copacker Dev, Aisle Dev), so connecting a store there never rotates production's tokens. Its
 worker reads its own SQS queues (`copacker-*-staging`) as IAM user `copacker-worker-staging`. To fill it with the demo
-store, sign in there once, then run `railway ssh --environment staging --service copacker-worker -- pnpm --filter
-copacker db:seed`.
+store, explicitly set `DEPLOYMENT_ENV=staging` and staging database credentials for the seed command. Never seed production.
 
 ## Databases and migrations
 

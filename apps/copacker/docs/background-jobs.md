@@ -1,67 +1,69 @@
 # Background jobs
 
-Postgres stores payloads, status, idempotency keys and leases. Cloudflare Queues carries wake signals only. Credentials
-and customer records never enter the queues. Each deployed job family has one canonical executor:
+Postgres stores payloads, status, idempotency keys, checkpoints and leases. Cloudflare Queues carries wake signals;
+Workflows receives only the SQL claim identity. Credentials and customer records remain out of both transports.
 
 | Executor | Job families |
 | --- | --- |
 | Cloudflare native queue handler | `analytics`, `shopify-event`, `ebay-event` |
-| Railway Node worker | Remaining families, long imports, shipment creation and AWS notification readers |
-| Local Node worker | All families against the local database |
+| Cloudflare Workflow | All remaining families, including imports, sales, shipments, documents, email and reconciliation |
+| Local Node worker | All families against the local database only |
 
-`analytics` processes one checkpointed page per attempt. The event handlers enqueue bounded sync requests. Each
-Cloudflare delivery runs one SQL attempt, schedules the next due wake, and acknowledges only after both succeed.
-An invocation owns its database pool; heartbeats finish before that pool closes. A later stage must checkpoint long
-imports and replace the AWS readers before Railway can be retired. There is no compatibility toggle or dual ownership.
+Sales imports commit one 14-day period per attempt, then checkpoint each post-import operation. They do not buffer a
+whole historical Shopify bulk export. Other long handlers run inside a Workflow step, with a 24-hour wall timeout and
+300-second CPU budget. A Workflow step owns its Hyperdrive pool and native R2 context; no sockets cross step boundaries.
+External side effects retain their domain idempotency and ownership checks. Workflow execution does not automatically
+retry a failed step: SQL owns retry timing, payload checkpoints and failure status.
 
 ## Delivery and recovery
 
-Producers wrap their insert or entire transaction in `withJobWake`. Both executors receive a wake after commit, never
-inside the transaction. Publication failure is logged without failing an already committed action. The hourly signal
-covers a crash between commit and publication; that failure can delay work by up to an hour.
+Producers publish to the native executor queue after commit. Publication failure is logged without failing an already
+committed action. The hourly recovery signal covers a crash between commit and publication; it can delay work by up
+to an hour. Empty notification reads never query Postgres.
 
-A PostgreSQL advisory transaction lock serializes claims across both runtimes. They share a maximum of three running
-jobs. Row locks, job keys and attempt fencing handle duplicate delivery. A runtime recovers only its own expired
-leases, after ten minutes. SQL owns retry timing and payload checkpoints. Cloudflare schedules a delayed wake, with
-a five-second minimum to avoid busy retries when all slots are occupied. Queue failures retry five times, then enter
-the executor DLQ. Monitor both DLQs and `job_failed`, `job_signal_failed` and `queue_read_failed` logs.
+A PostgreSQL advisory transaction lock serializes claims. Queues and Workflows share three running SQL slots. Row
+locks, job keys and ownership checks handle duplicate delivery. Ten-minute expired leases become eligible again;
+active handlers heartbeat every 30 seconds. Workflow IDs combine job ID and claim timestamp, so progress checkpoints
+that reset the retry counter still create distinct instances. An ambiguous Workflow create keeps its SQL lease until
+recovery rather than dispatching a concurrent attempt. The initial Workflow read rejects stale claim timestamps.
 
-Railway has three independent HTTP signal readers. Empty pulls wait five seconds without querying Postgres; active
-work still consumes database compute. The local executor polls its Docker database without hosted queues. Preview
-Workers have no executor trigger or executor binding and cannot consume staging or production jobs.
+Each delivery acknowledges only after processing and publishing its next wake. Queue failures retry five times, then
+enter the executor DLQ. Monitor `job_failed`, `job_signal_failed`, Workflow errors and executor/AWS DLQs. Native delivery
+has a five-second minimum retry wake to avoid busy polling when all SQL slots are occupied.
 
-## Resources and configuration
+## Notification readers
 
-Terraform owns four queues per persistent environment: `copacker-jobs-<environment>`, `copacker-executor-<environment>`
-and each queue's `-dlq`. The jobs queue retains its HTTP consumer; `cloudflare.config.ts` owns the executor's native
-consumer. Provision through the reviewed [infrastructure workflow](infrastructure.md) before releasing the consumer.
-The native consumer uses batch size one and maximum concurrency three.
+The scheduler publishes one read signal per provider each minute. Each handler reads at most ten SQS messages without
+long polling; it deletes each message only after its application handler succeeds. A full batch schedules another read
+one second later. AWS clients receive explicit region and credentials because the Workers browser bundle has no Node
+credential-provider chain. Configure `AWS_REGION`, `AWS_NOTIFICATION_ACCESS_KEY_ID`, `AWS_NOTIFICATION_SECRET_ACCESS_KEY` and optional `AWS_NOTIFICATION_SESSION_TOKEN`,
+plus each enabled provider's `AMAZON_NOTIFICATIONS_QUEUE_URL`, `SHOPIFY_EVENTS_QUEUE_URL` or `EBAY_EVENTS_QUEUE_URL`.
+Notification credentials are separate from the web EventBridge publisher credentials, preserving the existing IAM boundaries.
+AWS EventBridge/SQS remains the provider notification transport; no Railway reader is required.
 
-The web Worker publishes through native `JOBS` and `EXECUTOR_JOBS` bindings, without a queue API token. Set these on
-Railway in each environment before releasing the new Node executor:
+## Resources and releases
 
-- `CLOUDFLARE_ACCOUNT_ID`: account ID.
-- `CLOUDFLARE_JOBS_QUEUE_ID`: retained HTTP queue ID.
-- `CLOUDFLARE_EXECUTOR_QUEUE_ID`: native executor queue ID.
-- `CLOUDFLARE_JOBS_TOKEN`: account-scoped Queues Read and Write token covering both queues.
+Terraform owns `copacker-executor-<environment>` and its `-dlq`. The application's `cloudflare.config.ts` owns its native
+consumer and `copacker[-staging]-jobs` Workflow. The scheduler has only a queue binding and no database credentials:
 
-Production Node startup requires both queue IDs. Local development uses the same domain handlers without the deployed
-split. `scheduler/` has only the two queue bindings, no database credentials or public HTTP handler. Its UTC schedules:
+- `* * * * *`: publish bounded AWS notification reads.
+- `17 * * * *`: recover missed publications and abandoned leases.
+- `0 7 * * *`: enqueue daily reconciliation.
 
-- `17 * * * *`: wake both executors for missed publications and abandoned leases.
-- `0 7 * * *`: send daily reconciliation to Railway and wake Cloudflare.
+The release deploys web, Storybook and Workflows from one tested commit, then the scheduler. Administrative Node tools
+can publish using `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_JOBS_QUEUE_ID` (the **executor** queue ID) and a scoped
+`CLOUDFLARE_JOBS_TOKEN`. Hosted Workers use native bindings. Preview Workers have only their isolated wake queue;
+they have no executor trigger or Workflow binding and cannot execute staging or production work.
 
-Set `COPACKER_ENVIRONMENT` to `staging` or `production`, then run
-`pnpm --filter copacker-scheduler exec cf deploy --dry-run` and `pnpm --filter copacker-scheduler exec cf deploy`.
-The release workflow deploys the scheduler after the retained executor. Deployment and runtime queue tokens remain separate.
+## Cutover and verification
 
-## Cutover and acceptance
+Copy each environment's AWS reader settings and integration secrets before releasing. Stop its Railway worker, deploy
+the tested Worker and scheduler, then publish a wake. Verify bounded work, Workflow completion, delayed retry, lease
+recovery, downstream publication, document access and AWS consumption before removing obsolete Railway resources.
+Inspect SQL failures and both providers' DLQs. Confirm old storage against the R2 transfer manifests before deletion.
+Apply the reviewed Terraform removal of the unused HTTP-pull queues only after both environments have cut over.
 
-Apply the queue infrastructure and set Railway's new queue ID first. Release the same tested commit to the web Worker,
-Node executor and scheduler. A brief interruption during this unreleased application's cutover is acceptable; there
-is no old-executor handoff protocol. Once both runtimes serve the new code, publish a wake to each queue.
-
-PR CI runs `test:worker-jobs` against the exact built application and a disposable PostgreSQL database, alongside unit
-coverage for routing, concurrency, delayed publication and failure. In staging, verify a new job, delayed retry,
-lease recovery, downstream work reaching Railway and an empty executor queue. Record evidence before production promotion.
-The full migration remains incomplete until long imports and AWS notification readers have moved.
+PR CI runs `test:worker-jobs` against the exact application artifact and a disposable local PostgreSQL database.
+It checks real Workflow execution, signed AWS SQS requests, queue jobs, downstream publication, duplicates, delayed
+retry, lease recovery and database failure. Unit coverage also verifies sales checkpoints and SQS acknowledgement.
+Deployed acceptance is recorded in [migration acceptance](specs/platform-migration/acceptance.md).

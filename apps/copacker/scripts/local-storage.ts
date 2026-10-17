@@ -5,7 +5,7 @@ import { z } from "zod"
 
 const credentials = z.object({ accessKeyId: z.string().min(16), secretAccessKey: z.string().min(32) })
 
-// One worktree-local credential pair lets the retained Node worker use the web emulator's S3 endpoint.
+// One worktree-local credential pair lets the local Node worker use the web emulator's S3 endpoint.
 // It is unrelated to any remote account and is never included in a deployed configuration.
 export function localStorage() {
   const folder = new URL("../.cloudflare/", import.meta.url)

@@ -1,20 +1,12 @@
-import { inArray, not, sql } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 import type { Transaction } from "@/db"
-import { jobs } from "@/db/schema"
 
-// These handlers enqueue work or process a checkpointed page. Long imports and external shipment creates stay on Node.
-export const cloudflareJobKinds = ["analytics", "shopify-event", "ebay-event"] as const
-export type JobExecutor = "railway" | "cloudflare" | "local"
+// Short handlers execute in the queue consumer; all other families use a durable Workflow attempt.
+const queueJobKinds = new Set(["analytics", "shopify-event", "ebay-event"])
+export type JobExecutor = "cloudflare" | "local"
+export const jobNeedsWorkflow = (kind: string) => !queueJobKinds.has(kind)
 
-export function jobExecutorCondition(runtime: JobExecutor) {
-  if (runtime === "local") {
-    return undefined
-  }
-  const assigned = inArray(jobs.kind, cloudflareJobKinds)
-  return runtime === "cloudflare" ? assigned : not(assigned)
-}
-
-// All deployed executors share the same three SQL job slots, including simultaneous queue deliveries.
+// Queue consumers and Workflows share the same SQL job slots.
 export async function lockJobClaims(tx: Transaction) {
   await tx.execute(sql`select pg_advisory_xact_lock(1616879723)`)
 }

@@ -26,7 +26,7 @@ with each environment. Moving encrypted database records does not rotate their e
 Staging and production remain independent; never reset staging from production.
 
 CI continues to validate migrations on an empty local Postgres 18. The gated Cloudflare release workflow migrates
-through one dedicated session with an advisory lock before deploying web, Storybook, the retained worker and scheduler.
+through one dedicated session with an advisory lock before deploying web, Workflows, Storybook and scheduler.
 The old Railway web pre-deploy steps are disabled. Production promotion releases the exact
 tested staging commit. See the [release gates](cloudflare.md#release-procedure); tests never seed production.
 
@@ -114,7 +114,7 @@ test data; production files stay in a separate bucket.
 
 Preview secrets contain only the staging WorkOS credentials, a session password, and the staging encryption key.
 Do not provide production or commerce API credentials. Background jobs remain pending in the isolated preview
-database/queue: the retained staging and production executors never consume them. Hosted previews cover web,
+database/queue: the staging and production executors never consume them. Hosted previews cover web,
 authentication, database mutations and documents; full job execution needs the separate Cloudflare executor migration.
 
 The close workflow runs trusted default-branch code on **both merge and close**. It deletes both preview Workers,

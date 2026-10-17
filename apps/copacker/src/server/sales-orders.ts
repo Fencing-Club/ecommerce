@@ -8,7 +8,6 @@ import {
   collectAmazonSalesReport,
   collectEbaySales,
   collectShopifySales,
-  collectShopifySalesBulk,
   shopifyPaymentFees
 } from "@repo/aisle/sales"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
@@ -279,13 +278,15 @@ const payloadSchema = z.object({
   source: z.enum(salesSources),
   revision: z.number().int().positive(),
   // Where a paused sync picks up: the periods still to read, and the unbroken period stored so far in this sync.
-  resume: z.object({ remaining: z.array(period), covered: period.nullable() }).optional()
+  resume: z
+    .object({
+      remaining: z.array(period),
+      covered: period.nullable(),
+      after: z.number().int().min(0).max(32).optional()
+    })
+    .optional()
 })
 
-// A Shopify sync reading more periods than this uses one bulk export.
-const bulkThreshold = 3
-const within = (at: string, window: { from: string; to: string }) =>
-  Date.parse(at) >= Date.parse(window.from) && Date.parse(at) < Date.parse(window.to)
 // How long Amazon's order report can take to include a new order.
 const reportLagMs = 2 * day
 // Amazon's order search allows about one request every three minutes once its burst of 20 is spent.
@@ -313,50 +314,30 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale | EbaySale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
     // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
-    let afterOrders: (() => Promise<void>) | null = null
+    let afterOrders: (() => Promise<unknown>)[] = []
     if (source === "shopify") {
       // Shopify Payments' labels, bills and dispute fees are copied after the orders.
-      afterOrders = async () => {
-        await syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
-        await queueShopifyEconomics({ orgId, externalAccountId: account, revision })
-      }
-      // Shopify access tokens last about an hour and two years of orders can take longer, so each period gets a current
-      // token (renewed when it's about to expire) instead of one from the start of the sync.
+      afterOrders = [
+        () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned),
+        () => queueShopifyEconomics({ orgId, externalAccountId: account, revision })
+      ]
+      // Read one period per attempt instead of buffering a whole historical bulk export in Worker memory.
       const customers = hasCustomerScope(scopes)
-      // Reading many periods (a first sync, or one reading everything again) uses one bulk export of the whole stretch;
-      // a sync of recent orders reads each period directly. If the export fails, each period is read directly.
-      let exported: ShopifySale[] | null = null
-      if (chunks.length > bulkThreshold) {
-        const from = chunks.reduce((min, chunk) => (chunk.from < min ? chunk.from : min), chunks[0]!.from)
-        const to = chunks.reduce((max, chunk) => (chunk.to > max ? chunk.to : max), chunks[0]!.to)
-        exported = await collectShopifySalesBulk(
-          await shopifyFor(orgId, account),
-          { from: from.toISOString(), to: to.toISOString() },
-          assertOwned,
-          { customers }
-        ).catch((error: unknown) => {
-          console.error(JSON.stringify({ event: "shopify_bulk_export_failed", orgId, error: describeError(error) }))
-          return null
-        })
-      }
       read = async (window) =>
-        (
-          exported?.filter((order) => within(order.createdAt, window)) ??
-          (await collectShopifySales(await shopifyFor(orgId, account), account, window, assertOwned, { customers }))
-        ).map((order) => ({
-          orderId: order.id,
-          orderedAt: new Date(order.createdAt),
-          data: order
-        }))
+        (await collectShopifySales(await shopifyFor(orgId, account), account, window, assertOwned, { customers })).map(
+          (order) => ({ orderId: order.id, orderedAt: new Date(order.createdAt), data: order })
+        )
     } else if (source === "ebay") {
       const client = await ebayFor(orgId, account)
       // Orders in another currency are converted at each day's rate.
-      afterOrders = () =>
-        syncExchangeRates(orgId).then(
-          () => undefined,
-          (error: unknown) =>
-            console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
-        )
+      afterOrders = [
+        () =>
+          syncExchangeRates(orgId).then(
+            () => undefined,
+            (error: unknown) =>
+              console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
+          )
+      ]
       read = async (window) =>
         (await collectEbaySales(client, window, assertOwned)).map((order) => ({
           orderId: order.orderId,
@@ -372,43 +353,29 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           return client.request(...args)
         }) as typeof client.request
       }
-      afterOrders = async () => {
-        await syncAmazonFulfillmentShipments(
-          { orgId, externalAccountId: account, revision, amazon: client },
-          assertOwned
-        )
-        await syncAmazonReturns({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncAmazonReimbursements({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncAmazonInventoryMovements({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncAmazonStorageFees(
-          { orgId, externalAccountId: account, revision, amazon: client },
-          "monthly",
-          assertOwned
-        )
-        await syncAmazonStorageFees(
-          { orgId, externalAccountId: account, revision, amazon: client },
-          "aged",
-          assertOwned
-        )
-        await syncAmazonRemovals({ orgId, externalAccountId: account, revision, amazon: client }, "orders", assertOwned)
-        await syncAmazonRemovals(
-          { orgId, externalAccountId: account, revision, amazon: client },
-          "shipments",
-          assertOwned
-        )
-        await syncLedger({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        // Neither fails the order sync: freight without its shipments' contents is spread over every unit, and amounts
-        // without rates stay unconverted until the next sync.
-        await syncInboundShipments({ orgId, externalAccountId: account, amazon: client }, assertOwned).catch((error) =>
-          console.error(JSON.stringify({ event: "inbound_shipments_failed", orgId, error: describeError(error) }))
-        )
-        await syncAmazonReceipts({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncAmazonExtraEvidence({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
-        await syncExchangeRates(orgId).catch((error) =>
-          console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
-        )
-      }
+      const input = { orgId, externalAccountId: account, revision, amazon: client }
+      afterOrders = [
+        () => syncAmazonFulfillmentShipments(input, assertOwned),
+        () => syncAmazonReturns(input, assertOwned),
+        () => syncAmazonReimbursements(input, assertOwned),
+        () => syncAmazonInventoryMovements(input, assertOwned),
+        () => syncAmazonStorageFees(input, "monthly", assertOwned),
+        () => syncAmazonStorageFees(input, "aged", assertOwned),
+        () => syncAmazonRemovals(input, "orders", assertOwned),
+        () => syncAmazonRemovals(input, "shipments", assertOwned),
+        () => syncLedger(input, assertOwned),
+        () => syncAmazonFees(input, assertOwned),
+        () =>
+          syncInboundShipments(input, assertOwned).catch((error) =>
+            console.error(JSON.stringify({ event: "inbound_shipments_failed", orgId, error: describeError(error) }))
+          ),
+        () => syncAmazonReceipts(input, assertOwned),
+        () => syncAmazonExtraEvidence(input, assertOwned),
+        () =>
+          syncExchangeRates(orgId).catch((error) =>
+            console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
+          )
+      ]
       const marketplaces = await amazonSalesMarketplaces(account, client)
       // Older periods come from Amazon's order report, one report per period, which is much faster than the order
       // search's pace. Recent ones use the order search, since the report can lag behind new orders; so does a period
@@ -443,6 +410,21 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     } else if (!planned!.fresh && sync.coveredFrom && sync.coveredTo) {
       covered = { from: sync.coveredFrom, to: sync.coveredTo }
     }
+    const checkpoint = (remaining: typeof chunks, after = 0) =>
+      new PollAgain("Sales import checkpoint saved", {
+        delayMs: 1000,
+        progressed: true,
+        payload: {
+          orgId,
+          source,
+          revision,
+          resume: {
+            remaining: remaining.map((chunk) => ({ from: chunk.from.toISOString(), to: chunk.to.toISOString() })),
+            covered: covered && { from: covered.from.toISOString(), to: covered.to.toISOString() },
+            after
+          }
+        }
+      })
     for (const [index, chunk] of chunks.entries()) {
       const window = { from: chunk.from.toISOString(), to: chunk.to.toISOString() }
       let orders: Stored[]
@@ -527,8 +509,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           .set({ coveredFrom: range.from, coveredTo: range.to, dataVersion: version })
           .where(scope)
       })
+      throw checkpoint(chunks.slice(index + 1))
     }
-    await afterOrders?.()
+    const after = resume?.after ?? 0
+    const next = afterOrders[after]
+    if (next) {
+      await next()
+      throw checkpoint([], after + 1)
+    }
     if (source === "shopify" || source === "amazon") {
       await syncAutomaticDepletions(orgId, source, account, assertOwned)
     }

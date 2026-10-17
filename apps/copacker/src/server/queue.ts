@@ -7,7 +7,7 @@ import { analyticsJob } from "./analytics-jobs"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
-import { jobExecutorCondition, lockJobClaims, type JobExecutor } from "./job-ownership"
+import { jobNeedsWorkflow, lockJobClaims, type JobExecutor } from "./job-ownership"
 import { jobConcurrency } from "./job-runner"
 import { logLine } from "./log"
 import { reconcileJob } from "./reconcile"
@@ -17,7 +17,7 @@ import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
 import { describeError, stockJob } from "./stock"
 
 // Read once after draining, then let the external queue wake us when the next retry or abandoned lease is due.
-export async function nextJobDelay(runtime: JobExecutor = "local") {
+export async function nextJobDelay() {
   const [row] = await db()
     .select({
       due: sql<
@@ -25,23 +25,19 @@ export async function nextJobDelay(runtime: JobExecutor = "local") {
       >`min(case when ${jobs.status} = 'running' then ${jobs.leaseAt} + interval '10 minutes' else ${jobs.runAt} end)`
     })
     .from(jobs)
-    .where(and(inArray(jobs.status, ["pending", "running"]), jobExecutorCondition(runtime)))
+    .where(inArray(jobs.status, ["pending", "running"]))
   return row?.due ? Math.max(1, Math.ceil((new Date(row.due).getTime() - Date.now()) / 1000)) : null
 }
 
-export async function runNextJob(runtime: JobExecutor = "local") {
+export type JobClaim = { id: string; attempt: number; leaseAt: string }
+
+export async function runNextJob(runtime: JobExecutor = "local", dispatch?: (claim: JobClaim) => Promise<void>) {
   const job = await db().transaction(async (tx) => {
     await lockJobClaims(tx)
     await tx
       .update(jobs)
       .set({ status: "pending" })
-      .where(
-        and(
-          eq(jobs.status, "running"),
-          lt(jobs.leaseAt, new Date(Date.now() - 10 * 60 * 1000)),
-          jobExecutorCondition(runtime)
-        )
-      )
+      .where(and(eq(jobs.status, "running"), lt(jobs.leaseAt, new Date(Date.now() - 10 * 60 * 1000))))
     const [active] = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(jobs)
@@ -52,7 +48,7 @@ export async function runNextJob(runtime: JobExecutor = "local") {
     const [next] = await tx
       .select()
       .from(jobs)
-      .where(and(eq(jobs.status, "pending"), lte(jobs.runAt, new Date()), jobExecutorCondition(runtime)))
+      .where(and(eq(jobs.status, "pending"), lte(jobs.runAt, new Date())))
       .orderBy(jobs.createdAt)
       .limit(1)
       .for("update", { skipLocked: true })
@@ -70,6 +66,33 @@ export async function runNextJob(runtime: JobExecutor = "local") {
     return false
   }
 
+  if (dispatch && jobNeedsWorkflow(job.kind)) {
+    // Keep the lease if dispatch fails: a timed-out create may have succeeded. Recovery fences a later attempt.
+    await dispatch({ id: job.id, attempt: job.attempts, leaseAt: job.leaseAt!.toISOString() })
+  } else {
+    await executeJob(job, runtime)
+  }
+  return true
+}
+
+export async function runClaimedJob(claim: JobClaim) {
+  const [job] = await db()
+    .select()
+    .from(jobs)
+    .where(
+      and(
+        eq(jobs.id, claim.id),
+        eq(jobs.attempts, claim.attempt),
+        eq(jobs.leaseAt, new Date(claim.leaseAt)),
+        eq(jobs.status, "running")
+      )
+    )
+  if (job) {
+    await executeJob(job, "cloudflare")
+  }
+}
+
+async function executeJob(job: typeof jobs.$inferSelect, runtime: JobExecutor) {
   // One line when a job starts and one when it ends, so the worker's output shows what it's doing.
   const started = Date.now()
   logLine(`Started ${job.kind} job ${job.key} on ${runtime} (attempt ${job.attempts})`)
@@ -140,7 +163,7 @@ export async function runNextJob(runtime: JobExecutor = "local") {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job failed"
     const poll = error instanceof PollAgain ? error.options : null
-    const polling = error instanceof PollAgain && job.attempts < 60
+    const polling = error instanceof PollAgain && (poll?.progressed || job.attempts < 60)
     // The error is also stored on the job; logging it shows failures in the service logs without a database read.
     if (polling) {
       logLine(`Paused ${job.kind} job ${job.key} after ${took()}s: ${message}`)
@@ -192,5 +215,4 @@ export async function runNextJob(runtime: JobExecutor = "local") {
     clearTimeout(timer)
     await pendingHeartbeat
   }
-  return true
 }

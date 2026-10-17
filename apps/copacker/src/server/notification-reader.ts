@@ -1,0 +1,35 @@
+import { SQSClient } from "@aws-sdk/client-sqs"
+import { pollAmazonNotifications } from "./amazon-notifications"
+import { pollEbayEvents } from "./ebay-events"
+import { pollShopifyEvents } from "./shopify-webhooks"
+import { sqsQueue } from "./sqs"
+
+export type NotificationProvider = "amazon" | "shopify" | "ebay"
+
+// One bounded AWS batch per delivery. Empty queues never query Postgres; full batches schedule another read.
+export async function readNotifications(provider: NotificationProvider) {
+  const readers = {
+    amazon: { url: process.env.AMAZON_NOTIFICATIONS_QUEUE_URL, poll: pollAmazonNotifications },
+    shopify: { url: process.env.SHOPIFY_EVENTS_QUEUE_URL, poll: pollShopifyEvents },
+    ebay: { url: process.env.EBAY_EVENTS_QUEUE_URL, poll: pollEbayEvents }
+  }
+  const reader = readers[provider]
+  if (!reader.url) {
+    return 0
+  }
+  const {
+    AWS_REGION: region,
+    AWS_NOTIFICATION_ACCESS_KEY_ID: accessKeyId,
+    AWS_NOTIFICATION_SECRET_ACCESS_KEY: secretAccessKey,
+    AWS_NOTIFICATION_SESSION_TOKEN: sessionToken
+  } = process.env
+  if (!region || !accessKeyId || !secretAccessKey) {
+    throw new Error("AWS notification credentials are not configured")
+  }
+  const client = new SQSClient({ region, credentials: { accessKeyId, secretAccessKey, sessionToken } })
+  try {
+    return await reader.poll(sqsQueue(client, reader.url, 0))
+  } finally {
+    client.destroy()
+  }
+}

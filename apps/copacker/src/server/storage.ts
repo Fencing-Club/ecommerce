@@ -11,7 +11,7 @@ export type FileStorage = {
 }
 const invocation = new AsyncLocalStorage<FileStorage>()
 
-// A Worker supplies its private bucket for this invocation. The retained Node worker uses its S3 configuration.
+// A Worker supplies its private bucket for this invocation. Local development and storage migration tools use their S3 configuration.
 export function withFileStorage<T>(files: FileStorage, run: () => T, prefix = ""): T {
   if (prefix && !/^previews\/pr-[1-9]\d*\/app\/$/.test(prefix)) {
     throw new Error("Invalid preview storage prefix")

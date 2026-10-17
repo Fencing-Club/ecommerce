@@ -31,8 +31,6 @@ jobs:
       DIRECT_DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
       DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
       DATABASE_TLS_SERVER_NAME: ${{ vars.DATABASE_TLS_SERVER_NAME }}
-      RAILWAY_TOKEN:
-        ${{ inputs.mode == 'staging' && secrets.RAILWAY_STAGING_TOKEN || secrets.RAILWAY_PRODUCTION_TOKEN }}
       VITE_GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
     steps:
       - uses: actions/checkout@v7
@@ -52,7 +50,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --global pnpm@12.10.1 @railway/cli@5.68.0
+      - run: npm install --global pnpm@12.10.1
       - run: pnpm install --frozen-lockfile
       - name: Prepare scoped release inputs
         working-directory: apps/copacker
@@ -70,9 +68,6 @@ jobs:
         env:
           CLOUDFLARE_SECRETS_FILE: .cloudflare/release-secrets.json
           CLOUDFLARE_SETTINGS_FILE: .cloudflare/release-settings.json
-      - name: Deploy retained background executor
-        timeout-minutes: 35
-        run: bash .github/scripts/deploy-worker.sh "$APP_COMMIT_SHA"
       - name: Deploy background-job scheduler
         run: pnpm --filter copacker-scheduler exec cf deploy
         env:

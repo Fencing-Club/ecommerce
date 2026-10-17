@@ -6,12 +6,12 @@ export type NotificationQueue = {
   receive(): Promise<{ body: string; handle: string }[]>
   remove(handle: string): Promise<void>
 }
-export function sqsQueue(sqs: SQSClient, queueUrl: string): NotificationQueue {
+export function sqsQueue(sqs: SQSClient, queueUrl: string, waitTimeSeconds = 20): NotificationQueue {
   return {
     async receive() {
       // Long polling: waits up to 20 seconds for a message, so an empty queue costs few requests.
       const { Messages = [] } = await sqs.send(
-        new ReceiveMessageCommand({ QueueUrl: queueUrl, MaxNumberOfMessages: 10, WaitTimeSeconds: 20 })
+        new ReceiveMessageCommand({ QueueUrl: queueUrl, MaxNumberOfMessages: 10, WaitTimeSeconds: waitTimeSeconds })
       )
       return Messages.flatMap((message) =>
         message.ReceiptHandle ? [{ body: message.Body ?? "", handle: message.ReceiptHandle }] : []
