@@ -94,6 +94,7 @@ import { Route as ApiInventoryProductDefaultsRouteImport } from './routes/api.in
 import { Route as ApiInventoryProductLabelsRouteImport } from './routes/api.inventory.product-labels'
 import { Route as ApiInventoryProductsRouteImport } from './routes/api.inventory.products'
 import { Route as ApiInventoryRefreshRouteImport } from './routes/api.inventory.refresh'
+import { Route as ApiInventoryStatusRouteImport } from './routes/api.inventory.status'
 import { Route as ApiInventoryVariantFieldsRouteImport } from './routes/api.inventory.variant-fields'
 import { Route as ApiMailingListUnsubscribeRouteImport } from './routes/api.mailing-list.unsubscribe'
 import { Route as ApiOrdersSummaryRouteImport } from './routes/api.orders.summary'
@@ -575,6 +576,11 @@ const ApiInventoryRefreshRoute = ApiInventoryRefreshRouteImport.update({
   path: '/refresh',
   getParentRoute: () => ApiInventoryRoute,
 } as any)
+const ApiInventoryStatusRoute = ApiInventoryStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => ApiInventoryRoute,
+} as any)
 const ApiInventoryVariantFieldsRoute =
   ApiInventoryVariantFieldsRouteImport.update({
     id: '/variant-fields',
@@ -917,6 +923,7 @@ export interface FileRoutesByFullPath {
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
+  '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
@@ -1049,6 +1056,7 @@ export interface FileRoutesByTo {
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
+  '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
@@ -1184,6 +1192,7 @@ export interface FileRoutesById {
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
+  '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
@@ -1318,6 +1327,7 @@ export interface FileRouteTypes {
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
+    | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/orders/summary'
@@ -1450,6 +1460,7 @@ export interface FileRouteTypes {
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
+    | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/orders/summary'
@@ -1584,6 +1595,7 @@ export interface FileRouteTypes {
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
+    | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/orders/summary'
@@ -2305,6 +2317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInventoryRefreshRouteImport
       parentRoute: typeof ApiInventoryRoute
     }
+    '/api/inventory/status': {
+      id: '/api/inventory/status'
+      path: '/status'
+      fullPath: '/api/inventory/status'
+      preLoaderRoute: typeof ApiInventoryStatusRouteImport
+      parentRoute: typeof ApiInventoryRoute
+    }
     '/api/inventory/variant-fields': {
       id: '/api/inventory/variant-fields'
       path: '/variant-fields'
@@ -2789,6 +2808,7 @@ interface ApiInventoryRouteChildren {
   ApiInventoryProductLabelsRoute: typeof ApiInventoryProductLabelsRoute
   ApiInventoryProductsRoute: typeof ApiInventoryProductsRoute
   ApiInventoryRefreshRoute: typeof ApiInventoryRefreshRoute
+  ApiInventoryStatusRoute: typeof ApiInventoryStatusRoute
   ApiInventoryVariantFieldsRoute: typeof ApiInventoryVariantFieldsRoute
 }
 
@@ -2801,6 +2821,7 @@ const ApiInventoryRouteChildren: ApiInventoryRouteChildren = {
   ApiInventoryProductLabelsRoute: ApiInventoryProductLabelsRoute,
   ApiInventoryProductsRoute: ApiInventoryProductsRoute,
   ApiInventoryRefreshRoute: ApiInventoryRefreshRoute,
+  ApiInventoryStatusRoute: ApiInventoryStatusRoute,
   ApiInventoryVariantFieldsRoute: ApiInventoryVariantFieldsRoute,
 }
 

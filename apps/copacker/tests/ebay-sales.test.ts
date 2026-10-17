@@ -412,6 +412,7 @@ describe("eBay sales figures", () => {
     const days = await salesByDay(orgId, [account], new Date(Date.now() - 7 * day), "UTC", "USD")
     expect(days.reduce((sum, row) => sum + row.units, 0)).toBe(1)
     expect(days.reduce((sum, row) => sum + row.revenueMinor, 0)).toBe(2000)
+    expect(await salesSyncStatus(orgId)).toMatchObject([{ source: "ebay", recent: { orders: 2, units: 1 } }])
     const bounds = { from: new Date(Date.now() - 7 * day), to: new Date(Date.now() + day) }
     const items = await salesByItem(orgId, [account], { current: bounds, previous: null }, "USD")
     expect(items.map((item) => [item.key, item.units, item.revenueMinor]).toSorted()).toEqual([

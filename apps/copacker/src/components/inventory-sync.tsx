@@ -26,7 +26,7 @@ const stockApi = api.injectEndpoints({
   endpoints: (build) => ({
     // Only the sync status is needed here; the product list reads stock itself.
     inventoryStatus: build.query<StockStatus, Selection>({
-      query: (selection) => ({ url: "inventory", params: { ...selection, limit: 1 } }),
+      query: (selection) => ({ url: "inventory/status", params: selection }),
       keepUnusedDataFor: 0
     }),
     syncInventory: build.mutation<{ status: string }, Selection>({

@@ -39,7 +39,7 @@ const supplier = pageStory("/products", ProductsPage, "supplier")
 
 // A store's inventory sync status, as the page polls it.
 function syncStatus(refresh: { status: string; errorCode: string | null }, observedAt: string | null) {
-  return http.get("/api/inventory", () =>
+  return http.get("/api/inventory/status", () =>
     HttpResponse.json({ externalAccountId: "harbor-goods.myshopify.com", observedAt, refresh })
   )
 }

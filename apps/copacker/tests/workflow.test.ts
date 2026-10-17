@@ -4617,6 +4617,7 @@ describe("stored sales orders", () => {
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "idle", externalAccountId: "A123456789", errorCode: null })
+    expect(await salesSyncStatus(buyerId)).toMatchObject([{ source: "amazon", recent: { orders: 1, units: 2 } }])
     expect(await listSalesOrders(buyerId, { page: 0 })).toMatchObject({
       total: 2,
       orders: [

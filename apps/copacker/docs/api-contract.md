@@ -422,6 +422,10 @@ The 60 uncertain pieces stay reserved. If assignments totalled 180, it would rep
   queues a read of the whole Shopify store, US FBA or US AWD, never a write.
 - Refreshes also start when a store connects, from Shopify inventory webhooks and Amazon FBA notifications, and in a
   daily reconciliation at 07:00 UTC for every stock scope already in use.
+- `GET /api/inventory/status?source=...` (buyer, Products) is the sync polling endpoint. It accepts the same source and
+  marketplace selection as refresh and returns only `externalAccountId`, `observedAt` and `refresh: {status, errorCode}`.
+  It projects metadata inside Postgres; no inventory rows cross the database connection. Unknown or duplicate
+  parameters return 400. The response is private and never cached.
 - `GET /api/inventory?source=...&limit=100&cursor=...` (buyer, Products) returns source, scope and account identity,
   `snapshotId`, `startedAt`/`observedAt`, the latest `refresh` state (`status`, `revision`, `requestedAt`,
   `errorCode`), `locations`, `rows` and `nextCursor`. Limit is 1â€“200. FBA requires `marketplaceId=ATVPDKIKX0DER`;
