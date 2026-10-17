@@ -24,7 +24,8 @@ let aborted: boolean
 beforeEach(() => {
   workers = [
     { id: "web", name: "copacker-pr-42" },
-    { id: "stories", name: "copacker-preview-assets" },
+    { id: "stories", name: "copacker-stories-pr-42" },
+    { id: "other-stories", name: "copacker-stories-pr-420" },
     { id: "staging", name: "copacker-staging" },
     { id: "other", name: "copacker-pr-420" }
   ]
@@ -101,19 +102,19 @@ describe("Cloudflare preview teardown", () => {
   })
   it("removes all preview resources without touching staging files in the same bucket or another PR", () => {
     removeHostedPreview(config, "42")
-    expect(workers.map((item) => item.name)).toEqual(["copacker-preview-assets", "copacker-staging", "copacker-pr-420"])
+    expect(workers.map((item) => item.name)).toEqual(["copacker-stories-pr-420", "copacker-staging", "copacker-pr-420"])
     expect(hyperdrives.map((item) => item.name)).toEqual(["copacker"])
     expect(queues.map((item) => item.queue_name)).toEqual(["copacker-jobs-staging"])
     expect(keys).toEqual(["documents/staging.pdf", "invoice.pdf", "previews/pr-420/keep"])
     expect(() => removeHostedPreview(config, "42")).not.toThrow()
   })
 
-  it("finds file-only, Hyperdrive-only and queue-only leftovers without a Neon branch", () => {
-    workers = []
+  it("finds file-only, Storybook-only, Hyperdrive-only and queue-only leftovers without a Neon branch", () => {
+    workers = [{ id: "orphan", name: "copacker-stories-pr-16" }]
     hyperdrives = [{ id: "orphan", name: "copacker-pr-12" }]
     queues = [{ queue_id: "orphan", queue_name: "copacker-jobs-pr-13" }]
     keys = ["previews/pr-14/a", "previews/pr-14/b", "previews/pr-15/late-page", "production/no"]
-    expect([...hostedPreviewNumbers(previewInventory(config))].sort()).toEqual(["12", "13", "14", "15"])
+    expect([...hostedPreviewNumbers(previewInventory(config))].sort()).toEqual(["12", "13", "14", "15", "16"])
   })
 
   it("preserves files and database connections when a Worker deletion fails or is silently aborted", () => {

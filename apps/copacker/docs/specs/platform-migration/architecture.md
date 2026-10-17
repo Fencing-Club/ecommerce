@@ -183,8 +183,7 @@ commit and saved-plan checks supplies the current approval mechanism. See [infra
 and [release procedure](../../cloudflare.md). Terraform state backups are not database or document backups.
 
 PR previews copy staging into an isolated Neon branch, use a private R2 prefix and receive no merchant integration
-secrets. They have no background executor. Their static Storybook files are served through the shared preview asset
-Worker. Preview expiration and closed-PR cleanup are independent of production retention.
+secrets. They have no background executor. Their static Storybook files are served through an assets-only Worker per PR. Preview expiration and closed-PR cleanup are independent of production retention.
 
 Production acceptance includes existing sessions, role boundaries, authorized and unauthorized file access, immutable
 file checksums, current provider callbacks, queue delivery, and matching web/Storybook commit metadata. Observe at least

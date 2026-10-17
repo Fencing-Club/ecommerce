@@ -34,28 +34,25 @@ tested staging commit. See the [release gates](cloudflare.md#release-procedure);
 
 ### Provisioning performance
 
-The October 16 [PR 25 run](https://github.com/AndrewCraswell/ecommerce/actions/runs/38993225040) took 20m 12s from
-workflow creation to preview-job completion: 7m 21s waiting for verification, 41s runner/dependency setup, 21s through
-preflight, Neon branch creation and migrations, 11m 47s in hosting preparation, builds, publication and health checks,
-and two seconds of job cleanup. The same run's verification job built the app in 32 seconds and Storybook in 28
-seconds. This makes file-transfer and publication overhead a stronger suspect than build time, but individual hosting
-phases are not timed yet, so the preview duration cannot be attributed precisely.
+Preview commands report each provisioning phase as structured timing events. CI also uploads the aggregate
+`preview-timings` artifact and writes a phase table to the job summary, including document and Storybook file counts
+and bytes. Reports exclude credentials, file names and copied contents. The measured command total excludes waiting
+for earlier CI checks and runner setup; compare those separately using the workflow's job timestamps.
 
-The implementation currently rebuilds app and Storybook outside Turbo after CI builds them; copies initial referenced
-documents serially with download/upload/read-back checks; uploads all Storybook files on every push through separate
-CLI processes in batches of eight; and inventories other previews repeatedly. The initial document copy is skipped
-after the ready marker exists. All preview lifecycle jobs also share one lock, which can delay unrelated PRs.
-During the next staging qualification, a read-only inventory found 78 referenced files: the current first-copy
-algorithm needs 234 sequential CLI calls for those files alone. This is a later snapshot, not the PR 25 copy count.
+The first performance pass copies documents in batches of four. Each copy still downloads its source, uploads to
+its PR prefix, reads it back and compares SHA-256 before the ready marker can be written. Batches drain on failure
+before temporary files are removed. Later pushes skip the copy after the ready marker, preserving preview edits.
 
-Prioritize phase timings and object counts, bounded concurrent document copying with unchanged checksum checks, and
-targeted inventories. Reuse compatible exact-commit build artifacts; Worker bindings are environment-specific, so a
-staging Worker artifact must not be reused as a preview artifact. Evaluate Workers Static Assets for preview
-Storybook and publish app readiness independently of Storybook. Starting trusted previews alongside verification can
-remove the initial wait while keeping all tests required for merging. Per-PR deployment locks need coordinated sweep
-and cleanup ownership before replacing the global lock. A maintained small preview fixture baseline would prevent
-accumulated staging qualification data from increasing every new preview's copy cost. These are follow-up
-improvements, not completed changes.
+Storybook uses Workers Static Assets on a separate Worker per PR. The CLI batches missing content hashes and reuses
+unchanged assets on updates, replacing one CLI process per R2 object. Deployment validates the artifact before
+publishing its complete manifest. File and byte counts describe the source build, not only uploaded differences.
+
+Compare fresh previews only with other fresh previews and compare repeated pushes separately. Record counts, bytes,
+commit, workflow URL and whether documents were reused. The [performance qualification in PR 28](https://github.com/AndrewCraswell/ecommerce/pull/28) records hosted before/after measurements and functional checks.
+
+Follow-up opportunities are exact-commit build reuse, targeted inventories, starting trusted previews alongside
+verification, per-PR lifecycle locks with coordinated cleanup, and a maintained small fixture baseline. This pass
+keeps the existing verification gate, environment-specific app build and global preview lock.
 
 ### Isolation and lifecycle
 
@@ -68,7 +65,11 @@ the Actions summary. Each app gets its own Hyperdrive connection and queue. Prev
 into that PR's `app/` folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
 pushes preserve the preview's edits. No new bucket or Railway resource is created.
 
-Storybook is served at `https://previews.copacker.ai/pr-<number>/storybook/` by one shared Worker. Its files live under `previews/pr-<number>/storybook/<build-version>/`. Publication changes only after every upload succeeds. The server checks the publication marker before serving cached files, so cleanup makes even cached URLs unavailable. The private bucket is never made public, and the server cannot route requests to app documents. The app itself retains its isolated workers.dev origin for routing and authentication; the `app/` bucket folder contains documents, not executable server code.
+Storybook is served at `https://copacker-stories-pr-<number>.<subdomain>.workers.dev/` by an assets-only Worker.
+It has no R2, database or secret bindings. Only the fixture build is published; unknown paths return 404, and
+`health.json` reports the deployed commit without caching. Closing the PR deletes the Storybook Worker along with
+the app Worker. The private bucket is never made public. The app retains its isolated workers.dev origin for routing
+and authentication; the `app/` bucket folder contains documents, not executable server code.
 
 The storage adapter prefixes every preview read, write and delete. These folders separate normal app operations,
 not bucket permissions: trusted preview code has the same bucket access as staging. The shared bucket holds only
@@ -79,10 +80,10 @@ Do not provide production or commerce API credentials. Background jobs remain pe
 database/queue: the retained staging and production executors never consume them. Hosted previews cover web,
 authentication, database mutations and documents; full job execution needs the separate Cloudflare executor migration.
 
-The close workflow runs trusted default-branch code on **both merge and close**. It stops the app and unpublishes Storybook,
+The close workflow runs trusted default-branch code on **both merge and close**. It deletes both preview Workers,
 removes the PR's queue and Hyperdrive, deletes only its R2 prefix, and finally removes the Neon branch. It verifies
 absence before reporting success. A partial failure fails the job and can be retried safely; the database remains
-until Cloudflare cleanup succeeds. The shared assets Worker and bucket, staging and production are preserved.
+until Cloudflare cleanup succeeds. The shared bucket, staging and production are preserved.
 
 A six-hour sweep inventories Neon, Workers, Hyperdrive, queues **and R2 files independently**, so an expired Neon
 branch or interrupted deployment cannot hide leftover hosting. It removes only PRs GitHub explicitly reports closed;
@@ -102,11 +103,9 @@ Required repository configuration:
 `CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-staging-private`),
 `subdomain` (the account's workers.dev subdomain), and `caCertificateId` (the uploaded Neon public root CA).
 CI reuses the existing staging bucket and never deletes it. The scoped account token
-needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. Deploying the shared assets Worker with its custom domain also requires the corresponding Workers domain/zone permissions. The secrets JSON contains
+needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. The secrets JSON contains
 exactly `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`, and `TOKEN_ENCRYPTION_KEY`.
 Register the test WorkOS callback/sign-out patterns listed in [domains](domains.md#pull-request-previews).
-
-Deploy and verify the shared assets Worker with `pnpm --filter copacker preview:assets:deploy` before enabling hosted previews. Its dedicated workflow maintains it after changes on main.
 
 Hosted previews are enabled and verified; see [cutover acceptance](specs/platform-migration/acceptance.md).
 When recreating this setup, enable it only after cleanup is on the default branch and staging's R2 files match its

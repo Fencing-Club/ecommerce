@@ -1,18 +1,16 @@
 import { z } from "zod"
 
 export const previewNumber = z.string().regex(/^[1-9]\d*$/)
-export const previewAssetsWorker = "copacker-preview-assets"
-export const previewAssetsHostname = "previews.copacker.ai"
 
 export function previewResources(input: string) {
   const number = previewNumber.parse(input)
   const prefix = `previews/pr-${number}/`
   return {
     app: `copacker-pr-${number}`,
+    stories: `copacker-stories-pr-${number}`,
     queue: `copacker-jobs-pr-${number}`,
     prefix,
-    documentsPrefix: `${prefix}app/`,
-    storiesPrefix: `${prefix}storybook/`
+    documentsPrefix: `${prefix}app/`
   }
 }
 

@@ -2,7 +2,6 @@ import { execFile, execFileSync } from "node:child_process"
 import { mkdtempSync, rmSync, rmdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { setTimeout } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import invariant from "tiny-invariant"
@@ -26,40 +25,18 @@ const object = z.object({
 })
 const cli = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))
 
-// Upload concurrently through the same pinned CLI without logging provider output.
-export async function uploadPreviewFile(config: HostingSettings, key: string, file: string, contentType: string) {
-  invariant(/^previews\/pr-[1-9]\d*\/storybook\//.test(key), "Invalid Storybook upload prefix")
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await promisify(execFile)(
-        process.execPath,
-        [
-          cli,
-          "r2",
-          "objects",
-          "put",
-          key,
-          "--bucket-name",
-          config.bucket,
-          "--file",
-          file,
-          "--content-type",
-          contentType
-        ],
-        {
-          env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
-          timeout: 120000,
-          maxBuffer: 1024 * 1024
-        }
-      )
-      return
-    } catch {
-      if (attempt === 2) {
-        throw new Error("Storybook file upload failed; retry the preview workflow")
-      }
-      // PUT is idempotent for this immutable build key, including a lost successful response.
-      await setTimeout(2000 * (attempt + 1))
-    }
+// Async child processes allow bounded document concurrency without logging provider output.
+export async function cloudflareAsync(config: HostingSettings, args: string[], binary = false) {
+  try {
+    const result = await promisify(execFile)(process.execPath, [cli, ...args], {
+      env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
+      timeout: 120000,
+      maxBuffer: 64 * 1024 * 1024,
+      encoding: binary ? "buffer" : "utf8"
+    })
+    return result.stdout
+  } catch {
+    throw new Error(`Cloudflare ${args.slice(0, 2).join(" ")} failed; retry the preview workflow`)
   }
 }
 
@@ -67,7 +44,7 @@ export async function uploadPreviewFile(config: HostingSettings, key: string, fi
 export function cloudflare(
   config: Pick<HostingSettings, "accountId">,
   args: string[],
-  options: { body?: unknown; binary?: boolean } = {}
+  options: { body?: unknown; binary?: boolean; cwd?: string; timeoutMs?: number } = {}
 ) {
   const directory = options.body === undefined ? undefined : mkdtempSync(path.join(tmpdir(), "copacker-cf-body-"))
   try {
@@ -78,9 +55,10 @@ export function cloudflare(
       args = [...args, "--body", `@${file}`]
     }
     return execFileSync(process.execPath, [cli, ...args], {
+      cwd: options.cwd,
       env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
       stdio: "pipe",
-      timeout: 120000,
+      timeout: options.timeoutMs ?? 120000,
       maxBuffer: 64 * 1024 * 1024,
       ...(options.binary ? {} : { encoding: "utf8" })
     })
@@ -159,7 +137,7 @@ export function hostedPreviewNumbers(inventory: Inventory) {
     ...inventory.queues.map((item) => item.queue_name),
     ...inventory.objects.map((item) => item.key)
   ]) {
-    const match = /^(?:copacker-(?:jobs-)?pr-([1-9]\d*)|previews\/pr-([1-9]\d*)\/.*)$/.exec(name)
+    const match = /^(?:copacker-(?:(?:jobs|stories)-)?pr-([1-9]\d*)|previews\/pr-([1-9]\d*)\/.*)$/.exec(name)
     const number = match?.[1] || match?.[2]
     if (number) {
       numbers.add(number)
@@ -173,19 +151,13 @@ export function removeHostedPreview(config: HostingSettings, input: string) {
   const names = previewResources(number)
   const inventory = previewInventory(config)
   // Stop all writers first. If this fails, preserve files/database rather than race a live preview.
-  for (const item of inventory.workers.filter((entry) => entry.name === names.app)) {
+  const ownedWorkers = new Set([names.app, names.stories])
+  for (const item of inventory.workers.filter((entry) => ownedWorkers.has(entry.name))) {
     cloudflare(config, ["workers", "delete", item.id, "--force"])
   }
   const remaining = pages(config, ["workers", "list"], worker)
-  invariant(!remaining.some((item) => item.name === names.app), "Preview Worker still exists after deletion")
+  invariant(!remaining.some((item) => ownedWorkers.has(item.name)), "Preview Worker still exists after deletion")
   const failures: string[] = []
-  // The shared asset server checks this marker before serving even cached files.
-  const publication = `${names.storiesPrefix}.release.json`
-  if (inventory.objects.some((item) => item.key === publication)) {
-    cloudflare(config, ["r2", "objects", "bulk-delete", "--bucket-name", config.bucket, "--force"], {
-      body: [publication]
-    })
-  }
   function attempt(label: string, remove: () => void) {
     try {
       remove()

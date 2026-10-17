@@ -134,7 +134,7 @@ live integration task; never reuse another project's tunnel.
 
 Trusted same-repository PRs receive an isolated Neon branch copied from staging, with the PR's migrations applied.
 See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets. Cloudflare hosting uses
-`copacker-pr-<number>.hoa-preview.workers.dev` and `previews.copacker.ai/pr-<number>/storybook/`;
+`copacker-pr-<number>.hoa-preview.workers.dev` and `copacker-stories-pr-<number>.hoa-preview.workers.dev`;
 documents use only that PR's prefix in private R2. No new Railway preview infrastructure is created.
 
 Automatic PR environment creation is disabled in both Copacker Railway projects. Existing fixture-only Storybook
