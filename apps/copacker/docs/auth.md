@@ -33,13 +33,13 @@ executing an operation. Start serves the main application in this branch. See th
 
 A person belongs to one WorkOS organization per workspace, so WorkOS asks which one a session is for
 (`organization_selection_required`). Copacker picks its workspaces itself: the session takes the workspace this
-browser had open, or else the first. `next` survives every step, and only ever points at a Copacker page
-(`returnPath`).
+browser had open. If that selection is unavailable, recovery asks which workspace to open (or persists the only
+remaining one) before opening its home. Sign-in's `next` only points at a Copacker page (`returnPath`).
 
 Workspace lookup and permissions are independent of the web framework: `src/server/workspace-session.ts` resolves the
 person's current database memberships, and `src/server/authorization.ts` checks role, page and price grants. The active
-workspace cookie can choose only an existing membership. Missing, stale or foreign selections fall back to the oldest
-authorized workspace (ID breaks creation-time ties); no memberships sends the person to onboarding. The workspace
+workspace cookie can choose only an existing membership. Missing, stale or foreign selections require recovery; no
+memberships sends the person to onboarding. A stale form never falls back to another company. The workspace
 switcher receives only ID, name and kind. Full workspace settings stay on the server and page loaders return explicit
 rendering data. Start loaders and server functions call these authorization helpers for every request; browser caches
 never authorize an operation. See [migration evidence](specs/platform-migration/compatibility.md).
@@ -145,3 +145,14 @@ Test inboxes can't receive codes. WorkOS records each code it sends: list the en
 `email_verification.created` events, then `getEmailVerification(id)` returns the code (and `password_reset.created`
 with `getPasswordReset(id)`, the reset token). Use `example.net` addresses: staging's test SSO organization claims
 `example.com`, which answers every password sign-in with `sso_required`.
+
+## Recovering an unavailable workspace
+
+`/workspaces` requires sign-in but not an active workspace. With one membership, `/workspaces/recover` rechecks it,
+persists the workspace cookie, and opens home. With several memberships, the picker asks which workspace to open.
+With none, onboarding opens. The switch action independently verifies membership before writing the cookie.
+
+Open tabs check workspace availability on navigation and focus. The outer error page checks even when the shell
+cannot render, and both error pages offer Switch workspace. Page and form requests redirect to recovery; API-mode
+requests retain their 401/403 contract. The browser follows recovery with a fresh document, without replaying the
+original mutation or retaining another workspace's cached data. Expired sign-in sessions return through login.

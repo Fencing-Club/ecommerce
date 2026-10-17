@@ -4,6 +4,7 @@ import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { WorkspaceWatch } from "@/components/workspace-watch"
 // Outside the app's layouts, so it brings the app's stylesheet itself; the reset comes first.
 import "@/styles/global.css"
 import "./globals.css"
@@ -15,6 +16,7 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
   const t = useTranslations("common.pages.error")
   return (
     <div className="flex min-h-svh flex-col">
+      <WorkspaceWatch />
       <header className="flex h-14 shrink-0 items-center border-b px-4">
         <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark flat />
@@ -38,6 +40,13 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
                 {t("goToOverview")}
               </Button>
             </div>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<a href="/workspaces" aria-label={t("switchWorkspace")} />}
+            >
+              {t("switchWorkspace")}
+            </Button>
           </EmptyContent>
         </Empty>
       </main>

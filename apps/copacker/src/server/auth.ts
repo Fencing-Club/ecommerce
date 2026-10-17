@@ -7,7 +7,7 @@ import type { Permissions } from "@/lib/access"
 import { can } from "@/lib/access"
 import { authentication } from "./auth-session"
 import { appUrl, returnPath } from "./security"
-import { workspaceCookie, workspaceSession } from "./workspace-session"
+import { workspaceCookie, workspaceRecoveryPath, workspaceSession } from "./workspace-session"
 
 export function setWorkspace(id: string) {
   setCookie(workspaceCookie, id, { httpOnly: true, secure: appUrl().startsWith("https:"), sameSite: "lax", path: "/" })
@@ -38,12 +38,13 @@ export async function session(mode: "page" | "api" = "page") {
   if (!user) {
     throw new ApiSessionError(401)
   }
-  const current = await workspaceSession(user, getCookie(workspaceCookie))
+  const active = getCookie(workspaceCookie)
+  const current = await workspaceSession(user, active)
   if (!current) {
     if (mode === "api") {
       throw new ApiSessionError(403)
     }
-    throw redirect({ href: "/onboarding" })
+    throw redirect({ href: await workspaceRecoveryPath(user.id, active) })
   }
   return current
 }

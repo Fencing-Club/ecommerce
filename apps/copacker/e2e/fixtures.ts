@@ -26,9 +26,21 @@ export function unique(prefix: string) {
   return `${prefix} ${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
 
-// Opens the top bar's workspace menu and switches to the role's workspace, which reloads the portal.
+// Chooses the role's workspace from the initial picker or the portal menu.
 export async function switchWorkspace(page: Page, role: Role) {
-  await expect(page.locator("[data-slot=sidebar-wrapper]")).toHaveAttribute("data-portal-hydrated", "true")
+  const picker = page.getByRole("list", { name: "Choose a workspace" })
+  const portal = page.locator("[data-slot=sidebar-wrapper]")
+  await expect(picker.or(portal)).toBeVisible()
+  if (await picker.isVisible()) {
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true")
+    await picker.getByRole("button", { name: new RegExp(workspaces[role]) }).click()
+    await expect(portal).toHaveAttribute("data-portal-hydrated", "true")
+    await expect(page.getByRole("button", { name: /, switch workspace$/ })).toHaveAccessibleName(
+      `${workspaces[role]}, switch workspace`
+    )
+    return
+  }
+  await expect(portal).toHaveAttribute("data-portal-hydrated", "true")
   const switcher = page.getByRole("button", { name: /, switch workspace$/ })
   await switcher.click()
   await Promise.all([

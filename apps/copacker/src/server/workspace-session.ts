@@ -15,13 +15,9 @@ type Executor = Database | Transaction
 // Resolve from current database memberships on every operation. Framework request helpers and redirect decisions
 // belong to the caller, so Start and isolated database tests use exactly the same authorization query.
 export async function workspaceSession(user: Identity, active: string | undefined, executor: Executor = db()) {
-  const available = await executor
-    .select({ org: organizations, member: memberships })
-    .from(memberships)
-    .innerJoin(organizations, eq(organizations.id, memberships.orgId))
-    .where(eq(memberships.userId, user.id))
-    .orderBy(asc(organizations.createdAt), asc(organizations.id))
-  const chosen = available.find((row) => row.org.id === active) ?? available[0]
+  const available = await workspaceMemberships(user.id, executor)
+  // Never execute a request for a different company when its saved selection is no longer available.
+  const chosen = available.find((row) => row.org.id === active)
   if (!chosen) {
     return null
   }
@@ -39,6 +35,23 @@ export async function workspaceSession(user: Identity, active: string | undefine
     access: chosen.member.access,
     workspaces: available.map(({ org }) => ({ id: org.id, name: org.name, kind: org.kind }))
   }
+}
+
+// Available without an active workspace so recovery and switching remain usable after access is lost.
+export async function workspaceMemberships(userId: string, executor: Executor = db()) {
+  return executor
+    .select({ org: organizations, member: memberships })
+    .from(memberships)
+    .innerJoin(organizations, eq(organizations.id, memberships.orgId))
+    .where(eq(memberships.userId, userId))
+    .orderBy(asc(organizations.createdAt), asc(organizations.id))
+}
+
+export async function workspaceRecoveryPath(userId: string, active: string | undefined) {
+  if (!(await workspaceMemberships(userId)).length) {
+    return "/onboarding"
+  }
+  return active ? "/workspaces?unavailable=1" : "/workspaces"
 }
 
 export type Session = NonNullable<Awaited<ReturnType<typeof workspaceSession>>>

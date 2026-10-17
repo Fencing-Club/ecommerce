@@ -18,6 +18,7 @@ export const Default = meta.story({
     await expect(canvas.getByRole("heading", { level: 1, name: "This page didn’t load" })).toBeVisible()
     await expect(canvas.getByText("Your data hasn’t changed")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Go to Overview" })).toHaveAttribute("href", "/overview")
+    await expect(canvas.getByRole("button", { name: "Switch workspace" })).toHaveAttribute("href", "/workspaces")
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }))
     await expect(args.retry).toHaveBeenCalledOnce()
   }
@@ -27,6 +28,7 @@ export const Dark = meta.story({
   globals: { theme: "dark" },
   play: async ({ canvas, args }) => {
     await expect(document.documentElement).toHaveClass("dark")
+    await expect(canvas.getByRole("button", { name: "Switch workspace" })).toHaveAttribute("href", "/workspaces")
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }))
     await expect(args.retry).toHaveBeenCalledOnce()
   }

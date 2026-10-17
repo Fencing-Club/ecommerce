@@ -38,6 +38,31 @@ export function initials(name: string) {
 const tile = "flex size-7 shrink-0 items-center justify-center rounded-[7px]"
 const item = "gap-2.5 rounded-[6px] px-2 py-1.5"
 
+// The same identity in the sidebar menu and in the recovery picker.
+export function WorkspaceIdentity({ workspace }: { workspace: Workspace }) {
+  const t = useTranslations("navigation.workspaceMenu")
+  return (
+    <>
+      <span
+        aria-hidden
+        className={cn(
+          tile,
+          "text-xs font-semibold",
+          isKind(workspace.kind) ? kinds[workspace.kind] : "bg-muted text-muted-foreground"
+        )}
+      >
+        {initials(workspace.name)}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-px text-start">
+        <span className="truncate font-medium">{workspace.name}</span>
+        {isKind(workspace.kind) && (
+          <span className="truncate text-xs text-muted-foreground">{t(`kinds.${workspace.kind}`)}</span>
+        )}
+      </span>
+    </>
+  )
+}
+
 // The workspace switcher at the top of the sidebar: the open workspace's kind tile and its name. Collapsed to the rail,
 // only its tile. Copacker's own mark and name are in the top bar. The trigger doesn't name the kind, since most people
 // have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs.
@@ -57,7 +82,7 @@ export function WorkspaceMenu({
   const current = open?.name ?? fallbackName
 
   async function switchTo(id: string) {
-    // Persist even the displayed default: without a workspace cookie, later requests can choose another workspace.
+    // Persist the selection before opening a fresh document and discarding workspace-scoped caches.
     await run({ action: "workspace.switch", data: { id } }).unwrap()
     announceWorkspace(id)
     // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
@@ -93,22 +118,7 @@ export function WorkspaceMenu({
             onClick={() => void switchTo(workspace.id)}
             className={cn(item, workspace.id === active && "bg-muted")}
           >
-            <span
-              aria-hidden
-              className={cn(
-                tile,
-                "text-xs font-semibold",
-                isKind(workspace.kind) ? kinds[workspace.kind] : "bg-muted text-muted-foreground"
-              )}
-            >
-              {initials(workspace.name)}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-px">
-              <span className="truncate font-medium">{workspace.name}</span>
-              {isKind(workspace.kind) && (
-                <span className="truncate text-xs text-muted-foreground">{t(`kinds.${workspace.kind}`)}</span>
-              )}
-            </span>
+            <WorkspaceIdentity workspace={workspace} />
             {workspace.id === active && <Check className="ms-auto text-foreground" aria-label={t("current")} />}
           </DropdownMenuItem>
         ))}

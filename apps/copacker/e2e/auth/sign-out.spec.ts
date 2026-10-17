@@ -1,5 +1,5 @@
 import { e2eEmail } from "../../scripts/e2e-user"
-import { expect, signIn, test } from "../fixtures"
+import { expect, signIn, switchWorkspace, test } from "../fixtures"
 
 // Its own browser, signed in afresh, so signing out doesn't end a session the role pages carry forward.
 test("signing out from the user menu ends the session", async ({ browser, baseURL }) => {
@@ -8,6 +8,7 @@ test("signing out from the user menu ends the session", async ({ browser, baseUR
   try {
     const page = await context.newPage()
     await signIn(page)
+    await switchWorkspace(page, "buyer")
     await expect(page.getByRole("button", { name: /, switch workspace$/ })).toBeVisible()
 
     await page.getByRole("button", { name: /, account$/ }).click()

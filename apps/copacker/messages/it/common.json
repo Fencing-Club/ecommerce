@@ -150,7 +150,8 @@
       "didntLoad": "Questa pagina non si è caricata",
       "dataUnchanged": "I tuoi dati non sono cambiati",
       "tryAgain": "Riprova",
-      "goToOverview": "Vai alla Panoramica"
+      "goToOverview": "Vai alla Panoramica",
+      "switchWorkspace": "Cambia spazio di lavoro"
     },
     "notFound": {
       "title": "Pagina non trovata",

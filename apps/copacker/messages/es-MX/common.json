@@ -150,7 +150,8 @@
       "didntLoad": "Esta página no cargó",
       "dataUnchanged": "Tus datos no cambiaron",
       "tryAgain": "Intentar de nuevo",
-      "goToOverview": "Ir a Resumen"
+      "goToOverview": "Ir a Resumen",
+      "switchWorkspace": "Cambiar de espacio de trabajo"
     },
     "notFound": {
       "title": "Página no encontrada",

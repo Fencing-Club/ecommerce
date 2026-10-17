@@ -22,6 +22,7 @@ export const Default = meta.story({
     // The shell stays around it.
     await expect(canvas.getByRole("link", { name: "Purchase orders" })).toHaveAttribute("data-active")
     await expect(canvas.getByRole("button", { name: "Go to Overview" })).toHaveAttribute("href", "/overview")
+    await expect(canvas.getByRole("button", { name: "Switch workspace" })).toHaveAttribute("href", "/workspaces")
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }))
     await expect(args.retry).toHaveBeenCalledOnce()
   }
@@ -31,6 +32,7 @@ export const Supplier = meta.story({
   ...failed("/customers", "supplier"),
   play: async ({ canvas, args }) => {
     await expect(canvas.getByRole("link", { name: "Customers" })).toHaveAttribute("data-active")
+    await expect(canvas.getByRole("button", { name: "Switch workspace" })).toHaveAttribute("href", "/workspaces")
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }))
     await expect(args.retry).toHaveBeenCalledOnce()
   }
