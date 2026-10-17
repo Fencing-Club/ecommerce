@@ -20,6 +20,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1
+      - run: pnpm install --frozen-lockfile
       - name: Inspect existing signed cache artifact without exposing credentials
         shell: bash
         run: |
@@ -74,6 +81,7 @@ jobs:
             console.log(JSON.stringify({ roundtrip: true, size, put: put.status, get: get.status, bytesMatch: payload.equals(downloaded), tagMatches: sentTag === get.headers.get('x-artifact-tag') }));
           }
           NODE
+      - run: node .github/scripts/cache-diagnostic.mjs
   # Which apps this change affects (.github/scripts/affected.mjs), so a change to one app, a package it doesn't use or
   # the docs skips another app's tests and deploy. A pull request is compared with its target branch; a push to main
   # with the commit staging serves, so a change an earlier failed run didn't deploy still counts.
