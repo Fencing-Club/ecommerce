@@ -93,7 +93,7 @@ These tags were written and read back on October 16, 2026, preserving existing t
 | `copacker-media` | production | marketing | persistent |
 | `copacker-staging` | staging | web | persistent |
 | `copacker-stories-staging` | staging | storybook | persistent |
-| `copacker-preview-assets` | preview | storybook | shared |
+| `copacker-stories-pr-<number>` | preview | storybook | ephemeral |
 | `copacker-scheduler-staging` | staging | scheduler | persistent |
 | `copacker-scheduler-production` | production | scheduler | persistent |
 | `copacker-start-compatibility` | staging | qualification | temporary |
@@ -111,7 +111,7 @@ success. Failed reads, concurrent edits or failed verification fail the apply; r
 stays in the process environment, outside state and command arguments. Other persistent resources retain their current
 owners and tags. Native provider support should replace this adapter when available.
 
-Preview deployment uses the same reconciler for its app Worker and Queue before publishing Storybook or reporting success.
+Preview deployment uses the same reconciler for both its app and Storybook Workers and its Queue before reporting success.
 It sets `app=copacker`, `environment=preview`, `lifecycle=ephemeral`, `pr=<number>`, and `component=web` or `jobs` on every
 deployment. The preview token must have Tag Read and Tag Write; failures block successful publication rather than silently
 skipping tags. Hyperdrive is not a supported generic tag resource and folders are object prefixes, not taggable resources.

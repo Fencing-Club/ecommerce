@@ -233,7 +233,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: preview-timings
+          name: preview-timings-${{ github.run_attempt }}
           path: apps/copacker/.cloudflare/preview-timings.json
           include-hidden-files: true
           if-no-files-found: ignore

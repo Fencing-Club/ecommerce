@@ -1,91 +1,17 @@
 import { execFileSync } from "node:child_process"
-import { createHash } from "node:crypto"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { Client } from "pg"
 import invariant from "tiny-invariant"
 import { z } from "zod"
-import { databaseConfig } from "../src/db/connection"
-import { storageReferenceQuery } from "../src/db/storage-references"
 import { requiredSecrets } from "./cloudflare-environment"
-import {
-  cloudflare,
-  cloudflareJson,
-  previewInventory,
-  previewObjects,
-  provisionHostedPreview,
-  type HostingSettings
-} from "./preview-cloudflare"
-import { previewAssetsHostname, previewResources } from "./preview-config"
+import { cloudflareJson, previewInventory, provisionHostedPreview, type HostingSettings } from "./preview-cloudflare"
+import { previewResources } from "./preview-config"
+import { copyPreviewDocuments } from "./preview-documents"
 import { publishPreviewStories } from "./preview-stories"
 import { PreviewTimings } from "./preview-timings"
 import { reconcileResourceTags } from "./resource-tags"
-
-function fingerprint(bytes: Buffer) {
-  return createHash("sha256").update(bytes).digest("hex")
-}
-
-// Copy the referenced staging documents once. Further pushes preserve the PR's own document edits.
-async function copyDocuments(
-  config: HostingSettings,
-  number: string,
-  databaseUrl: URL,
-  folder: string,
-  timings: PreviewTimings
-) {
-  const prefix = previewResources(number).documentsPrefix
-  const marker = `${prefix}.preview-ready`
-  const existing = new Set(previewObjects(config, config.bucket, prefix).map((item) => item.key))
-  if (existing.has(marker)) {
-    timings.count({ documentsReused: 1, documentFiles: 0, documentBytes: 0 })
-    return
-  }
-  const client = new Client(databaseConfig("migration", { ...process.env, DIRECT_DATABASE_URL: databaseUrl.href }))
-  await client.connect()
-  let keys: string[]
-  try {
-    keys = z
-      .array(z.object({ key: z.string().min(1) }))
-      .parse((await client.query(storageReferenceQuery)).rows)
-      .map((item) => item.key)
-  } finally {
-    await client.end()
-  }
-  const source = new Map(previewObjects(config, config.bucket, "").map((item) => [item.key, item]))
-  invariant(
-    keys.every((key) => source.has(key)),
-    "Referenced staging files are missing from R2; synchronize staging storage before deploying previews"
-  )
-  const file = path.join(folder, "document")
-  let totalBytes = 0
-  for (const key of new Set(keys)) {
-    const bytes = Buffer.from(
-      cloudflare(config, ["r2", "objects", "get", key, "--bucket-name", config.bucket], { binary: true })
-    )
-    writeFileSync(file, bytes, { mode: 0o600 })
-    cloudflare(config, [
-      "r2",
-      "objects",
-      "put",
-      `${prefix}${key}`,
-      "--bucket-name",
-      config.bucket,
-      "--file",
-      file,
-      "--content-type",
-      source.get(key)?.http_metadata?.contentType || "application/octet-stream"
-    ])
-    const copied = Buffer.from(
-      cloudflare(config, ["r2", "objects", "get", `${prefix}${key}`, "--bucket-name", config.bucket], { binary: true })
-    )
-    invariant(fingerprint(copied) === fingerprint(bytes), "Preview file copy did not match staging")
-    totalBytes += bytes.length
-  }
-  cloudflare(config, ["r2", "objects", "put", marker, "--bucket-name", config.bucket, "--body", "ready"])
-  timings.count({ documentsReused: 0, documentFiles: new Set(keys).size, documentBytes: totalBytes })
-}
 
 export async function deployHostedPreview(
   config: HostingSettings,
@@ -115,10 +41,10 @@ export async function deployHostedPreview(
   )
   const folder = mkdtempSync(path.join(tmpdir(), "copacker-preview-"))
   const app = `https://${names.app}.${config.subdomain}.workers.dev`
-  const stories = `https://${previewAssetsHostname}/pr-${number}/storybook/`
+  const stories = `https://${names.stories}.${config.subdomain}.workers.dev/`
   try {
     const hyperdrive = await timings.measure("resources", () => provisionHostedPreview(config, number, databaseUrl))
-    await timings.measure("documents", () => copyDocuments(config, number, databaseUrl, folder, timings))
+    await timings.measure("documents", () => copyPreviewDocuments(config, number, databaseUrl, folder, timings))
     const secretFile = path.join(folder, "secrets.json")
     writeFileSync(secretFile, JSON.stringify(secrets), { mode: 0o600 })
     const environment = {
@@ -170,19 +96,21 @@ export async function deployHostedPreview(
     ]
     await timings.measure("app-validate", () => run([...deploy, "--dry-run", "--secrets-file", secretFile]))
     await timings.measure("app-deploy", () => run([...deploy, "--secrets-file", secretFile]))
-    await timings.measure("resource-tags", () => {
-      const inventory = previewInventory(config)
-      const worker = inventory.workers.find((item) => item.name === names.app)
-      const queue = inventory.queues.find((item) => item.queue_name === names.queue)
-      invariant(worker && queue, "Preview resources missing before tagging")
-      const tags = { app: "copacker", environment: "preview", lifecycle: "ephemeral", pr: number }
-      const tag = (args: string[], body?: unknown) => cloudflareJson(config, args, body)
-      reconcileResourceTags({ type: "worker", id: worker.id, tags: { ...tags, component: "web" } }, tag)
-      reconcileResourceTags({ type: "queue", id: queue.queue_id, tags: { ...tags, component: "jobs" } }, tag)
-    })
     await timings.measure("storybook-publish", () =>
       publishPreviewStories(config, number, sha, path.join(root, "storybook-static"), timings)
     )
+    await timings.measure("resource-tags", () => {
+      const inventory = previewInventory(config)
+      const worker = inventory.workers.find((item) => item.name === names.app)
+      const storyWorker = inventory.workers.find((item) => item.name === names.stories)
+      const queue = inventory.queues.find((item) => item.queue_name === names.queue)
+      invariant(worker && storyWorker && queue, "Preview resources missing before tagging")
+      const tags = { app: "copacker", environment: "preview", lifecycle: "ephemeral", pr: number }
+      const tag = (args: string[], body?: unknown) => cloudflareJson(config, args, body)
+      reconcileResourceTags({ type: "worker", id: worker.id, tags: { ...tags, component: "web" } }, tag)
+      reconcileResourceTags({ type: "worker", id: storyWorker.id, tags: { ...tags, component: "storybook" } }, tag)
+      reconcileResourceTags({ type: "queue", id: queue.queue_id, tags: { ...tags, component: "jobs" } }, tag)
+    })
     for (const [phase, url] of [
       ["app-health", `${app}/api/health`],
       ["storybook-health", `${stories}health.json`]
