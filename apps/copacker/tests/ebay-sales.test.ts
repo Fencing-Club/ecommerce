@@ -17,7 +17,6 @@ vi.mock("../src/server/connections", async (original) => ({
   ebayFor: async () => ({ request: ebay.request })
 }))
 import { orderFees, salesByDay, salesByItem } from "../src/server/overview-sales"
-import { runNextJob } from "../src/server/queue"
 import { ebayLocation } from "../src/server/restock-page"
 import { restockPlan } from "../src/server/restock-plan"
 import { attributeEbaySales } from "../src/server/sales-attribution"
@@ -31,6 +30,7 @@ import {
   summarizeSalesOrder
 } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
+import { drainSales } from "./drain-sales"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
@@ -91,9 +91,7 @@ beforeEach(async () => {
 
 async function syncEbay() {
   expect(await requestSalesSync({ id: orgId, kind: "buyer" }, "ebay")).toEqual({ status: "queued" })
-  while (await runNextJob()) {
-    // Runs the sync and anything it queues.
-  }
+  await drainSales()
 }
 
 describe("eBay order sync", () => {

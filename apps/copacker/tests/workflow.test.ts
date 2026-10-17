@@ -201,6 +201,7 @@ import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { profileFor } from "../src/server/workspace-session"
+import { drainSales } from "./drain-sales"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
@@ -4614,7 +4615,7 @@ describe("stored sales orders", () => {
     expect(await requestSalesSync(buyer.org, "amazon")).toEqual({ status: "queued" })
     expect(await requestSalesSync(buyer.org, "amazon")).toEqual({ status: "queued" })
     expect(await database.select().from(tables.jobs)).toHaveLength(1)
-    await runNextJob()
+    await drainSales()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "idle", externalAccountId: "A123456789", errorCode: null })
     expect(await salesSyncStatus(buyerId)).toMatchObject([{ source: "amazon", recent: { orders: 1, units: 2 } }])
@@ -4648,7 +4649,7 @@ describe("stored sales orders", () => {
   it("leaves out Shopify orders with an excluded tag, such as Shopify's copies of Amazon orders", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2)])
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const shop = "test.myshopify.com"
     await database
       .insert(tables.connections)
@@ -4803,13 +4804,13 @@ describe("stored sales orders", () => {
   it("drops orders that disappear from the source when the period is synced again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     amazonOrders([amazonOrder("111-2", daysAgo(100), 3)])
     const orderReads = () =>
       provider.api.request.mock.calls.filter((call) => String(call[1]).startsWith("/orders/")).length
     const before = orderReads()
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual(["111-2"])
     // Only the recent periods are read again.
     expect(orderReads() - before).toBe(3)
@@ -4828,16 +4829,16 @@ describe("stored sales orders", () => {
     })
     provider.shopifyFor.mockResolvedValue({ graphql })
     await requestSalesSync(buyer.org, "shopify")
-    await runNextJob()
+    await drainSales()
     const [sync] = await database
       .select()
       .from(tables.salesSyncs)
       .where(and(eq(tables.salesSyncs.orgId, buyerId), eq(tables.salesSyncs.source, "shopify")))
     expect(sync?.status).toBe("idle")
-    // 60 days of history (no read_all_orders) is five 14-day periods. The bulk export gets no answer here, so each
-    // period is read directly, each with its own client; financial evidence is queued independently.
-    expect(graphql).toHaveBeenCalledTimes(6)
-    expect(provider.shopifyFor).toHaveBeenCalledTimes(6)
+    // 60 days of history (no read_all_orders) is five 14-day periods, each with its own client.
+    // Financial evidence is queued independently.
+    expect(graphql).toHaveBeenCalledTimes(5)
+    expect(provider.shopifyFor).toHaveBeenCalledTimes(5)
     // Without the payouts permission, labels and Shopify charges wait for the store to reconnect.
     expect(sync?.feesErrorCode).toBe("reconnect")
   })
@@ -4874,9 +4875,9 @@ describe("stored sales orders", () => {
       }
     })
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const [paused] = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "sales"))
-    expect(paused).toMatchObject({ status: "pending", attempts: 0 })
+    expect(paused).toMatchObject({ status: "pending", attempts: 1 })
     expect(paused!.runAt.getTime()).toBeGreaterThan(Date.now() + 170000)
     const resume = (paused!.payload as { resume: { remaining: { from: string }[]; covered: unknown } }).resume
     expect(resume.remaining[0]!.from).toBe(reads[2])
@@ -4887,7 +4888,7 @@ describe("stored sales orders", () => {
     expect(waiting?.dataVersion).toBe(amazonDataVersion)
 
     await database.update(tables.jobs).set({ runAt: new Date() }).where(eq(tables.jobs.id, paused!.id))
-    await runNextJob()
+    await drainSales()
     // The two periods read before the pause aren't read again.
     expect(reads.slice(3, 4)).toEqual([reads[2]])
     expect(reads.filter((from) => from === reads[0])).toHaveLength(1)
@@ -4929,7 +4930,7 @@ describe("stored sales orders", () => {
       }
     })
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
     expect(sync).toMatchObject({ status: "idle", dataVersion: amazonDataVersion, feesErrorCode: null })
     expect(sync?.feesCoveredTo).not.toBeNull()
@@ -4957,7 +4958,7 @@ describe("stored sales orders", () => {
       }
     )
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     expect(await database.select().from(tables.amazonReimbursements)).toMatchObject([
       { reimbursementId: "R1", amountTotal: "6.246912", externalAccountId: "A123456789" }
     ])
@@ -4980,7 +4981,7 @@ describe("stored sales orders", () => {
       }
     )
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     expect(await database.select().from(tables.amazonInventoryMovements)).toMatchObject([
       { eventDay, quantity: -3, referenceId: "REF1", externalAccountId: "A123456789" }
     ])
@@ -5002,7 +5003,7 @@ describe("stored sales orders", () => {
       return null
     })
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     expect(await database.select().from(tables.amazonStorageFees)).toHaveLength(24)
     const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
     expect(state?.status).toBe("idle")
@@ -5023,7 +5024,7 @@ describe("stored sales orders", () => {
       return null
     })
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const state = (await salesSyncStatus(buyerId)).find((source) => source.source === "amazon")
     expect(state?.status).toBe("idle")
     expect(state?.removals?.orders.windows.every((window) => window.complete)).toBe(true)
@@ -5048,7 +5049,7 @@ describe("stored sales orders", () => {
       return [["Date", "FNSKU", "MSKU", "Disposition", "Ending Warehouse Balance"].join("\t"), ...rows].join("\n")
     })
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ stockErrorCode: null, stockCoveredTo: new Date(today) })
     const rows = await database.select().from(tables.stockDays)
@@ -5102,7 +5103,7 @@ describe("stored sales orders", () => {
   it("records a failed sync and keeps the orders already copied", async () => {
     provider.api.request.mockRejectedValue(new Error("private provider text"))
     await requestSalesSync(buyer.org, "amazon")
-    await runNextJob()
+    await drainSales()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "failed", errorCode: "refresh_failed", coveredTo: null })
     await expect(requestSalesSync(supplier.org, "amazon")).rejects.toThrow("buyer workspace")
