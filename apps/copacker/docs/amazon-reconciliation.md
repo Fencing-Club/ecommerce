@@ -48,9 +48,14 @@ to financial postings. Multiple source records may point to the same posting wit
 
 ## Coverage and limits
 
+Financial searches filter by the current evidence page's exact order, SKU and ASIN identifiers before applying the
+5,000-posting limit. Explicit order references rank ahead of product-only candidates. Unrelated recent postings no
+longer hide historical matches. Marketplace/account isolation and search truncation remain explicit; candidates
+still require source-specific allocation checks and are not additional costs.
+
 Report status/coverage intersecting the requested period and the financial sync's successful bounds/error/status accompany
-the result. Empty report coverage or zero rows does not establish zero cost. The candidate search scans the latest 5,000
-stored account postings across dates to allow late postings; a `truncated` flag identifies excluded older postings.
+the result. Empty report coverage or zero rows does not establish zero cost. Candidates can span posting dates to allow late postings; a `truncated` flag identifies excluded candidates.
+The existing `amazon_transaction_posted` index begins with workspace and external account, supporting the search scope.
 Only 20 candidates per source row are returned, with the full count within that search. Missing candidates never prove
 missing recovery. Review the bounds and truncation before drawing conclusions. Live-account validation remains pending.
 

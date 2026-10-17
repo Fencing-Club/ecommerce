@@ -198,6 +198,33 @@ describe("Amazon storage acquisition", () => {
     await expect(sync("monthly")).rejects.toThrow("Lease lost")
     expect(await database.select().from(tables.amazonStorageFees)).toEqual([])
   })
+  it("resumes untouched history before retrying failures or refreshing covered months", async () => {
+    report.mockResolvedValueOnce(monthlyStorageReport([{}]))
+    report.mockRejectedValueOnce(new ProviderError(429, null, "throttled"))
+    await sync("monthly")
+    expect(report).toHaveBeenCalledTimes(2)
+    report.mockClear()
+    report.mockRejectedValueOnce(new ProviderError(429, null, "throttled"))
+    await sync("monthly")
+    expect(report.mock.calls[0]?.[0].dataStartTime).toBe("2026-07-01T00:00:00.000Z")
+    expect((await status("monthly")).windows[0]).toMatchObject({ complete: true, rows: 1 })
+    report.mockClear()
+    report.mockResolvedValue(monthlyStorageReport())
+    await sync("monthly")
+    const starts = report.mock.calls.map(([request]) => request.dataStartTime.slice(0, 7))
+    expect(starts.slice(0, 9)).toEqual([
+      "2026-06",
+      "2026-05",
+      "2026-04",
+      "2026-03",
+      "2026-02",
+      "2026-01",
+      "2025-12",
+      "2025-11",
+      "2025-10"
+    ])
+    expect(starts.slice(9)).toEqual(["2026-08", "2026-07", "2026-09"])
+  })
   it("records access denial once per source without claiming zero costs", async () => {
     report.mockRejectedValue(new ProviderError(403, null, "denied"))
     await sync("aged")

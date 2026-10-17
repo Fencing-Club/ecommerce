@@ -65,7 +65,7 @@ const reportResponse = (status = "COMPLETED") =>
       }
     ]
   })
-const reportRow = (cost: number, product = "SPONSORED_PRODUCTS") => ({
+const reportRow = (cost: number, product = "Sponsored Products") => ({
   "date.value": "2026-10-12",
   "campaign.id": "1",
   "campaign.country": "US",
@@ -266,6 +266,15 @@ describe("Amazon Ads authorization and transport", () => {
     ])
     expect(fetchMock.mock.calls[0]![1]!.headers).toBeUndefined()
     await expect(downloadAdsReport("https://example.com/report")).rejects.toThrow("Unexpected")
+  })
+  it.each([
+    ["Sponsored Products", "SPONSORED_PRODUCTS"],
+    ["Sponsored Brands", "SPONSORED_BRANDS"],
+    ["Sponsored Display", "SPONSORED_DISPLAY"],
+    ["Amazon DSP", "Amazon DSP"]
+  ])("normalizes the report label %s without widening supported scope", async (label, product) => {
+    fetchMock.mockResolvedValue(Response.json([reportRow(1.25, label)]))
+    expect((await downloadAdsReport("https://reports.s3.amazonaws.com/report"))[0]?.product).toBe(product)
   })
   it("scopes current API reports by account, country and sponsored ad products", async () => {
     fetchMock.mockResolvedValue(reportResponse("PENDING"))

@@ -24,6 +24,16 @@ const aged = {
   "amount-charged": "-0.123456789"
 }
 describe("Amazon storage fee reports", () => {
+  it.each([
+    ["8.0E-4", "0.00080"],
+    ["-1.234567890123456789e+2", "-123.4567890123456789"],
+    ["1e3", "1000"],
+    ["1E-9", "0.000000001"]
+  ])("expands Amazon scientific notation %s without losing digits", (amount, expected) => {
+    const [row] = parseMonthlyStorageFees(report({ ...monthly, estimated_monthly_storage_fee: amount }))
+    expect(row?.amount).toBe(expected)
+    expect(row?.data.estimated_monthly_storage_fee).toBe(amount)
+  })
   it("preserves exact estimates, fractional averages and raw components without guessing SKU or adding costs", () => {
     const [row] = parseMonthlyStorageFees(
       report({
@@ -70,7 +80,9 @@ describe("Amazon storage fee reports", () => {
     { month_of_charge: "09/2026" },
     { estimated_monthly_storage_fee: "1,000" },
     { currency: "usd" },
-    { average_quantity_on_hand: "NaN" }
+    { average_quantity_on_hand: "NaN" },
+    { estimated_monthly_storage_fee: "1e999999" },
+    { estimated_monthly_storage_fee: "1e" }
   ])("rejects malformed monthly values %j", (override) => {
     expect(() => parseMonthlyStorageFees(report({ ...monthly, ...override }))).toThrow(/./)
   })

@@ -72,11 +72,36 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         sql`select * from (${sources[input.source]}) evidence where "occurredAt">=${`${input.from}T00:00:00Z`}::timestamptz and "occurredAt"<${`${input.to}T00:00:00Z`}::timestamptz order by "occurredAt" desc,id limit ${pageSize + 1} offset ${input.page * pageSize}`
       )
       const rows = z.array(evidence).parse(result.rows)
+      const pageRows = rows.slice(0, pageSize)
+      const identifiers = (key: "orderId" | "sku" | "asin") => [
+        ...new Set(pageRows.map((row) => row[key]).filter((value) => value !== null))
+      ]
+      const orders = sql.param(identifiers("orderId"))
+      const orderMatch = sql`(${amazonTransactions.orderId}=any(${orders}::text[]) or exists (
+        select 1 from jsonb_array_elements(case when jsonb_typeof(${amazonTransactions.data}->'relatedIdentifiers')='array' then ${amazonTransactions.data}->'relatedIdentifiers' else '[]'::jsonb end) ref
+        where ref->>'relatedIdentifierName'='ORDER_ID' and ref->>'relatedIdentifierValue'=any(${orders}::text[])
+      ))`
+      // Filter before bounding the search: recent unrelated postings must not hide historical order evidence.
+      const productMatch = sql`(
+        jsonb_path_query_array(${amazonTransactions.data}, '$.items[*].contexts[*] ? (@.contextType == "ProductContext").sku') ?| ${sql.param(identifiers("sku"))}::text[]
+        or jsonb_path_query_array(${amazonTransactions.data}, '$.items[*].contexts[*] ? (@.contextType == "ProductContext").asin') ?| ${sql.param(identifiers("asin"))}::text[]
+      )`
       const postings = await tx
         .select()
         .from(amazonTransactions)
-        .where(and(eq(amazonTransactions.orgId, orgId), eq(amazonTransactions.externalAccountId, externalAccountId)))
-        .orderBy(desc(amazonTransactions.postedAt), amazonTransactions.transactionId)
+        .where(
+          and(
+            eq(amazonTransactions.orgId, orgId),
+            eq(amazonTransactions.externalAccountId, externalAccountId),
+            sql`(${orderMatch} or ${productMatch})`,
+            sql`coalesce(nullif(${amazonTransactions.data}->'marketplaceDetails'->>'marketplaceId', ''), ${marketplaceId})=${marketplaceId}`
+          )
+        )
+        .orderBy(
+          sql`case when ${orderMatch} then 0 else 1 end`,
+          desc(amazonTransactions.postedAt),
+          amazonTransactions.transactionId
+        )
         .limit(postingLimit + 1)
       const mappings = await tx
         .select()
@@ -137,7 +162,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         page: input.page,
         hasMore: rows.length > pageSize,
         rows: reconcileAmazonEvidence(
-          rows.slice(0, pageSize),
+          pageRows,
           inventory?.rows.map((row) => ({ sku: row.sellerSku, asin: row.asin ?? null, fnsku: row.fnSku ?? null })) ??
             [],
           postings.slice(0, postingLimit)
@@ -148,7 +173,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
           financialSearch: {
             limit: postingLimit,
             truncated: postings.length > postingLimit,
-            scope: "latest_stored_account_postings"
+            scope: "matching_page_identifiers_order_references_first"
           },
           productSnapshot: {
             available: inventory !== null,

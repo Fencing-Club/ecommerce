@@ -99,6 +99,18 @@ export async function syncMonthlyAmazonReport<Row>(
 ) {
   const { orgId, externalAccountId, revision } = input
   const windows = monthlyReportWindows(now, source.wholeMonths)
+  // Spend the provider's limited report budget on missing history before refreshing covered months.
+  // Preserve newest-first ordering within each group, including an initial empty backfill.
+  windows.sort((a, b) => {
+    const priority = (window: Window) => {
+      const prior = source.reports.find((report) => report.from.getTime() === window.from.getTime())
+      if (!prior) {
+        return 0
+      }
+      return prior.coveredTo && prior.coveredTo >= window.to ? 2 : 1
+    }
+    return priority(a) - priority(b)
+  })
   const previousMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (source.wholeMonths ? 2 : 1), 1))
   const stale = source.reports
     .filter(
