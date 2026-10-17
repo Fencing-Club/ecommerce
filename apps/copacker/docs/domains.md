@@ -60,10 +60,10 @@ A dedicated E2E process isolates its lifecycle and build output, not its databas
 | Launcher and Buildkit | Primary app has no `main` prefix; linked worktrees use readable folder names; collisions fail visibly | Implemented with published `@buildkitgg/dev-domains@0.1.0` |
 | Shared Portless proxy | Register complete Copacker hostnames on the existing HTTPS proxy at port 443 | Buildkit 0.1.0 supports exact routes independently of startup suffixes; no restart required. Trusted HTTPS and independent cleanup verified alongside Spawn |
 | Cloudflare DNS | Add DNS-only A `local.copacker.ai` → `127.0.0.1`, TTL 300; retain `*.local.copacker.ai` | Base record absent when inspected; pending |
-| WorkOS redirects/logout | Add exact primary `https://local.copacker.ai/callback` and logout origin; optional exact E2E equivalents; retain existing entries and production defaults | Read-only inventory verified; no changes saved. Redirect dry-run rejected an existing URI ID and needs dashboard follow-up |
-| Google Maps local key | Include exact `https://local.copacker.ai/*` alongside worktree wildcard; verify API restrictions and optional E2E scope | Pending inspection/update |
+| WorkOS redirects/logout | Exact primary `https://local.copacker.ai/callback` and logout origin; retain preview, worktree/E2E and CI entries and production defaults | Saved and read back October 17; obsolete localhost and Railway entries removed. Application-scoped redirect mutation preserves existing IDs |
+| Google Maps local key | Exact `https://local.copacker.ai/*` alongside worktree wildcard; Maps JavaScript API and Places API (New) restrictions | Saved October 17; obsolete localhost port referrers removed |
 | Google through WorkOS | Keep the existing Google → WorkOS callback | No upstream change; test WorkOS → primary app after activation |
-| Amazon Ads relay | Add exact `https://local.copacker.ai` to `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay; retain the worktree pattern; deploy readable-name validation to the relay | Code updated; environment variables and deployment pending |
+| Amazon Ads relay | Exact `https://local.copacker.ai` in `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay, alongside the worktree pattern | Primary ignored `.env` and GitHub staging release settings updated October 17; apply staging settings through the normal release |
 | eBay local RuName | Change accepted URL to `https://local.copacker.ai/api/connections/ebay`, declined URL to `https://local.copacker.ai/settings#integrations` | Existing registration still targets `main.local.copacker.ai`; pending portal update |
 | Other direct OAuth integrations | Register each exact new callback shown by the app before enabling the integration | Per-integration opt-in; no wildcard assumption |
 | Webhooks | Keep app handlers; if enabled, point an owned public tunnel at them and set `WEBHOOK_BASE_URL` | Optional; hosted receiver remains deferred |
@@ -97,9 +97,21 @@ Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript
 
 | Key name / resource ID | Allowed website referrers | Configuration destination |
 | --- | --- | --- |
-| Copacker Maps Local / `f2ae7042-d129-4240-8a95-941b9aaffed8` | `https://*.local.copacker.ai/*`, `http://localhost:3000/*`, `http://localhost:3001/*`, `http://localhost:3010/*` | Primary checkout's ignored `.env`: `VITE_GOOGLE_MAPS_API_KEY`; refresh other checkouts from this local key |
-| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | GitHub staging `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY`; historical Railway allowlist entry; deployment stopped |
-| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | GitHub production `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY`; historical Railway allowlist entry; deployment stopped |
+| Copacker Maps Local / `f2ae7042-d129-4240-8a95-941b9aaffed8` | `https://local.copacker.ai/*`, `https://*.local.copacker.ai/*` | Primary checkout's ignored `.env`: `VITE_GOOGLE_MAPS_API_KEY`; refresh other checkouts from this local key |
+| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*` | GitHub staging `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY` |
+| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*` | GitHub production `GOOGLE_MAPS_BROWSER_KEY`, embedded as `VITE_GOOGLE_MAPS_API_KEY` |
+
+On October 17, 2026, the retired Railway referrers were removed from the staging and production keys and the older
+shared Maps Platform API Key (`829033b6-204a-48a7-9e52-fda3b6226976`). Current Copacker/local referrers and API
+restrictions remain. Both Shopify apps released `local-domain-urls-20261017`: production version `1171235045377`
+retains production/staging callbacks and replaces localhost with `https://local.copacker.ai/api/connections/shopify`;
+Copacker Dev version `1171234422785` uses the local app URL and local/staging callbacks. Neither has Railway or
+localhost callbacks. Scopes, install flow and production EventBridge privacy subscriptions are unchanged.
+`shopify.app.toml` matches the released production callback list. WorkOS similarly retains production defaults,
+preview/worktree/E2E registrations and CI's `127.0.0.1:3005`, while replacing old localhost and Railway entries with
+the exact primary local callback and logout origin. Google OAuth still returns to the unchanged WorkOS URI; Amazon
+Ads retains production/staging return URLs and uses the staging relay for local authorization. Aisle and Aisle Dev
+remain private draft SP-API apps; their inspected registration forms expose no browser callback fields.
 
 The Cloudflare release embeds the environment's restricted browser key during its web build. Do not add these keys to
 the background executor or fixture Storybook previews.
