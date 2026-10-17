@@ -1,9 +1,8 @@
-import { execFile, execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import { mkdtempSync, rmSync, rmdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { promisify } from "node:util"
 import invariant from "tiny-invariant"
 import { z } from "zod"
 import { previewNumber, previewResources } from "./preview-config"
@@ -24,21 +23,6 @@ const object = z.object({
   http_metadata: z.object({ contentType: z.string().optional() }).optional()
 })
 const cli = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))
-
-// Async child processes allow bounded document concurrency without logging provider output.
-export async function cloudflareAsync(config: HostingSettings, args: string[], binary = false) {
-  try {
-    const result = await promisify(execFile)(process.execPath, [cli, ...args], {
-      env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
-      timeout: 120000,
-      maxBuffer: 64 * 1024 * 1024,
-      encoding: binary ? "buffer" : "utf8"
-    })
-    return result.stdout
-  } catch {
-    throw new Error(`Cloudflare ${args.slice(0, 2).join(" ")} failed; retry the preview workflow`)
-  }
-}
 
 // Keep cf's output private: Hyperdrive responses and CLI errors can contain database credentials.
 export function cloudflare(
@@ -119,12 +103,13 @@ export function previewObjects(config: HostingSettings, bucket: string, prefix: 
   }
 }
 
-export function previewInventory(config: HostingSettings) {
+export function previewInventory(config: HostingSettings, number?: string, includeObjects = true) {
+  const prefix = number ? previewResources(number).prefix : "previews/pr-"
   return {
     workers: pages(config, ["workers", "list"], worker),
     hyperdrives: pages(config, ["hyperdrive", "list"], hyperdrive),
     queues: z.array(queue).parse(cloudflareJson(config, ["queues", "list"])),
-    objects: previewObjects(config, config.bucket, "previews/pr-")
+    objects: includeObjects ? previewObjects(config, config.bucket, prefix) : []
   }
 }
 type Inventory = ReturnType<typeof previewInventory>
@@ -149,7 +134,7 @@ export function hostedPreviewNumbers(inventory: Inventory) {
 export function removeHostedPreview(config: HostingSettings, input: string) {
   const number = previewNumber.parse(input)
   const names = previewResources(number)
-  const inventory = previewInventory(config)
+  const inventory = previewInventory(config, number, false)
   // Stop all writers first. If this fails, preserve files/database rather than race a live preview.
   const ownedWorkers = new Set([names.app, names.stories])
   for (const item of inventory.workers.filter((entry) => ownedWorkers.has(entry.name))) {
@@ -171,7 +156,8 @@ export function removeHostedPreview(config: HostingSettings, input: string) {
   for (const item of inventory.hyperdrives.filter((entry) => entry.name === names.app)) {
     attempt("Hyperdrive", () => cloudflare(config, ["hyperdrive", "delete", item.id, "--force"]))
   }
-  const objects = inventory.objects.filter((item) => item.key.startsWith(names.prefix))
+  // Inventory files after stopping writers, and only inside this PR's prefix.
+  const objects = previewObjects(config, config.bucket, names.prefix)
   for (let offset = 0; offset < objects.length; offset += 1000) {
     attempt("files", () =>
       cloudflare(config, ["r2", "objects", "bulk-delete", "--bucket-name", config.bucket, "--force"], {
@@ -181,14 +167,14 @@ export function removeHostedPreview(config: HostingSettings, input: string) {
   }
   invariant(!failures.length, `Preview cleanup incomplete (${[...new Set(failures)].join(", ")}); rerun cleanup`)
   invariant(
-    !hostedPreviewNumbers(previewInventory(config)).has(number),
+    !hostedPreviewNumbers(previewInventory(config, number)).has(number),
     "Preview resources remain after cleanup; rerun cleanup"
   )
 }
 
 export function provisionHostedPreview(config: HostingSettings, number: string, databaseUrl: URL) {
   const names = previewResources(number)
-  const inventory = previewInventory(config)
+  const inventory = previewInventory(config, number, false)
   const body = {
     name: names.app,
     origin: {

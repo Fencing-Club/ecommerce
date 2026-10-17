@@ -12,6 +12,7 @@ import { copyPreviewDocuments } from "./preview-documents"
 import { publishPreviewStories } from "./preview-stories"
 import { PreviewTimings } from "./preview-timings"
 import { reconcileResourceTags } from "./resource-tags"
+import { verifyStorybookArtifact } from "./storybook-artifact"
 
 export async function deployHostedPreview(
   config: HostingSettings,
@@ -42,7 +43,9 @@ export async function deployHostedPreview(
   const folder = mkdtempSync(path.join(tmpdir(), "copacker-preview-"))
   const app = `https://${names.app}.${config.subdomain}.workers.dev`
   const stories = `https://${names.stories}.${config.subdomain}.workers.dev/`
+  const root = fileURLToPath(new URL("..", import.meta.url))
   try {
+    await timings.measure("storybook-artifact", () => verifyStorybookArtifact(path.join(root, "storybook-static"), sha))
     const hyperdrive = await timings.measure("resources", () => provisionHostedPreview(config, number, databaseUrl))
     await timings.measure("documents", () => copyPreviewDocuments(config, number, databaseUrl, folder, timings))
     const secretFile = path.join(folder, "secrets.json")
@@ -56,7 +59,6 @@ export async function deployHostedPreview(
       CLOUDFLARE_DOCUMENTS_BUCKET: config.bucket,
       CLOUDFLARE_HYPERDRIVE_ID: hyperdrive
     }
-    const root = fileURLToPath(new URL("..", import.meta.url))
     const run = (args: string[], cwd = root) => {
       try {
         execFileSync(process.execPath, args, {
@@ -72,16 +74,13 @@ export async function deployHostedPreview(
     }
     await timings.measure("app-build", () =>
       run([
-        fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json"))),
-        "build",
-        "--mode",
-        "preview"
+        fileURLToPath(new URL("../../../node_modules/turbo/bin/turbo", import.meta.url)),
+        "run",
+        "build:preview",
+        "--filter=copacker"
       ])
     )
     await timings.measure("worker-regression", () => run(["--import", "tsx", "scripts/test-worker-webhooks.ts"]))
-    await timings.measure("storybook-build", () =>
-      run([fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json"))), "build"])
-    )
     const deploy = [
       fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))),
       "deploy",
@@ -100,7 +99,7 @@ export async function deployHostedPreview(
       publishPreviewStories(config, number, sha, path.join(root, "storybook-static"), timings)
     )
     await timings.measure("resource-tags", () => {
-      const inventory = previewInventory(config)
+      const inventory = previewInventory(config, number, false)
       const worker = inventory.workers.find((item) => item.name === names.app)
       const storyWorker = inventory.workers.find((item) => item.name === names.stories)
       const queue = inventory.queues.find((item) => item.queue_name === names.queue)

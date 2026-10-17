@@ -9,7 +9,7 @@ type Phase =
   | "documents"
   | "app-build"
   | "worker-regression"
-  | "storybook-build"
+  | "storybook-artifact"
   | "app-validate"
   | "app-deploy"
   | "resource-tags"

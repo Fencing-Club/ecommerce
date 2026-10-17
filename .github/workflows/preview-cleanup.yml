@@ -1,6 +1,6 @@
 name: Remove Copacker preview
 on:
-  # Only trusted base-branch code runs with credentials. Never check out a PR head here.
+  # Every job checks out trusted default-branch code, never the PR head.
   pull_request_target:
     types: [closed]
   schedule:
@@ -14,27 +14,65 @@ on:
 permissions:
   contents: read
   pull-requests: read
-concurrency:
-  group: copacker-previews
-  cancel-in-progress: false
+env:
+  PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+  NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+  NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
+  NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+  NEON_ROLE_NAME: ${{ vars.NEON_ROLE_NAME }}
+  CLOUDFLARE_PREVIEW_CONFIG: ${{ vars.CLOUDFLARE_PREVIEW_CONFIG }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
+  GH_TOKEN: ${{ github.token }}
 jobs:
-  remove:
+  plan:
     if: >-
       github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      numbers: ${{ steps.plan.outputs.numbers }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - if: github.event_name == 'schedule'
+        run: npm install --global pnpm@12.10.1
+      - if: github.event_name == 'schedule'
+        run: pnpm install --frozen-lockfile
+      - id: plan
+        run: |
+          if [ "$EVENT" = schedule ]; then
+            pnpm --filter copacker preview:discover
+          else
+            node -e 'const n=process.env.NUMBER; if(!/^[1-9]\d*$/.test(n)) throw new Error("Invalid PR number"); require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, `numbers=${JSON.stringify([n])}\n`)'
+          fi
+        env:
+          EVENT: ${{ github.event_name }}
+          NUMBER: ${{ github.event.pull_request.number || inputs.number }}
+
+  remove:
+    needs: plan
+    # A partial inventory failure must not prevent cleanup of independently confirmed closed PRs.
+    if: always() && needs.plan.outputs.numbers != '' && needs.plan.outputs.numbers != '[]'
+    runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        number: ${{ fromJSON(needs.plan.outputs.numbers || '[]') }}
+    concurrency:
+      group: copacker-preview-${{ matrix.number }}
+      cancel-in-progress: false
+      queue: max
     env:
-      PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-      PR_NUMBER: ${{ github.event.pull_request.number || inputs.number }}
-      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
-      NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
-      NEON_ROLE_NAME: ${{ vars.NEON_ROLE_NAME }}
-      CLOUDFLARE_PREVIEW_CONFIG: ${{ vars.CLOUDFLARE_PREVIEW_CONFIG }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
-      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ matrix.number }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,8 +82,12 @@ jobs:
           node-version-file: .nvmrc
           package-manager-cache: false
       - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
-      - if: github.event_name != 'schedule'
-        run: pnpm --filter copacker preview:remove
-      - if: github.event_name == 'schedule'
-        run: pnpm --filter copacker preview:sweep
+      # Re-read provider state and PR state only after acquiring the same lock used by deployment.
+      - run: pnpm --filter copacker preview:remove

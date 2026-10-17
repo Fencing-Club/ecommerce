@@ -14,7 +14,9 @@
     "dev": "dev-domains run app",
     "storybook": "dev-domains run stories",
     "build-storybook": "storybook build",
+    "storybook:seal": "node --import tsx scripts/seal-storybook.ts",
     "build": "vite build --mode staging",
+    "build:preview": "vite build --mode preview",
     "lint": "oxlint --max-warnings=0",
     "check:types": "pnpm typegen && tsc --noEmit && tsc --noEmit --project tsconfig.worker.json && tsc --noEmit --project tests/start-runtime/tsconfig.json",
     "typegen:start-runtime": "pnpm --dir tests/start-runtime exec cf workers types",
@@ -47,7 +49,7 @@
     "dev:doctor": "dev-domains doctor",
     "preview:deploy": "node --import tsx scripts/preview.ts deploy",
     "preview:remove": "node --import tsx scripts/preview.ts remove",
-    "preview:sweep": "node --import tsx scripts/preview.ts sweep"
+    "preview:discover": "node --import tsx scripts/preview.ts discover"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",

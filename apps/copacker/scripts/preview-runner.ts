@@ -8,7 +8,7 @@ import { assertPreviewBranch, neonBranch, previewSettings } from "./preview-conf
 import { deployHostedPreview } from "./preview-hosting"
 import { PreviewTimings } from "./preview-timings"
 
-export async function runPreview(mode: "deploy" | "remove" | "sweep") {
+export async function runPreview(mode: "deploy" | "remove" | "discover") {
   const timings = new PreviewTimings()
   try {
     return await timings.measure("total", () => executePreview(mode, timings))
@@ -17,8 +17,8 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
   }
 }
 
-async function executePreview(mode: "deploy" | "remove" | "sweep", timings: PreviewTimings) {
-  const settings = previewSettings.parse({ ...process.env, ...(mode === "sweep" ? { PR_NUMBER: "1" } : {}) })
+async function executePreview(mode: "deploy" | "remove" | "discover", timings: PreviewTimings) {
+  const settings = previewSettings.parse({ ...process.env, ...(mode === "discover" ? { PR_NUMBER: "1" } : {}) })
   const name = `pr-${settings.PR_NUMBER}`
   const key = z.string().trim().min(1).parse(process.env.NEON_API_KEY)
   const hosting = process.env.CLOUDFLARE_PREVIEW_CONFIG
@@ -95,7 +95,7 @@ async function executePreview(mode: "deploy" | "remove" | "sweep", timings: Prev
     log(`Removed pr-${number}`)
   }
 
-  if (mode === "sweep") {
+  if (mode === "discover") {
     const found = (await branches("pr-")).filter(
       (branch) => /^pr-[1-9]\d*$/.test(branch.name) && branch.parent_id === settings.NEON_STAGING_BRANCH_ID
     )
@@ -104,20 +104,23 @@ async function executePreview(mode: "deploy" | "remove" | "sweep", timings: Prev
       numbers.add(branch.name.slice(3))
     }
     const failed: string[] = []
+    const closed: string[] = []
     for (const number of numbers) {
       try {
         if ((await pullRequest(number)).state === "closed") {
-          await remove(
-            number,
-            found.find((branch) => branch.name === `pr-${number}`)
-          )
+          closed.push(number)
         }
       } catch {
         failed.push(number)
       }
     }
+    // Discovery never deletes. Each matrix job rechecks GitHub and providers after acquiring its PR's lock.
+    if (process.env.GITHUB_OUTPUT) {
+      appendFileSync(process.env.GITHUB_OUTPUT, `numbers=${JSON.stringify(closed)}\n`)
+    }
+    log(`Found ${closed.length} closed previews for cleanup`)
     if (failed.length) {
-      throw new Error(`Preview cleanup incomplete for PRs ${failed.join(", ")}; rerun cleanup`)
+      throw new Error(`Preview discovery incomplete for PRs ${failed.join(", ")}; rerun cleanup`)
     }
   } else {
     let branch = (await branches(name)).find((entry) => entry.name === name)
@@ -197,7 +200,7 @@ async function executePreview(mode: "deploy" | "remove" | "sweep", timings: Prev
       if (process.env.GITHUB_STEP_SUMMARY) {
         appendFileSync(
           process.env.GITHUB_STEP_SUMMARY,
-          `Neon database branch: ${name} (${branch.id})\n\nCopied from staging, with this PR's migrations applied. Expires ${expiresAt}.\n\n${urls ? `[App preview](${urls.app}) | [Storybook](${urls.stories})\n\nPreview resources are removed on merge/close, with a six-hour cleanup sweep. Background jobs stay isolated and pending until preview job execution is migrated.` : "Cloudflare previews require the repository's CLOUDFLARE_PREVIEW_CONFIG and preview credentials."}\n`
+          `Neon database branch: ${name} (${branch.id})\n\nCopied from staging, with this PR's migrations applied. Expires ${expiresAt}.\n\n${urls ? `[App preview](${urls.app}) | [Storybook](${urls.stories})\n\nPreview availability does not imply CI passed; verification continues independently and is required before merge. Preview resources are removed on merge/close, with a six-hour cleanup sweep. Background jobs stay isolated and pending until preview job execution is migrated.` : "Cloudflare previews require the repository's CLOUDFLARE_PREVIEW_CONFIG and preview credentials."}\n`
         )
       }
     }

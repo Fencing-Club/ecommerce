@@ -39,24 +39,40 @@ Preview commands report each provisioning phase as structured timing events. CI 
 and bytes. Reports exclude credentials, file names and copied contents. The measured command total excludes waiting
 for earlier CI checks and runner setup; compare those separately using the workflow's job timestamps.
 
-The first performance pass copies documents in batches of four. Each copy still downloads its source, uploads to
-its PR prefix, reads it back and compares SHA-256 before the ready marker can be written. Batches drain on failure
-before temporary files are removed. Later pushes skip the copy after the ready marker, preserving preview edits.
+Documents stream through one S3 client per source/destination, in batches of four, without launching a CLI for each
+object or listing the whole bucket. The existing SDK reuses connections and retries transient failures. Each copy
+downloads its source, uploads to its PR prefix, reads it back and compares SHA-256, length and content type before
+the ready marker can be written. Batches drain on failure before scratch files and clients are removed. Later pushes
+check the marker directly and preserve preview edits.
+
+The `cf` CLI verifies the existing account API token and issues temporary credentials lasting 30 minutes. Source
+credentials allow only reads of the database's exact reference keys; destination credentials allow reads/writes
+only inside this PR's document prefix. They stay in memory, are never added to artifacts/logs, and require no new
+long-lived secret. See [R2 temporary credentials](https://developers.cloudflare.com/r2/api/s3/temporary-credentials/).
 
 Storybook uses Workers Static Assets on a separate Worker per PR. The CLI batches missing content hashes and reuses
 unchanged assets on updates, replacing one CLI process per R2 object. Deployment validates the artifact before
 publishing its complete manifest. File and byte counts describe the source build, not only uploaded differences.
 
+CI builds Storybook once from the exact source commit alongside the verification jobs. It uploads a fixture-only
+artifact with commit metadata and a SHA-256 manifest. The preview downloads that artifact from the same workflow
+run and verifies both identity and content before deploying. There is no second Storybook build inside provisioning.
+Local provisioning likewise requires `build-storybook` followed by `storybook:seal` with `APP_COMMIT_SHA` matching HEAD.
+
+Preview app builds use Turbo's signed cache through `build:preview`. Its key includes the commit, PR number, app
+origin, Hyperdrive, bucket, account, authentication settings and Vite variables. Staging and preview builds use
+separate tasks. The Worker regression still runs on the exact resulting artifact, including cache hits.
+
 Compare fresh previews only with other fresh previews and compare repeated pushes separately. Record counts, bytes,
 commit, workflow URL and whether documents were reused. The [performance qualification in PR 28](https://github.com/AndrewCraswell/ecommerce/pull/28) records hosted before/after measurements and functional checks.
 
-Follow-up opportunities are exact-commit build reuse, targeted inventories, starting trusted previews alongside
-verification, per-PR lifecycle locks with coordinated cleanup, and a maintained small fixture baseline. This pass
-keeps the existing verification gate, environment-specific app build and global preview lock.
+Previews start after the shared Storybook build while verification, story tests and end-to-end tests continue.
+Availability is not a successful CI result: `ci-ok` and staging promotion still require every applicable check.
+Different PRs may provision concurrently. A maintained small fixture baseline remains a separate opportunity.
 
 ### Isolation and lifecycle
 
-After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging.
+Alongside the regular CI checks, trusted same-repository PRs receive a private Neon branch cloned from staging.
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
 test edits. Forks and Dependabot do not receive credentials. With `CLOUDFLARE_PREVIEW_CONFIG` configured, CI builds
 the Cloudflare app Worker and uploads fixture-only Storybook files, verifies their commit health endpoints, and links both in
@@ -87,9 +103,13 @@ until Cloudflare cleanup succeeds. The shared bucket, staging and production are
 
 A six-hour sweep inventories Neon, Workers, Hyperdrive, queues **and R2 files independently**, so an expired Neon
 branch or interrupted deployment cannot hide leftover hosting. It removes only PRs GitHub explicitly reports closed;
-unknown/inaccessible or reopened PRs are preserved. One PR's failure does not prevent attempts on the others.
-Deployments recheck PR state and commit before provisioning and PR state after deployment. All lifecycle jobs share
-a concurrency group. The scheduled sweep also recovers events displaced from GitHub's pending concurrency slot.
+unknown/inaccessible or reopened PRs are preserved. Discovery is read-only and emits a matrix of confirmed closed
+PRs. Each removal acquires the same `copacker-preview-<number>` concurrency group as that PR's deployment, then
+re-reads the PR and provider state. A reopened PR is preserved even if discovery found it closed. Partial discovery
+failures still allow independently confirmed candidates to be removed; removal jobs do not fail fast.
+Deployments recheck PR state and commit before provisioning and PR state after deployment. Lifecycle groups queue
+pending jobs (`queue: max`) and never cancel active mutations. Superseded verification jobs can still be cancelled.
+Ordinary provisioning does not inventory unrelated PR files; cleanup lists its own prefix after stopping writers.
 Cleanup can be dispatched with a closed PR number. Branches expire seven days after provisioning; a later push
 removes old hosting/files before recreating the database from current staging.
 

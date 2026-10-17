@@ -3,11 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-# A newer push replaces a pull request's run. Pushes to the branch each run in full, side by side: only their staging
-# deploys take turns (deploy-staging's own group), so a push doesn't wait for the one before to finish on staging.
-concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('ci-{0}', github.ref) || format('ci-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+# Replace superseded checks at job level. Never cancel an active preview mutation just because another push arrives.
 env:
   PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
   # Turbo replays any task whose inputs haven't changed from the shared cache on Cloudflare (apps/turbo-cache).
@@ -45,6 +41,9 @@ jobs:
 
   verify:
     needs: changes
+    concurrency:
+      group: verify-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -88,8 +87,6 @@ jobs:
         run: pnpm turbo run build --filter=copacker
       - if: needs.changes.outputs.copacker == 'true'
         run: pnpm --filter copacker test:worker-webhooks
-      - if: needs.changes.outputs.copacker == 'true'
-        run: pnpm --filter copacker build-storybook
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
       - if: needs.changes.outputs.copacker == 'true'
         run: |
@@ -102,6 +99,9 @@ jobs:
   # split across four machines.
   stories:
     needs: changes
+    concurrency:
+      group: stories-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
+      cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -129,6 +129,9 @@ jobs:
   # local R2 emulator for uploads. It signs in through the WorkOS environment staging uses. See apps/copacker/docs/e2e.md.
   e2e:
     needs: changes
+    concurrency:
+      group: e2e-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
+      cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
     # Split in two, each with its own Worker build, database and R2 emulator.
@@ -192,8 +195,48 @@ jobs:
           # The report folders start with a dot, which upload-artifact skips unless told otherwise.
           include-hidden-files: true
 
+  # One fixture build per source commit, shared by verification and preview publication.
+  storybook-build:
+    needs: changes
+    if: needs.changes.outputs.copacker == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: storybook-build-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+    outputs:
+      artifact: storybook-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+    env:
+      APP_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.APP_COMMIT_SHA }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build-storybook --filter=copacker
+      - run: pnpm --filter copacker storybook:seal
+      - uses: actions/upload-artifact@v7
+        with:
+          name: storybook-${{ env.APP_COMMIT_SHA }}-${{ github.run_attempt }}
+          path: |
+            apps/copacker/storybook-static
+            apps/copacker/.cloudflare/storybook-artifact.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   preview:
-    needs: [changes, verify, stories, e2e]
+    needs: [changes, storybook-build]
     if: >-
       github.event_name == 'pull_request' && needs.changes.outputs.copacker == 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
@@ -203,8 +246,9 @@ jobs:
       contents: read
       pull-requests: read
     concurrency:
-      group: copacker-previews
+      group: copacker-preview-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+      queue: max
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
@@ -227,7 +271,17 @@ jobs:
           node-version-file: .nvmrc
           package-manager-cache: false
       - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.storybook-build.outputs.artifact }}
+          path: apps/copacker
       - id: deploy
         run: pnpm --filter copacker preview:deploy
       - uses: actions/upload-artifact@v7
@@ -240,7 +294,7 @@ jobs:
           retention-days: 30
 
   deploy-staging:
-    needs: [changes, verify, stories, e2e]
+    needs: [changes, verify, stories, e2e, storybook-build]
     if:
       github.event_name == 'push' && needs.changes.outputs.copacker == 'true' && vars.CLOUDFLARE_RELEASE_ENABLED ==
       'true'
@@ -254,7 +308,7 @@ jobs:
   # affect it counts as passed. It's the check to require in branch protection.
   ci-ok:
     if: always()
-    needs: [changes, verify, stories, e2e, preview, deploy-staging]
+    needs: [changes, verify, stories, e2e, storybook-build, preview, deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - run: |

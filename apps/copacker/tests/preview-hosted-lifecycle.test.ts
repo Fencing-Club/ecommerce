@@ -4,6 +4,9 @@ import type { removeHostedPreview, previewInventory, hostedPreviewNumbers } from
 import type { deployHostedPreview } from "../scripts/preview-hosting"
 import { runPreview } from "../scripts/preview-runner"
 
+const output = vi.hoisted(() => ({ appendFileSync: vi.fn<typeof import("node:fs").appendFileSync>() }))
+vi.mock("node:fs", async (original) => ({ ...(await original<typeof import("node:fs")>()), ...output }))
+
 const provider = vi.hoisted(() => ({
   remove: vi.fn<typeof removeHostedPreview>(),
   deploy: vi.fn<typeof deployHostedPreview>(),
@@ -103,14 +106,28 @@ describe("Preview merge and close races", () => {
     await expect(runPreview("remove")).rejects.toThrow("Cloudflare failure")
     expect(request.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
   })
-  it("sweeps Cloudflare orphans and continues to other PRs after a GitHub lookup fails", async () => {
+  it("discovers Cloudflare orphans despite a failed lookup and leaves deletion to locked cleanup jobs", async () => {
+    vi.stubEnv("GITHUB_OUTPUT", "test-output")
     provider.numbers.mockReturnValue(new Set(["42", "43", "44"]))
     respond({ branches: [] })
     respond({}, 404)
     respond({ state: "closed" })
     respond({ state: "open" })
-    await expect(runPreview("sweep")).rejects.toThrow("cleanup incomplete for PRs 42")
-    expect(provider.remove).toHaveBeenCalledExactlyOnceWith(expect.anything(), "43")
+    await expect(runPreview("discover")).rejects.toThrow("discovery incomplete for PRs 42")
+    expect(provider.remove).not.toHaveBeenCalled()
+    expect(output.appendFileSync).toHaveBeenCalledWith("test-output", 'numbers=["43"]\n')
+  })
+  it("preserves a PR that reopens after the read-only cleanup plan was produced", async () => {
+    vi.stubEnv("GITHUB_OUTPUT", "test-output")
+    respond({ branches: [preview] })
+    respond({ state: "closed" })
+    await runPreview("discover")
+    expect(output.appendFileSync).toHaveBeenCalledWith("test-output", 'numbers=["42"]\n')
+    respond({ branches: [preview] })
+    respond({ state: "open", head: { sha } })
+    await runPreview("remove")
+    expect(provider.remove).not.toHaveBeenCalled()
+    expect(request.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
   })
   it("does not replace a newer PR revision with an outdated queued build", async () => {
     respond({ branches: [preview] })
