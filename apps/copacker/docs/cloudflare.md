@@ -1,8 +1,8 @@
 # Cloudflare runtime and releases
 
-Copacker's TanStack Start application is deployed to Cloudflare Workers on staging. Production web is temporarily
-back on its retained Railway artifact after the first cutover exposed an eBay forwarding failure. Storybook is live
-on Cloudflare in both environments. It integrates the separately completed
+Copacker's TanStack Start application and Storybook are live on Cloudflare Workers in staging and production.
+The corrected production cutover completed October 16, 2026, after a live eBay forwarding regression was repaired
+and verified through the retained executor. It integrates the separately completed
 [Neon database migration](neon.md). The retained Railway Node worker remains the only background executor;
 [Cloudflare Queues and Cron](background-jobs.md) deliver wake signals and scheduled reconciliation. Workflows and
 Cloudflare job execution remain a later milestone. The existing public hostnames are retained; the previous Railway
@@ -75,8 +75,8 @@ Deployment adds `RELEASE_CUTOVER_READY=true`, a clean checkout matching the rele
 Use Neon's direct endpoint through `DIRECT_DATABASE_URL`, with public certificate and hostname verification.
 For retained Railway database recovery access, `DATABASE_CA_CERT` is required over the public proxy and
 `DATABASE_TLS_SERVER_NAME` names the certificate's identity when it differs from the proxy. Verification is never disabled. One dedicated PostgreSQL session
-holds an advisory lock around Drizzle migrations, with a two-minute lock timeout. Disable the old Railway web
-predeploy migration command before enabling the new release workflow.
+holds an advisory lock around Drizzle migrations, with a two-minute lock timeout. The old Railway web predeploy
+migration commands are disabled; keep the serialized release runner as the only migration owner.
 
 GitHub's `staging` and `production` environments supply the variables above, `CLOUDFLARE_ACCOUNT_ID`,
 `STORIES_URL`, optional domain lists, and `CLOUDFLARE_API_TOKEN`, `DATABASE_MIGRATION_URL`, optional `DATABASE_CA_CERT`,

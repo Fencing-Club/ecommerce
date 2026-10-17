@@ -1,6 +1,10 @@
 # Compatibility evidence
 
-Part of the [migration specification](README.md). Updated October 15, 2026 (qualification continued October 16 UTC).
+Part of the [migration specification](README.md). This article preserves historical implementation evidence from
+October 15–16, 2026. See [cutover acceptance](acceptance.md) for the completed Cloudflare web release and current
+verification; branch paths and pending integration gates below describe the earlier trials.
+
+Updated October 15, 2026 (qualification continued October 16 UTC).
 Implementation is on `codex/tanstack-start` under `D:\system\worktrees\ecommerce\tanstack-start`, with pre-existing
 local development/domain changes preserved. The main application now runs on TanStack Start and Cloudflare Workers.
 The sections after the current qualification record retain earlier incremental proof and its then-current limits.

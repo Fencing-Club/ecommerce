@@ -1,12 +1,11 @@
 # Tasks, milestones and delivery plan
 
-Part of the [migration specification](README.md). The full web route conversion, runtime foundation, release tooling and
-storage-transfer tools are implemented on the migration branch. The full local browser suite, repository verification
-and deployed auth/navigation/read checks passed; the main app and static Storybook are on Cloudflare staging.
-Production qualification and coordinated storage/worker deployment gates remain open;
-checkboxes below require their complete exit evidence, not only code. See [compatibility evidence](compatibility.md) for verified substeps and remaining
-work. This document does not create issues or schedule releases.
-The web can ship on Start before the background-worker migration finishes.
+Part of the [migration specification](README.md). The web, private-storage and CDN milestone is live in staging and
+production; [cutover acceptance](acceptance.md) records its tested release and operational evidence. The Node background
+executor remains on Railway. The broader milestones below retain unfinished load, cost, recovery, job-execution and
+retirement work: their checkboxes require complete exit evidence, not only the completed web cutover. See
+[compatibility evidence](compatibility.md) for the earlier implementation trials. This document does not create issues
+or schedule releases.
 
 ## Milestone sequence and effort
 
