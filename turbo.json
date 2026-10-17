@@ -24,6 +24,22 @@
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"]
     },
+    "build:preview": {
+      "env": [
+        "APP_URL",
+        "APP_COMMIT_SHA",
+        "PR_NUMBER",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_HYPERDRIVE_ID",
+        "CLOUDFLARE_DOCUMENTS_BUCKET",
+        "WORKOS_*",
+        "TOKEN_ENCRYPTION_KEY",
+        "VITE_*"
+      ],
+      "dependsOn": ["^build", "^transit"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".cloudflare/output/**"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },

@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { stripVTControlCharacters } from "node:util"
 
 type Phase =
   | "total"
@@ -9,7 +10,7 @@ type Phase =
   | "documents"
   | "app-build"
   | "worker-regression"
-  | "storybook-build"
+  | "storybook-artifact"
   | "app-validate"
   | "app-deploy"
   | "resource-tags"
@@ -24,6 +25,7 @@ type Counts = {
   documentsReused?: number
   storybookFiles?: number
   storybookBytes?: number
+  appBuildCacheHits?: number
 }
 
 // Only fixed phase names and aggregate counts are recorded. Provider output and copied keys stay private.
@@ -48,6 +50,19 @@ export class PreviewTimings {
 
   count(values: Counts) {
     Object.assign(this.counts, values)
+  }
+
+  buildCache(output: string) {
+    // Never replay build output: allow only the task's cache state and opaque hash into hosted logs.
+    const text = stripVTControlCharacters(output)
+    const match = /^copacker:build:preview: cache (hit|miss), [^\r\n]* ([a-f0-9]{16})\s*$/m.exec(text)
+    const remote = /Remote caching (enabled|disabled)/.exec(text)?.[1] ?? "unknown"
+    if (match) {
+      this.count({ appBuildCacheHits: match[1] === "hit" ? 1 : 0 })
+    }
+    process.stdout.write(
+      `${JSON.stringify({ event: "preview-build-cache", status: match?.[1] ?? "unknown", hash: match?.[2], remote })}\n`
+    )
   }
 
   finish() {
