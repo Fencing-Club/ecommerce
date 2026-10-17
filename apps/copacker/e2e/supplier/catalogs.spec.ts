@@ -77,27 +77,27 @@ test("creates a catalog for E2E Buyer, edits it, exports it and deletes it", asy
 
     await expect(page.getByRole("combobox", { name: "Adjustment direction" })).toContainText("Decrease by")
     await page.getByRole("textbox", { name: "Price adjustment" }).fill("10")
-    await expect(page.getByText("Applies to every price you don’t fix below. $100.00 becomes $90.00.")).toBeVisible()
+    await expect(page.getByText("Applies to every price you don’t fix below. $100 becomes $90.")).toBeVisible()
     await page.getByRole("switch", { name: "Automatically include new products" }).click()
     await includeOnly(page, prefix, [cord!, glove!, shoe!])
 
     // Each price follows the adjustment until it's fixed.
-    await expect(page.getByRole("button", { name: `Price for ${cord}: $18.00` })).toBeVisible()
-    await page.getByRole("button", { name: `Price for ${glove}: $36.00` }).click()
+    await expect(page.getByRole("button", { name: `Price for ${cord}: $18` })).toBeVisible()
+    await page.getByRole("button", { name: `Price for ${glove}: $36` }).click()
     await page.getByRole("textbox", { name: "Fixed price" }).fill("30")
     await page.getByRole("button", { name: "Done" }).click()
-    await expect(page.getByRole("button", { name: `Price for ${glove}: $30.00, fixed` })).toBeVisible()
+    await expect(page.getByRole("button", { name: `Price for ${glove}: $30, fixed` })).toBeVisible()
     // The glove's price field closes with an animation; wait for it to go before opening the cord's.
     await expect(page.getByRole("textbox", { name: "Fixed price" })).toHaveCount(0)
-    await page.getByRole("button", { name: `Price for ${cord}: $18.00` }).click()
+    await page.getByRole("button", { name: `Price for ${cord}: $18` }).click()
     await page.getByRole("textbox", { name: "Fixed price" }).fill("15")
     await page.getByRole("button", { name: "Done" }).click()
-    await expect(page.getByRole("button", { name: `Price for ${cord}: $15.00, fixed` })).toBeVisible()
+    await expect(page.getByRole("button", { name: `Price for ${cord}: $15, fixed` })).toBeVisible()
 
     // Clearing the cord's override puts it back on the adjusted price; the shoe is left out.
     await page.getByRole("checkbox", { name: `Select ${cord}` }).check()
     await page.getByRole("button", { name: "Clear price overrides" }).click()
-    await expect(page.getByRole("button", { name: `Price for ${cord}: $18.00` })).toBeVisible()
+    await expect(page.getByRole("button", { name: `Price for ${cord}: $18` })).toBeVisible()
     await page.getByRole("checkbox", { name: `Select ${shoe}` }).check()
     await page.getByRole("button", { name: "Exclude", exact: true }).click()
     await expect(page.getByText(shoe!, { exact: true })).toBeHidden()
@@ -121,7 +121,7 @@ test("creates a catalog for E2E Buyer, edits it, exports it and deletes it", asy
     await saveBar(page).getByRole("button", { name: "Save" }).click()
     await expect(saveBar(page)).toBeHidden()
     await page.reload()
-    await expect(page.getByRole("button", { name: `Price for ${cord}: $16.00` })).toBeVisible()
+    await expect(page.getByRole("button", { name: `Price for ${cord}: $16` })).toBeVisible()
 
     await page.getByRole("button", { name: "More actions" }).click()
     const excel = await download(page, () => page.getByRole("menuitem", { name: "Export to Excel" }).click())

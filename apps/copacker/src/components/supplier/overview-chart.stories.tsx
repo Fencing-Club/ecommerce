@@ -42,9 +42,9 @@ export const Daily = meta.story({
       within(rows[1]!)
         .getAllByRole("cell")
         .map((cell) => cell.textContent)
-    ).toEqual(["$400.00", "2", "$300.00"])
+    ).toEqual(["$400", "2", "$300"])
     await expect(within(rows[1]!).getByRole("rowheader")).toHaveTextContent("Tue, Sep 1")
-    await expect(within(rows[2]!).getAllByRole("cell")[0]).toHaveTextContent("$0.00")
+    await expect(within(rows[2]!).getAllByRole("cell")[0]).toHaveTextContent("$0")
   }
 })
 
@@ -62,8 +62,8 @@ export const Tooltip = meta.story({
       await expect(canvasElement.querySelector(".recharts-tooltip-wrapper")).toHaveTextContent(/Tue, Sep 1/)
     })
     const tooltip = within(canvasElement.querySelector<HTMLElement>(".recharts-tooltip-wrapper")!)
-    await expect(tooltip.getByText("$400.00")).toBeInTheDocument()
-    await expect(tooltip.getByText("$300.00")).toBeInTheDocument()
+    await expect(tooltip.getByText("$400")).toBeInTheDocument()
+    await expect(tooltip.getByText("$300")).toBeInTheDocument()
   }
 })
 

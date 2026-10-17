@@ -15,7 +15,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import { generateShipmentDocuments, storeDocument } from "./documents"
+import { storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { PollAgain } from "./job-handlers"
 
@@ -425,7 +425,6 @@ export async function fbaShipmentJob(
     })
     .where(eq(shipments.id, shipment.id))
   await assertOwned()
-  await generateShipmentDocuments(shipment.id)
   await assertOwned()
   await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
 }

@@ -178,6 +178,7 @@
     "preparation": "Preparazione",
     "suffocationWarning": "Etichetta di avvertenza soffocamento",
     "instructionsPlaceholder": "Eccezioni di movimentazione o etichettatura",
+    "markdownHint": "Markdown supportato: usa - per gli elenchi, 1. per i passaggi numerati e **grassetto** per evidenziare.",
     "done": "Fatto",
     "editCostSummary": "Modifica<hidden> riepilogo costi</hidden>",
     "editCostSummaryTitle": "Modifica riepilogo costi",
@@ -187,6 +188,7 @@
     "removeAdjustment": "Rimuovi rettifica",
     "addAdjustment": "Aggiungi rettifica",
     "skuLabel": "Etichetta SKU",
+    "fnskuLabel": "Etichetta FNSKU",
     "amazonRequiresIt": "Richiesta da Amazon",
     "shipments": "Spedizioni",
     "groupingHint": "Seleziona i prodotti da spostare tra le spedizioni.",
@@ -208,7 +210,14 @@
     "perPiece": "Per pezzo",
     "flatAmount": "Importo fisso",
     "shipmentTotal": "Totale spedizione",
-    "expenseType": "Tipo di spesa"
+    "expenseType": "Tipo di spesa",
+    "prepNone": "Nessuna",
+    "polybag": "Sacchetto di plastica",
+    "sealedPolybag": "Sacchetto di plastica sigillato",
+    "chokingHazard": "Avvertenza per parti piccole",
+    "countryOfOriginLabel": "Etichetta del paese d’origine",
+    "countryOfOriginCode": "Codice paese",
+    "instructions": "Istruzioni"
   },
   "revise": {
     "title": "Modifica ordine",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "Prepara la prossima spedizione",
     "offCopacker": {
       "title": "{supplier} non è su Copacker",
-      "description": "Invia tu l’ordine di acquisto via email, poi inserisci i suoi cartoni e la sua fattura nella spedizione."
+      "description": "Invia loro l’ordine di acquisto via email, poi inserisci i dettagli dei cartoni nella spedizione."
     },
     "columns": {
       "products": "Prodotti",
@@ -422,7 +431,8 @@
     "otherAddress": "Altro indirizzo",
     "readyForPickup": "Pronto per il ritiro",
     "addCartonProduct": "Aggiungi prodotto al cartone",
-    "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone"
+    "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone",
+    "finishPacking": "Completa imballaggio"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -447,5 +457,84 @@
     "surcharge": "Sovrapprezzo",
     "tariffs": "Tariffe doganali",
     "other": "Altro"
+  },
+  "cartonEditor": {
+    "addProductsTo": "Aggiungi prodotti al cartone {carton}",
+    "shipmentProducts": "Prodotti di questa spedizione",
+    "searchProducts": "Cerca prodotti in questa spedizione",
+    "alreadyAdded": "Già aggiunto",
+    "noProducts": "Nessun prodotto trovato",
+    "cancel": "Annulla",
+    "addSelected": "Aggiungi {count, plural, one {# prodotto} other {# prodotti}}",
+    "carton": "Cartone {carton}",
+    "count": "Cartoni",
+    "length": "Lunghezza",
+    "width": "Larghezza",
+    "height": "Altezza",
+    "weight": "Peso",
+    "enterNumber": "Inserisci un numero positivo per {field}.",
+    "enterQuantity": "Inserisci una quantità intera per {sku}.",
+    "addProductRequired": "Aggiungi un prodotto a questo cartone.",
+    "dimensions": "Dimensioni (cm)",
+    "axis": {
+      "length": "L",
+      "width": "P",
+      "height": "H"
+    },
+    "actions": "Azioni del cartone {carton}",
+    "duplicate": "Duplica cartone",
+    "delete": "Elimina cartone",
+    "quantityPerCarton": "Quantità / cartone",
+    "packsPerCarton": "Confezioni / cartone",
+    "unitsPerCarton": "Unità / cartone",
+    "productQuantity": "{sku}: quantità per cartone {carton}",
+    "unitCount": "{count} unità",
+    "removeProduct": "Rimuovi {sku} dal cartone {carton}",
+    "product": "Prodotto",
+    "leftToPack": "Da imballare",
+    "packCount": "{count, plural, one {# confezione} other {# confezioni}}",
+    "addToCarton": "Aggiungi al cartone {carton}",
+    "selectedCount": "{count} selezionati",
+    "cartonGroup": "Cartoni {cartons}"
+  },
+  "cartonImport": {
+    "title": "Importa cartoni",
+    "reviewTitle": "Controlla importazione",
+    "downloadTemplate": "Scarica modello",
+    "templateHint": "Usa il modello per inserire contenuto, quantità, dimensioni e peso dei cartoni.",
+    "downloadFailed": "Impossibile scaricare il modello.",
+    "formats": "XLSX o CSV, fino a 10 MB",
+    "failed": "Impossibile importare i cartoni. Nessuna modifica effettuata.",
+    "templateMismatch": "Il file non corrisponde al modello",
+    "issues": "{count, plural, one {# problema} other {# problemi}}",
+    "row": "Riga {row}",
+    "mode": "Modalità di importazione",
+    "add": "Aggiungi cartoni",
+    "replace": "Sostituisci imballaggio",
+    "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
+    "productCount": "{count, plural, one {# prodotto} other {# prodotti}}",
+    "measurements": "{length} × {width} × {height} cm / {weight} kg",
+    "close": "Chiudi",
+    "back": "Indietro",
+    "cancel": "Annulla",
+    "import": "Importa cartoni",
+    "review": "Controlla cartoni",
+    "importing": "Importazione cartoni…",
+    "importingButton": "Importazione…",
+    "checking": "Controllo file…",
+    "errors": {
+      "missingColumns": "Colonne mancanti: {value}.",
+      "duplicateColumns": "Colonne duplicate: {value}.",
+      "unknownColumns": "Colonne inattese: {value}.",
+      "empty": "Il file non contiene righe di cartoni.",
+      "worksheet": "Il file deve contenere un foglio chiamato Cartons.",
+      "unreadable": "Impossibile leggere il file. Usa un file XLSX o CSV basato sul modello.",
+      "number": "Inserisci un numero positivo valido in {value}.",
+      "sku": "Lo SKU non appartiene a questa spedizione: {value}.",
+      "cartonId": "Inserisci un ID cartone da 1 a 60 caratteri.",
+      "measurements": "Le righe di questo cartone devono avere lo stesso numero di cartoni, dimensioni e peso.",
+      "duplicateProduct": "Questo cartone include {value} più di una volta.",
+      "limit": "Una spedizione può contenere fino a 1.000 cartoni."
+    }
   }
 }

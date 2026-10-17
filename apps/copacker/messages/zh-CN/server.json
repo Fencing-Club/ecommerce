@@ -25,7 +25,8 @@
       "overQuantity": "{sku}：箱内数量超过采购订单的剩余数量",
       "unknownChange": "发票更改必须对应采购订单上不重复的商品"
     },
-    "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。"
+    "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。",
+    "missingTransport": "运输尚未确认"
   },
   "workflow": {
     "arrived": "货物已到达",
@@ -41,7 +42,8 @@
     "complete": "货件已完成",
     "cancellation": "创建替换货件前，请先取消现有的 Amazon 货件",
     "reconcile": "请先找到并关联 Amazon 订单，再继续",
-    "retry": "解决报告的问题，然后重试货件"
+    "retry": "解决报告的问题，然后重试货件",
+    "packed": "装箱已完成。买家现在可以准备亚马逊货件并获取标签。"
   },
   "overview": {
     "due": {

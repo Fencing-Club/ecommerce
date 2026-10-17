@@ -10,6 +10,7 @@ import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
+import type { ShipmentTransport } from "@repo/aisle/transport"
 import { sql } from "drizzle-orm"
 import {
   pgTable,
@@ -383,6 +384,7 @@ export const orderRevisions = pgTable(
   (t) => [uniqueIndex("order_revision").on(t.orderId, t.revision)]
 )
 export type ShipmentState =
+  | "packed"
   | "packing"
   | "approval"
   | "queued"
@@ -463,6 +465,7 @@ export const shipments = pgTable(
     // accepted. A correction puts them back.
     stockTaken: jsonb().$type<Record<string, number>>(),
     bookingReference: text(),
+    transport: jsonb().$type<ShipmentTransport>(),
     // The carrier and tracking or booking number the forwarder shipped on with.
     forwarderCarrier: text(),
     forwarderReference: text(),

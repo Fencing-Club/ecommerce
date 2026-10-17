@@ -292,7 +292,7 @@ export const BuyerOwner = meta.story({
     ).toHaveTextContent(timeZoneLabel("America/Los_Angeles"))
     const monthly = canvas.getByRole("region", { name: "Monthly costs" })
     await expect(monthly).toHaveTextContent("3 costs")
-    await expect(monthly).toHaveTextContent("$1,800.00")
+    await expect(monthly).toHaveTextContent("$1,800")
     await expect(monthly).toHaveTextContent("Amazon, since Jan 5, 2026")
     await expect(monthly).toHaveTextContent("Shopify, Mar 1, 2026 to May 31, 2026")
     // Addresses kept with a supplier or forwarder are on the Partners page instead.

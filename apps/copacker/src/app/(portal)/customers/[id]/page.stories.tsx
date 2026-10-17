@@ -37,8 +37,8 @@ export const Default = meta.story({
     await expect(canvas.getByRole("heading", { name: "Harbor Goods" })).toBeVisible()
     // The figures are the app's stat cards: the first currency spent, the others named beneath.
     const spent = card(canvas, "Amount spent")
-    await expect(spent.getByText("$12,840.00")).toBeVisible()
-    await expect(spent.getByText("Plus €960.00")).toBeVisible()
+    await expect(spent.getByText("$12,840")).toBeVisible()
+    await expect(spent.getByText("Plus €960")).toBeVisible()
     // Each figure has its own card.
     await expect(canvas.getByText("6").closest("[data-slot=card]")).toHaveTextContent("Orders6")
     // Its orders, without a customer column.

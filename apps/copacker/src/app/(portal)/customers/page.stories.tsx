@@ -25,7 +25,7 @@ export const Default = meta.story({
     await expect(canvas.getByRole("heading", { name: "Customers" })).toBeVisible()
     const harbor = within(canvas.getByRole("link", { name: "Harbor Goods" }).closest("tr")!)
     await expect(harbor.getByRole("combobox", { name: "Catalog for Harbor Goods" })).toHaveTextContent("Wholesale 2026")
-    await expect(harbor.getByText("$12,840.00")).toBeVisible()
+    await expect(harbor.getByText("$12,840")).toBeVisible()
   }
 })
 
@@ -42,7 +42,7 @@ export const WithoutPrices = meta.story({
   parameters: { permissions: customerEditor },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("columnheader", { name: "Amount spent" })).toBeNull()
-    await expect(canvas.queryByText("$12,840.00")).toBeNull()
+    await expect(canvas.queryByText("$12,840")).toBeNull()
     await expect(canvas.getByRole("combobox", { name: "Catalog for Harbor Goods" })).toBeEnabled()
   }
 })

@@ -21,11 +21,24 @@ const prepKeys = {
 export async function requirementTranslator() {
   const config = await localization()
   const t = createTranslator({ ...config, namespace: "shipments.requirements" })
+  const packing = createTranslator({ ...config, namespace: "orders.builder" })
   const format = createFormatter(config)
   const names = (networks: AmazonNetwork[]) => format.list(networks.map((network) => amazonNetworkNames[network]))
   return {
     requirement(requirement: Requirement) {
       return match(requirement)
+        .with({ code: "productTask" }, ({ task, countryCode }) => {
+          const keys = {
+            polybag: "polybag",
+            sealedPolybag: "sealedPolybag",
+            sku: "skuLabel",
+            fnsku: "fnskuLabel",
+            suffocation: "suffocationWarning",
+            choking: "chokingHazard",
+            countryOfOrigin: "countryOfOriginLabel"
+          } as const
+          return packing(keys[task]) + (task === "countryOfOrigin" ? `: ${countryCode}` : "")
+        })
         .with({ code: "prep" }, ({ prep }) => t(`prep.${prepKeys[prep]}`))
         .with({ code: "cartons" }, ({ network }) => t(network === "fba" ? "fbaCartons" : "awdUsCartons"))
         .with({ code: "separateCartons" }, ({ networks }) => t("separateCartons", { networks: names(networks) }))

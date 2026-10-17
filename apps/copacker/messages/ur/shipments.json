@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "ترسیل کا پتہ",
+      "pending": "شپمنٹ بننے کے بعد Amazon ترسیل کا پتہ مقرر کرتا ہے۔",
+      "unavailable": "ترسیل کا پتہ دستیاب نہیں۔ خریداری کا آرڈر یا منسلک Amazon شپمنٹ دیکھیں۔"
+    },
     "metaTitle": "شپمنٹ",
     "title": "شپمنٹ {number}",
     "cartonCount": "{count, plural, one {# کارٹن} other {# کارٹن}}",
@@ -56,7 +61,9 @@
       "markShipped": "بھیجا گیا نشان زد کریں",
       "markReceived": "موصول نشان زد کریں",
       "retry": "شپمنٹ دوبارہ آزمائیں",
-      "cancelInAmazon": "Amazon میں منسوخ کریں"
+      "cancelInAmazon": "Amazon میں منسوخ کریں",
+      "getAmazonLabels": "Amazon لیبل حاصل کریں",
+      "createAmazonShipment": "Amazon شپمنٹ بنائیں"
     },
     "needsAttention": "توجہ درکار",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "خریدار کی منظوری کا انتظار"
     },
     "labels": {
-      "title": "شپنگ لیبلز",
-      "waiting": "شپنگ لیبلز کا انتظار",
-      "fba": "Amazon تک ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں۔",
-      "agl": "Amazon میں AGL ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں۔"
+      "title": "لیبل",
+      "waiting": "لیبل کا انتظار"
     },
     "creating": {
       "title": "Amazon شپمنٹ بنائی جا رہی ہے",
@@ -89,7 +94,11 @@
       "downloadLabel": "سپلائر پیکٹ ڈاؤن لوڈ کریں",
       "download": "پیکٹ ڈاؤن لوڈ کریں",
       "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
-      "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے"
+      "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے",
+      "cartonLabels": "کارٹن لیبل",
+      "unitLabels": "مصنوعات کے لیبل",
+      "carrierLabels": "کیریئر لیبل",
+      "backToShipment": "شپمنٹ پر واپس جائیں"
     },
     "cartons": {
       "title": "کارٹن",
@@ -185,5 +194,45 @@
     "fnskuLabel": "FNSKU {fnsku} کا لیبل لگائیں۔",
     "suffocationLabel": "ہر پولی بیگ پر دم گھٹنے کی وارننگ کا لیبل لگائیں۔",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "نقل و حمل",
+    "service": "سروس",
+    "parcel": "پارسل کیریئر",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "مال بردار کیریئر",
+    "handoff": "حوالگی کی جگہ",
+    "supplier": "سپلائر",
+    "forwarder": "فریٹ فارورڈر",
+    "collection": "حوالگی کا طریقہ",
+    "pickup": "کیریئر پک اپ",
+    "dropoff": "کیریئر تک پہنچائیں",
+    "carrierLabels": "کیریئر لیبل",
+    "perCarton": "فی کارٹن ایک",
+    "none": "ضروری نہیں",
+    "instructions": "حوالگی کی ہدایات",
+    "save": "نقل و حمل محفوظ کریں",
+    "unconfirmed": "نقل و حمل کی تصدیق نہیں ہوئی"
+  },
+  "documentPreview": {
+    "settings": "ڈاؤن لوڈ کی ترتیبات",
+    "language": "زبان",
+    "paper": "صفحے کا سائز",
+    "preparing": "PDF تیار ہو رہی ہے…",
+    "unavailable": "PDF دستیاب نہیں",
+    "packet": "پیکٹ ڈاؤن لوڈ کریں",
+    "fit": "اسکرین کے مطابق سائز",
+    "zoom": "پیش منظر بڑا کریں",
+    "download": "PDF ڈاؤن لوڈ کریں",
+    "changed": "یہ پیکٹ اب دستیاب نہیں ہے۔ موجودہ دستاویزات کے لیے صفحہ ریفریش کریں۔",
+    "previewLoading": "پیش منظر تیار ہو رہا ہے…",
+    "failed": "PDF نہیں بن سکی۔ دستاویز اور ڈاؤن لوڈ کی ترتیبات محفوظ ہیں۔",
+    "preview": "PDF پیش منظر",
+    "page": "PDF صفحہ {page}",
+    "pageOf": "صفحہ {page} از {total}",
+    "title": "شپنگ دستاویزات",
+    "document": "دستاویز",
+    "issues": "ڈاؤن لوڈ سے پہلے دستاویزات کے یہ مسائل درست کریں۔",
+    "pages": "{count} صفحات / {paper}"
   }
 }

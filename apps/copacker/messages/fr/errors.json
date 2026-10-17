@@ -354,5 +354,9 @@
   "awdOriginDiffers": "L’adresse d’enlèvement diffère d’Amazon. Vérifiez rue, complément, code postal et pays.",
   "linkAwdOnly": "Seul un brouillon de colisage AWD peut être lié à un envoi AWD existant.",
   "awdProductsDiffer": "L’envoi Amazon contient des produits ou des quantités hors de cette commande AWD.",
-  "awdAlreadyLinked": "Cet envoi Amazon est déjà lié à un bon de commande."
+  "awdAlreadyLinked": "Cet envoi Amazon est déjà lié à un bon de commande.",
+  "transportChanged": "Transport modifié ou déjà validé. Rechargez l’expédition.",
+  "transportForwarderMissing": "Ajoutez d’abord une étape chez un transitaire.",
+  "packetDestinationUnavailable": "Confirmez l’adresse de livraison de l’expédition avant de télécharger le dossier.",
+  "packetNoLabelsRequired": "Aucune étiquette de ce type n’est requise pour cette expédition."
 }

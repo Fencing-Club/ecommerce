@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "Enviar a",
+      "pending": "Amazon asigna la dirección de entrega después de crear el envío.",
+      "unavailable": "Dirección de entrega no disponible. Revisa la orden de compra o el envío de Amazon vinculado."
+    },
     "metaTitle": "Envío",
     "title": "Envío {number}",
     "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
@@ -56,7 +61,9 @@
       "markShipped": "Marcar como enviado",
       "markReceived": "Marcar como recibido",
       "retry": "Reintentar envío",
-      "cancelInAmazon": "Cancelar en Amazon"
+      "cancelInAmazon": "Cancelar en Amazon",
+      "getAmazonLabels": "Obtener etiquetas de Amazon",
+      "createAmazonShipment": "Crear envío de Amazon"
     },
     "needsAttention": "Requiere atención",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "Esperando la aprobación del comprador"
     },
     "labels": {
-      "title": "Etiquetas de envío",
-      "waiting": "Esperando las etiquetas de envío",
-      "fba": "Reserva el transporte a Amazon y luego sube las etiquetas de envío.",
-      "agl": "Reserva el transporte AGL en Amazon y luego sube las etiquetas de envío."
+      "title": "Etiquetas",
+      "waiting": "Esperando etiquetas"
     },
     "creating": {
       "title": "Creando el envío de Amazon",
@@ -89,7 +94,11 @@
       "downloadLabel": "Descargar paquete de documentos del proveedor",
       "download": "Descargar paquete de documentos",
       "incompleteTitle": "Paquete de documentos incompleto",
-      "waitingForLabels": "Esperando las etiquetas del comprador"
+      "waitingForLabels": "Esperando las etiquetas del comprador",
+      "cartonLabels": "Etiquetas de cajas",
+      "unitLabels": "Etiquetas de productos",
+      "carrierLabels": "Etiquetas del transportista",
+      "backToShipment": "Volver al envío"
     },
     "cartons": {
       "title": "Cajas",
@@ -185,5 +194,45 @@
     "fnskuLabel": "Etiqueta con el FNSKU {fnsku}.",
     "suffocationLabel": "Pon una etiqueta de advertencia de asfixia en cada bolsa de polietileno.",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "Transporte",
+    "service": "Servicio",
+    "parcel": "Paquetería",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "Transportista de carga",
+    "handoff": "Lugar de entrega",
+    "supplier": "Proveedor",
+    "forwarder": "Agente de carga",
+    "collection": "Método de entrega",
+    "pickup": "Recolección por el transportista",
+    "dropoff": "Entregar al transportista",
+    "carrierLabels": "Etiquetas del transportista",
+    "perCarton": "Una por caja",
+    "none": "No se requieren",
+    "instructions": "Instrucciones de entrega",
+    "save": "Guardar transporte",
+    "unconfirmed": "Transporte sin confirmar"
+  },
+  "documentPreview": {
+    "settings": "Configuración de descarga",
+    "language": "Idioma",
+    "paper": "Tamaño de página",
+    "preparing": "Preparando PDF…",
+    "unavailable": "PDF no disponible",
+    "packet": "Descargar paquete",
+    "fit": "Ajustar a la pantalla",
+    "zoom": "Ampliar vista previa",
+    "download": "Descargar PDF",
+    "changed": "Este paquete ya no está disponible. Actualiza la página para obtener los documentos actuales.",
+    "previewLoading": "Preparando vista previa…",
+    "failed": "No se pudo generar el PDF. Se conservaron tus ajustes del documento y de descarga.",
+    "preview": "Vista previa del PDF",
+    "page": "Página PDF {page}",
+    "pageOf": "Página {page} de {total}",
+    "title": "Documentos de envío",
+    "document": "Documento",
+    "issues": "Resuelve estos problemas antes de descargar los documentos.",
+    "pages": "{count, plural, one {# página} other {# páginas}} / {paper}"
   }
 }

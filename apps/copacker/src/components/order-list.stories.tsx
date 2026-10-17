@@ -35,7 +35,7 @@ export const AllOrders = meta.story({
     await expect(canvas.getByRole("link", { name: "PO-1046" })).toHaveAttribute("href", "/orders/order-PO-1046")
     await expect(canvas.getAllByText("3 products")).toHaveLength(5)
     await expect(canvas.getAllByText("Oakland warehouse")).toHaveLength(5)
-    await expect(canvas.getAllByText("$2,958.00")).toHaveLength(5)
+    await expect(canvas.getAllByText("$2,958")).toHaveLength(5)
     // A purchase order from another year shows its year.
     const lastYear = daysAgo(400).toLocaleDateString("en", { year: "numeric" })
     await expect(canvas.getByText(new RegExp(lastYear))).toBeInTheDocument()
@@ -81,7 +81,7 @@ export const WithoutValues = meta.story({
     // Without a Draft tab, the draft status falls back to All.
     await expect(canvas.getByRole("link", { name: /^All/ })).toHaveAttribute("aria-current", "page")
     await expect(canvas.queryByRole("columnheader", { name: "Value" })).toBeNull()
-    await expect(canvas.queryByText("$2,958.00")).toBeNull()
+    await expect(canvas.queryByText("$2,958")).toBeNull()
     await expect(canvas.getByText("Amazon FBA")).toBeInTheDocument()
     await expect(canvas.getByText("Oakland warehouse")).toBeInTheDocument()
   }
@@ -129,6 +129,6 @@ export const Phone = meta.story({
     await expect(canvas.getByRole("table").getBoundingClientRect().right).toBeLessThanOrEqual(width)
     await expect(canvas.queryByRole("columnheader", { name: "Supplier" })).toBeNull()
     await expect(canvas.getAllByText(/^Lotus Manufacturing,/)[0]).toBeVisible()
-    await expect(canvas.getAllByText("$2,958.00")[0]).toBeVisible()
+    await expect(canvas.getAllByText("$2,958")[0]).toBeVisible()
   }
 })

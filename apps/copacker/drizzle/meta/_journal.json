@@ -407,6 +407,13 @@
       "when": 1792225191861,
       "tag": "0057_robust_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792274122769,
+      "tag": "0058_warm_reavers",
+      "breakpoints": true
     }
   ]
 }

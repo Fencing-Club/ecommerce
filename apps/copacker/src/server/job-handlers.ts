@@ -18,7 +18,7 @@ import { defaultLocale, isLocale } from "../i18n/locales"
 import { translatorFor } from "../i18n/translator"
 import { checkLinkedAwd } from "./awd-packing"
 import { amazonFor, shopifyFor } from "./connections"
-import { filedPo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
+import { filedPo, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
 import { saveSupplierSkus } from "./product-fields"
@@ -208,7 +208,6 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
     })
     .where(eq(shipments.id, shipmentId))
   await assertOwned()
-  await generateShipmentDocuments(shipmentId)
   await assertOwned()
   await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
 }

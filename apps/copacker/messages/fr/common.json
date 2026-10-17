@@ -52,7 +52,8 @@
     "notInvited": "Non invité",
     "accepted": "Accepté",
     "declined": "Refusé",
-    "atForwarder": "Chez le transitaire"
+    "atForwarder": "Chez le transitaire",
+    "packed": "Emballé"
   },
   "destinations": {
     "amazon": "Amazon",

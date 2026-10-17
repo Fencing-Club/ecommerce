@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "Livrer à",
+      "pending": "Amazon attribue l’adresse de livraison après la création de l’expédition.",
+      "unavailable": "Adresse de livraison indisponible. Consultez le bon de commande ou l’expédition Amazon liée."
+    },
     "metaTitle": "Expédition",
     "title": "Expédition {number}",
     "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
@@ -56,7 +61,9 @@
       "markShipped": "Marquer comme expédiée",
       "markReceived": "Marquer comme reçue",
       "retry": "Relancer l’expédition",
-      "cancelInAmazon": "Annuler dans Amazon"
+      "cancelInAmazon": "Annuler dans Amazon",
+      "getAmazonLabels": "Obtenir les étiquettes Amazon",
+      "createAmazonShipment": "Créer l’expédition Amazon"
     },
     "needsAttention": "À traiter",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "En attente de l’approbation de l’acheteur"
     },
     "labels": {
-      "title": "Étiquettes d’expédition",
-      "waiting": "En attente des étiquettes d’expédition",
-      "fba": "Réservez le transport vers Amazon, puis importez les étiquettes d’expédition.",
-      "agl": "Réservez le transport AGL dans Amazon, puis importez les étiquettes d’expédition."
+      "title": "Étiquettes",
+      "waiting": "En attente des étiquettes"
     },
     "creating": {
       "title": "Création de l’expédition Amazon",
@@ -89,7 +94,11 @@
       "downloadLabel": "Télécharger le dossier fournisseur",
       "download": "Télécharger le dossier",
       "incompleteTitle": "Dossier fournisseur incomplet",
-      "waitingForLabels": "En attente des étiquettes de l’acheteur"
+      "waitingForLabels": "En attente des étiquettes de l’acheteur",
+      "cartonLabels": "Étiquettes de carton",
+      "unitLabels": "Étiquettes produit",
+      "carrierLabels": "Étiquettes du transporteur",
+      "backToShipment": "Retour à l’expédition"
     },
     "cartons": {
       "title": "Cartons",
@@ -185,5 +194,45 @@
     "fnskuLabel": "Étiquetez avec le FNSKU {fnsku}.",
     "suffocationLabel": "Apposez une étiquette d’avertissement de risque d’étouffement sur chaque sachet plastique.",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "Transport",
+    "service": "Service",
+    "parcel": "Transporteur de colis",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "Transporteur de fret",
+    "handoff": "Lieu de remise",
+    "supplier": "Fournisseur",
+    "forwarder": "Transitaire",
+    "collection": "Mode de remise",
+    "pickup": "Enlèvement par le transporteur",
+    "dropoff": "Livrer au transporteur",
+    "carrierLabels": "Étiquettes de transport",
+    "perCarton": "Une par carton",
+    "none": "Non requises",
+    "instructions": "Instructions de remise",
+    "save": "Enregistrer le transport",
+    "unconfirmed": "Transport non confirmé"
+  },
+  "documentPreview": {
+    "settings": "Paramètres de téléchargement",
+    "language": "Langue",
+    "paper": "Format de page",
+    "preparing": "Préparation du PDF…",
+    "unavailable": "PDF indisponible",
+    "packet": "Télécharger le dossier",
+    "fit": "Adapter à l’écran",
+    "zoom": "Agrandir l’aperçu",
+    "download": "Télécharger le PDF",
+    "changed": "Ce dossier n’est plus disponible. Actualisez la page pour obtenir les documents à jour.",
+    "previewLoading": "Préparation de l’aperçu…",
+    "failed": "Le PDF n’a pas pu être généré. Vos paramètres de document et de téléchargement ont été conservés.",
+    "preview": "Aperçu du PDF",
+    "page": "Page PDF {page}",
+    "pageOf": "Page {page} sur {total}",
+    "title": "Documents d’expédition",
+    "document": "Document",
+    "issues": "Corrigez ces problèmes avant de télécharger les documents.",
+    "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
   }
 }

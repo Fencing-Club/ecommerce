@@ -52,7 +52,8 @@
     "notInvited": "आमंत्रित नहीं",
     "accepted": "स्वीकृत",
     "declined": "अस्वीकृत",
-    "atForwarder": "फ़ॉरवर्डर के पास"
+    "atForwarder": "फ़ॉरवर्डर के पास",
+    "packed": "पैक हो गया"
   },
   "destinations": {
     "amazon": "Amazon",

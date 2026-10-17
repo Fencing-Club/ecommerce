@@ -52,7 +52,8 @@
     "notInvited": "Not invited",
     "accepted": "Accepted",
     "declined": "Declined",
-    "atForwarder": "At the forwarder"
+    "atForwarder": "At the forwarder",
+    "packed": "Packed"
   },
   "destinations": {
     "amazon": "Amazon",

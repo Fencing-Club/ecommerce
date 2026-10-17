@@ -1,6 +1,6 @@
+import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { CircleCheck, UploadCloud } from "lucide-react"
-import { useState } from "react"
-import { useDropzone } from "react-dropzone"
+import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -18,7 +18,6 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
 import { fileName, WarningNote } from "./common"
-import { pdfFiles } from "./file-dropzone"
 import { useUploadBarcodeMutation } from "./product-barcodes"
 
 // One chosen file and what happened to it. A file whose SKU matched no single variation can be retried with a SKU.
@@ -102,17 +101,26 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
   // How many of the last files dropped or chosen weren't PDFs within the size limit.
   const [skipped, setSkipped] = useState(0)
   const [upload] = useUploadBarcodeMutation()
-  // Drop, paste or click the zone to choose PDFs; react-dropzone leaves out anything else.
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: pdfFiles,
-    maxSize: maxBytes,
-    disabled: running,
-    onDrop: (accepted, rejected) => {
-      setFiles(accepted)
-      setSkipped(rejected.length)
-      setResults([])
+  const inputRef = useRef<HTMLInputElement>(null)
+  const pasteTarget = useRef<HTMLDivElement>(null)
+  const acceptedTypes = ["application/pdf", ".pdf"]
+  const { validate } = useFileValidation({ accept: acceptedTypes, maxSize: maxBytes })
+  async function choose(chosen: File[]) {
+    if (running || !chosen.length) {
+      return
     }
+    const { accepted, rejected } = await validate(chosen)
+    setFiles(accepted)
+    setSkipped(rejected.length)
+    setResults([])
+  }
+  const { handlers, isDragging: isDragActive } = useDropzone({
+    accept: acceptedTypes,
+    multiple: true,
+    disabled: running,
+    onDrop: choose
   })
+  usePasteFiles({ target: pasteTarget, enabled: open && !running, onPaste: choose })
   const update = (index: number, result: Result) =>
     setResults((current) => current.map((item, at) => (at === index ? result : item)))
 
@@ -191,20 +199,35 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <div
-            {...getRootProps({ role: "button", "aria-label": t("choose") })}
+        <div ref={pasteTarget} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <input
+            ref={inputRef}
+            type="file"
+            accept={acceptedTypes.join(",")}
+            multiple
+            hidden
+            disabled={running}
+            onChange={(event) => {
+              void choose(Array.from(event.currentTarget.files ?? []))
+              event.currentTarget.value = ""
+            }}
+          />
+          <button
+            {...handlers}
+            type="button"
+            aria-label={t("choose")}
+            disabled={running}
+            onClick={() => inputRef.current?.click()}
             className={cn(
               "flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
               isDragActive && "border-ring bg-muted/50",
               running && "cursor-default opacity-50"
             )}
           >
-            <input {...getInputProps()} />
             <UploadCloud className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
             <span className="font-medium">{files.length ? t("chosen", { count: files.length }) : t("dropHere")}</span>
             <span className="text-xs text-muted-foreground">{t("sizeLimit")}</span>
-          </div>
+          </button>
           {skipped > 0 && <WarningNote>{t("skipped", { count: skipped })}</WarningNote>}
           {results.length > 0 && (
             <div className="flex flex-col gap-2">

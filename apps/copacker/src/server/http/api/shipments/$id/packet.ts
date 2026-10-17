@@ -1,97 +1,81 @@
 import { combinePdfs } from "@repo/aisle/documents"
-import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
-import { shipments, documents } from "@/db/schema"
-import { accessibleOrder } from "@/server/access"
-import { session, requirePage } from "@/server/auth"
-import { packingDocuments } from "@/server/documents"
-import { errorTextResponse } from "@/server/errors"
-import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
-import { releaseIssues } from "@/server/readiness"
-import { releasedStates } from "@/server/readiness"
+import { session } from "@/server/auth"
+import { shipmentDocumentFilename } from "@/server/document-filenames"
+import { errorTextResponse, StatusError } from "@/server/errors"
+import { lineLabelFiles, warningLabelFile } from "@/server/product-barcodes"
+import { releasedPacket } from "@/server/shipment-packet"
 import { getFile } from "@/server/storage"
-import { requireMembership } from "@/server/workspace-session"
-// The supplier's packet, to print: the packing list and checklist, the product labels and suffocation warning labels
-// for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels and the buyer's shipping labels.
-export async function GET(_request: Request, context: { params: { id: string } }) {
-  const s = await session(),
-    id = z.uuid().parse((await context.params).id)
-  requirePage(s, "shipments")
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
-  if (!shipment) {
-    return errorTextResponse("shipmentNotFound", 404)
+
+// Provider artwork retains its original page geometry. Reference documents render from the checked snapshot in the browser.
+export async function GET(request: Request, context: { params: { id: string } }) {
+  try {
+    return await packet(request, context)
+  } catch (error) {
+    if (error instanceof StatusError) {
+      return errorTextResponse(error.key, error.status)
+    }
+    throw error
   }
-  const { order } = await accessibleOrder(s, shipment.orderId)
-  if (!releasedStates.includes(shipment.status)) {
-    return errorTextResponse("packetNotReleased", 409)
+}
+
+async function packet(request: Request, context: { params: { id: string } }) {
+  const query = new URL(request.url).searchParams
+  const section = z
+    .enum(["verify", "carton_labels", "carrier_labels", "product_labels"])
+    .safeParse(query.get("section"))
+  if (!section.success) {
+    return new Response("Unknown packet section", { status: 400 })
   }
-  const docs = await db()
-    .select()
-    .from(documents)
-    .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-  // Product labels are made from each product now, for the lines this shipment carries.
-  const labels = await lineLabels(order)
-  const missingLabels = new Set(labels.flatMap((label) => (label.state === "missing" ? [label.itemId] : [])))
-  if (releaseIssues(shipment, docs, missingLabels).length) {
-    return errorTextResponse("packetIncomplete", 409)
+  const s = await session()
+  const { id } = context.params
+  const { shipment, labelOrder, docs, labels, version } = await releasedPacket(s, id, query.get("version") ?? undefined)
+  if (section.data === "verify") {
+    return new Response(null, { status: 204, headers: { "Cache-Control": "private, no-store" } })
   }
-  const itemIds = new Set(shipment.packing?.cartons.flatMap((c) => c.items.map((i) => i.itemId)))
-  // A shipment to Amazon keeps its packing list and checklist, made with Amazon's carton labels, and its carton and
-  // shipping labels. Any other shipment has neither kind of label, and its packing list and checklist are made from its
-  // packing now.
-  const amazon = shipment.snapshot?.destination === "amazon"
-  const selected = amazon
-    ? docs.filter(
-        (d) =>
-          d.shipmentId === id &&
-          d.shipmentRevision === shipment.revision &&
-          ["packing_list", "checklist", "carton_label", "shipping_label"].includes(d.kind)
-      )
-    : []
-  const byKind = (kind: string) =>
-    selected
-      .filter((d) => d.kind === kind)
-      .toSorted((a, b) => (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true }))
-  const file = (d: (typeof selected)[number]) => getFile(d.objectKey)
-  const packing = amazon
-    ? await Promise.all([...byKind("packing_list"), ...byKind("checklist")].map(file))
-    : await packingDocuments(shipment).then((made) => [made.packingList, made.checklist])
-  const productLabels = await lineLabelFiles(
-    order,
-    labels.filter((label) => itemIds.has(label.itemId))
-  )
-  const warnings = await warningLabelFile(
-    (shipment.snapshot ?? order.data).items.filter((item) => itemIds.has(item.id))
-  )
-  const result = await combinePdfs([
-    ...packing,
-    ...productLabels.map((label) => label.bytes),
-    ...(warnings ? [warnings.bytes] : []),
-    ...(await Promise.all([...byKind("carton_label"), ...byKind("shipping_label")].map(file)))
-  ])
-  await accessibleOrder(s, shipment.orderId)
-  const [current] = await db().select().from(shipments).where(eq(shipments.id, id))
-  if (!current || !releasedStates.includes(current.status) || current.revision !== shipment.revision) {
-    return errorTextResponse("packetChanged", 409)
-  }
-  const currentDocs = await db()
-    .select()
-    .from(documents)
-    .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-  if (
-    releaseIssues(current, currentDocs, missingLabels).length ||
-    selected.some(
-      (doc) => !currentDocs.some((currentDoc) => currentDoc.id === doc.id && currentDoc.objectKey === doc.objectKey)
+  const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const files: Uint8Array[] = []
+  if (section.data === "product_labels") {
+    files.push(
+      ...(
+        await lineLabelFiles(
+          labelOrder,
+          labels.filter((label) => included.has(label.itemId))
+        )
+      ).map((label) => label.bytes)
     )
-  ) {
-    return errorTextResponse("shipmentDocumentsChanged", 409)
+    const warnings = await warningLabelFile(labelOrder.data.items.filter((item) => included.has(item.id)))
+    if (warnings) {
+      files.push(warnings.bytes)
+    }
+  } else {
+    const kind = section.data === "carton_labels" ? "carton_label" : "shipping_label"
+    if (kind !== "shipping_label" || shipment.transport?.carrierLabels === "per_carton") {
+      const selected = docs
+        .filter((doc) => doc.shipmentId === id && doc.shipmentRevision === shipment.revision && doc.kind === kind)
+        .toSorted((a, b) => (a.cartonId ?? "").localeCompare(b.cartonId ?? "", undefined, { numeric: true }))
+      files.push(...(await Promise.all(selected.map((doc) => getFile(doc.objectKey)))))
+    }
   }
-  await requireMembership(s.user.id, s.org.id)
-  return new Response(Buffer.from(result), {
+  if (!files.length) {
+    return errorTextResponse("packetNoLabelsRequired", 404)
+  }
+  const bytes = files.length === 1 ? files[0]! : await combinePdfs(files)
+  await releasedPacket(s, id, version)
+  const filename = shipmentDocumentFilename(
+    ({ product_labels: "product_label", carton_labels: "carton_label", carrier_labels: "shipping_label" } as const)[
+      section.data
+    ],
+    {
+      orderReference: labelOrder.data.reference,
+      shipmentReference: shipment.amazonShipmentId ?? shipment.id,
+      revision: shipment.revision
+    }
+  )
+  return new Response(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="Supplier packet.pdf"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "sandbox"

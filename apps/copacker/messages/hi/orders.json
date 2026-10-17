@@ -178,6 +178,7 @@
     "preparation": "प्रेप",
     "suffocationWarning": "दम घुटने की चेतावनी वाला लेबल",
     "instructionsPlaceholder": "हैंडलिंग या लेबलिंग के अपवाद",
+    "markdownHint": "Markdown समर्थित है: बुलेट के लिए -, क्रमांकित चरणों के लिए 1. और ज़ोर देने के लिए **बोल्ड** का उपयोग करें।",
     "done": "हो गया",
     "editCostSummary": "एडिट करें<hidden> लागत सारांश</hidden>",
     "editCostSummaryTitle": "लागत सारांश एडिट करें",
@@ -187,6 +188,7 @@
     "removeAdjustment": "एडजस्टमेंट हटाएं",
     "addAdjustment": "एडजस्टमेंट जोड़ें",
     "skuLabel": "SKU लेबल",
+    "fnskuLabel": "FNSKU लेबल",
     "amazonRequiresIt": "Amazon के लिए ज़रूरी",
     "shipments": "शिपमेंट",
     "groupingHint": "शिपमेंट के बीच ले जाने के लिए उत्पाद चुनें।",
@@ -208,7 +210,14 @@
     "perPiece": "प्रति पीस",
     "flatAmount": "निश्चित राशि",
     "shipmentTotal": "शिपमेंट कुल",
-    "expenseType": "खर्च का प्रकार"
+    "expenseType": "खर्च का प्रकार",
+    "prepNone": "कोई नहीं",
+    "polybag": "पॉलीबैग",
+    "sealedPolybag": "सीलबंद पॉलीबैग",
+    "chokingHazard": "छोटे हिस्सों से दम घुटने की चेतावनी",
+    "countryOfOriginLabel": "मूल देश का लेबल",
+    "countryOfOriginCode": "देश का कोड",
+    "instructions": "निर्देश"
   },
   "revise": {
     "title": "ऑर्डर एडिट करें",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "अगला शिपमेंट तैयार करें",
     "offCopacker": {
       "title": "{supplier} Copacker पर नहीं है",
-      "description": "खरीद ऑर्डर उन्हें खुद ईमेल करें, फिर शिपमेंट में उनके कार्टन और इनवॉइस दर्ज करें।"
+      "description": "उन्हें खरीद आदेश ईमेल करें, फिर शिपमेंट में उनके कार्टन का विवरण दर्ज करें।"
     },
     "columns": {
       "products": "प्रोडक्ट",
@@ -422,7 +431,8 @@
     "otherAddress": "दूसरा पता",
     "readyForPickup": "पिकअप के लिए तैयार",
     "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
-    "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ"
+    "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
+    "finishPacking": "पैकिंग पूरी करें"
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -447,5 +457,84 @@
     "surcharge": "अधिभार",
     "tariffs": "टैरिफ़",
     "other": "अन्य"
+  },
+  "cartonEditor": {
+    "addProductsTo": "कार्टन {carton} में उत्पाद जोड़ें",
+    "shipmentProducts": "इस शिपमेंट के उत्पाद",
+    "searchProducts": "इस शिपमेंट में उत्पाद खोजें",
+    "alreadyAdded": "पहले से जोड़ा गया",
+    "noProducts": "कोई उत्पाद नहीं मिला",
+    "cancel": "रद्द करें",
+    "addSelected": "{count} उत्पाद जोड़ें",
+    "carton": "कार्टन {carton}",
+    "count": "कार्टन",
+    "length": "लंबाई",
+    "width": "चौड़ाई",
+    "height": "ऊँचाई",
+    "weight": "वज़न",
+    "enterNumber": "{field} के लिए धनात्मक संख्या दर्ज करें।",
+    "enterQuantity": "{sku} के लिए पूर्णांक मात्रा दर्ज करें।",
+    "addProductRequired": "इस कार्टन में एक उत्पाद जोड़ें।",
+    "dimensions": "आयाम (सेमी)",
+    "axis": {
+      "length": "ल",
+      "width": "चौ",
+      "height": "ऊँ"
+    },
+    "actions": "कार्टन {carton} की कार्रवाइयाँ",
+    "duplicate": "कार्टन की प्रतिलिपि बनाएँ",
+    "delete": "कार्टन हटाएँ",
+    "quantityPerCarton": "मात्रा / कार्टन",
+    "packsPerCarton": "पैक / कार्टन",
+    "unitsPerCarton": "इकाइयाँ / कार्टन",
+    "productQuantity": "{sku}: कार्टन {carton} में मात्रा",
+    "unitCount": "{count} इकाइयाँ",
+    "removeProduct": "कार्टन {carton} से {sku} हटाएँ",
+    "product": "उत्पाद",
+    "leftToPack": "पैक करना बाकी",
+    "packCount": "{count} पैक",
+    "addToCarton": "कार्टन {carton} में जोड़ें",
+    "selectedCount": "{count} चुने गए",
+    "cartonGroup": "कार्टन {cartons}"
+  },
+  "cartonImport": {
+    "title": "कार्टन आयात करें",
+    "reviewTitle": "आयात की समीक्षा करें",
+    "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+    "templateHint": "कार्टन की सामग्री, मात्रा, आयाम और वज़न दर्ज करने के लिए टेम्पलेट का उपयोग करें।",
+    "downloadFailed": "टेम्पलेट डाउनलोड नहीं हो सका।",
+    "formats": "XLSX या CSV, अधिकतम 10 MB",
+    "failed": "कार्टन आयात नहीं हो सके। कोई बदलाव नहीं किया गया।",
+    "templateMismatch": "फ़ाइल टेम्पलेट से मेल नहीं खाती",
+    "issues": "{count} समस्याएँ",
+    "row": "पंक्ति {row}",
+    "mode": "आयात मोड",
+    "add": "कार्टन जोड़ें",
+    "replace": "पैकिंग बदलें",
+    "cartonCount": "{count} कार्टन",
+    "productCount": "{count} उत्पाद",
+    "measurements": "{length} × {width} × {height} सेमी / {weight} किग्रा",
+    "close": "बंद करें",
+    "back": "वापस",
+    "cancel": "रद्द करें",
+    "import": "कार्टन आयात करें",
+    "review": "कार्टन की समीक्षा करें",
+    "importing": "कार्टन आयात हो रहे हैं…",
+    "importingButton": "आयात हो रहा है…",
+    "checking": "फ़ाइल जाँची जा रही है…",
+    "errors": {
+      "missingColumns": "ये कॉलम मौजूद नहीं हैं: {value}।",
+      "duplicateColumns": "दोहराए गए कॉलम: {value}।",
+      "unknownColumns": "अनपेक्षित कॉलम: {value}।",
+      "empty": "फ़ाइल में कार्टन की कोई पंक्ति नहीं है।",
+      "worksheet": "फ़ाइल में Cartons नाम की वर्कशीट होनी चाहिए।",
+      "unreadable": "फ़ाइल पढ़ी नहीं जा सकी। टेम्पलेट पर आधारित XLSX या CSV फ़ाइल का उपयोग करें।",
+      "number": "{value} में मान्य धनात्मक संख्या दर्ज करें।",
+      "sku": "SKU इस शिपमेंट में नहीं है: {value}।",
+      "cartonId": "1–60 अक्षरों की कार्टन ID दर्ज करें।",
+      "measurements": "इस कार्टन की सभी पंक्तियों में कार्टन की संख्या, आयाम और वज़न समान होने चाहिए।",
+      "duplicateProduct": "इस कार्टन में {value} एक से अधिक बार है।",
+      "limit": "एक शिपमेंट में अधिकतम 1,000 कार्टन हो सकते हैं।"
+    }
   }
 }

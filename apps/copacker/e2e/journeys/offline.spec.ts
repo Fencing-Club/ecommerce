@@ -1,18 +1,19 @@
 import { expect, test } from "../fixtures"
-import { download, expectPdf, pdfFile } from "../support/files"
+import { download, expectPdf } from "../support/files"
 import { daysFromNow, openOrder, titleStatus } from "./orders"
+import { addCartonProduct, fillCarton } from "./packing"
 
 test.use({ role: "buyer" })
 
 // Offline supplier isn't on Copacker, so the buyer sends E2E-OFFLINE itself and enters the supplier's side: its
-// invoice, pickup address and cartons, then ships and receives the goods.
+// pickup address and cartons, then ships and receives the goods.
 test("a buyer sends a purchase order to a supplier off Copacker and enters its shipment", async ({ page }) => {
   test.setTimeout(180_000)
   await openOrder(page, "E2E-OFFLINE")
 
   await test.step("send the purchase order", async () => {
     const alert = page.getByRole("alert").filter({ hasText: "Offline supplier isn’t on Copacker" })
-    await expect(alert).toContainText("Email them the purchase order yourself")
+    await expect(alert).toContainText("Email them the purchase order, then enter their carton details on the shipment.")
     await expect(page.getByRole("button", { name: "Submit to supplier" })).toHaveCount(0)
     await page.getByRole("button", { name: "Send purchase order" }).click()
     await expect(titleStatus(page)).toHaveText("With supplier")
@@ -34,10 +35,10 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByRole("heading", { level: 1, name: "Shipment 1" })).toBeVisible()
     await expect(titleStatus(page)).toHaveText("Packing")
     await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("E2E-OFFLINE")
-    await expect(page.getByText("Offline supplier’s invoice for these cartons")).toBeVisible()
-    await expect(page.getByText("Changes update the purchase order")).toBeVisible()
+    await expect(page.getByText("Commercial invoice", { exact: true })).toHaveCount(0)
+    await expect(page.getByRole("textbox", { name: "Supplier SKU" })).toHaveCount(0)
     await expect(page.getByText("No cartons yet")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Submit packing list" })).toBeDisabled()
+    await expect(page.getByRole("button", { name: "Finish packing" })).toBeDisabled()
   })
 
   await test.step("enter the pickup address the supplier emailed", async () => {
@@ -56,53 +57,29 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("option", { name: "Oregon", exact: true }).click()
   })
 
-  await test.step("enter the cartons and the supplier's invoice", async () => {
+  await test.step("enter cartons with quantities for each product", async () => {
     await page.getByRole("button", { name: "Add carton" }).click()
-    await page.getByLabel("Carton number").fill("OFF-1")
-    for (const [field, value] of [
-      ["Length (cm)", "40"],
-      ["Width (cm)", "30"],
-      ["Height (cm)", "25"],
-      ["Weight (kg)", "9.5"]
-    ]) {
-      await page.getByRole("spinbutton", { name: field }).fill(value)
-    }
-    await page.getByRole("spinbutton", { name: "Units", exact: true }).fill("100")
-    await page.getByRole("button", { name: "Duplicate carton OFF-1" }).click()
-    await page.getByLabel("Carton number").nth(1).fill("OFF-2")
-    await page.getByRole("combobox", { name: "Product" }).nth(1).click()
-    await page.getByRole("option", { name: "Pro-grip glove / Right / grip-right" }).click()
-    await page.getByRole("spinbutton", { name: "Units", exact: true }).nth(1).fill("50")
+    await fillCarton(page, "1", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "9.5" })
+    await addCartonProduct(page, "1", "Left", "grip-left", "100")
+    await page.getByRole("button", { name: "Add carton" }).click()
+    await fillCarton(page, "2", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "7" })
+    await addCartonProduct(page, "2", "Right", "grip-right", "50")
     await expect(page.getByText("2 cartons, 150 units")).toBeVisible()
-
-    // The supplier's invoice names a new SKU for the right glove, which the buyer's own entry applies at once.
-    await page.getByRole("textbox", { name: "Supplier SKU" }).nth(1).fill("GRIP-R2")
-
-    const chooser = page.waitForEvent("filechooser")
-    await page.getByRole("button", { name: /Drop a PDF or browse/ }).click()
-    await (await chooser).setFiles(await pdfFile("Offline invoice.pdf", ["Offline supplier invoice 1001"]))
-    await expect(page.getByRole("link", { name: "Offline invoice.pdf" })).toBeVisible()
-
-    await page.getByRole("button", { name: "Check packing" }).click()
-    await expect(page.getByText("Ready to submit; changes update the purchase order")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Check packing" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Finish packing" })).toBeEnabled()
   })
 
   await test.step("submit the packing list", async () => {
-    await page.getByRole("button", { name: "Submit packing list" }).click()
+    await page.getByRole("button", { name: "Finish packing" }).click()
     // Submitting makes the shipment's documents, which takes a while on a busy machine.
     await expect(titleStatus(page)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    const cartons = page.getByRole("table")
-    await expect(cartons.getByRole("row", { name: /^OFF-1 / })).toContainText("grip-left")
-    await expect(cartons.getByRole("row", { name: /^OFF-2 / })).toContainText("40 × 30 × 25")
+    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("grip-left")
+    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("grip-right")
     await expect(page.getByText("200 Factory Road")).toBeVisible()
-    await expect(page.getByRole("link", { name: "Download Commercial invoice Offline invoice.pdf" })).toBeVisible()
-
-    // The packet's product labels look up each product's country of origin in Shopify, which the demo store can't
-    // answer, so the packet is offered but not downloaded here.
     await expect(page.getByRole("note").filter({ hasText: "Supplier packet ready" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute(
       "href",
-      /\/api\/shipments\/[0-9a-f-]{36}\/packet$/
+      /\/shipments\/[0-9a-f-]{36}\/packet$/
     )
   })
 
@@ -114,12 +91,10 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByRole("button", { name: "Mark received" })).toHaveCount(0)
   })
 
-  await test.step("the purchase order shows the new SKU and the received shipment", async () => {
+  await test.step("the purchase order keeps its SKU and shows the received shipment", async () => {
     await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "E2E-OFFLINE" }).click()
-    await expect(page.getByRole("row", { name: /grip-right/ })).toContainText("GRIP-R2")
+    await expect(page.getByRole("row", { name: /grip-right/ })).toContainText("GRIP-R")
     await expect(page.getByRole("link", { name: /^Shipment 1/ })).toContainText("Received")
-    await expect(
-      page.getByRole("region", { name: "Timeline" }).getByText(/Invoice changes approved; purchase order revision 2/)
-    ).toBeVisible()
+    await expect(page.getByRole("region", { name: "Timeline" }).getByText(/Invoice changes approved/)).toHaveCount(0)
   })
 })

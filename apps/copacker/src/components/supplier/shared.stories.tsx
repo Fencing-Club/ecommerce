@@ -103,8 +103,8 @@ export const AmountsInCurrencies = meta.story({
     </div>
   ),
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("$12,840.00")).toBeVisible()
-    await expect(canvas.getByText("€960.00")).toBeVisible()
+    await expect(canvas.getByText("$12,840")).toBeVisible()
+    await expect(canvas.getByText("€960")).toBeVisible()
     await expect(canvas.getByText("—")).toBeVisible()
   }
 })

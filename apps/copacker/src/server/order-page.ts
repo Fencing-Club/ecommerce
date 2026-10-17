@@ -120,7 +120,12 @@ export async function orderPage(input: { id: string; query: Record<string, strin
     }))
   ].flatMap((group) => {
     const documents = workflow.documents
-      .filter((doc) => doc.downloadUrl && doc.shipmentId === group.shipmentId && documentOrder.includes(doc.kind))
+      .filter(
+        (doc) =>
+          doc.downloadUrl &&
+          (doc.kind === "invoice" ? null : doc.shipmentId) === group.shipmentId &&
+          documentOrder.includes(doc.kind)
+      )
       .toSorted(
         (a, b) =>
           documentOrder.indexOf(a.kind) - documentOrder.indexOf(b.kind) ||
@@ -228,7 +233,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
         order.data.items.map((item) => [
           item.id,
           itemRequirements(item, order.data.destination, prep)
-            .filter((requirement) => requirement.code !== "packFor")
+            .filter((requirement) => !["packFor", "bundle", "fnskuLabel", "instruction"].includes(requirement.code))
             .map(text.requirement)
         ])
       ),

@@ -26,7 +26,7 @@ export const SetRules = meta.story({
     const rules = await dialog()
     await expect(rules.getByText("Canvas tote bag, Natural")).toBeInTheDocument()
     await expect(rules.getByText("In units, the unit this product is priced in.")).toBeInTheDocument()
-    await expect(rules.getByRole("textbox", { name: "Base price" })).toHaveValue("$10.00")
+    await expect(rules.getByRole("textbox", { name: "Base price" })).toHaveValue("$10")
     await userEvent.clear(rules.getByRole("spinbutton", { name: "Increment" }))
     await userEvent.type(rules.getByRole("spinbutton", { name: "Increment" }), "6")
     await userEvent.clear(rules.getByRole("spinbutton", { name: "Minimum" }))

@@ -497,6 +497,47 @@ describe("labels in bulk", () => {
 })
 
 describe("label file names", () => {
+  it("omits already-applied labels even when a barcode was uploaded and the destination is Amazon", async () => {
+    await upload(variantB)
+    const id = randomUUID()
+    const po = await order(
+      [
+        {
+          ...item(id, variantB),
+          fnsku: "X00GLOVE06",
+          suffocationWarning: true,
+          packingRequirements: { preparation: "sealedPolybag", labels: [], countryCode: "", instructions: "" }
+        }
+      ],
+      "amazon"
+    )
+    expect(await lineLabels(po)).toEqual([{ itemId: id, state: "none" }])
+    const response = await orderLabels(new Request(`${appUrl()}/api/orders/${po.id}/labels`), {
+      params: { id: po.id }
+    })
+    expect(response.status).toBe(404)
+  })
+  it("downloads SKU and FNSKU independently for the same order line", async () => {
+    const id = randomUUID()
+    const po = await order(
+      [
+        {
+          ...item(id, variantA),
+          fnsku: "X00CORD001",
+          packingRequirements: { preparation: "none", labels: ["sku", "fnsku"], countryCode: "", instructions: "" }
+        }
+      ],
+      "amazon"
+    )
+    expect(await lineLabels(po)).toMatchObject([
+      { itemId: id, state: "standard", code: "CORD-1" },
+      { itemId: id, state: "standard", code: "X00CORD001" }
+    ])
+    const response = await lineLabel(new Request(`${appUrl()}/api/orders/${po.id}/labels/${id}`), {
+      params: { id: po.id, itemId: id }
+    })
+    expect((await PDFDocument.load(await response.arrayBuffer())).getPageCount()).toBe(2)
+  })
   it("names a generated label after its product and variation, without characters files can't have", () => {
     expect(labelFileName("Pro-Grip Fencing Glove (10, Left)")).toBe("Pro-Grip Fencing Glove (10, Left).pdf")
     expect(labelFileName('Mask: "Pro" 3/4')).toBe("Mask- -Pro- 3-4.pdf")

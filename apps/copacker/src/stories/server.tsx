@@ -30,7 +30,7 @@ function StorySlot() {
 
 // A portal page as the portal layout shows it: the app header, the sidebar for the workspace's kind, and the page
 // beside them, at the page's path so the sidebar marks it.
-export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
+export function portalPage(pathname: string, kind: WorkspaceKind = "buyer", name?: string) {
   const workspace = workspaces[kind]
   const loader: Loader = async ({ globals }) => {
     await prepareIntl(globals.locale)
@@ -39,7 +39,7 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
         pathname={pathname}
         defaultOpen
         navigate={(href) => getStoryRouter().navigate({ href })}
-        name={workspace.name}
+        name={name ?? workspace.name}
         userName={person.name}
         email={person.email}
         kind={workspace.kind}

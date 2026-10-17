@@ -24,9 +24,9 @@ export const Default = meta.story({
       `/customers/${customerIds.harbor}`
     )
     await expect(row.getByText("Packing")).toBeVisible()
-    await expect(row.getByText("$1,030.00")).toBeVisible()
+    await expect(row.getByText("$1,030")).toBeVisible()
     // An order in euros totals in euros.
-    await expect(rowOf(canvas, "PO-2048").getByText("€960.00")).toBeVisible()
+    await expect(rowOf(canvas, "PO-2048").getByText("€960")).toBeVisible()
     await expect(rowOf(canvas, "PO-2050").getByText("Canvas tote bag")).toBeVisible()
     await expect(canvas.getByRole("tab", { name: /All\s*6/ })).toHaveAttribute("aria-selected", "true")
     await expect(canvas.getByRole("tab", { name: /To pack\s*2/ })).toBeVisible()
@@ -97,7 +97,7 @@ export const WithoutPrices = meta.story({
   parameters: { permissions: member },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("columnheader", { name: "Total" })).toBeNull()
-    await expect(canvas.queryByText("$1,030.00")).toBeNull()
+    await expect(canvas.queryByText("$1,030")).toBeNull()
     await expect(canvas.queryByRole("link", { name: "Harbor Goods" })).toBeNull()
     await expect(rowOf(canvas, "PO-2051").getByText("Harbor Goods")).toBeVisible()
   }

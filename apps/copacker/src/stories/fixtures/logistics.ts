@@ -113,7 +113,6 @@ export function packingFor(order: OrderInput, overrides: Partial<Packing> = {}):
   return {
     readyDate: daysAgo(-5).toISOString().slice(0, 10),
     origin: pickupAddress,
-    invoiceDocumentId: "d0c00000-0000-4000-8000-000000000001",
     cartons: [
       { cartonId: "C1", length: 60, width: 40, height: 40, weight: 18.5, items: [{ itemId: first!.id, pieces: 120 }] },
       {
@@ -153,6 +152,13 @@ export function shipmentRow(overrides: Partial<ShipmentRow> = {}): ShipmentRow {
     labels: [],
     stockTaken: null,
     bookingReference: null,
+    transport: {
+      service: "parcel",
+      handoff: "supplier",
+      collection: "pickup",
+      carrierLabels: "per_carton",
+      instructions: ""
+    },
     forwarderCarrier: null,
     forwarderReference: null,
     issue: null,

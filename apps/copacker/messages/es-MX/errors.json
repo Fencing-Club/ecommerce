@@ -354,5 +354,9 @@
   "awdOriginDiffers": "La dirección de recolección difiere de Amazon. Revisa calle, unidad, código postal y país.",
   "linkAwdOnly": "Solo un borrador de empaque AWD puede vincular un envío AWD existente.",
   "awdProductsDiffer": "El envío de Amazon contiene productos o cantidades fuera de este pedido AWD.",
-  "awdAlreadyLinked": "Este envío de Amazon ya está vinculado a una orden de compra."
+  "awdAlreadyLinked": "Este envío de Amazon ya está vinculado a una orden de compra.",
+  "transportChanged": "El transporte cambió o ya fue liberado. Recarga el envío.",
+  "transportForwarderMissing": "Primero agrega una parada con un agente de carga.",
+  "packetDestinationUnavailable": "Confirma la dirección de entrega del envío antes de descargar el paquete.",
+  "packetNoLabelsRequired": "Este envío no requiere etiquetas de este tipo."
 }

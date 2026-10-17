@@ -25,7 +25,8 @@
       "overQuantity": "{sku}: las cajas superan la cantidad pendiente de la orden de compra",
       "unknownChange": "Los cambios de la factura deben referirse a artículos únicos de la orden de compra"
     },
-    "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío."
+    "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío.",
+    "missingTransport": "Transporte sin confirmar"
   },
   "workflow": {
     "arrived": "La mercancía llegó",
@@ -41,7 +42,8 @@
     "complete": "Envío completado",
     "cancellation": "Cancela el envío existente de Amazon antes de crear uno de reemplazo",
     "reconcile": "Busca y vincula el pedido de Amazon antes de continuar",
-    "retry": "Resuelve el problema reportado y vuelve a intentar el envío"
+    "retry": "Resuelve el problema reportado y vuelve a intentar el envío",
+    "packed": "El empaque está completo. El comprador puede preparar el envío de Amazon y obtener sus etiquetas."
   },
   "overview": {
     "due": {

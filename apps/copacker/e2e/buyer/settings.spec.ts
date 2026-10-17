@@ -206,7 +206,7 @@ test("adds a monthly cost and removes it", async ({ page }) => {
   await expect(dialog).toBeHidden()
 
   const row = costs.getByRole("listitem").filter({ hasText: name })
-  await expect(row.getByText("$125.00")).toBeVisible()
+  await expect(row.getByText("$125")).toBeVisible()
   await expect(row.getByText("Shopify, Mar 1, 2026 to Dec 31, 2026")).toBeVisible()
 
   await row.getByRole("button", { name: `More for ${name}` }).click()

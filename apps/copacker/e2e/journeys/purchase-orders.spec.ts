@@ -17,9 +17,9 @@ test("the purchase order list filters by status", { tag: "@mobile" }, async ({ p
   await expect(tabs.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page")
   await expect(draft).toContainText("Demo supplier")
   await expect(draft).toContainText("Draft")
-  await expect(draft).toContainText("$1,275.00")
+  await expect(draft).toContainText("$1,275")
   await expect(sent).toContainText("With supplier")
-  await expect(sent).toContainText("$600.00")
+  await expect(sent).toContainText("$600")
 
   await tabs.getByRole("link", { name: "Draft" }).click()
   await expect(page).toHaveURL(/\?status=draft$/)
@@ -39,7 +39,7 @@ test("the purchase order list filters by status", { tag: "@mobile" }, async ({ p
 
   // A click anywhere on a row opens its purchase order.
   await tabs.getByRole("link", { name: "All" }).click()
-  await sent.getByRole("cell", { name: "$600.00" }).click()
+  await sent.getByRole("cell", { name: "$600" }).click()
   await expect(page.getByRole("heading", { level: 1, name: "DEMO-1" })).toBeVisible()
 })
 
@@ -52,8 +52,8 @@ test("a purchase order sent to Amazon shows its lines, costs and terms", async (
   await expect(line).toContainText("grip-left-3pk")
   await expect(line).toContainText("3 per pack")
   await expect(line).toContainText("Not set")
-  await expect(line).toContainText("$4.00")
-  await expect(line).toContainText("$600.00")
+  await expect(line).toContainText("$4")
+  await expect(line).toContainText("$600")
   await expect(page.getByText("Label every unit with its FNSKU barcode, covering any other barcode.")).toBeVisible()
 
   const aside = page.getByRole("complementary")
@@ -90,7 +90,7 @@ test("a draft shows its lines and totals, downloads, and takes comments", async 
     "GRIP-L",
     "100",
     "$8.50",
-    "$850.00",
+    "$850",
     ""
   ])
   await expect(right.getByRole("cell")).toHaveText([
@@ -98,14 +98,14 @@ test("a draft shows its lines and totals, downloads, and takes comments", async 
     "GRIP-R",
     "50",
     "$8.50",
-    "$425.00",
+    "$425",
     ""
   ])
   await expect(page.getByText("Shipments start once the purchase order is sent.")).toBeVisible()
 
   const aside = page.getByRole("complementary")
   await expect(aside).toContainText("2 variants (150 units)")
-  await expect(aside).toContainText("Total$1,275.00")
+  await expect(aside).toContainText("Total$1,275")
   await expect(aside).toContainText("Required byJan 15, 2027")
   await expect(aside).toContainText("Payment termsNet 30")
   await expect(aside).toContainText("CurrencyUSD")

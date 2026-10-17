@@ -40,8 +40,8 @@ export const Default = meta.story({
     const harbor = rowOf("Harbor Goods")
     await expect(harbor.getByText("2 open")).toBeVisible()
     await expect(harbor.getByRole("combobox", { name: "Catalog for Harbor Goods" })).toHaveTextContent("Wholesale 2026")
-    await expect(harbor.getByText("$12,840.00")).toBeVisible()
-    await expect(harbor.getByText("€960.00")).toBeVisible()
+    await expect(harbor.getByText("$12,840")).toBeVisible()
+    await expect(harbor.getByText("€960")).toBeVisible()
     // A catalog that isn't active says so.
     await expect(rowOf("Pine & Paper Co.").getByRole("combobox")).toHaveTextContent("Retail partners (draft)")
     const bluebird = rowOf("Bluebird Home")
@@ -138,7 +138,7 @@ export const WithoutPrices = meta.story({
   parameters: { permissions: customerEditor },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("columnheader", { name: "Amount spent" })).toBeNull()
-    await expect(canvas.queryByText("$12,840.00")).toBeNull()
+    await expect(canvas.queryByText("$12,840")).toBeNull()
     await userEvent.click(rowOf("Bluebird Home").getByRole("combobox"))
     await userEvent.click(await screen.findByRole("option", { name: "Wholesale 2026" }))
     await waitFor(() =>
@@ -152,7 +152,7 @@ export const ViewOnly = meta.story({
   parameters: { permissions: catalogViewer },
   play: async () => {
     await expect(rowOf("Harbor Goods").getByRole("combobox")).toBeDisabled()
-    await expect(rowOf("Harbor Goods").getByText("$12,840.00")).toBeVisible()
+    await expect(rowOf("Harbor Goods").getByText("$12,840")).toBeVisible()
   }
 })
 

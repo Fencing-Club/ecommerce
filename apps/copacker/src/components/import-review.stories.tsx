@@ -107,11 +107,11 @@ export const Review = meta.story({
     await expect(second.getByText("No matching product")).toBeVisible()
     await expect(second.getByText("Quantity is hard to read")).toBeVisible()
     // Units × price doesn't make the document's line total.
-    await expect(second.getByText("Units × price is $870.00, but the line total is $900.00")).toBeVisible()
+    await expect(second.getByText("Units × price is $870, but the line total is $900")).toBeVisible()
 
-    await expect(canvas.getByText("$1,890.00")).toBeVisible()
-    await expect(canvas.getByText("$85.00")).toBeVisible()
-    await expect(canvas.getByText("$1,975.00")).toBeVisible()
+    await expect(canvas.getByText("$1,890")).toBeVisible()
+    await expect(canvas.getByText("$85")).toBeVisible()
+    await expect(canvas.getByText("$1,975")).toBeVisible()
     await expect(canvas.queryByText(/the document total/)).toBeNull()
 
     // Correcting the price clears the mismatch; the totals move with it.
@@ -119,7 +119,7 @@ export const Review = meta.story({
     await userEvent.clear(price)
     await userEvent.type(price, "15")
     await expect(second.queryByText(/but the line total is/)).toBeNull()
-    await expect(canvas.getByText("$30.00 over the document total")).toBeVisible()
+    await expect(canvas.getByText("$30 over the document total")).toBeVisible()
   }
 })
 
@@ -284,12 +284,12 @@ export const Charges = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Charge 2" }), "Early payment discount")
     await userEvent.type(canvas.getByRole("textbox", { name: "Amount of charge 2" }), "-20")
     await expect(canvas.getByRole("textbox", { name: "Amount of charge 2" })).toHaveAttribute("aria-invalid", "false")
-    await expect(canvas.getByText("$65.00")).toBeVisible()
-    await expect(canvas.getByText("$1,955.00")).toBeVisible()
-    await expect(canvas.getByText("$20.00 under the document total")).toBeVisible()
+    await expect(canvas.getByText("$65")).toBeVisible()
+    await expect(canvas.getByText("$1,955")).toBeVisible()
+    await expect(canvas.getByText("$20 under the document total")).toBeVisible()
 
     await userEvent.click(canvas.getByRole("button", { name: "Remove charge 1" }))
-    await expect(canvas.getByText("-$20.00")).toBeVisible()
+    await expect(canvas.getByText("-$20")).toBeVisible()
     await expect(canvas.getByRole("textbox", { name: "Charge 1" })).toHaveValue("Early payment discount")
 
     // A charge without an amount leaves the totals open.
@@ -306,7 +306,7 @@ export const NoCurrency = meta.story({
     await expect(canvas.getAllByText("—")).toHaveLength(3)
     await userEvent.click(canvas.getByRole("combobox", { name: "Currency" }))
     await userEvent.click(await screen.findByRole("option", { name: "Euro (EUR €)" }))
-    await expect(await canvas.findByText("€1,975.00")).toBeVisible()
+    await expect(await canvas.findByText("€1,975")).toBeVisible()
     for (const name of ["Price per unit on line 1", "Line total on line 1", "Amount of charge 1", "Document total"]) {
       const input = canvas.getByRole("textbox", { name })
       await expect(input).toHaveAccessibleDescription("EUR")

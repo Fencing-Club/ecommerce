@@ -52,7 +52,8 @@
     "notInvited": "未邀请",
     "accepted": "已接受",
     "declined": "已拒绝",
-    "atForwarder": "在货代处"
+    "atForwarder": "在货代处",
+    "packed": "已装箱"
   },
   "destinations": {
     "amazon": "Amazon",

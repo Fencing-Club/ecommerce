@@ -35,7 +35,7 @@ export const Default = meta.story({
     // The buyer Overview's pill: tinted, with the comparison beside it when the tile has room and always read out.
     await expect(orders.getByText("+5%")).toHaveClass("bg-success/10")
     await expect(orders.getByText("vs previous period")).toBeInTheDocument()
-    await expect(card(canvas, "Order value").getByText("$18,420.00")).toBeVisible()
+    await expect(card(canvas, "Order value").getByText("$18,420")).toBeVisible()
     await expect(card(canvas, "Order value").getByText("-12%")).toHaveClass("text-destructive")
     await expect(card(canvas, "Units shipped").getByText("No earlier orders to compare")).toBeVisible()
     await expect(canvas.getByText("Order value in USD, by the day each order arrived")).toBeVisible()
@@ -56,7 +56,7 @@ export const TopProductsAndCustomers = meta.story({
       "href",
       "/products/2f8c6b14-4b3e-4f5a-8c6d-000000000001"
     )
-    await expect(products.getByText("LM-TOTE-NAT, $10,200.00")).toBeVisible()
+    await expect(products.getByText("LM-TOTE-NAT, $10,200")).toBeVisible()
     await expect(products.getByText("2,400")).toBeVisible()
     // A SKU that's no longer a product shows without a link.
     await expect(products.queryByRole("link", { name: "LM-OLD" })).toBeNull()
@@ -66,14 +66,14 @@ export const TopProductsAndCustomers = meta.story({
       `/customers/${customerIds.harbor}`
     )
     await expect(customers.getByText("9 orders")).toBeVisible()
-    await expect(customers.getByText("$12,840.00")).toBeVisible()
+    await expect(customers.getByText("$12,840")).toBeVisible()
   }
 })
 
 export const InventoryHealth = meta.story({
   play: async ({ canvas }) => {
     const health = card(canvas, "Inventory health")
-    await expect(health.getByText("3 tracked variants, $680.00 on hand")).toBeVisible()
+    await expect(health.getByText("3 tracked variants, $680 on hand")).toBeVisible()
     await expect(health.getByRole("button", { name: "View all" })).toHaveAttribute("href", "/inventory")
     for (const label of ["Short", "Out of stock", "Low", "In stock"]) {
       await expect(health.getByText(label)).toBeVisible()
@@ -94,7 +94,7 @@ export const RecentOrders = meta.story({
       "href",
       `/orders/${supplierOrders[0]!.id}`
     )
-    await expect(within(rows[4]!).getByText("€960.00")).toBeVisible()
+    await expect(within(rows[4]!).getByText("€960")).toBeVisible()
     await expect(within(rows[1]!).getByText("Packing")).toBeVisible()
   }
 })

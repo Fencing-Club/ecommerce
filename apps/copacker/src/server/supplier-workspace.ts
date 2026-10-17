@@ -19,6 +19,7 @@ import { committedStock } from "./supplier-stock"
 // Where a supplier's PO stands from the supplier's side: its cartons to pack, labels to wait for, goods to ship, or done.
 export type OrderStage = "pack" | "waiting" | "ship" | "shipped" | "closed"
 const stages: Record<ShipmentState, OrderStage> = {
+  packed: "waiting",
   packing: "pack",
   correction: "pack",
   needs_attention: "pack",

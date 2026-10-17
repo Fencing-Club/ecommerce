@@ -16,12 +16,13 @@ import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { LandedCosts } from "@/components/landed-costs"
+import { Markdown } from "@/components/markdown"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
 import { PoTimeline } from "@/components/po-timeline"
+import { ProductIdentity } from "@/components/product-identity"
 import { RoutePill } from "@/components/route-pill"
 import { ProposalPanel } from "@/components/supplier/proposal-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -241,17 +242,9 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                           className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
                         >
                           <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
-                            <p className="leading-snug font-medium">{item.name}</p>
-                            {item.variant && item.variant !== "Default Title" && (
-                              <Badge variant="secondary" className="mt-1">
-                                {item.variant}
-                              </Badge>
-                            )}
-                            <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
-                            {item.piecesPerSet > 1 && (
-                              <p className="text-xs text-muted-foreground">
-                                {t("detail.perPack", { count: item.piecesPerSet })}
-                              </p>
+                            <ProductIdentity item={item} />
+                            {item.instructions && (
+                              <Markdown className="text-xs text-muted-foreground">{item.instructions}</Markdown>
                             )}
                             {(instructionsByItem[item.id] ?? []).map((line) => (
                               <p key={line} className="text-xs text-muted-foreground">
@@ -307,7 +300,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 <CardTitle>{t("detail.instructions")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="flex flex-col gap-1">
+                <ul className="list-disc space-y-2 ps-5 leading-relaxed">
                   {instructions.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
@@ -443,7 +436,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 />
                 {order.data.readyDate && <Detail label={t("detail.ready")} value={day(order.data.readyDate)} />}
                 <Detail label={t("detail.currency")} value={currency} />
-                <Detail label={noteLabel} value={order.data.notes || "—"} />
+                <Detail label={noteLabel} value={order.data.notes ? <Markdown>{order.data.notes}</Markdown> : "—"} />
               </dl>
             </CardContent>
           </Card>
@@ -477,7 +470,7 @@ function SupplierSku({ item, notSet }: { item: OrderItem; notSet: string }) {
   return item.supplierSku || <WarningNote>{notSet}</WarningNote>
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-muted-foreground">{label}</dt>

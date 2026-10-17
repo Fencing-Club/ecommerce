@@ -271,9 +271,17 @@ export function FormTextarea({
         onChange={onChange}
         onBlur={onBlur}
         aria-invalid={fieldState.invalid}
-        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
+        aria-describedby={
+          [
+            props["aria-describedby"],
+            description ? `${id}-description` : undefined,
+            fieldState.invalid ? `${id}-error` : undefined
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
       />
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description && <FieldDescription id={`${id}-description`}>{description}</FieldDescription>}
       <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )

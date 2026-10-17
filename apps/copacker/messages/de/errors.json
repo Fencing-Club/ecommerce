@@ -354,5 +354,9 @@
   "awdOriginDiffers": "Die Abholadresse weicht von Amazon ab. Straße, Zusatz, Postleitzahl und Land prüfen.",
   "linkAwdOnly": "Nur ein AWD-Packentwurf kann eine vorhandene AWD-Sendung verknüpfen.",
   "awdProductsDiffer": "Die Amazon-Sendung enthält andere Produkte oder größere Mengen als dieser AWD-Auftrag.",
-  "awdAlreadyLinked": "Diese Amazon-Sendung ist bereits mit einer Bestellung verknüpft."
+  "awdAlreadyLinked": "Diese Amazon-Sendung ist bereits mit einer Bestellung verknüpft.",
+  "transportChanged": "Transport geändert oder bereits freigegeben. Sendung neu laden.",
+  "transportForwarderMissing": "Fügen Sie zuerst einen Speditionsstopp hinzu.",
+  "packetDestinationUnavailable": "Bestätigen Sie vor dem Herunterladen die Lieferadresse der Sendung.",
+  "packetNoLabelsRequired": "Für diese Sendung sind keine Etiketten dieses Typs erforderlich."
 }
