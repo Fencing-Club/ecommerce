@@ -195,7 +195,7 @@ import {
   syncChunks
 } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
-import { shipmentPacketPage, releasedPacket } from "../src/server/shipment-packet"
+import { shipmentPacketPage, shipmentPacketResult, releasedPacket } from "../src/server/shipment-packet"
 import { shopifyOrderTags, untaggedShopifyOrders } from "../src/server/shopify-tags"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
 import { saveSupplierAddress, supplierPickupAddresses } from "../src/server/supplier-addresses"
@@ -3024,6 +3024,10 @@ describe("document upload and packet release", () => {
     })
     await expect(shipmentPacketPage(supplier, prepared.id)).rejects.toMatchObject({
       key: "packetDestinationUnavailable"
+    })
+    expect(await shipmentPacketResult(supplier, prepared.id)).toMatchObject({
+      unavailable: true,
+      labelSections: ["carton_labels"]
     })
     await database
       .update(tables.shipments)

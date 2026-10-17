@@ -1,5 +1,6 @@
 import type { OrderItem } from "@repo/aisle"
 import { amazonNetworkNames, itemTotal, money, orderCharges, orderTotal } from "@repo/aisle"
+import { packingInstructions } from "@repo/aisle/requirements"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowRight,
@@ -243,8 +244,8 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                         >
                           <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
                             <ProductIdentity item={item} />
-                            {item.instructions && (
-                              <Markdown className="text-xs text-muted-foreground">{item.instructions}</Markdown>
+                            {packingInstructions(item) && (
+                              <Markdown className="text-xs text-muted-foreground">{packingInstructions(item)}</Markdown>
                             )}
                             {(instructionsByItem[item.id] ?? []).map((line) => (
                               <p key={line} className="text-xs text-muted-foreground">

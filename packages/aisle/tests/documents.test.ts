@@ -1,6 +1,13 @@
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { describe, expect, it } from "vitest"
-import { checklistPdf, drawableText, packingListPdf, purchaseOrderPdf, type PoParty } from "../src/documents"
+import {
+  commercialInvoicePdf,
+  checklistPdf,
+  drawableText,
+  packingListPdf,
+  purchaseOrderPdf,
+  type PoParty
+} from "../src/documents"
 import { orderInputSchema, packingSchema, type OrderInput } from "../src/index"
 import { readLabelPdfPages } from "../src/label-pdf-reader"
 
@@ -169,6 +176,28 @@ describe("packing checklist PDF", () => {
     })
     return (await pdfText(bytes)).replace(/\s+/g, " ")
   }
+
+  it("uses edited packing instructions in PO, invoice and checklist documents", async () => {
+    const data = order(1)
+    data.items[0]!.instructions = "Obsolete instructions"
+    data.items[0]!.packingRequirements = {
+      preparation: "none",
+      labels: [],
+      countryCode: "",
+      instructions: "- Use the updated grip material."
+    }
+    for (const bytes of [
+      await purchaseOrderPdf({ order: data, revision: 1, ...parties }),
+      await commercialInvoicePdf({ order: data, revision: 1, ...parties })
+    ]) {
+      const text = (await pdfText(bytes)).replace(/\s+/g, " ")
+      expect(text).toContain("Use the updated grip material.")
+      expect(text).not.toContain("Obsolete instructions")
+    }
+    const checklist = await checklistText(data)
+    expect(checklist).toContain("Use the updated grip material.")
+    expect(checklist).not.toContain("Obsolete instructions")
+  })
 
   it("names the destination after the ship-to, in full", async () => {
     const text = await checklistText(order(1), { name: "Fencing Club, Seattle fulfillment warehouse", lines: [] })

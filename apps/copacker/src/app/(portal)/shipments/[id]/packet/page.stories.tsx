@@ -63,11 +63,35 @@ export const RevisionChanged = meta.story({
 
 export const IncompletePacket = meta.story({
   args: {
-    page: { unavailable: true, id, message: "Complete the shipment details before downloading the supplier packet." }
+    page: {
+      unavailable: true,
+      id,
+      labelSections: [],
+      message: "Complete the shipment details before downloading the supplier packet."
+    }
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("alert")).toHaveTextContent("Complete the shipment details")
     await expect(canvas.getByRole("button", { name: "Back to shipment" })).toHaveAttribute("href", `/shipments/${id}`)
     await expect(canvas.queryByRole("button", { name: "Download packet" })).not.toBeInTheDocument()
+  }
+})
+
+export const LabelsWithoutReferenceDocuments = meta.story({
+  args: {
+    page: {
+      unavailable: true,
+      id,
+      message: "Complete the shipment details before downloading the supplier packet.",
+      labelSections: ["carton_labels", "carrier_labels"]
+    }
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Carton labels" })).toHaveAttribute(
+      "href",
+      `/api/shipments/${id}/packet?section=carton_labels`
+    )
+    await expect(canvas.getByRole("button", { name: "Carrier labels" })).toHaveAttribute("download")
+    await expect(canvas.queryByRole("button", { name: "Product labels" })).not.toBeInTheDocument()
   }
 })

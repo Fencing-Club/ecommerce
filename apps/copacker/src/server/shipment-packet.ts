@@ -9,7 +9,7 @@ import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError, errorText } from "./errors"
-import { lineLabels } from "./product-barcodes"
+import { hasProductLabels, lineLabels } from "./product-barcodes"
 import { releasedStates, releaseIssues } from "./readiness"
 import { requireMembership, type Session } from "./workspace-session"
 
@@ -109,15 +109,7 @@ export async function shipmentPacketPage(s: Session, id: string) {
     orderId: order.id,
     version,
     data,
-    hasProductLabels:
-      labels.some(
-        (label) => included.has(label.itemId) && (label.state === "standard" || label.state === "uploaded")
-      ) ||
-      shipment.snapshot.items.some(
-        (item) =>
-          included.has(item.id) &&
-          (item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning)
-      )
+    hasProductLabels: hasProductLabels(shipment.snapshot.items, labels, included)
   }
 }
 
@@ -128,6 +120,21 @@ export async function shipmentPacketResult(s: Session, id: string) {
     if (!(error instanceof StatusError)) {
       throw error
     }
-    return { unavailable: true as const, id, message: (await errorText())(error.key, error.values) }
+    // Even an unsupported reference-document layout must keep its released original labels accessible.
+    let labelSections: Array<"carton_labels" | "carrier_labels" | "product_labels"> = []
+    try {
+      const { shipment, labels, labelOrder } = await releasedPacket(s, id)
+      const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+      labelSections = [
+        ...(shipment.amazonNetwork ? ["carton_labels" as const] : []),
+        ...(shipment.transport?.carrierLabels === "per_carton" ? ["carrier_labels" as const] : []),
+        ...(hasProductLabels(labelOrder.data.items, labels, included) ? ["product_labels" as const] : [])
+      ]
+    } catch (labelError) {
+      if (!(labelError instanceof StatusError)) {
+        throw labelError
+      }
+    }
+    return { unavailable: true as const, id, message: (await errorText())(error.key, error.values), labelSections }
   }
 }

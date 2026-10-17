@@ -62,8 +62,8 @@
       "markReceived": "标记为已收货",
       "retry": "重试货件",
       "cancelInAmazon": "在 Amazon 中取消",
-      "getAmazonLabels": "获取亚马逊标签",
-      "createAmazonShipment": "创建亚马逊货件"
+      "getAmazonLabels": "获取Amazon 标签",
+      "createAmazonShipment": "创建Amazon 货件"
     },
     "needsAttention": "需要处理",
     "changesWaiting": {
@@ -199,7 +199,7 @@
     "title": "运输",
     "service": "服务",
     "parcel": "包裹承运商",
-    "agl": "亚马逊全球物流 (AGL)",
+    "agl": "Amazon Global Logistics (AGL)",
     "freight": "货运承运商",
     "handoff": "交接地点",
     "supplier": "供应商",

@@ -287,6 +287,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                     nativeButton={false}
                     render={
                       <a
+                        download
                         href={`/api/shipments/${id}/packet?section=carton_labels`}
                         aria-label={t("packet.cartonLabels")}
                       />
@@ -295,19 +296,22 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                     {t("packet.cartonLabels")}
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={`/api/shipments/${id}/packet?section=product_labels`}
-                      aria-label={t("packet.unitLabels")}
-                    />
-                  }
-                >
-                  {t("packet.unitLabels")}
-                </Button>
+                {page.hasProductLabels && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={
+                      <a
+                        download
+                        href={`/api/shipments/${id}/packet?section=product_labels`}
+                        aria-label={t("packet.unitLabels")}
+                      />
+                    }
+                  >
+                    {t("packet.unitLabels")}
+                  </Button>
+                )}
               </AlertAction>
             </Alert>
           )}

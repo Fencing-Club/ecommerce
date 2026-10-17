@@ -52,6 +52,7 @@ type Args = {
   addresses: PartnerAddress[]
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
+  productLabels?: boolean
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -66,7 +67,8 @@ async function ShipmentPage({
   reserved,
   docs,
   addresses,
-  awaitingChanges
+  awaitingChanges,
+  productLabels = true
 }: Args) {
   const t = await translateStory("shipments.detail")
   const editsShipments = can(s, "shipments", "edit")
@@ -115,6 +117,7 @@ async function ShipmentPage({
     <ShipmentPageView
       page={{
         id,
+        hasProductLabels: productLabels,
         delivery: { addresses: [], pending: amazon },
         destinationName: destination(order.data, shipment.amazonNetwork),
         editsShipments,
@@ -652,5 +655,26 @@ export const ViewOnly = meta.story({
     await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await expect(screen.queryByRole("dialog")).toBeNull()
+  }
+})
+
+export const ReadyWithoutProductLabels = meta.story({
+  ...supplier,
+  args: {
+    productLabels: false,
+    kind: "supplier",
+    order: amazonOrder,
+    shipment: shipmentRow({
+      status: "ready",
+      packing: packingFor(amazonOrder.data),
+      amazonNetwork: "awd_us",
+      amazonShipmentId: "STAR-EXAMPLE",
+      labels
+    }),
+    docs: [cartonLabel]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Carton labels" })).toHaveAttribute("download")
+    await expect(canvas.queryByRole("button", { name: "Product labels" })).not.toBeInTheDocument()
   }
 })

@@ -14,6 +14,7 @@ import { releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
+import { hasProductLabels, lineLabels } from "./product-barcodes"
 export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
   const s = await session()
   requirePage(s, "shipments")
@@ -97,6 +98,11 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
+    hasProductLabels: hasProductLabels(
+      snapshot.items,
+      await lineLabels({ ...order, data: snapshot }),
+      new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+    ),
     delivery: await shipmentDelivery(order, shipment),
     destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,

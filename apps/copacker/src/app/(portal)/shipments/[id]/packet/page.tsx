@@ -8,6 +8,12 @@ import { type DocumentSettings } from "@/documents/shipping-model"
 import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
 import type { shipmentPacketPage, shipmentPacketResult } from "@/server/shipment-packet"
 
+const labelNames = {
+  carton_labels: "cartonLabels",
+  carrier_labels: "carrierLabels",
+  product_labels: "unitLabels"
+} as const
+
 export default function ShipmentPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPacketResult>> }) {
   const t = useTranslations("shipments.detail.packet")
   if ("unavailable" in page) {
@@ -15,6 +21,25 @@ export default function ShipmentPacketPage({ page }: { page: Awaited<ReturnType<
       <div className="space-y-4">
         <PageHeader title={t("incompleteTitle")} />
         <p role="alert">{page.message}</p>
+        <div className="flex flex-wrap gap-2">
+          {page.labelSections.map((section) => (
+            <Button
+              key={section}
+              variant="outline"
+              nativeButton={false}
+              render={
+                <a
+                  download
+                  aria-label={t(labelNames[section])}
+                  href={`/api/shipments/${page.id}/packet?section=${section}`}
+                />
+              }
+            >
+              <Download />
+              {t(labelNames[section])}
+            </Button>
+          ))}
+        </div>
         <Button
           variant="outline"
           nativeButton={false}

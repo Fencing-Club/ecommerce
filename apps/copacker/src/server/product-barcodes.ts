@@ -432,6 +432,17 @@ export type LineLabel =
 
 type LabelOrder = { buyerOrgId: string; shopifyDomain: string; data: OrderInput }
 
+export function hasProductLabels(items: OrderInput["items"], labels: LineLabel[], included: ReadonlySet<string>) {
+  return (
+    labels.some((label) => included.has(label.itemId) && (label.state === "standard" || label.state === "uploaded")) ||
+    items.some(
+      (item) =>
+        included.has(item.id) &&
+        (item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning)
+    )
+  )
+}
+
 export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   const t = await errorText()
   const variantIds = [...new Set(order.data.items.map((item) => item.variantId))]

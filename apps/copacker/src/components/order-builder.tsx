@@ -55,6 +55,7 @@ import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
+import { countriesIn } from "@/lib/countries"
 import { currencySymbol } from "@/lib/currency"
 import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { cn } from "@/lib/utils"
@@ -1169,6 +1170,7 @@ function CostSummaryDialog({
 }
 
 function PackingRequirementsFields({ index }: { index: number }) {
+  const countries = countriesIn(useLocale())
   const t = useTranslations("orders.builder")
   const { control } = useFormContext<OrderInput>()
   const { field } = useController({ control, name: `items.${index}.packingRequirements.labels` })
@@ -1209,10 +1211,10 @@ function PackingRequirementsFields({ index }: { index: number }) {
         </Field>
       ))}
       {labels.includes("countryOfOrigin") && (
-        <FormInput
+        <FormSelect
           name={`items.${index}.packingRequirements.countryCode`}
           label={t("countryOfOriginCode")}
-          maxLength={2}
+          options={countries}
         />
       )}
       <FormTextarea

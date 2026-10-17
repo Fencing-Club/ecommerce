@@ -432,7 +432,7 @@
     "readyForPickup": "Listo para recolección",
     "addCartonProduct": "Agregar producto a la caja",
     "removeCartonProduct": "Quitar producto {number} de la caja",
-    "finishPacking": "Terminar embalaje"
+    "finishPacking": "Terminar empaque"
   },
   "paymentTerms": {
     "net7": "Neto 7 días",

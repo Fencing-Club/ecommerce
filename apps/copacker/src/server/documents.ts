@@ -268,6 +268,14 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
   if (!packed(shipment)) {
     return undefined
   }
+  if (
+    shipment.snapshot.destination === "amazon" &&
+    !shipment.snapshot.via &&
+    shipment.amazonShipmentId &&
+    shipment.labels.some((label) => label.destinationCode)
+  ) {
+    return shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+  }
   return (await shipmentParties(shipment)).shipTo?.name ?? destinationName(shipment.snapshot)
 }
 

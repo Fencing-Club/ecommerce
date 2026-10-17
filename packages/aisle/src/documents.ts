@@ -5,6 +5,7 @@ import { markdownBlocks } from "./markdown"
 import {
   destinationName,
   destinationRequirements,
+  packingInstructions,
   itemRequirements,
   isCartonRule,
   requirementText,
@@ -528,7 +529,7 @@ async function orderPdf(input: {
         .filter((requirement) => requirement.code !== "instruction")
         .map(requirementText)
     ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
-    const instructions = kit.markdownLines(item.instructions, 8.5, descriptionWidth)
+    const instructions = kit.markdownLines(packingInstructions(item), 8.5, descriptionWidth)
     const skus = item.components?.length
       ? item.components.map(
           (component) => `${component.quantity} x ${component.supplierSku || component.buyerSku || "?"}`
@@ -811,7 +812,7 @@ export async function checklistPdf(input: {
     ...items.map((item) => ({
       rail: "Product",
       heading: item.buyerSku + " / " + item.name,
-      instructions: item.instructions,
+      instructions: packingInstructions(item),
       steps: [
         packing.cartons.reduce(
           (sum, carton) =>

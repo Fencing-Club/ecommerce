@@ -10,6 +10,10 @@ import { packingTasks, type ProductTask } from "./packing-requirements"
 
 // One thing the supplier must do, as a code and the values it names, so the app can say it in each reader's language
 // and documents in English (requirementText).
+export function packingInstructions(item: OrderItem): string {
+  return item.packingRequirements ? item.packingRequirements.instructions : item.instructions
+}
+
 export type Requirement =
   | { code: "productTask"; task: ProductTask; countryCode: string }
   | { code: "prep"; prep: PrepCategory }
