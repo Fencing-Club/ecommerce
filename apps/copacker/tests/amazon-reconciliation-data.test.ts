@@ -240,6 +240,35 @@ describe("Amazon reconciliation endpoint", () => {
     const result = await amazonReconciliation(orgId, input)
     expect(result.rows[0]?.finance.candidates.map((candidate) => candidate.transactionId)).toEqual(["ProductContext"])
   })
+  it("does not match unrelated postings when a page has no order or product identifiers", async () => {
+    await database.insert(tables.amazonStorageFees).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      kind: "monthly",
+      basis: "estimate",
+      periodDay: "2026-10-01",
+      currency: "USD",
+      amount: "1",
+      data: {}
+    })
+    await database.insert(tables.amazonTransactions).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      transactionId: "UNRELATED",
+      orderId: "ORDER1",
+      postedAt: new Date("2026-10-02"),
+      type: "ServiceFee",
+      currency: "USD",
+      totalMinor: -100,
+      feesMinor: 100,
+      data: { items: [{ contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }] }
+    })
+    const result = await amazonReconciliation(orgId, { ...input, source: "storage" })
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0]?.finance).toMatchObject({ status: "unmatched", candidates: [], candidateCount: 0 })
+    expect(result.coverage?.financialSearch.truncated).toBe(false)
+  })
   it("paginates without claiming empty evidence means complete coverage", async () => {
     await database.insert(tables.amazonReturns).values(Array.from({ length: 101 }, () => ({ ...baseRow, orgId })))
     const first = await amazonReconciliation(orgId, input)
