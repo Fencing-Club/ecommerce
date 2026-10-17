@@ -11,7 +11,10 @@ export default defineConfig({
     name: `copacker-scheduler-${environment}`,
     entrypoint: "./index.ts",
     compatibilityDate: "2026-10-15",
-    env: { JOBS: bindings.queue<string>({ name: `copacker-jobs-${environment}` }) },
+    env: {
+      JOBS: bindings.queue<string>({ name: `copacker-jobs-${environment}` }),
+      EXECUTOR_JOBS: bindings.queue<string>({ name: `copacker-executor-${environment}` })
+    },
     triggers: [triggers.scheduled({ schedule: "17 * * * *" }), triggers.scheduled({ schedule: "0 7 * * *" })],
     observability: { enabled: true, traces: { enabled: true } }
   }

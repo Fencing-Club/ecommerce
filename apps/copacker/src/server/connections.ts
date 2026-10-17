@@ -8,6 +8,7 @@ import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { AccessError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
+import { DemoShopify, demoShopConnection } from "./demo-shopify"
 import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
@@ -46,7 +47,8 @@ export async function connection(orgId: string, provider: Provider) {
       throw new LocalizedError("connectInSettings", { provider })
     }
     let stored = savedToken.parse(JSON.parse(decrypt(row.encryptedToken, `${orgId}:${provider}`)))
-    if (provider === "shopify" && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)) {
+    const demo = provider === "shopify" && demoShopConnection(row.externalId, stored.token)
+    if (provider === "shopify" && !demo && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)) {
       if (!stored.refreshToken || !stored.refreshExpiresAt || stored.refreshExpiresAt < Date.now()) {
         throw new ReconnectRequiredError("Reconnect Shopify to renew merchant authorization")
       }
@@ -83,7 +85,7 @@ export async function shopifyFor(orgId: string, expectedDomain?: string) {
   if (expectedDomain && c.externalId !== expectedDomain) {
     throw new LocalizedError("reconnectOrderShopify")
   }
-  return new Shopify(c.externalId, c.token)
+  return demoShopConnection(c.externalId, c.token) ? new DemoShopify(orgId) : new Shopify(c.externalId, c.token)
 }
 export async function amazonFor(orgId: string, expectedSellerId?: string | null) {
   const c = await connection(orgId, "amazon")
@@ -134,12 +136,14 @@ export async function disconnect(orgId: string, provider: Provider) {
   if (provider === "shopify") {
     try {
       const c = await connection(orgId, "shopify")
-      const response = await fetch(`https://${c.externalId}/admin/api_permissions/current.json`, {
-        method: "DELETE",
-        headers: { "X-Shopify-Access-Token": c.token },
-        signal: AbortSignal.timeout(30000)
-      })
-      revoked = response.ok
+      if (!demoShopConnection(c.externalId, c.token)) {
+        const response = await fetch(`https://${c.externalId}/admin/api_permissions/current.json`, {
+          method: "DELETE",
+          headers: { "X-Shopify-Access-Token": c.token },
+          signal: AbortSignal.timeout(30000)
+        })
+        revoked = response.ok
+      }
     } catch {
       revoked = false
     }

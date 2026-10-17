@@ -25,6 +25,7 @@
     "test:e2e": "node --use-system-ca --import tsx scripts/test-e2e.ts test",
     "test:start-runtime": "node --import tsx scripts/test-start-runtime.ts",
     "test:worker-webhooks": "node --import tsx scripts/test-worker-webhooks.ts",
+    "test:worker-jobs": "node --import tsx scripts/test-worker-jobs.ts",
     "test:start-auth": "node --import tsx scripts/test-start-auth.ts",
     "update:address-regions": "tsx scripts/update-address-regions.ts",
     "db:generate": "drizzle-kit generate",

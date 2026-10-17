@@ -52,12 +52,18 @@ const readQueues = [amazonQueueUrl && "amazon", shopifyQueueUrl && "shopify", eb
 
 // Jobs run in several loops, so a long job (a year of Amazon orders) doesn't hold up the rest. Each claim skips jobs
 // another loop holds, and each sync guards against a second run for the same workspace and source.
-const runNext = limitJobConcurrency(() => (stopped ? Promise.resolve(false) : runNextJob()))
+const executor = process.env.NODE_ENV === "production" ? "railway" : "local"
+const runNext = limitJobConcurrency(() => (stopped ? Promise.resolve(false) : runNextJob(executor)))
 async function drainJobs() {
-  await drainPendingJobs({ runNext, nextDelay: nextJobDelay, signal: signalJobs, stopped: () => stopped })
+  await drainPendingJobs({
+    runNext,
+    nextDelay: () => nextJobDelay(executor),
+    signal: signalJobs,
+    stopped: () => stopped
+  })
 }
 async function runJobs() {
-  if (!jobDeliveryConfigured() && process.env.NODE_ENV === "production") {
+  if (executor === "railway" && (!jobDeliveryConfigured() || !process.env.CLOUDFLARE_EXECUTOR_QUEUE_ID)) {
     throw new Error("Production workers require Cloudflare job delivery configuration")
   }
   let recover = true

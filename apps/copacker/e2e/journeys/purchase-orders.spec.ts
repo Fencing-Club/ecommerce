@@ -144,7 +144,7 @@ test("a draft shows its lines and totals, downloads, and takes comments", async 
   await expect(posted).toBeVisible()
 })
 
-test("editing a draft opens the builder with its values", async ({ page }) => {
+test("editing a draft validates and saves through the demo Shopify provider", async ({ page }) => {
   const url = await openOrder(page, "E2E-DRAFT")
   await page.getByRole("button", { name: "Edit", exact: true }).click()
   await expect(page).toHaveURL(`${url}/edit`)
@@ -168,7 +168,7 @@ test("editing a draft opens the builder with its values", async ({ page }) => {
   await expect(page.getByRole("spinbutton", { name: "Cost of Pro-grip glove" }).first()).toHaveValue("8.50")
   await expect(page.getByText("2 variants (150 units)")).toBeVisible()
 
-  // Saving waits for a change, and a draft without its reference doesn't save (saving itself calls Shopify).
+  // Saving waits for a change, and a draft without its reference doesn't save.
   const save = page.getByRole("button", { name: "Save" })
   await expect(save).toBeDisabled()
   await page.getByRole("textbox", { name: "Reference number" }).fill("")
@@ -177,9 +177,15 @@ test("editing a draft opens the builder with its values", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "Reference number" })).toHaveAttribute("aria-invalid", "true")
   await expect(page).toHaveURL(`${url}/edit`)
 
-  await page.getByRole("button", { name: "Discard" }).click()
+  await page.getByRole("textbox", { name: "Reference number" }).fill("E2E-DRAFT")
+  const note = unique("Pack each glove separately")
+  await page.getByRole("textbox", { name: "Note to supplier" }).fill(note)
+  await save.click()
   await expect(page).toHaveURL(url)
   await expect(page.getByRole("heading", { level: 1, name: "E2E-DRAFT" })).toBeVisible()
+  await expect(page.getByText(note, { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText(note, { exact: true })).toBeVisible()
 })
 
 test("deleting a draft asks first, then removes it from the list", async ({ page }) => {

@@ -1,37 +1,11 @@
 import assert from "node:assert/strict"
 import { createSign, generateKeyPairSync } from "node:crypto"
-import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { Miniflare, Response } from "miniflare"
-import { z } from "zod"
+import { artifact, modules, output } from "./worker-test-artifact"
 
 // Exercise the exact application artifact, including Vite's AWS package resolution. All bindings are synthetic and
 // every outbound request is intercepted: this check cannot reach AWS, eBay, WorkOS or an application database.
-const output = new URL("../.cloudflare/output/v0/workers/default/", import.meta.url)
-const artifact = z
-  .object({
-    compatibilityDate: z.string(),
-    compatibilityFlags: z.array(z.string()),
-    manifest: z.object({
-      mainModule: z.string(),
-      modules: z.record(z.string(), z.object({ type: z.enum(["esm", "data", "text", "wasm", "sourcemap"]) }))
-    })
-  })
-  .parse(JSON.parse(await readFile(new URL("worker.config.json", output), "utf8")))
-const modules = Object.fromEntries(
-  await Promise.all(
-    Object.entries(artifact.manifest.modules)
-      .filter(([, module]) => module.type !== "sourcemap")
-      .map(async ([name, module]) => {
-        assert(module.type !== "sourcemap")
-        const bytes = await readFile(new URL(`bundle/${name}`, output))
-        return [
-          name,
-          { type: module.type, contents: module.type === "esm" || module.type === "text" ? bytes.toString() : bytes }
-        ]
-      })
-  )
-)
 const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" })
 const key = publicKey.export({ type: "spki", format: "pem" }).toString()
 const notification = {
