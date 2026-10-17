@@ -45,6 +45,7 @@ const signed = Buffer.from(JSON.stringify({ alg: "ECDSA", kid: "fixture-key", si
 )
 let deliveries = 0
 let rejectEntry = false
+let flagReads = 0
 const runtime = new Miniflare({
   telemetry: { enabled: false },
   workers: [
@@ -57,6 +58,7 @@ const runtime = new Miniflare({
         env: {
           APP_URL: { type: "text", value: "https://copacker.test" },
           DEPLOYMENT_ENV: { type: "text", value: "local" },
+          WORKOS_API_KEY: { type: "text", value: "fixture-workos-key" },
           HYPERDRIVE: { type: "json", value: { connectionString: "postgres://fixture:fixture@127.0.0.1:1/fixture" } },
           EBAY_CLIENT_ID: { type: "text", value: "fixture-ebay-client" },
           EBAY_CLIENT_SECRET: { type: "text", value: "fixture-ebay-secret" },
@@ -74,6 +76,10 @@ const runtime = new Miniflare({
           type: "fetcher",
           async handler(request) {
             const url = new URL(request.url)
+            if (url.href === "https://api.workos.com/feature-flags/maintenance") {
+              flagReads++
+              return Response.json({ enabled: false, default_value: false })
+            }
             if (url.href === "https://api.ebay.com/identity/v1/oauth2/token") {
               return Response.json({ access_token: "fixture-ebay-token", expires_in: 3600 })
             }
@@ -119,6 +125,7 @@ try {
     })
   const invalid = await post("invalid")
   assert.equal(invalid.status, 412)
+  assert.equal(flagReads, 1, "The built Worker must actually fetch its maintenance flag")
   assert.equal(deliveries, 0, "Unsigned notifications must never reach AWS")
   const forwarded = await post(signed)
   assert.equal(forwarded.status, 204, await forwarded.text())
@@ -138,3 +145,65 @@ try {
 } finally {
   await runtime.dispose()
 }
+
+// Fresh isolates keep the ten-second flag cache from hiding each provider outcome. No real WorkOS setting changes.
+for (const mode of ["enabled", "missing", "redirect"]) {
+  let requests = 0
+  const maintenance = new Miniflare({
+    telemetry: { enabled: false },
+    workers: [
+      {
+        config: {
+          name: "copacker-maintenance-regression",
+          compatibilityDate: artifact.compatibilityDate,
+          compatibilityFlags: artifact.compatibilityFlags,
+          manifest: { mainModule: artifact.manifest.mainModule, modules },
+          env: {
+            APP_URL: { type: "text", value: "https://copacker.test" },
+            DEPLOYMENT_ENV: { type: "text", value: "local" },
+            WORKOS_API_KEY: { type: "text", value: "fixture-workos-key" },
+            HYPERDRIVE: { type: "json", value: { connectionString: "postgres://fixture:fixture@127.0.0.1:1/fixture" } }
+          }
+        },
+        dev: {
+          rootPath: fileURLToPath(output),
+          outboundService: {
+            type: "fetcher",
+            async handler(request) {
+              assert.equal(
+                request.url,
+                "https://api.workos.com/feature-flags/maintenance",
+                "Never follow a flag redirect"
+              )
+              assert.equal(request.headers.get("authorization"), "Bearer fixture-workos-key")
+              requests++
+              if (mode === "redirect") {
+                return new Response(null, { status: 302, headers: { Location: "https://elsewhere.test" } })
+              }
+              if (mode === "missing") {
+                return new Response(null, { status: 404 })
+              }
+              return Response.json({ enabled: true, default_value: true })
+            }
+          }
+        }
+      }
+    ]
+  })
+  try {
+    const state = await maintenance.dispatchFetch("https://copacker.test/api/maintenance")
+    assert.equal(state.status, 200)
+    assert.deepEqual(await state.json(), { active: mode === "enabled" })
+    assert.equal(requests, 1, "The flag request must reach the provider")
+    if (mode === "enabled") {
+      const closed = await maintenance.dispatchFetch("https://copacker.test/api/action", { method: "POST" })
+      assert.equal(closed.status, 503)
+      assert.equal(closed.headers.get("retry-after"), "120")
+      await closed.body?.cancel()
+      assert.equal(requests, 1, "Completed flag values are cached")
+    }
+  } finally {
+    await maintenance.dispose()
+  }
+}
+process.stdout.write("Built Worker maintenance checks passed: enabled, missing and redirect rejection.\n")
