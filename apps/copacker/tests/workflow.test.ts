@@ -5348,7 +5348,8 @@ describe("stored sales orders", () => {
     expect(state?.removals?.orders.windows.every((window) => window.complete)).toBe(true)
     expect(state?.removals?.shipments.windows.every((window) => window.complete)).toBe(true)
     expect(state?.storageFees?.monthly.windows.every((window) => !window.complete)).toBe(true)
-    expect(await database.select().from(tables.amazonRemovals)).toHaveLength(
+    expect(await database.select().from(tables.amazonRemovals)).toHaveLength(2)
+    expect(await database.select().from(tables.amazonRemovalReports)).toHaveLength(
       (state?.removals?.orders.windows.length ?? 0) * 2
     )
     expect(await database.select().from(tables.amazonTransactions)).toEqual([])

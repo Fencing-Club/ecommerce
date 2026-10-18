@@ -1,4 +1,5 @@
 import { ProviderError, ReportProcessingError } from "@repo/aisle/amazon"
+import { parseFbmReturns } from "@repo/aisle/fbm-returns"
 import { expect, it } from "vitest"
 import { z } from "zod"
 import { amazonFailureDetails } from "../src/server/amazon-diagnostics"
@@ -22,4 +23,19 @@ it("logs only allowlisted failure metadata", () => {
     processingStatus: "FATAL",
     hasDiagnosticDocument: true
   })
+})
+
+it("retains only the shape of an unsupported return date", () => {
+  let failure: unknown
+  try {
+    parseFbmReturns(
+      "Order ID\tReturn request date\tAmazon RMA ID\tMerchant SKU\tReturn quantity\tReturn Reason\tReturn request status\nPRIVATE_ORDER\t09/17/2026\tPRIVATE_RMA\tPRIVATE_SKU\t1\tPRIVATE_REASON\tCLOSED"
+    )
+  } catch (error) {
+    failure = error
+  }
+  const details = amazonFailureDetails(failure)
+  expect(details.dateFormat).toBe("00/00/0000")
+  expect(details.validation).toEqual([{ code: "invalid_format", field: "occurredAt" }])
+  expect(JSON.stringify(details)).not.toMatch(/PRIVATE|2026|17/)
 })

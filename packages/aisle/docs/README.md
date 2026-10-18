@@ -39,10 +39,12 @@ See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the pu
 
 `@repo/aisle/fulfillment-shipments` parses dated FBA shipment items with stable identities and an accounting-only field allowlist. Sales readers also retain Shopify fulfillment creation and in-transit times. See [shipment-date evidence](../../../apps/copacker/docs/shipment-date-evidence.md).
 
-The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text.
+The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text, including unambiguous named-month dates and unavailable monetary placeholders. Invalid records expose field diagnostics and a masked date shape, never source values.
 
 Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
 a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries.
+AWD shipment lists and receipt details also retry transient read failures with a five-minute bound and optional
+ownership checks; neither path retries mutations or suppresses invalid documents.
 
 ## Commerce snapshots
 

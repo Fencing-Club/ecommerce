@@ -14,7 +14,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Amazon FBA reimbursement ingestion](amazon-reimbursements.md)
 - [Detailed Amazon inventory movements](amazon-inventory-movements.md)
 - [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, retries and safe failure diagnostics
-- [Amazon removal and disposal evidence](amazon-removals.md)
+- [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
 - [Amazon reconciliation evidence](amazon-reconciliation.md)
 - [Historical inventory cost inputs](historical-inventory-basis.md)
 - [Analytics HTTP contract](analytics-api.md)

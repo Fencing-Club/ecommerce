@@ -926,7 +926,8 @@ export class Amazon {
     }
     throw new Error("FBA receipt page limit")
   }
-  async awdReceiptItems(shipmentId: string) {
+  async awdReceiptItems(shipmentId: string, assertActive?: () => Promise<void>) {
+    const read = stockReader(Date.now() + 5 * 60 * 1000, assertActive)
     const quantity = z.object({ quantity: z.number().int().nonnegative().safe(), unitOfMeasurement: z.string() })
     return z
       .object({
@@ -940,9 +941,8 @@ export class Amazon {
           .optional()
       })
       .parse(
-        await this.request(
-          "GET",
-          `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}?skuQuantities=SHOW`
+        await read(() =>
+          this.request("GET", `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}?skuQuantities=SHOW`)
         )
       )
   }
@@ -973,7 +973,8 @@ export class Amazon {
     throw new Error("FBA shipments exceed the supported page limit")
   }
   /** Every AWD inbound shipment, whoever created it, newest first. */
-  async awdShipments() {
+  async awdShipments(assertActive?: () => Promise<void>) {
+    const read = stockReader(Date.now() + 5 * 60 * 1000, assertActive)
     const shipments: Array<{ shipmentId: string; orderId: string; status: string; createdAt: string | null }> = []
     const tokens = new Set<string>()
     let nextToken: string | undefined
@@ -984,7 +985,9 @@ export class Amazon {
         maxResults: "200",
         ...(nextToken ? { nextToken } : {})
       })
-      const page = awdShipmentsPage.parse(await this.request("GET", `/awd/2024-05-09/inboundShipments?${query}`))
+      const page = awdShipmentsPage.parse(
+        await read(() => this.request("GET", `/awd/2024-05-09/inboundShipments?${query}`))
+      )
       for (const row of page.shipments ?? []) {
         shipments.push({
           shipmentId: row.shipmentId,
