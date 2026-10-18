@@ -102,7 +102,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@buildkitgg/dev-domains": "0.1.0",
-    "@cloudflare/vite-plugin": "1.64.0",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-805ec1ff3",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@repo/oxlint-config": "workspace:*",
