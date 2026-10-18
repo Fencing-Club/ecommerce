@@ -38,7 +38,6 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
     amazon,
     ebayName,
     orderTags,
-    copyingTags,
     ownLocations,
     person,
     owned,
@@ -112,11 +111,7 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
                   <IntegrationSection title={t("integrations.panel.preferencesTitle")}>
                     <div className="divide-y rounded-lg border bg-card">
                       <InventoryLocations />
-                      <ExcludedOrderTags
-                        tags={s.org.excludedShopifyTags}
-                        suggestions={orderTags}
-                        copying={copyingTags}
-                      />
+                      <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} />
                     </div>
                   </IntegrationSection>
                 </>

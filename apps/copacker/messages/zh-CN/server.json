@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "无法复制 Shopify 费用",
       "amazonFeesFailedDetail": "下次同步前，利润率不计入这些费用",
       "shopifyChargesFailedDetail": "下次同步前，毛利不计入这些费用",
-      "unpriced": "重新同步 {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} 订单以获取价格",
-      "unpricedDetail": "此期间有 {count, plural, other {# 个订单}}没有价格",
       "stockFailed": "库存量同步失败",
       "stockFailedDetail": "库存量可能不是最新的",
       "viewProducts": "查看产品",

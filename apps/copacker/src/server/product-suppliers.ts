@@ -25,7 +25,7 @@ export async function productsWithoutSupplier(orgId: string): Promise<ProductWit
     }
     const product = products.get(row.productId) ?? {
       productId: row.productId,
-      title: row.productTitle ?? row.buyerSku ?? "Untitled product",
+      title: row.productTitle,
       imageUrl: row.imageUrl ?? null,
       skus: [],
       supplied: false

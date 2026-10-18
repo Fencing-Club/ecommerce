@@ -255,6 +255,7 @@ describe("eBay orders beside Shopify's copies of them", () => {
       orderId: id,
       orderedAt: new Date(at),
       data: {
+        transactions: [],
         id,
         name: `#${id}`,
         createdAt: at,
@@ -264,6 +265,7 @@ describe("eBay orders beside Shopify's copies of them", () => {
         tags,
         lines: [
           {
+            discountAllocations: [],
             id: `${id}-l`,
             quantity: 1,
             currentQuantity: 1,
@@ -500,6 +502,7 @@ describe("eBay demand in restock", () => {
       productId: "p1",
       productTitle: "Mask",
       variantTitle: "M",
+      imageUrl: null,
       tracked: true,
       unit: "shopify_inventory_unit",
       levels: [

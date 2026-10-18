@@ -14,6 +14,7 @@ import {
 const window = { from: "2026-08-01T00:00:00Z", to: "2026-09-01T00:00:00Z" }
 const pageInfo = { hasNextPage: false, endCursor: null }
 const header = {
+  transactions: [],
   id: "order1",
   name: "#1001",
   createdAt: "2026-08-20T00:00:00Z",
@@ -22,7 +23,15 @@ const header = {
   sourceName: "web",
   tags: ["Wholesale"]
 }
-const line = { id: "line1", quantity: 2, currentQuantity: 2, sku: "SKU", variant: { id: "variant1" } }
+const line = {
+  id: "line1",
+  quantity: 2,
+  currentQuantity: 2,
+  sku: "SKU",
+  variant: { id: "variant1" },
+  originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+  discountAllocations: []
+}
 function shopify() {
   const graphql = vi
     .fn<(_query: string, _variables?: Record<string, unknown>) => Promise<unknown>>()
@@ -369,7 +378,6 @@ describe("Shopify payment fees", () => {
       })
     ).toEqual({ minor: 185, currency: "USD" })
     expect(shopifyPaymentFees({ transactions: [] })).toEqual({ minor: 0, currency: null })
-    expect(shopifyPaymentFees({})).toBeNull()
   })
 
   it("asks Shopify for each order's payments and their fees", () => {

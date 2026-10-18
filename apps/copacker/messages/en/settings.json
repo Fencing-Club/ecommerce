@@ -157,7 +157,6 @@
   },
   "excludedTags": {
     "title": "Excluded order tags",
-    "syncing": "Syncing tags from Shopify",
     "none": "None",
     "edit": "Edit",
     "editLabel": "Edit excluded order tags",

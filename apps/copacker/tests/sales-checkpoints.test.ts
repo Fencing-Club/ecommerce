@@ -54,7 +54,7 @@ it("commits each sales period and resumes each follow-up exactly once", async ()
     orgId,
     source: "shopify",
     revision: 1,
-    resume: { remaining: [first, second], covered: null }
+    resume: { remaining: [first, second], covered: null, customersIncluded: false }
   }
   const owned = vi.fn<() => Promise<void>>().mockResolvedValue()
   for (let index = 0; index < 4; index++) {

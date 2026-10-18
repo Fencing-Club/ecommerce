@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Shopify charges couldn’t be copied",
       "amazonFeesFailedDetail": "Margins leave them out until the next sync",
       "shopifyChargesFailedDetail": "Gross profit leaves them out until the next sync",
-      "unpriced": "Sync {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} orders again for prices",
-      "unpricedDetail": "{count, plural, one {# order in this period has} other {# orders in this period have}} no price",
       "stockFailed": "Stock sync failed",
       "stockFailedDetail": "Stock counts may be out of date",
       "viewProducts": "View products",

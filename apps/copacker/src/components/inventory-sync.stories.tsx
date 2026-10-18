@@ -11,7 +11,6 @@ const started: unknown[] = []
 // A page of the product list with nothing on it, which is all these stories need of it.
 const noProducts = {
   observedAt: null,
-  needsResync: false,
   page: 1,
   pageSize: 25,
   totalPages: 0,

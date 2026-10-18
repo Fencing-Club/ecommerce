@@ -223,6 +223,8 @@ describe("finance links", () => {
       orderId: id,
       orderedAt: new Date(at),
       data: {
+        tags: [],
+        transactions: [],
         id,
         name: "#1",
         createdAt: at,
@@ -233,6 +235,7 @@ describe("finance links", () => {
         ...(customerId && { customerId }),
         lines: [
           {
+            discountAllocations: [],
             id: `${id}-l`,
             quantity: 1,
             currentQuantity: 1,

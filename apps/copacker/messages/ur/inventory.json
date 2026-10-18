@@ -52,7 +52,6 @@
     "needLabelHint": "وہ ویریئنٹس جن کا لیبل اپ لوڈ کرنا ضروری ہے",
     "withoutCountryFilter": "{count, plural, other {# بغیر ملک کے}}",
     "withoutCountryHint": "وہ ویریئنٹس جن کا Shopify میں کوئی ملکِ اصل نہیں، اس لیے ان کے لیبلز پر “Made in” نہیں آتا",
-    "needsResync": "تازہ ترین پروڈکٹ تفصیلات لوڈ کرنے کے لیے Shopify سنک کریں",
     "noMatch": "کوئی پروڈکٹ مماثل نہیں",
     "noProducts": "کوئی پروڈکٹ نہیں",
     "loading": "پروڈکٹس لوڈ ہو رہے ہیں",
