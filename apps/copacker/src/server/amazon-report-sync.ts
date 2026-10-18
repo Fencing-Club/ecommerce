@@ -91,6 +91,8 @@ export async function syncMonthlyAmazonReport<Row>(
     retryCreate?: boolean
     // Storage fees require completed calendar months and a request spanning exactly one calendar month.
     wholeMonths?: boolean
+    // Removal reports support a date range. One complete file can establish coverage for sparse months.
+    combineMonths?: boolean
     reports: ReportState[]
     parse: (text: string) => Row[]
     timestamp: (row: Row) => Date
@@ -139,10 +141,20 @@ export async function syncMonthlyAmazonReport<Row>(
     eq(connections.provider, "amazon"),
     eq(connections.externalId, externalAccountId)
   )
-  for (const window of windows) {
+  const requests = source.combineMonths
+    ? [
+        {
+          from: new Date(Math.min(...windows.map((window) => window.from.getTime()))),
+          to: new Date(Math.max(...windows.map((window) => window.to.getTime())))
+        }
+      ]
+    : windows
+  for (const window of requests) {
+    const periods = source.combineMonths ? windows : [window]
     const previous = source.reports.find((report) => report.from.getTime() === window.from.getTime())
     // Refresh the newest two months and incomplete windows; rotate one older stale successful month per run.
     if (
+      !source.combineMonths &&
       window.from < previousMonth &&
       previous?.status === "imported" &&
       previous.coveredTo &&
@@ -186,10 +198,12 @@ export async function syncMonthlyAmazonReport<Row>(
           deadline: Date.now() + 20 * 60 * 1000,
           assertActive: assertOwned,
           retryCreate: source.retryCreate,
-          reuseCreatedSince:
-            !previous?.coveredTo || previous.coveredTo < window.to
-              ? new Date(now.getTime() - day).toISOString()
-              : undefined
+          reuseCreatedSince: periods.some((period) => {
+            const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
+            return !saved?.coveredTo || saved.coveredTo < period.to
+          })
+            ? new Date(now.getTime() - day).toISOString()
+            : undefined
         }
       )
       if (text === null) {
@@ -230,23 +244,28 @@ export async function syncMonthlyAmazonReport<Row>(
         throw new Error("Amazon report sync was superseded")
       }
       const checkedAt = new Date()
-      let status: ReportState["status"] = "failed"
-      if (rows !== null) {
-        await source.replace(tx, window, rows, checkedAt)
-        status = "imported"
-      } else if (errorCode === "report_cancelled") {
-        status = "unavailable"
+      for (const period of periods) {
+        const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
+        const periodRows =
+          rows?.filter((row) => source.timestamp(row) >= period.from && source.timestamp(row) < period.to) ?? null
+        let status: ReportState["status"] = "failed"
+        if (periodRows !== null) {
+          await source.replace(tx, period, periodRows, checkedAt)
+          status = "imported"
+        } else if (errorCode === "report_cancelled") {
+          status = "unavailable"
+        }
+        await source.save(tx, {
+          from: period.from,
+          requestedTo: period.to,
+          status,
+          errorCode,
+          checkedAt,
+          coveredTo: periodRows !== null ? period.to : (saved?.coveredTo ?? null),
+          rowCount: periodRows !== null ? periodRows.length : (saved?.rowCount ?? null),
+          importedAt: periodRows !== null ? checkedAt : (saved?.importedAt ?? null)
+        })
       }
-      await source.save(tx, {
-        from: window.from,
-        requestedTo: window.to,
-        status,
-        errorCode,
-        checkedAt,
-        coveredTo: rows !== null ? window.to : (previous?.coveredTo ?? null),
-        rowCount: rows !== null ? rows.length : (previous?.rowCount ?? null),
-        importedAt: rows !== null ? checkedAt : (previous?.importedAt ?? null)
-      })
     })
     // A denied or throttled source won't improve on older windows. Leave them missing and let the next sync retry.
     if (errorCode === "report_access_denied" || errorCode === "report_throttled") {

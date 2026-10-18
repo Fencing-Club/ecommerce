@@ -729,3 +729,51 @@ describe("report throttling", () => {
     ])
   })
 })
+
+describe("AWD receipt reads", () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+  it("retries the same receipt after throttling without losing unknown received quantities", async () => {
+    const { api, calls, times } = client([
+      new Response(null, { status: 429, headers: { "retry-after": "2" } }),
+      {
+        shipmentId: "S1",
+        shipmentStatus: "RECEIVING",
+        shipmentSkuQuantities: [{ sku: "SKU", expectedQuantity: { quantity: 10, unitOfMeasurement: "PRODUCT_UNITS" } }]
+      }
+    ])
+    const result = await api.awdReceiptItems("S1")
+    expect(result.shipmentSkuQuantities?.[0]?.receivedQuantity).toBeUndefined()
+    expect(calls.map(String)).toEqual([String(calls[0]), String(calls[0])])
+    expect(calls[0]?.searchParams.get("skuQuantities")).toBe("SHOW")
+    expect(times[1]! - times[0]!).toBeGreaterThanOrEqual(2000)
+  })
+  it("preserves the listing cursor after a retry and checks ownership before retrying", async () => {
+    const { api, calls } = client([
+      { shipments: [], nextToken: "next" },
+      new Response(null, { status: 503 }),
+      { shipments: [] }
+    ])
+    expect(await api.awdShipments()).toEqual([])
+    expect(calls[1]?.searchParams.get("nextToken")).toBe("next")
+    expect(String(calls[2])).toBe(String(calls[1]))
+    const denied = client([new Response(null, { status: 429 })])
+    const owned = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValue(new Error("Lease lost"))
+    await expect(denied.api.awdReceiptItems("S1", owned)).rejects.toThrow("Lease lost")
+    expect(denied.calls).toHaveLength(1)
+  })
+  it("does not retry forbidden or malformed receipt responses", async () => {
+    for (const response of [new Response(null, { status: 403 }), { shipmentId: "OTHER", shipmentStatus: "CLOSED" }]) {
+      const { api, calls } = client([response])
+      await expect(api.awdReceiptItems("S1")).rejects.toThrow(response instanceof Response ? "403" : "shipmentId")
+      expect(calls).toHaveLength(1)
+    }
+  })
+})

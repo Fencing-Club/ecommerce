@@ -1,4 +1,5 @@
 import { ProviderError, ReportProcessingError } from "@repo/aisle/amazon"
+import { FbmReturnsError } from "@repo/aisle/fbm-returns"
 import { z } from "zod"
 
 // Only schema-owned field names and fixed error categories. Never provider text, row values, URLs or IDs.
@@ -34,7 +35,9 @@ const fields = new Set([
 ])
 const operations = new Set(["createReport", "getReports", "getReport", "getReportDocument", "downloadReport"])
 export function amazonFailureDetails(error: unknown) {
+  const validationError = error instanceof FbmReturnsError ? error.validation : error
   return {
+    dateFormat: error instanceof FbmReturnsError ? error.dateFormat : undefined,
     httpStatus: error instanceof ProviderError ? error.status : undefined,
     operation:
       error instanceof ProviderError && error.operation && operations.has(error.operation)
@@ -43,8 +46,8 @@ export function amazonFailureDetails(error: unknown) {
     processingStatus: error instanceof ReportProcessingError ? "FATAL" : undefined,
     hasDiagnosticDocument: error instanceof ReportProcessingError ? error.hasDiagnosticDocument : undefined,
     validation:
-      error instanceof z.ZodError
-        ? error.issues.slice(0, 10).map((issue) => ({
+      validationError instanceof z.ZodError
+        ? validationError.issues.slice(0, 10).map((issue) => ({
             code: issue.code,
             field: issue.path.filter((part) => typeof part === "string" && fields.has(part)).join(".") || "other"
           }))

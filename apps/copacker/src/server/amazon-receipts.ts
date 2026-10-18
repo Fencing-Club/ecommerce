@@ -18,7 +18,8 @@ export async function syncAmazonReceipts(
     let stage = "list"
     try {
       await assertOwned()
-      const shipments = network === "fba" ? await input.amazon.fbaShipments() : await input.amazon.awdShipments()
+      const shipments =
+        network === "fba" ? await input.amazon.fbaShipments() : await input.amazon.awdShipments(assertOwned)
       const stored = await db()
         .select({ id: analyticsEvidence.sourceId, at: analyticsEvidence.observedAt })
         .from(analyticsEvidence)
@@ -56,7 +57,7 @@ export async function syncAmazonReceipts(
               }
             })
           } else {
-            const details = await input.amazon.awdReceiptItems(shipment.shipmentId)
+            const details = await input.amazon.awdReceiptItems(shipment.shipmentId, assertOwned)
             rows.push({
               id: shipment.shipmentId,
               data: {

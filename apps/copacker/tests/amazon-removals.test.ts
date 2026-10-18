@@ -41,15 +41,10 @@ beforeEach(async () => {
     .values({ orgId, source: "amazon", externalAccountId: "SELLER1", revision: 1, status: "running" })
   report.mockImplementation(async (request) => {
     const kind = request.reportType === "GET_FBA_FULFILLMENT_REMOVAL_ORDER_DETAIL_DATA" ? "orders" : "shipments"
-    return removalReport(
-      kind,
-      request.dataStartTime.startsWith("2026-10")
-        ? [
-            {},
-            kind === "orders" ? { "order-type": "Disposal", disposition: "SELLABLE" } : { "tracking-number": "TRACK2" }
-          ]
-        : []
-    )
+    return removalReport(kind, [
+      {},
+      kind === "orders" ? { "order-type": "Disposal", disposition: "SELLABLE" } : { "tracking-number": "TRACK2" }
+    ])
   })
 })
 const sync = (kind: "orders" | "shipments", date = now) => syncAmazonRemovals(input, kind, owned, date)
@@ -58,11 +53,11 @@ describe("Amazon removal evidence", () => {
   it("backfills each source independently and keeps overlapping quantities out of stock/profit", async () => {
     await sync("orders")
     await sync("shipments")
-    expect(report).toHaveBeenCalledTimes(26)
+    expect(report).toHaveBeenCalledTimes(2)
     expect(report.mock.calls[0]?.[0]).toEqual({
       reportType: "GET_FBA_FULFILLMENT_REMOVAL_ORDER_DETAIL_DATA",
       marketplaceIds: ["ATVPDKIKX0DER"],
-      dataStartTime: "2026-10-01T00:00:00.000Z",
+      dataStartTime: "2025-10-01T00:00:00.000Z",
       dataEndTime: "2026-10-15T23:59:59.000Z"
     })
     const rows = await database.select().from(tables.amazonRemovals)
@@ -93,7 +88,7 @@ describe("Amazon removal evidence", () => {
     report.mockClear()
     await sync("orders")
     await sync("shipments")
-    expect(report).toHaveBeenCalledTimes(4)
+    expect(report).toHaveBeenCalledTimes(2)
     expect(await database.select().from(tables.amazonRemovals)).toHaveLength(4)
   })
   it("replaces corrected and removed evidence, preserves identical rows and isolates source/account/workspace/marketplace", async () => {
@@ -109,12 +104,10 @@ describe("Amazon removal evidence", () => {
       { ...row, orgId, externalAccountId: "SELLER1", marketplaceId: "OTHER" }
     ])
     await sync("shipments")
-    report.mockImplementation(async (request) =>
+    report.mockResolvedValue(
       removalReport(
         "orders",
-        request.dataStartTime.startsWith("2026-10")
-          ? Array.from({ length: 501 }, () => ({ "disposed-quantity": "8", "removal-fee": "-0.000001" }))
-          : []
+        Array.from({ length: 501 }, () => ({ "disposed-quantity": "8", "removal-fee": "-0.000001" }))
       )
     )
     await sync("orders")
@@ -154,42 +147,28 @@ describe("Amazon removal evidence", () => {
     await sync("shipments")
     expect((await status("shipments")).windows.every((window) => window.complete)).toBe(true)
   })
-  it("validates shipment periods by shipment date, not request date, and never publishes part of a bad month", async () => {
-    report.mockImplementation(async (request) =>
-      removalReport(
-        "shipments",
-        request.dataStartTime.startsWith("2026-10") ? [{}, { "shipment-date": "2026-09-30T23:59:59Z" }] : []
-      )
-    )
+  it("validates the entire shipment file by shipment date and never publishes part of an invalid range", async () => {
+    report.mockResolvedValue(removalReport("shipments", [{}, { "shipment-date": "2025-09-30T23:59:59Z" }]))
     await sync("shipments")
     expect(await database.select().from(tables.amazonRemovals)).toEqual([])
     const state = await status("shipments")
     expect(state.windows[0]).toMatchObject({ complete: false, rows: null, status: "failed" })
-    expect(state.windows.slice(1).every((window) => window.complete)).toBe(true)
+    expect(state.windows.every((window) => !window.complete)).toBe(true)
   })
-  it("rotates older order corrections by request month even when last updated later", async () => {
+  it("refreshes older order corrections by request month even when last updated later", async () => {
     await sync("orders")
-    await database
-      .update(tables.amazonRemovalReports)
-      .set({ checkedAt: new Date("2026-08-01") })
-      .where(eq(tables.amazonRemovalReports.from, new Date("2026-05-01")))
     report.mockClear()
-    report.mockImplementation(async (request) =>
-      removalReport(
-        "orders",
-        request.dataStartTime.startsWith("2026-05")
-          ? [
-              {
-                "request-date": "2026-05-01T00:00:00Z",
-                "last-updated-date": "2026-10-15T00:00:00Z",
-                "order-status": "Completed"
-              }
-            ]
-          : []
-      )
+    report.mockResolvedValue(
+      removalReport("orders", [
+        {
+          "request-date": "2026-05-01T00:00:00Z",
+          "last-updated-date": "2026-10-15T00:00:00Z",
+          "order-status": "Completed"
+        }
+      ])
     )
     await sync("orders")
-    expect(report).toHaveBeenCalledTimes(3)
+    expect(report).toHaveBeenCalledTimes(1)
     expect(await database.select().from(tables.amazonRemovals)).toMatchObject([
       { requestedAt: new Date("2026-05-01"), status: "Completed" }
     ])
@@ -222,5 +201,33 @@ describe("Amazon removal evidence", () => {
       rows: null,
       errorCode: code === 403 ? "report_access_denied" : "report_throttled"
     })
+  })
+
+  it("partitions a complete date-range report into months without discarding older stored history", async () => {
+    await database.insert(tables.amazonRemovals).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      kind: "orders",
+      requestedAt: new Date("2025-09-02"),
+      orderId: "OLDER"
+    })
+    report.mockResolvedValue(
+      removalReport("orders", [
+        { "request-date": "2025-10-01T00:00:00Z" },
+        { "request-date": "2026-05-15T12:00:00Z" },
+        { "request-date": "2026-10-15T23:59:59Z" }
+      ])
+    )
+    await sync("orders")
+    const windows = (await status("orders")).windows
+    expect(windows.every((window) => window.complete)).toBe(true)
+    expect(windows.filter((window) => window.rows === 1).map((window) => window.from)).toEqual([
+      "2026-10-01T00:00:00.000Z",
+      "2026-05-01T00:00:00.000Z",
+      "2025-10-01T00:00:00.000Z"
+    ])
+    expect(windows.filter((window) => window.rows === 0)).toHaveLength(10)
+    expect(await database.select().from(tables.amazonRemovals)).toHaveLength(4)
   })
 })

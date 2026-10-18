@@ -274,3 +274,16 @@ inventory/removal windows remain open. A fresh Amazon sync is running; do not tr
 The latest saved checkpoint also has all 13 inventory-movement windows imported. Monthly storage retains all
 8,446 rows, but a throttled September refresh currently leaves 11 windows marked complete. Older aged-storage
 requests now report cancellation instead of generation failure; no zero-cost coverage is inferred from cancellation.
+
+
+### Retry recovery acceptance: 2026-10-18 21:15 UTC
+
+The deployed report retry and receipt checkpoint changes passed full verification and production smoke checks.
+Live September and October reimbursement refreshes succeeded, retaining 102 rows across the target history. October
+inventory movement coverage recovered. September aged storage imported seven records; the other eleven months were
+cancelled by Amazon and remain unavailable, not zero fees. One May removal-order row was recovered; other removal
+periods still returned FATAL without a diagnostic document. AWD receipts subsequently succeeded at 21:30 UTC: 12 shipment snapshots were saved, all with SKU quantities
+reported in cases. FBA receipt collection also finished without errors. All eight missing FBM months were retried. They fail validation on return dates and SAFE-T amounts, with refund
+amount failures in two months. The parser follow-up supports unambiguous alternate date formats and explicit missing
+amount placeholders; successful live row ingestion is still required. A wider removal date-range request is being prepared to reduce report creation pressure; its
+monthly coverage must come from a successfully validated file, never inferred from failed or cancelled requests.

@@ -52,5 +52,19 @@ report created within the last day, and no longer disables ordinary creation ret
 AWD/FBA receipt collection checkpoints each successful shipment. A malformed individual shipment does not discard other
 snapshots or prevent later shipments from being attempted; access and rate failures stop that network. Partial failure
 remains visible. Diagnostics identify the report operation, Amazon FATAL processing outcome and allowlisted schema fields,
-without logging source rows or provider messages. These changes need live acceptance for the remaining reimbursement,
-AWD and older FBM failures; they do not establish complete coverage.
+without logging source rows or provider messages. Live reimbursement refreshes and AWD receipt collection subsequently succeeded; see the
+[dated checkpoint](specs/analytics/analytics-data-backlog.md#retry-recovery-acceptance-2026-10-18-2115-utc). Older FBM
+validation remains open. These results do not establish complete historical coverage.
+
+
+AWD shipment lists and receipt reads retry transient HTTP failures within a five-minute deadline, respecting Retry-After
+and rechecking job ownership before another request. List retries retain the same page token; receipt retries retain
+the shipment ID. Schema errors and access denial are not retried. See [removal collection](amazon-removals.md) for the
+combined date-range requests that reduce the removal backfill from up to 26 reports to two.
+
+
+FBM return parsing supports English named-month dates, year-first dates and timestamps with explicit UTC offsets.
+Date-only records retain day precision; numeric day/month order and timestamps without zones are not guessed.
+Explicit unavailable monetary placeholders stay null, while decimal amounts remain exact signed strings. Invalid
+dates and malformed amounts still reject the complete file. Diagnostics retain a masked date format (letters and
+digits replaced), never the source date, order, customer text or monetary values. Live revalidation is required.
