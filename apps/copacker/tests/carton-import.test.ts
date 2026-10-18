@@ -107,7 +107,9 @@ describe("carton import", () => {
     await book.xlsx.load(await cartonTemplate(padded, ["Instructions"]))
     const sheet = book.getWorksheet("Cartons")!
     row().forEach((value, index) => {
-      if (index !== 2) {sheet.getRow(2).getCell(index + 1).value = value}
+      if (index !== 2) {
+        sheet.getRow(2).getCell(index + 1).value = value
+      }
     })
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), padded)
     expect(result.issues).toEqual([])
