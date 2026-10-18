@@ -439,3 +439,43 @@ export const FinancialFeesFailed = meta.story({
     await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
   }
 })
+
+export const FinancialIndependentOfOrders = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            { ...syncState("amazon", { status: "failed", errorCode: "provider_unavailable" }), ...financialReports }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Financial reports imported")).toBeVisible()
+    await expect(canvas.queryByText("Last sync failed")).toBeNull()
+  }
+})
+
+export const FinancialFeesMissing = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            {
+              ...syncState("amazon"),
+              ...financialReports,
+              fees: { coveredFrom: null, coveredTo: null, errorCode: null }
+            }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports are not available yet.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
+  }
+})

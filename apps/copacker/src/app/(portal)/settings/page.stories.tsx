@@ -337,7 +337,7 @@ export const AmazonSettings = meta.story({
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Harbor Goods US")
     for (const name of ["Orders", "Inventory", "Financial data"]) {
-      await expect(within(sheet).getByRole("heading", { name })).toBeVisible()
+      await waitFor(() => expect(within(sheet).getByRole("heading", { name })).toBeVisible())
     }
     await expect(within(sheet).getByRole("button", { name: "Sync Amazon financial data" })).toBeVisible()
     await expect(sheet).not.toHaveTextContent(amazonAccount)

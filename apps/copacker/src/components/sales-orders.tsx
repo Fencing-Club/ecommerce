@@ -184,7 +184,10 @@ function SalesSyncCard({ source, financial = false }: { source: SalesSource; fin
   } else if (mutation.isError) {
     syncState = "failed"
     text = <span className="text-destructive">{errorMessage(mutation.error, t("couldNotStart"))}</span>
-  } else if (state?.status === "failed") {
+  } else if (
+    state?.status === "failed" &&
+    (!financial || state.errorCode === "reconnect" || state.errorCode === "shopify_permissions")
+  ) {
     syncState = "failed"
     text = (
       <span className="text-destructive">
