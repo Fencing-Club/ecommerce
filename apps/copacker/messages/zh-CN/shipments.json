@@ -62,8 +62,8 @@
       "markReceived": "标记为已收货",
       "retry": "重试货件",
       "cancelInAmazon": "在 Amazon 中取消",
-      "getAmazonLabels": "获取Amazon 标签",
-      "createAmazonShipment": "创建Amazon 货件"
+      "getAmazonLabels": "获取 Amazon 标签",
+      "createAmazonShipment": "创建 Amazon 货件"
     },
     "needsAttention": "需要处理",
     "changesWaiting": {
