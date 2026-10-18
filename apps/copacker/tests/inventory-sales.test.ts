@@ -98,6 +98,7 @@ const range = {
 async function shopifyOrder() {
   const id = randomUUID()
   const data = {
+    transactions: [],
     id: "order1",
     name: "#1",
     createdAt: "2026-01-01T00:00:00Z",
@@ -105,7 +106,17 @@ async function shopifyOrder() {
     test: false,
     sourceName: "web",
     tags: [],
-    lines: [{ id: "line", quantity: 3, currentQuantity: 3, sku: "SKU", variant: { id: "v1" } }],
+    lines: [
+      {
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
+        id: "line",
+        quantity: 3,
+        currentQuantity: 3,
+        sku: "SKU",
+        variant: { id: "v1" }
+      }
+    ],
     fulfillments: [
       {
         id: "f1",

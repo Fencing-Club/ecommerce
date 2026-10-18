@@ -1,1 +1,0 @@
-ALTER TABLE "product_defaults" ADD COLUMN "productLabel" text DEFAULT 'standard' NOT NULL;

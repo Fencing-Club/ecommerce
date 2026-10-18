@@ -1,1 +1,0 @@
-ALTER TABLE "suppliers" ALTER COLUMN "email" DROP NOT NULL;

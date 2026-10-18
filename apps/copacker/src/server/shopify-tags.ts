@@ -4,7 +4,7 @@ import type { ShopifySale } from "@repo/aisle/sales"
 import type { SQL } from "drizzle-orm"
 import { eq, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { organizations, salesOrders, salesSyncs } from "@/db/schema"
+import { organizations, salesOrders } from "@/db/schema"
 
 // The workspace's excluded Shopify order tags, trimmed and lower-cased: Shopify compares tags without regard to case.
 export async function excludedShopifyTags(orgId: string) {
@@ -31,7 +31,7 @@ const tagPattern = (tag: string) =>
   )
 
 // Whether a stored order's data (a jsonb expression) has a tag matching any of the (lower-cased) tags. Amazon and eBay
-// orders, and Shopify orders copied before tags were read, have none.
+// orders have none.
 export function taggedWith(data: SQL, tags: readonly string[]) {
   return tags.length
     ? sql`exists (select 1 from jsonb_array_elements_text(coalesce(${data}->'tags', '[]'::jsonb)) tag
@@ -48,19 +48,6 @@ export function hasExcludedTag(data: ShopifySale | AmazonSale | EbaySale, tags: 
     "lines" in data &&
     Boolean(data.tags?.some((tag) => patterns.some((pattern) => pattern.test(tag.trim().toLowerCase()))))
   )
-}
-
-// Whether a Shopify sync is still copying tags: one is queued or running, and some order from the last `days` (the
-// history syncs keep) was copied before tags were read, so excluded tags can't leave it out yet. Orders a finished sync
-// didn't reach wait for a later one, and don't count as copying.
-export async function untaggedShopifyOrders(orgId: string, days: number) {
-  const result = await db().execute(sql`
-    select exists (select 1 from ${salesSyncs} s
-        where s."orgId" = ${orgId} and s.source = 'shopify' and s.status in ('queued', 'running'))
-      and exists (select 1 from ${salesOrders} o
-        where o."orgId" = ${orgId} and o.source = 'shopify' and not (o.data ? 'tags')
-          and o."orderedAt" > now() - make_interval(days => ${days})) as untagged`)
-  return (result as unknown as { rows: { untagged: unknown }[] }).rows[0]?.untagged === true
 }
 
 // The tags the store's copied Shopify orders use, most used first, to suggest when choosing tags to exclude.

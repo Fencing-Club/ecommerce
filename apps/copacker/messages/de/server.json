@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Shopify-Gebühren konnten nicht übernommen werden",
       "amazonFeesFailedDetail": "Die Margen enthalten sie erst nach der nächsten Synchronisierung",
       "shopifyChargesFailedDetail": "Der Bruttogewinn enthält sie erst nach der nächsten Synchronisierung",
-      "unpriced": "Synchronisieren Sie die {source, select, amazon {Amazon} ebay {eBay} other {Shopify}}-Aufträge erneut, um Preise zu erhalten",
-      "unpricedDetail": "{count, plural, one {# Auftrag in diesem Zeitraum hat} other {# Aufträge in diesem Zeitraum haben}} keinen Preis",
       "stockFailed": "Synchronisierung des Lagerbestands fehlgeschlagen",
       "stockFailedDetail": "Die Lagerbestände sind möglicherweise veraltet",
       "viewProducts": "Produkte anzeigen",

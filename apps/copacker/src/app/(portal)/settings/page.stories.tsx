@@ -63,7 +63,6 @@ type Args = {
   // Whether Copacker has its eBay keys.
   ebayAvailable: boolean
   orderTags: string[]
-  copyingTags: boolean
   // The store's Shopify locations and what each counts as.
   locations: typeof inventoryLocations.locations
   // The workspaces the person owns: those others use, and those that close with the account.
@@ -87,7 +86,6 @@ async function SettingsPage(args: Args) {
   const amazon = amazonAccount ? args.amazonStore : null
   const ebayName = ebayAccount ? args.ebayName : null
   const orderTags = buyer && shopifyAccount && admin ? args.orderTags : []
-  const copyingTags = buyer && shopifyAccount && admin ? args.copyingTags : false
   const ownLocations = buyer
     ? args.locations
         .filter((location) => location.classification === "merchant")
@@ -125,7 +123,6 @@ async function SettingsPage(args: Args) {
         amazon,
         ebayName,
         orderTags,
-        copyingTags,
         ownLocations,
         person: saved,
         owned: {
@@ -243,7 +240,6 @@ const buyerArgs: Args = {
   ebayName: ebayAccount,
   ebayAvailable: true,
   orderTags: ["Amazon", "wholesale", "sample"],
-  copyingTags: false,
   locations: inventoryLocations.locations,
   owned: { handOver: [], closing: [workspaces.buyer.name] }
 }

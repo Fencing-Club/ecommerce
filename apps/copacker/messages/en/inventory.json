@@ -52,7 +52,6 @@
     "needLabelHint": "Variations whose label has to be uploaded",
     "withoutCountryFilter": "{count, plural, other {# without a country}}",
     "withoutCountryHint": "Variations with no country of origin in Shopify, so their labels leave out “Made in”",
-    "needsResync": "Sync Shopify to load the latest product details",
     "noMatch": "No products match",
     "noProducts": "No products",
     "loading": "Loading products",

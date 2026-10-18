@@ -99,11 +99,9 @@ The [Cloudflare release guide](cloudflare.md#release-procedure) describes exact-
 static Storybook, Cloudflare Workflows, serialized migrations and deployed health checks. Railway is no longer a release
 target. See the [cutover acceptance record](specs/platform-migration/acceptance.md) for deployment and retirement status.
 
-Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
-A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
-new migration or restore a verified recovery point from the authoritative database. Confirm Neon's actual restore
-window and matching private documents as described in [database recovery](neon.md#transfer-and-acceptance);
-the former Railway retention does not apply to Neon.
+During prelaunch, breaking schema changes ship with coordinated releases; stop incompatible executors before applying
+them. Do not retain obsolete fields for older releases. A rollback requires compatible code or a matching database
+recovery point and private documents. See [database recovery](neon.md#transfer-and-acceptance).
 
 ## Infrastructure
 
@@ -160,11 +158,19 @@ uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application
 Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
-Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
-under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied
-migration is edited (record each migration's hash there once it's deployed), or when migrations are numbered out of the
-order they were made. The release runner uses one direct connection and an advisory lock to apply pending migrations
-before deployment. The old Railway predeploy migration commands are disabled; keep one migration owner.
+Copacker is prelaunch. `drizzle/0000_baseline.sql` creates the current schema directly, including the `fx_per_usd`
+and `fx_rate` functions used by financial reports. Historical schema changes and data conversions are not retained.
+
+**This baseline requires a fresh database.** A database initialized with the removed migration history cannot be
+upgraded with `db:migrate`. Before deploying this checkout, explicitly arrange a fresh database or an authorized reset
+for each affected environment, with the web and worker stopped. Do not clear migration bookkeeping and run the baseline
+on existing tables. No deployed database has been reset by the repository cleanup. Preserve integration credentials
+and external provider configuration unless a full reset is separately requested.
+
+Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
+`drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
+`tests/migrations.test.ts` checks schema coverage, journal ordering, fresh initialization and repeat migration runs.
+The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.

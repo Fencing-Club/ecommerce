@@ -52,7 +52,6 @@
     "needLabelHint": "需要上传标签的变体",
     "withoutCountryFilter": "{count, plural, other {# 个无原产国}}",
     "withoutCountryHint": "Shopify 中未设置原产国的变体，其标签上不会显示“Made in”",
-    "needsResync": "同步 Shopify 以加载最新的产品详情",
     "noMatch": "没有匹配的产品",
     "noProducts": "暂无产品",
     "loading": "正在加载产品",

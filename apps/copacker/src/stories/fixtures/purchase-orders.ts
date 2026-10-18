@@ -81,7 +81,6 @@ export function supplierRecord(overrides: Partial<Supplier> = {}): Supplier {
     expiresAt: null,
     removedAt: null,
     leadTimeDays: 60,
-    paymentTerms: "Due immediately",
     shopifySupplierName: null,
     website: null,
     contactName: "Mei Chen",

@@ -82,10 +82,12 @@ needs a human discussion**, not a silent add.
 
 - Every page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or update them
   with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
-- Its database holds production data. Change the schema only through a new migration: edit
-  `apps/copacker/src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and add the new file's hash to
-  `apps/copacker/tests/migrations.test.ts` once it has been deployed. Never edit an existing migration or apply SQL by
-  hand. The serialized release runner applies pending migrations before deploying the web service.
+- Copacker is prelaunch, with no users to migrate. The database starts from `drizzle/0000_baseline.sql`, generated from
+  the current schema plus the currency-conversion SQL functions. Do not restore historical migrations, data backfills,
+  or compatibility aliases. For schema changes, edit `apps/copacker/src/db/schema.ts` and run
+  `pnpm --filter copacker db:generate`. See
+  [database setup](../apps/copacker/docs/operations.md#databases-and-migrations) before deploying to a database created
+  from a different baseline. Database resets require explicit authorization.
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is
   disposable; never reset or delete production data unless the user explicitly asks, and keep integration credentials
   and unrelated external configuration when resetting application data unless a full reset is requested.

@@ -40,3 +40,9 @@ See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the pu
 `@repo/aisle/fulfillment-shipments` parses dated FBA shipment items with stable identities and an accounting-only field allowlist. Sales readers also retain Shopify fulfillment creation and in-transit times. See [shipment-date evidence](../../../apps/copacker/docs/shipment-date-evidence.md).
 
 The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text.
+
+## Commerce snapshots
+
+Shopify stock always includes product identity and display fields. Shopify sales always include tags, line prices,
+discount allocations and payment transactions. Readers validate those fields instead of accepting historical partial
+shapes. Customer IDs remain permission-dependent; Amazon proceeds remain optional until Amazon prices an order.

@@ -1,1 +1,0 @@
-ALTER TABLE "organizations" ADD COLUMN "excludedShopifyTags" text[] DEFAULT '{"Amazon"}' NOT NULL;

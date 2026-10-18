@@ -161,7 +161,6 @@ export const amazonOnlyStock: AmazonOnlyStock[] = [
 export function productsPage(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     observedAt: daysAgo(0).toISOString(),
-    needsResync: false,
     page: 1,
     pageSize: 25,
     totalPages: 1,

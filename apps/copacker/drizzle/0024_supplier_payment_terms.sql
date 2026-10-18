@@ -1,1 +1,0 @@
-ALTER TABLE "suppliers" ADD COLUMN "paymentTerms" text DEFAULT 'Due immediately' NOT NULL;

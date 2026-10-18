@@ -1,1 +1,0 @@
-ALTER TABLE "organizations" ALTER COLUMN "excludedShopifyTags" SET DEFAULT '{"Amazon","eBay"}';

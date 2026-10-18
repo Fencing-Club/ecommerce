@@ -1,7 +1,7 @@
 # Route and endpoint inventory
 
 Part of the [migration specification](README.md). This is the October 15, 2026 working-tree baseline from
-`apps/copacker/src/app`: **40 pages, seven layouts and 62 HTTP route files**. Refresh it at M0 and reconcile any routes
+`apps/copacker/src/app`: **38 pages, seven layouts and 62 HTTP route files**. Refresh it at M0 and reconcile any routes
 added during implementation. A route row covers all of its roles and states, not just its successful render.
 
 Paths below use `:id` notation for readability. Preserve actual URL spelling and query semantics while converting Next
@@ -14,7 +14,7 @@ file parameters to Router parameters. The [API contract](../../api-contract.md),
 | --- | --- | --- | --- |
 | P1: public and system | `/`, `/contact`, `/privacy`, `/terms`, `/unsubscribe`, `/maintenance`, `/setup` | 7 | Marketing SSR/SEO, localized forms, unsubscribe behavior, maintenance/status and setup restrictions |
 | P2: identity and onboarding | `/login`, `/signup`, `/verify-email`, `/forgot-password`, `/reset-password`, `/invite`, `/onboarding`, `/workspaces/new` | 8 | Custom auth, invite/verification expiry, safe redirects, cookies, workspace creation and setup transitions |
-| P3: workspace and partners | `/overview`, `/settings`, `/partners`, `/customers`, `/customers/:id`, `/suppliers`, `/forwarders` | 7 | Role gates, language/settings, workspace switch, partner sheets and existing redirect-only pages |
+| P3: workspace and partners | `/overview`, `/settings`, `/partners`, `/customers`, `/customers/:id` | 5 | Role gates, language/settings, workspace switch, partner sheets |
 | P4: catalogs and products | `/catalogs`, `/catalogs/new`, `/catalogs/:id`, `/products`, `/products/new`, `/products/:id` | 6 | Buyer/supplier views, restricted prices, forms, import/export and nuqs product-import state |
 | P5: inventory and sales | `/inventory`, `/restock`, `/sales` | 3 | Filtering, calculations, location/variant edits, restock actions and sync freshness |
 | P6: orders and shipments | `/orders`, `/orders/new`, `/orders/import`, `/orders/import/:id`, `/orders/:id`, `/orders/:id/edit`, `/orders/:id/revise`, `/shipments`, `/shipments/:id` | 9 | All roles/revisions, document release, imports, proposal actions, labels, packets and job progress |

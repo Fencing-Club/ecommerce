@@ -52,7 +52,6 @@
     "needLabelHint": "Variantes cuya etiqueta hay que subir",
     "withoutCountryFilter": "{count, plural, one {# sin país} other {# sin país}}",
     "withoutCountryHint": "Variantes sin país de origen en Shopify, así que sus etiquetas omiten “Hecho en”",
-    "needsResync": "Sincroniza Shopify para cargar los datos más recientes de los productos",
     "noMatch": "Ningún producto coincide",
     "noProducts": "No hay productos",
     "loading": "Cargando productos",

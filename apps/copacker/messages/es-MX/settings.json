@@ -157,7 +157,6 @@
   },
   "excludedTags": {
     "title": "Etiquetas de pedido excluidas",
-    "syncing": "Sincronizando etiquetas de Shopify",
     "none": "Ninguna",
     "edit": "Editar",
     "editLabel": "Editar etiquetas de pedido excluidas",
