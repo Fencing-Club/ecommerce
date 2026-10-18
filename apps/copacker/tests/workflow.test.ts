@@ -5106,6 +5106,8 @@ describe("stored sales orders", () => {
       .update(tables.connections)
       .set({ scopes: "read_orders,read_customers" })
       .where(and(eq(tables.connections.orgId, buyerId), eq(tables.connections.provider, "shopify")))
+    // Finish the independent analytics job queued by the preceding sales sync.
+    await runNextJob()
     graphql.mockClear()
     await requestSalesSync(buyer.org, "shopify")
     await drainSales()
@@ -5116,6 +5118,8 @@ describe("stored sales orders", () => {
     expect(withCustomers).toMatchObject({ status: "idle", customersIncluded: true })
     expect(graphql).toHaveBeenCalledTimes(5)
     // Subsequent syncs preserve customer coverage and read only the recent window.
+    // Finish the independent analytics job queued by the preceding sales sync.
+    await runNextJob()
     graphql.mockClear()
     await requestSalesSync(buyer.org, "shopify")
     await drainSales()
