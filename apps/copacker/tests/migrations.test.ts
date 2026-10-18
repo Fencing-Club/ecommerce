@@ -16,6 +16,7 @@ import { migrationSql } from "./migrations"
 // production without the change; add a new migration with `pnpm db:generate` instead. Line endings are normalized
 // because Windows checkouts use CRLF.
 const applied: Record<string, string> = {
+  "0059_customer_coverage": "b33d7ae10731f6630e21d63a7bd4cf82203c09f8f4c43537d6c6aff650cb54c8",
   "0000_copacker": "294906ff9375edefaba8e22358763e37eb091d7afc5e7ea9ef663a1ae5c85f6e",
   "0001_optional_amazon_seller": "bdd9c66153a5c4738722d4dc9c3d8e3ebeb68d2f9475211ca4420a6b758e16c2",
   "0002_loving_starfox": "3c23e5624beddf0042d8800838757242db1d25731de0c1ec10a15b241e560d50",
@@ -247,6 +248,105 @@ describe("migrations", () => {
       expect(Number(result.rows[0]?.rate)).toBe(1.4)
     } finally {
       await pg.close()
+    }
+  })
+
+  it("rejects malformed stored payments after the coverage migration without changing data", async () => {
+    const folder = await mkdtemp(join(tmpdir(), "copacker-payments-"))
+    const pg = new PGlite()
+    try {
+      const prior = journal.entries.filter((entry) => entry.idx < 60)
+      await mkdir(join(folder, "meta"))
+      await writeFile(join(folder, "meta/_journal.json"), JSON.stringify({ ...journal, entries: prior }))
+      for (const entry of prior) {
+        await cp(new URL(`../drizzle/${entry.tag}.sql`, import.meta.url), join(folder, `${entry.tag}.sql`))
+      }
+      const database = drizzle(pg)
+      await migrate(database, { migrationsFolder: folder })
+      await pg.exec(`
+        INSERT INTO organizations (id, name, kind) VALUES ('00000000-0000-4000-8000-000000000001', 'Payments', 'buyer');
+        INSERT INTO sales_orders ("orgId", source, "externalAccountId", "orderId", "orderedAt", data) VALUES
+          ('00000000-0000-4000-8000-000000000001', 'shopify', 'payments.myshopify.com', 'retained-order', now(), '{}');
+      `)
+      const options = { migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)) }
+      const fee = {
+        amount: { amount: "1.23", currencyCode: "USD" },
+        taxAmount: { amount: "0.00", currencyCode: "USD" }
+      }
+      const payment = { id: "gid://shopify/OrderTransaction/1", kind: "SALE", status: "SUCCESS", fees: [fee] }
+      const malformed: unknown[] = [
+        null,
+        {},
+        [null],
+        [{}],
+        [{ ...payment, id: undefined }],
+        [{ ...payment, id: "" }],
+        [{ ...payment, id: 1 }],
+        [{ ...payment, kind: undefined }],
+        [{ ...payment, kind: null }],
+        [{ ...payment, status: undefined }],
+        [{ ...payment, status: false }],
+        [{ ...payment, fees: undefined }],
+        [{ ...payment, fees: null }],
+        [{ ...payment, fees: {} }],
+        [{ ...payment, fees: Array.from({ length: 51 }, () => fee) }],
+        [{ ...payment, fees: [null] }],
+        [{ ...payment, fees: [{}] }],
+        [{ ...payment, fees: [{ amount: fee.amount }] }],
+        [{ ...payment, fees: [{ taxAmount: fee.taxAmount }] }]
+      ]
+      for (const key of ["amount", "taxAmount"]) {
+        for (const money of [
+          null,
+          {},
+          { amount: 1, currencyCode: "USD" },
+          { amount: "NaN", currencyCode: "USD" },
+          { amount: "1e3", currencyCode: "USD" },
+          { amount: ".5", currencyCode: "USD" },
+          { amount: "1", currencyCode: "US" },
+          { amount: "1", currencyCode: 123 }
+        ]) {
+          malformed.push([{ ...payment, fees: [{ ...fee, [key]: money }] }])
+        }
+      }
+      for (const transactions of malformed) {
+        const data = { tags: [], lines: [], transactions, merchantNote: "Keep this evidence" }
+        await pg.query(`UPDATE sales_orders SET data = $1::jsonb`, [JSON.stringify(data)])
+        const before = (await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t`)).rows
+        await expect(migrate(database, options)).rejects.toMatchObject({
+          cause: { message: expect.stringContaining("Stored Shopify payment data needs a refresh") }
+        })
+        expect((await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t`)).rows).toEqual(before)
+        expect((await pg.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`)).rows).toEqual([
+          { count: 60 }
+        ])
+      }
+      const valid = {
+        tags: [],
+        lines: [],
+        transactions: [
+          payment,
+          { ...payment, id: "other", fees: [] },
+          {
+            ...payment,
+            id: "refund",
+            fees: [
+              { amount: { amount: "-1.23", currencyCode: "CAD" }, taxAmount: { amount: "0", currencyCode: "CAD" } }
+            ]
+          }
+        ]
+      }
+      await pg.query(`UPDATE sales_orders SET data = $1::jsonb`, [JSON.stringify(valid)])
+      const before = (await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t`)).rows
+      await migrate(database, options)
+      await migrate(database, options)
+      expect((await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t`)).rows).toEqual(before)
+      expect((await pg.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`)).rows).toEqual([
+        { count: journal.entries.length }
+      ])
+    } finally {
+      await pg.close()
+      await rm(folder, { recursive: true, force: true })
     }
   })
 

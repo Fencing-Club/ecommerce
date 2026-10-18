@@ -174,6 +174,10 @@ orders to get past the check. The failure rolls back the migration and the relea
 If a provider can no longer supply the missing history, retain the existing release until a preservation plan is reviewed.
 Customer coverage starts unconfirmed so the next permitted sync verifies the complete history without deleting orders.
 
+Migration `0060_validate_shopify_payments` also checks each stored Shopify payment and its fee amounts against the
+current contract. Invalid payment data stops deployment without changing records; use the same refresh-and-retry
+process. This is a separate migration because `0059_customer_coverage` has already run in preview environments.
+
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
 `drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
 `tests/migrations.test.ts` checks schema coverage, journal ordering, fresh initialization and repeat migration runs.

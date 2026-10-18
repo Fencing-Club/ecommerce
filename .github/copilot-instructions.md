@@ -85,7 +85,7 @@ needs a human discussion**, not a silent add.
 - Production data must survive every release. Keep applied migrations immutable and append forward migrations; never
   replace deployed migration history with a fresh baseline or reset a database as part of a release. Remove obsolete
   runtime compatibility paths only when stored data meets the current contract. For schema changes, edit
-  `apps/copacker/src/db/schema.ts` and run `pnpm --filter copacker db:generate`. See Record deployed migration hashes in
+  `apps/copacker/src/db/schema.ts` and run `pnpm --filter copacker db:generate`. Record deployed migration hashes in
   `apps/copacker/tests/migrations.test.ts`. See
   [database setup](../apps/copacker/docs/operations.md#databases-and-migrations). Database resets require explicit
   authorization.

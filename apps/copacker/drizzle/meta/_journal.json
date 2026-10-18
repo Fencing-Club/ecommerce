@@ -421,6 +421,13 @@
       "when": 1792309033097,
       "tag": "0059_customer_coverage",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792311442576,
+      "tag": "0060_validate_shopify_payments",
+      "breakpoints": true
     }
   ]
 }
