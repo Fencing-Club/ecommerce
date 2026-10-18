@@ -623,14 +623,14 @@ export const SupplierFbaMixedCartons = meta.story({
   }
 })
 
-export const PackingListOnOrder = meta.story({
+export const SupplierPackOnOrder = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "ready" }),
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
-    await expect(await canvas.findByRole("button", { name: "Download packing list" })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Download packing list" })).toBeEnabled())
     await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
-    await expect(canvas.getByRole("heading", { name: "Packing lists" })).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Download Shipment 1 packing list" })).toBeEnabled()
+    await expect(canvas.getByRole("region", { name: "Purchase order documents" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
     await userEvent.click(canvas.getByRole("button", { name: "View packing" }))
     await expect(canvas.getByText("Packed", { exact: true })).toBeVisible()
   }
@@ -643,5 +643,31 @@ export const SupplierPackedMobile = meta.story({
     await expect(canvas.getByRole("button", { name: "Download packing list" })).toBeEnabled()
     const heading = canvas.getByRole("heading", { name: "Shipment 1" })
     await expect(heading.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
+  }
+})
+
+export const ShipmentDocumentsReady = meta.story({
+  ...flow({
+    viewer: "supplier",
+    initialState: "accepted",
+    viaForwarder: true,
+    initialPacking: "packed",
+    labelsReady: true
+  }),
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    const summary = within(canvas.getByRole("region", { name: "Shipment summary" }))
+    await expect(summary.getByText("18", { exact: true })).toBeVisible()
+    await expect(summary.getByText("230.8 kg")).toBeVisible()
+    await expect(summary.getByText("1.79 m\u00b3")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download carton labels" })).toBeEnabled()
+    await expect(canvas.queryByRole("button", { name: "Download carrier labels" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Product labels" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
+    await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
+    await expect(canvas.getByRole("button", { name: "Product labels" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "View packing" }))
   }
 })

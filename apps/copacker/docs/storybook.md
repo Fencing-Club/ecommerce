@@ -102,3 +102,17 @@ mocked comment action succeeds. Revision-specific content uses the timeline entr
 
 Their sibling stories cover event revisions, price visibility, internal and shared comments for buyers and suppliers,
 keyboard submission, pending requests, and failures. The flow's `TimelineComments` story checks posted entries end to end.
+
+## Document downloads prototype
+
+`ProductDownloadsMenu` is shared by the PO and shipment views. Its caller supplies only applicable label types and
+scopes the download to that order or shipment. `ShipmentDocuments` owns the packing list, carton labels, carrier labels,
+and reference-sheet rows; pending files are disabled and carrier labels are omitted when not required.
+
+The PO keeps the combined supplier-pack action. Ready packets reuse `renderSupplierPacket`, also used by the existing
+shipment packet page. Carton/carrier files in this prototype are marked sample documents; product labels use fixture
+product codes with the existing printable generators. The prototype
+uses local packing state and does not persist documents or alter production release/access rules.
+
+Product SKU/FNSKU and suffocation downloads use the existing shared printable label generators. Country-of-origin and choking-hazard label files are unavailable until supplied; the menu never substitutes a placeholder for these files.
+`DetailFields` renders the shared label-above-value fields for PO details and shipment summaries. The packing form supplies live carton, weight, and volume totals to its sidebar slot.

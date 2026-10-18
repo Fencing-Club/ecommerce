@@ -1,6 +1,7 @@
 import { Toast } from "@base-ui/react/toast"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
 import { packingSchema, type Packing, type OrderInput } from "@repo/aisle"
+import { packingTasks } from "@repo/aisle/packing-requirements"
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,13 +27,16 @@ import { match } from "ts-pattern"
 import { useLocale } from "use-intl"
 import { AddProductsDialog } from "@/components/add-products-dialog"
 import { StatusBadge } from "@/components/common"
+import { DetailFields } from "@/components/detail-fields"
 import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
 import { PackingForm } from "@/components/packing-form"
 import { PoTimeline, type TimelineEntry } from "@/components/po-timeline"
+import { ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
+import { ShipmentDocuments } from "@/components/shipment-documents"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -371,7 +375,10 @@ export function PurchaseOrderFlow({
   mobileRoutes = false,
   initialPacking,
   forwarderPickup = false,
-  mixedFba = false
+
+  mixedFba = false,
+
+  labelsReady = false
 }: {
   viewer?: "buyer" | "supplier"
   initialState?: State
@@ -386,6 +393,7 @@ export function PurchaseOrderFlow({
   initialPacking?: "editing" | "ready" | "packed"
   forwarderPickup?: boolean
   mixedFba?: boolean
+  labelsReady?: boolean
 }) {
   const cash = useMoney()
   const controlId = useId()
@@ -446,12 +454,17 @@ export function PurchaseOrderFlow({
   const [packingFinished, setPackingFinished] = useState(initialPacking === "packed")
   const [packingDetails, setPackingDetails] = useState<Item | null>(null)
   const [requirements, setRequirements] = useState<Record<string, PackingRequirements>>({})
-  const requirement: PackingRequirements = (packingDetails && requirements[packingDetails.id]) ?? {
+
+  const defaultRequirement: PackingRequirements = {
     preparation: "sealedPolybag",
     labels: viewer === "supplier" ? ["fnsku", "suffocation", "countryOfOrigin"] : ["fnsku", "suffocation"],
     countryCode: viewer === "supplier" ? "CN" : "",
     instructions: "Keep the label visible on the outside of the bag."
   }
+  function packingRequirementsFor(item: Item) {
+    return requirements[item.id] ?? defaultRequirement
+  }
+  const requirement = packingDetails ? packingRequirementsFor(packingDetails) : defaultRequirement
   function updateRequirement(change: Partial<PackingRequirements>) {
     if (packingDetails) {
       setRequirements({ ...requirements, [packingDetails.id]: { ...requirement, ...change } })
@@ -790,41 +803,46 @@ export function PurchaseOrderFlow({
         }
       : {}
   )
+  function packingDocument(record: { shipment: Shipment; packing: Packing }): ShippingDocumentData {
+    return {
+      company: "Harbor Goods",
+      order: "PO38",
+      revision: 1,
+      generatedDate: "2026-10-20",
+      shipment: `Shipment ${record.shipment.id}`,
+      recipient: { name: "Northwind Textiles", address: [] },
+      origin: { name: record.packing.origin.name, address: [record.packing.origin.addressLine1] },
+      destination: { name: record.shipment.destination, address: [] },
+      network: record.shipment.destination.includes("AWD") ? "awd" : "fba",
+      transport: { service: "supplier", collection: "delivery", carrierLabels: false, palletized: false },
+      products: record.shipment.items.map((item) => ({
+        id: item.id,
+        supplierSku: item.supplierSku,
+        description: item.name,
+        variant: item.variant,
+        piecesPerPack: item.piecesPerSet,
+        tasks: packingTasks(packingRequirementsFor(item)),
+        countryCode: packingRequirementsFor(item).countryCode || undefined
+      })),
+      cartons: record.packing.cartons.map((carton) => ({
+        id: carton.cartonId,
+        dimensions: [carton.length, carton.width, carton.height],
+        weight: carton.weight,
+        contents: carton.items.map((item) => ({
+          productId: item.itemId,
+          packs: item.pieces / (record.shipment.items.find((product) => product.id === item.itemId)?.piecesPerSet ?? 1)
+        }))
+      })),
+      instructions: ""
+    }
+  }
   async function downloadPackingList(record: { shipment: Shipment; packing: Packing }) {
     setDownloadingPacking(true)
     try {
       const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
-      const data: ShippingDocumentData = {
-        company: "Harbor Goods",
-        order: "PO38",
-        revision: 1,
-        generatedDate: "2026-10-20",
-        shipment: `Shipment ${record.shipment.id}`,
-        recipient: { name: "Northwind Textiles", address: [] },
-        origin: { name: record.packing.origin.name, address: [record.packing.origin.addressLine1] },
-        destination: { name: record.shipment.destination, address: [] },
-        network: record.shipment.destination.includes("AWD") ? "awd" : "fba",
-        transport: { service: "supplier", collection: "delivery", carrierLabels: false, palletized: false },
-        products: record.shipment.items.map((item) => ({
-          id: item.id,
-          supplierSku: item.supplierSku,
-          description: item.name,
-          variant: item.variant,
-          piecesPerPack: item.piecesPerSet,
-          tasks: []
-        })),
-        cartons: record.packing.cartons.map((carton) => ({
-          id: carton.cartonId,
-          dimensions: [carton.length, carton.width, carton.height],
-          weight: carton.weight,
-          contents: carton.items.map((item) => ({
-            productId: item.itemId,
-            packs:
-              item.pieces / (record.shipment.items.find((product) => product.id === item.itemId)?.piecesPerSet ?? 1)
-          }))
-        })),
-        instructions: ""
-      }
+
+      const data = packingDocument(record)
+
       const blob = await renderShippingDocument(
         <ShippingPdf data={data} kind="packing" settings={documentSettingsForLocale(locale)} packingRecord />
       )
@@ -836,6 +854,166 @@ export function PurchaseOrderFlow({
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch {
       toast.add({ title: "Could not download the packing list", type: "error" })
+    } finally {
+      setDownloadingPacking(false)
+    }
+  }
+  function labelsForItem(item: Item): PackingRequirements["labels"] {
+    return packingRequirementsFor(item).labels
+  }
+  function productDownloads(items: Item[]) {
+    return packingLabelOptions
+      .filter((option) => items.some((item) => labelsForItem(item).includes(option.value)))
+      .map((option) => ({
+        id: option.value,
+        label: option.label,
+        unavailable: option.value === "choking" || option.value === "countryOfOrigin" ? "Label not provided" : undefined
+      }))
+  }
+  async function productLabelPdf(id: string, items: Item[]) {
+    const { standardProductLabels, suffocationWarningLabels, labelTitle } = await import("@repo/aisle/product-labels")
+    const { combinePdfs } = await import("@repo/aisle/documents")
+    if (id === "suffocation") {
+      return suffocationWarningLabels()
+    }
+    if (id !== "fnsku" && id !== "sku") {
+      throw new Error("The required label has not been provided")
+    }
+    const uniqueItems = [...new Map(items.map((item) => [item.id, item])).values()]
+    return combinePdfs(
+      await Promise.all(
+        uniqueItems.map((item) => {
+          const code = id === "fnsku" ? item.fnsku : item.buyerSku
+          if (!code) {
+            throw new Error("The product is missing its label code")
+          }
+          return standardProductLabels({ code, title: labelTitle(item.name, item.variant) })
+        })
+      )
+    )
+  }
+  async function sampleLabels(kind: string, items: Item[]) {
+    const { PDFDocument } = await import("pdf-lib")
+    const pdf = await PDFDocument.create()
+    const page = pdf.addPage([595, 842])
+    page.drawText("STORYBOOK SAMPLE - NOT FOR SHIPPING", { x: 36, y: 800, size: 14 })
+    page.drawText(kind, { x: 36, y: 766, size: 14 })
+    items.forEach((item, index) => page.drawText(item.supplierSku, { x: 36, y: 730 - index * 24, size: 12 }))
+    return pdf.save()
+  }
+  function saveDocument(bytes: Uint8Array, name: string) {
+    const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/pdf" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = name
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  async function downloadProductLabels(items: Item[], ids: string[], scope: string) {
+    setDownloadingPacking(true)
+    try {
+      const { combinePdfs } = await import("@repo/aisle/documents")
+      const files = await Promise.all(
+        ids.map((id) =>
+          productLabelPdf(
+            id,
+            items.filter((item) => labelsForItem(item).some((label) => label === id))
+          )
+        )
+      )
+      saveDocument(await combinePdfs(files), `PO38-${scope}-Product-labels.pdf`)
+    } catch {
+      toast.add({ title: "Could not download product labels", type: "error" })
+    } finally {
+      setDownloadingPacking(false)
+    }
+  }
+  async function downloadShipmentDocument(id: string) {
+    if (!packing) {
+      return
+    }
+    const record = packingRecords[packing.id]
+    if (!record) {
+      return
+    }
+    if (id === "packing") {
+      await downloadPackingList(record)
+      return
+    }
+    setDownloadingPacking(true)
+    try {
+      if (id === "reference") {
+        const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
+        const blob = await renderShippingDocument(
+          <ShippingPdf data={releasedDocument(record)} kind="reference" settings={documentSettingsForLocale(locale)} />
+        )
+        saveDocument(new Uint8Array(await blob.arrayBuffer()), `PO38-Shipment-${packing.id}-Label-reference.pdf`)
+      } else {
+        saveDocument(await sampleLabels(id, packing.items), `PO38-Shipment-${packing.id}-${id}-labels.pdf`)
+      }
+    } catch {
+      toast.add({ title: "Could not download document", type: "error" })
+    } finally {
+      setDownloadingPacking(false)
+    }
+  }
+  function releasedDocument(record: { shipment: Shipment; packing: Packing }): ShippingDocumentData {
+    const data = packingDocument(record)
+    return {
+      ...data,
+      destination: { ...data.destination, address: ["Storybook example destination"] },
+      transport: {
+        ...data.transport,
+        service: record.shipment.transport === "Amazon pickup" ? "agl" : "parcel",
+        collection: record.shipment.transport === "Amazon pickup" ? "pickup" : "delivery",
+        carrierLabels: record.shipment.transport !== "Amazon pickup"
+      },
+      cartons: data.cartons.map((carton) => ({
+        ...carton,
+        amazonLabel: `SAMPLE-${record.shipment.id}-${carton.id}`,
+        carrierLabel: record.shipment.transport !== "Amazon pickup" ? `SAMPLE-CARRIER-${carton.id}` : undefined
+      }))
+    }
+  }
+  async function downloadSupplierPack() {
+    setDownloadingPacking(true)
+    try {
+      const { combinePdfs } = await import("@repo/aisle/documents")
+      const { renderSupplierPacket } = await import("@/documents/supplier-packet")
+      const items = shipments.flatMap((shipment) => shipment.items)
+      const files = await Promise.all(
+        productDownloads(items)
+          .filter((label) => !label.unavailable)
+          .map((label) =>
+            productLabelPdf(
+              label.id,
+              items.filter((item) => labelsForItem(item).some((kind) => kind === label.id))
+            )
+          )
+      )
+      for (const record of Object.values(packingRecords)) {
+        if (labelsReady) {
+          const labels = [await sampleLabels("Carton labels", record.shipment.items)]
+          if (record.shipment.transport !== "Amazon pickup") {
+            labels.push(await sampleLabels("Carrier labels", record.shipment.items))
+          }
+          files.push(await renderSupplierPacket(releasedDocument(record), documentSettingsForLocale(locale), labels))
+        } else {
+          const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
+          const blob = await renderShippingDocument(
+            <ShippingPdf
+              data={packingDocument(record)}
+              kind="packing"
+              settings={documentSettingsForLocale(locale)}
+              packingRecord
+            />
+          )
+          files.push(new Uint8Array(await blob.arrayBuffer()))
+        }
+      }
+      saveDocument(await combinePdfs(files), "PO38-Supplier-pack.pdf")
+    } catch {
+      toast.add({ title: "Could not download supplier pack", type: "error" })
     } finally {
       setDownloadingPacking(false)
     }
@@ -861,6 +1039,61 @@ export function PurchaseOrderFlow({
           <span>Shipment {packing.id}</span>
         </div>
         <PackingForm
+          renderSidebar={(summary) => (
+            <div className="space-y-6">
+              <ShipmentDocuments
+                busy={downloadingPacking}
+                productLabels={productDownloads(packing.items)}
+                onProductDownload={(ids) => void downloadProductLabels(packing.items, ids, `Shipment-${packing.id}`)}
+                onDownload={(id) => void downloadShipmentDocument(id)}
+                documents={[
+                  {
+                    id: "packing",
+                    label: "Packing list",
+                    unavailable: packingFinished ? undefined : "Finish packing to download"
+                  },
+                  { id: "carton", label: "Carton labels", unavailable: labelsReady ? undefined : "Awaiting labels" },
+                  ...(packing.transport !== "Amazon pickup"
+                    ? [
+                        {
+                          id: "carrier",
+                          label: "Carrier labels",
+                          unavailable: labelsReady ? undefined : "Awaiting labels"
+                        }
+                      ]
+                    : []),
+                  {
+                    id: "reference",
+                    label: "Carton label reference",
+                    unavailable: labelsReady ? undefined : "Awaiting labels"
+                  }
+                ]}
+              />
+              <section aria-label="Shipment summary" className="space-y-3">
+                <h2 className="text-sm font-semibold">Summary</h2>
+                <DetailFields items={[{ label: "Cartons", value: summary.cartons }]} />
+                <DetailFields
+                  className="grid-cols-2"
+                  items={[
+                    {
+                      label: "Gross weight",
+                      value:
+                        summary.weight === null
+                          ? "\u2014"
+                          : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(summary.weight)} kg`
+                    },
+                    {
+                      label: "Volume",
+                      value:
+                        summary.volume === null
+                          ? "\u2014"
+                          : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(summary.volume)} m\u00b3`
+                    }
+                  ]}
+                />
+              </section>
+            </div>
+          )}
           heading={
             <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
               <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
@@ -872,25 +1105,18 @@ export function PurchaseOrderFlow({
                   <Button variant="outline" onClick={() => setPackingFinished(false)}>
                     Edit packing
                   </Button>
-                  <Button
-                    disabled={downloadingPacking || !packingRecords[packing.id]}
-                    onClick={() => {
-                      const record = packingRecords[packing.id]
-                      if (record) {
-                        void downloadPackingList(record)
-                      }
-                    }}
-                  >
-                    <Download />
-                    Download packing list
-                  </Button>
                 </div>
               )}
             </div>
           }
           readOnly={packingFinished}
           onSubmitted={(completed) => {
-            setPackingRecords((current) => ({ ...current, [packing.id]: { shipment: packing, packing: completed } }))
+            setPackingRecords((current) => ({
+              ...current,
+
+              [packing.id]: { shipment: packing, packing: completed }
+            }))
+
             setPackingFinished(true)
           }}
           shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
@@ -1171,7 +1397,7 @@ export function PurchaseOrderFlow({
                       className="grid grid-cols-2 items-center gap-4 rounded-lg border p-4 sm:grid-cols-[minmax(0,1fr)_6rem_7rem] sm:rounded-none sm:border-0 sm:border-t"
                     >
                       <div className="col-span-2 min-w-0 border-b pb-3 sm:col-span-1 sm:border-0 sm:pb-0">
-                        <ProductIdentity item={item} />
+                        <ProductIdentity item={item} showPackSize={false} />
                         {(!before || !after) && (
                           <Badge variant="secondary" className="mt-2">
                             {after ? "Added" : "Removed"}
@@ -1614,7 +1840,7 @@ export function PurchaseOrderFlow({
                               alt=""
                               className="hidden size-10 shrink-0 rounded-md border object-cover @3xl/shipment:block"
                             />
-                            <ProductIdentity item={item} />
+                            <ProductIdentity item={item} showPackSize={false} />
                           </div>
                         </div>
                         <div className="col-span-3 min-w-0 wrap-anywhere @lg/shipment:col-span-1">
@@ -1817,7 +2043,7 @@ export function PurchaseOrderFlow({
                         )}
                         {(editable || viewer === "supplier") && (
                           <Button
-                            className="col-span-3 h-auto justify-self-start gap-1 p-0 text-xs text-muted-foreground hover:bg-transparent @lg/shipment:col-span-1 @lg/shipment:col-start-1"
+                            className="col-span-3 mt-1 h-auto justify-self-start gap-1 p-0 text-xs text-muted-foreground hover:bg-transparent @lg/shipment:col-span-1 @lg/shipment:col-start-1 @3xl/shipment:ms-13"
                             variant="ghost"
                             onClick={() => setPackingDetails(item)}
                           >
@@ -1984,27 +2210,33 @@ export function PurchaseOrderFlow({
                 <InvoiceRow name="Invoice-PO38.pdf" onView={viewInvoice} />
               </section>
             )}
-            {Object.values(packingRecords).length > 0 && (
-              <section className="flex flex-col gap-3">
-                <h2 className="font-semibold">Packing lists</h2>
-                {Object.values(packingRecords).map((record) => (
-                  <div key={record.shipment.id} className="flex items-center gap-3 rounded-lg border p-3">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p>Shipment {record.shipment.id}</p>
-                      <p className="text-xs text-muted-foreground">Packing list.pdf</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label={`Download Shipment ${record.shipment.id} packing list`}
-                      disabled={downloadingPacking}
-                      onClick={() => void downloadPackingList(record)}
-                    >
-                      <Download />
-                    </Button>
-                  </div>
-                ))}
+            {accepted && (
+              <section aria-label="Purchase order documents" className="space-y-3">
+                <h2 className="font-semibold">Documents</h2>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" disabled={downloadingPacking} onClick={() => void downloadSupplierPack()}>
+                    <Download />
+                    Download supplier pack
+                  </Button>
+                  <ProductDownloadsMenu
+                    busy={downloadingPacking}
+                    items={productDownloads(shipments.flatMap((shipment) => shipment.items))}
+                    onDownload={(ids) =>
+                      void downloadProductLabels(
+                        shipments.flatMap((shipment) => shipment.items),
+
+                        ids,
+
+                        "Order"
+                      )
+                    }
+                  />
+                </div>
+                {!labelsReady && (
+                  <p className="text-xs text-muted-foreground">
+                    Includes available documents. Shipment labels are pending.
+                  </p>
+                )}
               </section>
             )}
             {!proposing && (
@@ -2025,35 +2257,27 @@ export function PurchaseOrderFlow({
                     </Button>
                   )}
                 </div>
-                {[
-                  [
-                    viewer === "supplier" ? "Customer" : "Supplier",
-                    viewer === "supplier" ? "Harbor Goods" : "Northwind Textiles"
-                  ],
-                  ["Date created", "Oct 15, 2026"],
-                  ["Reference number", details.reference || "None"]
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="mt-1">{value}</p>
-                  </div>
-                ))}
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {viewer === "supplier" ? "Note from buyer" : "Note to supplier"}
-                  </p>
-                  <Markdown className="mt-1">{details.notes}</Markdown>
-                </div>
-                <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Terms</p>
-                    <p className="mt-1">{details.terms}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Currency</p>
-                    <p className="mt-1">USD $</p>
-                  </div>
-                </div>
+                <DetailFields
+                  items={[
+                    {
+                      label: viewer === "supplier" ? "Customer" : "Supplier",
+                      value: viewer === "supplier" ? "Harbor Goods" : "Northwind Textiles"
+                    },
+                    { label: "Date created", value: "Oct 15, 2026" },
+                    { label: "Reference number", value: details.reference || "None" },
+                    {
+                      label: viewer === "supplier" ? "Note from buyer" : "Note to supplier",
+                      value: <Markdown>{details.notes}</Markdown>
+                    }
+                  ]}
+                />
+                <DetailFields
+                  className="grid-cols-2 border-t pt-4"
+                  items={[
+                    { label: "Terms", value: details.terms },
+                    { label: "Currency", value: "USD $" }
+                  ]}
+                />
               </section>
             )}
           </aside>

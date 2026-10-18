@@ -92,9 +92,11 @@ export function PackingForm({
   shippingDetails,
   shipmentName,
   heading,
+  renderSidebar,
   readOnly = false,
   onSubmitted
 }: {
+  renderSidebar?: (summary: { cartons: number; weight: number | null; volume: number | null }) => React.ReactNode
   heading?: React.ReactNode
   readOnly?: boolean
   onSubmitted?: (packing: Packing) => void
@@ -313,265 +315,303 @@ export function PackingForm({
             )}
           </div>
         )}
-        {linkedId !== undefined && (
-          <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
-        )}
-        {shippingDetails ?? (
-          <div className={cn("grid gap-6", destination && "lg:grid-cols-2")}>
-            <PickupCard addresses={addresses} addAddressTo={addAddressTo} pickup={pickup} onPickupChange={setPickup} />
-            {destination}
-          </div>
-        )}
-
-        {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
-        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-        <form
-          id={formId}
-          onSubmit={(event) => {
-            if (allUnitsPacked) {
-              return validated()(event)
-            }
-            event.preventDefault()
-            void perform("save", form.getValues())
-          }}
-          onKeyDown={keepEnterFromSubmitting}
-          noValidate
-          className="flex flex-col gap-6"
+        <div
+          className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
         >
-          <Accordion className="rounded-xl border bg-card">
-            <AccordionItem value="products">
-              <AccordionTrigger className="items-center gap-3 p-4 text-sm font-semibold hover:no-underline">
-                <span className="flex flex-wrap items-center gap-x-3">
-                  {detail("columns.products")} ({order.items.length})
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
-                {/* Read-only PO values; the table scrolls within the disclosure on narrow screens. */}
-                <Table framed={false} className={cn("min-w-160", edgeCells)}>
-                  <TableHeader className="[&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
-                    <TableRow>
-                      <TableHead className="w-px">{t("product")}</TableHead>
-                      <TableHead className="px-6 text-end">{t("packed")}</TableHead>
-                      <TableHead className="px-6">{t("supplierSku")}</TableHead>
-                      {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {order.items.map((item) => {
-                      const available = availablePieces[item.id] ?? 0
-                      const count = packed(item.id)
-                      return (
-                        // Keep product details aligned at the top of each row.
-                        <TableRow key={item.id} className="hover:bg-transparent [&>td]:align-top">
-                          <TableCell className="w-px whitespace-normal">
-                            <div className="w-max max-w-sm">
-                              <ProductIdentity item={item} />
-                            </div>
-                          </TableCell>
-                          <TableCell
-                            className={cn("px-6 pt-3.5 text-end tabular-nums", count > available && "text-destructive")}
-                          >
-                            {t("packedOf", { count, available })}
-                          </TableCell>
-                          <TableCell className="px-6 whitespace-normal">
-                            {item.components?.length ? (
-                              <div className="flex flex-col gap-1 pt-1.5">
-                                {item.components.map((component) => (
-                                  <p key={component.variantId}>
-                                    {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
-                                  </p>
-                                ))}
-                              </div>
-                            ) : (
-                              <span>{item.supplierSku || "—"}</span>
-                            )}
-                          </TableCell>
-                          {prices && (
-                            <TableCell className="whitespace-normal">
-                              {money(item.unitPrice, order.currency, locale)}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          <section className="flex flex-col gap-5" aria-label={t("cartons")}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-sm font-semibold">{t("cartons")}</h2>
-                <span
-                  className={cn(
-                    "text-xs tabular-nums text-muted-foreground",
-                    pieces === Object.values(availablePieces).reduce((total, value) => total + value, 0) &&
-                      "text-green-700"
-                  )}
-                >
-                  {t("packedOf", {
-                    count: pieces,
-                    available: Object.values(availablePieces).reduce((total, value) => total + value, 0)
-                  })}
-                </span>
+          <div className="flex min-w-0 flex-col gap-6">
+            {linkedId !== undefined && (
+              <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
+            )}
+            {shippingDetails ?? (
+              <div className={cn("grid gap-6", destination && "lg:grid-cols-2")}>
+                <PickupCard
+                  addresses={addresses}
+                  addAddressTo={addAddressTo}
+                  pickup={pickup}
+                  onPickupChange={setPickup}
+                />
+                {destination}
               </div>
-              {!readOnly && (
-                <div className="flex gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          aria-label={importText("title")}
-                          onClick={() => setImporting(true)}
-                        />
-                      }
+            )}
+
+            {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
+            {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+            <form
+              id={formId}
+              onSubmit={(event) => {
+                if (allUnitsPacked) {
+                  return validated()(event)
+                }
+                event.preventDefault()
+                void perform("save", form.getValues())
+              }}
+              onKeyDown={keepEnterFromSubmitting}
+              noValidate
+              className="flex flex-col gap-6"
+            >
+              <Accordion className="rounded-xl border bg-card">
+                <AccordionItem value="products">
+                  <AccordionTrigger className="items-center gap-3 p-4 text-sm font-semibold hover:no-underline">
+                    <span className="flex flex-wrap items-center gap-x-3">
+                      {detail("columns.products")} ({order.items.length})
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
+                    {/* Read-only PO values; the table scrolls within the disclosure on narrow screens. */}
+                    <Table framed={false} className={cn("min-w-160", edgeCells)}>
+                      <TableHeader className="[&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
+                        <TableRow>
+                          <TableHead className="w-px">{t("product")}</TableHead>
+                          <TableHead className="px-6 text-end">{t("packed")}</TableHead>
+                          <TableHead className="px-6">{t("supplierSku")}</TableHead>
+                          {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.items.map((item) => {
+                          const available = availablePieces[item.id] ?? 0
+                          const count = packed(item.id)
+                          return (
+                            // Keep product details aligned at the top of each row.
+                            <TableRow key={item.id} className="hover:bg-transparent [&>td]:align-top">
+                              <TableCell className="w-px whitespace-normal">
+                                <div className="w-max max-w-sm">
+                                  <ProductIdentity item={item} showPackSize={false} />
+                                </div>
+                              </TableCell>
+                              <TableCell
+                                className={cn(
+                                  "px-6 pt-3.5 text-end tabular-nums",
+                                  count > available && "text-destructive"
+                                )}
+                              >
+                                {t("packedOf", { count, available })}
+                              </TableCell>
+                              <TableCell className="px-6 whitespace-normal">
+                                {item.components?.length ? (
+                                  <div className="flex flex-col gap-1 pt-1.5">
+                                    {item.components.map((component) => (
+                                      <p key={component.variantId}>
+                                        {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                                      </p>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span>{item.supplierSku || "—"}</span>
+                                )}
+                              </TableCell>
+                              {prices && (
+                                <TableCell className="whitespace-normal">
+                                  {money(item.unitPrice, order.currency, locale)}
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              <section className="flex flex-col gap-5" aria-label={t("cartons")}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-sm font-semibold">{t("cartons")}</h2>
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums text-muted-foreground",
+                        pieces === Object.values(availablePieces).reduce((total, value) => total + value, 0) &&
+                          "text-green-700"
+                      )}
                     >
-                      <Upload />
-                    </TooltipTrigger>
-                    <TooltipContent>{importText("title")}</TooltipContent>
-                  </Tooltip>
-                  <Button type="button" variant="outline" onClick={addCarton}>
-                    <Plus />
-                    {t("addCarton")}
-                  </Button>
+                      {t("packedOf", {
+                        count: pieces,
+                        available: Object.values(availablePieces).reduce((total, value) => total + value, 0)
+                      })}
+                    </span>
+                  </div>
+                  {!readOnly && (
+                    <div className="flex gap-2">
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              aria-label={importText("title")}
+                              onClick={() => setImporting(true)}
+                            />
+                          }
+                        >
+                          <Upload />
+                        </TooltipTrigger>
+                        <TooltipContent>{importText("title")}</TooltipContent>
+                      </Tooltip>
+                      <Button type="button" variant="outline" onClick={addCarton}>
+                        <Plus />
+                        {t("addCarton")}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {cartons.fields.map((carton, index) => {
+                  const value = cartonValues[index] ?? carton
+                  const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
+                  const issues = packingIssues
+                    .filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
+                    .map((issue) => {
+                      const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
+                      let field: string | undefined
+                      if (issue.code === "cartonWeight") {
+                        field = "weight"
+                      } else if (["awdOneSku", "mixedNetworks", "repeatedProduct"].includes(issue.code)) {
+                        field = "items"
+                      } else if (sku && ["incompletePacks", "awdUnits", "overQuantity"].includes(issue.code)) {
+                        field = `items.${value.items.findIndex((content) => order.items.find((item) => item.id === content.itemId)?.buyerSku === sku)}`
+                      }
+                      return { message: issueText(issue), field, fields: issue.fields }
+                    })
+                    .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+                  return (
+                    <CartonEditor
+                      key={carton.id}
+                      value={value}
+                      products={order.items}
+                      context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                      remainingPieces={Object.fromEntries(
+                        order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                      )}
+                      showErrors={
+                        form.formState.submitCount > 0 ||
+                        Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
+                      }
+                      issues={issues}
+                      readOnly={readOnly}
+                      onChange={(next) =>
+                        form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                      }
+                      onDuplicate={() =>
+                        cartons.append({
+                          ...structuredClone(value),
+                          cartonId: nextCartonId(cartonValues),
+                          cartonIds: []
+                        })
+                      }
+                      onDelete={() => cartons.remove(index)}
+                    />
+                  )
+                })}
+                {!cartons.fields.length && (
+                  <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
+                )}
+                {cartonsError && <FormError message={cartonsError} />}
+                {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
+              </section>
+            </form>
+
+            <div
+              className={cn(
+                "flex flex-col gap-3 text-sm",
+                !heading && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
+              )}
+            >
+              {packingIssues.some((issue) => !issue.cartonId) && (
+                <ul aria-live="polite" className="text-sm text-destructive">
+                  {packingIssues
+                    .filter((issue) => !issue.cartonId)
+                    .map((issue, index) => (
+                      <li key={index}>
+                        {issue.cartonId
+                          ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
+                          : issueText(issue)}
+                      </li>
+                    ))}
+                </ul>
+              )}
+              {serverError && (
+                <div className="max-h-48 overflow-y-auto">
+                  <FormError message={serverError} />
                 </div>
               )}
-            </div>
-            {cartons.fields.map((carton, index) => {
-              const value = cartonValues[index] ?? carton
-              const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-              const issues = packingIssues
-                .filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                .map((issue) => {
-                  const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
-                  let field: string | undefined
-                  if (issue.code === "cartonWeight") {
-                    field = "weight"
-                  } else if (["awdOneSku", "mixedNetworks", "repeatedProduct"].includes(issue.code)) {
-                    field = "items"
-                  } else if (sku && ["incompletePacks", "awdUnits", "overQuantity"].includes(issue.code)) {
-                    field = `items.${value.items.findIndex((content) => order.items.find((item) => item.id === content.itemId)?.buyerSku === sku)}`
-                  }
-                  return { message: issueText(issue), field, fields: issue.fields }
-                })
-                .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
-              return (
-                <CartonEditor
-                  key={carton.id}
-                  value={value}
-                  products={order.items}
-                  context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                  remainingPieces={Object.fromEntries(
-                    order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className={cn("flex flex-col px-1", renderSidebar && "hidden")}>
+                  <p className="font-medium tabular-nums">
+                    {heading
+                      ? importText("cartonCount", { count: totals.cartons })
+                      : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
+                  </p>
+                  {heading && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
+                    <p className="mt-1 flex gap-5 text-xs tabular-nums">
+                      <span>
+                        {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                          physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
+                        )}{" "}
+                        kg
+                      </span>
+                      <span>
+                        {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                          physicalCartons.reduce(
+                            (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
+                            0
+                          )
+                        )}{" "}
+                        m³
+                      </span>
+                    </p>
                   )}
-                  showErrors={
-                    form.formState.submitCount > 0 ||
-                    Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
-                  }
-                  issues={issues}
-                  readOnly={readOnly}
-                  onChange={(next) =>
-                    form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                  }
-                  onDuplicate={() =>
-                    cartons.append({ ...structuredClone(value), cartonId: nextCartonId(cartonValues), cartonIds: [] })
-                  }
-                  onDelete={() => cartons.remove(index)}
-                />
-              )
-            })}
-            {!cartons.fields.length && <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />}
-            {cartonsError && <FormError message={cartonsError} />}
-            {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
-          </section>
-        </form>
-
-        <div
-          className={cn(
-            "flex flex-col gap-3 text-sm",
-            !heading && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
-          )}
-        >
-          {packingIssues.some((issue) => !issue.cartonId) && (
-            <ul aria-live="polite" className="text-sm text-destructive">
-              {packingIssues
-                .filter((issue) => !issue.cartonId)
-                .map((issue, index) => (
-                  <li key={index}>
-                    {issue.cartonId
-                      ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                      : issueText(issue)}
-                  </li>
-                ))}
-            </ul>
-          )}
-          {serverError && (
-            <div className="max-h-48 overflow-y-auto">
-              <FormError message={serverError} />
+                </div>
+                {!readOnly && (
+                  <div className={cn("flex flex-wrap gap-2", heading && "max-sm:w-full sm:hidden")}>
+                    <SubmitButton
+                      type="button"
+                      variant="ghost"
+                      className={heading || !allUnitsPacked ? "hidden" : undefined}
+                      pending={working === "save"}
+                      disabled={totals.cartons > 1000}
+                      onClick={() => void perform("save", form.getValues())}
+                    >
+                      {t("saveDraft")}
+                    </SubmitButton>
+                    <SubmitButton
+                      type="submit"
+                      form={formId}
+                      pending={working === (allUnitsPacked ? "submit" : "save")}
+                      className={heading ? "max-sm:flex-1" : undefined}
+                      disabled={
+                        totals.cartons > 1000 ||
+                        (allUnitsPacked &&
+                          (!cartons.fields.length ||
+                            packingIssues.length > 0 ||
+                            completeCartons.length !== physicalCartons.length))
+                      }
+                    >
+                      {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
+                    </SubmitButton>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <div className="flex flex-col px-1">
-              <p className="font-medium tabular-nums">
-                {heading
-                  ? importText("cartonCount", { count: totals.cartons })
-                  : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
-              </p>
-              {heading && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
-                <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                  <span>
-                    {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                      physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                    )}{" "}
-                    kg
-                  </span>
-                  <span>
-                    {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                      physicalCartons.reduce(
+          </div>
+          {renderSidebar && (
+            <aside className="min-w-0">
+              {renderSidebar({
+                cartons: totals.cartons,
+                weight:
+                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
+                    ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
+                    : null,
+                volume:
+                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
+                    ? physicalCartons.reduce(
                         (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
                         0
                       )
-                    )}{" "}
-                    m³
-                  </span>
-                </p>
-              )}
-            </div>
-            {!readOnly && (
-              <div className={cn("flex flex-wrap gap-2", heading && "max-sm:w-full sm:hidden")}>
-                <SubmitButton
-                  type="button"
-                  variant="ghost"
-                  className={heading || !allUnitsPacked ? "hidden" : undefined}
-                  pending={working === "save"}
-                  disabled={totals.cartons > 1000}
-                  onClick={() => void perform("save", form.getValues())}
-                >
-                  {t("saveDraft")}
-                </SubmitButton>
-                <SubmitButton
-                  type="submit"
-                  form={formId}
-                  pending={working === (allUnitsPacked ? "submit" : "save")}
-                  className={heading ? "max-sm:flex-1" : undefined}
-                  disabled={
-                    totals.cartons > 1000 ||
-                    (allUnitsPacked &&
-                      (!cartons.fields.length ||
-                        packingIssues.length > 0 ||
-                        completeCartons.length !== physicalCartons.length))
-                  }
-                >
-                  {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
-                </SubmitButton>
-              </div>
-            )}
-          </div>
+                    : null
+              })}
+            </aside>
+          )}
         </div>
         <CartonImportDialog
           open={importing}
