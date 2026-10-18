@@ -168,7 +168,8 @@ ingestion plumbing and do not migrate to outbound Novu workflows.
 - [ ] Keep excluded direct/WorkOS flows working; verify password-reset duplicate-sender configuration separately.
 - [ ] Add monitored failure/replay handling for all migrated job types, not just order-linked jobs.
 - [ ] Test submit, revise and explicit release end to end: action, publication, eligibility, workflow and delivery.
-- [ ] Keep retries on the same delivery identity so they cannot send the same notification twice.
+- [ ] Keep retries on the same delivery identity. During cutover, reconcile ambiguous sends against provider evidence;
+  hold late retries outside the provider's deduplication window for review instead of automatically replaying them.
 
 ## Test delivery restriction
 

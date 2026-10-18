@@ -251,6 +251,7 @@ const payloadSchema = z.object({
     .object({
       remaining: z.array(period),
       covered: period.nullable(),
+      customersIncluded: z.boolean().optional(),
       after: z.number().int().min(0).max(32).optional()
     })
     .optional()
@@ -264,7 +265,7 @@ const amazonSearchInterval = 180000
 // Worker job: copies one source's orders into sales_orders, a chunk at a time. Each chunk replaces the stored orders
 // in its period, so cancelled or test orders that disappear from the source disappear here too.
 export async function salesJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId, source, revision, resume } = payloadSchema.parse(payload)
+  const { orgId, source, revision, resume: savedResume } = payloadSchema.parse(payload)
   const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, source), eq(salesSyncs.revision, revision))
   const [sync] = await db().select().from(salesSyncs).where(scope)
   if (!sync || !["queued", "running"].includes(sync.status)) {
@@ -277,6 +278,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     const { scopes } = await connection(orgId, source)
     const historyDays = historyDaysFor(source, scopes)
     const customersIncluded = source === "shopify" && hasCustomerScope(scopes)
+    // A checkpoint can finish only under the permission used to plan it. Existing checkpoints without this
+    // metadata must also replan, so a scope change cannot mark an incomplete customer history as complete.
+    const resume =
+      source === "shopify" && savedResume?.customersIncluded !== customersIncluded ? undefined : savedResume
     // Newly granted customer access needs a complete read, not just the recent refresh window.
     const coverage = customersIncluded && !sync.customersIncluded ? { coveredFrom: null, coveredTo: null } : sync
     const planned = resume ? null : syncChunks(Date.now(), coverage, historyDays)
@@ -392,6 +397,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           resume: {
             remaining: remaining.map((chunk) => ({ from: chunk.from.toISOString(), to: chunk.to.toISOString() })),
             covered: covered && { from: covered.from.toISOString(), to: covered.to.toISOString() },
+            customersIncluded,
             after
           }
         }

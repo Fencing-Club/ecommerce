@@ -5126,6 +5126,38 @@ describe("stored sales orders", () => {
     expect(graphql).toHaveBeenCalledTimes(3)
   })
 
+  it("restarts the complete history when customer permission changes between checkpoints", async () => {
+    await database.insert(tables.connections).values({
+      orgId: buyerId,
+      provider: "shopify",
+      externalId: "test.myshopify.com",
+      encryptedToken: "test-only",
+      scopes: "read_orders"
+    })
+    const graphql = vi.fn<() => Promise<unknown>>().mockResolvedValue({
+      shop: { myshopifyDomain: "test.myshopify.com" },
+      orders: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }
+    })
+    provider.shopifyFor.mockResolvedValue({ graphql })
+    await requestSalesSync(buyer.org, "shopify")
+    await runNextJob()
+    expect(graphql).toHaveBeenCalledTimes(1)
+    await database
+      .update(tables.connections)
+      .set({ scopes: "read_orders,read_customers" })
+      .where(eq(tables.connections.orgId, buyerId))
+    await database
+      .update(tables.jobs)
+      .set({ runAt: new Date(0) })
+      .where(eq(tables.jobs.kind, "sales"))
+    graphql.mockClear()
+    await drainSales()
+    // Re-read all five periods, including the one read before customer permission was granted.
+    expect(graphql).toHaveBeenCalledTimes(5)
+    const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
+    expect(sync).toMatchObject({ status: "idle", customersIncluded: true })
+  })
+
   it("starts a sync again when the job of one still marked queued has failed", async () => {
     await requestSalesSync(buyer.org, "amazon")
     await database.update(tables.jobs).set({ status: "failed", error: "Unknown job type" })

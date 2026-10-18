@@ -280,8 +280,8 @@ Use local development data and new migrations. Release behind workspace/workflow
 then enable a small cohort. Observe failures, duplicate sends, delivery volume and opt-outs before broad activation.
 All test emails must go to `andrew@fencing.club`, never Chen or another real partner. Enforce the restriction at the
 delivery boundary. Manual packet emails do not establish workflow-trigger or Novu acceptance coverage.
-Replace the existing sender directly; there are no user deliveries to migrate. Keep replay scoped to original event IDs
-and use one delivery path per notification.
+Replace the queued business-email delivery path directly. Password resets and other direct flows retain the shared
+Resend sender. Keep replay scoped to original event IDs and use one delivery path per notification.
 
 Update this checklist only when acceptance evidence exists. Record unresolved provider limits and current SDK behavior
 in implementation docs rather than assuming this plan verifies an external integration.
