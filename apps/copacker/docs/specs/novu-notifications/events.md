@@ -18,6 +18,8 @@ workspaces, infer a milestone from a reference string, or emit a business change
 | --- | --- | --- | --- |
 | Supplier invitation received | Supplier contact | Existing | 2: migrate invitation email. |
 | Forwarder invitation received | Forwarder contact | Existing | 2: migrate invitation email. |
+| Workspace team invitation received | Invited team member | Existing | 2: migrate invitation, resend and cancellation. |
+| Customer data request report available | Affected workspace owner | Existing | 2: migrate Shopify compliance report with owner-only scope. |
 | New PO sent | Supplier | Existing | 2: `submitOrder`. |
 | Supplier proposes price changes | Buyer | Existing | 2: saved proposal price differences. |
 | Supplier proposes quantity changes | Buyer | Existing | 2: saved proposal quantity differences. |

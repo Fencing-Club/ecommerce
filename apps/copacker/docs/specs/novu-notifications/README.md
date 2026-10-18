@@ -10,6 +10,8 @@ alongside the business workflows that make them reliable. The first useful relea
 ## Scope and supporting documents
 
 - [Concrete notification catalog](events.md): individual events, recipients, current support and dependencies.
+- [Existing delivery migration inventory](migration-inventory.md): implemented triggers, recipients, templates,
+  localization, attachments, retry behavior, excluded flows and cutover risks.
 - [Email templates and notification settings](templates-and-settings.md): package work, preferences and defaults.
 - [App header](../../app-header.md): existing Inbox placeholder.
 - [Roles and page access](../../permissions.md): recipient and content authorization.
@@ -121,12 +123,16 @@ preferences persist, revoked access is handled and a failure is diagnosable with
 ## Phase 2 Existing business events and email migration
 
 - [ ] Connect supplier invitations and forwarder invitations, preserving token and recipient behavior.
+- [ ] Migrate team invitations including resend/cancellation, and owner-only customer-data-request reports.
+- [ ] Complete the migration inventory cutover checklist; preserve excluded auth, contact and waitlist delivery.
 - [ ] Connect PO submission and migrate the existing purchase-order email without duplicate delivery.
 - [ ] Connect each proposal difference type, withdrawal, approval and rejection from the event catalog.
 - [ ] Connect immediate ready-date changes and date removal with accurate copy.
 - [ ] Connect invoice uploads, comments and generated packing-list availability.
 - [ ] Connect packing submitted, commercial approval required, correction requested and labels required.
 - [ ] Connect released shipment documents and migrate labels-ready email delivery.
+- [ ] Preserve explicit `shipment.release` as the ready-email trigger; packing completion alone does not send it.
+- [ ] Preserve joined-supplier/email eligibility, PO revision/PDF attachment parity and release revision identity.
 - [ ] Connect supplier shipped, forwarder forwarded and buyer-confirmed receipt.
 - [ ] Notify an assigned forwarder of goods shipped toward it and relevant ready-date changes.
 - [ ] Add a notification when a submitted route names a forwarder, without implying acceptance.
@@ -272,6 +278,8 @@ Finish with `pnpm verify`. Do not add tests for the prose checklist itself.
 
 Use local development data and new migrations. Release behind workspace/workflow controls, begin with test recipients,
 then enable a small cohort. Observe failures, duplicate sends, delivery volume and opt-outs before broad activation.
+All test emails must go to `andrew@fencing.club`, never Chen or another real partner. Enforce the restriction at the
+delivery boundary. Manual packet emails do not establish workflow-trigger or Novu acceptance coverage.
 Keep replay scoped to original event IDs, and prevent a rollback from re-enabling both legacy and Novu delivery.
 
 Update this checklist only when acceptance evidence exists. Record unresolved provider limits and current SDK behavior

@@ -15,7 +15,8 @@ Never include restricted prices in an email to a user without access. Comments a
 
 | Phase | Template | Work |
 | --- | --- | --- |
-| 2 | Invitation | Update existing supplier and forwarder variants for Novu delivery. |
+| 2 | Invitation | Update existing supplier, forwarder and team variants for Novu delivery. |
+| 2 | Customer data request | Migrate existing owner-only compliance report; preserve disclosure and localization. |
 | 2 | Purchase order | Update existing new-PO and approved-revision delivery. |
 | 2 | Labels ready | Update existing released-document delivery. |
 | 2 | Order change request | Add before/after proposal values and approval link. |
