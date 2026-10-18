@@ -5,7 +5,7 @@ packages:
 nodeLinker: hoisted
 verifyDepsBeforeRun: error
 catalog:
-  "@types/node": 24.13.2
+  "@types/node": 26.6.5
   typescript: 7.0.1-rc
 # react-is must match React: recharts reads element types through it, and an older copy hoisted from
 # pretty-format does not recognise React 19 elements.
