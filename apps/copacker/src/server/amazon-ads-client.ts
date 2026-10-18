@@ -47,10 +47,10 @@ function readReport(value: unknown) {
   const errors = response.error?.flatMap((item) => item.errors) ?? []
   if (errors.length) {
     if (errors.some((error) => error.code === "TOO_MANY_REQUESTS")) {
-      throw new AdsRequestError(429)
+      throw new AdsRequestError(429, "report", "provider")
     }
     if (errors.some((error) => error.code === "INTERNAL_ERROR")) {
-      throw new AdsRequestError(500)
+      throw new AdsRequestError(500, "report", "provider")
     }
     throw new Error("Amazon Ads report request was rejected")
   }

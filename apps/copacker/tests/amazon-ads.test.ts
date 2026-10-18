@@ -299,7 +299,9 @@ describe("Amazon Ads authorization and transport", () => {
   })
   it("retries per-report throttling and rejects redacted reports", async () => {
     fetchMock.mockResolvedValueOnce(Response.json({ error: [{ errors: [{ code: "TOO_MANY_REQUESTS" }] }] }))
-    await expect(new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).rejects.toThrow("429")
+    await expect(new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).rejects.toThrow(
+      "report provider failure (429)"
+    )
     fetchMock.mockResolvedValueOnce(
       Response.json({
         success: [{ report: { reportId: "report", status: "COMPLETED", warnings: [{ field: "metric.totalCost" }] } }]
