@@ -20,7 +20,7 @@ try {
       )
       if (first.rows.length && Number(first.rows[0]?.created_at) !== journal.entries[0]?.when) {
         throw new Error(
-          "This database uses a different migration baseline. Provision a fresh database or explicitly authorize a reset before deploying. See docs/operations.md."
+          "This database has a different migration history. Stop deployment and reconcile its schema and history without deleting data. See docs/operations.md."
         )
       }
     }

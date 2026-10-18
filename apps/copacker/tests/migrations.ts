@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import journal from "../drizzle/meta/_journal.json"
 
 // Every migration in journal order, as deploys apply them.
-async function migrationSql() {
+export async function migrationSql() {
   return Promise.all(
     journal.entries.map((entry) => readFile(new URL(`../drizzle/${entry.tag}.sql`, import.meta.url), "utf8"))
   )

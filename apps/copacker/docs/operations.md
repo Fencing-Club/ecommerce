@@ -158,14 +158,21 @@ uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application
 Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
-Copacker is prelaunch. `drizzle/0000_baseline.sql` creates the current schema directly, including the `fx_per_usd`
-and `fx_rate` functions used by financial reports. Historical schema changes and data conversions are not retained.
+**Production data survives releases.** Keep applied SQL migrations and their journal entries immutable; append new
+migrations rather than replacing deployed history with a fresh baseline. `db:migrate` applies only pending migrations
+to existing databases and builds the full schema on empty databases. Never clear migration bookkeeping or reset a
+database during deployment. Preview branches inherit staging's history and follow the same incremental path.
 
-**This baseline requires a fresh database.** A database initialized with the removed migration history cannot be
-upgraded with `db:migrate`. Before deploying this checkout, explicitly arrange a fresh database or an authorized reset
-for each affected environment, with the web and worker stopped. Do not clear migration bookkeeping and run the baseline
-on existing tables. No deployed database has been reset by the repository cleanup. Preserve integration credentials
-and external provider configuration unless a full reset is separately requested.
+The compatibility cleanup adds customer-coverage tracking without deleting orders, connections, supplier terms or
+stored sync metadata. Numeric sync versions no longer drive runtime behavior. Removing unused stored fields is a
+separate data-retention decision, not a prerequisite for simplifying the application. Resets of disposable local,
+preview or staging data require explicit authorization; production must be upgraded in place with a verified backup.
+
+Migration `0059_customer_coverage` refuses to proceed if stored Shopify orders or stock snapshots lack fields now
+required by the runtime. Refresh those records using the previous release and retry; do not fabricate prices or delete
+orders to get past the check. The failure rolls back the migration and the release stops before deploying new code.
+If a provider can no longer supply the missing history, retain the existing release until a preservation plan is reviewed.
+Customer coverage starts unconfirmed so the next permitted sync verifies the complete history without deleting orders.
 
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
 `drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
@@ -184,7 +191,7 @@ See [Neon connections and releases](neon.md).
 
 ## Preview scope
 
-Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Configured Cloudflare
+Trusted PRs receive isolated Neon staging copies with their migrations applied after the Storybook build. Configured Cloudflare
 previews deploy the app and static Storybook, use a private R2 prefix per PR, and remove their hosting, database
 connection, queue, files and Neon branch on merge/close. A six-hour sweep retries incomplete cleanup, including
 Cloudflare resources whose Neon branch already expired. No new Railway resources are provisioned.

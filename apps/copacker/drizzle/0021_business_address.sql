@@ -1,0 +1,1 @@
+ALTER TABLE "supplier_profiles" ADD COLUMN "address" jsonb;

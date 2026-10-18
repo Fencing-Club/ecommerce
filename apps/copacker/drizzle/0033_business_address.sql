@@ -1,0 +1,1 @@
+ALTER TABLE "supplier_profiles" DROP COLUMN "address";
