@@ -333,7 +333,12 @@ export class ReportProcessingError extends Error {
 // Each collection owns its pacing and deadline; mutations never use these retries.
 function stockReader(deadline: number, assertActive?: () => Promise<void>, throttleMs = 1000) {
   let nextRequestAt = 0
-  return async <T>(read: () => Promise<T>, pageDeadline = deadline, retry = true): Promise<T> => {
+  return async <T>(
+    read: () => Promise<T>,
+    pageDeadline = deadline,
+    retry = true,
+    throttleFloor = throttleMs
+  ): Promise<T> => {
     const check = async () => {
       await assertActive?.()
       if (Date.now() >= Math.min(deadline, pageDeadline)) {
@@ -364,7 +369,7 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>, throt
         ) {
           throw error
         }
-        const delay = Math.max(error.retryAfterMs ?? 0, (error.status === 429 ? throttleMs : 1000) * 2 ** attempt)
+        const delay = Math.max(error.retryAfterMs ?? 0, (error.status === 429 ? throttleFloor : 1000) * 2 ** attempt)
         if (Date.now() + delay >= Math.min(deadline, pageDeadline)) {
           throw error
         }
@@ -1062,12 +1067,12 @@ export class Amazon {
       reuseCreatedSince?: string
     }
   ) {
-    // Report creation and document retrieval replenish about once per minute, unlike inventory reads.
+    // Report reads need minute-scale backoff; creation can remain throttled for a five-minute quota window.
     // Keep the same report ID while retrying a throttled poll/document; never recreate it to retry a read.
     const retry = stockReader(options.deadline, options.assertActive, 60000)
     const read = async <T>(operation: string, request: () => Promise<T>, retryRequest = true) => {
       try {
-        return await retry(request, options.deadline, retryRequest)
+        return await retry(request, options.deadline, retryRequest, operation === "createReport" ? 300000 : 60000)
       } catch (error) {
         if (error instanceof ProviderError) {
           throw new ProviderError(
@@ -1082,7 +1087,7 @@ export class Amazon {
       }
     }
     let reportId: string | undefined
-    // Only callers recovering incomplete imports opt in. Normal refreshes always request fresh evidence.
+    // Callers opt in for recovery or a documented content-refresh interval; reuse requires the exact scope.
     // getReports does not expose reportOptions, so their equivalence cannot be established here.
     if (options.reuseCreatedSince && !input.reportOptions) {
       await options.assertActive?.()

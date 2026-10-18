@@ -287,3 +287,18 @@ reported in cases. FBA receipt collection also finished without errors. All eigh
 amount failures in two months. The parser follow-up supports unambiguous alternate date formats and explicit missing
 amount placeholders; successful live row ingestion is still required. A wider removal date-range request is being prepared to reduce report creation pressure; its
 monthly coverage must come from a successfully validated file, never inferred from failed or cancelled requests.
+
+### Returns and receipts acceptance: 2026-10-18 22:42 UTC
+
+The parser and AWD retry changes from [PR #65](https://github.com/AndrewCraswell/ecommerce/pull/65) are deployed.
+The eight previously failing seller-fulfilled return months imported 47 rows: October 2025 through March 2026,
+and May and June 2026. All thirteen target months now have imported evidence, through October 17 inclusive;
+the other five contain valid header-only reports. This closes the observed FBM document-format ingestion gap,
+not return accounting or history before October 2025. AWD receipts refreshed successfully at 22:41 UTC:
+12 shipment snapshots, all with SKU quantities, with no feed error.
+
+Both combined removal requests were throttled during creation, so their date-range handling remains unverified
+in production; the five saved order rows and four shipment rows remain intact. September and October reimbursement
+refreshes again returned FATAL, preserving all 102 rows but leaving those refreshes incomplete. The follow-up reuses
+recent exact daily reimbursement reports and extends creation-throttle waits to five then ten minutes. These refreshes
+and the remaining aged-storage/removal coverage are still pending live acceptance.

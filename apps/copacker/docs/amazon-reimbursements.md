@@ -15,7 +15,13 @@ The shared monthly report lifecycle requests twelve completed calendar months an
 using UTC boundaries and an exclusive stored end. That is a backfill target, not a promise of Amazon's available history.
 This/last month and incomplete months refresh on each run. Each run also refreshes one older successful month that has
 not been checked in 30 days. Historical rows outside the moving target remain stored but are not automatically refreshed.
-The existing report client polls for up to 20 minutes per request; restart may request the report again.
+Covered-window refreshes first look for an exact completed report created in the previous four hours. Amazon updates
+this daily report's content no more than once every four hours, so another creation request inside that interval is
+unnecessary. The reader requires the same report type, marketplace set and date bounds, chooses the newest matching
+file, and still downloads and validates it before publication. Older files do not satisfy an ordinary refresh; if no
+eligible file exists, it requests a new one. Incomplete-history recovery retains its existing one-day reuse window.
+A failed refresh can therefore recover from a recent valid file without merely clearing the error. The report client
+polls for up to 20 minutes per request; all failures preserve prior evidence.
 
 ## Evidence and accounting boundaries
 
