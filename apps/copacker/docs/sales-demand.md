@@ -125,7 +125,7 @@ The default excluded Shopify tags are `Amazon` and `eBay` (case-insensitive). Ta
 ## Amazon Financial data card
 
 The Amazon connection shows Orders, Inventory, and Financial data as matching compact cards, without expandable rows.
-Financial data summarizes returns, reimbursements, monthly and aged storage fees, and removal orders and shipments.
+Financial data summarizes transaction-fee ingestion, returns, reimbursements, monthly and aged storage fees, and removal orders and shipments.
 A failed report remains visible even when order ingestion succeeds; unavailable or missing reports do not count as
 complete. Previously saved data is retained after failed refreshes.
 

@@ -314,6 +314,7 @@ export const ListFailed = meta.story({
 
 const importedReport = { windows: [{ complete: true, status: "imported", checkedAt: "2026-10-18T00:00:00Z" }] }
 const financialReports = {
+  fees: { coveredFrom: "2024-10-18T00:00:00Z", coveredTo: "2026-10-18T00:00:00Z", errorCode: null },
   returns: importedReport,
   reimbursements: importedReport,
   storageFees: { monthly: importedReport, aged: importedReport },
@@ -414,5 +415,27 @@ export const FinancialUnavailable = meta.story({
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Status unavailable", { selector: "span" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Sync Amazon financial data" })).toBeDisabled()
+  }
+})
+
+export const FinancialFeesFailed = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            {
+              ...syncState("amazon"),
+              ...financialReports,
+              fees: { ...financialReports.fees, errorCode: "fees_failed" }
+            }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports failed. Saved data is retained.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
   }
 })

@@ -25,6 +25,7 @@ import { SyncedAt, SyncProgress } from "./sync-status"
 type ReportCoverage = { windows: { complete: boolean; status: string; checkedAt: string | null }[] }
 
 type SyncState = {
+  fees?: { coveredFrom: string | null; coveredTo: string | null; errorCode: string | null }
   returns?: ReportCoverage | null
   reimbursements?: ReportCoverage | null
   storageFees?: { monthly: ReportCoverage; aged: ReportCoverage } | null
@@ -203,17 +204,19 @@ function SalesSyncCard({ source, financial = false }: { source: SalesSource; fin
       state?.removals?.shipments
     ]
     const windows = reports.flatMap((report) => report?.windows ?? [])
-    if (windows.some((window) => window.status === "failed")) {
+    if (state?.fees?.errorCode || windows.some((window) => window.status === "failed")) {
       syncState = "failed"
       text = t("financialFailed")
     } else if (
+      state?.fees?.coveredFrom &&
+      state.fees.coveredTo &&
       reports.every(
         (report) => report && report.windows.length > 0 && report.windows.every((window) => window.complete)
       )
     ) {
       syncState = "synced"
       text = t("financialImported")
-    } else if (windows.some((window) => window.checkedAt)) {
+    } else if (state?.fees?.coveredTo || windows.some((window) => window.checkedAt)) {
       text = t("financialIncomplete")
     }
   } else if (syncedAt) {

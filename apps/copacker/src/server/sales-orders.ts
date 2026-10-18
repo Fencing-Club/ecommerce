@@ -609,7 +609,20 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
       {
         source,
         externalAccountId: account.externalId,
-        ...(source === "amazon" ? { returns, reimbursements, inventoryMovements, storageFees, removals } : {}),
+        ...(source === "amazon"
+          ? {
+              returns,
+              reimbursements,
+              inventoryMovements,
+              storageFees,
+              removals,
+              fees: {
+                coveredFrom: sync?.feesCoveredFrom?.toISOString() ?? null,
+                coveredTo: sync?.feesCoveredTo?.toISOString() ?? null,
+                errorCode: sync?.feesErrorCode ?? null
+              }
+            }
+          : {}),
         status: sync?.status ?? "idle",
         errorCode: sync?.errorCode ?? null,
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
