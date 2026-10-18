@@ -5,10 +5,10 @@ import { cartonColumns, cartonTemplate, parseCartonTable, readCartonFile } from 
 import { orderData } from "@/stories/fixtures/orders"
 
 const products = orderData().items.map((item, index) => ({ ...item, piecesPerSet: index === 1 ? 2 : 1 }))
-const row = (sku = products[0]!.buyerSku, quantity = "10") => ["01", "2", sku, quantity, "60", "40", "40", "12"]
+const row = (sku = products[0]!.supplierSku, quantity = "10") => ["01", "2", sku, quantity, "60", "40", "40", "12"]
 describe("carton import", () => {
   it("groups products, converts multipacks, and expands physical cartons without losing totals", () => {
-    const result = parseCartonTable([[...cartonColumns], row(), row(products[1]!.buyerSku, "5")], products)
+    const result = parseCartonTable([[...cartonColumns], row(), row(products[1]!.supplierSku, "5")], products)
     expect(result.issues).toEqual([])
     expect(result.groups).toHaveLength(1)
     expect(result.groups[0]?.items.map((item) => item.pieces)).toEqual([10, 10])
@@ -31,9 +31,9 @@ describe("carton import", () => {
         [...cartonColumns],
         row(),
         row(),
-        ["01", "3", products[1]!.buyerSku, "5", "60", "40", "40", "12"],
+        ["01", "3", products[1]!.supplierSku, "5", "60", "40", "40", "12"],
         row("UNKNOWN"),
-        row(products[2]!.buyerSku, "0.5")
+        row(products[2]!.supplierSku, "0.5")
       ],
       products
     )
@@ -63,12 +63,38 @@ describe("carton import", () => {
   })
   it("generates a usable workbook with text SKU references and imports filled template values", async () => {
     const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await cartonTemplate(products))
-    expect(book.getWorksheet("Products")?.getCell("A2").value).toBe(products[0]!.buyerSku)
+    await book.xlsx.load(await cartonTemplate(products, ["Anleitung zum Verpacken"]))
+    expect(book.worksheets.map((sheet) => sheet.name)).toEqual(["Cartons", "Instructions"])
+    expect(book.getWorksheet("Cartons")?.getCell("C2").value).toBe(products[0]!.supplierSku)
+    expect(book.getWorksheet("Instructions")?.getCell("A1").value).toBe("Anleitung zum Verpacken")
     book.getWorksheet("Cartons")!.addRow(row())
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
     expect(result.issues).toEqual([])
     expect(result.groups[0]?.cartonId).toBe("01")
+  })
+  it("disambiguates supplier SKUs using the prefilled variant and rejects changed product data", () => {
+    const first = products[0]!
+    const variants = [first, { ...products[1]!, supplierSku: first.supplierSku }]
+    const selected = variants[1]!
+    const filled = [...row(first.supplierSku), selected.name, selected.variant, String(selected.piecesPerSet)]
+    expect(parseCartonTable([[...cartonColumns], row(first.supplierSku)], variants).issues[0]?.code).toBe("sku")
+    expect(parseCartonTable([[...cartonColumns], filled], variants).groups[0]?.items[0]?.itemId).toBe(selected.id)
+    expect(parseCartonTable([[...cartonColumns], [...filled.slice(0, 10), "999"]], variants).issues[0]?.code).toBe(
+      "sku"
+    )
+  })
+  it("imports a filled localized workbook while ignoring unused product rows", async () => {
+    const book = new ExcelJS.Workbook()
+    await book.xlsx.load(await cartonTemplate(products, ["پیکنگ کی ہدایات"], true))
+    const sheet = book.getWorksheet("Cartons")!
+    row().forEach((value, index) => {
+      sheet.getRow(2).getCell(index + 1).value = value
+    })
+    expect(book.getWorksheet("Instructions")?.views[0]?.rightToLeft).toBe(true)
+    const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
+    expect(result.issues).toEqual([])
+    expect(result.groups).toHaveLength(1)
+    expect(result.groups[0]?.items[0]?.itemId).toBe(products[0]!.id)
   })
   it("reports unreadable files and ignores formula values", async () => {
     expect((await readCartonFile(new File(["broken"], "cartons.xlsx"), products)).issues[0]?.code).toBe("unreadable")

@@ -7,12 +7,15 @@ import { csvTable } from "./csv-table"
 export const cartonColumns = [
   "Carton ID",
   "Carton count",
-  "SKU",
+  "Supplier SKU",
   "Quantity per carton",
   "Length (cm)",
   "Width (cm)",
   "Height (cm)",
-  "Weight (kg)"
+  "Weight (kg)",
+  "Product",
+  "Variant",
+  "Units per pack"
 ] as const
 
 export type ImportIssue = {
@@ -79,13 +82,27 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
     }
     const row = index + 2
     const values = positions.map((position) => (cells[position] ?? "").trim())
-    const [id = "", countText = "", sku = "", quantityText = "", ...measurementText] = values
+    const [id = "", countText = "", sku = "", quantityText = ""] = values
+    const measurementText = values.slice(4, 8)
+    const [name = "", variant = "", pack = ""] = values.slice(8)
+    // Prefilled product references are not cartons until packing values are entered.
+    if ([id, countText, quantityText, ...measurementText].every((value) => !value)) {
+      continue
+    }
     const location = { row, carton: id }
     if (!id || id.length > 60) {
       issues.push({ ...location, code: "cartonId" })
       continue
     }
-    const product = products.find((item) => item.buyerSku === sku)
+    const matches = products.filter(
+      (item) =>
+        Boolean(sku) &&
+        item.supplierSku === sku &&
+        (!name || item.name === name) &&
+        (!variant || item.variant === variant) &&
+        (!pack || String(item.piecesPerSet) === pack)
+    )
+    const product = matches.length === 1 ? matches[0] : undefined
     if (!product) {
       issues.push({ ...location, code: "sku", value: sku })
       continue
@@ -179,36 +196,44 @@ export async function readCartonFile(file: File, products: OrderInput["items"]):
   }
 }
 
-export async function cartonTemplate(products: OrderInput["items"]) {
+export async function cartonTemplate(
+  products: OrderInput["items"],
+  instructionsCopy: readonly string[],
+  rightToLeft = false
+) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
   const cartons = book.addWorksheet("Cartons")
-  cartons.columns = cartonColumns.map((header) => ({ header, width: header === "SKU" ? 24 : 22 }))
-  cartons.getRow(1).font = { bold: true }
-  cartons.views = [{ state: "frozen", ySplit: 1 }]
+  cartons.columns = cartonColumns.map((header) => ({
+    header,
+    width: header === "Product" || header === "Variant" ? 36 : 22
+  }))
+  cartons.views = [{ state: "frozen", ySplit: 1, rightToLeft }]
   cartons.getColumn(1).numFmt = "@"
   cartons.getColumn(3).numFmt = "@"
-  const reference = book.addWorksheet("Products")
-  reference.columns = [
-    { header: "SKU", key: "sku", width: 26 },
-    { header: "Product", key: "product", width: 40 },
-    { header: "Variant", key: "variant", width: 36 },
-    { header: "Units per pack", key: "pack", width: 20 }
-  ]
-  reference.addRows(
-    products.map((item) => ({ sku: item.buyerSku, product: item.name, variant: item.variant, pack: item.piecesPerSet }))
+  cartons.addRows(
+    products.map((item) => ["", "", item.supplierSku, "", "", "", "", "", item.name, item.variant, item.piecesPerSet])
   )
-  reference.getRow(1).font = { bold: true }
+  cartons.autoFilter = { from: { row: 1, column: 1 }, to: { row: products.length + 1, column: cartonColumns.length } }
+  cartons.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } }
+  cartons.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } }
+  cartons.getRow(1).height = 30
+  cartons.eachRow((row, index) => {
+    row.alignment = { vertical: "middle", wrapText: true }
+    if (index > 1) {
+      row.height = 42
+      for (const column of [3, 9, 10, 11]) {
+        row.getCell(column).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }
+      }
+    }
+  })
   const instructions = book.addWorksheet("Instructions")
+  instructions.views = [{ rightToLeft }]
   instructions.getColumn(1).width = 110
-  for (const instruction of [
-    "Add one row per product in a carton. Repeat the same Carton ID for products packed together.",
-    "Carton count is the number of identical cartons in that group. Repeat its count, dimensions and weight on every row.",
-    "Quantity per carton counts sellable packs. For a single product, 1 means one unit. For a 2-pack, 1 means two units.",
-    "Use the exact SKU from Products. Pack sizes and products cannot be changed by this import.",
-    "Dimensions are in centimetres and weight is in kilograms for each carton. Keep the headers and Cartons worksheet name unchanged."
-  ]) {
-    instructions.addRow([instruction])
+  for (const instruction of instructionsCopy) {
+    const row = instructions.addRow([instruction])
+    row.alignment = { wrapText: true, vertical: "top", readingOrder: rightToLeft ? "rtl" : "ltr" }
+    row.height = 60
   }
   return book.xlsx.writeBuffer()
 }
