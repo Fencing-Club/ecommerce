@@ -265,7 +265,16 @@ describe("Amazon Ads authorization and transport", () => {
       }
     ])
     expect(fetchMock.mock.calls[0]![1]!.headers).toBeUndefined()
+    expect(fetchMock.mock.calls[0]![1]!.redirect).toBe("manual")
     await expect(downloadAdsReport("https://example.com/report")).rejects.toThrow("Unexpected")
+  })
+  it.each([301, 302, 303, 307, 308])("rejects report redirect %s without fetching its destination", async (status) => {
+    fetchMock.mockResolvedValue(new Response(null, { status, headers: { location: "https://example.com/private" } }))
+    await expect(downloadAdsReport("https://reports.s3.amazonaws.com/report")).rejects.toThrow(
+      "Unexpected Amazon Ads report redirect"
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]![1]!.redirect).toBe("manual")
   })
   it.each([
     ["Sponsored Products", "SPONSORED_PRODUCTS"],
