@@ -59,12 +59,12 @@ A dedicated E2E process isolates its lifecycle and build output, not its databas
 | --- | --- | --- |
 | Launcher and Buildkit | Primary app has no `main` prefix; linked worktrees use readable folder names; collisions fail visibly | Implemented with published `@buildkitgg/dev-domains@0.1.0` |
 | Shared Portless proxy | Register complete Copacker hostnames on the existing HTTPS proxy at port 443 | Buildkit 0.1.0 supports exact routes independently of startup suffixes; no restart required. Trusted HTTPS and independent cleanup verified alongside Spawn |
-| Cloudflare DNS | Add DNS-only A `local.copacker.ai` → `127.0.0.1`, TTL 300; retain `*.local.copacker.ai` | Base record absent when inspected; pending |
+| Cloudflare DNS | DNS-only A `local.copacker.ai` → `127.0.0.1`, TTL 300; retain `*.local.copacker.ai` | Created October 17; Cloudflare readback and public DNS resolution verified |
 | WorkOS redirects/logout | Exact primary `https://local.copacker.ai/callback` and logout origin; retain preview, worktree/E2E and CI entries and production defaults | Saved and read back October 17; obsolete localhost and Railway entries removed. Application-scoped redirect mutation preserves existing IDs |
 | Google Maps local key | Exact `https://local.copacker.ai/*` alongside worktree wildcard; Maps JavaScript API and Places API (New) restrictions | Saved October 17; obsolete localhost port referrers removed |
 | Google through WorkOS | Keep the existing Google → WorkOS callback | No upstream change; test WorkOS → primary app after activation |
 | Amazon Ads relay | Exact `https://local.copacker.ai` in `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay, alongside the worktree pattern | Primary ignored `.env` and GitHub staging release settings updated October 17; staging applies these settings through the normal release |
-| eBay local RuName | Change accepted URL to `https://local.copacker.ai/api/connections/ebay`, declined URL to `https://local.copacker.ai/settings#integrations` | Existing registration still targets `main.local.copacker.ai`; pending portal update |
+| eBay local RuName | Accepted URL `https://local.copacker.ai/api/connections/ebay`, declined URL `https://local.copacker.ai/settings#integrations` | Saved October 17 and verified after reload; primary checkout keeps the existing local RuName |
 | Other direct OAuth integrations | Register each exact new callback shown by the app before enabling the integration | Per-integration opt-in; no wildcard assumption |
 | Webhooks | Keep app handlers; if enabled, point an owned public tunnel at them and set `WEBHOOK_BASE_URL` | Optional; hosted receiver remains deferred |
 | Database/storage | None for this naming change | Migration and preview resources remain deferred |
