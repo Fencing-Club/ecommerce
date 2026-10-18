@@ -1,5 +1,6 @@
+import { Toast } from "@base-ui/react/toast"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import type { OrderInput } from "@repo/aisle"
+import { packingSchema, type Packing, type OrderInput } from "@repo/aisle"
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,7 +11,7 @@ import {
   CornerDownRight,
   Ellipsis,
   FileText,
-  LockKeyhole,
+  Download,
   MapPin,
   Plus,
   Pencil,
@@ -18,20 +19,20 @@ import {
   Ship,
   Trash2,
   Truck,
-  Upload,
-  Users
+  Upload
 } from "lucide-react"
 import { useId, useState } from "react"
 import { match } from "ts-pattern"
+import { useLocale } from "use-intl"
 import { AddProductsDialog } from "@/components/add-products-dialog"
 import { StatusBadge } from "@/components/common"
 import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
 import { PackingForm } from "@/components/packing-form"
+import { PoTimeline, type TimelineEntry } from "@/components/po-timeline"
 import { ProductIdentity } from "@/components/product-identity"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { QuantityDisplay } from "@/components/quantity-display"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -52,15 +53,105 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { documentSettingsForLocale, type ShippingDocumentData } from "@/documents/shipping-model"
 import { useMoney } from "@/hooks/use-money"
 import { countriesIn } from "@/lib/countries"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
 import { orderItem } from "./fixtures/orders"
-import { order, pickupAddress } from "./fixtures/purchase-orders"
+import { order, orderId, pickupAddress } from "./fixtures/purchase-orders"
+
+const pageLayout = "@container/po flex min-w-0 flex-col gap-6 text-sm"
 
 type Item = OrderInput["items"][number] & { taxRate?: number }
+function quantityError(item: Item) {
+  if (!Number.isInteger(item.pieces) || item.pieces <= 0) {
+    return "Enter a positive whole number."
+  }
+  if (item.pieces % item.piecesPerSet !== 0) {
+    return `Enter a multiple of ${item.piecesPerSet}.`
+  }
+  return null
+}
+
+function QuantityInput({
+  item,
+  shipmentId,
+  onChange
+}: {
+  item: Item
+  shipmentId: string
+  onChange: (pieces: number) => void
+}) {
+  const [value, setValue] = useState(String(item.pieces))
+  return (
+    <Input
+      type="number"
+      min={item.piecesPerSet}
+      step={item.piecesPerSet}
+      aria-invalid={!!quantityError(item)}
+      aria-describedby={quantityError(item) ? `quantity-error-${shipmentId}-${item.id}` : undefined}
+      aria-label={`${item.buyerSku} quantity`}
+      className="px-2 text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      value={value}
+      onChange={(event) => {
+        setValue(event.target.value)
+        onChange(event.target.valueAsNumber || 0)
+      }}
+    />
+  )
+}
+
+function TaxInput({
+  id,
+  label,
+  taxRate,
+  onChange
+}: {
+  id: string
+  label: string
+  taxRate: number
+  onChange: (value: number) => void
+}) {
+  const [value, setValue] = useState(String(taxRate))
+  return (
+    <InputGroup>
+      <InputGroupInput
+        id={id}
+        aria-label={label}
+        type="number"
+        min={0}
+        max={100}
+        step="any"
+        value={value}
+        onBlur={() => setValue(String(taxRate))}
+        onChange={(event) => {
+          setValue(event.target.value)
+          onChange(Math.min(100, Math.max(0, event.target.valueAsNumber || 0)))
+        }}
+        className="min-w-0 px-2 text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <InputGroupAddon align="inline-end" className="pe-2">
+        %
+      </InputGroupAddon>
+    </InputGroup>
+  )
+}
+
+function timelineEvent(key: string, content: string, time: string, day = 15): TimelineEntry {
+  return {
+    key,
+    content,
+    at: new Date(`October ${day}, 2026 ${time} GMT+0000`),
+    comment: false,
+    author: null,
+    authorOrg: null,
+    revision: null,
+    revisionNumber: null
+  }
+}
+
 type Adjustment = { id: string; name: string; amount: number }
 const receivingStops = {
   forwarder: {
@@ -267,16 +358,6 @@ function InvoiceRow({ name, onView }: { name: string; onView: () => void }) {
   )
 }
 
-function CommentAvatar({ viewer }: { viewer: "buyer" | "supplier" }) {
-  return (
-    <Avatar aria-hidden className="size-7 after:hidden">
-      <AvatarFallback className="bg-primary-soft text-xs font-semibold text-primary">
-        {viewer === "buyer" ? "AR" : "ML"}
-      </AvatarFallback>
-    </Avatar>
-  )
-}
-
 export function PurchaseOrderFlow({
   viewer = "buyer",
   initialState = "draft",
@@ -360,9 +441,7 @@ export function PurchaseOrderFlow({
   const [invoiceGenerated, setInvoiceGenerated] = useState(false)
   const [reason, setReason] = useState("")
   const [decisionReason, setDecisionReason] = useState("")
-  const [comment, setComment] = useState("")
-  const [comments, setComments] = useState<{ id: string; text: string; scope: string; time: string }[]>([])
-  const [scope, setScope] = useState(viewer === "supplier" ? "Message customer" : "Internal comment")
+  const [comments, setComments] = useState<TimelineEntry[]>([])
   const [packing, setPacking] = useState<Shipment | null>(initialPacking ? shipments[0]! : null)
   const [packingFinished, setPackingFinished] = useState(initialPacking === "packed")
   const [packingDetails, setPackingDetails] = useState<Item | null>(null)
@@ -554,21 +633,6 @@ export function PurchaseOrderFlow({
     setDeletingShipment(null)
   }
 
-  function postComment() {
-    if (!comment.trim()) {
-      return
-    }
-    setComments((current) => [
-      {
-        id: crypto.randomUUID(),
-        text: comment.trim(),
-        scope,
-        time: "2:16 PM"
-      },
-      ...current
-    ])
-    setComment("")
-  }
   function updateItem(shipment: Shipment, id: string, patch: Partial<Item>) {
     updateShipment(shipment.id, {
       items: shipment.items.map((item) => (item.id === id ? { ...item, ...patch } : item))
@@ -585,7 +649,12 @@ export function PurchaseOrderFlow({
     setSavedShipments(shipments)
     setState("proposing")
   }
+  const hasQuantityErrors = shipments.some((shipment) => shipment.items.some((item) => quantityError(item)))
+
   function submitOrder() {
+    if (hasQuantityErrors) {
+      return
+    }
     setState("submitted")
     recordEvent("You sent the order to Northwind Textiles.")
   }
@@ -703,13 +772,86 @@ export function PurchaseOrderFlow({
     return []
   }
 
+  const locale = useLocale()
+  const toast = Toast.useToastManager()
+  const [downloadingPacking, setDownloadingPacking] = useState(false)
+  const [packingRecords, setPackingRecords] = useState<Record<string, { shipment: Shipment; packing: Packing }>>(() =>
+    initialPacking === "packed" && packing
+      ? {
+          [packing.id]: {
+            shipment: packing,
+            packing: packingSchema.parse({
+              origin: pickupAddress,
+              readyDate: "2026-10-20",
+              cartons: packingCartons(),
+              changes: []
+            })
+          }
+        }
+      : {}
+  )
+  async function downloadPackingList(record: { shipment: Shipment; packing: Packing }) {
+    setDownloadingPacking(true)
+    try {
+      const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
+      const data: ShippingDocumentData = {
+        company: "Harbor Goods",
+        order: "PO38",
+        revision: 1,
+        generatedDate: "2026-10-20",
+        shipment: `Shipment ${record.shipment.id}`,
+        recipient: { name: "Northwind Textiles", address: [] },
+        origin: { name: record.packing.origin.name, address: [record.packing.origin.addressLine1] },
+        destination: { name: record.shipment.destination, address: [] },
+        network: record.shipment.destination.includes("AWD") ? "awd" : "fba",
+        transport: { service: "supplier", collection: "delivery", carrierLabels: false, palletized: false },
+        products: record.shipment.items.map((item) => ({
+          id: item.id,
+          supplierSku: item.supplierSku,
+          description: item.name,
+          variant: item.variant,
+          piecesPerPack: item.piecesPerSet,
+          tasks: []
+        })),
+        cartons: record.packing.cartons.map((carton) => ({
+          id: carton.cartonId,
+          dimensions: [carton.length, carton.width, carton.height],
+          weight: carton.weight,
+          contents: carton.items.map((item) => ({
+            productId: item.itemId,
+            packs:
+              item.pieces / (record.shipment.items.find((product) => product.id === item.itemId)?.piecesPerSet ?? 1)
+          }))
+        })),
+        instructions: ""
+      }
+      const blob = await renderShippingDocument(
+        <ShippingPdf data={data} kind="packing" settings={documentSettingsForLocale(locale)} packingRecord />
+      )
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `PO38-Shipment-${record.shipment.id}-Packing-list.pdf`
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      toast.add({ title: "Could not download the packing list", type: "error" })
+    } finally {
+      setDownloadingPacking(false)
+    }
+  }
+
   if (packing) {
     return (
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Button variant="ghost" size="icon" aria-label="Back to order" onClick={() => setPacking(null)}>
-            <ArrowLeft />
-          </Button>
+      <div className={pageLayout}>
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <button
+            className="rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-label="Back to order"
+            onClick={() => setPacking(null)}
+          >
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+          </button>
           <span>Orders</span>
           <ChevronRight className="size-3" />
           <button className="hover:text-foreground" onClick={() => setPacking(null)}>
@@ -720,20 +862,37 @@ export function PurchaseOrderFlow({
         </div>
         <PackingForm
           heading={
-            <div className={cn("flex items-center gap-3", packingFinished && "w-full")}>
+            <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
               <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
               <StatusBadge tone={packingFinished ? "success" : "info"}>
                 {packingFinished ? "Packed" : "Packing"}
               </StatusBadge>
               {packingFinished && (
-                <Button className="ms-auto" variant="outline" onClick={() => setPackingFinished(false)}>
-                  Edit packing
-                </Button>
+                <div className="ms-auto flex w-full flex-wrap gap-2 sm:w-auto">
+                  <Button variant="outline" onClick={() => setPackingFinished(false)}>
+                    Edit packing
+                  </Button>
+                  <Button
+                    disabled={downloadingPacking || !packingRecords[packing.id]}
+                    onClick={() => {
+                      const record = packingRecords[packing.id]
+                      if (record) {
+                        void downloadPackingList(record)
+                      }
+                    }}
+                  >
+                    <Download />
+                    Download packing list
+                  </Button>
+                </div>
               )}
             </div>
           }
           readOnly={packingFinished}
-          onSubmitted={() => setPackingFinished(true)}
+          onSubmitted={(completed) => {
+            setPackingRecords((current) => ({ ...current, [packing.id]: { shipment: packing, packing: completed } }))
+            setPackingFinished(true)
+          }}
           shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
           shipmentName={`Shipment ${packing.id}`}
           revision={1}
@@ -748,15 +907,17 @@ export function PurchaseOrderFlow({
             }))
           }}
           availablePieces={Object.fromEntries(packing.items.map((item) => [item.id, item.pieces]))}
-          initial={{
-            origin: pickupAddress,
-            readyDate: "2026-10-20",
-            cartons: packingCartons()
-          }}
+          initial={
+            packingRecords[packing.id]?.packing ?? {
+              origin: pickupAddress,
+              readyDate: "2026-10-20",
+              cartons: packingCartons()
+            }
+          }
           addresses={[{ id: "supplier-origin", name: "Northwind Textiles", address: pickupAddress }]}
           shippingDetails={
             <section className="overflow-hidden rounded-xl border">
-              <div className="flex flex-col gap-3 bg-muted/40 p-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="flex flex-col gap-3 bg-muted/40 p-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <span className="inline-flex items-center gap-2">
                   <Factory className="size-4" />
                   Northwind Textiles
@@ -828,7 +989,7 @@ export function PurchaseOrderFlow({
   }
 
   return (
-    <div className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+    <div className={pageLayout}>
       <header className="flex flex-col gap-3">
         <a
           href={reviewing || proposing ? "/orders/po38" : "/orders"}
@@ -939,13 +1100,13 @@ export function PurchaseOrderFlow({
                 >
                   Cancel
                 </Button>
-                <Button disabled={!hasProposalChanges} onClick={() => setAction("send")}>
+                <Button disabled={!hasProposalChanges || hasQuantityErrors} onClick={() => setAction("send")}>
                   Send for approval
                 </Button>
               </>
             )}
             {state === "draft" && (
-              <Button className="hidden sm:inline-flex" onClick={submitOrder}>
+              <Button className="hidden sm:inline-flex" disabled={hasQuantityErrors} onClick={submitOrder}>
                 Send order
               </Button>
             )}
@@ -1216,8 +1377,8 @@ export function PurchaseOrderFlow({
             {shipments.map((shipment) => {
               const editable = editing === shipment.id || proposing
               const itemColumns = editable
-                ? "@lg/shipment:grid-cols-[minmax(0,1fr)_6.5rem_3.5rem_7rem_4.75rem_1.75rem] @3xl/shipment:grid-cols-[minmax(0,1fr)_6.5rem_4rem_10.5rem_5.5rem_1.75rem]"
-                : "@lg/shipment:grid-cols-[minmax(0,1fr)_6rem_4rem_4.5rem_5rem] @3xl/shipment:grid-cols-[minmax(0,1fr)_7rem_4.5rem_7.5rem_5.5rem]"
+                ? "@lg/shipment:grid-cols-[minmax(0,1fr)_5rem_5rem_9.5rem_4.5rem_1.75rem] @3xl/shipment:grid-cols-[minmax(0,1fr)_6.5rem_5rem_12.5rem_5.5rem_1.75rem]"
+                : "@lg/shipment:grid-cols-[minmax(0,1fr)_6rem_5rem_8rem_5rem] @3xl/shipment:grid-cols-[minmax(0,1fr)_7rem_5rem_10rem_5.5rem]"
               return (
                 <section
                   key={shipment.id}
@@ -1227,7 +1388,14 @@ export function PurchaseOrderFlow({
                   <div className="flex items-center justify-between">
                     <h2 className="font-semibold">Shipment {shipment.id}</h2>
                     {accepted && state === "accepted" && (
-                      <Button onClick={() => setPacking(shipment)}>Pack shipment</Button>
+                      <Button
+                        onClick={() => {
+                          setPackingFinished(Boolean(packingRecords[shipment.id]))
+                          setPacking(shipment)
+                        }}
+                      >
+                        {packingRecords[shipment.id] ? "View packing" : "Pack shipment"}
+                      </Button>
                     )}
                   </div>
                   <div className="overflow-hidden rounded-xl border">
@@ -1335,7 +1503,11 @@ export function PurchaseOrderFlow({
                                 >
                                   Cancel
                                 </Button>
-                                <Button size="sm" onClick={() => setEditing(null)}>
+                                <Button
+                                  size="sm"
+                                  disabled={shipment.items.some((item) => quantityError(item))}
+                                  onClick={() => setEditing(null)}
+                                >
                                   Done
                                 </Button>
                               </>
@@ -1407,8 +1579,11 @@ export function PurchaseOrderFlow({
                     >
                       <span>Product</span>
                       <span>Supplier SKU</span>
-                      <span className="text-end">Quantity</span>
-                      <span className="text-end">Cost</span>
+                      <span className={cn("text-end", editable && "pe-2")}>Quantity</span>
+                      <div className="grid grid-cols-1 gap-2 text-end @3xl/shipment:grid-cols-[minmax(0,1fr)_5rem]">
+                        <span className={cn(editable && "pe-9")}>Cost</span>
+                        <span className="hidden @3xl/shipment:block">Tax</span>
+                      </div>
                       <span className="text-end">Total</span>
                       {editable && <span className="sr-only">Actions</span>}
                     </div>
@@ -1458,38 +1633,47 @@ export function PurchaseOrderFlow({
                           )}
                         </div>
                         <div className="min-w-0 text-end tabular-nums">
-                          <span className="mb-1 block text-xs text-muted-foreground @lg/shipment:hidden">Quantity</span>
-                          {editable ? (
-                            <Input
-                              type="number"
-                              min={1}
-                              aria-label={`${item.buyerSku} quantity`}
-                              className="px-2 text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                              value={item.pieces}
-                              onChange={(event) =>
-                                updateItem(shipment, item.id, { pieces: event.target.valueAsNumber || 0 })
-                              }
-                            />
-                          ) : (
-                            <span>
-                              {item.pieces}
-                              <span className="ms-2 text-xs text-muted-foreground @lg/shipment:hidden">pcs</span>
-                            </span>
-                          )}
-                          {item.piecesPerSet > 1 && (
-                            <p className="mt-1 text-[11px] whitespace-nowrap text-muted-foreground">
-                              {item.pieces / item.piecesPerSet} packs of {item.piecesPerSet}
-                            </p>
-                          )}
-                        </div>
-                        <div className="min-w-0 text-end tabular-nums">
-                          <span className="mb-1 block text-xs text-muted-foreground @lg/shipment:hidden">Cost</span>
-                          <div
+                          <span
                             className={cn(
-                              "flex items-center justify-end gap-1",
-                              editable && "flex-col items-end @3xl/shipment:flex-row @3xl/shipment:items-center"
+                              "mb-1 block text-xs text-muted-foreground @lg/shipment:hidden",
+                              editable && "pe-2"
                             )}
                           >
+                            Quantity
+                          </span>
+                          <QuantityDisplay pieces={item.pieces} packSize={item.piecesPerSet}>
+                            {editable ? (
+                              <QuantityInput
+                                item={item}
+                                shipmentId={shipment.id}
+                                onChange={(pieces) => updateItem(shipment, item.id, { pieces })}
+                              />
+                            ) : (
+                              <span>
+                                {item.pieces}
+                                <span className="ms-2 text-xs text-muted-foreground @lg/shipment:hidden">pcs</span>
+                              </span>
+                            )}
+                            {editable && quantityError(item) && (
+                              <output
+                                id={`quantity-error-${shipment.id}-${item.id}`}
+                                className="mt-1 block text-xs text-destructive"
+                              >
+                                {quantityError(item)}
+                              </output>
+                            )}
+                          </QuantityDisplay>
+                        </div>
+                        <div className="min-w-0 text-end tabular-nums">
+                          <span
+                            className={cn(
+                              "mb-1 block text-xs text-muted-foreground @lg/shipment:hidden",
+                              editable && "pe-9"
+                            )}
+                          >
+                            Cost
+                          </span>
+                          <div className="grid grid-cols-1 items-start gap-3 @3xl/shipment:grid-cols-[minmax(0,1fr)_5rem] @3xl/shipment:gap-2">
                             {editable ? (
                               <InputGroup className="min-w-0 flex-1">
                                 <InputGroupAddon>$</InputGroupAddon>
@@ -1578,29 +1762,26 @@ export function PurchaseOrderFlow({
                                 </InputGroupAddon>
                               </InputGroup>
                             ) : (
-                              cash(item.unitPrice)
+                              <span>{cash(item.unitPrice)}</span>
                             )}
-                            {editable ? (
-                              <label className="flex shrink-0 items-center justify-end gap-1 text-xs text-muted-foreground">
-                                <span className="sr-only">{item.buyerSku} tax percent</span>
-                                <input
-                                  aria-label={`${item.buyerSku} tax percent`}
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  value={item.taxRate ?? 0}
-                                  onChange={(event) =>
-                                    updateItem(shipment, item.id, {
-                                      taxRate: Math.min(100, Math.max(0, event.target.valueAsNumber || 0))
-                                    })
-                                  }
-                                  className="w-9 rounded border border-input bg-transparent px-1 text-end"
-                                />
-                                <span>%</span>
+                            <div className="w-full min-w-0 justify-self-end @lg/shipment:max-w-20">
+                              <label
+                                htmlFor={`${controlId}-${shipment.id}-${item.id}-tax`}
+                                className="mb-1 block text-xs text-muted-foreground @3xl/shipment:hidden"
+                              >
+                                Tax
                               </label>
-                            ) : (
-                              <span className="ms-2 text-xs text-muted-foreground">{item.taxRate ?? 0}%</span>
-                            )}
+                              {editable ? (
+                                <TaxInput
+                                  id={`${controlId}-${shipment.id}-${item.id}-tax`}
+                                  label={`${item.buyerSku} tax percent`}
+                                  taxRate={item.taxRate ?? 0}
+                                  onChange={(taxRate) => updateItem(shipment, item.id, { taxRate })}
+                                />
+                              ) : (
+                                <span>{item.taxRate ?? 0}%</span>
+                              )}
+                            </div>
                           </div>
                           {proposing &&
                             acceptedShipments.flatMap((group) => group.items).find((row) => row.id === item.id)
@@ -1653,7 +1834,7 @@ export function PurchaseOrderFlow({
                       )}
                     >
                       <span>Subtotal</span>
-                      <span className="text-end whitespace-nowrap @lg/shipment:col-span-2">
+                      <span className={cn("text-end whitespace-nowrap @lg/shipment:col-span-2", editable && "pe-2")}>
                         {shipment.items.reduce((sum, item) => sum + item.pieces, 0)} items
                       </span>
                       <span className="text-end @lg/shipment:col-start-5">{cash(lineTotal(shipment.items))}</span>
@@ -1803,6 +1984,29 @@ export function PurchaseOrderFlow({
                 <InvoiceRow name="Invoice-PO38.pdf" onView={viewInvoice} />
               </section>
             )}
+            {Object.values(packingRecords).length > 0 && (
+              <section className="flex flex-col gap-3">
+                <h2 className="font-semibold">Packing lists</h2>
+                {Object.values(packingRecords).map((record) => (
+                  <div key={record.shipment.id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <p>Shipment {record.shipment.id}</p>
+                      <p className="text-xs text-muted-foreground">Packing list.pdf</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Download Shipment ${record.shipment.id} packing list`}
+                      disabled={downloadingPacking}
+                      onClick={() => void downloadPackingList(record)}
+                    >
+                      <Download />
+                    </Button>
+                  </div>
+                ))}
+              </section>
+            )}
             {!proposing && (
               <section className="flex flex-col gap-4 border-t pt-5">
                 <div className="flex items-center justify-between gap-3">
@@ -1854,199 +2058,108 @@ export function PurchaseOrderFlow({
             )}
           </aside>
           {!proposing && (
-            <section aria-label="Timeline" className="flex flex-col gap-4 border-t pt-6 [grid-area:timeline]">
-              <h2 className="font-semibold">Timeline</h2>
-              <div className="flex items-start gap-3">
-                <CommentAvatar viewer={viewer} />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="overflow-hidden rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                    <Textarea
-                      aria-label="Comment"
-                      aria-describedby={`${controlId}-audience`}
-                      placeholder={scope === "Internal comment" ? "Leave a comment…" : "Write a message…"}
-                      value={comment}
-                      onChange={(event) => setComment(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                          event.preventDefault()
-                          postComment()
-                        }
-                      }}
-                      className="min-h-18 resize-none rounded-none border-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
-                    />
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/50 px-2 py-1.5">
-                      <Select
-                        value={scope}
-                        onValueChange={(value) => {
-                          if (value) {
-                            setScope(value)
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          aria-label="Comment visibility"
-                          size="sm"
-                          className="max-w-full gap-1.5 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none"
-                        >
-                          {scope === "Internal comment" ? (
-                            <LockKeyhole className="size-3.5" />
-                          ) : (
-                            <Users className="size-3.5" />
-                          )}
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="start" alignItemWithTrigger={false} className="min-w-44">
-                          <SelectItem value="Internal comment">Internal comment</SelectItem>
-                          <SelectItem value={viewer === "supplier" ? "Message customer" : "Message supplier"}>
-                            {viewer === "supplier" ? "Message customer" : "Message supplier"}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="outline" size="sm" disabled={!comment.trim()} onClick={postComment}>
-                        Post
-                      </Button>
-                    </div>
-                  </div>
-                  <p id={`${controlId}-audience`} className="text-xs text-muted-foreground">
-                    {scope === "Internal comment"
-                      ? "Only your team can see this comment."
-                      : `Visible to ${recipient} and your team.`}
-                  </p>
-                </div>
-              </div>
-              <h3 className="mt-3 ps-10 text-xs font-medium text-muted-foreground">October 15, 2026</h3>
-              <ol className="relative space-y-4 before:absolute before:start-3.5 before:top-3 before:bottom-3 before:w-px before:bg-border">
-                {comments.map((entry) => (
-                  <li key={entry.id} className="relative flex gap-3">
-                    <CommentAvatar viewer={viewer} />
-                    <div className="min-w-0 flex-1 rounded-lg bg-muted/60 px-3 py-2">
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                        <p className="font-medium">You</p>
-                        <time className="text-xs text-muted-foreground">{entry.time}</time>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap wrap-anywhere">{entry.text}</p>
-                      <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                        {entry.scope === "Internal comment" ? (
-                          <LockKeyhole className="size-3" />
-                        ) : (
-                          <Users className="size-3" />
-                        )}
-                        {entry.scope === "Internal comment"
-                          ? "Internal comment"
-                          : `Shared with ${viewer === "buyer" ? "supplier" : "customer"}`}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-                {[
-                  ...events,
-                  ...(["accepted", "pending", "rejected", "changes_requested"].includes(initialState)
-                    ? [{ text: "The supplier accepted the order.", time: "9:45 AM" }]
-                    : []),
-                  ...(!timelineExample
+            <div className="flex flex-col gap-4 border-t pt-6 [grid-area:timeline]">
+              <PoTimeline
+                orderId={orderId}
+                viewer={viewer === "buyer" ? "Alex Rivera" : "Maya Liu"}
+                viewerOrg={viewer === "buyer" ? "Harbor Goods" : "Northwind Textiles"}
+                counterparty={viewer === "buyer" ? "supplier" : "customer"}
+                timeZone="UTC"
+                prices
+                onCommentPosted={(comment) =>
+                  setComments((current) => [
+                    {
+                      key: crypto.randomUUID(),
+                      at: new Date("2026-10-15T14:16:00Z"),
+                      content: comment.message,
+                      comment: true,
+                      author: viewer === "buyer" ? "Alex Rivera" : "Maya Liu",
+                      authorOrg: viewer === "buyer" ? "Harbor Goods" : "Northwind Textiles",
+                      visibility: comment.visibility,
+                      revision: null,
+                      revisionNumber: null
+                    },
+                    ...current
+                  ])
+                }
+                entries={[
+                  ...comments,
+                  ...[
+                    ...events,
+                    ...(["accepted", "pending", "rejected", "changes_requested"].includes(initialState)
+                      ? [{ text: "The supplier accepted the order.", time: "9:45 AM" }]
+                      : [])
+                  ].map((event, index) => timelineEvent(`event-${index}`, event.text, event.time)),
+                  ...(timelineExample
                     ? [
                         {
-                          text:
-                            viewer === "supplier"
-                              ? "Harbor Goods sent you this purchase order."
-                              : "You created this purchase order.",
-                          time: "9:15 AM"
-                        }
+                          ...timelineEvent("revision-2", "Northwind Textiles proposed changes.", "9:32 AM"),
+                          details: (
+                            <div className="space-y-3 py-3">
+                              {" "}
+                              <div className="flex justify-between">
+                                <span>Packing</span>
+                                <span>+{cash(12000)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Handling</span>
+                                <span>+{cash(2500)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Order total</span>
+                                <span>
+                                  {cash(435600)} → {cash(450100)}
+                                </span>
+                              </div>
+                              <InvoiceRow name="Invoice-PO38-rev2.pdf" onView={viewInvoice} />
+                            </div>
+                          )
+                        },
+                        {
+                          ...timelineEvent(
+                            "supplier-comment",
+                            "Packing is $120 and handling is $25 for this order. The revised invoice includes both charges.",
+                            "9:30 AM"
+                          ),
+                          comment: true,
+                          author: "Maya",
+                          authorOrg: "Northwind Textiles",
+                          visibility: "shared"
+                        } satisfies TimelineEntry
+                      ]
+                    : []),
+                  timelineEvent(
+                    "created",
+                    viewer === "supplier"
+                      ? "Harbor Goods sent you this purchase order."
+                      : "You created this purchase order.",
+                    "9:15 AM"
+                  ),
+                  ...(timelineExample && earlierActivity
+                    ? [
+                        timelineEvent(
+                          "sent-earlier",
+                          "You sent this purchase order to Northwind Textiles.",
+                          "4:15 PM",
+                          14
+                        ),
+                        timelineEvent("created-earlier", "You created this purchase order.", "4:00 PM", 14)
                       ]
                     : [])
-                ].map((event, index) => (
-                  <li key={`${event.text}-${index}`} className="relative flex items-start justify-between gap-3 ps-10">
-                    <span
-                      aria-hidden
-                      className="absolute start-2.5 top-1.5 size-2 rounded-full bg-muted-foreground ring-4 ring-background"
-                    />
-                    <span className="min-w-0">{event.text}</span>
-                    <time className="shrink-0 text-xs text-muted-foreground">{event.time}</time>
-                  </li>
-                ))}
-                {timelineExample && (
-                  <>
-                    <li className="ps-10">
-                      <Accordion>
-                        <AccordionItem value="revision-2" className="border-0">
-                          <AccordionTrigger className="py-2 hover:no-underline">
-                            <span className="text-start">
-                              <span className="block">Northwind Textiles proposed changes.</span>
-                              <span className="text-xs text-muted-foreground">Revision 2 / 9:32 AM</span>
-                            </span>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-3">
-                            <div className="flex justify-between">
-                              <span>Packing</span>
-                              <span>+{cash(12000)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Handling</span>
-                              <span>+{cash(2500)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Order total</span>
-                              <span>
-                                {cash(435600)} → {cash(450100)}
-                              </span>
-                            </div>
-                            <InvoiceRow name="Invoice-PO38-rev2.pdf" onView={viewInvoice} />
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </li>
-                    <li className="relative flex gap-3">
-                      <CommentAvatar viewer="supplier" />
-                      <div className="min-w-0 flex-1 rounded-lg bg-muted/60 px-3 py-2">
-                        <div className="flex flex-wrap justify-between gap-2">
-                          <p className="font-medium">Maya at Northwind Textiles</p>
-                          <time className="text-xs text-muted-foreground">9:30 AM</time>
-                        </div>
-                        <p className="mt-1">
-                          Packing is $120 and handling is $25 for this order. The revised invoice includes both charges.
-                        </p>
-                        <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                          <Users className="size-3" />
-                          Shared with supplier
-                        </p>
-                      </div>
-                    </li>
-                    <li className="flex justify-between gap-3 ps-10">
-                      <span>You created this purchase order.</span>
-                      <time className="text-xs text-muted-foreground">9:15 AM</time>
-                    </li>
-                  </>
-                )}
-              </ol>
+                ]}
+              />
               {timelineExample && (
-                <>
-                  <Button variant="outline" className="self-start" onClick={() => setEarlierActivity(!earlierActivity)}>
-                    {earlierActivity ? "Hide earlier activity" : "Show earlier activity"}
-                  </Button>
-                  {earlierActivity && (
-                    <>
-                      <h3 className="ps-10 text-xs font-medium text-muted-foreground">October 14, 2026</h3>
-                      <ol className="space-y-4 ps-10">
-                        <li className="flex justify-between gap-3">
-                          <span>You sent this purchase order to Northwind Textiles.</span>
-                          <time className="text-xs text-muted-foreground">4:15 PM</time>
-                        </li>
-                        <li className="flex justify-between gap-3">
-                          <span>You created this purchase order.</span>
-                          <time className="text-xs text-muted-foreground">4:00 PM</time>
-                        </li>
-                      </ol>
-                    </>
-                  )}
-                </>
+                <Button variant="outline" className="self-start" onClick={() => setEarlierActivity(!earlierActivity)}>
+                  {earlierActivity ? "Hide earlier activity" : "Show earlier activity"}
+                </Button>
               )}
-            </section>
+            </div>
           )}
         </div>
       )}
 
       {state === "draft" && (
-        <Button className="w-full sm:hidden" onClick={submitOrder}>
+        <Button className="w-full sm:hidden" disabled={hasQuantityErrors} onClick={submitOrder}>
           Send order
         </Button>
       )}

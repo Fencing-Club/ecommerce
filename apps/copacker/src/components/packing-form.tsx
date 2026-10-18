@@ -1,8 +1,10 @@
+import { Toast } from "@base-ui/react/toast"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   type Address,
   type OrderInput,
   type PackingDraft,
+  type Packing,
   packingSchema,
   cartonInputSchema,
   validatePacking,
@@ -95,7 +97,7 @@ export function PackingForm({
 }: {
   heading?: React.ReactNode
   readOnly?: boolean
-  onSubmitted?: () => void
+  onSubmitted?: (packing: Packing) => void
   shipmentName?: string
   destination?: React.ReactNode
   shippingDetails?: React.ReactNode
@@ -112,6 +114,7 @@ export function PackingForm({
   // Present only for a buyer's AWD draft. Null means it has no existing Amazon shipment yet.
   linkedAmazonShipmentId?: string | null
 }) {
+  const actionsText = useTranslations("orders.detail.columns")
   const t = useTranslations("orders.packing")
   const locale = useLocale()
   const detail = useTranslations("orders.detail")
@@ -124,7 +127,7 @@ export function PackingForm({
   // Purchase-order values are read-only during packing.
   const prices = useCan("prices")
   const [savedRevision, setSavedRevision] = useState(revision)
-  const [notice, setNotice] = useState("")
+  const toast = Toast.useToastManager()
   const [serverError, setServerError] = useState("")
   const [working, setWorking] = useState<"save" | "submit" | "link" | null>(null)
   const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
@@ -155,6 +158,9 @@ export function PackingForm({
   const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
   const packed = (itemId: string) =>
     contents.reduce((total, item) => total + (item.itemId === itemId ? item.pieces || 0 : 0), 0)
+  const allUnitsPacked =
+    order.items.some((item) => (availablePieces[item.id] ?? 0) > 0) &&
+    order.items.every((item) => packed(item.id) === (availablePieces[item.id] ?? 0))
   const cartonsError = form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message
 
   const completeCartons = physicalCartons.flatMap((carton) => {
@@ -192,11 +198,10 @@ export function PackingForm({
   async function perform(mode: "save" | "submit", values: Values) {
     setWorking(mode)
     setServerError("")
-    setNotice("")
     try {
       const nextRevision = await saveDraft(values)
-      setNotice(t("draftSaved"))
-      if (mode === "save") {
+      if (mode === "save" || !allUnitsPacked) {
+        toast.add({ title: t("draftSaved") })
         return
       }
       const checked = checkResult.parse(await run({ action: "shipment.check", data: { id: shipmentId } }).unwrap())
@@ -211,7 +216,7 @@ export function PackingForm({
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
-      onSubmitted?.()
+      onSubmitted?.(packingSchema.parse(withoutBlanks({ ...values, cartons: expandCartonGroups(values.cartons) })))
       router.invalidate()
     } catch (error) {
       setServerError(errorMessage(error, t("saveFailed")))
@@ -222,7 +227,6 @@ export function PackingForm({
 
   async function linkShipment(amazonShipmentId: string | null) {
     setWorking("link")
-    setNotice("")
     setServerError("")
     try {
       // Preserve any incomplete packing before changing the link; both writes use the latest revision.
@@ -269,7 +273,7 @@ export function PackingForm({
   return (
     <FormProvider {...form}>
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
-      <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6">
+      <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6 text-sm">
         {heading && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             {heading}
@@ -277,7 +281,7 @@ export function PackingForm({
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    render={<Button type="button" variant="outline" size="icon" aria-label={t("saveDraft")} />}
+                    render={<Button type="button" variant="outline" size="icon" aria-label={actionsText("actions")} />}
                   >
                     <Ellipsis />
                   </DropdownMenuTrigger>
@@ -294,15 +298,16 @@ export function PackingForm({
                   className="max-sm:hidden"
                   type="submit"
                   form={formId}
-                  pending={working === "submit"}
+                  pending={working === (allUnitsPacked ? "submit" : "save")}
                   disabled={
-                    !cartons.fields.length ||
-                    packingIssues.length > 0 ||
-                    completeCartons.length !== physicalCartons.length ||
-                    totals.cartons > 1000
+                    totals.cartons > 1000 ||
+                    (allUnitsPacked &&
+                      (!cartons.fields.length ||
+                        packingIssues.length > 0 ||
+                        completeCartons.length !== physicalCartons.length))
                   }
                 >
-                  {t("finishPacking")}
+                  {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
                 </SubmitButton>
               </div>
             )}
@@ -322,14 +327,20 @@ export function PackingForm({
         {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <form
           id={formId}
-          onSubmit={validated()}
+          onSubmit={(event) => {
+            if (allUnitsPacked) {
+              return validated()(event)
+            }
+            event.preventDefault()
+            void perform("save", form.getValues())
+          }}
           onKeyDown={keepEnterFromSubmitting}
           noValidate
           className="flex flex-col gap-6"
         >
           <Accordion className="rounded-xl border bg-card">
             <AccordionItem value="products">
-              <AccordionTrigger className="items-center gap-3 p-4 hover:no-underline">
+              <AccordionTrigger className="items-center gap-3 p-4 text-sm font-semibold hover:no-underline">
                 <span className="flex flex-wrap items-center gap-x-3">
                   {detail("columns.products")} ({order.items.length})
                 </span>
@@ -337,12 +348,12 @@ export function PackingForm({
               <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
                 {/* Read-only PO values; the table scrolls within the disclosure on narrow screens. */}
                 <Table framed={false} className={cn("min-w-160", edgeCells)}>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
                     <TableRow>
-                      <TableHead>{t("product")}</TableHead>
-                      <TableHead className="text-end">{t("packed")}</TableHead>
-                      <TableHead className="w-52">{t("supplierSku")}</TableHead>
-                      {prices && <TableHead className="w-44">{t("pricePerUnit")}</TableHead>}
+                      <TableHead className="w-px">{t("product")}</TableHead>
+                      <TableHead className="px-6 text-end">{t("packed")}</TableHead>
+                      <TableHead className="px-6">{t("supplierSku")}</TableHead>
+                      {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -352,15 +363,17 @@ export function PackingForm({
                       return (
                         // Keep product details aligned at the top of each row.
                         <TableRow key={item.id} className="hover:bg-transparent [&>td]:align-top">
-                          <TableCell className="whitespace-normal">
-                            <ProductIdentity item={item} />
+                          <TableCell className="w-px whitespace-normal">
+                            <div className="w-max max-w-sm">
+                              <ProductIdentity item={item} />
+                            </div>
                           </TableCell>
                           <TableCell
-                            className={cn("pt-3.5 text-end tabular-nums", count > available && "text-destructive")}
+                            className={cn("px-6 pt-3.5 text-end tabular-nums", count > available && "text-destructive")}
                           >
                             {t("packedOf", { count, available })}
                           </TableCell>
-                          <TableCell className="whitespace-normal">
+                          <TableCell className="px-6 whitespace-normal">
                             {item.components?.length ? (
                               <div className="flex flex-col gap-1 pt-1.5">
                                 {item.components.map((component) => (
@@ -528,14 +541,13 @@ export function PackingForm({
                   </span>
                 </p>
               )}
-              {notice && <output className="text-xs text-muted-foreground">{notice}</output>}
             </div>
             {!readOnly && (
               <div className={cn("flex flex-wrap gap-2", heading && "max-sm:w-full sm:hidden")}>
                 <SubmitButton
                   type="button"
                   variant="ghost"
-                  className={heading ? "hidden" : undefined}
+                  className={heading || !allUnitsPacked ? "hidden" : undefined}
                   pending={working === "save"}
                   disabled={totals.cartons > 1000}
                   onClick={() => void perform("save", form.getValues())}
@@ -545,16 +557,17 @@ export function PackingForm({
                 <SubmitButton
                   type="submit"
                   form={formId}
-                  pending={working === "submit"}
+                  pending={working === (allUnitsPacked ? "submit" : "save")}
                   className={heading ? "max-sm:flex-1" : undefined}
                   disabled={
-                    !cartons.fields.length ||
-                    packingIssues.length > 0 ||
-                    completeCartons.length !== physicalCartons.length ||
-                    totals.cartons > 1000
+                    totals.cartons > 1000 ||
+                    (allUnitsPacked &&
+                      (!cartons.fields.length ||
+                        packingIssues.length > 0 ||
+                        completeCartons.length !== physicalCartons.length))
                   }
                 >
-                  {t("finishPacking")}
+                  {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
                 </SubmitButton>
               </div>
             )}

@@ -749,7 +749,10 @@ export async function POST(request: Request) {
           }
           await tx
             .update(shipments)
-            .set({ status: "ready", bookingReference: z.string().trim().min(1).max(100).parse(data.bookingReference) })
+            .set({
+              status: "ready",
+              bookingReference: z.string().trim().max(100).optional().parse(data.bookingReference) || null
+            })
             .where(eq(shipments.id, id()))
           // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the
           // shipment in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the

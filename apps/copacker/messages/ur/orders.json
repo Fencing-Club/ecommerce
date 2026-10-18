@@ -280,7 +280,16 @@
       "label": "تبصرہ",
       "placeholder": "تبصرہ لکھیں…",
       "post": "پوسٹ کریں",
-      "required": "تبصرہ لکھیں"
+      "required": "تبصرہ لکھیں",
+      "visibility": "تبصرے کی رسائی",
+      "internal": "اندرونی تبصرہ",
+      "messageSupplier": "سپلائر کو پیغام",
+      "messageCustomer": "کسٹمر کو پیغام",
+      "internalHint": "صرف آپ کی ٹیم یہ تبصرہ دیکھ سکتی ہے۔",
+      "supplierHint": "آپ کی ٹیم اور سپلائر یہ پیغام دیکھ سکتے ہیں۔",
+      "customerHint": "آپ کی ٹیم اور کسٹمر یہ پیغام دیکھ سکتے ہیں۔",
+      "sharedSupplier": "سپلائر کے ساتھ شیئر کیا گیا",
+      "sharedCustomer": "کسٹمر کے ساتھ شیئر کیا گیا"
     },
     "events": {
       "created": "خریداری آرڈر بنایا گیا",
@@ -459,6 +468,7 @@
     "other": "دیگر"
   },
   "cartonEditor": {
+    "addProducts": "کارٹن میں مصنوعات شامل کریں",
     "addProductsTo": "کارٹن {carton} میں مصنوعات شامل کریں",
     "shipmentProducts": "اس شپمنٹ کی مصنوعات",
     "searchProducts": "اس شپمنٹ میں مصنوعات تلاش کریں",
@@ -484,16 +494,14 @@
     "actions": "کارٹن {carton} کی کارروائیاں",
     "duplicate": "کارٹن کی نقل بنائیں",
     "delete": "کارٹن حذف کریں",
-    "quantityPerCarton": "مقدار / کارٹن",
-    "packsPerCarton": "پیک / کارٹن",
-    "unitsPerCarton": "اکائیاں / کارٹن",
+    "quantityPerCarton": "مقدار",
     "productQuantity": "{sku}: کارٹن {carton} میں مقدار",
     "unitCount": "{count} اکائیاں",
     "removeProduct": "کارٹن {carton} سے {sku} ہٹائیں",
     "product": "پروڈکٹ",
     "leftToPack": "پیک کرنا باقی",
     "packCount": "{count} پیک",
-    "addToCarton": "کارٹن {carton} میں شامل کریں",
+    "addToCarton": "کارٹن میں شامل کریں",
     "selectedCount": "{count} منتخب",
     "cartonGroup": "کارٹن {cartons}"
   },

@@ -24,6 +24,7 @@ export type ShippingProduct = {
   id: string
   supplierSku: string
   description: string
+  variant?: string
   piecesPerPack: number
   tasks: ProductTask[]
   countryCode?: string

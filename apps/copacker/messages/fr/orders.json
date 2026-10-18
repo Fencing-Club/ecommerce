@@ -280,7 +280,16 @@
       "label": "Commentaire",
       "placeholder": "Laisser un commentaire…",
       "post": "Publier",
-      "required": "Rédigez un commentaire"
+      "required": "Rédigez un commentaire",
+      "visibility": "Visibilité du commentaire",
+      "internal": "Commentaire interne",
+      "messageSupplier": "Message au fournisseur",
+      "messageCustomer": "Message au client",
+      "internalHint": "Seule votre équipe peut voir ce commentaire.",
+      "supplierHint": "Votre équipe et le fournisseur peuvent voir ce message.",
+      "customerHint": "Votre équipe et le client peuvent voir ce message.",
+      "sharedSupplier": "Partagé avec le fournisseur",
+      "sharedCustomer": "Partagé avec le client"
     },
     "events": {
       "created": "Bon de commande créé",
@@ -459,6 +468,7 @@
     "other": "Autre"
   },
   "cartonEditor": {
+    "addProducts": "Ajouter des produits au carton",
     "addProductsTo": "Ajouter des produits au carton {carton}",
     "shipmentProducts": "Produits de cet envoi",
     "searchProducts": "Rechercher dans cet envoi",
@@ -484,16 +494,14 @@
     "actions": "Actions du carton {carton}",
     "duplicate": "Dupliquer le carton",
     "delete": "Supprimer le carton",
-    "quantityPerCarton": "Quantité / carton",
-    "packsPerCarton": "Lots / carton",
-    "unitsPerCarton": "Unités / carton",
+    "quantityPerCarton": "Quantité",
     "productQuantity": "{sku} : quantité par carton {carton}",
     "unitCount": "{count, plural, one {# unité} other {# unités}}",
     "removeProduct": "Retirer {sku} du carton {carton}",
     "product": "Produit",
     "leftToPack": "Reste à emballer",
     "packCount": "{count, plural, one {# lot} other {# lots}}",
-    "addToCarton": "Ajouter au carton {carton}",
+    "addToCarton": "Ajouter au carton",
     "selectedCount": "{count} sélectionnés",
     "cartonGroup": "Cartons {cartons}"
   },

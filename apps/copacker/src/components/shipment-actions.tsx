@@ -42,7 +42,7 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
   )
 }
 
-const releaseSchema = z.object({ bookingReference: z.string().trim().min(1).max(100) })
+const releaseSchema = z.object({ bookingReference: z.string().trim().max(100) })
 
 export function ReleaseLabels({ id, revision }: { id: string; revision: number }) {
   const t = useTranslations("shipments.actions.release")
@@ -53,9 +53,17 @@ export function ReleaseLabels({ id, revision }: { id: string; revision: number }
     toPayload: (values) => ({ id, revision, ...values })
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label={t("submit")}>
-      <FormInput name="bookingReference" required label={t("bookingReference")} />
-    </ActionForm>
+    <FormProvider {...form}>
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <FormInput name="bookingReference" label={t("bookingReference")} />
+        <FormError message={form.formState.errors.root?.server?.message} />
+        <div>
+          <SubmitButton type="submit" pending={form.formState.isSubmitting}>
+            {t("submit")}
+          </SubmitButton>
+        </div>
+      </form>
+    </FormProvider>
   )
 }
 

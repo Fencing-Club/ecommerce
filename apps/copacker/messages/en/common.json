@@ -67,7 +67,9 @@
     "checklist": "Packing checklist",
     "cartonLabel": "Carton label",
     "shippingLabel": "Shipping label",
-    "productLabel": "Product label"
+    "productLabel": "Product label",
+    "cartonLabels": "Carton labels",
+    "shippingLabels": "Shipping labels"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",

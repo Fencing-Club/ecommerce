@@ -57,6 +57,30 @@ export const BuyerDraft = meta.story({
     await expect(shipment.queryByRole("spinbutton")).toBeNull()
   }
 })
+export const WholePackValidation = meta.story({
+  ...flow({ initialState: "draft" }),
+  play: async ({ canvas }) => {
+    const shipment = within(canvas.getByRole("region", { name: "Shipment 2" }))
+    await userEvent.click(shipment.getByRole("button", { name: "Edit" }))
+    const quantity = shipment.getByRole("spinbutton", { name: /quantity/ })
+    for (const invalid of ["121", "0", "-2", "1.5"]) {
+      await userEvent.clear(quantity)
+      await userEvent.type(quantity, invalid)
+      await expect(quantity).toHaveAttribute("aria-invalid", "true")
+      await expect(shipment.getByRole("status")).toBeVisible()
+      await expect(shipment.getByRole("button", { name: "Done" })).toBeDisabled()
+      await expect(canvas.getAllByRole("button", { name: "Send order" })[0]).toBeDisabled()
+      await expect(shipment.queryByText(/60.5 packs/)).toBeNull()
+    }
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, "122")
+    await expect(quantity).toHaveAttribute("aria-invalid", "false")
+    await expect(shipment.queryByRole("status")).toBeNull()
+    await expect(shipment.getByText("61 packs of 2")).toBeVisible()
+    await userEvent.click(shipment.getByRole("button", { name: "Done" }))
+    await expect(shipment.queryByRole("spinbutton")).toBeNull()
+  }
+})
 export const NarrowShipmentRows = meta.story({
   ...flow({ initialState: "draft" }),
   render: () => (
@@ -76,6 +100,12 @@ export const NarrowShipmentRows = meta.story({
     const quantity = shipment.getByRole("spinbutton", { name: "HG-WBT-NAT quantity" })
     const cost = shipment.getByRole("textbox", { name: "HG-WBT-NAT cost" })
     const sku = shipment.getByRole("textbox", { name: "HG-WBT-NAT supplier SKU" })
+    const tax = shipment.getByRole("spinbutton", { name: "HG-WBT-NAT tax percent" })
+    await expect(Math.abs(tax.getBoundingClientRect().height - quantity.getBoundingClientRect().height)).toBeLessThan(2)
+    await expect(tax.closest('[data-slot="input-group"]')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(79)
+    await userEvent.clear(tax)
+    await userEvent.type(tax, "7.25")
+    await expect(tax).toHaveValue(7.25)
     await expect(Math.abs(quantity.getBoundingClientRect().top - cost.getBoundingClientRect().top)).toBeLessThan(2)
     await expect(Math.abs(quantity.getBoundingClientRect().top - sku.getBoundingClientRect().top)).toBeLessThan(2)
     await expect(Math.abs(count.getBoundingClientRect().right - quantity.getBoundingClientRect().right)).toBeLessThan(1)
@@ -132,6 +162,11 @@ export const SupplierAcceptedOrder = meta.story({
     await expect(canvas.getByRole("heading", { name: "Shipment 1" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Import cartons" })).toBeVisible()
     await expect(canvas.queryByRole("heading", { name: "Invoice" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Products (3)" }))
+    const productHeader = canvas.getByRole("columnheader", { name: "Product" })
+    await expect(getComputedStyle(productHeader).fontSize).toBe("12px")
+    await expect(getComputedStyle(productHeader).fontWeight).toBe("400")
+    await expect(canvas.queryByText("Quantity / carton")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
   }
 })
@@ -336,15 +371,17 @@ export const TimelineComments = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Please confirm the final carton weights.")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
-    await expect(canvas.getByText("Please confirm the final carton weights.")).toBeVisible()
-    await expect(canvas.getByRole("textbox", { name: "Comment" })).toHaveValue("")
+    await expect(await canvas.findByText("Please confirm the final carton weights.", { selector: "p" })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole("textbox", { name: "Comment" })).toHaveValue(""))
     await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
     await userEvent.click(await screen.findByRole("option", { name: "Message supplier" }))
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "The packing instructions are confirmed.")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     const timeline = within(canvas.getByRole("region", { name: "Timeline" }))
     const internal = timeline.getByText("Please confirm the final carton weights.").closest("li")
-    const shared = timeline.getByText("The packing instructions are confirmed.").closest("li")
+    const shared = (await timeline.findByText("The packing instructions are confirmed.", { selector: "p" })).closest(
+      "li"
+    )
     await expect(internal).toHaveTextContent("Internal comment")
     await expect(shared).toHaveTextContent("Shared with supplier")
     await expect(canvas.getByRole("button", { name: "Post" })).toBeDisabled()
@@ -506,7 +543,11 @@ export const SupplierPacking = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "editing" }),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Shipment 1" })).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(canvas.getByText("Packing", { exact: true })).toBeVisible()
+    await expect(canvas.queryByText("Packed", { exact: true })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
     await expect(canvas.queryByRole("heading", { name: "Invoice" })).toBeNull()
   }
 })
@@ -514,7 +555,7 @@ export const SupplierPackingMobile = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "editing" }),
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Save draft" })).toBeVisible()
     await expect(canvas.getByText("Ningbo warehouse", { exact: true })).toBeVisible()
   }
 })
@@ -579,5 +620,28 @@ export const SupplierFbaMixedCartons = meta.story({
     await expect(canvas.getAllByRole("region", { name: /^Carton [123]$/ })).toHaveLength(3)
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     await expect(canvas.queryByText(/Enter.*FNSKU/)).toBeNull()
+  }
+})
+
+export const PackingListOnOrder = meta.story({
+  ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "ready" }),
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
+    await expect(await canvas.findByRole("button", { name: "Download packing list" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
+    await expect(canvas.getByRole("heading", { name: "Packing lists" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download Shipment 1 packing list" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "View packing" }))
+    await expect(canvas.getByText("Packed", { exact: true })).toBeVisible()
+  }
+})
+
+export const SupplierPackedMobile = meta.story({
+  ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "packed" }),
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Download packing list" })).toBeEnabled()
+    const heading = canvas.getByRole("heading", { name: "Shipment 1" })
+    await expect(heading.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
   }
 })

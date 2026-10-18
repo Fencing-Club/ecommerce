@@ -202,6 +202,7 @@ async function OrderPage(args: Args) {
           ),
           timeline: timeline.map((entry) => ({
             ...entry,
+            visibility: "shared" as const,
             revision: entry.revision && !prices ? unpricedOrder(entry.revision) : entry.revision
           })),
           documentGroups: documentGroups.map((group) => ({

@@ -67,7 +67,9 @@
     "checklist": "Liste de contrôle d’emballage",
     "cartonLabel": "Étiquette de carton",
     "shippingLabel": "Étiquette d’expédition",
-    "productLabel": "Étiquette produit"
+    "productLabel": "Étiquette produit",
+    "cartonLabels": "Étiquettes de carton",
+    "shippingLabels": "Étiquettes d’expédition"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",

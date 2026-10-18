@@ -6,7 +6,9 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { FormLabel, FormTextarea } from "./form-controls"
 import { FormError, SubmitButton } from "./form-feedback"
 import { FormSelect, SelectControl } from "./form-select"
+import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Field } from "./ui/field"
 
 export function ShipmentTransportSettings({
@@ -14,15 +16,18 @@ export function ShipmentTransportSettings({
   revision,
   initial,
   hasForwarder,
-  editable = true
+  editable = true,
+  compact = false
 }: {
   id: string
   revision: number
   initial: ShipmentTransport | null
   hasForwarder: boolean
   editable?: boolean
+  compact?: boolean
 }) {
   const t = useTranslations("shipments.transport")
+  const common = useTranslations("orders.builder")
   const serviceId = useId()
   const { form, submit } = useActionForm({
     schema: transportSchema,
@@ -32,6 +37,29 @@ export function ShipmentTransportSettings({
     toPayload: (transport) => ({ id, revision, expected: initial, transport })
   })
   const service = form.watch("service")
+  if (compact && initial) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">
+        <div className="flex flex-col gap-1">
+          <span>
+            {t(initial.service)} / {t(initial.collection)}
+          </span>
+          {initial.instructions && <p className="whitespace-pre-line text-muted-foreground">{initial.instructions}</p>}
+        </div>
+        {editable && (
+          <Dialog>
+            <DialogTrigger render={<Button variant="ghost" size="sm" />}>{common("edit")}</DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t("title")}</DialogTitle>
+              </DialogHeader>
+              <ShipmentTransportSettings id={id} revision={revision} initial={initial} hasForwarder={hasForwarder} />
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    )
+  }
   return (
     <Card>
       <CardHeader>

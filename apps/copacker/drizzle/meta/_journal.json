@@ -414,6 +414,13 @@
       "when": 1792274122769,
       "tag": "0058_warm_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792310597018,
+      "tag": "0059_curly_energizer",
+      "breakpoints": true
     }
   ]
 }

@@ -280,7 +280,16 @@
       "label": "评论",
       "placeholder": "发表评论…",
       "post": "发布",
-      "required": "请输入评论"
+      "required": "请输入评论",
+      "visibility": "评论可见范围",
+      "internal": "内部评论",
+      "messageSupplier": "给供应商留言",
+      "messageCustomer": "给客户留言",
+      "internalHint": "只有您的团队可以查看此评论。",
+      "supplierHint": "您的团队和供应商可以查看此消息。",
+      "customerHint": "您的团队和客户可以查看此消息。",
+      "sharedSupplier": "已与供应商共享",
+      "sharedCustomer": "已与客户共享"
     },
     "events": {
       "created": "已创建采购订单",
@@ -459,6 +468,7 @@
     "other": "其他"
   },
   "cartonEditor": {
+    "addProducts": "添加商品到纸箱",
     "addProductsTo": "向纸箱 {carton} 添加商品",
     "shipmentProducts": "此货件中的商品",
     "searchProducts": "搜索此货件中的商品",
@@ -484,16 +494,14 @@
     "actions": "纸箱 {carton} 操作",
     "duplicate": "复制纸箱",
     "delete": "删除纸箱",
-    "quantityPerCarton": "数量 / 箱",
-    "packsPerCarton": "包装数 / 箱",
-    "unitsPerCarton": "件数 / 箱",
+    "quantityPerCarton": "数量",
     "productQuantity": "{sku}：纸箱 {carton} 每箱数量",
     "unitCount": "{count} 件",
     "removeProduct": "从纸箱 {carton} 中移除 {sku}",
     "product": "产品",
     "leftToPack": "待装箱",
     "packCount": "{count} 包",
-    "addToCarton": "添加到纸箱 {carton}",
+    "addToCarton": "添加到纸箱",
     "selectedCount": "已选择 {count} 项",
     "cartonGroup": "箱 {cartons}"
   },

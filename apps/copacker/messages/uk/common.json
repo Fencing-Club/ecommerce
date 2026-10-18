@@ -67,7 +67,9 @@
     "checklist": "Контрольний список пакування",
     "cartonLabel": "Етикетка коробки",
     "shippingLabel": "Транспортна етикетка",
-    "productLabel": "Етикетка товару"
+    "productLabel": "Етикетка товару",
+    "cartonLabels": "Етикетки коробок",
+    "shippingLabels": "Транспортні етикетки"
   },
   "format": {
     "plusAmounts": "Плюс {amounts}",

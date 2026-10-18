@@ -67,7 +67,9 @@
     "checklist": "Pack-Checkliste",
     "cartonLabel": "Kartonetikett",
     "shippingLabel": "Versandetikett",
-    "productLabel": "Produktetikett"
+    "productLabel": "Produktetikett",
+    "cartonLabels": "Kartonetiketten",
+    "shippingLabels": "Versandetiketten"
   },
   "format": {
     "plusAmounts": "Zzgl. {amounts}",

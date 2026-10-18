@@ -1,4 +1,4 @@
-import { expect, within } from "storybook/test"
+import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { TabLinks } from "./tab-links"
 
@@ -12,6 +12,14 @@ const meta = preview.meta({
       { label: "With supplier", href: "/orders?status=submitted", current: false, count: 2 },
       { label: "Closed", href: "/orders?status=closed", current: false, count: 0 }
     ]
+  }
+})
+
+export const Controlled = meta.story({
+  args: { onSelect: fn() },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole("link", { name: /Drafts/ }))
+    await expect(args.onSelect).toHaveBeenCalledWith("/orders?status=draft")
   }
 })
 

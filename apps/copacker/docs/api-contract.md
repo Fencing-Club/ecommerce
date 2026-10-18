@@ -114,7 +114,7 @@ kept with that partner and change through the partner's commands.
 | order.submit | id, revision | Buyer, Orders: Edit. Sends the PO, emails a supplier that has joined, stores the PO PDF and creates the first packing draft; returns ok and shipmentId |
 | order.delete | id | Buyer, Orders: Edit. Deletes a draft with its documents, history and landed costs; a PO import saved as that draft goes back to review; returns redirect |
 | order.close | id | Buyer, Orders: Edit. Closes a sent PO: unpacked shipments are cancelled; refused unless every shipment is received, cancelled, or still packing with no Amazon request in progress |
-| order.comment | orderId, message | Orders: View; a comment on the PO's timeline |
+| order.comment | orderId, message, visibility (`internal` or `shared`) | Orders: View; internal comments are visible only to the authenticated workspace, shared comments to the buyer and supplier. Existing comments remain shared. |
 | landedCost.create | orderId, kind: freight, duty or other, description, amount | Buyer, Orders: Edit; returns the cost |
 | landedCost.delete | id | Buyer, Orders: Edit |
 | monthlyCost.create, monthlyCost.delete | cost fields, or id | Buyer admin; costs paid monthly that no platform reports |
@@ -139,7 +139,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
-| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
+| shipment.release | id, revision, optional bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
@@ -283,6 +283,11 @@ PDFs are limited to 32 MB and 1,000 pages and may not carry active content. Path
 the user. `GET /api/documents/:id` authorizes access to the order and returns a private attachment. Outdated documents
 can't be downloaded. Suppliers can't download carton or shipping labels before release. The PO and commercial invoice
 need prices. A forwarder reads only the invoice, packing list, carton labels and shipping labels.
+
+Adding `?bundle=true` to a carton or shipping label download combines the current shipment revision's labels of that
+type into one PDF, in numeric carton order. Carton and carrier labels stay separate. Original page sizes are preserved;
+all source documents and workspace permissions are checked again after assembly. The PO and shipment document lists
+show one download per label type and shipment. Individual source files remain stored for carton-to-label mapping.
 
 Sending a PO stores its PDF with the PO; a storage failure is logged as `po_document_failed` and doesn't undo sending,
 since the PDF is made again when it's emailed or downloaded.

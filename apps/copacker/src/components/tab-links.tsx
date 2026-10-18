@@ -15,7 +15,18 @@ type Tab = {
 // Tabs that change the URL: a list's saved views, or a record's sections. Each is a link, the current one marked with
 // aria-current and a 2px underline, and a count shows only when it's more than zero. A row too wide for the screen
 // scrolls sideways and keeps the current tab in view.
-export function TabLinks({ label, tabs, className }: { label: string; tabs: ReadonlyArray<Tab>; className?: string }) {
+export function TabLinks({
+  label,
+  tabs,
+  className,
+  onSelect
+}: {
+  label: string
+  tabs: ReadonlyArray<Tab>
+  className?: string
+  // Controlled previews can select a view without leaving their story.
+  onSelect?: (href: string) => void
+}) {
   const locale = useLocale()
   const nav = useRef<HTMLElement>(null)
   const currentHref = tabs.find((tab) => tab.current)?.href
@@ -38,6 +49,14 @@ export function TabLinks({ label, tabs, className }: { label: string; tabs: Read
           to="."
           href={tab.href}
           aria-current={tab.current ? "page" : undefined}
+          onClickCapture={
+            onSelect
+              ? (event) => {
+                  event.preventDefault()
+                  onSelect(tab.href)
+                }
+              : undefined
+          }
           className={cn(
             "-mb-px inline-flex h-10 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50",
             tab.current && "border-foreground text-foreground"

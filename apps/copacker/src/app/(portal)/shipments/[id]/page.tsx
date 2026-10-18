@@ -8,6 +8,8 @@ import {
   Clock,
   Download,
   ExternalLink,
+  Factory,
+  MapPin,
   Loader2,
   PackageCheck
 } from "lucide-react"
@@ -136,17 +138,92 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         {editsShipments ? nextAction[step.next.step] || null : null}
       </PageHeader>
 
-      {!editable && <ShipmentDestination {...delivery} />}
-      <ShipmentTransportSettings
-        key={JSON.stringify(shipment.transport)}
-        id={id}
-        revision={shipment.revision}
-        initial={shipment.transport}
-        hasForwarder={!!snapshot.via}
-        editable={
-          isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
-        }
-      />
+      {!editable && (
+        <div className="overflow-hidden rounded-lg border">
+          <div className="flex flex-wrap items-center gap-3 border-b bg-muted/50 px-4 py-3 text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Factory className="size-4" aria-hidden />
+              {supplier.name}
+            </span>
+            <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+            {snapshot.via && delivery.addresses[0] && (
+              <>
+                <span>{delivery.addresses[0].name}</span>
+                <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+              </>
+            )}
+            <span className="inline-flex items-center gap-2">
+              <MapPin className="size-4" aria-hidden />
+              {destinationName}
+            </span>
+          </div>
+          <div className="grid gap-6 p-4 sm:grid-cols-2">
+            <section className="min-w-0">
+              <div className="mb-2 flex flex-col gap-1">
+                <CardTitle>{t("pickup.title")}</CardTitle>
+                {shipment.packing && (
+                  <CardDescription>
+                    {t("pickup.ready", {
+                      date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC"
+                      })
+                    })}
+                  </CardDescription>
+                )}
+              </div>
+              <div>
+                {origin && (
+                  <address className="flex flex-col gap-0.5 text-sm text-muted-foreground not-italic">
+                    <span className="font-medium text-foreground">{origin.name}</span>
+                    <span>{[origin.addressLine1, origin.addressLine2].filter(Boolean).join(", ")}</span>
+                    <span>
+                      {origin.city}, {origin.stateOrRegion} {origin.postalCode}, {origin.countryCode}
+                    </span>
+                    {origin.phoneNumber && (
+                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                        {formatPhone(origin.phoneNumber)}
+                      </a>
+                    )}
+                    {origin.email && <span>{origin.email}</span>}
+                  </address>
+                )}
+              </div>
+            </section>
+
+            <ShipmentDestination {...delivery} compact />
+          </div>
+          {shipment.transport && (
+            <ShipmentTransportSettings
+              compact
+              key={JSON.stringify(shipment.transport)}
+              id={id}
+              revision={shipment.revision}
+              initial={shipment.transport}
+              hasForwarder={!!snapshot.via}
+              editable={
+                isBuyer &&
+                editsShipments &&
+                canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+              }
+            />
+          )}
+        </div>
+      )}
+      {(editable || !shipment.transport) && (
+        <ShipmentTransportSettings
+          key={JSON.stringify(shipment.transport)}
+          id={id}
+          revision={shipment.revision}
+          initial={shipment.transport}
+          hasForwarder={!!snapshot.via}
+          editable={
+            isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+          }
+        />
+      )}
       <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
       {shipment.status === "packed" && <p className="text-sm text-muted-foreground">{step.next.message}</p>}
       {shipment.issue && (
@@ -356,54 +433,18 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             ))}
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("pickup.title")}</CardTitle>
-                {shipment.packing && (
-                  <CardDescription>
-                    {t("pickup.ready", {
-                      date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        timeZone: "UTC"
-                      })
-                    })}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                {origin && (
-                  <address className="flex flex-col gap-0.5 text-sm text-muted-foreground not-italic">
-                    <span className="font-medium text-foreground">{origin.name}</span>
-                    <span>{[origin.addressLine1, origin.addressLine2].filter(Boolean).join(", ")}</span>
-                    <span>
-                      {origin.city}, {origin.stateOrRegion} {origin.postalCode}, {origin.countryCode}
-                    </span>
-                    {origin.phoneNumber && (
-                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
-                        {formatPhone(origin.phoneNumber)}
-                      </a>
-                    )}
-                    {origin.email && <span>{origin.email}</span>}
-                  </address>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("documents.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {visibleDocs.length ? (
-                  <DocumentList documents={visibleDocs} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("documents.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {visibleDocs.length ? (
+                <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+              ) : (
+                <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
+              )}
+            </CardContent>
+          </Card>
 
           {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
           {editsShipments &&

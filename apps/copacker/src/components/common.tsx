@@ -294,29 +294,44 @@ const documentKinds: Record<string, keyof typeof messages.documents> = {
 export function DocumentList({
   documents
 }: {
-  documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null }>
+  documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null; shipmentId?: string | null }>
 }) {
   const t = useTranslations("common.documents")
+  const seen = new Set<string>()
+  const rows = documents.filter((doc) => {
+    if (!doc.shipmentId || (doc.kind !== "carton_label" && doc.kind !== "shipping_label")) {
+      return true
+    }
+    const key = `${doc.shipmentId}:${doc.kind}`
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
   return (
     <ul className="divide-y">
-      {documents.map((d) => {
+      {rows.map((d) => {
+        const bundle = !!d.shipmentId && (d.kind === "carton_label" || d.kind === "shipping_label")
         const kindKey = d.kind ? documentKinds[d.kind] : undefined
         const kind = kindKey && t(kindKey)
         return (
           <li key={d.id}>
             {/* The row bleeds into the card's padding on hover, so its content lines up with the card's. */}
             <a
-              href={`/api/documents/${d.id}`}
+              href={`/api/documents/${d.id}${bundle ? "?bundle=true" : ""}`}
               className="group/document -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium">
                   <span className="sr-only">{t("download")} </span>
-                  {kind ?? fileName(d.name)}
-                  {d.cartonId && ` ${d.cartonId}`}
+                  {bundle
+                    ? t(d.kind === "carton_label" ? "cartonLabels" : "shippingLabels")
+                    : (kind ?? fileName(d.name))}
+                  {!bundle && d.cartonId && ` ${d.cartonId}`}
                 </span>
-                {kind && <span className="truncate text-xs text-muted-foreground">{fileName(d.name)}</span>}
+                {kind && !bundle && <span className="truncate text-xs text-muted-foreground">{fileName(d.name)}</span>}
               </span>
               <span
                 aria-hidden
