@@ -43,6 +43,10 @@ The shopify-economics collector reads bounded financial/return evidence independ
 
 Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
 a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries. Opt-in reuse requires an exact report scope and a caller-defined creation-time cutoff, including the reimbursement daily-content refresh interval.
+Report creation uses five- then ten-minute backoff for HTTP 429, within the caller deadline; report reads retain
+minute-scale retries. This accommodates the [SP-API team's three-per-five-minute clarification](https://github.com/amzn/selling-partner-api-models/discussions/3686)
+without treating the nominal reference-page rate as a guarantee. Longer `Retry-After` values still take precedence.
+
 AWD shipment lists and receipt details also retry transient read failures with a five-minute bound and optional
 ownership checks; neither path retries mutations or suppresses invalid documents.
 

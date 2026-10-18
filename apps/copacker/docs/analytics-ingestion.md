@@ -44,8 +44,8 @@ validation (`report_outside_period`) and provider requests (`report_failed`). No
 are exposed in these failure codes. Failed refreshes preserve previously imported evidence and coverage bounds.
 
 
-Report HTTP throttling now waits at least 60 seconds before retrying, doubles that interval for the final retry,
-and respects longer Retry-After values within the request deadline. Poll/document retries keep the existing report ID.
+Report creation throttling waits five minutes, then ten minutes for the final retry; report reads wait one minute,
+then two. Both respect longer Retry-After values within the request deadline. Poll/document retries keep the existing report ID.
 Budgeted fulfillment-shipment creates still disable automatic creation retries. FBM recovery can reuse an exact completed
 report created within the last day, and no longer disables ordinary creation retries.
 

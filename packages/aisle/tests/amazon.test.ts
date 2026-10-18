@@ -706,6 +706,23 @@ describe("report throttling", () => {
     expect(calls[2]?.href).toBe(calls[3]?.href)
     expect(calls.filter((url) => url.pathname === "/reports/2021-06-30/reports")).toHaveLength(1)
   })
+  it("waits five then ten minutes for report creation quota without changing the requested scope", async () => {
+    const { api, calls, times } = client([
+      new Response(null, { status: 429 }),
+      new Response(null, { status: 429 }),
+      { reportId: "report" },
+      { processingStatus: "DONE", reportDocumentId: "document" },
+      { url: "https://reports.example.com/report" },
+      new Response("data")
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 20 * 60 * 1000 })).resolves.toBe("data"),
+      vi.runAllTimersAsync()
+    ])
+    expect(times[1]! - times[0]!).toBeGreaterThanOrEqual(300000)
+    expect(times[2]! - times[1]!).toBeGreaterThanOrEqual(600000)
+    expect(calls.slice(0, 3).map((url) => url.href)).toEqual(Array(3).fill(calls[0]?.href))
+  })
   it("honors a longer Retry-After and reports the failed operation when the deadline cannot fit it", async () => {
     const { api, calls } = client([new Response(null, { status: 429, headers: { "retry-after": "300" } })])
     await expect(api.report(input, { deadline: Date.now() + 120000 })).rejects.toMatchObject({
