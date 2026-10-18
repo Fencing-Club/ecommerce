@@ -35,8 +35,8 @@ export async function syncAmazonReceipts(
         .toSorted((a, b) => (checked.get(a.shipmentId) ?? 0) - (checked.get(b.shipmentId) ?? 0))
         .slice(0, 40)
       let failed = false
-      stage = "items"
       for (const shipment of wanted) {
+        stage = "items"
         await assertOwned()
         const rows = []
         try {
@@ -78,9 +78,11 @@ export async function syncAmazonReceipts(
           }
           continue
         }
-        // Persistence failures stop this network; they are not malformed provider documents.
+        // Persistence failures stop both networks; they are not malformed provider documents.
+        stage = "publish"
         await publishAnalyticsFeed(input, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
       }
+      stage = "publish"
       await publishAnalyticsFeed(input, dataset, [], { error: failed ? "collection_failed" : null }, assertOwned)
     } catch (error) {
       console.warn("Amazon receipt collection failed", { network, stage, ...amazonFailureDetails(error) })
@@ -96,6 +98,9 @@ export async function syncAmazonReceipts(
           )
         )
       await publishAnalyticsFeed(input, dataset, [], { ...prior?.state, error: "collection_failed" }, assertOwned)
+      if (stage === "publish") {
+        return
+      }
     }
   }
 }

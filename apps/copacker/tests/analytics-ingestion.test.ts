@@ -452,3 +452,38 @@ it("stops receipt requests when the sync revision changes before a checkpoint", 
   expect(awdShipments).not.toHaveBeenCalled()
   expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
 })
+
+it("stops both receipt networks after recording a transient checkpoint failure", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  const receipt = vi.fn<Amazon["fbaReceiptItems"]>(async () => [])
+  const awdShipments = vi.fn<Amazon["awdShipments"]>(async () => [])
+  const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(new Error("Database unavailable"))
+  try {
+    await syncAmazonReceipts(
+      {
+        orgId,
+        externalAccountId: "seller",
+        revision: 1,
+        amazon: {
+          fbaShipments: async () =>
+            ["first", "second"].map((shipmentId) => ({ shipmentId, name: null, status: "CLOSED" })),
+          fbaReceiptItems: receipt,
+          awdShipments,
+          awdReceiptItems: async (shipmentId) => ({ shipmentId, shipmentStatus: "CLOSED" })
+        }
+      },
+      async () => undefined
+    )
+    expect(receipt).toHaveBeenCalledTimes(1)
+    expect(awdShipments).not.toHaveBeenCalled()
+    expect(
+      (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "fba_inbound_receipts")?.state
+        .error
+    ).toBe("collection_failed")
+  } finally {
+    transaction.mockRestore()
+  }
+})
