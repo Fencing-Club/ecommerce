@@ -530,11 +530,19 @@
       "worksheet": "Die Datei benötigt ein Arbeitsblatt namens Cartons.",
       "unreadable": "Datei konnte nicht gelesen werden. Eine XLSX- oder CSV-Datei aus der Vorlage verwenden.",
       "number": "In {value} eine gültige positive Zahl eingeben.",
-      "sku": "SKU ist nicht in dieser Sendung: {value}.",
+      "sku": "Lieferanten-SKU {value} und Produktangaben müssen genau einem Produkt dieser Sendung entsprechen.",
       "cartonId": "Eine Karton-ID mit 1–60 Zeichen eingeben.",
       "measurements": "Zeilen desselben Kartons müssen dieselbe Anzahl, Abmessungen und dasselbe Gewicht haben.",
       "duplicateProduct": "Dieser Karton enthält {value} mehrfach.",
       "limit": "Eine Sendung darf höchstens 1.000 Kartons enthalten."
+    },
+    "template": {
+      "identity": "Die vorausgefüllte Lieferanten-SKU, das Produkt, die Variante und die Stückzahl pro Packung nicht ändern. Fehlende oder falsche Produktangaben vom Käufer korrigieren lassen.",
+      "rows": "Eine Zeile pro Produkt und Karton verwenden. Produktzeilen für weitere Kartons kopieren. Für gemeinsam verpackte Produkte dieselbe Carton ID verwenden. Nicht verwendete Verpackungszeilen leer lassen.",
+      "cartons": "Carton ID ist Ihre Referenz, keine Amazon-Etikettennummer. Für einzelne Kartons A1, A2 usw. mit Carton count 1 verwenden. Für identische Kartons eine höhere Anzahl eintragen: A1 mit Anzahl 3 ergibt A1, A1-2 und A1-3. Vorhandene IDs werden übersprungen.",
+      "quantity": "Quantity per carton zählt Packungen. Bei einem Zweierpack bedeutet Menge 10 insgesamt 20 Stück. Alle Kartons einer identischen Gruppe müssen dieselben Produkte und Mengen enthalten.",
+      "measurements": "Maße in Zentimetern und Gewicht in Kilogramm angeben. Anzahl, Maße und Gewicht in jeder Zeile mit derselben Carton ID wiederholen.",
+      "format": "Die weißen Verpackungszellen ausfüllen. Englische Überschriften und Blattname Cartons unverändert lassen. XLSX-Datei hochladen oder die Tabelle Cartons als CSV exportieren."
     }
   }
 }

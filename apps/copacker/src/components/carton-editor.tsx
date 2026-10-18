@@ -39,7 +39,13 @@ function NumberField({
   const format = useFormatter()
   if (readOnly) {
     return (
-      <span className={cn("flex h-9 items-center justify-end gap-2 px-3 tabular-nums", className)}>
+      <span
+        className={cn(
+          "flex h-9 items-center justify-end gap-2 px-3 tabular-nums",
+          className,
+          "h-auto w-auto flex-none px-0"
+        )}
+      >
         {prefix && <span className="text-xs text-muted-foreground">{prefix}</span>}
         {Number.isFinite(value) ? format.number(value) : "—"}
       </span>
@@ -259,7 +265,7 @@ export function CartonEditor({
     <section aria-label={title} className="@container/carton overflow-hidden rounded-lg border bg-card">
       <div className="grid grid-cols-[1fr_auto] items-center gap-3 bg-muted/60 p-4 @3xl/carton:grid-cols-[minmax(0,1fr)_auto_auto]">
         <h3 className="text-sm font-semibold">{heading}</h3>
-        <div className="order-3 col-span-2 grid grid-cols-2 items-center gap-3 @3xl/carton:order-2 @3xl/carton:col-span-1 @3xl/carton:flex @3xl/carton:gap-5">
+        <div className="order-3 col-span-2 flex flex-wrap items-center gap-x-5 gap-y-3 @3xl/carton:order-2 @3xl/carton:col-span-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{t("count")}</span>
             <NumberField
@@ -274,9 +280,9 @@ export function CartonEditor({
               className="w-20"
             />
           </div>
-          <div className="order-3 col-span-2 flex flex-col gap-2 @3xl/carton:order-2 @3xl/carton:flex-row @3xl/carton:items-center">
+          <div className="order-3 flex w-full flex-wrap items-center gap-2 @xl/carton:order-2 @xl/carton:w-auto">
             <span className="shrink-0 text-xs text-muted-foreground">{t("dimensions")}</span>
-            <div className="flex min-w-0 gap-2">
+            <div className="flex min-w-0 flex-1 gap-2 @xl/carton:flex-none">
               {(["length", "width", "height"] as const).map((field) => (
                 <NumberField
                   key={field}
@@ -288,12 +294,12 @@ export function CartonEditor({
                   invalid={invalid(field)}
                   readOnly={readOnly}
                   errorId={errorId}
-                  className="flex-1 @3xl/carton:w-18"
+                  className="min-w-0 flex-1 @xl/carton:w-18 @xl/carton:flex-none"
                 />
               ))}
             </div>
           </div>
-          <div className="order-2 flex items-center justify-end gap-2 @3xl/carton:order-3">
+          <div className="order-2 flex items-center gap-2 @xl/carton:order-3">
             <span className="text-xs text-muted-foreground">{t("weight")}</span>
             <NumberField
               label={`${title}: ${packing("dimensions.weight")}`}
@@ -336,7 +342,7 @@ export function CartonEditor({
           </DropdownMenu>
         )}
       </div>
-      <div className="hidden justify-between gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground sm:flex">
+      <div className="hidden justify-between gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground @sm/carton:flex">
         <span>{packing("product")}</span>
         <span className={cn("w-36 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
       </div>
@@ -348,11 +354,14 @@ export function CartonEditor({
           }
           const field = `items.${index}`
           return (
-            <div key={content.itemId} className="flex flex-wrap items-start justify-between gap-4 p-4 sm:flex-nowrap">
-              <div className="w-full min-w-0 sm:flex-1">
+            <div
+              key={content.itemId}
+              className="flex flex-wrap items-start justify-between gap-4 p-4 @sm/carton:flex-nowrap"
+            >
+              <div className="w-full min-w-0 [overflow-wrap:anywhere] @sm/carton:flex-1">
                 <ProductIdentity item={item} showPackSize={false} />
               </div>
-              <span className="self-center text-xs sm:hidden">
+              <span className="self-center text-xs @sm/carton:hidden">
                 {item.piecesPerSet > 1 ? t("packsPerCarton") : t("unitsPerCarton")}
                 {item.piecesPerSet > 1 && (
                   <span className="mt-1 block text-muted-foreground">
@@ -361,9 +370,9 @@ export function CartonEditor({
                 )}
               </span>
               <div className="ms-auto flex items-start gap-3">
-                <div className="flex w-28 flex-col gap-1 sm:w-36">
+                <div className="flex w-28 flex-col gap-1 @sm/carton:w-36">
                   {item.piecesPerSet > 1 && (
-                    <p className="hidden text-end text-xs text-muted-foreground sm:block">
+                    <p className="hidden text-end text-xs text-muted-foreground @sm/carton:block">
                       {identity("perPack", { count: item.piecesPerSet })}
                     </p>
                   )}

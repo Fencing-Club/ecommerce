@@ -530,11 +530,19 @@
       "worksheet": "Il file deve contenere un foglio chiamato Cartons.",
       "unreadable": "Impossibile leggere il file. Usa un file XLSX o CSV basato sul modello.",
       "number": "Inserisci un numero positivo valido in {value}.",
-      "sku": "Lo SKU non appartiene a questa spedizione: {value}.",
+      "sku": "Lo SKU fornitore {value} e i dettagli devono corrispondere a un solo prodotto di questa spedizione.",
       "cartonId": "Inserisci un ID cartone da 1 a 60 caratteri.",
       "measurements": "Le righe di questo cartone devono avere lo stesso numero di cartoni, dimensioni e peso.",
       "duplicateProduct": "Questo cartone include {value} più di una volta.",
       "limit": "Una spedizione può contenere fino a 1.000 cartoni."
+    },
+    "template": {
+      "identity": "Non modificare SKU fornitore, prodotto, variante e pezzi per confezione precompilati. Chiedi all’acquirente di correggere i dati mancanti o errati.",
+      "rows": "Usa una riga per prodotto in ogni cartone. Copia la riga del prodotto per altri cartoni. Ripeti il Carton ID per prodotti imballati insieme. Lascia vuote le celle di imballaggio inutilizzate.",
+      "cartons": "Carton ID è il tuo riferimento, non il numero di etichetta Amazon. Usa A1, A2, ecc. con Carton count 1 per cartoni singoli. Per cartoni identici, indica un numero maggiore di 1: A1 con 3 genera A1, A1-2 e A1-3. Gli ID esistenti vengono saltati.",
+      "quantity": "Quantity per carton conta le confezioni. Per una confezione da 2, quantità 10 significa 20 pezzi. Tutti i cartoni di un gruppo identico devono contenere gli stessi prodotti e quantità.",
+      "measurements": "Inserisci le dimensioni in centimetri e il peso in chilogrammi. Ripeti numero di cartoni, dimensioni e peso su ogni riga con lo stesso Carton ID.",
+      "format": "Compila le celle bianche di imballaggio. Mantieni le intestazioni inglesi e il nome del foglio Cartons. Carica il file XLSX o esporta la tabella Cartons in CSV."
     }
   }
 }

@@ -530,11 +530,19 @@
       "worksheet": "The file needs a worksheet named Cartons.",
       "unreadable": "Couldn’t read this file. Use an XLSX or CSV file from the template.",
       "number": "Enter a valid positive number in {value}.",
-      "sku": "SKU is not in this shipment: {value}.",
+      "sku": "Supplier SKU {value} and product details must match exactly one product in this shipment.",
       "cartonId": "Enter a carton ID of 1–60 characters.",
       "measurements": "Rows for this carton must have the same carton count, dimensions, and weight.",
       "duplicateProduct": "This carton lists {value} more than once.",
       "limit": "A shipment can contain up to 1,000 cartons."
+    },
+    "template": {
+      "identity": "Keep the prefilled supplier SKU, product, variant and units per pack unchanged. Ask the buyer to correct missing or incorrect product details.",
+      "rows": "Use one row per product in a carton. Copy a product row for additional cartons. Repeat the Carton ID for products packed together. Leave unused packing rows blank.",
+      "cartons": "Carton ID is your reference, not an Amazon label number. Use A1, A2, etc. with Carton count 1 for separate cartons. For identical cartons, use a count greater than 1: A1 with count 3 becomes A1, A1-2 and A1-3. Existing IDs are skipped.",
+      "quantity": "Quantity per carton counts packs. For a 2-pack, quantity 10 means 20 pieces. Every carton in an identical group must have the same products and quantities.",
+      "measurements": "Enter dimensions in centimetres and weight in kilograms. Repeat the same count, dimensions and weight on every row sharing a Carton ID.",
+      "format": "Fill the white packing cells. Keep the English headers and Cartons sheet name unchanged. Upload the XLSX workbook or export the Cartons table as CSV."
     }
   }
 }

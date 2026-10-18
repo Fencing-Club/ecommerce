@@ -103,3 +103,12 @@ reference examples for repeated headings and intact carton groups. Stories cover
 mobile, loading, generation failure, and missing carrier assignments. Unit tests inspect actual PDFs for page size,
 continuation headers, label identity, and group integrity. Fonts, complex scripts, and long content also require visual
 review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
+
+## Carton import workbook
+
+The download has one prefilled `Cartons` table and a localized `Instructions` sheet. Supplier SKU, product, variant,
+and units per pack identify each product; unchanged reference cells are shaded. The importer rejects ambiguous supplier
+SKUs instead of guessing, and ignores unused product rows until packing values are entered. Column headers and the
+`Cartons` worksheet name remain stable in English for XLSX and CSV imports. Instructions use the current app language;
+Urdu workbook sheets read right to left. A carton ID identifies a physical carton or an identical-carton group, not an
+Amazon label. Group expansion and numbering follow the shared carton-group implementation.

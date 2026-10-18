@@ -1318,7 +1318,8 @@ export async function downloadAmazonLabels(raw: string) {
   ) {
     throw new Error("Amazon returned an unsupported label download host")
   }
-  const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(30000) })
+  // Workers supports manual redirects; the status check below rejects them without following another host.
+  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(30000) })
   if (!response.ok || !response.body) {
     throw new Error("Amazon label download failed")
   }

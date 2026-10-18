@@ -530,11 +530,19 @@
       "worksheet": "El archivo necesita una hoja llamada Cartons.",
       "unreadable": "No se pudo leer el archivo. Usa un archivo XLSX o CSV basado en la plantilla.",
       "number": "Ingresa un número positivo válido en {value}.",
-      "sku": "El SKU no pertenece a este envío: {value}.",
+      "sku": "El SKU del proveedor {value} y los datos deben coincidir con un solo producto de este envío.",
       "cartonId": "Ingresa un ID de caja de 1 a 60 caracteres.",
       "measurements": "Las filas de esta caja deben tener la misma cantidad de cajas, dimensiones y peso.",
       "duplicateProduct": "Esta caja incluye {value} más de una vez.",
       "limit": "Un envío puede contener hasta 1,000 cajas."
+    },
+    "template": {
+      "identity": "No cambies el SKU del proveedor, producto, variante ni unidades por paquete precargados. Pide al comprador que corrija los datos faltantes o incorrectos.",
+      "rows": "Usa una fila por producto en cada caja. Copia la fila del producto para cajas adicionales. Repite el Carton ID para productos empacados juntos. Deja vacías las celdas de empaque que no uses.",
+      "cartons": "Carton ID es tu referencia, no el número de etiqueta de Amazon. Usa A1, A2, etc. con Carton count 1 para cajas individuales. Para cajas idénticas, indica más de 1: A1 con cantidad 3 genera A1, A1-2 y A1-3. Se omiten los identificadores existentes.",
+      "quantity": "Quantity per carton cuenta paquetes. Para un paquete de 2, una cantidad de 10 equivale a 20 piezas. Todas las cajas de un grupo idéntico deben contener los mismos productos y cantidades.",
+      "measurements": "Ingresa las dimensiones en centímetros y el peso en kilogramos. Repite la cantidad de cajas, dimensiones y peso en cada fila con el mismo Carton ID.",
+      "format": "Llena las celdas blancas de empaque. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la tabla Cartons como CSV."
     }
   }
 }

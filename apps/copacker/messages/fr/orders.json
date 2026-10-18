@@ -530,11 +530,19 @@
       "worksheet": "Le fichier doit contenir une feuille nommée Cartons.",
       "unreadable": "Impossible de lire ce fichier. Utilisez un fichier XLSX ou CSV issu du modèle.",
       "number": "Saisissez un nombre positif valide dans {value}.",
-      "sku": "Le SKU ne figure pas dans cet envoi : {value}.",
+      "sku": "Le SKU fournisseur {value} et les détails doivent correspondre à un seul produit de cet envoi.",
       "cartonId": "Saisissez un identifiant de carton de 1 à 60 caractères.",
       "measurements": "Les lignes de ce carton doivent avoir le même nombre de cartons, les mêmes dimensions et le même poids.",
       "duplicateProduct": "Ce carton contient plusieurs fois {value}.",
       "limit": "Un envoi peut contenir jusqu’à 1 000 cartons."
+    },
+    "template": {
+      "identity": "Ne modifiez pas le SKU fournisseur, le produit, la variante ni le nombre de pièces par lot préremplis. Demandez à l’acheteur de corriger les données manquantes ou incorrectes.",
+      "rows": "Utilisez une ligne par produit et par carton. Copiez une ligne produit pour les cartons supplémentaires. Répétez le Carton ID pour les produits emballés ensemble. Laissez vides les cellules d’emballage inutilisées.",
+      "cartons": "Carton ID est votre référence, pas un numéro d’étiquette Amazon. Utilisez A1, A2, etc. avec Carton count 1 pour des cartons distincts. Pour des cartons identiques, indiquez un nombre supérieur à 1 : A1 avec 3 donne A1, A1-2 et A1-3. Les identifiants existants sont ignorés.",
+      "quantity": "Quantity per carton compte les lots. Pour un lot de 2, une quantité de 10 représente 20 pièces. Les cartons d’un groupe identique doivent contenir les mêmes produits et quantités.",
+      "measurements": "Indiquez les dimensions en centimètres et le poids en kilogrammes. Répétez le nombre, les dimensions et le poids sur chaque ligne ayant le même Carton ID.",
+      "format": "Remplissez les cellules d’emballage blanches. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le classeur XLSX ou exportez la table Cartons au format CSV."
     }
   }
 }

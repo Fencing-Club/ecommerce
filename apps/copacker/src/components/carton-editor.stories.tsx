@@ -131,3 +131,45 @@ export const Packed = meta.story({
     await expect(canvas.getByText("20 units")).toBeVisible()
   }
 })
+
+export const NarrowPacked = meta.story({
+  args: { readOnly: true },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 620, maxWidth: "100%" }}>
+        <Story />
+      </div>
+    )
+  ],
+  play: async ({ canvas }) => {
+    const region = canvas.getByRole("region", { name: "Carton 1" })
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
+    await expect(canvas.getByText("20 units")).toBeVisible()
+  }
+})
+export const MobilePacked = meta.story({
+  args: { readOnly: true },
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  play: async ({ canvas }) => {
+    const region = canvas.getByRole("region", { name: "Carton 1" })
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
+    await expect(canvas.getByText("20 units")).toBeVisible()
+  }
+})
+export const LongSku = meta.story({
+  args: {
+    readOnly: true,
+    products: products.map((item) => ({ ...item, buyerSku: `${item.buyerSku}-LONG-SUPPLIER-REFERENCE-1234567890` }))
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 400, maxWidth: "100%" }}>
+        <Story />
+      </div>
+    )
+  ],
+  play: async ({ canvas }) => {
+    const sku = canvas.getAllByText(/LONG-SUPPLIER-REFERENCE/)[0]!
+    await expect(sku.scrollWidth).toBeLessThanOrEqual(sku.clientWidth)
+  }
+})
