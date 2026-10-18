@@ -63,7 +63,7 @@ A dedicated E2E process isolates its lifecycle and build output, not its databas
 | WorkOS redirects/logout | Exact primary `https://local.copacker.ai/callback` and logout origin; retain preview, worktree/E2E and CI entries and production defaults | Saved and read back October 17; obsolete localhost and Railway entries removed. Application-scoped redirect mutation preserves existing IDs |
 | Google Maps local key | Exact `https://local.copacker.ai/*` alongside worktree wildcard; Maps JavaScript API and Places API (New) restrictions | Saved October 17; obsolete localhost port referrers removed |
 | Google through WorkOS | Keep the existing Google → WorkOS callback | No upstream change; test WorkOS → primary app after activation |
-| Amazon Ads relay | Exact `https://local.copacker.ai` in `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay, alongside the worktree pattern | Primary ignored `.env` and GitHub staging release settings updated October 17; apply staging settings through the normal release |
+| Amazon Ads relay | Exact `https://local.copacker.ai` in `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay, alongside the worktree pattern | Primary ignored `.env` and GitHub staging release settings updated October 17; staging applies these settings through the normal release |
 | eBay local RuName | Change accepted URL to `https://local.copacker.ai/api/connections/ebay`, declined URL to `https://local.copacker.ai/settings#integrations` | Existing registration still targets `main.local.copacker.ai`; pending portal update |
 | Other direct OAuth integrations | Register each exact new callback shown by the app before enabling the integration | Per-integration opt-in; no wildcard assumption |
 | Webhooks | Keep app handlers; if enabled, point an owned public tunnel at them and set `WEBHOOK_BASE_URL` | Optional; hosted receiver remains deferred |
@@ -83,7 +83,7 @@ The snapshot below records the earlier rollout. It does not certify activation o
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
 | GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
 | Public development hooks | No default subdomain; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
-| eBay local OAuth (2026-10-15) | Main checkout RuName `Andrew_Craswell-AndrewCr-Copack-kmslwycva` maps to `https://main.local.copacker.ai/api/connections/ebay`; local `.env` selects it | Each additional worktree needs its own exact callback registration; see [eBay configuration](notifications.md#keys-and-signing-in) |
+| eBay local OAuth (updated 2026-10-17) | Primary checkout RuName `Andrew_Craswell-AndrewCr-Copack-kmslwycva` maps to `https://local.copacker.ai/api/connections/ebay`, declined to `https://local.copacker.ai/settings#integrations`; local `.env` selects it | Saved and verified after reload; production/staging entries unchanged. Each additional worktree needs its own exact registration; see [eBay configuration](notifications.md#keys-and-signing-in) |
 | Other integration dashboards | Exact callback changes are specified in the register below | Shopify, Amazon and eBay local callbacks are opt-in per integration worktree; not automatically registered |
 
 The initial Storybook deployments use each environment's currently deployed application source: staging
@@ -112,6 +112,13 @@ preview/worktree/E2E registrations and CI's `127.0.0.1:3005`, while replacing ol
 the exact primary local callback and logout origin. Google OAuth still returns to the unchanged WorkOS URI; Amazon
 Ads retains production/staging return URLs and uses the staging relay for local authorization. Aisle and Aisle Dev
 remain private draft SP-API apps; their inspected registration forms expose no browser callback fields.
+eBay's existing local RuName was updated to the exact primary local callback and declined URL and verified after
+reload; production/staging callbacks and the selected production RuName remain unchanged.
+
+Post-cleanup Places Autocomplete checks returned HTTP 200 with suggestions for `https://local.copacker.ai/`,
+`https://staging.copacker.ai/` and `https://copacker.ai/`. The removed `http://localhost:3000/` and both retired
+Railway origins returned HTTP 403 with `API_KEY_HTTP_REFERRER_BLOCKED`. These verify the referrer restrictions,
+not a complete OAuth reconnect or browser address-entry workflow.
 
 The Cloudflare release embeds the environment's restricted browser key during its web build. Do not add these keys to
 the background executor or fixture Storybook previews.
