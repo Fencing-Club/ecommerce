@@ -278,7 +278,11 @@ export async function downloadAdsReport(url: string) {
     throw new Error("Unexpected Amazon Ads report location")
   }
   // Signed report downloads must never receive the Ads token or client secret.
-  const response = await adsFetch(location, { redirect: "error", signal: AbortSignal.timeout(60000) }, "download")
+  // Workers rejects redirect: "error" before fetching. Manual mode preserves the no-redirect policy.
+  const response = await adsFetch(location, { redirect: "manual", signal: AbortSignal.timeout(60000) }, "download")
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error("Unexpected Amazon Ads report redirect")
+  }
   if (!response.ok) {
     throw new AdsRequestError(response.status, "download")
   }
