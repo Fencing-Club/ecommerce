@@ -68,8 +68,6 @@ export async function syncAmazonReceipts(
               }
             })
           }
-          // Checkpoint each successful shipment. A later provider failure must not discard this progress.
-          await publishAnalyticsFeed(input, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
         } catch (error) {
           await assertOwned()
           failed = true
@@ -78,7 +76,10 @@ export async function syncAmazonReceipts(
           if (error instanceof ProviderError && [401, 403, 429, 503].includes(error.status)) {
             break
           }
+          continue
         }
+        // Persistence failures stop this network; they are not malformed provider documents.
+        await publishAnalyticsFeed(input, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
       }
       await publishAnalyticsFeed(input, dataset, [], { error: failed ? "collection_failed" : null }, assertOwned)
     } catch (error) {
