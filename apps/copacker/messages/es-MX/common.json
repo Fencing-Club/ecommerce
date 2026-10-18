@@ -52,7 +52,8 @@
     "notInvited": "Sin invitar",
     "accepted": "Aceptado",
     "declined": "Rechazado",
-    "atForwarder": "Con el agente de carga"
+    "atForwarder": "Con el agente de carga",
+    "packed": "Empacado"
   },
   "destinations": {
     "amazon": "Amazon",

@@ -354,5 +354,9 @@
   "awdOriginDiffers": "L’indirizzo di ritiro differisce da Amazon. Controlla via, interno, CAP e paese.",
   "linkAwdOnly": "Solo una bozza di imballaggio AWD può collegare una spedizione AWD esistente.",
   "awdProductsDiffer": "La spedizione Amazon contiene prodotti o quantità estranei a questo ordine AWD.",
-  "awdAlreadyLinked": "Questa spedizione Amazon è già collegata a un ordine di acquisto."
+  "awdAlreadyLinked": "Questa spedizione Amazon è già collegata a un ordine di acquisto.",
+  "transportChanged": "Trasporto modificato o già rilasciato. Ricarica la spedizione.",
+  "transportForwarderMissing": "Aggiungi prima una tappa presso uno spedizioniere.",
+  "packetDestinationUnavailable": "Conferma l’indirizzo di consegna della spedizione prima di scaricare i documenti.",
+  "packetNoLabelsRequired": "Questa spedizione non richiede etichette di questo tipo."
 }

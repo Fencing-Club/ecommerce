@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "डिलीवरी का पता",
+      "pending": "शिपमेंट बनने के बाद Amazon डिलीवरी का पता तय करता है।",
+      "unavailable": "डिलीवरी का पता उपलब्ध नहीं है। खरीद आदेश या लिंक किया गया Amazon शिपमेंट देखें।"
+    },
     "metaTitle": "शिपमेंट",
     "title": "शिपमेंट {number}",
     "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
@@ -56,7 +61,9 @@
       "markShipped": "भेजा गया मार्क करें",
       "markReceived": "प्राप्त मार्क करें",
       "retry": "शिपमेंट फिर से आज़माएं",
-      "cancelInAmazon": "Amazon में रद्द करें"
+      "cancelInAmazon": "Amazon में रद्द करें",
+      "getAmazonLabels": "Amazon लेबल प्राप्त करें",
+      "createAmazonShipment": "Amazon शिपमेंट बनाएँ"
     },
     "needsAttention": "ध्यान देना ज़रूरी",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "खरीदार की मंज़ूरी का इंतज़ार"
     },
     "labels": {
-      "title": "शिपिंग लेबल",
-      "waiting": "शिपिंग लेबल का इंतज़ार",
-      "fba": "Amazon तक ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें।",
-      "agl": "Amazon में AGL ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें।"
+      "title": "लेबल",
+      "waiting": "लेबल की प्रतीक्षा"
     },
     "creating": {
       "title": "Amazon शिपमेंट बनाया जा रहा है",
@@ -89,7 +94,11 @@
       "downloadLabel": "सप्लायर पैकेट डाउनलोड करें",
       "download": "पैकेट डाउनलोड करें",
       "incompleteTitle": "सप्लायर पैकेट अधूरा है",
-      "waitingForLabels": "खरीदार के लेबल का इंतज़ार है"
+      "waitingForLabels": "खरीदार के लेबल का इंतज़ार है",
+      "cartonLabels": "कार्टन लेबल",
+      "unitLabels": "उत्पाद लेबल",
+      "carrierLabels": "वाहक लेबल",
+      "backToShipment": "शिपमेंट पर वापस जाएँ"
     },
     "cartons": {
       "title": "कार्टन",
@@ -185,5 +194,45 @@
     "fnskuLabel": "FNSKU {fnsku} का लेबल लगाएं।",
     "suffocationLabel": "हर पॉलीबैग पर दम घुटने की चेतावनी का लेबल लगाएं।",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "परिवहन",
+    "service": "सेवा",
+    "parcel": "पार्सल वाहक",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "माल वाहक",
+    "handoff": "हस्तांतरण स्थान",
+    "supplier": "आपूर्तिकर्ता",
+    "forwarder": "फ्रेट फ़ॉरवर्डर",
+    "collection": "हस्तांतरण का तरीका",
+    "pickup": "वाहक द्वारा पिकअप",
+    "dropoff": "वाहक को पहुँचाएँ",
+    "carrierLabels": "वाहक लेबल",
+    "perCarton": "प्रति कार्टन एक",
+    "none": "आवश्यक नहीं",
+    "instructions": "हस्तांतरण निर्देश",
+    "save": "परिवहन सहेजें",
+    "unconfirmed": "परिवहन की पुष्टि नहीं हुई"
+  },
+  "documentPreview": {
+    "settings": "डाउनलोड सेटिंग",
+    "language": "भाषा",
+    "paper": "पृष्ठ का आकार",
+    "preparing": "PDF तैयार हो रही है…",
+    "unavailable": "PDF उपलब्ध नहीं है",
+    "packet": "पैकेट डाउनलोड करें",
+    "fit": "स्क्रीन के अनुसार आकार",
+    "zoom": "पूर्वावलोकन बड़ा करें",
+    "download": "PDF डाउनलोड करें",
+    "changed": "यह पैकेट अब उपलब्ध नहीं है। वर्तमान दस्तावेज़ों के लिए पृष्ठ रीफ़्रेश करें।",
+    "previewLoading": "पूर्वावलोकन तैयार हो रहा है…",
+    "failed": "PDF नहीं बन सकी। आपके दस्तावेज़ और डाउनलोड सेटिंग सुरक्षित हैं।",
+    "preview": "PDF पूर्वावलोकन",
+    "page": "PDF पृष्ठ {page}",
+    "pageOf": "पृष्ठ {page} / {total}",
+    "title": "शिपिंग दस्तावेज़",
+    "document": "दस्तावेज़",
+    "issues": "डाउनलोड करने से पहले दस्तावेज़ों की ये समस्याएँ ठीक करें।",
+    "pages": "{count} पृष्ठ / {paper}"
   }
 }

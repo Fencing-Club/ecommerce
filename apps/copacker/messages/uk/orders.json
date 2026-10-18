@@ -178,6 +178,7 @@
     "preparation": "Підготовка",
     "suffocationWarning": "Етикетка із попередженням про ризик задушення",
     "instructionsPlaceholder": "Винятки щодо обробки чи маркування",
+    "markdownHint": "Підтримується Markdown: - для списків, 1. для нумерованих кроків і **жирний текст** для виділення.",
     "done": "Готово",
     "editCostSummary": "Редагувати<hidden> підсумок вартості</hidden>",
     "editCostSummaryTitle": "Редагувати підсумок вартості",
@@ -187,6 +188,7 @@
     "removeAdjustment": "Видалити коригування",
     "addAdjustment": "Додати коригування",
     "skuLabel": "Етикетка SKU",
+    "fnskuLabel": "Етикетка FNSKU",
     "amazonRequiresIt": "Обов’язково для Amazon",
     "shipments": "Відправлення",
     "groupingHint": "Виберіть товари, щоб перемістити їх між відправленнями.",
@@ -208,7 +210,14 @@
     "perPiece": "За штуку",
     "flatAmount": "Фіксована сума",
     "shipmentTotal": "Сума відправлення",
-    "expenseType": "Тип витрат"
+    "expenseType": "Тип витрат",
+    "prepNone": "Немає",
+    "polybag": "Поліетиленовий пакет",
+    "sealedPolybag": "Запаяний поліетиленовий пакет",
+    "chokingHazard": "Попередження про дрібні деталі",
+    "countryOfOriginLabel": "Етикетка країни походження",
+    "countryOfOriginCode": "Код країни",
+    "instructions": "Інструкції"
   },
   "revise": {
     "title": "Редагувати замовлення",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "Підготувати наступне відправлення",
     "offCopacker": {
       "title": "{supplier} не користується Copacker",
-      "description": "Надішліть замовлення на закупівлю електронною поштою самостійно, а потім внесіть коробки й рахунок у відправлення."
+      "description": "Надішліть постачальнику замовлення електронною поштою, а потім внесіть дані коробок у відправлення."
     },
     "columns": {
       "products": "Товари",
@@ -422,7 +431,8 @@
     "otherAddress": "Інша адреса",
     "readyForPickup": "Готово до забору",
     "addCartonProduct": "Додати товар до коробки",
-    "removeCartonProduct": "Видалити товар {number} з коробки"
+    "removeCartonProduct": "Видалити товар {number} з коробки",
+    "finishPacking": "Завершити пакування"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -447,5 +457,84 @@
     "surcharge": "Надбавка",
     "tariffs": "Тарифи",
     "other": "Інше"
+  },
+  "cartonEditor": {
+    "addProductsTo": "Додати товари до коробки {carton}",
+    "shipmentProducts": "Товари в цьому відправленні",
+    "searchProducts": "Шукати товари в цій відправці",
+    "alreadyAdded": "Уже додано",
+    "noProducts": "Товари не знайдено",
+    "cancel": "Скасувати",
+    "addSelected": "Додати товари: {count}",
+    "carton": "Коробка {carton}",
+    "count": "Коробки",
+    "length": "Довжина",
+    "width": "Ширина",
+    "height": "Висота",
+    "weight": "Вага",
+    "enterNumber": "Введіть додатне число для поля «{field}».",
+    "enterQuantity": "Введіть цілу кількість для {sku}.",
+    "addProductRequired": "Додайте товар до цієї коробки.",
+    "dimensions": "Розміри (см)",
+    "axis": {
+      "length": "Д",
+      "width": "Ш",
+      "height": "В"
+    },
+    "actions": "Дії з коробкою {carton}",
+    "duplicate": "Дублювати коробку",
+    "delete": "Видалити коробку",
+    "quantityPerCarton": "Кількість / коробка",
+    "packsPerCarton": "Упаковок / коробка",
+    "unitsPerCarton": "Одиниць / коробка",
+    "productQuantity": "{sku}: кількість у коробці {carton}",
+    "unitCount": "{count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+    "removeProduct": "Вилучити {sku} з коробки {carton}",
+    "product": "Товар",
+    "leftToPack": "Залишилось упакувати",
+    "packCount": "{count} пак.",
+    "addToCarton": "Додати до коробки {carton}",
+    "selectedCount": "Вибрано: {count}",
+    "cartonGroup": "Коробки {cartons}"
+  },
+  "cartonImport": {
+    "title": "Імпортувати коробки",
+    "reviewTitle": "Перевірити імпорт",
+    "downloadTemplate": "Завантажити шаблон",
+    "templateHint": "У шаблоні вкажіть вміст, кількість, розміри та вагу коробок.",
+    "downloadFailed": "Не вдалося завантажити шаблон.",
+    "formats": "XLSX або CSV, до 10 МБ",
+    "failed": "Не вдалося імпортувати коробки. Зміни не внесено.",
+    "templateMismatch": "Файл не відповідає шаблону",
+    "issues": "{count, plural, one {# помилка} few {# помилки} many {# помилок} other {# помилки}}",
+    "row": "Рядок {row}",
+    "mode": "Режим імпорту",
+    "add": "Додати коробки",
+    "replace": "Замінити пакування",
+    "cartonCount": "{count, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}",
+    "productCount": "{count, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}",
+    "measurements": "{length} × {width} × {height} см / {weight} кг",
+    "close": "Закрити",
+    "back": "Назад",
+    "cancel": "Скасувати",
+    "import": "Імпортувати коробки",
+    "review": "Перевірити коробки",
+    "importing": "Імпорт коробок…",
+    "importingButton": "Імпорт…",
+    "checking": "Перевірка файлу…",
+    "errors": {
+      "missingColumns": "Відсутні стовпці: {value}.",
+      "duplicateColumns": "Повторювані стовпці: {value}.",
+      "unknownColumns": "Неочікувані стовпці: {value}.",
+      "empty": "Файл не містить рядків із коробками.",
+      "worksheet": "Файл має містити аркуш із назвою Cartons.",
+      "unreadable": "Не вдалося прочитати файл. Використайте файл XLSX або CSV на основі шаблону.",
+      "number": "Введіть коректне додатне число в полі {value}.",
+      "sku": "SKU не належить до цього відправлення: {value}.",
+      "cartonId": "Введіть ідентифікатор коробки з 1–60 символів.",
+      "measurements": "Рядки однієї коробки повинні мати однакову кількість коробок, розміри та вагу.",
+      "duplicateProduct": "У цій коробці {value} зазначено кілька разів.",
+      "limit": "Відправлення може містити до 1 000 коробок."
+    }
   }
 }

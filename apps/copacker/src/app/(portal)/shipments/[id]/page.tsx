@@ -1,19 +1,32 @@
 import { money } from "@repo/aisle"
+import { canConfigureTransport, shipmentLabelRequirements } from "@repo/aisle/transport"
 import { Link } from "@tanstack/react-router"
-import { AlertTriangle, ArrowRight, Clock, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  Download,
+  ExternalLink,
+  Loader2,
+  PackageCheck
+} from "lucide-react"
 import { Fragment } from "react"
 import { useTranslations, useFormatter, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
+import { CartonEditor } from "@/components/carton-editor"
 import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
+import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentProgress } from "@/components/shipment-progress"
+import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Upload } from "@/components/upload"
+import { groupCartons } from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { finishedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
@@ -38,7 +51,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     isBuyer,
     amazonLinks,
     visibleDocs,
-    invoice,
     changes,
     origin,
     fba,
@@ -46,12 +58,19 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     amazon,
     title,
     summary,
-    nextStep
+    nextStep,
+    delivery,
+    destinationName
   } = page
   const t = useTranslations("shipments.detail"),
     format = useFormatter(),
     locale = useLocale()
   const nextAction: Record<string, React.ReactNode> = {
+    prepareAmazon: isBuyer && (
+      <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
+        {t(shipment.linkedAmazonShipmentId ? "actions.getAmazonLabels" : "actions.createAmazonShipment")}
+      </ActionButton>
+    ),
     ship: (!isBuyer || enteringFor) && (
       <ActionButton action="shipment.ship" data={{ id }}>
         {t("actions.markShipped")}
@@ -82,7 +101,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             label: isBuyer ? t("parents.purchaseOrders") : t("parents.orders"),
             href: seesOrder ? "/orders" : undefined
           },
-          { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined }
+          { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined },
+          { label: `${title} (${destinationName})` }
         ]}
         title={title}
         badge={<Status status={shipment.status} />}
@@ -107,10 +127,28 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           </>
         }
       >
+        {seesOrder && (
+          <Button variant="outline" nativeButton={false} render={<Link to="/orders/$id" params={{ id: order.id }} />}>
+            <ArrowLeft aria-hidden="true" />
+            {isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")}
+          </Button>
+        )}
         {editsShipments ? nextAction[step.next.step] || null : null}
       </PageHeader>
 
+      {!editable && <ShipmentDestination {...delivery} />}
+      <ShipmentTransportSettings
+        key={JSON.stringify(shipment.transport)}
+        id={id}
+        revision={shipment.revision}
+        initial={shipment.transport}
+        hasForwarder={!!snapshot.via}
+        editable={
+          isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+        }
+      />
       <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
+      {shipment.status === "packed" && <p className="text-sm text-muted-foreground">{step.next.message}</p>}
       {shipment.issue && (
         <Alert variant="destructive">
           <AlertTriangle />
@@ -124,24 +162,13 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           <Clock />
           <AlertTitle>{t("changesWaiting.title")}</AlertTitle>
           <AlertDescription>{isBuyer ? t("changesWaiting.buyer") : t("changesWaiting.supplier")}</AlertDescription>
-          {seesOrder && (
-            <AlertAction>
-              <Button
-                size="sm"
-                variant="outline"
-                nativeButton={false}
-                render={<Link to="/orders/$id" params={{ id: order.id }} />}
-              >
-                {isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")}
-              </Button>
-            </AlertAction>
-          )}
         </Alert>
       )}
 
       {editable ? (
         <PackingForm
-          orderId={order.id}
+          shipmentName={title}
+          destination={<ShipmentDestination {...delivery} />}
           shipmentId={id}
           linkedAmazonShipmentId={
             isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
@@ -154,9 +181,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           )}
           order={packingOrder}
           initial={shipment.packingDraft ?? shipment.packing}
-          invoice={invoice && { id: invoice.id, name: invoice.name, bytes: invoice.bytes }}
           addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
-          enteringFor={isBuyer ? supplier.name : undefined}
           addAddressTo={enteringFor && editsPartners ? { id: supplier.id, name: enteringFor } : undefined}
         />
       ) : (
@@ -205,19 +230,18 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             <Card>
               <CardHeader>
                 <CardTitle>{isBuyer && editsShipments ? t("labels.title") : t("labels.waiting")}</CardTitle>
-                {isBuyer && editsShipments && (
-                  <CardDescription>{fba ? t("labels.fba") : t("labels.agl")}</CardDescription>
-                )}
               </CardHeader>
               {isBuyer && editsShipments && (
                 <CardContent className="flex flex-col gap-6">
-                  <Upload
-                    orderId={order.id}
-                    shipmentId={id}
-                    kind="shipping_label"
-                    label={null}
-                    cartons={shipment.packing?.cartons}
-                  />
+                  {shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels && (
+                    <Upload
+                      orderId={order.id}
+                      shipmentId={id}
+                      kind="shipping_label"
+                      label={null}
+                      cartons={shipment.packing?.cartons}
+                    />
+                  )}
                   {step.issues.length > 0 && (
                     <ul className="list-disc ps-5 text-sm">
                       {step.issues.map((issue, index) => (
@@ -246,7 +270,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <AlertTitle>{t("packet.title")}</AlertTitle>
               <AlertDescription>{t("packet.description")}</AlertDescription>
               {/* Under the text on a phone, top right from sm up. */}
-              <AlertAction className="static col-span-full mt-2 sm:absolute sm:mt-0">
+              <AlertAction className="static col-span-full mt-2 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   variant="outline"
@@ -256,6 +280,38 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                   <Download data-icon="inline-start" />
                   {t("packet.download")}
                 </Button>
+                {amazon && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={
+                      <a
+                        download
+                        href={`/api/shipments/${id}/packet?section=carton_labels`}
+                        aria-label={t("packet.cartonLabels")}
+                      />
+                    }
+                  >
+                    {t("packet.cartonLabels")}
+                  </Button>
+                )}
+                {page.hasProductLabels && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={
+                      <a
+                        download
+                        href={`/api/shipments/${id}/packet?section=product_labels`}
+                        aria-label={t("packet.unitLabels")}
+                      />
+                    }
+                  >
+                    {t("packet.unitLabels")}
+                  </Button>
+                )}
               </AlertAction>
             </Alert>
           )}
@@ -279,58 +335,26 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             </Alert>
           )}
 
-          <Card className="gap-0 overflow-hidden py-0">
-            <CardHeader className="border-b p-4">
-              <CardTitle>{t("cartons.title")}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table
-                framed={false}
-                className="[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("cartons.carton")}</TableHead>
-                    <TableHead>{t("cartons.product")}</TableHead>
-                    <TableHead className="text-end">{t("cartons.units")}</TableHead>
-                    <TableHead className="ps-6">{t("cartons.dimensions")}</TableHead>
-                    <TableHead className="text-end">{t("cartons.weight")}</TableHead>
-                    {amazon && <TableHead>{t("cartons.amazonLabel")}</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shipment.packing?.cartons.map((c) => (
-                    <TableRow key={c.cartonId}>
-                      <TableCell className="font-medium">{c.cartonId}</TableCell>
-                      {/* SKUs wrap between each other, never at their own hyphens. */}
-                      <TableCell className="whitespace-normal">
-                        {c.items.map((i, index) => (
-                          <Fragment key={i.itemId}>
-                            {index > 0 && ", "}
-                            <span className="whitespace-nowrap">
-                              {snapshot.items.find((p) => p.id === i.itemId)?.buyerSku}
-                            </span>
-                          </Fragment>
-                        ))}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {c.items.reduce((n, i) => n + i.pieces, 0)}
-                      </TableCell>
-                      <TableCell className="ps-6 tabular-nums">
-                        {c.length} × {c.width} × {c.height}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">{c.weight}</TableCell>
-                      {amazon && (
-                        <TableCell className="font-mono text-xs">
-                          {shipment.labels.find((l) => l.cartonId === c.cartonId)?.labelNumber ?? "—"}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <section className="flex flex-col gap-5" aria-label={t("cartons.title")}>
+            <h2 className="font-semibold">{t("cartons.title")}</h2>
+            {groupCartons(shipment.packing?.cartons).map((carton) => (
+              <div key={carton.cartonId} className="flex flex-col gap-2">
+                <CartonEditor value={carton} products={snapshot.items} readOnly />
+                {amazon && shipment.labels.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("cartons.amazonLabel")}:{" "}
+                    <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
+                      {(carton.cartonIds ?? [carton.cartonId]).map((id) => (
+                        <span key={id} className="whitespace-nowrap">
+                          {id}: {shipment.labels.find((label) => label.cartonId === id)?.labelNumber ?? "—"}
+                        </span>
+                      ))}
+                    </span>
+                  </p>
+                )}
+              </div>
+            ))}
+          </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
@@ -340,6 +364,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                   <CardDescription>
                     {t("pickup.ready", {
                       date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
+                        year: "numeric",
                         month: "short",
                         day: "numeric",
                         timeZone: "UTC"

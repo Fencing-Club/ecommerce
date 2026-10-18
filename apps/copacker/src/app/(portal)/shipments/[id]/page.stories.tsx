@@ -52,6 +52,7 @@ type Args = {
   addresses: PartnerAddress[]
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
+  productLabels?: boolean
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -66,7 +67,8 @@ async function ShipmentPage({
   reserved,
   docs,
   addresses,
-  awaitingChanges
+  awaitingChanges,
+  productLabels = true
 }: Args) {
   const t = await translateStory("shipments.detail")
   const editsShipments = can(s, "shipments", "edit")
@@ -89,9 +91,8 @@ async function ShipmentPage({
   const visibleDocs = docs.filter(
     (d) =>
       (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
-      (prices || d.kind !== "invoice")
+      !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
-  const invoice = docs.find((d) => d.kind === "invoice")
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
     const item = snapshot.items.find((i) => i.id === change.itemId)!
     return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
@@ -116,6 +117,9 @@ async function ShipmentPage({
     <ShipmentPageView
       page={{
         id,
+        hasProductLabels: productLabels,
+        delivery: { addresses: [], pending: amazon },
+        destinationName: destination(order.data, shipment.amazonNetwork),
         editsShipments,
         seesOrder,
         prices,
@@ -125,6 +129,8 @@ async function ShipmentPage({
         supplier: { id: supplier.id, name: supplier.name },
         shipment: {
           amazonNetwork: shipment.amazonNetwork,
+          transport: shipment.transport,
+          operation: shipment.operation,
           linkedAmazonShipmentId: shipment.linkedAmazonShipmentId,
           status: shipment.status,
           revision: shipment.revision,
@@ -150,7 +156,6 @@ async function ShipmentPage({
         isBuyer,
         amazonLinks,
         visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),
-        invoice: prices && invoice ? { id: invoice.id, name: invoice.name, bytes: invoice.bytes } : undefined,
         changes: changes
           .filter(({ item, change }) => prices || change.supplierSku !== item.supplierSku)
           .map(({ item, change }) => ({
@@ -181,7 +186,7 @@ function step(next: string, message: string, changes: Partial<Step> = {}): Step 
 const warehouse = orderRecords.warehouse
 const amazonOrder = orderRecords.amazon
 const [firstLine, secondLine] = warehouse.data.items
-const packet = `/api/shipments/${shipmentId}/packet`
+const packet = `/shipments/${shipmentId}/packet`
 const invoice = documentRow("invoice", "Lotus invoice 2291.pdf")
 const packingList = documentRow("packing_list", "Packing list.pdf")
 const shippingLabel = documentRow("shipping_label", "AGL labels.pdf")
@@ -226,7 +231,7 @@ export const PackingSupplier = meta.story({
   args: {
     kind: "supplier",
     shipment: shipmentRow({ status: "packing" }),
-    step: step("packing", "Complete the packing list and upload the commercial invoice"),
+    step: step("packing", "Complete the packing list"),
     number: 1,
     docs: []
   },
@@ -248,7 +253,7 @@ export const PackingForSupplier = meta.story({
   args: {
     shipment: shipmentRow({ status: "packing" }),
     supplier: { id: supplierRecordId, name: "Lotus Manufacturing", supplierOrgId: null },
-    step: step("packing", "Complete the packing list and upload the commercial invoice"),
+    step: step("packing", "Complete the packing list"),
     number: 1,
     docs: []
   },
@@ -259,8 +264,8 @@ export const PackingForSupplier = meta.story({
       "href",
       `/orders/${orderRecords.warehouse.id}`
     )
-    await expect(canvas.getAllByText(/Lotus Manufacturing/).length).toBeGreaterThan(0)
-    await expect(canvas.queryByRole("heading", { name: "Cartons" })).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Add carton" })).toBeVisible()
+    await expect(canvas.queryByRole("textbox", { name: /Supplier SKU/ })).toBeNull()
   }
 })
 
@@ -269,7 +274,7 @@ export const ChangesWaiting = meta.story({
   ...buyer,
   args: {
     shipment: shipmentRow({ status: "packing" }),
-    step: step("packing", "Complete the packing list and upload the commercial invoice"),
+    step: step("packing", "Complete the packing list"),
     number: 1,
     docs: [],
     awaitingChanges: true
@@ -292,7 +297,7 @@ export const ChangesWaitingSupplier = meta.story({
   args: {
     kind: "supplier",
     shipment: shipmentRow({ status: "packing" }),
-    step: step("packing", "Complete the packing list and upload the commercial invoice"),
+    step: step("packing", "Complete the packing list"),
     docs: [],
     awaitingChanges: true
   },
@@ -324,10 +329,8 @@ export const Approval = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Invoice changes")).toBeVisible()
     await expect(canvas.getByText("Canvas tote bag / Natural")).toBeVisible()
-    // A carton's SKUs wrap between each other, never at their own hyphens.
-    await expect(canvas.getByRole("cell", { name: "TOTE-016, TOTE-017" }).querySelector("span")).toHaveClass(
-      "whitespace-nowrap"
-    )
+    // Packed products are shown in the shared read-only carton editor.
+    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
     await expect(canvas.getByText(/Price per unit \$4\.25/)).toHaveTextContent("$4.50")
     await expect(canvas.getByText(/Supplier SKU LM-TOTE/)).toHaveTextContent("LM-APRON-CH")
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
@@ -380,7 +383,7 @@ export const Creating = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Creating the Amazon shipment")).toBeVisible()
     await expect(canvas.getByText("Amazon FBA, 2 cartons")).toBeVisible()
-    await expect(canvas.getByRole("columnheader", { name: "Amazon label" })).toBeInTheDocument()
+    await expect(canvas.getByRole("region", { name: "Cartons" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
@@ -404,8 +407,8 @@ export const WaitingForLabels = meta.story({
     })
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Shipping labels")).toBeVisible()
-    await expect(canvas.getByText("Book AGL transport in Amazon, then upload the shipping labels.")).toBeVisible()
+    await expect(canvas.getByText("Labels")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Save transport" })).toBeVisible()
     await expect(canvas.getByText("Upload the shipping label for carton C2")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Release labels to supplier" })).toBeNull()
     // The buyer's Amazon shipment opens in Seller Central.
@@ -424,7 +427,7 @@ export const Release = meta.story({
     step: step("release", "Enter the booking reference and release the supplier packet", { canRelease: true })
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Book transport to Amazon, then upload the shipping labels.")).toBeVisible()
+    await expect(canvas.getByText("Labels", { exact: true })).toBeVisible()
     await userEvent.type(canvas.getByRole("textbox", { name: "Amazon transport booking reference" }), "AGL-778812")
     await userEvent.click(canvas.getByRole("button", { name: "Release labels to supplier" }))
     await waitFor(() =>
@@ -446,12 +449,12 @@ export const WaitingForLabelsSupplier = meta.story({
     docs: [invoice, shippingLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Waiting for shipping labels")).toBeVisible()
+    await expect(canvas.getByText("Waiting for labels")).toBeVisible()
     await expect(canvas.getByText("Amazon AWD US, 2 cartons, STAR-8KQ2M7-1")).toBeVisible()
     await expect(canvas.queryByRole("link", { name: /STAR-8KQ2M7-1/ })).toBeNull()
     // Labels reach the supplier once they're released.
     await expect(canvas.queryByText("AGL labels.pdf")).toBeNull()
-    await expect(canvas.getByText("Lotus invoice 2291.pdf")).toBeVisible()
+    await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
   }
 })
 
@@ -473,7 +476,7 @@ export const ReadySupplier = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute("href", packet)
-    await expect(canvas.getByText("FBA18ABCD123U000002")).toBeVisible()
+    await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
     await expect(canvas.getByText("AGL labels.pdf")).toBeVisible()
     await expect(canvas.getByText("Mei Chen")).toBeVisible()
     await expect(canvas.getByRole("link", { name: /\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
@@ -649,7 +652,29 @@ export const ViewOnly = meta.story({
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
-    await expect(within(canvas.getByRole("table")).getAllByRole("row")).toHaveLength(3)
+    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
+    await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await expect(screen.queryByRole("dialog")).toBeNull()
+  }
+})
+
+export const ReadyWithoutProductLabels = meta.story({
+  ...supplier,
+  args: {
+    productLabels: false,
+    kind: "supplier",
+    order: amazonOrder,
+    shipment: shipmentRow({
+      status: "ready",
+      packing: packingFor(amazonOrder.data),
+      amazonNetwork: "awd_us",
+      amazonShipmentId: "STAR-EXAMPLE",
+      labels
+    }),
+    docs: [cartonLabel]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Carton labels" })).toHaveAttribute("download")
+    await expect(canvas.queryByRole("button", { name: "Product labels" })).not.toBeInTheDocument()
   }
 })

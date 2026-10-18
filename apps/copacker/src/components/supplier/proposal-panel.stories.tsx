@@ -65,8 +65,8 @@ export const ForBuyer = meta.story({
     await expect(canvas.getByText("Net 15")).toBeVisible()
     await expect(canvas.getByText("Not set")).toBeVisible()
     await expect(canvas.getByText("Nov 2, 2026")).toBeVisible()
-    await expect(canvas.getByText("$2,376.00")).toHaveClass("line-through")
-    await expect(canvas.getByText("$2,388.00")).toBeVisible()
+    await expect(canvas.getByText("$2,376")).toHaveClass("line-through")
+    await expect(canvas.getByText("$2,388")).toBeVisible()
   }
 })
 
@@ -166,7 +166,7 @@ export const OnlyNewTerms = meta.story({
     await expect(canvas.getByText("None")).toHaveClass("line-through")
     await expect(canvas.queryByText("Ready date")).toBeNull()
     // An unchanged total reads once.
-    await expect(canvas.getByText("$288.00")).not.toHaveClass("line-through")
+    await expect(canvas.getByText("$288")).not.toHaveClass("line-through")
   }
 })
 

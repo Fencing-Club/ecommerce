@@ -52,7 +52,8 @@
     "notInvited": "Nicht eingeladen",
     "accepted": "Angenommen",
     "declined": "Abgelehnt",
-    "atForwarder": "Beim Spediteur"
+    "atForwarder": "Beim Spediteur",
+    "packed": "Verpackt"
   },
   "destinations": {
     "amazon": "Amazon",

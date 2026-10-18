@@ -1,14 +1,17 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
 import { money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput, type Packing } from "./index"
 import type { CartonLabel } from "./labels"
+import { markdownBlocks } from "./markdown"
 import {
   destinationName,
   destinationRequirements,
-  isCartonRule,
+  packingInstructions,
   itemRequirements,
+  isCartonRule,
   requirementText,
   sharedPrep
 } from "./requirements"
+import { transportInstructions, type ShipmentTransport } from "./transport"
 
 // "2026-12-01" as "December 1, 2026".
 function longDate(date: string) {
@@ -24,6 +27,12 @@ function longDate(date: string) {
 export type PoParty = { name: string; lines: string[] }
 // The buyer heading its documents, with how to reach it for the footer.
 export type DocumentBuyer = PoParty & { email?: string | null; website?: string | null }
+type ShipmentEdition = { orderRevision: number; shipmentRevision: number; generated: string }
+const shipmentEdition = (edition: ShipmentEdition, shipment?: string) => ({
+  revision: `Order revision ${edition.orderRevision} / Shipment revision ${edition.shipmentRevision}`,
+  date: `Generated ${edition.generated}`,
+  shipment
+})
 
 // A line's name without Shopify's "Default Title" for a product with no options.
 const lineName = (item: OrderInput["items"][number]) =>
@@ -84,12 +93,19 @@ export function drawableText(value: string, font: PDFFont) {
 // The layout Copacker's documents share, after Fencing Club's printed invoice: a masthead with the buyer and the
 // document type over a heavy rule, a band of facts, then sections labelled in a left rail, and a footer on every page
 // with the buyer's name, contact details, reference and page count.
-async function documentKit(title: string, reference: string, buyer: DocumentBuyer) {
+async function documentKit(
+  title: string,
+  reference: string,
+  buyer: DocumentBuyer,
+  edition?: { revision: string; date: string; shipment?: string }
+) {
   const pdf = await PDFDocument.create()
   pdf.setTitle(`${title} ${reference}`)
   pdf.setAuthor(buyer.name)
   const regular = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique)
+  const boldItalic = await pdf.embedFont(StandardFonts.HelveticaBoldOblique)
   type Font = typeof regular
   const ink = rgb(0, 0, 0)
   const muted = rgb(0.29, 0.29, 0.33)
@@ -102,7 +118,12 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
   const content = left + 96
   const trackedWidth = (value: string, size: number, font: Font, tracking: number) => {
     const text = drawableText(value, font)
-    return font.widthOfTextAtSize(text, size) + tracking * Math.max(0, text.length - 1)
+    return (
+      (tracking
+        ? Array.from(text).reduce((sum, char) => sum + font.widthOfTextAtSize(char, size), 0)
+        : font.widthOfTextAtSize(text, size)) +
+      tracking * Math.max(0, text.length - 1)
+    )
   }
   // Splits text into lines no wider than the given width.
   const wrap = (value: string, font: Font, size: number, max: number) => {
@@ -156,6 +177,80 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
     return false
   }
 
+  type MarkdownLine = { runs: Array<{ text: string; font: Font }>; indent: number; marker?: string; gap: number }
+  const markdownLines = (source: string, size: number, max: number): MarkdownLine[] => {
+    const lines: MarkdownLine[] = []
+    for (const block of markdownBlocks(source)) {
+      // Deeply nested lists must still leave enough width for their contents.
+      const indent = Math.min(block.indent * 14, max / 3)
+      let row: MarkdownLine = { runs: [], indent, marker: block.marker, gap: lines.length ? 4 : 0 }
+      let used = 0
+      const nextLine = () => {
+        lines.push(row)
+        row = { runs: [], indent, gap: 0 }
+        used = 0
+      }
+      const append = (text: string, font: Font) => {
+        const previous = row.runs.at(-1)
+        if (previous?.font === font) {
+          previous.text += text
+        } else {
+          row.runs.push({ text, font })
+        }
+        used += font.widthOfTextAtSize(text, size)
+      }
+      for (const run of block.runs) {
+        let font = regular
+        if (run.bold && run.italic) {
+          font = boldItalic
+        } else if (run.bold) {
+          font = bold
+        } else if (run.italic) {
+          font = italic
+        }
+        for (const token of run.text.split(/(\n|[^\S\n]+)/).filter(Boolean)) {
+          if (token === "\n") {
+            nextLine()
+            continue
+          }
+          const text = drawableText(token, font)
+          const space = /^\s+$/.test(text)
+          const width = font.widthOfTextAtSize(text, size)
+          if (used && used + width > max - indent) {
+            nextLine()
+          }
+          if (space && !used) {
+            continue
+          }
+          if (width <= max - indent) {
+            append(text, font)
+          } else {
+            for (const char of text) {
+              if (used && used + font.widthOfTextAtSize(char, size) > max - indent) {
+                nextLine()
+              }
+              append(char, font)
+            }
+          }
+        }
+      }
+      if (row.runs.length || row.marker) {
+        lines.push(row)
+      }
+    }
+    return lines
+  }
+  const drawMarkdownLine = (row: MarkdownLine, x: number, size: number, color = ink) => {
+    if (row.marker) {
+      draw(row.marker, x + row.indent - 4, { size, color, align: "right" })
+    }
+    let cursor = x + row.indent
+    for (const run of row.runs) {
+      draw(run.text, cursor, { size, font: run.font, color })
+      cursor += run.font.widthOfTextAtSize(run.text, size)
+    }
+  }
+
   // Masthead: the buyer's name and contact lines, and the document type.
   const mastTop = at.y
   draw(buyer.name.toUpperCase(), left, { size: 13, font: bold, tracking: 1.9 })
@@ -184,6 +279,21 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
     wrap,
     ensure,
     newPage,
+    markdownLines,
+    drawMarkdownLine,
+    markdown(source: string, { size = 10 } = {}) {
+      const rows = markdownLines(source, size, right - content)
+      for (const [index, row] of rows.entries()) {
+        // Keep a paragraph's first two lines together where possible.
+        const space = size + 4 + row.gap
+        const moved = ensure(space + (row.gap && index + 1 < rows.length ? size + 4 : 0))
+        if (!moved) {
+          at.y -= row.gap
+        }
+        drawMarkdownLine(row, content, size)
+        at.y -= size + 4
+      }
+    },
     // A band of facts, such as the PO number and dates, divided by hairlines. The last can be shown large. A value too
     // long for its column wraps, and the band grows to fit it.
     facts(facts: Array<[string, string]>, { emphasizeLast = false } = {}) {
@@ -253,20 +363,24 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
     },
     // Plain lines of text in the content column, each wrapped, with room checked first.
     paragraphs(rows: string[], { size = 10, check = false } = {}) {
-      for (const row of rows.flatMap((value) => wrap(value, regular, size, right - content - (check ? 16 : 0)))) {
-        ensure(size + 6)
-        if (check) {
-          page.drawRectangle({
-            x: content,
-            y: at.y - 1,
-            width: 8,
-            height: 8,
-            borderWidth: 0.8,
-            borderColor: muted
-          })
+      for (const value of rows) {
+        const wrapped = wrap(value, regular, size, right - content - (check ? 16 : 0))
+        ensure(Math.min(570, wrapped.length * (size + 4)))
+        for (const [index, row] of wrapped.entries()) {
+          ensure(size + 6)
+          if (check && index === 0) {
+            page.drawRectangle({
+              x: content,
+              y: at.y - 1,
+              width: 8,
+              height: 8,
+              borderWidth: 0.8,
+              borderColor: muted
+            })
+          }
+          draw(row, content + (check ? 16 : 0), { size })
+          at.y -= size + 4
         }
-        draw(row, content + (check ? 16 : 0), { size })
-        at.y -= size + 4
       }
     },
     // Adds every page's footer, then the finished file.
@@ -292,6 +406,14 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
           color: muted,
           align: "right"
         })
+        if (edition) {
+          at.y = 26
+          draw(`${edition.revision} / ${edition.date}`, left, { size: 8, color: muted })
+          if (edition.shipment) {
+            at.y = 14
+            draw(`Shipment ${edition.shipment}`, left, { size: 8, color: muted })
+          }
+        }
       })
       return pdf.save()
     }
@@ -315,6 +437,8 @@ export async function purchaseOrderPdf(input: {
     title: "Purchase order",
     heading: input.buyer,
     order,
+    revision,
+    issued: input.issued,
     facts: [
       ["Purchase order", revision > 1 ? `${order.reference} (rev. ${revision})` : order.reference],
       ["Date", longDate(input.issued)],
@@ -342,6 +466,8 @@ export async function commercialInvoicePdf(input: {
     title: "Commercial invoice",
     heading: input.supplier,
     order,
+    revision,
+    issued: input.issued,
     facts: [
       ["Invoice", revision > 1 ? `${order.reference}-${revision}` : order.reference],
       ["Date", longDate(input.issued)],
@@ -358,12 +484,17 @@ async function orderPdf(input: {
   title: string
   heading: DocumentBuyer
   order: OrderInput
+  revision: number
+  issued: string
   facts: Array<[string, string]>
   parties: Array<[string, PoParty]>
 }) {
   const { order } = input
   const price = (minor: number) => money(minor, order.currency)
-  const kit = await documentKit(input.title, order.reference, input.heading)
+  const kit = await documentKit(input.title, order.reference, input.heading, {
+    revision: `Order revision ${input.revision}`,
+    date: `Issued ${input.issued}`
+  })
   const { at, content, right, bold, regular, muted, draw, label, line, wrap, ensure } = kit
   kit.facts([...input.facts, ["Total", price(orderTotal(order))]], { emphasizeLast: true })
   kit.section("Parties")
@@ -394,14 +525,23 @@ async function orderPdf(input: {
         (charge) =>
           `${charge.description}: ${price(charge.amount)}${charge.basis === "flat" ? " flat" : ` per ${charge.basis}`} (${price(supplierChargeTotal(item, charge))})`
       ),
-      ...itemRequirements(item, order.destination, prep).map(requirementText)
+      ...itemRequirements(item, order.destination, prep)
+        .filter((requirement) => requirement.code !== "instruction")
+        .map(requirementText)
     ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
+    const instructions = kit.markdownLines(packingInstructions(item), 8.5, descriptionWidth)
     const skus = item.components?.length
       ? item.components.map(
           (component) => `${component.quantity} x ${component.supplierSku || component.buyerSku || "?"}`
         )
       : [item.supplierSku || "Not set"]
-    const rowHeight = 8 + title.length * 12.5 + variant.length * 11.5 + details.length * 10.5 + 8
+    const rowHeight =
+      8 +
+      title.length * 12.5 +
+      variant.length * 11.5 +
+      details.length * 10.5 +
+      instructions.reduce((sum, row) => sum + 10.5 + row.gap, 0) +
+      8
     if (ensure(rowHeight + 10)) {
       at.y -= 4
       label("Items", kit.left)
@@ -430,6 +570,16 @@ async function orderPdf(input: {
       at.y -= 10.5
     }
     at.y = Math.min(at.y, rowTop - skus.length * 11.5)
+    for (const row of instructions) {
+      if (ensure(12.5 + row.gap)) {
+        label("Items", kit.left)
+        header()
+        at.y -= 15
+      }
+      at.y -= row.gap
+      kit.drawMarkdownLine(row, columns.description, 8.5, muted)
+      at.y -= 10.5
+    }
     line(content, right, at.y + 2)
   }
 
@@ -475,7 +625,11 @@ async function orderPdf(input: {
     at.y -= 12
     line(kit.left, right, at.y)
     kit.section(name, 20)
-    kit.paragraphs(entries)
+    if (name === "Notes") {
+      kit.markdown(order.notes)
+    } else {
+      kit.paragraphs(entries)
+    }
   }
   return kit.save()
 }
@@ -488,17 +642,26 @@ export async function packingListPdf(input: {
   shipmentId: string
   buyer: DocumentBuyer
   shipTo?: PoParty
+  transport?: ShipmentTransport | null
+  bookingReference?: string | null
+  edition: ShipmentEdition
 }) {
   const { order, packing, labels } = input
-  const kit = await documentKit("Packing list", order.reference, input.buyer)
+  const kit = await documentKit(
+    "Packing list",
+    order.reference,
+    input.buyer,
+    shipmentEdition(input.edition, input.shipmentId)
+  )
   const { at, content, right, bold, regular, muted, draw, line, wrap, ensure } = kit
   const pieces = packing.cartons.reduce((sum, carton) => sum + carton.items.reduce((n, item) => n + item.pieces, 0), 0)
   kit.facts([
     ["Purchase order", order.reference],
-    ["Shipment", input.shipmentId.length > 16 ? input.shipmentId.slice(0, 8).toUpperCase() : input.shipmentId],
-    ["Ready by", longDate(packing.readyDate)],
-    ["Cartons", `${packing.cartons.length}, ${pieces.toLocaleString("en-US")} units`]
+    ["Cartons", String(packing.cartons.length)],
+    ["Pieces", pieces.toLocaleString("en-US")]
   ])
+  kit.section("Shipment")
+  kit.paragraphs([input.shipmentId])
   kit.section("Parties")
   kit.parties([
     ["From", { name: packing.origin.name, lines: originLines(packing.origin) }],
@@ -510,30 +673,41 @@ export async function packingListPdf(input: {
   const packs = packing.cartons.some((carton) =>
     carton.items.some((contents) => (order.items.find((item) => item.id === contents.itemId)?.piecesPerSet ?? 1) > 1)
   )
-  const columns = packs
-    ? { item: content, sku: right - 190, units: right - 70, packs: right }
-    : { item: content, sku: right - 120, units: right, packs: right }
-  const itemWidth = columns.sku - 12 - columns.item
+  kit.section("Quantities")
+  kit.paragraphs([
+    packs
+      ? "Pieces are individual products. Packs are complete sellable units; Amazon label QTY counts packs."
+      : "One piece is one sellable unit."
+  ])
+  kit.section("Handoff")
+  kit.paragraphs([
+    ...transportInstructions(input.transport),
+    ...(input.bookingReference ? ["Booking: " + input.bookingReference] : [])
+  ])
+  const columns = { item: content, units: right - (packs ? 62 : 0), packs: right }
+  const itemWidth = columns.units - 38 - columns.item
   for (const carton of packing.cartons) {
-    const labelNumber = labels.find((row) => row.cartonId === carton.cartonId)?.labelNumber
-    ensure(80)
-    kit.section(`Carton ${carton.cartonId}`, 22)
-    draw(
-      [
-        `${carton.length} x ${carton.width} x ${carton.height} cm`,
-        `${carton.weight} kg`,
-        labelNumber ? `Amazon label ${labelNumber}` : ""
-      ]
-        .filter(Boolean)
-        .join("    "),
-      content,
-      { size: 10, font: bold }
-    )
+    const cartonLabel = labels.find((row) => row.cartonId === carton.cartonId)
+    const rowsHeight = carton.items.reduce((sum, contents) => {
+      const item = order.items.find((row) => row.id === contents.itemId)
+      return sum + (item ? wrap(lineName(item), bold, 10, itemWidth).length * 12 + 48 : 0)
+    }, 0)
+    ensure(Math.min(570, rowsHeight + 85))
+    kit.section("Carton " + carton.cartonId, 22)
+    draw([carton.length, carton.width, carton.height].join(" x ") + " cm    " + carton.weight + " kg", content, {
+      size: 10,
+      font: bold
+    })
     at.y -= 16
+    if (cartonLabel) {
+      draw("Amazon label (SSCC / box ID): " + cartonLabel.labelNumber, content, { size: 9.5 })
+      at.y -= 15
+      draw("Destination: " + cartonLabel.destinationCode, content, { size: 9, color: muted })
+      at.y -= 16
+    }
     kit.tableHeader([
       { label: "Item", x: columns.item },
-      { label: "Supplier SKU", x: columns.sku },
-      { label: "Units", x: columns.units, align: "right" },
+      { label: "Pieces", x: columns.units, align: "right" },
       ...(packs ? [{ label: "Packs", x: columns.packs, align: "right" as const }] : [])
     ])
     for (const contents of carton.items) {
@@ -542,13 +716,12 @@ export async function packingListPdf(input: {
         continue
       }
       const title = wrap(lineName(item), bold, 10, itemWidth)
-      ensure(title.length * 12 + 26)
+      if (ensure(title.length * 12 + 52)) {
+        kit.section("Carton " + carton.cartonId, 0)
+        kit.paragraphs(["Contents continued"])
+      }
       at.y -= 14
       const rowTop = at.y
-      draw(item.supplierSku || (item.components?.length ? "See components" : "Not set"), columns.sku, {
-        size: 9.5,
-        color: item.supplierSku ? undefined : muted
-      })
       draw(contents.pieces.toLocaleString("en-US"), columns.units, { size: 10, align: "right" })
       if (packs) {
         draw((contents.pieces / item.piecesPerSet).toLocaleString("en-US"), columns.packs, { size: 10, align: "right" })
@@ -558,11 +731,25 @@ export async function packingListPdf(input: {
         draw(row, columns.item, { size: 10, font: bold })
         at.y -= 12
       }
-      draw(`SKU ${item.buyerSku}${item.fnsku ? `, FNSKU ${item.fnsku}` : ""}`, columns.item, {
-        size: 8.5,
-        font: regular,
-        color: muted
-      })
+      const supplierCodes =
+        item.supplierSku ||
+        item.components
+          ?.map((component) => component.supplierSku)
+          .filter(Boolean)
+          .join(", ")
+      const details = [
+        "SKU: " + item.buyerSku,
+        ...(supplierCodes ? ["Supplier SKU: " + supplierCodes] : []),
+        ...(item.fnsku
+          ? ["FNSKU: " + item.fnsku + (item.piecesPerSet > 1 ? " / " + item.piecesPerSet + " pieces per pack" : "")]
+          : [])
+      ]
+      for (const detail of details) {
+        for (const row of wrap(detail, regular, 8.5, right - content)) {
+          draw(row, content, { size: 8.5, color: muted })
+          at.y -= 11
+        }
+      }
       at.y -= 8
       line(content, right, at.y + 2)
     }
@@ -574,14 +761,23 @@ export async function packingListPdf(input: {
 // and the final checks, each with a box to tick. Its destination is the Amazon network the cartons are packed for, or
 // else the name of where they ship.
 export async function checklistPdf(input: {
+  shipmentId?: string
   order: OrderInput
   packing: Packing
   buyer: DocumentBuyer
   shipTo?: PoParty
+  transport?: ShipmentTransport | null
+  bookingReference?: string | null
+  edition: ShipmentEdition
 }) {
   const { order, packing } = input
   const amazon = order.destination === "amazon"
-  const kit = await documentKit("Packing checklist", order.reference, input.buyer)
+  const kit = await documentKit(
+    "Packing checklist",
+    order.reference,
+    input.buyer,
+    shipmentEdition(input.edition, input.shipmentId)
+  )
   const { at, right, line } = kit
   const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   const items = order.items.filter((item) => included.has(item.id))
@@ -591,10 +787,14 @@ export async function checklistPdf(input: {
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", String(packing.cartons.length)]
   ])
+  if (input.shipmentId) {
+    kit.section("Shipment")
+    kit.paragraphs([input.shipmentId])
+  }
   const prep = sharedPrep({ items })
   const rules = destinationRequirements({ destination: order.destination, items })
   // Each block: its label in the rail, a heading for a product's own steps, and the steps to tick.
-  const blocks: Array<{ rail: string; heading?: string; steps: string[] }> = [
+  const blocks: Array<{ rail: string; heading?: string; steps: string[]; instructions?: string }> = [
     {
       rail: "Cartons",
       steps: [
@@ -611,22 +811,38 @@ export async function checklistPdf(input: {
     },
     ...items.map((item) => ({
       rail: "Product",
-      heading: lineName(item),
-      steps: itemRequirements(item, order.destination, prep)
-        .map(requirementText)
-        .map((step) => (step.endsWith(".") ? step : `${step}.`))
+      heading: item.buyerSku + " / " + item.name,
+      instructions: packingInstructions(item),
+      steps: [
+        packing.cartons.reduce(
+          (sum, carton) =>
+            sum +
+            carton.items
+              .filter((contents) => contents.itemId === item.id)
+              .reduce((count, contents) => count + contents.pieces, 0),
+          0
+        ) /
+          item.piecesPerSet +
+          " product labels. One per " +
+          (item.piecesPerSet > 1 ? "complete pack" : "unit") +
+          ".",
+        ...itemRequirements(item, order.destination, prep)
+          .filter((requirement) => requirement.code !== "packFor" && requirement.code !== "instruction")
+          .map(requirementText)
+          .map((step) => (step.endsWith(".") ? step : step + "."))
+      ]
     })),
     {
       rail: "Final checks",
       steps: [
         ...(amazon
           ? [
-              "Match each carton to its label number in the packing list. Use each carton label once.",
-              "Apply the buyer's shipping labels to the assigned cartons."
+              "Match the SKU, quantity and SSCC / box ID to the packing list. Do not rely on PDF page order. Use each carton label once."
             ]
           : []),
-        "Print labels at actual size (100%) and test-scan them before applying.",
-        "Confirm pickup with the carrier."
+        "Print product labels for the quantities listed. Print at actual size (100%) and test-scan before applying.",
+        ...transportInstructions(input.transport),
+        ...(input.bookingReference ? ["Booking: " + input.bookingReference] : [])
       ]
     }
   ]
@@ -643,6 +859,10 @@ export async function checklistPdf(input: {
       }
     }
     kit.paragraphs(block.steps, { check: true })
+    if (block.instructions) {
+      at.y -= 4
+      kit.markdown(block.instructions)
+    }
     at.y -= 4
     line(kit.left, right, at.y)
   }

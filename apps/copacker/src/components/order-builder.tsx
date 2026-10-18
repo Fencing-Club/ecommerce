@@ -6,7 +6,6 @@ import {
   itemTotal,
   orderCharges,
   orderTotal,
-  supplierChargeTotal,
   type OrderInput,
   orderInputSchema
 } from "@repo/aisle"
@@ -56,13 +55,13 @@ import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
+import { countriesIn } from "@/lib/countries"
 import { currencySymbol } from "@/lib/currency"
 import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
-import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import type { StockAt } from "./add-products-dialog"
 import { AddProductsDialog } from "./add-products-dialog"
-import { DateInput, FormCheckbox, FormInput, FormLabel, FormTextarea } from "./form-controls"
+import { DateInput, FormInput, FormLabel, FormTextarea } from "./form-controls"
 import { FormSelect } from "./form-select"
 
 // Where a purchase order can go, each labeled under orders.builder.destinations.
@@ -724,7 +723,11 @@ export function OrderBuilder({
                 <FieldGroup className="gap-4">
                   <FormInput name="reference" required label={tb("reference")} placeholder="PO-038" />
                   <RequiredBy />
-                  <FormTextarea name="notes" label={t("detail.noteToSupplier")} />
+                  <FormTextarea
+                    name="notes"
+                    label={t("detail.noteToSupplier")}
+                    description={t("builder.markdownHint")}
+                  />
                   <Separator />
                   <p className="font-medium">{tb("purchasingInformation")}</p>
                   <FormSelect name="paymentTerms" label={t("detail.paymentTerms")} options={termOptions} />
@@ -961,10 +964,22 @@ function LineMenu({
   toAmazon: boolean
 }) {
   const t = useTranslations("orders")
-  const tShipments = useTranslations("shipments")
   const [packing, setPacking] = useState(false)
+  const { getValues, setValue } = useFormContext<OrderInput>()
   const warning = useWatch({ name: `items.${index}.suffocationWarning` }) as boolean | undefined
   function editPacking() {
+    const item = getValues(`items.${index}`)
+    if (!item.packingRequirements) {
+      setValue(`items.${index}.packingRequirements`, {
+        preparation: item.prepCategory === "POLYBAGGING" ? "polybag" : "none",
+        labels: [
+          ...(item.skuLabel === false ? [] : [toAmazon || item.fnsku ? ("fnsku" as const) : ("sku" as const)]),
+          ...(item.suffocationWarning ? ["suffocation" as const] : [])
+        ],
+        countryCode: "",
+        instructions: item.instructions
+      })
+    }
     setPacking(true)
   }
   return (
@@ -1013,20 +1028,7 @@ function LineMenu({
             <DialogDescription>{name}</DialogDescription>
           </DialogHeader>
           <FieldGroup className="gap-4">
-            <FormSelect
-              name={`items.${index}.prepCategory`}
-              required
-              label={t("builder.preparation")}
-              options={prepOptions(tShipments)}
-            />
-            <SkuLabel index={index} toAmazon={toAmazon} />
-            <FormCheckbox name={`items.${index}.suffocationWarning`} label={t("builder.suffocationWarning")} />
-            <FormTextarea
-              name={`items.${index}.instructions`}
-              label={t("detail.instructions")}
-              placeholder={t("builder.instructionsPlaceholder")}
-            />
-            <SupplierCharges index={index} />
+            <PackingRequirementsFields index={index} />
           </FieldGroup>
           <DialogFooter>
             <DialogClose render={<Button type="button" />}>{t("builder.done")}</DialogClose>
@@ -1037,102 +1039,9 @@ function LineMenu({
   )
 }
 
-function SupplierCharges({ index }: { index: number }) {
-  const t = useTranslations("orders")
-  const locale = useLocale()
-  const money = useMoney()
-  const { control } = useFormContext<OrderInput>()
-  const currency = useWatch({ control, name: "currency" })
-  const item = useWatch({ control, name: `items.${index}` })
-  const charges = useFieldArray({ control, name: `items.${index}.supplierCharges`, keyName: "key" })
-  const types = adjustmentTypes
-    .filter((type) => type !== "Discount")
-    .map((type) => ({
-      value: type,
-      label: knownName(adjustmentKeys, type, t)
-    }))
-  return (
-    <div className="flex flex-col gap-3 border-t pt-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-medium">{t("builder.supplierCharges")}</h3>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={charges.fields.length >= 20}
-          onClick={() =>
-            charges.append({ description: "Packing", amount: 0, basis: item.piecesPerSet > 1 ? "pack" : "piece" })
-          }
-        >
-          <Plus />
-          {t("builder.addSupplierCharge")}
-        </Button>
-      </div>
-      {charges.fields.map((charge, chargeIndex) => (
-        <div
-          key={charge.key}
-          className={cn(
-            "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-end gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto_2rem]",
-            chargeIndex > 0 && "border-t pt-3 sm:[&_[data-slot=field-label]]:sr-only"
-          )}
-        >
-          <FormSelect
-            name={`items.${index}.supplierCharges.${chargeIndex}.description`}
-            label={t("builder.expenseType")}
-            className="col-span-2 min-w-0 gap-1.5 sm:col-span-1"
-            options={types}
-          />
-          <div className="row-start-2 flex min-w-0 flex-col gap-1.5 sm:row-start-auto">
-            <span className={cn("text-sm font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("builder.rate")}</span>
-            <CellNumber
-              name={`items.${index}.supplierCharges.${chargeIndex}.amount`}
-              label={t("builder.rate")}
-              min={0}
-              step={0.01}
-              scale={100}
-              prefix={currencySymbol(currency, locale)}
-            />
-          </div>
-          <FormSelect
-            name={`items.${index}.supplierCharges.${chargeIndex}.basis`}
-            label={t("builder.chargeBasis")}
-            className="col-span-2 col-start-2 row-start-2 min-w-0 gap-1.5 sm:col-span-1 sm:col-start-auto sm:row-start-auto"
-            options={[
-              { value: "pack", label: t("builder.perPack") },
-              { value: "piece", label: t("builder.perPiece") },
-              { value: "flat", label: t("builder.flatAmount") }
-            ]}
-          />
-          <div className="col-span-3 flex items-center justify-between gap-1.5 text-sm sm:col-span-1 sm:min-w-20 sm:flex-col sm:items-end">
-            <span className={cn("font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("detail.columns.total")}</span>
-            <span className="flex h-9 items-center tabular-nums">
-              {money(
-                item.supplierCharges?.[chargeIndex] ? supplierChargeTotal(item, item.supplierCharges[chargeIndex]) : 0,
-                currency
-              )}
-            </span>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="col-start-3 row-start-1 mb-0.5 sm:col-start-5 sm:row-start-auto"
-            aria-label={t("builder.removeSupplierCharge")}
-            onClick={() => charges.remove(chargeIndex)}
-          >
-            <X />
-          </Button>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 type Adjustment = { description: string; amount: number }
 type AdjustmentRow = { key: string; type: string; amount: string }
 
-// Shopify's cost summary editor, behind an Edit button: each row a kind of cost and its amount, saved together. A
-// discount is entered as a positive amount and taken off.
 function CostSummaryDialog({
   currency,
   adjustments,
@@ -1260,24 +1169,60 @@ function CostSummaryDialog({
   )
 }
 
-// Whether each unit gets its SKU label. Amazon needs every unit labeled, so POs to Amazon keep it on.
-function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
+function PackingRequirementsFields({ index }: { index: number }) {
+  const countries = countriesIn(useLocale())
   const t = useTranslations("orders.builder")
-  const { field } = useController({ name: `items.${index}.skuLabel` })
-  const id = `sku-label-${index}`
+  const { control } = useFormContext<OrderInput>()
+  const { field } = useController({ control, name: `items.${index}.packingRequirements.labels` })
+  const labels = field.value ?? []
+  const fnsku = useWatch({ control, name: `items.${index}.fnsku` })
   return (
-    <Field orientation="horizontal" data-disabled={toAmazon || undefined}>
-      <Checkbox
-        id={id}
-        checked={toAmazon || field.value !== false}
-        disabled={toAmazon}
-        onCheckedChange={(checked) => field.onChange(checked)}
+    <>
+      <FormSelect
+        name={`items.${index}.packingRequirements.preparation`}
+        label={t("preparation")}
+        options={[
+          { value: "none", label: t("prepNone") },
+          { value: "polybag", label: t("polybag") },
+          { value: "sealedPolybag", label: t("sealedPolybag") }
+        ]}
       />
-      <FieldContent>
-        <FieldLabel htmlFor={id}>{t("skuLabel")}</FieldLabel>
-        {toAmazon && <FieldDescription>{t("amazonRequiresIt")}</FieldDescription>}
-      </FieldContent>
-    </Field>
+      {(
+        [
+          ["sku", "skuLabel"],
+          ["fnsku", "fnskuLabel"],
+          ["suffocation", "suffocationWarning"],
+          ["choking", "chokingHazard"],
+          ["countryOfOrigin", "countryOfOriginLabel"]
+        ] as const
+      ).map(([value, key]) => (
+        <Field key={value} orientation="horizontal">
+          <Checkbox
+            id={`packing-${index}-${value}`}
+            checked={labels.includes(value)}
+            onCheckedChange={(checked) =>
+              field.onChange(checked ? [...labels, value] : labels.filter((label) => label !== value))
+            }
+          />
+          <FieldContent>
+            <FieldLabel htmlFor={`packing-${index}-${value}`}>{t(key)}</FieldLabel>
+            {value === "fnsku" && fnsku && <FieldDescription className="font-mono break-all">{fnsku}</FieldDescription>}
+          </FieldContent>
+        </Field>
+      ))}
+      {labels.includes("countryOfOrigin") && (
+        <FormSelect
+          name={`items.${index}.packingRequirements.countryCode`}
+          label={t("countryOfOriginCode")}
+          options={countries}
+        />
+      )}
+      <FormTextarea
+        name={`items.${index}.packingRequirements.instructions`}
+        label={t("instructions")}
+        description={t("markdownHint")}
+      />
+    </>
   )
 }
 

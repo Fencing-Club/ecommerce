@@ -52,7 +52,6 @@ export async function orderWorkflow(s: Session, orderId: string) {
           order.data,
           shipment,
           shipment.packingDraft ?? shipment.packing ?? {},
-          docs,
           reservedPieces(rows, shipment.id),
           order.revision,
           t
@@ -70,6 +69,13 @@ export async function orderWorkflow(s: Session, orderId: string) {
             step: "packing",
             action: "shipment.submit",
             message: t("workflow.packing")
+          }
+        } else if (shipment.status === "packed") {
+          next = {
+            owner: "buyer",
+            step: "prepareAmazon",
+            action: "shipment.prepareAmazon",
+            message: t("workflow.packed")
           }
         } else if (shipment.status === "approval") {
           next = {
@@ -169,7 +175,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           issues,
           // The packet downloads only while it's complete.
           packetUrl:
-            releasedStates.includes(shipment.status) && !release.length ? `/api/shipments/${shipment.id}/packet` : null
+            releasedStates.includes(shipment.status) && !release.length ? `/shipments/${shipment.id}/packet` : null
         }
       }),
       documents: docs
@@ -184,7 +190,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
             id: doc.id,
             name: doc.name,
             kind: doc.kind,
-            shipmentId: doc.shipmentId,
+            shipmentId: doc.kind === "invoice" ? null : doc.shipmentId,
             cartonId: doc.cartonId,
             itemId: doc.itemId,
             downloadUrl: downloadable ? `/api/documents/${doc.id}` : null

@@ -66,11 +66,11 @@ test("a buyer sends a purchase order, records landed costs and closes it", async
     await expect(aside.getByRole("listitem").filter({ hasText: "Freight" })).toContainText(
       "Ocean freight to Seattle$1,250.50"
     )
-    await expect(aside.getByRole("listitem").filter({ hasText: "Duty" })).toContainText("Customs entry$80.00")
+    await expect(aside.getByRole("listitem").filter({ hasText: "Duty" })).toContainText("Customs entry$80")
     await expect(aside.getByRole("listitem").filter({ hasText: "Other" })).toContainText("$19.50")
-    await expect(aside).toContainText("Supplier total$1,275.00")
-    await expect(aside).toContainText("Landed costs$1,350.00")
-    await expect(aside).toContainText("Landed total$2,625.00")
+    await expect(aside).toContainText("Supplier total$1,275")
+    await expect(aside).toContainText("Landed costs$1,350")
+    await expect(aside).toContainText("Landed total$2,625")
   })
 
   await test.step("remove a landed cost", async () => {

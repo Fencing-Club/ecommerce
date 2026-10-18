@@ -201,7 +201,7 @@ export const Supplier = meta.story({
     // The URL's tab opens.
     await expect(canvas.queryByRole("link", { name: "PO-1044" })).toBeNull()
     await expect(canvas.getByRole("columnheader", { name: "Total" })).toBeVisible()
-    await expect(canvas.getByText("$2,958.00")).toBeVisible()
+    await expect(canvas.getByText("$2,958")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: /Create purchase order/ })).toBeNull()
   }
 })
@@ -212,7 +212,7 @@ export const SupplierWithoutPrices = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "PO-1044" })).toBeVisible()
     await expect(canvas.queryByRole("columnheader", { name: "Total" })).toBeNull()
-    await expect(canvas.queryByText("$2,958.00")).toBeNull()
+    await expect(canvas.queryByText("$2,958")).toBeNull()
   }
 })
 

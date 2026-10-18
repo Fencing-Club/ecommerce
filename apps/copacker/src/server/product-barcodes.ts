@@ -432,6 +432,17 @@ export type LineLabel =
 
 type LabelOrder = { buyerOrgId: string; shopifyDomain: string; data: OrderInput }
 
+export function hasProductLabels(items: OrderInput["items"], labels: LineLabel[], included: ReadonlySet<string>) {
+  return (
+    labels.some((label) => included.has(label.itemId) && (label.state === "standard" || label.state === "uploaded")) ||
+    items.some(
+      (item) =>
+        included.has(item.id) &&
+        (item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning)
+    )
+  )
+}
+
 export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   const t = await errorText()
   const variantIds = [...new Set(order.data.items.map((item) => item.variantId))]
@@ -452,37 +463,77 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
   const forAmazon = order.data.destination === "amazon"
-  return order.data.items.map((item): LineLabel => {
+  return order.data.items.flatMap((item): LineLabel[] => {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
     const productId = rows.find((row) => row.variantId === item.variantId)?.productId
+    if (item.packingRequirements) {
+      const required = item.packingRequirements.labels
+      const labels: LineLabel[] = []
+      if (required.includes("sku")) {
+        labels.push({
+          itemId: item.id,
+          state: "standard",
+          variantId: item.variantId,
+          code: item.buyerSku,
+          title: labelTitle(item.name, item.variant)
+        })
+      }
+      if (required.includes("fnsku")) {
+        if (barcode) {
+          labels.push({ itemId: item.id, state: "uploaded", name: barcode.name, objectKey: barcode.objectKey })
+        } else if (item.fnsku) {
+          labels.push({
+            itemId: item.id,
+            state: "standard",
+            variantId: item.variantId,
+            code: item.fnsku,
+            title: labelTitle(item.name, item.variant)
+          })
+        } else {
+          labels.push({
+            itemId: item.id,
+            state: "missing",
+            problem: t("fnskuLookedUpOnSend"),
+            problemKey: "fnskuLookedUpOnSend"
+          })
+        }
+      }
+      return labels.length ? labels : [{ itemId: item.id, state: "none" }]
+    }
     if (barcode) {
-      return { itemId: item.id, state: "uploaded", name: barcode.name, objectKey: barcode.objectKey }
+      return [{ itemId: item.id, state: "uploaded", name: barcode.name, objectKey: barcode.objectKey }]
     }
     // A line set to go without its label skips it, except to Amazon, which needs every unit labeled.
     const unlabeled =
       item.skuLabel === undefined ? labelFree(defaults, productId, order.data.destination) : !item.skuLabel
     if (unlabeled && !forAmazon) {
-      return { itemId: item.id, state: "none" }
+      return [{ itemId: item.id, state: "none" }]
     }
     if (needsUpload(defaults, productId)) {
-      return {
-        itemId: item.id,
-        state: "missing",
-        problem: t("uploadLabelOnProducts"),
-        problemKey: "uploadLabelOnProducts"
-      }
+      return [
+        {
+          itemId: item.id,
+          state: "missing",
+          problem: t("uploadLabelOnProducts"),
+          problemKey: "uploadLabelOnProducts"
+        }
+      ]
     }
     const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
     if (!code) {
-      return { itemId: item.id, state: "missing", problem: t("fnskuLookedUpOnSend"), problemKey: "fnskuLookedUpOnSend" }
+      return [
+        { itemId: item.id, state: "missing", problem: t("fnskuLookedUpOnSend"), problemKey: "fnskuLookedUpOnSend" }
+      ]
     }
-    return {
-      itemId: item.id,
-      state: "standard",
-      variantId: item.variantId,
-      code,
-      title: labelTitle(item.name, item.variant)
-    }
+    return [
+      {
+        itemId: item.id,
+        state: "standard",
+        variantId: item.variantId,
+        code,
+        title: labelTitle(item.name, item.variant)
+      }
+    ]
   })
 }
 
@@ -494,7 +545,9 @@ export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
     await countriesOfOrigin(
       order.buyerOrgId,
       order.shopifyDomain,
-      standard.map((label) => label.variantId)
+      standard
+        .filter((label) => !order.data.items.find((item) => item.id === label.itemId)?.packingRequirements)
+        .map((label) => label.variantId)
     )
   )
   const files: Array<{ itemId: string; name: string; bytes: Uint8Array }> = []
@@ -502,10 +555,15 @@ export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
     if (label.state === "uploaded") {
       files.push({ itemId: label.itemId, name: label.name, bytes: await getFile(label.objectKey) })
     } else if (label.state === "standard") {
+      const requirements = order.data.items.find((item) => item.id === label.itemId)?.packingRequirements
+      let countryOfOrigin = origins.get(label.variantId) ?? null
+      if (requirements) {
+        countryOfOrigin = requirements.labels.includes("countryOfOrigin") ? [requirements.countryCode] : null
+      }
       const bytes = await standardProductLabels({
         code: label.code,
         title: label.title,
-        countryOfOrigin: origins.get(label.variantId) ?? null
+        countryOfOrigin
       })
       files.push({ itemId: label.itemId, name: labelFileName(label.title), bytes })
     }
@@ -515,8 +573,12 @@ export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
 
 // One sheet of suffocation warning labels when any of the lines needs them, for the supplier to print as many as it
 // bags; null when none does.
-export async function warningLabelFile(items: readonly Pick<OrderInput["items"][number], "suffocationWarning">[]) {
-  return items.some((item) => item.suffocationWarning)
+export async function warningLabelFile(
+  items: readonly Pick<OrderInput["items"][number], "suffocationWarning" | "packingRequirements">[]
+) {
+  return items.some((item) =>
+    item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning
+  )
     ? { name: "Suffocation warning labels.pdf", bytes: await suffocationWarningLabels() }
     : null
 }
@@ -530,7 +592,8 @@ export async function linesMissingLabels(s: Session, orderId: string) {
 // One PO line's product label, for downloading from the PO.
 export async function orderLineLabel(s: Session, orderId: string, itemId: string) {
   const { order } = await accessibleOrder(s, orderId)
-  const label = (await lineLabels(order)).find((row) => row.itemId === itemId)
+  const labels = (await lineLabels(order)).filter((row) => row.itemId === itemId)
+  const label = labels.find((row) => row.state === "missing") ?? labels[0]
   if (!label) {
     throw new ProductBarcodeError("lineNotOnOrder", 404)
   }
@@ -540,8 +603,11 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   if (label.state === "missing") {
     throw new ProductBarcodeError(label.problemKey, 404)
   }
-  const [file] = await lineLabelFiles(order, [label])
-  return file!
+  const files = await lineLabelFiles(order, labels)
+  return {
+    ...files[0]!,
+    bytes: files.length === 1 ? files[0]!.bytes : await combinePdfs(files.map((file) => file.bytes))
+  }
 }
 
 // All of a PO's product labels in one PDF, in the PO's line order, then its suffocation warning labels, for printing

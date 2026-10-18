@@ -354,5 +354,9 @@
   "awdOriginDiffers": "پک اپ کا پتہ Amazon سے مختلف ہے۔ گلی، یونٹ، پوسٹل کوڈ اور ملک چیک کریں۔",
   "linkAwdOnly": "صرف AWD پیکنگ ڈرافٹ کو موجودہ AWD شپمنٹ سے منسلک کیا جا سکتا ہے۔",
   "awdProductsDiffer": "Amazon شپمنٹ میں اس AWD آرڈر سے باہر مصنوعات یا زیادہ مقدار ہے۔",
-  "awdAlreadyLinked": "یہ Amazon شپمنٹ پہلے ہی خریداری کے آرڈر سے منسلک ہے۔"
+  "awdAlreadyLinked": "یہ Amazon شپمنٹ پہلے ہی خریداری کے آرڈر سے منسلک ہے۔",
+  "transportChanged": "نقل و حمل تبدیل ہو چکی ہے یا جاری ہو چکی ہے۔ شپمنٹ دوبارہ لوڈ کریں۔",
+  "transportForwarderMissing": "پہلے آرڈر میں فریٹ فارورڈر کا اسٹاپ شامل کریں۔",
+  "packetDestinationUnavailable": "دستاویزات ڈاؤن لوڈ کرنے سے پہلے شپمنٹ کے ترسیلی پتے کی تصدیق کریں۔",
+  "packetNoLabelsRequired": "اس شپمنٹ کے لیے اس قسم کے لیبل درکار نہیں ہیں۔"
 }

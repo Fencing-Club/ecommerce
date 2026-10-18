@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { addressSchema } from "@repo/aisle"
+import { canConfigureTransport, transportSchema } from "@repo/aisle/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -49,6 +50,7 @@ import {
   submitOrder,
   newShipment,
   submitPacking,
+  prepareAmazonShipment,
   approveInvoice,
   correctShipment,
   savePacking,
@@ -485,6 +487,11 @@ export async function POST(request: Request) {
       await approveInvoice(s, id(), revision(), z.boolean().parse(data.updateCost))
       return Response.json({ ok: true })
     }
+    if (action === "shipment.prepareAmazon") {
+      requireAccess(s, "shipments", "edit")
+      await prepareAmazonShipment(s, id(), revision())
+      return Response.json({ ok: true })
+    }
     if (action === "shipment.correct") {
       requireAccess(s, "shipments", "edit")
       await correctShipment(s, id(), z.string().parse(data.reason))
@@ -682,6 +689,33 @@ export async function POST(request: Request) {
       await withJobWake(
         db().update(jobs).set({ status: "pending", runAt: new Date(), error: null }).where(eq(jobs.id, id()))
       )
+      return Response.json({ ok: true })
+    }
+    if (action === "shipment.transport") {
+      requireBuyer(s)
+      requireAccess(s, "shipments", "edit")
+      const transport = transportSchema.parse(data.transport)
+      const expected = transportSchema.nullable().parse(data.expected)
+      await db().transaction(async (tx) => {
+        const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
+        if (!initial) {
+          throw new LocalizedError("shipmentNotFound")
+        }
+        const { order } = await accessibleOrder(s, initial.orderId, tx, true)
+        const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
+        if (
+          !shipment ||
+          !canConfigureTransport(shipment.status, shipment.operation, shipment.transport) ||
+          shipment.revision !== revision() ||
+          JSON.stringify(shipment.transport && transportSchema.parse(shipment.transport)) !== JSON.stringify(expected)
+        ) {
+          throw new LocalizedError("transportChanged")
+        }
+        if (transport.handoff === "forwarder" && !(shipment.snapshot ?? order.data).via) {
+          throw new LocalizedError("transportForwarderMissing")
+        }
+        await tx.update(shipments).set({ transport, updatedAt: new Date() }).where(eq(shipments.id, id()))
+      })
       return Response.json({ ok: true })
     }
     if (action === "shipment.release") {

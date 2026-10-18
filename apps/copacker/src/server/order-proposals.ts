@@ -357,11 +357,10 @@ export async function approveProposal(s: Session, proposalId: string) {
         .insert(orderRevisions)
         .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "approvedSupplierChanges" })
       await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, locked.id))
-      const open = await tx
+      await tx
         .update(shipments)
         .set({ snapshot: data, orderRevision: revision, updatedAt: new Date() })
         .where(and(eq(shipments.orderId, locked.id), eq(shipments.status, "packing")))
-        .returning({ id: shipments.id })
       await tx
         .update(documents)
         .set({ outdated: 1 })
@@ -385,15 +384,13 @@ export async function approveProposal(s: Session, proposalId: string) {
         actor: s.user.id,
         ...eventMessage({ key: "supplierChangesApproved", values: { revision } })
       })
-      return { orderId: locked.id, revision, shipmentIds: open.map((row) => row.id) }
+      return { orderId: locked.id, revision }
     })
   )
   // The documents are made again if storage fails, when they're next needed.
   try {
     await generatePo(result.orderId, result.revision)
-    for (const shipmentId of result.shipmentIds) {
-      await generateInvoice(result.orderId, shipmentId, result.revision)
-    }
+    await generateInvoice(result.orderId, result.revision)
   } catch (error) {
     console.error(
       JSON.stringify({ event: "proposal_documents_failed", orderId: result.orderId, error: describeError(error) })

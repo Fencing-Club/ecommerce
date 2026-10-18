@@ -178,6 +178,7 @@
     "preparation": "Preparación",
     "suffocationWarning": "Etiqueta de advertencia de asfixia",
     "instructionsPlaceholder": "Excepciones de manejo o etiquetado",
+    "markdownHint": "Compatible con Markdown: usa - para viñetas, 1. para pasos numerados y **negritas** para destacar.",
     "done": "Listo",
     "editCostSummary": "Editar<hidden> resumen de costos</hidden>",
     "editCostSummaryTitle": "Editar resumen de costos",
@@ -187,6 +188,7 @@
     "removeAdjustment": "Quitar ajuste",
     "addAdjustment": "Agregar ajuste",
     "skuLabel": "Etiqueta de SKU",
+    "fnskuLabel": "Etiqueta FNSKU",
     "amazonRequiresIt": "Amazon la exige",
     "shipments": "Envíos",
     "groupingHint": "Selecciona productos para moverlos entre envíos.",
@@ -208,7 +210,14 @@
     "perPiece": "Por pieza",
     "flatAmount": "Importe fijo",
     "shipmentTotal": "Total del envío",
-    "expenseType": "Tipo de gasto"
+    "expenseType": "Tipo de gasto",
+    "prepNone": "Ninguna",
+    "polybag": "Bolsa de plástico",
+    "sealedPolybag": "Bolsa de plástico sellada",
+    "chokingHazard": "Advertencia de asfixia por piezas pequeñas",
+    "countryOfOriginLabel": "Etiqueta de país de origen",
+    "countryOfOriginCode": "Código de país",
+    "instructions": "Instrucciones"
   },
   "revise": {
     "title": "Editar pedido",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "Preparar siguiente envío",
     "offCopacker": {
       "title": "{supplier} no está en Copacker",
-      "description": "Envíale tú la orden de compra por correo electrónico y luego registra sus cajas y su factura en el envío."
+      "description": "Envíales la orden de compra por correo y después registra los detalles de sus cajas en el envío."
     },
     "columns": {
       "products": "Productos",
@@ -422,7 +431,8 @@
     "otherAddress": "Otra dirección",
     "readyForPickup": "Listo para recolección",
     "addCartonProduct": "Agregar producto a la caja",
-    "removeCartonProduct": "Quitar producto {number} de la caja"
+    "removeCartonProduct": "Quitar producto {number} de la caja",
+    "finishPacking": "Terminar empaque"
   },
   "paymentTerms": {
     "net7": "Neto 7 días",
@@ -447,5 +457,84 @@
     "surcharge": "Recargo",
     "tariffs": "Aranceles",
     "other": "Otro"
+  },
+  "cartonEditor": {
+    "addProductsTo": "Agregar productos a la caja {carton}",
+    "shipmentProducts": "Productos de este envío",
+    "searchProducts": "Buscar productos de este envío",
+    "alreadyAdded": "Ya agregado",
+    "noProducts": "No se encontraron productos",
+    "cancel": "Cancelar",
+    "addSelected": "Agregar {count, plural, one {# producto} other {# productos}}",
+    "carton": "Caja {carton}",
+    "count": "Cajas",
+    "length": "Largo",
+    "width": "Ancho",
+    "height": "Alto",
+    "weight": "Peso",
+    "enterNumber": "Ingresa un número positivo para {field}.",
+    "enterQuantity": "Ingresa una cantidad entera para {sku}.",
+    "addProductRequired": "Agrega un producto a esta caja.",
+    "dimensions": "Dimensiones (cm)",
+    "axis": {
+      "length": "L",
+      "width": "A",
+      "height": "H"
+    },
+    "actions": "Acciones de la caja {carton}",
+    "duplicate": "Duplicar caja",
+    "delete": "Eliminar caja",
+    "quantityPerCarton": "Cantidad / caja",
+    "packsPerCarton": "Paquetes / caja",
+    "unitsPerCarton": "Unidades / caja",
+    "productQuantity": "{sku}: cantidad por caja {carton}",
+    "unitCount": "{count, plural, one {# unidad} other {# unidades}}",
+    "removeProduct": "Quitar {sku} de la caja {carton}",
+    "product": "Producto",
+    "leftToPack": "Por empacar",
+    "packCount": "{count, plural, one {# paquete} other {# paquetes}}",
+    "addToCarton": "Agregar a la caja {carton}",
+    "selectedCount": "{count} seleccionados",
+    "cartonGroup": "Cajas {cartons}"
+  },
+  "cartonImport": {
+    "title": "Importar cajas",
+    "reviewTitle": "Revisar importación",
+    "downloadTemplate": "Descargar plantilla",
+    "templateHint": "Usa la plantilla para indicar el contenido, las cantidades, las dimensiones y el peso de las cajas.",
+    "downloadFailed": "No se pudo descargar la plantilla.",
+    "formats": "XLSX o CSV, hasta 10 MB",
+    "failed": "No se pudieron importar las cajas. No se realizaron cambios.",
+    "templateMismatch": "El archivo no coincide con la plantilla",
+    "issues": "{count, plural, one {# problema} other {# problemas}}",
+    "row": "Fila {row}",
+    "mode": "Modo de importación",
+    "add": "Agregar cajas",
+    "replace": "Reemplazar empaque",
+    "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
+    "productCount": "{count, plural, one {# producto} other {# productos}}",
+    "measurements": "{length} × {width} × {height} cm / {weight} kg",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "cancel": "Cancelar",
+    "import": "Importar cajas",
+    "review": "Revisar cajas",
+    "importing": "Importando cajas…",
+    "importingButton": "Importando…",
+    "checking": "Revisando archivo…",
+    "errors": {
+      "missingColumns": "Faltan columnas: {value}.",
+      "duplicateColumns": "Columnas duplicadas: {value}.",
+      "unknownColumns": "Columnas inesperadas: {value}.",
+      "empty": "El archivo no contiene filas de cajas.",
+      "worksheet": "El archivo necesita una hoja llamada Cartons.",
+      "unreadable": "No se pudo leer el archivo. Usa un archivo XLSX o CSV basado en la plantilla.",
+      "number": "Ingresa un número positivo válido en {value}.",
+      "sku": "El SKU no pertenece a este envío: {value}.",
+      "cartonId": "Ingresa un ID de caja de 1 a 60 caracteres.",
+      "measurements": "Las filas de esta caja deben tener la misma cantidad de cajas, dimensiones y peso.",
+      "duplicateProduct": "Esta caja incluye {value} más de una vez.",
+      "limit": "Un envío puede contener hasta 1,000 cajas."
+    }
   }
 }

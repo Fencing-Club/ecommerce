@@ -1,7 +1,7 @@
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
+import { shipmentDestinations, shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
@@ -14,6 +14,7 @@ import { releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
+import { hasProductLabels, lineLabels } from "./product-barcodes"
 export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
   const s = await session()
   requirePage(s, "shipments")
@@ -67,10 +68,9 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const visibleDocs = docs.filter(
     (d) =>
       (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
-      (prices || d.kind !== "invoice")
+      !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   // The shipment's commercial invoice. There's one at most: each upload replaces the last.
-  const invoice = docs.find((d) => d.kind === "invoice")
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
     const item = snapshot.items.find((i) => i.id === change.itemId)!
     return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
@@ -98,6 +98,13 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
+    hasProductLabels: hasProductLabels(
+      snapshot.items,
+      await lineLabels({ ...order, data: snapshot }),
+      new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+    ),
+    delivery: await shipmentDelivery(order, shipment),
+    destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,
     seesOrder,
     prices,
@@ -107,6 +114,8 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     supplier: { id: supplier.id, name: supplier.name },
     shipment: {
       amazonNetwork: shipment.amazonNetwork,
+      transport: shipment.transport,
+      operation: shipment.operation,
       linkedAmazonShipmentId: shipment.linkedAmazonShipmentId,
       status: shipment.status,
       revision: shipment.revision,
@@ -134,7 +143,6 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     isBuyer,
     amazonLinks,
     visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),
-    invoice: prices && invoice ? { id: invoice.id, name: invoice.name, bytes: invoice.bytes } : undefined,
     changes: changes
       .filter(({ item, change }) => prices || change.supplierSku !== item.supplierSku)
       .map(({ item, change }) => ({

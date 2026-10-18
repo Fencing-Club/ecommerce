@@ -1,6 +1,7 @@
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
 import { packingSchema, validatePacking } from "@repo/aisle"
+import { shipmentLabelRequirements } from "@repo/aisle/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import type { ShipmentState } from "../db/schema"
@@ -76,7 +77,6 @@ export function packingReadiness(
   order: OrderInput,
   shipment: Shipment,
   raw: unknown,
-  docs: Document[],
   reserved: Record<string, number>,
   orderRevision: number,
   t: ServerText = serverTextInEnglish
@@ -88,7 +88,11 @@ export function packingReadiness(
       message: t("readiness.orderChanged")
     })
   }
-  if (!["packing", "correction"].includes(shipment.status) || shipment.operation !== "none" || shipment.amazonOrderId) {
+  if (
+    !["packing", "correction", "packed"].includes(shipment.status) ||
+    shipment.operation !== "none" ||
+    shipment.amazonOrderId
+  ) {
     issues.push({ code: "shipment_locked", message: t("readiness.shipmentLocked") })
   }
   const parsed = packingSchema.safeParse(raw)
@@ -112,22 +116,6 @@ export function packingReadiness(
     )
   ) {
     issues.push({ code: "network_mismatch", message: t("readiness.networkMismatch") })
-  }
-  if (
-    !docs.some(
-      (doc) =>
-        doc.id === packing.invoiceDocumentId &&
-        doc.orderId === shipment.orderId &&
-        doc.shipmentId === shipment.id &&
-        doc.kind === "invoice" &&
-        !doc.outdated
-    )
-  ) {
-    issues.push({
-      code: "missing_invoice",
-      field: "invoiceDocumentId",
-      message: t("readiness.missingInvoice")
-    })
   }
   issues.push(
     ...validatePacking(order, packing, reserved).issues.map((issue) => ({
@@ -154,6 +142,9 @@ export function releaseIssues(
     return [{ code: "missing_packing", message: t("readiness.missingPacking") }]
   }
   const issues = shipment.snapshot.destination === "amazon" ? amazonIssues(shipment, shipment.packing, docs, t) : []
+  if (shipmentLabelRequirements(shipment.snapshot.destination, shipment.transport).needsTransport) {
+    issues.push({ code: "missing_transport", message: t("readiness.missingTransport") })
+  }
   const shipped = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   for (const item of shipment.snapshot.items) {
     if (shipped.has(item.id) && missingLabels.has(item.id)) {
@@ -167,9 +158,8 @@ export function releaseIssues(
   return issues
 }
 
-// What the packet of a shipment to Amazon needs besides product labels: Amazon's label and the buyer's shipping label
-// for every carton, and the packing list and checklist made with Amazon's labels, all for the shipment's current
-// revision.
+// Amazon carton labels and packing documents must match the current revision. The configured transport decides
+// whether each carton also needs a carrier label.
 function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t: ServerText) {
   const issues: ReadinessIssue[] = []
   const current = docs.filter(
@@ -186,14 +176,6 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
   ) {
     issues.push({ code: "unmatched_cartons", message: t("readiness.unmatchedCartons") })
   }
-  for (const kind of ["packing_list", "checklist"]) {
-    if (!current.some((doc) => doc.kind === kind)) {
-      issues.push({
-        code: `missing_${kind}`,
-        message: t(kind === "packing_list" ? "readiness.missingPackingList" : "readiness.missingChecklist")
-      })
-    }
-  }
   for (const carton of packing.cartons) {
     if (
       !shipment.labels.some((label) => label.cartonId === carton.cartonId) ||
@@ -205,7 +187,10 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
         message: t("readiness.missingCartonLabel", { carton: carton.cartonId })
       })
     }
-    if (!current.some((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)) {
+    if (
+      shipmentLabelRequirements(shipment.snapshot!.destination, shipment.transport).carrierLabels &&
+      !current.some((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)
+    ) {
       issues.push({
         code: "missing_shipping_label",
         cartonId: carton.cartonId,

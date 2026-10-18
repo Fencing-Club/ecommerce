@@ -32,7 +32,7 @@ export const WithCosts = meta.story({
     await expect(canvas.getByText("Freight")).toBeVisible()
     await expect(canvas.getByText("Bayline invoice 2291")).toBeVisible()
     await expect(canvas.getByText("Duty")).toBeVisible()
-    await expect(canvas.getByText("$2,958.00")).toBeVisible()
+    await expect(canvas.getByText("$2,958")).toBeVisible()
     await expect(canvas.getByText("$915.50")).toBeVisible()
     await expect(canvas.getByText("$3,873.50")).toBeVisible()
     await expect(canvas.getByText("30% on product cost")).toBeVisible()

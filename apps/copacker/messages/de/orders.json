@@ -178,6 +178,7 @@
     "preparation": "Vorbereitung",
     "suffocationWarning": "Erstickungswarnetikett",
     "instructionsPlaceholder": "Ausnahmen bei Handhabung oder Etikettierung",
+    "markdownHint": "Markdown wird unterstützt: - für Aufzählungen, 1. für nummerierte Schritte und **fett** für Hervorhebungen.",
     "done": "Fertig",
     "editCostSummary": "Bearbeiten<hidden>: Kostenübersicht</hidden>",
     "editCostSummaryTitle": "Kostenübersicht bearbeiten",
@@ -187,6 +188,7 @@
     "removeAdjustment": "Anpassung entfernen",
     "addAdjustment": "Anpassung hinzufügen",
     "skuLabel": "SKU-Etikett",
+    "fnskuLabel": "FNSKU-Etikett",
     "amazonRequiresIt": "Von Amazon vorgeschrieben",
     "shipments": "Sendungen",
     "groupingHint": "Wähle Produkte aus, um sie zwischen Sendungen zu verschieben.",
@@ -208,7 +210,14 @@
     "perPiece": "Pro Stück",
     "flatAmount": "Pauschalbetrag",
     "shipmentTotal": "Sendungssumme",
-    "expenseType": "Ausgabenart"
+    "expenseType": "Ausgabenart",
+    "prepNone": "Keine",
+    "polybag": "Polybeutel",
+    "sealedPolybag": "Versiegelter Polybeutel",
+    "chokingHazard": "Warnhinweis für verschluckbare Kleinteile",
+    "countryOfOriginLabel": "Ursprungsland-Etikett",
+    "countryOfOriginCode": "Ländercode",
+    "instructions": "Anweisungen"
   },
   "revise": {
     "title": "Auftrag bearbeiten",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "Nächste Sendung vorbereiten",
     "offCopacker": {
       "title": "{supplier} ist nicht bei Copacker",
-      "description": "Senden Sie die Bestellung selbst per E-Mail und erfassen Sie dann Kartons und Rechnung des Lieferanten in der Sendung."
+      "description": "Senden Sie dem Lieferanten die Bestellung per E-Mail und erfassen Sie anschließend die Kartondetails in der Sendung."
     },
     "columns": {
       "products": "Produkte",
@@ -422,7 +431,8 @@
     "otherAddress": "Andere Adresse",
     "readyForPickup": "Abholbereit",
     "addCartonProduct": "Produkt zum Karton hinzufügen",
-    "removeCartonProduct": "Produkt {number} aus dem Karton entfernen"
+    "removeCartonProduct": "Produkt {number} aus dem Karton entfernen",
+    "finishPacking": "Verpacken abschließen"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",
@@ -447,5 +457,84 @@
     "surcharge": "Zuschlag",
     "tariffs": "Einfuhrzölle",
     "other": "Sonstiges"
+  },
+  "cartonEditor": {
+    "addProductsTo": "Produkte zu Karton {carton} hinzufügen",
+    "shipmentProducts": "Produkte in dieser Sendung",
+    "searchProducts": "Produkte dieser Sendung suchen",
+    "alreadyAdded": "Bereits hinzugefügt",
+    "noProducts": "Keine Produkte gefunden",
+    "cancel": "Abbrechen",
+    "addSelected": "{count, plural, one {# Produkt hinzufügen} other {# Produkte hinzufügen}}",
+    "carton": "Karton {carton}",
+    "count": "Kartons",
+    "length": "Länge",
+    "width": "Breite",
+    "height": "Höhe",
+    "weight": "Gewicht",
+    "enterNumber": "Für {field} eine positive Zahl eingeben.",
+    "enterQuantity": "Für {sku} eine ganze Menge eingeben.",
+    "addProductRequired": "Diesem Karton ein Produkt hinzufügen.",
+    "dimensions": "Abmessungen (cm)",
+    "axis": {
+      "length": "L",
+      "width": "B",
+      "height": "H"
+    },
+    "actions": "Aktionen für Karton {carton}",
+    "duplicate": "Karton duplizieren",
+    "delete": "Karton löschen",
+    "quantityPerCarton": "Menge / Karton",
+    "packsPerCarton": "Packungen / Karton",
+    "unitsPerCarton": "Einheiten / Karton",
+    "productQuantity": "{sku}: Menge je Karton {carton}",
+    "unitCount": "{count, plural, one {# Einheit} other {# Einheiten}}",
+    "removeProduct": "{sku} aus Karton {carton} entfernen",
+    "product": "Produkt",
+    "leftToPack": "Noch zu packen",
+    "packCount": "{count, plural, one {# Packung} other {# Packungen}}",
+    "addToCarton": "Zu Karton {carton} hinzufügen",
+    "selectedCount": "{count} ausgewählt",
+    "cartonGroup": "Kartons {cartons}"
+  },
+  "cartonImport": {
+    "title": "Kartons importieren",
+    "reviewTitle": "Import prüfen",
+    "downloadTemplate": "Vorlage herunterladen",
+    "templateHint": "In der Vorlage Inhalt, Mengen, Abmessungen und Gewicht der Kartons eintragen.",
+    "downloadFailed": "Die Vorlage konnte nicht heruntergeladen werden.",
+    "formats": "XLSX oder CSV, bis 10 MB",
+    "failed": "Kartons konnten nicht importiert werden. Es wurden keine Änderungen vorgenommen.",
+    "templateMismatch": "Datei entspricht nicht der Vorlage",
+    "issues": "{count, plural, one {# Problem} other {# Probleme}}",
+    "row": "Zeile {row}",
+    "mode": "Importmodus",
+    "add": "Kartons hinzufügen",
+    "replace": "Packliste ersetzen",
+    "cartonCount": "{count, plural, one {# Karton} other {# Kartons}}",
+    "productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
+    "measurements": "{length} × {width} × {height} cm / {weight} kg",
+    "close": "Schließen",
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "import": "Kartons importieren",
+    "review": "Kartons prüfen",
+    "importing": "Kartons werden importiert…",
+    "importingButton": "Import läuft…",
+    "checking": "Datei wird geprüft…",
+    "errors": {
+      "missingColumns": "Fehlende Spalten: {value}.",
+      "duplicateColumns": "Doppelte Spalten: {value}.",
+      "unknownColumns": "Unerwartete Spalten: {value}.",
+      "empty": "Die Datei enthält keine Kartonzeilen.",
+      "worksheet": "Die Datei benötigt ein Arbeitsblatt namens Cartons.",
+      "unreadable": "Datei konnte nicht gelesen werden. Eine XLSX- oder CSV-Datei aus der Vorlage verwenden.",
+      "number": "In {value} eine gültige positive Zahl eingeben.",
+      "sku": "SKU ist nicht in dieser Sendung: {value}.",
+      "cartonId": "Eine Karton-ID mit 1–60 Zeichen eingeben.",
+      "measurements": "Zeilen desselben Kartons müssen dieselbe Anzahl, Abmessungen und dasselbe Gewicht haben.",
+      "duplicateProduct": "Dieser Karton enthält {value} mehrfach.",
+      "limit": "Eine Sendung darf höchstens 1.000 Kartons enthalten."
+    }
   }
 }

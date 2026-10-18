@@ -69,7 +69,7 @@ test("a supplier proposes changes to a purchase order and the buyer answers them
     await expect(panel).toContainText("Cotton prices went up this month")
     await expect(panel.getByRole("row", { name: /Pro-grip glove/ })).toContainText(/100\s*to\s*120/)
     await expect(panel).toContainText(/Net 30\s*to\s*Net 45/)
-    await expect(panel).toContainText(/\$1,275\.00\s*to\s*\$1,535\.00/)
+    await expect(panel).toContainText(/\$1,275\s*to\s*\$1,535/)
 
     const dialog = page.getByRole("dialog", { name: "Decline the changes?" })
     await panel.getByRole("button", { name: "Decline" }).click()

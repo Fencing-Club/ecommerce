@@ -25,7 +25,8 @@
       "overQuantity": "{sku}: i cartoni superano la quantità residua dell’ordine di acquisto",
       "unknownChange": "Le modifiche alla fattura devono riferirsi ad articoli univoci dell’ordine di acquisto"
     },
-    "networkMismatch": "Imballa solo prodotti assegnati alla rete Amazon di questa spedizione."
+    "networkMismatch": "Imballa solo prodotti assegnati alla rete Amazon di questa spedizione.",
+    "missingTransport": "Trasporto non confermato"
   },
   "workflow": {
     "arrived": "La merce è arrivata",
@@ -41,7 +42,8 @@
     "complete": "Spedizione completata",
     "cancellation": "Annulla la spedizione Amazon esistente prima di crearne una sostitutiva",
     "reconcile": "Trova e collega l’ordine Amazon prima di continuare",
-    "retry": "Risolvi il problema segnalato, poi riprova la spedizione"
+    "retry": "Risolvi il problema segnalato, poi riprova la spedizione",
+    "packed": "L’imballaggio è completo. L’acquirente può preparare la spedizione Amazon e ottenere le etichette."
   },
   "overview": {
     "due": {

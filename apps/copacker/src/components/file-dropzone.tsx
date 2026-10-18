@@ -19,7 +19,7 @@
 
 import { useMergedRef } from "@mantine/hooks"
 import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
-import { FileText, UploadCloud, X } from "lucide-react"
+import { FileText, UploadCloud, Trash2 } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
@@ -231,7 +231,7 @@ export function FileDropzone({
                 disabled={disabled}
                 onClick={remove}
               >
-                <X />
+                <Trash2 />
               </Button>
             </>
           ) : (

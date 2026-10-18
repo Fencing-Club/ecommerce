@@ -120,6 +120,7 @@ import { Route as ApiWebhooksEbayRouteImport } from './routes/api.webhooks.ebay'
 import { Route as PortalOrdersIdEditRouteImport } from './routes/_portal.orders_.$id_.edit'
 import { Route as PortalOrdersIdReviseRouteImport } from './routes/_portal.orders_.$id_.revise'
 import { Route as PortalOrdersImportIdRouteImport } from './routes/_portal.orders_.import_.$id'
+import { Route as PortalShipmentsIdPacketRouteImport } from './routes/_portal.shipments_.$id_.packet'
 import { Route as ApiAnalyticsAmazonAllocationsRouteImport } from './routes/api.analytics.amazon.allocations'
 import { Route as ApiAnalyticsAmazonFulfillmentShipmentsRouteImport } from './routes/api.analytics.amazon.fulfillment-shipments'
 import { Route as ApiAnalyticsAmazonProductMappingsRouteImport } from './routes/api.analytics.amazon.product-mappings'
@@ -718,6 +719,11 @@ const PortalOrdersImportIdRoute = PortalOrdersImportIdRouteImport.update({
   path: '/orders/import/$id',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalShipmentsIdPacketRoute = PortalShipmentsIdPacketRouteImport.update({
+  id: '/shipments_/$id_/packet',
+  path: '/shipments/$id/packet',
+  getParentRoute: () => PortalRoute,
+} as any)
 const ApiAnalyticsAmazonAllocationsRoute =
   ApiAnalyticsAmazonAllocationsRouteImport.update({
     id: '/api/analytics/amazon/allocations',
@@ -961,6 +967,7 @@ export interface FileRoutesByFullPath {
   '/orders/$id/edit': typeof PortalOrdersIdEditRoute
   '/orders/$id/revise': typeof PortalOrdersIdReviseRoute
   '/orders/import/$id': typeof PortalOrdersImportIdRoute
+  '/shipments/$id/packet': typeof PortalShipmentsIdPacketRoute
   '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
   '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
   '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
@@ -1096,6 +1103,7 @@ export interface FileRoutesByTo {
   '/orders/$id/edit': typeof PortalOrdersIdEditRoute
   '/orders/$id/revise': typeof PortalOrdersIdReviseRoute
   '/orders/import/$id': typeof PortalOrdersImportIdRoute
+  '/shipments/$id/packet': typeof PortalShipmentsIdPacketRoute
   '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
   '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
   '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
@@ -1234,6 +1242,7 @@ export interface FileRoutesById {
   '/_portal/orders_/$id_/edit': typeof PortalOrdersIdEditRoute
   '/_portal/orders_/$id_/revise': typeof PortalOrdersIdReviseRoute
   '/_portal/orders_/import_/$id': typeof PortalOrdersImportIdRoute
+  '/_portal/shipments_/$id_/packet': typeof PortalShipmentsIdPacketRoute
   '/api/analytics/amazon/allocations': typeof ApiAnalyticsAmazonAllocationsRoute
   '/api/analytics/amazon/fulfillment-shipments': typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
   '/api/analytics/amazon/product-mappings': typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
@@ -1371,6 +1380,7 @@ export interface FileRouteTypes {
     | '/orders/$id/edit'
     | '/orders/$id/revise'
     | '/orders/import/$id'
+    | '/shipments/$id/packet'
     | '/api/analytics/amazon/allocations'
     | '/api/analytics/amazon/fulfillment-shipments'
     | '/api/analytics/amazon/product-mappings'
@@ -1506,6 +1516,7 @@ export interface FileRouteTypes {
     | '/orders/$id/edit'
     | '/orders/$id/revise'
     | '/orders/import/$id'
+    | '/shipments/$id/packet'
     | '/api/analytics/amazon/allocations'
     | '/api/analytics/amazon/fulfillment-shipments'
     | '/api/analytics/amazon/product-mappings'
@@ -1643,6 +1654,7 @@ export interface FileRouteTypes {
     | '/_portal/orders_/$id_/edit'
     | '/_portal/orders_/$id_/revise'
     | '/_portal/orders_/import_/$id'
+    | '/_portal/shipments_/$id_/packet'
     | '/api/analytics/amazon/allocations'
     | '/api/analytics/amazon/fulfillment-shipments'
     | '/api/analytics/amazon/product-mappings'
@@ -2525,6 +2537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalOrdersImportIdRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/_portal/shipments_/$id_/packet': {
+      id: '/_portal/shipments_/$id_/packet'
+      path: '/shipments/$id/packet'
+      fullPath: '/shipments/$id/packet'
+      preLoaderRoute: typeof PortalShipmentsIdPacketRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/api/analytics/amazon/allocations': {
       id: '/api/analytics/amazon/allocations'
       path: '/api/analytics/amazon/allocations'
@@ -2742,6 +2761,7 @@ interface PortalRouteChildren {
   PortalOrdersIdEditRoute: typeof PortalOrdersIdEditRoute
   PortalOrdersIdReviseRoute: typeof PortalOrdersIdReviseRoute
   PortalOrdersImportIdRoute: typeof PortalOrdersImportIdRoute
+  PortalShipmentsIdPacketRoute: typeof PortalShipmentsIdPacketRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
@@ -2770,6 +2790,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalOrdersIdEditRoute: PortalOrdersIdEditRoute,
   PortalOrdersIdReviseRoute: PortalOrdersIdReviseRoute,
   PortalOrdersImportIdRoute: PortalOrdersImportIdRoute,
+  PortalShipmentsIdPacketRoute: PortalShipmentsIdPacketRoute,
 }
 
 const PortalRouteWithChildren =

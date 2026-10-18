@@ -354,5 +354,9 @@
   "awdOriginDiffers": "The pickup address differs from Amazon. Check the street, unit, postal code and country.",
   "linkAwdOnly": "Only an AWD packing draft can link an existing AWD shipment.",
   "awdProductsDiffer": "The Amazon shipment contains products or quantities outside this AWD order.",
-  "awdAlreadyLinked": "This Amazon shipment is already linked to a purchase order."
+  "awdAlreadyLinked": "This Amazon shipment is already linked to a purchase order.",
+  "transportChanged": "Transport changed or is already released. Reload the shipment.",
+  "transportForwarderMissing": "Add a freight forwarder stop to the order first.",
+  "packetDestinationUnavailable": "Confirm the shipment’s delivery address before downloading the packet.",
+  "packetNoLabelsRequired": "No labels of this type are required for this shipment."
 }

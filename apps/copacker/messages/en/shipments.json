@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "Ship to",
+      "pending": "Amazon assigns the delivery address after shipment creation.",
+      "unavailable": "Delivery address unavailable. Check the purchase order or linked Amazon shipment."
+    },
     "metaTitle": "Shipment",
     "title": "Shipment {number}",
     "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
@@ -56,7 +61,9 @@
       "markShipped": "Mark shipped",
       "markReceived": "Mark received",
       "retry": "Retry shipment",
-      "cancelInAmazon": "Cancel in Amazon"
+      "cancelInAmazon": "Cancel in Amazon",
+      "getAmazonLabels": "Get Amazon labels",
+      "createAmazonShipment": "Create Amazon shipment"
     },
     "needsAttention": "Needs attention",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "Waiting for the buyer’s approval"
     },
     "labels": {
-      "title": "Shipping labels",
-      "waiting": "Waiting for shipping labels",
-      "fba": "Book transport to Amazon, then upload the shipping labels.",
-      "agl": "Book AGL transport in Amazon, then upload the shipping labels."
+      "title": "Labels",
+      "waiting": "Waiting for labels"
     },
     "creating": {
       "title": "Creating the Amazon shipment",
@@ -89,7 +94,11 @@
       "downloadLabel": "Download supplier packet",
       "download": "Download packet",
       "incompleteTitle": "Supplier packet incomplete",
-      "waitingForLabels": "Waiting for the buyer’s labels"
+      "waitingForLabels": "Waiting for the buyer’s labels",
+      "cartonLabels": "Carton labels",
+      "unitLabels": "Product labels",
+      "carrierLabels": "Carrier labels",
+      "backToShipment": "Back to shipment"
     },
     "cartons": {
       "title": "Cartons",
@@ -185,5 +194,45 @@
     "fnskuLabel": "Label with FNSKU {fnsku}.",
     "suffocationLabel": "Put a suffocation warning label on each polybag.",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "Transport",
+    "service": "Service",
+    "parcel": "Parcel carrier",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "Freight carrier",
+    "handoff": "Handoff location",
+    "supplier": "Supplier",
+    "forwarder": "Freight forwarder",
+    "collection": "Handoff method",
+    "pickup": "Carrier pickup",
+    "dropoff": "Deliver to carrier",
+    "carrierLabels": "Carrier labels",
+    "perCarton": "One per carton",
+    "none": "Not required",
+    "instructions": "Handoff instructions",
+    "save": "Save transport",
+    "unconfirmed": "Transport not confirmed"
+  },
+  "documentPreview": {
+    "settings": "Download settings",
+    "language": "Language",
+    "paper": "Page size",
+    "preparing": "Preparing PDF…",
+    "unavailable": "PDF unavailable",
+    "packet": "Download packet",
+    "fit": "Fit to screen",
+    "zoom": "Zoom preview",
+    "download": "Download PDF",
+    "changed": "This packet is no longer available. Refresh the page to get the current documents.",
+    "previewLoading": "Preparing preview…",
+    "failed": "The PDF could not be generated. Your document and download settings have been kept.",
+    "preview": "PDF preview",
+    "page": "PDF page {page}",
+    "pageOf": "Page {page} of {total}",
+    "title": "Shipping documents",
+    "document": "Document",
+    "issues": "Resolve these document issues before downloading.",
+    "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
   }
 }

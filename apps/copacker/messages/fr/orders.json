@@ -178,6 +178,7 @@
     "preparation": "Préparation",
     "suffocationWarning": "Étiquette d’avertissement de suffocation",
     "instructionsPlaceholder": "Exceptions de manutention ou d’étiquetage",
+    "markdownHint": "Markdown pris en charge : utilisez - pour les listes, 1. pour les étapes numérotées et **gras** pour mettre en évidence.",
     "done": "Terminé",
     "editCostSummary": "Modifier<hidden> le récapitulatif des coûts</hidden>",
     "editCostSummaryTitle": "Modifier le récapitulatif des coûts",
@@ -187,6 +188,7 @@
     "removeAdjustment": "Retirer l’ajustement",
     "addAdjustment": "Ajouter un ajustement",
     "skuLabel": "Étiquette SKU",
+    "fnskuLabel": "Étiquette FNSKU",
     "amazonRequiresIt": "Exigée par Amazon",
     "shipments": "Expéditions",
     "groupingHint": "Sélectionnez des produits pour les déplacer entre les expéditions.",
@@ -208,7 +210,14 @@
     "perPiece": "Par pièce",
     "flatAmount": "Montant fixe",
     "shipmentTotal": "Total de l’expédition",
-    "expenseType": "Type de frais"
+    "expenseType": "Type de frais",
+    "prepNone": "Aucune",
+    "polybag": "Sachet plastique",
+    "sealedPolybag": "Sachet plastique scellé",
+    "chokingHazard": "Avertissement de risque d’étouffement",
+    "countryOfOriginLabel": "Étiquette du pays d’origine",
+    "countryOfOriginCode": "Code pays",
+    "instructions": "Instructions"
   },
   "revise": {
     "title": "Modifier la commande",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "Préparer la prochaine expédition",
     "offCopacker": {
       "title": "{supplier} n’est pas sur Copacker",
-      "description": "Envoyez-lui vous-même le bon de commande par e-mail, puis saisissez ses cartons et sa facture dans l’expédition."
+      "description": "Envoyez-leur le bon de commande par e-mail, puis saisissez les détails de leurs cartons dans l’expédition."
     },
     "columns": {
       "products": "Produits",
@@ -422,7 +431,8 @@
     "otherAddress": "Autre adresse",
     "readyForPickup": "Prêt pour l’enlèvement",
     "addCartonProduct": "Ajouter un produit au carton",
-    "removeCartonProduct": "Retirer le produit {number} du carton"
+    "removeCartonProduct": "Retirer le produit {number} du carton",
+    "finishPacking": "Terminer l’emballage"
   },
   "paymentTerms": {
     "net7": "7 jours net",
@@ -447,5 +457,84 @@
     "surcharge": "Supplément",
     "tariffs": "Tarifs douaniers",
     "other": "Autre"
+  },
+  "cartonEditor": {
+    "addProductsTo": "Ajouter des produits au carton {carton}",
+    "shipmentProducts": "Produits de cet envoi",
+    "searchProducts": "Rechercher dans cet envoi",
+    "alreadyAdded": "Déjà ajouté",
+    "noProducts": "Aucun produit trouvé",
+    "cancel": "Annuler",
+    "addSelected": "Ajouter {count, plural, one {# produit} other {# produits}}",
+    "carton": "Carton {carton}",
+    "count": "Cartons",
+    "length": "Longueur",
+    "width": "Largeur",
+    "height": "Hauteur",
+    "weight": "Poids",
+    "enterNumber": "Saisissez un nombre positif pour {field}.",
+    "enterQuantity": "Saisissez une quantité entière pour {sku}.",
+    "addProductRequired": "Ajoutez un produit à ce carton.",
+    "dimensions": "Dimensions (cm)",
+    "axis": {
+      "length": "L",
+      "width": "l",
+      "height": "H"
+    },
+    "actions": "Actions du carton {carton}",
+    "duplicate": "Dupliquer le carton",
+    "delete": "Supprimer le carton",
+    "quantityPerCarton": "Quantité / carton",
+    "packsPerCarton": "Lots / carton",
+    "unitsPerCarton": "Unités / carton",
+    "productQuantity": "{sku} : quantité par carton {carton}",
+    "unitCount": "{count, plural, one {# unité} other {# unités}}",
+    "removeProduct": "Retirer {sku} du carton {carton}",
+    "product": "Produit",
+    "leftToPack": "Reste à emballer",
+    "packCount": "{count, plural, one {# lot} other {# lots}}",
+    "addToCarton": "Ajouter au carton {carton}",
+    "selectedCount": "{count} sélectionnés",
+    "cartonGroup": "Cartons {cartons}"
+  },
+  "cartonImport": {
+    "title": "Importer des cartons",
+    "reviewTitle": "Vérifier l’importation",
+    "downloadTemplate": "Télécharger le modèle",
+    "templateHint": "Utilisez le modèle pour saisir le contenu, les quantités, les dimensions et le poids des cartons.",
+    "downloadFailed": "Impossible de télécharger le modèle.",
+    "formats": "XLSX ou CSV, jusqu’à 10 Mo",
+    "failed": "Impossible d’importer les cartons. Aucune modification effectuée.",
+    "templateMismatch": "Le fichier ne correspond pas au modèle",
+    "issues": "{count, plural, one {# problème} other {# problèmes}}",
+    "row": "Ligne {row}",
+    "mode": "Mode d’importation",
+    "add": "Ajouter des cartons",
+    "replace": "Remplacer le colisage",
+    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
+    "productCount": "{count, plural, one {# produit} other {# produits}}",
+    "measurements": "{length} × {width} × {height} cm / {weight} kg",
+    "close": "Fermer",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "import": "Importer des cartons",
+    "review": "Vérifier les cartons",
+    "importing": "Importation des cartons…",
+    "importingButton": "Importation…",
+    "checking": "Vérification du fichier…",
+    "errors": {
+      "missingColumns": "Colonnes manquantes : {value}.",
+      "duplicateColumns": "Colonnes en double : {value}.",
+      "unknownColumns": "Colonnes inattendues : {value}.",
+      "empty": "Le fichier ne contient aucune ligne de carton.",
+      "worksheet": "Le fichier doit contenir une feuille nommée Cartons.",
+      "unreadable": "Impossible de lire ce fichier. Utilisez un fichier XLSX ou CSV issu du modèle.",
+      "number": "Saisissez un nombre positif valide dans {value}.",
+      "sku": "Le SKU ne figure pas dans cet envoi : {value}.",
+      "cartonId": "Saisissez un identifiant de carton de 1 à 60 caractères.",
+      "measurements": "Les lignes de ce carton doivent avoir le même nombre de cartons, les mêmes dimensions et le même poids.",
+      "duplicateProduct": "Ce carton contient plusieurs fois {value}.",
+      "limit": "Un envoi peut contenir jusqu’à 1 000 cartons."
+    }
   }
 }

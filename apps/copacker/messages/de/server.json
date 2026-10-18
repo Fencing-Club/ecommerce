@@ -25,7 +25,8 @@
       "overQuantity": "{sku}: Die Kartons überschreiten die verbleibende Menge der Bestellung",
       "unknownChange": "Rechnungsänderungen müssen sich auf eindeutige Positionen der Bestellung beziehen"
     },
-    "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken."
+    "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken.",
+    "missingTransport": "Transport nicht bestätigt"
   },
   "workflow": {
     "arrived": "Die Waren sind angekommen",
@@ -41,7 +42,8 @@
     "complete": "Sendung abgeschlossen",
     "cancellation": "Stornieren Sie die bestehende Amazon-Sendung, bevor Sie einen Ersatz erstellen",
     "reconcile": "Suchen und verknüpfen Sie den Amazon-Auftrag, bevor Sie fortfahren",
-    "retry": "Beheben Sie das gemeldete Problem und wiederholen Sie dann die Sendung"
+    "retry": "Beheben Sie das gemeldete Problem und wiederholen Sie dann die Sendung",
+    "packed": "Das Packen ist abgeschlossen. Der Käufer kann jetzt die Amazon-Sendung vorbereiten und ihre Etiketten abrufen."
   },
   "overview": {
     "due": {

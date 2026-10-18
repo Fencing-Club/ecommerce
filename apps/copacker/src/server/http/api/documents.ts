@@ -28,8 +28,11 @@ export async function POST(request: Request) {
     if (kind !== "invoice") {
       requireBuyer(s)
     }
-    // A line's product label belongs to the purchase order; invoices and shipping labels to its shipments.
-    requireAccess(s, kind === "product_label" ? "orders" : "shipments", "edit")
+    // Invoices and product labels belong to the PO; carrier labels belong to a shipment.
+    requireAccess(s, kind === "shipping_label" ? "shipments" : "orders", "edit")
+    if (kind === "invoice") {
+      requireAccess(s, "prices")
+    }
     const { order } = await accessibleOrder(s, orderId)
     const file = form.get("file")
     if (!(file instanceof File) || file.size > 32 * 1024 * 1024) {
@@ -40,18 +43,15 @@ export async function POST(request: Request) {
     if (kind === "product_label" && (await splitPdfPages(bytes)).length !== 1) {
       throw new LocalizedError("uploadOneLabelSheet")
     }
-    const shipmentId = form.get("shipmentId") ? z.uuid().parse(form.get("shipmentId")) : null
+    const shipmentId = kind === "shipping_label" ? z.uuid().parse(form.get("shipmentId")) : null
     const [shipment] = shipmentId
       ? await db()
           .select()
           .from(shipments)
           .where(and(eq(shipments.id, shipmentId), eq(shipments.orderId, orderId)))
       : []
-    if (kind !== "product_label" && !shipment) {
+    if (kind === "shipping_label" && !shipment) {
       throw new LocalizedError("chooseDocumentShipment")
-    }
-    if (kind === "invoice" && shipment && !["packing", "correction"].includes(shipment.status)) {
-      throw new LocalizedError("correctionBeforeInvoiceChange")
     }
     if (kind === "shipping_label" && shipment?.status !== "waiting_labels") {
       throw new LocalizedError("shipmentNotWaitingForLabels")
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
           await tx
             .update(documents)
             .set({ outdated: 1 })
-            .where(and(eq(documents.shipmentId, shipmentId!), eq(documents.kind, "invoice")))
+            .where(and(eq(documents.orderId, orderId), eq(documents.kind, "invoice")))
         }
         if (kind === "product_label") {
           await tx

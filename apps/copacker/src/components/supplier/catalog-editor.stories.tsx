@@ -52,11 +52,11 @@ export const Existing = meta.story({
     await expect(canvas.getByRole("textbox", { name: /Title/ })).toHaveValue("Wholesale 2026")
     await expect(canvas.getByText("14/255")).toBeVisible()
     await expect(canvas.getByRole("textbox", { name: "Price adjustment" })).toHaveValue("10")
-    await expect(canvas.getByText("Applies to every price you don’t fix below. $100.00 becomes $90.00.")).toBeVisible()
+    await expect(canvas.getByText("Applies to every price you don’t fix below. $100 becomes $90.")).toBeVisible()
     await expect(canvas.getByRole("tab", { name: /Included\s*2/ })).toHaveAttribute("aria-selected", "true")
     await expect(canvas.getByRole("tab", { name: /Excluded\s*1/ })).toBeVisible()
-    // The tote's natural color is fixed at $4.00 and its black one is 10% off $4.50.
-    await expect(canvas.getByRole("button", { name: "Price for Canvas tote bag: $4.00 – $4.05" })).toBeVisible()
+    // The tote's natural color is fixed at $4 and its black one is 10% off $4.50.
+    await expect(canvas.getByRole("button", { name: "Price for Canvas tote bag: $4 – $4.05" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Price for Linen apron: $8.01" })).toBeVisible()
     await expect(
       canvas.getByRole("button", {
@@ -74,7 +74,7 @@ export const ExpandVariants = meta.story({
     const toggle = canvas.getByRole("button", { name: "2 variants" })
     await userEvent.click(toggle)
     await expect(toggle).toHaveAttribute("aria-expanded", "true")
-    await expect(canvas.getByRole("button", { name: "Price for Canvas tote bag, Natural: $4.00, fixed" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Price for Canvas tote bag, Natural: $4, fixed" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Price for Canvas tote bag, Black: $4.05" })).toBeVisible()
     await userEvent.click(toggle)
     await expect(canvas.queryByRole("button", { name: /Canvas tote bag, Black/ })).toBeNull()
@@ -167,7 +167,7 @@ export const FixPrice = meta.story({
 
 export const FixPriceForEveryVariant = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Price for Canvas tote bag: $4.00 – $4.05" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Price for Canvas tote bag: $4 – $4.05" }))
     const field = await screen.findByRole("textbox", { name: "Fixed price for 2 variants" })
     // The variants' fixed prices differ, so the field starts blank.
     await expect(field).toHaveValue("")
@@ -289,7 +289,7 @@ export const IncreaseAdjustment = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("combobox", { name: "Adjustment direction" }))
     await userEvent.click(await screen.findByRole("option", { name: "Increase by" }))
-    await expect(canvas.getByText(/\$100\.00 becomes \$110\.00/)).toBeVisible()
+    await expect(canvas.getByText(/\$100 becomes \$110/)).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Price for Linen apron: $9.79" })).toBeVisible()
     const percent = canvas.getByRole("textbox", { name: "Price adjustment" })
     await userEvent.clear(percent)
@@ -406,7 +406,7 @@ export const New = meta.story({
     await expect(saveBar().getByText("Add a title")).toBeVisible()
     await userEvent.type(canvas.getByRole("textbox", { name: /Title/ }), "  Trade show  ")
     await userEvent.type(canvas.getByRole("textbox", { name: "Price adjustment" }), "{Backspace}12.5")
-    await expect(canvas.getByText(/\$100\.00 becomes \$87\.50/)).toBeVisible()
+    await expect(canvas.getByText(/\$100 becomes \$87\.50/)).toBeVisible()
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveBeenCalledOnce())
     const body = saved.mock.calls[0]![0]
@@ -471,7 +471,7 @@ export const ReadOnly = meta.story({
     await expect(canvas.queryByRole("checkbox")).toBeNull()
     // Prices and rules show as text, without buttons to change them.
     await expect(canvas.queryByRole("button", { name: /Price for/ })).toBeNull()
-    await expect(canvas.getByText("$4.00 – $4.05")).toBeVisible()
+    await expect(canvas.getByText("$4 – $4.05")).toBeVisible()
     await expect(canvas.getByText("1 price break, min 12 units, steps of 6")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await expect(await screen.findByRole("menuitem", { name: "Export to PDF" })).toHaveAttribute("download")

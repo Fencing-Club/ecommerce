@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { packingRequirementsSchema } from "./packing-requirements"
 
 // Amazon inbound preparation categories.
 export const prepCategories = [
@@ -20,6 +21,29 @@ export const destinationSchema = z.enum(["amazon", "warehouse"])
 export const amazonNetworks = ["fba", "awd_us"] as const
 export type AmazonNetwork = (typeof amazonNetworks)[number]
 export const amazonNetworkNames: Record<AmazonNetwork, string> = { fba: "FBA", awd_us: "AWD US" }
+// Receiving policy is independent of transport and label ownership. UI validation and documents share these limits.
+export const amazonCartonPolicies = {
+  fba: {
+    maxSideCm: 63.5,
+    maxSideIn: 25,
+    maxWeightKg: 22.6796185,
+    maxWeightLb: 50,
+    maxUnits: null,
+    singleSku: false,
+    identicalCartons: false,
+    singleUnitException: true
+  },
+  awd_us: {
+    maxSideCm: 63.5,
+    maxSideIn: 25,
+    maxWeightKg: 22.6796185,
+    maxWeightLb: 50,
+    maxUnits: 150,
+    singleSku: true,
+    identicalCartons: true,
+    singleUnitException: false
+  }
+} as const
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),
@@ -119,6 +143,7 @@ export const itemSchema = z
       .max(20)
       .optional(),
     instructions: z.string().max(4000).default(""),
+    packingRequirements: packingRequirementsSchema.optional(),
     prepCategory: z.enum(prepCategories).default("POLYBAGGING"),
     // Each unit's polybag gets a suffocation warning label, printed from the PO's label sheets.
     suffocationWarning: z.boolean().default(false),
@@ -221,7 +246,6 @@ export const cartonInputSchema = z.object({
 export const packingSchema = z.object({
   readyDate: z.iso.date(),
   origin: originSchema,
-  invoiceDocumentId: z.uuid(),
   cartons: z.array(cartonInputSchema).min(1).max(1000),
   changes: z
     .array(
@@ -254,7 +278,6 @@ export const packingDraftSchema = z
         z.string().max(254)
       )
       .optional(),
-    invoiceDocumentId: z.union([z.uuid(), z.literal("")]).optional(),
     cartons: z
       .array(
         z
@@ -305,9 +328,13 @@ export type PackingRule =
   | { code: "cartonSize" | "cartonWeight"; values: { network: "FBA" | "AWD" } }
   | { code: "incompletePacks"; values: { sku: string; pack: number } }
   | { code: "awdUnits" | "missingAmazonIds" | "awdConfiguration" | "overQuantity"; values: { sku: string } }
-export type ValidationIssue = { cartonId?: string } & PackingRule
+export type ValidationIssue = { cartonId?: string; fields?: ("length" | "width" | "height" | "weight")[] } & PackingRule
 
-export function validatePacking(order: OrderInput, packing: Packing, reserved: Record<string, number> = {}) {
+export function validatePacking(
+  order: OrderInput,
+  packing: Pick<Packing, "cartons" | "changes">,
+  reserved: Record<string, number> = {}
+) {
   const issues: ValidationIssue[] = []
   const totals: Record<string, number> = {}
   const configurations = new Map<string, string>()
@@ -316,7 +343,8 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   // locations accept any cartons.
   const amazon = order.destination === "amazon"
   for (const carton of packing.cartons) {
-    const add = (rule: PackingRule) => issues.push({ cartonId: carton.cartonId, ...rule })
+    const add = (rule: PackingRule, fields?: ValidationIssue["fields"]) =>
+      issues.push({ cartonId: carton.cartonId, ...rule, ...(fields && { fields }) })
     if (cartonIds.has(carton.cartonId.toLowerCase())) {
       add({ code: "duplicateCarton" })
     }
@@ -326,19 +354,23 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       add({ code: "mixedNetworks" })
     }
     const awd = amazon && networks.includes("awd_us")
+    const policy = amazonCartonPolicies[awd ? "awd_us" : "fba"]
     const network = awd ? "AWD" : "FBA"
     // FBA takes a larger carton when it holds one unit that doesn't fit a standard one.
     const oneUnit =
       carton.items.length === 1 &&
       carton.items[0]!.pieces === order.items.find((i) => i.id === carton.items[0]!.itemId)?.piecesPerSet
-    const limited = awd || (amazon && !oneUnit)
-    if (limited && Math.max(carton.length, carton.width, carton.height) > 63.5) {
-      add({ code: "cartonSize", values: { network } })
+    const limited = amazon && !(policy.singleUnitException && oneUnit)
+    if (limited && Math.max(carton.length, carton.width, carton.height) > policy.maxSideCm) {
+      add(
+        { code: "cartonSize", values: { network } },
+        (["length", "width", "height"] as const).filter((field) => carton[field] > policy.maxSideCm)
+      )
     }
-    if (limited && carton.weight > 22.6796185) {
-      add({ code: "cartonWeight", values: { network } })
+    if (limited && carton.weight > policy.maxWeightKg) {
+      add({ code: "cartonWeight", values: { network } }, ["weight"])
     }
-    if (awd && carton.items.length !== 1) {
+    if (amazon && policy.singleSku && carton.items.length !== 1) {
       add({ code: "awdOneSku" })
     }
     if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
@@ -355,14 +387,14 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       if (!Number.isInteger(units)) {
         add({ code: "incompletePacks", values: { sku: item.buyerSku, pack: item.piecesPerSet } })
       }
-      if (awd && units > 150) {
+      if (amazon && policy.maxUnits !== null && units > policy.maxUnits) {
         add({ code: "awdUnits", values: { sku: item.buyerSku } })
       }
       if (amazon && (!item.fnsku || !item.asin)) {
         add({ code: "missingAmazonIds", values: { sku: item.buyerSku } })
       }
       const config = JSON.stringify([content.pieces, carton.length, carton.width, carton.height, carton.weight])
-      if (awd && configurations.has(item.id) && configurations.get(item.id) !== config) {
+      if (amazon && policy.identicalCartons && configurations.has(item.id) && configurations.get(item.id) !== config) {
         add({ code: "awdConfiguration", values: { sku: item.buyerSku } })
       }
       configurations.set(item.id, config)
@@ -581,9 +613,13 @@ export function fbaBoxes(order: OrderInput, packing: Packing, prep: ReadonlyMap<
   }))
 }
 
-// Money in minor units, as orders store it, written in `locale`: $1,234.50, 1.234,50 $. English suits documents.
+// Money in minor units. Hide cents only for whole amounts; keep the currency's precision otherwise.
 export function money(amount: number, currency = "USD", locale = "en-US") {
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount / 100)
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: amount % 100 === 0 ? 0 : undefined
+  }).format(amount / 100)
 }
 export function supplierChargeTotal(
   item: Pick<OrderItem, "pieces" | "piecesPerSet">,

@@ -25,7 +25,8 @@
       "overQuantity": "{sku} : les cartons dépassent la quantité restante du bon de commande",
       "unknownChange": "Les modifications de facture doivent porter sur des articles distincts du bon de commande"
     },
-    "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi."
+    "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi.",
+    "missingTransport": "Transport non confirmé"
   },
   "workflow": {
     "arrived": "Les marchandises sont arrivées",
@@ -41,7 +42,8 @@
     "complete": "Expédition terminée",
     "cancellation": "Annulez l’expédition Amazon existante avant d’en créer une de remplacement",
     "reconcile": "Trouvez et liez la commande Amazon avant de continuer",
-    "retry": "Résolvez le problème signalé, puis relancez l’expédition"
+    "retry": "Résolvez le problème signalé, puis relancez l’expédition",
+    "packed": "L’emballage est terminé. L’acheteur peut préparer l’expédition Amazon et récupérer ses étiquettes."
   },
   "overview": {
     "due": {

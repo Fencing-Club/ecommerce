@@ -46,7 +46,6 @@ const order = orderInputSchema.parse({
   ]
 })
 const packing = packingSchema.parse({
-  invoiceDocumentId: randomUUID(),
   readyDate: "2026-10-05",
   origin: {
     name: "Supplier",
@@ -224,7 +223,7 @@ describe("FBA shipments", () => {
       }
     ])
     expect(validatePacking(fbaOrder, oversize).issues).toEqual([
-      { cartonId: expect.any(String), code: "cartonSize", values: { network: "FBA" } }
+      { cartonId: expect.any(String), code: "cartonSize", values: { network: "FBA" }, fields: ["length"] }
     ])
     // AWD keeps its one-SKU cartons, and a carton goes to one network.
     const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const })) }
@@ -345,8 +344,21 @@ describe("POs to Amazon with lines for several networks", () => {
 })
 
 describe("money", () => {
+  it.each([
+    [0, "$0"],
+    [400, "$4"],
+    [410, "$4.10"],
+    [401, "$4.01"],
+    [-400, "-$4"],
+    [-410, "-$4.10"],
+    [123400, "$1,234"]
+  ])("formats %i minor units as %s", (amount, expected) => {
+    expect(money(amount)).toBe(expected)
+  })
+
   it("writes minor units in English unless given a language", () => {
     expect(money(123450)).toBe("$1,234.50")
     expect(money(123450, "EUR", "de")).toBe("1.234,50 €")
+    expect(money(123400, "EUR", "de")).toBe("1.234 €")
   })
 })

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
 import {
@@ -10,7 +9,7 @@ import {
   splitByNetwork
 } from "@repo/aisle"
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
-import { and, eq, inArray, isNull, sql } from "drizzle-orm"
+import { ne, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"
 import { db } from "@/db"
@@ -40,7 +39,7 @@ import { accessibleOrder } from "./access"
 import { requireBuyer } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
-import { copyDocument, generatePo } from "./documents"
+import { generatePo } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
@@ -486,13 +485,11 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
       if (shipment.amazonOrderId || shipment.operation !== "none") {
         throw new LocalizedError("resolveAmazonShipment")
       }
-      const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
       const others = await tx.select().from(shipments).where(eq(shipments.orderId, order.id))
       const assessed = packingReadiness(
         order.data,
         shipment,
         keepOrderPrices(s, order.data, raw ?? shipment.packingDraft),
-        docs,
         reservedPieces(others, shipmentId),
         order.revision,
         await serverText()
@@ -511,7 +508,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         status = "approval"
         event = { key: s.org.kind === "buyer" ? "invoiceEntered" : "invoiceChangesSubmitted", values: null }
       } else if (amazon) {
-        status = "queued"
+        status = "packed"
       }
       await tx
         .update(shipments)
@@ -524,9 +521,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
           updatedAt: new Date()
         })
         .where(eq(shipments.id, shipmentId))
-      if (!approval && amazon) {
-        event = await queueAmazon(tx, shipment, packing, order.data, order.revision, supplier.supplierOrgId)
-      } else if (!approval) {
+      if (!approval && !amazon) {
         await takeSupplierStock(tx, shipmentId, supplier.supplierOrgId, order.data, packing)
       }
       await tx.insert(events).values({ orderId: order.id, actor: s.user.id, ...eventMessage(event) })
@@ -541,6 +536,48 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
   }
   return { approval: submitted.approval }
 }
+export async function prepareAmazonShipment(s: Session, shipmentId: string, expectedRevision: number) {
+  requireBuyer(s)
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
+      if (!initial) {
+        throw new LocalizedError("shipmentNotFound")
+      }
+      const { order, supplier } = await accessibleOrder(s, initial.orderId, tx, true)
+      const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
+      if (!shipment || shipment.status !== "packed" || shipment.revision !== expectedRevision) {
+        throw new LocalizedError("shipmentChangedSubmit")
+      }
+      if (order.data.destination !== "amazon" || shipment.amazonOrderId || shipment.operation !== "none") {
+        throw new LocalizedError("resolveAmazonShipment")
+      }
+      await refusePendingChanges(tx, order.id)
+      const others = await tx.select().from(shipments).where(eq(shipments.orderId, order.id))
+      const assessed = packingReadiness(
+        order.data,
+        shipment,
+        shipment.packing,
+        reservedPieces(others, shipmentId),
+        order.revision,
+        await serverText()
+      )
+      if (!assessed.packing || assessed.issues.length) {
+        throw new Error(assessed.issues.map((issue) => issue.message).join("\n"))
+      }
+      const event = await queueAmazon(
+        tx,
+        shipment,
+        assessed.packing,
+        order.data,
+        order.revision,
+        supplier.supplierOrgId
+      )
+      await tx.insert(events).values({ orderId: order.id, actor: s.user.id, ...eventMessage(event) })
+    })
+  )
+}
+
 // Queues a shipment's cartons for Amazon, one shipment per Amazon network they go to: the shipment keeps the first
 // network's cartons, and each other network's become a new shipment with its own copy of the commercial invoice. Each
 // gets its own Amazon job and takes its own pieces from the supplier's stock. Returns the timeline event.
@@ -567,23 +604,17 @@ async function queueAmazon(
   await takeSupplierStock(tx, shipment.id, supplierOrgId, data, first!.packing)
   const queued = [{ shipmentId: shipment.id, revision: shipment.revision }]
   for (const part of rest) {
-    const invoiceDocumentId = randomUUID()
     const [added] = await tx
       .insert(shipments)
       .values({
         orderId: shipment.orderId,
         orderRevision,
         snapshot: data,
-        packing: { ...part.packing, invoiceDocumentId },
+        packing: part.packing,
         amazonNetwork: part.network,
         status: "queued"
       })
       .returning({ id: shipments.id, revision: shipments.revision })
-    await copyDocument(tx, part.packing.invoiceDocumentId, {
-      id: invoiceDocumentId,
-      shipmentId: added!.id,
-      shipmentRevision: added!.revision
-    })
     await takeSupplierStock(tx, added!.id, supplierOrgId, data, part.packing)
     queued.push({ shipmentId: added!.id, revision: added!.revision })
   }
@@ -628,7 +659,10 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
         .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "approvedCommercialChanges" })
       await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, order.id))
       if (order.data.destination === "amazon") {
-        await queueAmazon(tx, shipment, shipment.packing, data, revision, supplier.supplierOrgId)
+        await tx
+          .update(shipments)
+          .set({ snapshot: data, orderRevision: revision, status: "packed", updatedAt: new Date() })
+          .where(eq(shipments.id, shipmentId))
       } else {
         await tx
           .update(shipments)
@@ -701,7 +735,10 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId))
-    await tx.update(documents).set({ outdated: 1 }).where(eq(documents.shipmentId, shipmentId))
+    await tx
+      .update(documents)
+      .set({ outdated: 1 })
+      .where(and(eq(documents.shipmentId, shipmentId), ne(documents.kind, "invoice")))
     await tx
       .update(jobs)
       .set({ status: "cancelled" })
@@ -764,14 +801,12 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
       throw new LocalizedError("shipmentNotFound")
     }
     const { order } = await accessibleOrder(s, shipment.orderId, tx)
-    const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
     const all = await tx.select().from(shipments).where(eq(shipments.orderId, order.id))
     const reserved = reservedPieces(all, shipment.id)
     const result = packingReadiness(
       order.data,
       shipment,
       keepOrderPrices(s, order.data, raw ?? shipment.packingDraft ?? shipment.packing ?? {}),
-      docs,
       reserved,
       order.revision,
       await serverText()
@@ -795,6 +830,7 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
 
 // A shipment in any of these states is still being prepared, created or on its way, so its PO stays open.
 const inProgress = new Set<ShipmentState>([
+  "packed",
   "approval",
   "queued",
   "creating",

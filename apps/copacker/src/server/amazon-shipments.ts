@@ -1,7 +1,7 @@
-import type { AmazonNetwork } from "@repo/aisle"
-import { amazonNetworks } from "@repo/aisle"
+import { addressSchema, type AmazonNetwork, amazonNetworks } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import { and, eq, sql } from "drizzle-orm"
+import { z } from "zod"
 import { db } from "@/db"
 import type { shipments } from "@/db/schema"
 import { amazonInboundShipments } from "@/db/schema"
@@ -26,6 +26,34 @@ export function amazonShipmentLinks(
 
 // Statuses of a shipment Amazon has finished with: fully received, or cancelled.
 const finishedStatuses = new Set(["CLOSED", "CANCELLED"])
+
+// Read confirmed destinations only; never create or choose a placement while rendering a shipment.
+export async function amazonDestinationAddresses(
+  api: Pick<Amazon, "awdInboundShipment" | "fbaPlan" | "fbaShipment">,
+  shipment: Pick<typeof shipments.$inferSelect, "amazonNetwork" | "amazonShipmentId" | "amazonOrderId">
+) {
+  if (!shipment.amazonShipmentId) {
+    return []
+  }
+  if (shipment.amazonNetwork === "awd_us") {
+    const remote = await api.awdInboundShipment(shipment.amazonShipmentId)
+    if (remote.shipmentId !== shipment.amazonShipmentId) {
+      throw new Error("Amazon returned a different shipment")
+    }
+    return [addressSchema.parse(remote.destinationAddress)]
+  }
+  if (shipment.amazonNetwork === "fba" && shipment.amazonOrderId) {
+    const plan = await api.fbaPlan(shipment.amazonOrderId)
+    const destinations = await Promise.all(
+      (plan.shipments ?? []).map(({ shipmentId }) => api.fbaShipment(shipment.amazonOrderId!, shipmentId))
+    )
+    const confirmed = new Set(shipment.amazonShipmentId.split(", "))
+    return destinations
+      .filter((row) => row.shipmentConfirmationId && confirmed.has(row.shipmentConfirmationId))
+      .map((row) => z.object({ address: addressSchema }).parse(row.destination).address)
+  }
+  return []
+}
 
 export type AmazonShipment = {
   network: AmazonNetwork

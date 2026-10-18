@@ -44,6 +44,11 @@
     }
   },
   "detail": {
+    "shipTo": {
+      "title": "送货地址",
+      "pending": "Amazon 会在创建货件后分配送货地址。",
+      "unavailable": "送货地址不可用。请检查采购订单或关联的 Amazon 货件。"
+    },
     "metaTitle": "货件",
     "title": "货件 {number}",
     "cartonCount": "{count, plural, other {# 箱}}",
@@ -56,7 +61,9 @@
       "markShipped": "标记为已发货",
       "markReceived": "标记为已收货",
       "retry": "重试货件",
-      "cancelInAmazon": "在 Amazon 中取消"
+      "cancelInAmazon": "在 Amazon 中取消",
+      "getAmazonLabels": "获取 Amazon 标签",
+      "createAmazonShipment": "创建 Amazon 货件"
     },
     "needsAttention": "需要处理",
     "changesWaiting": {
@@ -74,10 +81,8 @@
       "waitingForBuyer": "等待买家审批"
     },
     "labels": {
-      "title": "运输标签",
-      "waiting": "等待运输标签",
-      "fba": "预订发往 Amazon 的运输，然后上传运输标签。",
-      "agl": "在 Amazon 中预订 AGL 运输，然后上传运输标签。"
+      "title": "标签",
+      "waiting": "等待标签"
     },
     "creating": {
       "title": "正在创建 Amazon 货件",
@@ -89,7 +94,11 @@
       "downloadLabel": "下载供应商资料包",
       "download": "下载资料包",
       "incompleteTitle": "供应商资料包不完整",
-      "waitingForLabels": "等待买家的标签"
+      "waitingForLabels": "等待买家的标签",
+      "cartonLabels": "外箱标签",
+      "unitLabels": "商品标签",
+      "carrierLabels": "承运商标签",
+      "backToShipment": "返回货件"
     },
     "cartons": {
       "title": "箱",
@@ -185,5 +194,45 @@
     "fnskuLabel": "贴上 FNSKU {fnsku} 标签。",
     "suffocationLabel": "在每个塑料袋上贴窒息警告标签。",
     "amazonDestination": "Amazon {networks}"
+  },
+  "transport": {
+    "title": "运输",
+    "service": "服务",
+    "parcel": "包裹承运商",
+    "agl": "Amazon Global Logistics (AGL)",
+    "freight": "货运承运商",
+    "handoff": "交接地点",
+    "supplier": "供应商",
+    "forwarder": "货运代理",
+    "collection": "交接方式",
+    "pickup": "承运商提货",
+    "dropoff": "送货至承运商",
+    "carrierLabels": "承运商标签",
+    "perCarton": "每箱一张",
+    "none": "不需要",
+    "instructions": "交接说明",
+    "save": "保存运输设置",
+    "unconfirmed": "运输尚未确认"
+  },
+  "documentPreview": {
+    "settings": "下载设置",
+    "language": "语言",
+    "paper": "纸张大小",
+    "preparing": "正在准备 PDF…",
+    "unavailable": "PDF 不可用",
+    "packet": "下载资料包",
+    "fit": "适应屏幕",
+    "zoom": "放大预览",
+    "download": "下载 PDF",
+    "changed": "此资料包已不可用。请刷新页面以获取最新文档。",
+    "previewLoading": "正在准备预览…",
+    "failed": "无法生成 PDF。已保留文档和下载设置。",
+    "preview": "PDF 预览",
+    "page": "PDF 第 {page} 页",
+    "pageOf": "第 {page} 页，共 {total} 页",
+    "title": "发货文档",
+    "document": "文档",
+    "issues": "请先解决以下文档问题再下载。",
+    "pages": "{count} 页 / {paper}"
   }
 }

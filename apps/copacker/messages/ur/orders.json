@@ -178,6 +178,7 @@
     "preparation": "پریپ",
     "suffocationWarning": "دم گھٹنے کی وارننگ کا لیبل",
     "instructionsPlaceholder": "ہینڈلنگ یا لیبلنگ کی مستثنیات",
+    "markdownHint": "Markdown دستیاب ہے: فہرست کے لیے -، نمبر وار مراحل کے لیے 1. اور نمایاں کرنے کے لیے **بولڈ** استعمال کریں۔",
     "done": "ہو گیا",
     "editCostSummary": "<hidden>لاگت کے خلاصے میں </hidden>ترمیم کریں",
     "editCostSummaryTitle": "لاگت کے خلاصے میں ترمیم کریں",
@@ -187,6 +188,7 @@
     "removeAdjustment": "ایڈجسٹمنٹ ہٹائیں",
     "addAdjustment": "ایڈجسٹمنٹ شامل کریں",
     "skuLabel": "SKU لیبل",
+    "fnskuLabel": "FNSKU لیبل",
     "amazonRequiresIt": "Amazon کے لیے لازمی",
     "shipments": "شپمنٹس",
     "groupingHint": "شپمنٹس کے درمیان منتقل کرنے کے لیے مصنوعات منتخب کریں۔",
@@ -208,7 +210,14 @@
     "perPiece": "فی عدد",
     "flatAmount": "مقررہ رقم",
     "shipmentTotal": "شپمنٹ کا کل",
-    "expenseType": "خرچ کی قسم"
+    "expenseType": "خرچ کی قسم",
+    "prepNone": "کوئی نہیں",
+    "polybag": "پولی بیگ",
+    "sealedPolybag": "سیل شدہ پولی بیگ",
+    "chokingHazard": "چھوٹے حصوں سے دم گھٹنے کی تنبیہ",
+    "countryOfOriginLabel": "ملکِ اصل کا لیبل",
+    "countryOfOriginCode": "ملک کا کوڈ",
+    "instructions": "ہدایات"
   },
   "revise": {
     "title": "آرڈر میں ترمیم کریں",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "اگلی شپمنٹ تیار کریں",
     "offCopacker": {
       "title": "{supplier} Copacker پر نہیں ہے",
-      "description": "خریداری آرڈر انہیں خود ای میل کریں، پھر شپمنٹ پر ان کے کارٹن اور انوائس درج کریں۔"
+      "description": "انہیں خریداری کا آرڈر ای میل کریں، پھر شپمنٹ میں ان کے کارٹن کی تفصیلات درج کریں۔"
     },
     "columns": {
       "products": "پروڈکٹس",
@@ -422,7 +431,8 @@
     "otherAddress": "دوسرا پتہ",
     "readyForPickup": "پک اپ کے لیے تیار",
     "addCartonProduct": "کارٹن میں پروڈکٹ شامل کریں",
-    "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں"
+    "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
+    "finishPacking": "پیکنگ مکمل کریں"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -447,5 +457,84 @@
     "surcharge": "اضافی چارج",
     "tariffs": "ٹیرف",
     "other": "دیگر"
+  },
+  "cartonEditor": {
+    "addProductsTo": "کارٹن {carton} میں مصنوعات شامل کریں",
+    "shipmentProducts": "اس شپمنٹ کی مصنوعات",
+    "searchProducts": "اس شپمنٹ میں مصنوعات تلاش کریں",
+    "alreadyAdded": "پہلے سے شامل ہے",
+    "noProducts": "کوئی مصنوعات نہیں ملیں",
+    "cancel": "منسوخ کریں",
+    "addSelected": "{count} مصنوعات شامل کریں",
+    "carton": "کارٹن {carton}",
+    "count": "کارٹن",
+    "length": "لمبائی",
+    "width": "چوڑائی",
+    "height": "اونچائی",
+    "weight": "وزن",
+    "enterNumber": "{field} کے لیے مثبت عدد درج کریں۔",
+    "enterQuantity": "{sku} کے لیے صحیح عدد میں مقدار درج کریں۔",
+    "addProductRequired": "اس کارٹن میں ایک مصنوعہ شامل کریں۔",
+    "dimensions": "ابعاد (سینٹی میٹر)",
+    "axis": {
+      "length": "ل",
+      "width": "چ",
+      "height": "ا"
+    },
+    "actions": "کارٹن {carton} کی کارروائیاں",
+    "duplicate": "کارٹن کی نقل بنائیں",
+    "delete": "کارٹن حذف کریں",
+    "quantityPerCarton": "مقدار / کارٹن",
+    "packsPerCarton": "پیک / کارٹن",
+    "unitsPerCarton": "اکائیاں / کارٹن",
+    "productQuantity": "{sku}: کارٹن {carton} میں مقدار",
+    "unitCount": "{count} اکائیاں",
+    "removeProduct": "کارٹن {carton} سے {sku} ہٹائیں",
+    "product": "پروڈکٹ",
+    "leftToPack": "پیک کرنا باقی",
+    "packCount": "{count} پیک",
+    "addToCarton": "کارٹن {carton} میں شامل کریں",
+    "selectedCount": "{count} منتخب",
+    "cartonGroup": "کارٹن {cartons}"
+  },
+  "cartonImport": {
+    "title": "کارٹن درآمد کریں",
+    "reviewTitle": "درآمد کا جائزہ لیں",
+    "downloadTemplate": "سانچہ ڈاؤن لوڈ کریں",
+    "templateHint": "کارٹن کے مواد، مقدار، ابعاد اور وزن درج کرنے کے لیے سانچہ استعمال کریں۔",
+    "downloadFailed": "سانچہ ڈاؤن لوڈ نہیں ہو سکا۔",
+    "formats": "XLSX یا CSV، زیادہ سے زیادہ 10 MB",
+    "failed": "کارٹن درآمد نہیں ہو سکے۔ کوئی تبدیلی نہیں کی گئی۔",
+    "templateMismatch": "فائل سانچے سے مطابقت نہیں رکھتی",
+    "issues": "{count} مسائل",
+    "row": "قطار {row}",
+    "mode": "درآمد کا طریقہ",
+    "add": "کارٹن شامل کریں",
+    "replace": "پیکنگ بدلیں",
+    "cartonCount": "{count} کارٹن",
+    "productCount": "{count} مصنوعات",
+    "measurements": "{length} × {width} × {height} سینٹی میٹر / {weight} کلوگرام",
+    "close": "بند کریں",
+    "back": "واپس",
+    "cancel": "منسوخ کریں",
+    "import": "کارٹن درآمد کریں",
+    "review": "کارٹن کا جائزہ لیں",
+    "importing": "کارٹن درآمد ہو رہے ہیں…",
+    "importingButton": "درآمد ہو رہا ہے…",
+    "checking": "فائل کی جانچ ہو رہی ہے…",
+    "errors": {
+      "missingColumns": "غائب کالم: {value}۔",
+      "duplicateColumns": "دہرائے گئے کالم: {value}۔",
+      "unknownColumns": "غیر متوقع کالم: {value}۔",
+      "empty": "فائل میں کارٹن کی کوئی قطار نہیں ہے۔",
+      "worksheet": "فائل میں Cartons نام کی ورک شیٹ ہونی چاہیے۔",
+      "unreadable": "فائل پڑھی نہیں جا سکی۔ سانچے پر مبنی XLSX یا CSV فائل استعمال کریں۔",
+      "number": "{value} میں درست مثبت عدد درج کریں۔",
+      "sku": "SKU اس شپمنٹ میں شامل نہیں ہے: {value}۔",
+      "cartonId": "1–60 حروف پر مشتمل کارٹن ID درج کریں۔",
+      "measurements": "اس کارٹن کی قطاروں میں کارٹن کی تعداد، ابعاد اور وزن یکساں ہونے چاہییں۔",
+      "duplicateProduct": "اس کارٹن میں {value} ایک سے زیادہ بار درج ہے۔",
+      "limit": "ایک شپمنٹ میں زیادہ سے زیادہ 1,000 کارٹن ہو سکتے ہیں۔"
+    }
   }
 }

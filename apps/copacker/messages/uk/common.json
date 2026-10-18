@@ -52,7 +52,8 @@
     "notInvited": "Не запрошено",
     "accepted": "Прийнято",
     "declined": "Відхилено",
-    "atForwarder": "В експедитора"
+    "atForwarder": "В експедитора",
+    "packed": "Упаковано"
   },
   "destinations": {
     "amazon": "Amazon",

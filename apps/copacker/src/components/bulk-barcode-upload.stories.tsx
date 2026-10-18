@@ -1,5 +1,5 @@
 import { delay, http, HttpResponse } from "msw"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { BulkBarcodeUpload } from "./bulk-barcode-upload"
 
@@ -42,7 +42,9 @@ async function openSheet() {
 
 // The drop zone's file input, which a click on the zone opens.
 function fileInput(sheet: ReturnType<typeof within>) {
-  const input = sheet.getByRole("button", { name: "Choose barcode PDFs" }).querySelector("input[type=file]")
+  const input = sheet
+    .getByRole("button", { name: "Choose barcode PDFs" })
+    .parentElement?.querySelector("input[type=file]")
   if (!(input instanceof HTMLInputElement)) {
     throw new Error("The drop zone has no file input")
   }
@@ -158,5 +160,26 @@ export const CloseClears = meta.story({
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     const reopened = await openSheet()
     await expect(reopened.getByText("Choose PDFs or drop them here")).toBeInTheDocument()
+  }
+})
+
+export const DropAndPaste = meta.story({
+  play: async () => {
+    const sheet = await openSheet()
+    const zone = sheet.getByRole("button", { name: "Choose barcode PDFs" })
+    const transfer = new DataTransfer()
+    transfer.items.add(pdf("TOTE-NAT.pdf"))
+    transfer.items.add(new File([new Uint8Array(32 * 1024 * 1024 + 1)], "large.pdf", { type: "application/pdf" }))
+    fireEvent(zone, new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }))
+    await waitFor(() => expect(sheet.getByText("1 PDF chosen")).toBeVisible())
+    await expect(sheet.getByText("Left out 1 file that isn’t a PDF up to 32 MB")).toBeVisible()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(pdf("TOTE-BLK.pdf"))
+    clipboard.items.add(pdf("APRON-CHR.pdf"))
+    fireEvent(zone, new ClipboardEvent("paste", { bubbles: true, clipboardData: clipboard }))
+    await expect(await sheet.findByText("2 PDFs chosen")).toBeVisible()
+    await userEvent.click(sheet.getByRole("button", { name: "Upload 2 files" }))
+    await expect(await sheet.findByText("2 of 2 saved")).toBeVisible()
+    await expect(uploads.map((upload) => upload.file)).toEqual(["TOTE-BLK.pdf", "APRON-CHR.pdf"])
   }
 })

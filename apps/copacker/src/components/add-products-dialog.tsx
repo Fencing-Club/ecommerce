@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -35,12 +36,18 @@ export type StockAt = { locationIds: string[] | null; label: string }
 export function AddProductsDialog({
   added,
   stockAt,
-  onAdd
+  onAdd,
+  title,
+  description,
+  addLabel
 }: {
   // Variations already on the PO.
   added: ReadonlySet<string>
   stockAt: StockAt
   onAdd: (variants: CatalogProduct[]) => void
+  title?: string
+  description?: string
+  addLabel?: string
 }) {
   const t = useTranslations("orders.addProducts")
   const errorMessage = useErrorMessage()
@@ -148,17 +155,18 @@ export function AddProductsDialog({
         render={
           <button
             type="button"
-            aria-label={t("trigger")}
+            aria-label={title ?? t("trigger")}
             className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-start text-sm text-muted-foreground transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           />
         }
       >
         <Search className="size-4" />
-        {t("trigger")}
+        {title ?? t("trigger")}
       </DialogTrigger>
       <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogTitle>{title ?? t("title")}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <InputGroup>
           <InputGroupAddon>
@@ -202,9 +210,13 @@ export function AddProductsDialog({
                           aria-labelledby={titleId}
                         />
                         {product.imageUrl ? (
-                          <img src={product.imageUrl} alt="" className="size-9 rounded border object-contain" />
+                          <img
+                            src={product.imageUrl}
+                            alt=""
+                            className="hidden size-9 rounded border object-contain sm:block"
+                          />
                         ) : (
-                          <span className="size-9 rounded border bg-muted" />
+                          <span className="hidden size-9 rounded border bg-muted sm:block" />
                         )}
                         <span id={titleId} className="font-medium">
                           {product.title}
@@ -257,7 +269,7 @@ export function AddProductsDialog({
           <div className="flex justify-end gap-2">
             <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
             <Button type="button" disabled={!selected.size || adding} onClick={() => void add()}>
-              {adding ? t("adding") : t("add")}
+              {adding ? t("adding") : (addLabel ?? t("add"))}
             </Button>
           </div>
         </DialogFooter>

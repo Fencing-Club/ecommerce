@@ -2,11 +2,10 @@ import { randomUUID } from "node:crypto"
 import type { Address } from "@repo/aisle"
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
-import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
+import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import invariant from "tiny-invariant"
-import type { Transaction } from "@/db"
 import { db } from "@/db"
 import {
   contacts,
@@ -19,6 +18,8 @@ import {
   suppliers,
   orderRevisions
 } from "@/db/schema"
+import { amazonDestinationAddresses } from "./amazon-shipments"
+import { amazonFor } from "./connections"
 import { getFile, putFile } from "./storage"
 
 type DocumentInput = Omit<typeof documents.$inferInsert, "id" | "objectKey" | "bytes">
@@ -72,22 +73,6 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     invariant(doc, "Filing a document inserts one row")
     return doc
   })
-}
-// Files a copy of a shipment's document with another shipment, under the given ID and with a stored file of its own,
-// such as the commercial invoice a shipment split off by Amazon network keeps. A correction to either shipment then
-// outdates only its own.
-export async function copyDocument(
-  tx: Transaction,
-  documentId: string,
-  copy: { id: string; shipmentId: string; shipmentRevision: number }
-) {
-  const [doc] = await tx.select().from(documents).where(eq(documents.id, documentId))
-  if (!doc) {
-    throw new Error("Document is unavailable")
-  }
-  const objectKey = `orders/${doc.orderId}/${copy.id}.pdf`
-  await putFile(objectKey, await getFile(doc.objectKey))
-  await tx.insert(documents).values({ ...doc, ...copy, objectKey })
 }
 // "1 Test Street", "Suite 2", "Testville, WA 98000", "US"
 function addressLines(address: Address) {
@@ -257,9 +242,24 @@ async function shipmentParties(shipment: PackedShipment) {
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
   const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
-  const shipTo = warehouses.length
-    ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
-    : parties.shipTo
+  const shipTo =
+    warehouses.length && !shipment.snapshot.via
+      ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
+      : parties.shipTo
+  if (shipment.snapshot.destination === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
+    const addresses = await amazonFor(order!.buyerOrgId, order!.amazonSellerId)
+      .then((api) => amazonDestinationAddresses(api, shipment))
+      .catch(() => [])
+    if (addresses.length) {
+      return {
+        buyer: parties.buyer,
+        shipTo: { name: network, lines: addresses.flatMap((address) => [address.name, ...addressLines(address)]) }
+      }
+    }
+    if (shipTo) {
+      shipTo.lines.push("Confirm the delivery address with the carrier before dispatch.")
+    }
+  }
   return { buyer: parties.buyer, shipTo }
 }
 
@@ -268,49 +268,19 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
   if (!packed(shipment)) {
     return undefined
   }
+  if (
+    shipment.snapshot.destination === "amazon" &&
+    !shipment.snapshot.via &&
+    shipment.amazonShipmentId &&
+    shipment.labels.some((label) => label.destinationCode)
+  ) {
+    return shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+  }
   return (await shipmentParties(shipment)).shipTo?.name ?? destinationName(shipment.snapshot)
 }
 
-// A packed shipment's packing list and checklist.
-export async function packingDocuments(shipment: typeof shipments.$inferSelect) {
-  if (!packed(shipment)) {
-    throw new Error("Shipment packing is missing")
-  }
-  const { buyer, shipTo } = await shipmentParties(shipment)
-  return {
-    packingList: await packingListPdf({
-      order: shipment.snapshot,
-      packing: shipment.packing,
-      labels: shipment.labels,
-      shipmentId: shipment.amazonShipmentId ?? shipment.id,
-      buyer,
-      shipTo
-    }),
-    checklist: await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer, shipTo })
-  }
-}
-
-// Keeps an Amazon shipment's packing list and checklist with it, once Amazon's labels are in.
-export async function generateShipmentDocuments(shipmentId: string) {
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
-  if (!shipment) {
-    throw new Error("Shipment packing is missing")
-  }
-  const { packingList, checklist } = await packingDocuments(shipment)
-  const input = {
-    orderId: shipment.orderId,
-    shipmentId,
-    orderRevision: shipment.orderRevision,
-    shipmentRevision: shipment.revision,
-    uploadedBy: "system"
-  }
-  await storeDocument({ ...input, kind: "packing_list", name: "Packing list.pdf" }, packingList)
-  await storeDocument({ ...input, kind: "checklist", name: "Packing Checklist.pdf" }, checklist)
-}
-
-// The supplier's commercial invoice for a PO revision the buyer approved, filed with the shipment being packed so the
-// supplier needn't upload its own. It replaces that shipment's earlier invoices.
-export async function generateInvoice(orderId: string, shipmentId: string, revision: number) {
+// The supplier's commercial invoice belongs to the approved purchase-order revision.
+export async function generateInvoice(orderId: string, revision: number) {
   const [order] = await db().select().from(orders).where(eq(orders.id, orderId))
   const [historical] = await db()
     .select()
@@ -342,25 +312,22 @@ export async function generateInvoice(orderId: string, shipmentId: string, revis
   const objectKey = `orders/${orderId}/${id}.pdf`
   await putFile(objectKey, bytes)
   await db().transaction(async (tx) => {
-    const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-    // A shipment that moved on since keeps the invoice it has.
-    if (!shipment || shipment.orderRevision !== revision || !["packing", "correction"].includes(shipment.status)) {
+    const [current] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update")
+    if (!current || current.revision !== revision) {
       return
     }
     await tx
       .update(documents)
       .set({ outdated: 1 })
-      .where(and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "invoice")))
+      .where(and(eq(documents.orderId, orderId), eq(documents.kind, "invoice")))
     await tx.insert(documents).values({
       id,
       orderId,
-      shipmentId,
       kind: "invoice",
       objectKey,
       name: `Commercial invoice ${order.data.reference}.pdf`,
       bytes: bytes.length,
       orderRevision: revision,
-      shipmentRevision: shipment.revision,
       uploadedBy: "system"
     })
   })

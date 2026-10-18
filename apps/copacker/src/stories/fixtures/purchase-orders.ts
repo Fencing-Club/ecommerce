@@ -114,6 +114,13 @@ export function shipmentRecord(overrides: Partial<Shipment> = {}): Shipment {
     labels: [],
     stockTaken: null,
     bookingReference: null,
+    transport: {
+      service: "parcel",
+      handoff: "supplier",
+      collection: "pickup",
+      carrierLabels: "per_carton",
+      instructions: ""
+    },
     forwarderCarrier: null,
     forwarderReference: null,
     issue: null,
@@ -141,7 +148,6 @@ export function packed(cartons: number) {
   return {
     readyDate: "2026-10-05",
     origin: pickupAddress,
-    invoiceDocumentId: "8e1b2c3d-4e5f-4a6b-8c7d-000000000001",
     cartons: Array.from({ length: cartons }, (_, index) => ({
       cartonId: `C${index + 1}`,
       length: 60,
@@ -253,7 +259,7 @@ const pickerProducts = [
   {
     productId: "gid://shopify/Product/30001",
     title: "Waffle towel",
-    imageUrl: null,
+    imageUrl: "https://images.unsplash.com/photo-1636714573130-bbb1d4b19cc1?w=160&fit=crop",
     variants: [
       {
         variantId: "gid://shopify/ProductVariant/300011",
@@ -277,7 +283,7 @@ const pickerProducts = [
   {
     productId: "gid://shopify/Product/30002",
     title: "Linen napkin set",
-    imageUrl: null,
+    imageUrl: "https://images.unsplash.com/photo-1636714573130-bbb1d4b19cc1?w=160&fit=crop",
     variants: [
       {
         variantId: "gid://shopify/ProductVariant/300021",

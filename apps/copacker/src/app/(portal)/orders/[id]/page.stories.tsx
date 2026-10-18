@@ -411,9 +411,9 @@ export const Sent = meta.story({
     await expect(canvas.getByText("Not set")).toBeVisible()
     // The header hides where the lines stack, as they do in a narrow window.
     await expect(canvas.getByRole("columnheader", { name: "Cost", hidden: true })).toBeInTheDocument()
-    await expect(canvas.getAllByText("$2,958.00").length).toBeGreaterThan(0)
+    await expect(canvas.getAllByText("$2,958").length).toBeGreaterThan(0)
     await expect(canvas.getByText("Nov 15, 2026")).toBeVisible()
-    await expect(canvas.getByText("Please use the recycled polybags.", { selector: "dd" })).toBeVisible()
+    await expect(canvas.getByText("Please use the recycled polybags.", { selector: "p" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "About landed costs" })).toBeVisible()
     await expect(canvas.getByRole("heading", { name: "Timeline" })).toBeVisible()
     await expect(canvas.getByText("Purchase order submitted to supplier")).toBeVisible()

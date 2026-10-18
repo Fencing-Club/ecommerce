@@ -25,7 +25,8 @@
       "overQuantity": "{sku}: cartons exceed the quantity remaining on the purchase order",
       "unknownChange": "Invoice changes must reference unique items on the purchase order"
     },
-    "networkMismatch": "Pack only products assigned to this shipment’s Amazon network."
+    "networkMismatch": "Pack only products assigned to this shipment’s Amazon network.",
+    "missingTransport": "Transport not confirmed"
   },
   "workflow": {
     "arrived": "The goods have arrived",
@@ -41,7 +42,8 @@
     "complete": "Shipment complete",
     "cancellation": "Cancel the existing Amazon shipment before creating a replacement",
     "reconcile": "Find and link the Amazon order before continuing",
-    "retry": "Resolve the reported problem, then retry the shipment"
+    "retry": "Resolve the reported problem, then retry the shipment",
+    "packed": "Packing is complete. The buyer can now prepare the Amazon shipment and retrieve its labels."
   },
   "overview": {
     "due": {

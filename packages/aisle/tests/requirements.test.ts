@@ -57,8 +57,7 @@ describe("PO instructions", () => {
       "Pack for FBA",
       "Bundle 2 units into one pack",
       "Label with FNSKU X004ABC123",
-      "Fold the cuff.",
-      "No tissue paper."
+      "Fold the cuff.\nNo tissue paper."
     ])
     expect(itemRequirements(po.items[0]!, "warehouse")).toEqual([{ code: "prep", prep: "POLYBAGGING" }])
     expect(requirementText({ code: "prep", prep: "POLYBAGGING" })).toBe("Seal each unit in a clear polybag")
@@ -82,4 +81,23 @@ describe("PO instructions", () => {
     ])
     expect(sharedPrep(po)).toBeNull()
   })
+})
+
+it("uses explicit recipient tasks without reintroducing already-applied labels", () => {
+  const data = order([
+    line({
+      packingRequirements: {
+        preparation: "sealedPolybag",
+        labels: [],
+        countryCode: "",
+        instructions: "- Keep packs together"
+      }
+    })
+  ])
+  expect(sharedPrep(data)).toBeNull()
+  expect(destinationRequirements(data).map((r) => r.code)).not.toContain("unitLabels")
+  const requirements = itemRequirements(data.items[0]!, data.destination)
+  expect(requirements).toContainEqual({ code: "productTask", task: "sealedPolybag", countryCode: "" })
+  expect(requirements.map(requirementText).join(" ")).not.toContain("FNSKU")
+  expect(requirements).toContainEqual({ code: "instruction", text: "- Keep packs together" })
 })

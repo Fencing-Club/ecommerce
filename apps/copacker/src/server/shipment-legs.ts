@@ -1,9 +1,8 @@
 import type { OrderInput } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import type { Transaction } from "@/db"
-import { db } from "@/db"
-import { documents, events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
+import { db, type Transaction } from "@/db"
+import { events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
 import type { Session } from "./workspace-session"
@@ -31,7 +30,7 @@ async function lockedShipment(tx: Transaction, shipmentId: string) {
 }
 
 // Marks a released shipment's goods shipped by the supplier: the supplier itself, or the buyer for a supplier that
-// isn't on Copacker. The shipment's commercial invoice must still be current.
+// isn't on Copacker.
 export async function shipShipment(s: Session, shipmentId: string) {
   await db().transaction(async (tx) => {
     const { order, supplier, shipment } = await lockedShipment(tx, shipmentId)
@@ -44,21 +43,6 @@ export async function shipShipment(s: Session, shipmentId: string) {
     }
     if (shipment.status !== "ready") {
       throw new LocalizedError("onlyReleasedShipped")
-    }
-    const [invoice] = shipment.packing
-      ? await tx
-          .select({ id: documents.id })
-          .from(documents)
-          .where(
-            and(
-              eq(documents.id, shipment.packing.invoiceDocumentId),
-              eq(documents.kind, "invoice"),
-              eq(documents.outdated, 0)
-            )
-          )
-      : []
-    if (!invoice) {
-      throw new LocalizedError("uploadInvoiceBeforeShipping")
     }
     await tx.update(shipments).set({ status: "shipped", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
     await tx

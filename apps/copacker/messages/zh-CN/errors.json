@@ -354,5 +354,9 @@
   "awdOriginDiffers": "提货地址与 Amazon 不符。请检查街道、单元、邮编和国家。",
   "linkAwdOnly": "只有 AWD 装箱草稿才能关联现有 AWD 货件。",
   "awdProductsDiffer": "Amazon 货件包含此 AWD 订单之外的产品或数量。",
-  "awdAlreadyLinked": "此 Amazon 货件已关联到采购订单。"
+  "awdAlreadyLinked": "此 Amazon 货件已关联到采购订单。",
+  "transportChanged": "运输设置已更改或已发布。请重新加载货件。",
+  "transportForwarderMissing": "请先为订单添加货运代理站点。",
+  "packetDestinationUnavailable": "下载文件包前，请确认货件的收货地址。",
+  "packetNoLabelsRequired": "此货件不需要此类标签。"
 }

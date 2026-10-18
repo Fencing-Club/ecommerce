@@ -178,6 +178,7 @@
     "preparation": "预处理",
     "suffocationWarning": "窒息警告标签",
     "instructionsPlaceholder": "处理或贴标方面的特殊要求",
+    "markdownHint": "支持 Markdown：使用 - 创建项目列表、1. 创建编号步骤、**粗体** 突出重点。",
     "done": "完成",
     "editCostSummary": "编辑<hidden>成本汇总</hidden>",
     "editCostSummaryTitle": "编辑成本汇总",
@@ -187,6 +188,7 @@
     "removeAdjustment": "移除调整项",
     "addAdjustment": "添加调整项",
     "skuLabel": "SKU 标签",
+    "fnskuLabel": "FNSKU 标签",
     "amazonRequiresIt": "Amazon 要求提供",
     "shipments": "货件",
     "groupingHint": "选择商品以在货件之间移动。",
@@ -208,7 +210,14 @@
     "perPiece": "每件",
     "flatAmount": "固定金额",
     "shipmentTotal": "货件总额",
-    "expenseType": "支出类型"
+    "expenseType": "支出类型",
+    "prepNone": "无",
+    "polybag": "塑料袋",
+    "sealedPolybag": "密封塑料袋",
+    "chokingHazard": "小零件窒息警告标签",
+    "countryOfOriginLabel": "原产国标签",
+    "countryOfOriginCode": "国家代码",
+    "instructions": "说明"
   },
   "revise": {
     "title": "编辑订单",
@@ -221,7 +230,7 @@
     "prepareNextShipment": "准备下一批货件",
     "offCopacker": {
       "title": "{supplier} 未使用 Copacker",
-      "description": "请自行通过电子邮件将采购订单发给对方，然后在货件中填写其箱子和发票信息。"
+      "description": "通过电子邮件向供应商发送采购订单，然后在货件中填写纸箱详情。"
     },
     "columns": {
       "products": "产品",
@@ -422,7 +431,8 @@
     "otherAddress": "其他地址",
     "readyForPickup": "可提货日期",
     "addCartonProduct": "向纸箱添加商品",
-    "removeCartonProduct": "从纸箱移除商品 {number}"
+    "removeCartonProduct": "从纸箱移除商品 {number}",
+    "finishPacking": "完成装箱"
   },
   "paymentTerms": {
     "net7": "7 天账期",
@@ -447,5 +457,84 @@
     "surcharge": "附加费",
     "tariffs": "进口关税",
     "other": "其他"
+  },
+  "cartonEditor": {
+    "addProductsTo": "向纸箱 {carton} 添加商品",
+    "shipmentProducts": "此货件中的商品",
+    "searchProducts": "搜索此货件中的商品",
+    "alreadyAdded": "已添加",
+    "noProducts": "未找到商品",
+    "cancel": "取消",
+    "addSelected": "添加 {count} 件商品",
+    "carton": "纸箱 {carton}",
+    "count": "箱数",
+    "length": "长",
+    "width": "宽",
+    "height": "高",
+    "weight": "重量",
+    "enterNumber": "请为{field}输入正数。",
+    "enterQuantity": "请为 {sku} 输入整数数量。",
+    "addProductRequired": "请向此纸箱添加商品。",
+    "dimensions": "尺寸（厘米）",
+    "axis": {
+      "length": "长",
+      "width": "宽",
+      "height": "高"
+    },
+    "actions": "纸箱 {carton} 操作",
+    "duplicate": "复制纸箱",
+    "delete": "删除纸箱",
+    "quantityPerCarton": "数量 / 箱",
+    "packsPerCarton": "包装数 / 箱",
+    "unitsPerCarton": "件数 / 箱",
+    "productQuantity": "{sku}：纸箱 {carton} 每箱数量",
+    "unitCount": "{count} 件",
+    "removeProduct": "从纸箱 {carton} 中移除 {sku}",
+    "product": "产品",
+    "leftToPack": "待装箱",
+    "packCount": "{count} 包",
+    "addToCarton": "添加到纸箱 {carton}",
+    "selectedCount": "已选择 {count} 项",
+    "cartonGroup": "箱 {cartons}"
+  },
+  "cartonImport": {
+    "title": "导入纸箱",
+    "reviewTitle": "检查导入",
+    "downloadTemplate": "下载模板",
+    "templateHint": "使用模板填写纸箱内容、数量、尺寸和重量。",
+    "downloadFailed": "无法下载模板。",
+    "formats": "XLSX 或 CSV，最大 10 MB",
+    "failed": "无法导入纸箱。未进行任何更改。",
+    "templateMismatch": "文件与模板不匹配",
+    "issues": "{count} 个问题",
+    "row": "第 {row} 行",
+    "mode": "导入模式",
+    "add": "添加纸箱",
+    "replace": "替换装箱数据",
+    "cartonCount": "{count} 箱",
+    "productCount": "{count} 种商品",
+    "measurements": "{length} × {width} × {height} 厘米 / {weight} 千克",
+    "close": "关闭",
+    "back": "返回",
+    "cancel": "取消",
+    "import": "导入纸箱",
+    "review": "检查纸箱",
+    "importing": "正在导入纸箱…",
+    "importingButton": "正在导入…",
+    "checking": "正在检查文件…",
+    "errors": {
+      "missingColumns": "缺少列：{value}。",
+      "duplicateColumns": "重复列：{value}。",
+      "unknownColumns": "意外的列：{value}。",
+      "empty": "文件中没有纸箱数据行。",
+      "worksheet": "文件需要包含名为 Cartons 的工作表。",
+      "unreadable": "无法读取此文件。请使用基于模板的 XLSX 或 CSV 文件。",
+      "number": "请在 {value} 中输入有效的正数。",
+      "sku": "SKU 不属于此货件：{value}。",
+      "cartonId": "请输入 1–60 个字符的纸箱编号。",
+      "measurements": "同一纸箱的各行必须具有相同的箱数、尺寸和重量。",
+      "duplicateProduct": "此纸箱重复列出了 {value}。",
+      "limit": "每个货件最多包含 1,000 箱。"
+    }
   }
 }

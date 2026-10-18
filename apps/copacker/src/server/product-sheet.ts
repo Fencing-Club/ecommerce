@@ -1,9 +1,14 @@
 import ExcelJS from "exceljs"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
-import type { PriceBreak } from "@/lib/catalog-pricing"
-import type { QuantityRules } from "@/lib/catalog-pricing"
-import { defaultQuantityRules, type PriceBasis, pricingProblem } from "@/lib/catalog-pricing"
+import {
+  defaultQuantityRules,
+  type PriceBasis,
+  type PriceBreak,
+  pricingProblem,
+  type QuantityRules
+} from "@/lib/catalog-pricing"
+import { csvTable } from "@/lib/csv-table"
 import { variantLabel } from "@/lib/supplier-product"
 import { pricingText } from "./text"
 
@@ -287,45 +292,6 @@ export async function sheetWorkbook(rows: SheetRow[], workspace: string) {
     note: "Variants are matched by SKU: matching SKUs are updated, new SKUs are added, and rows you leave out stay as they are."
   })
   return Buffer.from(await book.xlsx.writeBuffer())
-}
-
-// CSV text as rows of cells.
-function csvTable(text: string) {
-  const rows: string[][] = []
-  let row: string[] = []
-  let cell = ""
-  let quoted = false
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i]!
-    if (char === '"') {
-      if (quoted && text[i + 1] === '"') {
-        cell += '"'
-        i++
-      } else if (quoted || cell === "") {
-        quoted = !quoted
-      } else {
-        throw new LocalizedError("csvUnexpectedQuote", { row: rows.length + 1 })
-      }
-    } else if (!quoted && (char === "," || char === "\n" || char === "\r")) {
-      row.push(cell)
-      cell = ""
-      if (char !== ",") {
-        rows.push(row)
-        row = []
-        if (char === "\r" && text[i + 1] === "\n") {
-          i++
-        }
-      }
-    } else {
-      cell += char
-    }
-  }
-  if (quoted) {
-    throw new LocalizedError("csvUnclosedQuote")
-  }
-  row.push(cell)
-  rows.push(row)
-  return rows
 }
 
 function cellText(value: ExcelJS.CellValue): string {
