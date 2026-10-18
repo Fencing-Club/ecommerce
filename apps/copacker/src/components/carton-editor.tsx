@@ -358,7 +358,7 @@ export function CartonEditor({
               key={content.itemId}
               className="flex flex-wrap items-start justify-between gap-4 p-4 @sm/carton:flex-nowrap"
             >
-              <div className="w-full min-w-0 @sm/carton:flex-1">
+              <div className="w-full min-w-0 [overflow-wrap:anywhere] @sm/carton:flex-1">
                 <ProductIdentity item={item} showPackSize={false} />
               </div>
               <span className="self-center text-xs @sm/carton:hidden">

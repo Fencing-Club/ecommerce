@@ -97,9 +97,9 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
     const matches = products.filter(
       (item) =>
         Boolean(sku) &&
-        item.supplierSku === sku &&
-        (!name || item.name === name) &&
-        (!variant || item.variant === variant) &&
+        item.supplierSku.trim() === sku &&
+        (!name || item.name.trim() === name) &&
+        (!variant || item.variant.trim() === variant) &&
         (!pack || String(item.piecesPerSet) === pack)
     )
     const product = matches.length === 1 ? matches[0] : undefined

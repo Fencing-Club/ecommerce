@@ -96,6 +96,23 @@ describe("carton import", () => {
     expect(result.groups).toHaveLength(1)
     expect(result.groups[0]?.items[0]?.itemId).toBe(products[0]!.id)
   })
+  it("round-trips product references with surrounding whitespace", async () => {
+    const padded = products.map((item) => ({
+      ...item,
+      supplierSku: ` ${item.supplierSku} `,
+      name: ` ${item.name} `,
+      variant: ` ${item.variant} `
+    }))
+    const book = new ExcelJS.Workbook()
+    await book.xlsx.load(await cartonTemplate(padded, ["Instructions"]))
+    const sheet = book.getWorksheet("Cartons")!
+    row().forEach((value, index) => {
+      if (index !== 2) {sheet.getRow(2).getCell(index + 1).value = value}
+    })
+    const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), padded)
+    expect(result.issues).toEqual([])
+    expect(result.groups[0]?.items[0]?.itemId).toBe(padded[0]!.id)
+  })
   it("reports unreadable files and ignores formula values", async () => {
     expect((await readCartonFile(new File(["broken"], "cartons.xlsx"), products)).issues[0]?.code).toBe("unreadable")
     const book = new ExcelJS.Workbook()

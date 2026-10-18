@@ -156,3 +156,20 @@ export const MobilePacked = meta.story({
     await expect(canvas.getByText("20 units")).toBeVisible()
   }
 })
+export const LongSku = meta.story({
+  args: {
+    readOnly: true,
+    products: products.map((item) => ({ ...item, buyerSku: `${item.buyerSku}-LONG-SUPPLIER-REFERENCE-1234567890` }))
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 400, maxWidth: "100%" }}>
+        <Story />
+      </div>
+    )
+  ],
+  play: async ({ canvas }) => {
+    const sku = canvas.getAllByText(/LONG-SUPPLIER-REFERENCE/)[0]!
+    await expect(sku.scrollWidth).toBeLessThanOrEqual(sku.clientWidth)
+  }
+})
