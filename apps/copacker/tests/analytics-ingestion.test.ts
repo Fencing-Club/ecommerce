@@ -398,7 +398,9 @@ it("keeps successful receipt snapshots when another shipment has an invalid docu
             createdAt: null
           })),
         awdReceiptItems: async (shipmentId) => {
-          if (shipmentId === "bad") {throw new Error("Invalid document")}
+          if (shipmentId === "bad") {
+            throw new Error("Invalid document")
+          }
           return {
             shipmentId,
             shipmentStatus: "CLOSED",

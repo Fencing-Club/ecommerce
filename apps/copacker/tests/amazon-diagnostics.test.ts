@@ -6,7 +6,9 @@ it("logs only allowlisted failure metadata", () => {
   const parsed = z
     .object({ occurredAt: z.iso.datetime(), privateCustomerField: z.number() })
     .safeParse({ occurredAt: "secret", privateCustomerField: "private" })
-  if (parsed.success) {throw new Error("Expected invalid fixture")}
+  if (parsed.success) {
+    throw new Error("Expected invalid fixture")
+  }
   const details = amazonFailureDetails(parsed.error)
   expect(details.validation).toEqual([
     { code: "invalid_format", field: "occurredAt" },
