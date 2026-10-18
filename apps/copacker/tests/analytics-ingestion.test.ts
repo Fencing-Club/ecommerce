@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import { drizzle } from "drizzle-orm/pglite"
 import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -376,3 +376,114 @@ it.each([401, 403, 429, 503])(
     expect(feeds.find((row) => row.dataset === "awd_costs")?.state.error).toBeNull()
   }
 )
+
+it("keeps successful receipt snapshots when another shipment has an invalid document", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  await syncAmazonReceipts(
+    {
+      orgId,
+      externalAccountId: "seller",
+      revision: 1,
+      amazon: {
+        fbaShipments: async () => [],
+        fbaReceiptItems: async () => [],
+        awdShipments: async () =>
+          ["good", "bad", "later"].map((shipmentId) => ({
+            shipmentId,
+            orderId: "order",
+            status: "CLOSED",
+            createdAt: null
+          })),
+        awdReceiptItems: async (shipmentId) => {
+          if (shipmentId === "bad") {
+            throw new Error("Invalid document")
+          }
+          return {
+            shipmentId,
+            shipmentStatus: "CLOSED",
+            shipmentSkuQuantities: [{ sku: "SKU", expectedQuantity: { quantity: 2, unitOfMeasurement: "UNITS" } }]
+          }
+        }
+      }
+    },
+    async () => undefined
+  )
+  expect((await database.select().from(tables.analyticsEvidence)).map((row) => row.sourceId).sort()).toEqual([
+    "good",
+    "later"
+  ])
+  expect(
+    (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "awd_inbound_receipts")?.state
+      .error
+  ).toBe("collection_failed")
+})
+
+it("stops receipt requests when the sync revision changes before a checkpoint", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  const receipt = vi.fn<Amazon["fbaReceiptItems"]>(async () => {
+    await database.update(tables.salesSyncs).set({ revision: 2 })
+    return []
+  })
+  const awdShipments = vi.fn<Amazon["awdShipments"]>(async () => [])
+  await expect(
+    syncAmazonReceipts(
+      {
+        orgId,
+        externalAccountId: "seller",
+        revision: 1,
+        amazon: {
+          fbaShipments: async () =>
+            ["first", "second"].map((shipmentId) => ({ shipmentId, name: null, status: "CLOSED" })),
+          fbaReceiptItems: receipt,
+          awdShipments,
+          awdReceiptItems: async (shipmentId) => ({ shipmentId, shipmentStatus: "CLOSED" })
+        }
+      },
+      async () => undefined
+    )
+  ).rejects.toThrow("Analytics account changed")
+  expect(receipt).toHaveBeenCalledTimes(1)
+  expect(awdShipments).not.toHaveBeenCalled()
+  expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
+})
+
+it("stops both receipt networks after recording a transient checkpoint failure", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  const receipt = vi.fn<Amazon["fbaReceiptItems"]>(async () => [])
+  const awdShipments = vi.fn<Amazon["awdShipments"]>(async () => [])
+  const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(new Error("Database unavailable"))
+  try {
+    await syncAmazonReceipts(
+      {
+        orgId,
+        externalAccountId: "seller",
+        revision: 1,
+        amazon: {
+          fbaShipments: async () =>
+            ["first", "second"].map((shipmentId) => ({ shipmentId, name: null, status: "CLOSED" })),
+          fbaReceiptItems: receipt,
+          awdShipments,
+          awdReceiptItems: async (shipmentId) => ({ shipmentId, shipmentStatus: "CLOSED" })
+        }
+      },
+      async () => undefined
+    )
+    expect(receipt).toHaveBeenCalledTimes(1)
+    expect(awdShipments).not.toHaveBeenCalled()
+    expect(
+      (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "fba_inbound_receipts")?.state
+        .error
+    ).toBe("collection_failed")
+  } finally {
+    transaction.mockRestore()
+  }
+})

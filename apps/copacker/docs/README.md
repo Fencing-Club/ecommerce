@@ -57,4 +57,4 @@ See [shipment-date evidence](shipment-date-evidence.md) for Shopify fulfillment 
 
 [Dated conversions and automatic depletion imports](automatic-depletion-imports.md) now provide opt-in processing after sales sync; live coverage and return-to-stock accounting remain pending.
 
-- [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events, Amazon evidence and report failure diagnostics.
+- [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events, Amazon evidence, receipt checkpoints and quota-aware report retry diagnostics.

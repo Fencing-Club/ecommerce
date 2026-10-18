@@ -1,8 +1,8 @@
 import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"
+import { amazonFailureDetails } from "./amazon-diagnostics"
 
 // Request scope, not proof of a row's sales marketplace. Matches the app's US FBA inventory scope.
 export const fbaReportMarketplace = "ATVPDKIKX0DER"
@@ -204,30 +204,12 @@ export async function syncMonthlyAmazonReport<Row>(
       }
     } catch (error) {
       // Never log source rows, provider messages, URLs or input-bearing validation errors.
-      const fields = new Set(["periodDay", "currency", "amount", "quantity", "volume", "rate"])
       console.warn("Amazon monthly report failed", {
         reportType: source.reportType,
         from: window.from.toISOString(),
         stage,
         errorCode: amazonReportFailure(error, stage),
-        httpStatus: error instanceof ProviderError ? error.status : undefined,
-        validation:
-          error instanceof z.ZodError
-            ? error.issues.slice(0, 10).map((issue) => ({
-                code: issue.code,
-                field: typeof issue.path[0] === "string" && fields.has(issue.path[0]) ? issue.path[0] : "other"
-              }))
-            : undefined,
-        structure:
-          error instanceof Error &&
-          [
-            "Invalid quoted report field",
-            "Unclosed report field",
-            "Missing or duplicate report columns",
-            "Incomplete report row"
-          ].includes(error.message)
-            ? error.message
-            : undefined
+        ...amazonFailureDetails(error)
       })
       rows = null
       errorCode = amazonReportFailure(error, stage)

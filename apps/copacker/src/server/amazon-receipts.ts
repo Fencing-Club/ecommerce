@@ -1,7 +1,8 @@
-import type { Amazon } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsEvidence, analyticsFeeds } from "@/db/schema"
+import { amazonFailureDetails } from "./amazon-diagnostics"
 import { publishAnalyticsFeed } from "./analytics-feed-store"
 export async function syncAmazonReceipts(
   input: {
@@ -14,6 +15,7 @@ export async function syncAmazonReceipts(
 ) {
   for (const network of ["fba", "awd"] as const) {
     const dataset = `${network}_inbound_receipts`
+    let stage = "list"
     try {
       await assertOwned()
       const shipments = network === "fba" ? await input.amazon.fbaShipments() : await input.amazon.awdShipments()
@@ -32,40 +34,58 @@ export async function syncAmazonReceipts(
       const wanted = shipments
         .toSorted((a, b) => (checked.get(a.shipmentId) ?? 0) - (checked.get(b.shipmentId) ?? 0))
         .slice(0, 40)
-      const rows = []
+      let failed = false
       for (const shipment of wanted) {
+        stage = "items"
         await assertOwned()
-        if (network === "fba") {
-          const items = await input.amazon.fbaReceiptItems(shipment.shipmentId)
-          rows.push({
-            id: shipment.shipmentId,
-            data: {
-              ...shipment,
-              network,
-              items: items.map((r) => ({
-                ...r,
-                difference: r.sent === null || r.received === null ? null : r.sent - r.received
-              })),
-              gap: items.length ? null : "missing_items",
-              candidateOnly: true
-            }
-          })
-        } else {
-          const details = await input.amazon.awdReceiptItems(shipment.shipmentId)
-          rows.push({
-            id: shipment.shipmentId,
-            data: {
-              ...shipment,
-              network,
-              ...details,
-              gap: details.shipmentSkuQuantities ? null : "missing_sku_quantities",
-              candidateOnly: true
-            }
-          })
+        const rows = []
+        try {
+          if (network === "fba") {
+            const items = await input.amazon.fbaReceiptItems(shipment.shipmentId)
+            rows.push({
+              id: shipment.shipmentId,
+              data: {
+                ...shipment,
+                network,
+                items: items.map((r) => ({
+                  ...r,
+                  difference: r.sent === null || r.received === null ? null : r.sent - r.received
+                })),
+                gap: items.length ? null : "missing_items",
+                candidateOnly: true
+              }
+            })
+          } else {
+            const details = await input.amazon.awdReceiptItems(shipment.shipmentId)
+            rows.push({
+              id: shipment.shipmentId,
+              data: {
+                ...shipment,
+                network,
+                ...details,
+                gap: details.shipmentSkuQuantities ? null : "missing_sku_quantities",
+                candidateOnly: true
+              }
+            })
+          }
+        } catch (error) {
+          await assertOwned()
+          failed = true
+          console.warn("Amazon receipt collection failed", { network, stage, ...amazonFailureDetails(error) })
+          // Account and rate failures affect every remaining shipment; individual bad documents do not.
+          if (error instanceof ProviderError && [401, 403, 429, 503].includes(error.status)) {
+            break
+          }
+          continue
         }
+        // Persistence failures stop both networks; they are not malformed provider documents.
+        stage = "publish"
+        await publishAnalyticsFeed(input, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
       }
-      await publishAnalyticsFeed(input, dataset, rows, { error: null }, assertOwned)
-    } catch {
+      stage = "publish"
+      await publishAnalyticsFeed(input, dataset, [], { error: failed ? "collection_failed" : null }, assertOwned)
+    } catch (error) {
+      console.warn("Amazon receipt collection failed", { network, stage, ...amazonFailureDetails(error) })
       const [prior] = await db()
         .select()
         .from(analyticsFeeds)
@@ -78,6 +98,9 @@ export async function syncAmazonReceipts(
           )
         )
       await publishAnalyticsFeed(input, dataset, [], { ...prior?.state, error: "collection_failed" }, assertOwned)
+      if (stage === "publish") {
+        return
+      }
     }
   }
 }

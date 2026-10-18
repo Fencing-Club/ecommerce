@@ -319,13 +319,19 @@ export class ProviderError extends Error {
     public readonly status: number,
     public readonly requestId: string | null,
     message: string,
-    public readonly retryAfterMs: number | null = null
+    public readonly retryAfterMs: number | null = null,
+    public readonly operation?: string
   ) {
     super(message)
   }
 }
+export class ReportProcessingError extends Error {
+  constructor(public readonly hasDiagnosticDocument: boolean) {
+    super("Amazon report processing failed")
+  }
+}
 // Each collection owns its pacing and deadline; mutations never use these retries.
-function stockReader(deadline: number, assertActive?: () => Promise<void>) {
+function stockReader(deadline: number, assertActive?: () => Promise<void>, throttleMs = 1000) {
   let nextRequestAt = 0
   return async <T>(read: () => Promise<T>, pageDeadline = deadline, retry = true): Promise<T> => {
     const check = async () => {
@@ -358,7 +364,11 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>) {
         ) {
           throw error
         }
-        nextRequestAt = Math.max(nextRequestAt, Date.now() + (error.retryAfterMs ?? 1000 * 2 ** attempt))
+        const delay = Math.max(error.retryAfterMs ?? 0, (error.status === 429 ? throttleMs : 1000) * 2 ** attempt)
+        if (Date.now() + delay >= Math.min(deadline, pageDeadline)) {
+          throw error
+        }
+        nextRequestAt = Math.max(nextRequestAt, Date.now() + delay)
       }
     }
   }
@@ -1049,7 +1059,25 @@ export class Amazon {
       reuseCreatedSince?: string
     }
   ) {
-    const read = stockReader(options.deadline, options.assertActive)
+    // Report creation and document retrieval replenish about once per minute, unlike inventory reads.
+    // Keep the same report ID while retrying a throttled poll/document; never recreate it to retry a read.
+    const retry = stockReader(options.deadline, options.assertActive, 60000)
+    const read = async <T>(operation: string, request: () => Promise<T>, retryRequest = true) => {
+      try {
+        return await retry(request, options.deadline, retryRequest)
+      } catch (error) {
+        if (error instanceof ProviderError) {
+          throw new ProviderError(
+            error.status,
+            error.requestId,
+            "Amazon report request failed",
+            error.retryAfterMs,
+            operation
+          )
+        }
+        throw error
+      }
+    }
     let reportId: string | undefined
     // Only callers recovering incomplete imports opt in. Normal refreshes always request fresh evidence.
     // getReports does not expose reportOptions, so their equivalence cannot be established here.
@@ -1074,7 +1102,7 @@ export class Amazon {
             const params = next ? new URLSearchParams({ nextToken: next }) : query
             const result = z
               .object({ reports: z.array(z.unknown()), nextToken: z.string().optional() })
-              .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports?${params}`)))
+              .parse(await read("getReports", () => this.request("GET", `/reports/2021-06-30/reports?${params}`)))
             reports.push(...result.reports)
             next = result.nextToken
             if (!next) {
@@ -1133,8 +1161,8 @@ export class Amazon {
         .object({ reportId: z.string().min(1) })
         .parse(
           await read(
+            "createReport",
             () => this.request("POST", "/reports/2021-06-30/reports", input),
-            options.deadline,
             options.retryCreate !== false
           )
         ).reportId
@@ -1145,24 +1173,33 @@ export class Amazon {
           processingStatus: z.enum(["IN_QUEUE", "IN_PROGRESS", "DONE", "CANCELLED", "FATAL"]),
           reportDocumentId: z.string().min(1).optional()
         })
-        .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(reportId)}`)))
+        .parse(
+          await read("getReport", () =>
+            this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(reportId)}`)
+          )
+        )
       if (report.processingStatus === "CANCELLED") {
         return null
       }
       if (report.processingStatus === "FATAL") {
-        throw new Error(`Amazon couldn't build the ${input.reportType} report`)
+        throw new ReportProcessingError(Boolean(report.reportDocumentId))
       }
       if (report.processingStatus === "DONE" && report.reportDocumentId) {
         const documentId = report.reportDocumentId
         const document = z
           .object({ url: z.url(), compressionAlgorithm: z.literal("GZIP").optional() })
           .parse(
-            await read(() => this.request("GET", `/reports/2021-06-30/documents/${encodeURIComponent(documentId)}`))
+            await read("getReportDocument", () =>
+              this.request("GET", `/reports/2021-06-30/documents/${encodeURIComponent(documentId)}`)
+            )
           )
-        const response = await read(() => this.transport(document.url, { signal: AbortSignal.timeout(120000) }))
-        if (!response.ok) {
-          throw new ProviderError(response.status, null, `Amazon report download failed (${response.status})`)
-        }
+        const response = await read("downloadReport", async () => {
+          const response = await this.transport(document.url, { signal: AbortSignal.timeout(120000) })
+          if (!response.ok) {
+            throw new ProviderError(response.status, null, "Amazon report download failed")
+          }
+          return response
+        })
         const bytes = Buffer.from(await response.arrayBuffer())
         return (document.compressionAlgorithm ? gunzipSync(bytes) : bytes).toString("utf8")
       }

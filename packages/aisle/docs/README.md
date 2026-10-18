@@ -41,6 +41,9 @@ See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the pu
 
 The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text.
 
+Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
+a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries.
+
 ## Commerce snapshots
 
 Shopify stock always includes product identity and display fields. Shopify sales always include tags, line prices,
