@@ -248,3 +248,17 @@ entries. No test orders or Amazon/eBay-tagged copies leaked into this evidence s
 coverage. There were 38 refund-payment references also present in order transactions; those must be counted once by
 transaction ID. These are evidence counts, not recognized revenue or profit, and ordinary sales-order history has
 different coverage. Shopify historical economics acquisition is accepted through this cutoff; accounting remains open.
+
+### Recovery acceptance: 2026-10-18 00:50 UTC
+
+PR #44 is deployed in production release `67a6703`; full verification, review and release smoke checks passed.
+The live retry persisted all 12 monthly storage reports, October 2025 through September 2026, with 8,446 rows
+and no import errors. October 2025 inventory movements also recovered; November/December 2025 and the current
+October 2026 movement refresh still report throttling. Other failed report families remain unaccepted.
+
+September reconciliation now exposes reimbursement-type postings for nine of 11 records, up from six before ranking
+changes. Five retain order-reference candidates. All remain unconfirmed, with no additional recognized amounts.
+
+Both Ads profiles successfully requested reports, but downloads fail with `transport_TypeError`. The local Workers
+runtime reproduces rejection of `redirect: "error"` before fetching. The fix uses manual redirects and explicitly
+rejects redirect responses. Ads acquisition remains unaccepted until the repaired download persists real spend.

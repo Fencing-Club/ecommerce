@@ -64,6 +64,8 @@ nonempty warnings still reject the report without overwriting stored spend.
 All report parts must complete before any days in a window are stored in `amazon_ads_days`. Reports with warnings,
 missing costs, unexpected countries or currencies are rejected instead of counted as complete. Empty completed reports
 produce zero-spend days. Downloads are size-limited, use only Amazon S3 HTTPS URLs, and receive no authorization headers.
+Downloads use manual redirect handling and reject every redirect response. Cloudflare Workers rejects the Fetch
+`error` redirect mode before sending a request, which previously surfaced as a retryable download transport failure.
 Foreign currency spend uses the existing daily exchange rates.
 
 For a selected Overview period, daily Ads spend replaces `ProductAdsPayment` only if every applicable profile covers
