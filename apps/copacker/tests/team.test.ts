@@ -68,7 +68,7 @@ describe("the team", () => {
     ])
   })
 
-  it("shows current invitations with their access and expiry", async () => {
+  it("shows each invitation with its access and expiry even when emails match", async () => {
     await database.insert(tables.teamInvitations).values([
       {
         orgId,
@@ -79,7 +79,7 @@ describe("the team", () => {
       },
       {
         orgId,
-        email: "kim@club.example",
+        email: "lee@club.example",
         access: { sales: "view" },
         hash: "lapsed",
         expiresAt: new Date(Date.now() - 86400000)
@@ -89,7 +89,7 @@ describe("the team", () => {
     expect(invitations).toStrictEqual([
       { email: "lee@club.example", role: "admin", access: {}, expires: "Oct 4", expired: false },
       {
-        email: "kim@club.example",
+        email: "lee@club.example",
         role: "member",
         access: { sales: "view" },
         expires: expect.any(String),
