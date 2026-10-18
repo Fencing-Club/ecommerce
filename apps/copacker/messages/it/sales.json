@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {ordine} other {ordini}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {unità} other {unità}}",
     "orders": "Ordini",
-    "sourceOrders": "Ordini {source}"
+    "sourceOrders": "Ordini {source}",
+    "financialData": "Dati finanziari",
+    "amazonFinancialData": "Dati finanziari Amazon",
+    "financialFailed": "Alcuni report finanziari non sono riusciti. I dati salvati vengono conservati.",
+    "financialImported": "Report finanziari importati",
+    "financialIncomplete": "Alcuni report finanziari non sono ancora disponibili."
   },
   "list": {
     "label": "Ordini",

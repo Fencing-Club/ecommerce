@@ -17,7 +17,7 @@ reported calendar dates and raw source clock text. Missing optional values and u
 continues to supply stockout-day balances separately.
 
 `@repo/aisle/storage-fees` parses monthly storage estimates and aged-inventory charges separately, retaining exact
-decimals, calendar dates and raw fee components without summing or inventing missing product mappings. See
+decimals, calendar dates (including timezone-bearing aged-fee snapshots) and raw fee components without summing or inventing missing product mappings. See
 [storage ingestion](../../../apps/copacker/docs/amazon-storage-fees.md).
 
 `@repo/aisle/removals` parses removal orders and shipments with distinct quantities, exact fees and timezone-bearing

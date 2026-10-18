@@ -66,3 +66,11 @@ so a limited provider budget does not repeatedly prevent older history from bein
 
 Failed monthly windows rotate by oldest attempt after untouched history. Safe failure logs include the report type,
 month, stage, HTTP status and allowlisted validation fields; source values and provider messages are excluded.
+
+### Aged snapshot dates
+
+Aged charges accept ISO calendar dates, US month/day/year dates, and validated timezone-bearing ISO timestamps.
+Timestamp normalization keeps the source calendar day rather than shifting it through UTC; the original snapshot
+value remains in source evidence. Invalid dates, missing timestamp timezones and trailing garbage remain errors.
+The October 18 live diagnostic identified `periodDay` as the September report's rejected field. Timestamp support
+addresses a known Amazon output variant; a live retry must still verify that the affected report imports successfully.
