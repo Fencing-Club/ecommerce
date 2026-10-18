@@ -88,6 +88,8 @@ export async function syncMonthlyAmazonReport<Row>(
     reportType: string
     beforeRequest?: () => Promise<boolean>
     minimumRefreshMs?: number
+    // Covered windows can reuse an exact completed report within this content-refresh interval.
+    refreshReuseMs?: number
     retryCreate?: boolean
     // Storage fees require completed calendar months and a request spanning exactly one calendar month.
     wholeMonths?: boolean
@@ -183,6 +185,11 @@ export async function syncMonthlyAmazonReport<Row>(
     if (source.beforeRequest && !(await source.beforeRequest())) {
       return
     }
+    const recovering = periods.some((period) => {
+      const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
+      return !saved?.coveredTo || saved.coveredTo < period.to
+    })
+    const reuseMs = recovering ? day : source.refreshReuseMs
     let rows: Row[] | null = null
     let errorCode: string | null = null
     let stage: "request" | "parse" | "period" = "request"
@@ -198,12 +205,7 @@ export async function syncMonthlyAmazonReport<Row>(
           deadline: Date.now() + 20 * 60 * 1000,
           assertActive: assertOwned,
           retryCreate: source.retryCreate,
-          reuseCreatedSince: periods.some((period) => {
-            const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
-            return !saved?.coveredTo || saved.coveredTo < period.to
-          })
-            ? new Date(now.getTime() - day).toISOString()
-            : undefined
+          reuseCreatedSince: reuseMs ? new Date(now.getTime() - reuseMs).toISOString() : undefined
         }
       )
       if (text === null) {

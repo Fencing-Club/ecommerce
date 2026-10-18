@@ -42,7 +42,7 @@ See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the pu
 The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text, including unambiguous named-month dates and unavailable monetary placeholders. Invalid records expose field diagnostics and a masked date shape, never source values.
 
 Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
-a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries.
+a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries. Opt-in reuse requires an exact report scope and a caller-defined creation-time cutoff, including the reimbursement daily-content refresh interval.
 AWD shipment lists and receipt details also retry transient read failures with a five-minute bound and optional
 ownership checks; neither path retries mutations or suppresses invalid documents.
 

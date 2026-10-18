@@ -1082,7 +1082,7 @@ export class Amazon {
       }
     }
     let reportId: string | undefined
-    // Only callers recovering incomplete imports opt in. Normal refreshes always request fresh evidence.
+    // Callers opt in for recovery or a documented content-refresh interval; reuse requires the exact scope.
     // getReports does not expose reportOptions, so their equivalence cannot be established here.
     if (options.reuseCreatedSince && !input.reportOptions) {
       await options.assertActive?.()
