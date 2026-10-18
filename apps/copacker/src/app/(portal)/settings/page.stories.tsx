@@ -336,6 +336,10 @@ export const AmazonSettings = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Harbor Goods US")
+    for (const name of ["Orders", "Inventory", "Financial data"]) {
+      await waitFor(() => expect(within(sheet).getByRole("heading", { name })).toBeVisible())
+    }
+    await expect(within(sheet).getByRole("button", { name: "Sync Amazon financial data" })).toBeVisible()
     await expect(sheet).not.toHaveTextContent(amazonAccount)
     await expect(sheet).not.toHaveTextContent("Amazon Ads")
     await waitFor(() => expect(within(sheet).getByText("United States")).toBeVisible())

@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, other {个订单}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, other {件}}",
     "orders": "订单",
-    "sourceOrders": "{source} 订单"
+    "sourceOrders": "{source} 订单",
+    "financialData": "财务数据",
+    "amazonFinancialData": "Amazon 财务数据",
+    "financialFailed": "部分财务报告导入失败。已保存的数据将保留。",
+    "financialImported": "财务报告已导入",
+    "financialIncomplete": "部分财务报告尚不可用。"
   },
   "list": {
     "label": "订单",

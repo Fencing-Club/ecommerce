@@ -5198,6 +5198,11 @@ describe("stored sales orders", () => {
     const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
     expect(sync).toMatchObject({ status: "idle", dataVersion: amazonDataVersion, feesErrorCode: null })
     expect(sync?.feesCoveredTo).not.toBeNull()
+    expect((await salesSyncStatus(buyerId)).find((state) => state.source === "amazon")?.fees).toEqual({
+      coveredFrom: sync?.feesCoveredFrom?.toISOString(),
+      coveredTo: sync?.feesCoveredTo?.toISOString(),
+      errorCode: null
+    })
     expect(
       await database
         .select({

@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {commande} other {commandes}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {unité} other {unités}}",
     "orders": "Commandes",
-    "sourceOrders": "Commandes {source}"
+    "sourceOrders": "Commandes {source}",
+    "financialData": "Données financières",
+    "amazonFinancialData": "Données financières Amazon",
+    "financialFailed": "Certains rapports financiers ont échoué. Les données enregistrées sont conservées.",
+    "financialImported": "Rapports financiers importés",
+    "financialIncomplete": "Certains rapports financiers ne sont pas encore disponibles."
   },
   "list": {
     "label": "Commandes",

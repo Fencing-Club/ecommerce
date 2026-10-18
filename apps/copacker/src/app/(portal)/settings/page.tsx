@@ -8,7 +8,7 @@ import { InventoryLocations } from "@/components/inventory-locations"
 import { InventorySyncRow } from "@/components/inventory-sync"
 import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
-import { OrdersSyncRow } from "@/components/sales-orders"
+import { FinancialDataSyncCard, OrdersSyncRow } from "@/components/sales-orders"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { TeamSettings } from "@/components/team-settings"
@@ -139,6 +139,7 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
                     <div className="grid gap-3 sm:grid-cols-2">
                       <OrdersSyncRow source="amazon" />
                       <InventorySyncRow provider="amazon" />
+                      <FinancialDataSyncCard />
                     </div>
                   </IntegrationSection>
                 </>

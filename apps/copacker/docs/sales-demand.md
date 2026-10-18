@@ -121,3 +121,14 @@ Their overlapping quantities never change summary stock, demand or profit during
 ## Marketplace copies in Shopify
 
 The default excluded Shopify tags are `Amazon` and `eBay` (case-insensitive). Tagged copies remain stored as source evidence but are excluded from Shopify order lists, reporting, demand and automatic inventory depletion. Native Amazon and eBay orders remain included. Settings can customize exclusions, including wildcard tags such as `eBay*` for integrations that use suffixed tags. The migration adds eBay only to workspaces whose exclusion list still exactly matches the original Amazon-only default; custom lists are preserved.
+
+## Amazon Financial data card
+
+The Amazon connection shows Orders, Inventory, and Financial data as matching compact cards, without expandable rows.
+Financial data summarizes transaction-fee ingestion, returns, reimbursements, monthly and aged storage fees, and removal orders and shipments.
+A failed report remains visible even when order ingestion succeeds; unavailable or missing reports do not count as
+complete. Previously saved data is retained after failed refreshes.
+
+The Financial data action uses the existing Amazon sales sync endpoint and worker, so it also refreshes orders.
+Queued/running state and reconnect requirements are shared. Order-history progress is not displayed as financial
+progress. The card summarizes report ingestion, not accounting reconciliation or profitability readiness.
