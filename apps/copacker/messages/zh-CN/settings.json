@@ -157,7 +157,6 @@
   },
   "excludedTags": {
     "title": "排除的订单标签",
-    "syncing": "正在从 Shopify 同步标签",
     "none": "无",
     "edit": "编辑",
     "editLabel": "编辑排除的订单标签",

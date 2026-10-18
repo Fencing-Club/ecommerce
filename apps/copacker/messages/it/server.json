@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Impossibile copiare gli addebiti Shopify",
       "amazonFeesFailedDetail": "I margini non le includono fino alla prossima sincronizzazione",
       "shopifyChargesFailedDetail": "L’utile lordo non li include fino alla prossima sincronizzazione",
-      "unpriced": "Sincronizza di nuovo gli ordini {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} per ottenere i prezzi",
-      "unpricedDetail": "{count, plural, one {# ordine in questo periodo non ha} other {# ordini in questo periodo non hanno}} un prezzo",
       "stockFailed": "Sincronizzazione giacenze non riuscita",
       "stockFailedDetail": "Le giacenze potrebbero non essere aggiornate",
       "viewProducts": "Vedi prodotti",

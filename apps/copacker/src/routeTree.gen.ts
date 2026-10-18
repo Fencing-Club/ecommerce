@@ -31,7 +31,6 @@ import { Route as AuthSignupRouteImport } from './routes/_auth.signup'
 import { Route as AuthVerifyEmailRouteImport } from './routes/_auth.verify-email'
 import { Route as PortalCatalogsRouteImport } from './routes/_portal.catalogs'
 import { Route as PortalCustomersRouteImport } from './routes/_portal.customers'
-import { Route as PortalForwardersRouteImport } from './routes/_portal.forwarders'
 import { Route as PortalInventoryRouteImport } from './routes/_portal.inventory'
 import { Route as PortalOrdersRouteImport } from './routes/_portal.orders'
 import { Route as PortalOverviewRouteImport } from './routes/_portal.overview'
@@ -41,7 +40,6 @@ import { Route as PortalRestockRouteImport } from './routes/_portal.restock'
 import { Route as PortalSalesRouteImport } from './routes/_portal.sales'
 import { Route as PortalSettingsRouteImport } from './routes/_portal.settings'
 import { Route as PortalShipmentsRouteImport } from './routes/_portal.shipments'
-import { Route as PortalSuppliersRouteImport } from './routes/_portal.suppliers'
 import { Route as ApiActionRouteImport } from './routes/api.action'
 import { Route as ApiCatalogRouteImport } from './routes/api.catalog'
 import { Route as ApiCatalogsRouteImport } from './routes/api.catalogs'
@@ -254,11 +252,6 @@ const PortalCustomersRoute = PortalCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => PortalRoute,
 } as any)
-const PortalForwardersRoute = PortalForwardersRouteImport.update({
-  id: '/forwarders',
-  path: '/forwarders',
-  getParentRoute: () => PortalRoute,
-} as any)
 const PortalInventoryRoute = PortalInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -302,11 +295,6 @@ const PortalSettingsRoute = PortalSettingsRouteImport.update({
 const PortalShipmentsRoute = PortalShipmentsRouteImport.update({
   id: '/shipments',
   path: '/shipments',
-  getParentRoute: () => PortalRoute,
-} as any)
-const PortalSuppliersRoute = PortalSuppliersRouteImport.update({
-  id: '/suppliers',
-  path: '/suppliers',
   getParentRoute: () => PortalRoute,
 } as any)
 const ApiActionRoute = ApiActionRouteImport.update({
@@ -878,7 +866,6 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof AuthVerifyEmailRoute
   '/catalogs': typeof PortalCatalogsRoute
   '/customers': typeof PortalCustomersRoute
-  '/forwarders': typeof PortalForwardersRoute
   '/inventory': typeof PortalInventoryRoute
   '/orders': typeof PortalOrdersRoute
   '/overview': typeof PortalOverviewRoute
@@ -888,7 +875,6 @@ export interface FileRoutesByFullPath {
   '/sales': typeof PortalSalesRoute
   '/settings': typeof PortalSettingsRoute
   '/shipments': typeof PortalShipmentsRoute
-  '/suppliers': typeof PortalSuppliersRoute
   '/api/action': typeof ApiActionRoute
   '/api/catalog': typeof ApiCatalogRoute
   '/api/catalogs': typeof ApiCatalogsRouteWithChildren
@@ -1014,7 +1000,6 @@ export interface FileRoutesByTo {
   '/verify-email': typeof AuthVerifyEmailRoute
   '/catalogs': typeof PortalCatalogsRoute
   '/customers': typeof PortalCustomersRoute
-  '/forwarders': typeof PortalForwardersRoute
   '/inventory': typeof PortalInventoryRoute
   '/orders': typeof PortalOrdersRoute
   '/overview': typeof PortalOverviewRoute
@@ -1024,7 +1009,6 @@ export interface FileRoutesByTo {
   '/sales': typeof PortalSalesRoute
   '/settings': typeof PortalSettingsRoute
   '/shipments': typeof PortalShipmentsRoute
-  '/suppliers': typeof PortalSuppliersRoute
   '/api/action': typeof ApiActionRoute
   '/api/catalog': typeof ApiCatalogRoute
   '/api/catalogs': typeof ApiCatalogsRouteWithChildren
@@ -1153,7 +1137,6 @@ export interface FileRoutesById {
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/_portal/catalogs': typeof PortalCatalogsRoute
   '/_portal/customers': typeof PortalCustomersRoute
-  '/_portal/forwarders': typeof PortalForwardersRoute
   '/_portal/inventory': typeof PortalInventoryRoute
   '/_portal/orders': typeof PortalOrdersRoute
   '/_portal/overview': typeof PortalOverviewRoute
@@ -1163,7 +1146,6 @@ export interface FileRoutesById {
   '/_portal/sales': typeof PortalSalesRoute
   '/_portal/settings': typeof PortalSettingsRoute
   '/_portal/shipments': typeof PortalShipmentsRoute
-  '/_portal/suppliers': typeof PortalSuppliersRoute
   '/api/action': typeof ApiActionRoute
   '/api/catalog': typeof ApiCatalogRoute
   '/api/catalogs': typeof ApiCatalogsRouteWithChildren
@@ -1291,7 +1273,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/catalogs'
     | '/customers'
-    | '/forwarders'
     | '/inventory'
     | '/orders'
     | '/overview'
@@ -1301,7 +1282,6 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/shipments'
-    | '/suppliers'
     | '/api/action'
     | '/api/catalog'
     | '/api/catalogs'
@@ -1427,7 +1407,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/catalogs'
     | '/customers'
-    | '/forwarders'
     | '/inventory'
     | '/orders'
     | '/overview'
@@ -1437,7 +1416,6 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/shipments'
-    | '/suppliers'
     | '/api/action'
     | '/api/catalog'
     | '/api/catalogs'
@@ -1565,7 +1543,6 @@ export interface FileRouteTypes {
     | '/_auth/verify-email'
     | '/_portal/catalogs'
     | '/_portal/customers'
-    | '/_portal/forwarders'
     | '/_portal/inventory'
     | '/_portal/orders'
     | '/_portal/overview'
@@ -1575,7 +1552,6 @@ export interface FileRouteTypes {
     | '/_portal/sales'
     | '/_portal/settings'
     | '/_portal/shipments'
-    | '/_portal/suppliers'
     | '/api/action'
     | '/api/catalog'
     | '/api/catalogs'
@@ -1914,13 +1890,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalCustomersRouteImport
       parentRoute: typeof PortalRoute
     }
-    '/_portal/forwarders': {
-      id: '/_portal/forwarders'
-      path: '/forwarders'
-      fullPath: '/forwarders'
-      preLoaderRoute: typeof PortalForwardersRouteImport
-      parentRoute: typeof PortalRoute
-    }
     '/_portal/inventory': {
       id: '/_portal/inventory'
       path: '/inventory'
@@ -1982,13 +1951,6 @@ declare module '@tanstack/react-router' {
       path: '/shipments'
       fullPath: '/shipments'
       preLoaderRoute: typeof PortalShipmentsRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/_portal/suppliers': {
-      id: '/_portal/suppliers'
-      path: '/suppliers'
-      fullPath: '/suppliers'
-      preLoaderRoute: typeof PortalSuppliersRouteImport
       parentRoute: typeof PortalRoute
     }
     '/api/action': {
@@ -2738,7 +2700,6 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface PortalRouteChildren {
   PortalCatalogsRoute: typeof PortalCatalogsRoute
   PortalCustomersRoute: typeof PortalCustomersRoute
-  PortalForwardersRoute: typeof PortalForwardersRoute
   PortalInventoryRoute: typeof PortalInventoryRoute
   PortalOrdersRoute: typeof PortalOrdersRoute
   PortalOverviewRoute: typeof PortalOverviewRoute
@@ -2748,7 +2709,6 @@ interface PortalRouteChildren {
   PortalSalesRoute: typeof PortalSalesRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalShipmentsRoute: typeof PortalShipmentsRoute
-  PortalSuppliersRoute: typeof PortalSuppliersRoute
   PortalCatalogsIdRoute: typeof PortalCatalogsIdRoute
   PortalCatalogsNewRoute: typeof PortalCatalogsNewRoute
   PortalCustomersIdRoute: typeof PortalCustomersIdRoute
@@ -2767,7 +2727,6 @@ interface PortalRouteChildren {
 const PortalRouteChildren: PortalRouteChildren = {
   PortalCatalogsRoute: PortalCatalogsRoute,
   PortalCustomersRoute: PortalCustomersRoute,
-  PortalForwardersRoute: PortalForwardersRoute,
   PortalInventoryRoute: PortalInventoryRoute,
   PortalOrdersRoute: PortalOrdersRoute,
   PortalOverviewRoute: PortalOverviewRoute,
@@ -2777,7 +2736,6 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalSalesRoute: PortalSalesRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalShipmentsRoute: PortalShipmentsRoute,
-  PortalSuppliersRoute: PortalSuppliersRoute,
   PortalCatalogsIdRoute: PortalCatalogsIdRoute,
   PortalCatalogsNewRoute: PortalCatalogsNewRoute,
   PortalCustomersIdRoute: PortalCustomersIdRoute,

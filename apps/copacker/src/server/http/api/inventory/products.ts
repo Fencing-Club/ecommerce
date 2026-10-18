@@ -9,7 +9,6 @@ import { groupInventory, isCollective, pageSizes } from "@/server/inventory-prod
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 import { readVariantFields } from "@/server/product-fields"
-import { serverText } from "@/server/text"
 
 const querySchema = z.strictObject({
   q: z.string().trim().max(100).optional(),
@@ -45,7 +44,7 @@ function duplicateSkus(rows: Awaited<ReturnType<typeof inventoryContext>>["rows"
     const entry = bySku.get(sku.toLowerCase()) ?? { sku, variants: [] }
     entry.variants.push({
       variantId: row.variantId,
-      product: row.productTitle ?? sku,
+      product: row.productTitle,
       variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
     })
     bySku.set(sku.toLowerCase(), entry)
@@ -75,7 +74,6 @@ export async function GET(request: Request) {
     await inventoryContext(s.org.id)
   // Every Shopify product is listed, including those stocked only at locations that don't count toward the totals.
   const grouped = groupInventory(inventoryRows, {
-    untitled: (await serverText())("untitledProduct"),
     everyProduct: true,
     query: q,
     classifications: inventoryClassifications,
@@ -121,21 +119,10 @@ export async function GET(request: Request) {
   )
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
-  const levels = rows.flatMap((row) => row.levels)
   const supplierSkus = new Map(rows.map((row) => [row.variantId, row.supplierSku ?? null]))
   return Response.json(
     {
       observedAt: data?.observedAt ?? null,
-      // Snapshots saved before product details and location kinds were collected need one more sync.
-      needsResync:
-        rows.some(
-          (row) =>
-            row.productId === undefined ||
-            row.amazonStockTarget === undefined ||
-            row.caseQuantity === undefined ||
-            row.unitCostMinor === undefined ||
-            row.countryOfOrigin === undefined
-        ) || levels.some((level) => !level.locationKind),
       // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
       // listings Amazon still reports with nothing on hand or inbound, are left out.
       amazonOnly: amazonOnly.filter((stock) => !stock.resold && holdsStock(stock)),

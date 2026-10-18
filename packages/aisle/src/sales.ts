@@ -24,12 +24,9 @@ const line = z.object({
   // Set on each component line when the customer bought a bundle; variantId is the bundle's variant.
   lineItemGroup: z.object({ id, quantity, variantId: z.string().nullable() }).nullable().optional(),
   // The price of one unit before discounts, and the discounts (line and order discounts) given on the whole line, in
-  // the store's currency. Optional because orders stored before prices were copied lack them.
-  originalUnitPriceSet: z.object({ shopMoney }).optional(),
-  discountAllocations: z
-    .array(z.object({ allocatedAmountSet: z.object({ shopMoney }) }))
-    .max(250)
-    .optional()
+  // the store's currency.
+  originalUnitPriceSet: z.object({ shopMoney }),
+  discountAllocations: z.array(z.object({ allocatedAmountSet: z.object({ shopMoney }) })).max(250)
 })
 const lines = z.object({ nodes: z.array(line).max(250), pageInfo })
 const fulfillmentLine = z.object({ id, quantity: quantity.nullable(), lineItem: z.object({ id }) })
@@ -57,8 +54,7 @@ const header = z.object({
   cancelledAt: z.string().nullable(),
   test: z.boolean(),
   sourceName: z.string().nullable(),
-  // Orders copied before tags were read don't have them.
-  tags: z.array(z.string().max(255)).max(250).optional()
+  tags: z.array(z.string().max(255)).max(250)
 })
 const headers = "id name createdAt cancelledAt test sourceName tags"
 const money = "shopMoney{amount currencyCode}"
@@ -134,18 +130,13 @@ function within(created: string, window: SalesWindow) {
 export type ShopifySale = z.infer<typeof header> & {
   lines: z.infer<typeof line>[]
   fulfillments: (z.infer<typeof fulfillment> & { lines: z.infer<typeof fulfillmentLine>[] })[]
-  // Optional because orders stored before payments were copied lack them.
-  transactions?: z.infer<typeof payment>[]
+  transactions: z.infer<typeof payment>[]
   // The Shopify customer's ID, null for an order without one. Absent when customers weren't read.
   customerId?: string | null
 }
 
-// Shopify Payments' processing fees on an order, with the tax on them, in minor units: null when the order was copied
-// without its payments, zero when it was paid another way.
+// Shopify Payments' processing fees on an order, with tax, in minor units; zero when it was paid another way.
 export function shopifyPaymentFees(sale: Pick<ShopifySale, "transactions">) {
-  if (!sale.transactions) {
-    return null
-  }
   let minor = 0,
     currency: string | null = null
   for (const payment of sale.transactions) {
@@ -175,7 +166,7 @@ export async function collectShopifySales(
   const detailQuery = options.customers ? shopifyOrderWithCustomerQuery : shopifySalesQueries.order
   // One order's lines, fulfillments with their lines, payments and (when asked) customer.
   const orderDetails = async (summary: z.infer<typeof header>) => {
-    const sale: ShopifySale = { ...summary, lines: [], fulfillments: [] }
+    const sale: ShopifySale = { ...summary, lines: [], fulfillments: [], transactions: [] }
     const lineIds = new Set<string>(),
       cursors = new Set<string>()
     let lineAfter: string | null = null
@@ -429,7 +420,7 @@ const amazonItem = z.object({
     .object({ quantityFulfilled: quantity.optional(), quantityUnfulfilled: quantity.optional() })
     .optional(),
   // What the seller receives for the item, by category (ITEM, SHIPPING, TAX, DISCOUNT and so on). Optional because
-  // orders stored before proceeds were copied lack them, and Amazon leaves them out until the order is priced.
+  // Amazon leaves them out until the order is priced.
   proceeds: z
     .object({
       proceedsTotal: amazonMoney.optional(),
@@ -576,8 +567,7 @@ const ebaySale = z.object({
   salesRecordReference: z.string().optional(),
   // eBay's fees on the order.
   totalMarketplaceFee: ebayMoney.optional(),
-  // Every refund on the order, including those eBay also lists on its lines. Optional because orders stored before
-  // refunds were copied lack them.
+  // Every refund on the order, including those eBay also lists on its lines. The provider may omit refund details.
   paymentSummary: z
     .object({
       refunds: z

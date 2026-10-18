@@ -28,6 +28,10 @@ const stock = (levels = [level(1, 10), level(2, 100)]) => ({
       variantId: "v1",
       inventoryItemId: "i1",
       buyerSku: "cord",
+      productId: "p1",
+      productTitle: "Cord",
+      variantTitle: "Default Title",
+      imageUrl: null,
       tracked: true,
       unit: "shopify_inventory_unit" as const,
       levels

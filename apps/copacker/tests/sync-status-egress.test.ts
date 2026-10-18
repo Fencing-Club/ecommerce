@@ -71,7 +71,10 @@ it("keeps inventory status database results small as the catalog grows", async (
         variantId: `gid://shopify/ProductVariant/${index}`,
         inventoryItemId: `gid://shopify/InventoryItem/${index}`,
         buyerSku: `SKU-${index}`,
+        productId: `gid://shopify/Product/${index}`,
         productTitle: "A product with a title",
+        variantTitle: "Default Title",
+        imageUrl: null,
         tracked: true,
         unit: "shopify_inventory_unit",
         levels: []
@@ -132,6 +135,7 @@ it.each([
 
 it("aggregates recent sales without transferring orders, counting each bundle once", async () => {
   const data: ShopifySale = {
+    transactions: [],
     id: "gid://shopify/Order/1",
     name: "#1",
     createdAt: observedAt,
@@ -141,8 +145,18 @@ it("aggregates recent sales without transferring orders, counting each bundle on
     fulfillments: [],
     tags: [],
     lines: [
-      { id: "l1", sku: "A", quantity: 3, currentQuantity: 2, variant: { id: "v1" } },
+      {
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
+        id: "l1",
+        sku: "A",
+        quantity: 3,
+        currentQuantity: 2,
+        variant: { id: "v1" }
+      },
       ...["l2", "l3"].map((id) => ({
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
         id,
         sku: "B",
         quantity: 4,

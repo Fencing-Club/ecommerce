@@ -46,15 +46,7 @@ import {
 import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockSettings } from "./restock-report"
-import {
-  customerDataVersion,
-  hasCustomerScope,
-  historyDaysFor,
-  orderSyncProgress,
-  salesDataVersion,
-  type SalesSource,
-  salesSources
-} from "./sales-orders"
+import { hasCustomerScope, historyDaysFor, orderSyncProgress, type SalesSource, salesSources } from "./sales-orders"
 import { excludedShopifyTags } from "./shopify-tags"
 import { serverText } from "./text"
 
@@ -461,9 +453,6 @@ export function attentionItems(
       coveredTo: Date | null
       finishedAt: Date | null
       feesErrorCode?: string | null
-      // Orders in the chosen period without prices, and whether a sync would copy them.
-      unpriced?: number
-      outdated?: boolean
     }[]
     stock: { source: string; status: string; finishedAt: Date | null }[]
     shopifyHistoryLimited: boolean
@@ -569,16 +558,6 @@ export function attentionItems(
             ? "overview.attention.amazonFeesFailedDetail"
             : "overview.attention.shopifyChargesFailedDetail"
         ),
-        href: "/sales",
-        action: t("overview.attention.viewOrders")
-      })
-    }
-    if (sync.unpriced && sync.outdated && !busy) {
-      items.push({
-        key: `prices-${sync.source}`,
-        tone: "info",
-        title: t("overview.attention.unpriced", { source: name }),
-        detail: t("overview.attention.unpricedDetail", { count: sync.unpriced }),
         href: "/sales",
         action: t("overview.attention.viewOrders")
       })
@@ -1045,8 +1024,7 @@ export async function overview(
     status: order.status,
     supplier: order.supplier,
     data: order.data,
-    // A PO sent before submissions were recorded counts from its creation.
-    sentAt: order.status === "draft" ? null : (sentAt.get(order.id) ?? order.createdAt)
+    sentAt: order.status === "draft" ? null : (sentAt.get(order.id) ?? null)
   }))
   const buying = purchasing(poList)
   const states = shipmentRows.filter((row) => orderIds.has(row.orderId)).map((row) => row.status)
@@ -1056,10 +1034,9 @@ export async function overview(
   let customerStatus: "ready" | "reconnect" | "syncing" = "ready"
   if (!shopify || !hasCustomerScope(shopify.scopes)) {
     customerStatus = "reconnect"
-  } else if (!shopifySync || shopifySync.dataVersion < customerDataVersion) {
+  } else if (!shopifySync || !shopifySync.customersIncluded) {
     customerStatus = "syncing"
   }
-  const unpricedBySource = (source: SalesSource) => series.reduce((sum, row) => sum + (row[source]?.unpriced ?? 0), 0)
   const stockSources = [
     ...(connected.some((row) => row.provider === "shopify") ? (["shopify"] as const) : []),
     ...(connected.some((row) => row.provider === "amazon") ? (["fba"] as const) : [])
@@ -1146,9 +1123,7 @@ export async function overview(
           status: sync.status,
           coveredTo: sync.coveredTo,
           finishedAt: sync.finishedAt,
-          feesErrorCode: sync.feesErrorCode,
-          unpriced: unpricedBySource(sync.source),
-          outdated: sync.dataVersion < salesDataVersion
+          feesErrorCode: sync.feesErrorCode
         })),
         stock: stock.map((row) => ({ source: row.source, status: row.status, finishedAt: row.finishedAt })),
         shopifyHistoryLimited: Boolean(shopify && !shopify.scopes.split(/[,\s]+/).includes("read_all_orders"))

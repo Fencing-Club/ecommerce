@@ -10,8 +10,7 @@ const meta = preview.meta({
   component: ExcludedOrderTags,
   args: {
     tags: ["Amazon", "wholesale"],
-    suggestions: ["Amazon", "wholesale", "sample", "replacement"],
-    copying: false
+    suggestions: ["Amazon", "wholesale", "sample", "replacement"]
   },
   beforeEach: ({ msw }) => {
     sent.length = 0
@@ -31,14 +30,6 @@ export const None = meta.story({
   args: { tags: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("None")).toBeVisible()
-  }
-})
-
-// Some orders were copied before their tags were read; the next Shopify sync reads them.
-export const ReadingTags = meta.story({
-  args: { copying: true },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("status")).toHaveAttribute("title", "Syncing tags from Shopify")
   }
 })
 

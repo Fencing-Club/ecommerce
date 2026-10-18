@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Shopify چارجز کاپی نہیں ہو سکے",
       "amazonFeesFailedDetail": "اگلے سنک تک مارجن میں یہ شامل نہیں",
       "shopifyChargesFailedDetail": "اگلے سنک تک مجموعی منافع میں یہ شامل نہیں",
-      "unpriced": "قیمتوں کے لیے {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} آرڈرز دوبارہ سنک کریں",
-      "unpricedDetail": "اس مدت کے {count, plural, one {# آرڈر} other {# آرڈرز}} کی کوئی قیمت نہیں",
       "stockFailed": "اسٹاک سنک ناکام ہو گیا",
       "stockFailedDetail": "اسٹاک کی تعداد پرانی ہو سکتی ہے",
       "viewProducts": "پروڈکٹس دیکھیں",

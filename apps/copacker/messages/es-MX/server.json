@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "No se pudieron copiar los cargos de Shopify",
       "amazonFeesFailedDetail": "Los márgenes no las incluyen hasta la próxima sincronización",
       "shopifyChargesFailedDetail": "La utilidad bruta no los incluye hasta la próxima sincronización",
-      "unpriced": "Vuelve a sincronizar los pedidos de {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} para obtener los precios",
-      "unpricedDetail": "{count, plural, one {# pedido de este periodo no tiene} other {# pedidos de este periodo no tienen}} precio",
       "stockFailed": "Falló la sincronización de existencias",
       "stockFailedDetail": "Es posible que las existencias no estén actualizadas",
       "viewProducts": "Ver productos",

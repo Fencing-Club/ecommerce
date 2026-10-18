@@ -157,7 +157,6 @@
   },
   "excludedTags": {
     "title": "Tags de commande exclus",
-    "syncing": "Synchronisation des tags depuis Shopify",
     "none": "Aucun",
     "edit": "Modifier",
     "editLabel": "Modifier les tags de commande exclus",

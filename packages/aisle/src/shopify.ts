@@ -365,11 +365,11 @@ export class Shopify {
       variantId: string
       inventoryItemId: string
       buyerSku: string | null
-      // Product details for grouping and display. Optional because snapshots stored before they were collected lack them.
-      productId?: string
-      productTitle?: string
-      variantTitle?: string
-      imageUrl?: string | null
+      // Product details are returned on every stock read.
+      productId: string
+      productTitle: string
+      variantTitle: string
+      imageUrl: string | null
       // Details the buyer keeps in Copacker, filled in by Copacker when it saves the stock (Shopify doesn't return them).
       // The least to keep at Amazon (0 means intentionally not stocked there) and at the store's own locations.
       amazonStockTarget?: number | null
@@ -394,7 +394,7 @@ export class Shopify {
       levels: {
         locationId: string
         locationName: string
-        // Optional because snapshots stored before location kinds were collected lack it.
+        // Shopify reads include this; synthetic inventory pools may omit it.
         locationKind?: ShopifyLocationKind
         available: number | null
         onHand: number | null

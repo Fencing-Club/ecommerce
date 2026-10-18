@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Les frais Shopify n’ont pas pu être copiés",
       "amazonFeesFailedDetail": "Les marges ne les incluent pas jusqu’à la prochaine synchronisation",
       "shopifyChargesFailedDetail": "La marge brute ne les inclut pas jusqu’à la prochaine synchronisation",
-      "unpriced": "Synchronisez à nouveau les commandes {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} pour obtenir les prix",
-      "unpricedDetail": "{count, plural, one {# commande de cette période n’a} other {# commandes de cette période n’ont}} pas de prix",
       "stockFailed": "La synchronisation du stock a échoué",
       "stockFailedDetail": "Les quantités en stock ne sont peut-être pas à jour",
       "viewProducts": "Voir les produits",

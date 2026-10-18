@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Не вдалося скопіювати збори Shopify",
       "amazonFeesFailedDetail": "Маржа не враховує їх до наступної синхронізації",
       "shopifyChargesFailedDetail": "Валовий прибуток не враховує їх до наступної синхронізації",
-      "unpriced": "Синхронізуйте замовлення {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} ще раз, щоб отримати ціни",
-      "unpricedDetail": "{count, plural, one {# замовлення за цей період не має} few {# замовлення за цей період не мають} many {# замовлень за цей період не мають} other {# замовлення за цей період не мають}} ціни",
       "stockFailed": "Не вдалося синхронізувати залишки",
       "stockFailedDetail": "Залишки можуть бути застарілими",
       "viewProducts": "Переглянути товари",

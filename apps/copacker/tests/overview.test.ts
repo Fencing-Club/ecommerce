@@ -335,7 +335,7 @@ describe("attentionItems", () => {
     expect(attentionItems(quiet)).toEqual([])
   })
 
-  it("lists critical items first and flags stale syncs, missing fees and missing prices", () => {
+  it("lists critical items first and flags stale syncs and missing fees", () => {
     const items = attentionItems({
       ...quiet,
       restock: { ...quiet.restock, stockouts: 2, reorders: 1 },
@@ -346,9 +346,7 @@ describe("attentionItems", () => {
           source: "shopify",
           status: "idle",
           coveredTo: new Date("2026-09-20T00:00:00Z"),
-          finishedAt: null,
-          unpriced: 12,
-          outdated: true
+          finishedAt: null
         },
         { source: "amazon", status: "failed", coveredTo: now, finishedAt: now, feesErrorCode: "fees_failed" }
       ],
@@ -361,13 +359,11 @@ describe("attentionItems", () => {
       "sync-amazon",
       "fees-amazon",
       "sync-shopify",
-      "prices-shopify",
       "stock-stale",
       "drafts"
     ])
     expect(items[0]?.title).toBe("2 items run out before a reorder arrives")
     expect(items.find((item) => item.key === "sync-shopify")?.title).toBe("Shopify orders haven’t synced in 5 days")
-    expect(items.find((item) => item.key === "prices-shopify")?.detail).toBe("12 orders in this period have no price")
     expect(items.find((item) => item.key === "drafts")?.title).toBe("1 purchase order is still a draft")
   })
 })
@@ -594,6 +590,8 @@ describe("sales queries", () => {
       orderId: id,
       orderedAt: new Date(createdAt),
       data: {
+        tags: [],
+        transactions: [],
         id,
         name: "#1",
         createdAt,
@@ -631,6 +629,7 @@ describe("sales queries", () => {
             discountAllocations: [{ allocatedAmountSet: money("3.00") }]
           },
           {
+            discountAllocations: [],
             id: "l2",
             quantity: 2,
             currentQuantity: 2,
@@ -640,6 +639,7 @@ describe("sales queries", () => {
             originalUnitPriceSet: money("5.00")
           },
           {
+            discountAllocations: [],
             id: "l3",
             quantity: 4,
             currentQuantity: 4,
@@ -667,9 +667,17 @@ describe("sales queries", () => {
           ]
         }
       ),
-      // Before midnight on Sep 25 in UTC, but Sep 24 in Los Angeles. Copied before prices were.
+      // Before midnight on Sep 25 in UTC, but Sep 24 in Los Angeles. This order is free.
       shopifyOrder("s2", "2026-09-25T03:30:00Z", [
-        { id: "l4", quantity: 1, currentQuantity: 1, sku: "A", variant: { id: "va" } }
+        {
+          originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+          discountAllocations: [],
+          id: "l4",
+          quantity: 1,
+          currentQuantity: 1,
+          sku: "A",
+          variant: { id: "va" }
+        }
       ]),
       amazonOrder("a1", "2026-09-23T05:00:00Z", [
         {
@@ -822,8 +830,8 @@ describe("sales queries", () => {
       // a1, and a4 at zero; the cancelled a3 and the pending a5 and a7 aren't counted.
       { source: "amazon", date: "2026-09-19", orders: 1, units: 1, priced: 1, revenueMinor: 0, currency: "USD" },
       { source: "amazon", date: "2026-09-22", orders: 2, units: 6, priced: 2, revenueMinor: 2700, currency: "USD" },
-      // $20 less 2/3 of $3, plus the $20 bundle; the unpriced order counts its unit but no sales.
-      { source: "shopify", date: "2026-09-24", orders: 2, units: 5, priced: 1, revenueMinor: 3800, currency: "USD" }
+      // $20 less 2/3 of $3, plus the $20 bundle; the free order adds a unit but no sales.
+      { source: "shopify", date: "2026-09-24", orders: 2, units: 5, priced: 2, revenueMinor: 3800, currency: "USD" }
     ])
   })
 
@@ -857,7 +865,7 @@ describe("sales queries", () => {
       "USD"
     )
     const byKey = Object.fromEntries(rows.map((row) => [`${row.source}:${row.period}:${row.key}`, row]))
-    expect(byKey["shopify:current:va"]).toMatchObject({ units: 3, pricedUnits: 2, revenueMinor: 1800 })
+    expect(byKey["shopify:current:va"]).toMatchObject({ units: 3, pricedUnits: 3, revenueMinor: 1800 })
     expect(byKey["shopify:current:vbundle"]).toMatchObject({ units: 2, pricedUnits: 2, revenueMinor: 2000 })
     // Includes the replacement a6: a unit sold for nothing.
     expect(byKey["amazon:current:A"]).toMatchObject({ units: 6, pricedUnits: 6, revenueMinor: 2700, currency: "USD" })
@@ -909,8 +917,8 @@ describe("sales queries", () => {
     expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
       // $1.36 fee plus $0.11 tax; the failed payment's fee isn't charged.
       { orderId: "s1", revenueMinor: 3800, feesMinor: 147 },
-      // Copied before payments were: unknown.
-      { orderId: "s2", revenueMinor: null, feesMinor: null }
+      // No payment fees on the free order.
+      { orderId: "s2", revenueMinor: 0, feesMinor: 0 }
     ])
   })
 
@@ -922,6 +930,7 @@ describe("sales queries", () => {
       orderId: id,
       orderedAt: new Date("2026-09-20T10:00:00Z"),
       data: {
+        transactions: [],
         id,
         name: "#2",
         createdAt: "2026-09-20T10:00:00Z",
@@ -932,6 +941,7 @@ describe("sales queries", () => {
         fulfillments: [],
         lines: [
           {
+            discountAllocations: [],
             id: `${id}-l`,
             quantity: 1,
             currentQuantity: 1,
