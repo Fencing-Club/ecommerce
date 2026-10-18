@@ -69,6 +69,63 @@ beforeEach(async () => {
   context.actor = actor(orgId, "buyer")
 })
 describe("Amazon reconciliation endpoint", () => {
+  it("uses UTC window boundaries when ranking near the search limit in a non-UTC session", async () => {
+    await database.insert(tables.amazonReturns).values({ ...baseRow, orgId, orderId: "UNMATCHED" })
+    await pg.query(
+      `insert into amazon_transactions ("orgId","externalAccountId","transactionId","orderId","postedAt",type,currency,"totalMinor","feesMinor",data)
+      select $1,'SELLER1','REFUND-'||i,null,'2026-10-15T00:00:00Z','Refund','USD',-10,0,'{"items":[{"contexts":[{"contextType":"ProductContext","sku":"SKU1","asin":"A1"}]}]}'::jsonb from generate_series(1,4999) i`,
+      [orgId]
+    )
+    await database.insert(tables.amazonTransactions).values(
+      [
+        { id: "EARLY", date: "2026-10-01T00:01:00Z" },
+        { id: "LATE", date: "2026-11-01T00:01:00Z" }
+      ].map((item) => ({
+        orgId,
+        externalAccountId: "SELLER1",
+        transactionId: item.id,
+        orderId: null,
+        postedAt: new Date(item.date),
+        type: "Refund",
+        currency: "USD",
+        totalMinor: -10,
+        feesMinor: 0,
+        data: { items: [{ contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }] }
+      }))
+    )
+    await pg.exec("SET TIME ZONE 'Pacific/Honolulu'")
+    try {
+      const result = await amazonReconciliation(orgId, input)
+      expect(result.rows[0]?.finance.candidates[0]?.transactionId).toBe("EARLY")
+      expect(result.coverage?.financialSearch.truncated).toBe(true)
+    } finally {
+      await pg.exec("SET TIME ZONE 'UTC'")
+    }
+  })
+  it("retains relevant refund postings before the product-only search bound", async () => {
+    await database.insert(tables.amazonReturns).values({ ...baseRow, orgId, orderId: "UNMATCHED" })
+    await pg.query(
+      `insert into amazon_transactions ("orgId","externalAccountId","transactionId","orderId","postedAt",type,currency,"totalMinor","feesMinor",data)
+      select $1,'SELLER1','SALE-'||i,null,'2026-10-16','Shipment','USD',10,0,'{"items":[{"contexts":[{"contextType":"ProductContext","sku":"SKU1","asin":"A1"}]}]}'::jsonb from generate_series(1,5001) i`,
+      [orgId]
+    )
+    await database.insert(tables.amazonTransactions).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      transactionId: "OLD-REFUND",
+      orderId: null,
+      postedAt: new Date("2026-01-01"),
+      type: "Refund",
+      currency: "USD",
+      totalMinor: -10,
+      feesMinor: 0,
+      data: { items: [{ contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }] }
+    })
+    const result = await amazonReconciliation(orgId, input)
+    expect(result.rows[0]?.finance.candidates[0]?.transactionId).toBe("OLD-REFUND")
+    expect(result.rows[0]?.finance.reconciled).toBe(false)
+    expect(result.coverage?.financialSearch.truncated).toBe(true)
+  })
   it("scopes evidence, current inventory and postings to the connected seller and workspace", async () => {
     await database.insert(tables.amazonReturns).values([
       { ...baseRow, orgId },

@@ -47,10 +47,10 @@ function readReport(value: unknown) {
   const errors = response.error?.flatMap((item) => item.errors) ?? []
   if (errors.length) {
     if (errors.some((error) => error.code === "TOO_MANY_REQUESTS")) {
-      throw new AdsRequestError(429)
+      throw new AdsRequestError(429, "report", "provider")
     }
     if (errors.some((error) => error.code === "INTERNAL_ERROR")) {
-      throw new AdsRequestError(500)
+      throw new AdsRequestError(500, "report", "provider")
     }
     throw new Error("Amazon Ads report request was rejected")
   }
@@ -67,35 +67,50 @@ export function amazonAdsApp() {
     : null
 }
 export class AdsRequestError extends Error {
-  constructor(readonly status: number) {
-    super(`Amazon Ads request failed (${status})`)
+  constructor(
+    readonly status: number,
+    stage = "report",
+    failure = "http"
+  ) {
+    super(`Amazon Ads ${stage} ${failure} failure (${status})`)
   }
 }
 // Normalize transport failures so the durable worker retries without logging request credentials.
-async function adsFetch(input: string | URL, init: RequestInit) {
+async function adsTransport<T>(stage: "token" | "report" | "download", read: () => Promise<T>) {
   try {
-    return await fetch(input, init)
-  } catch {
-    throw new AdsRequestError(503)
+    return await read()
+  } catch (error) {
+    const failure =
+      error instanceof Error && ["TimeoutError", "AbortError", "TypeError"].includes(error.name)
+        ? `transport_${error.name}`
+        : "transport"
+    throw new AdsRequestError(503, stage, failure)
   }
+}
+function adsFetch(input: string | URL, init: RequestInit, stage: "token" | "report" | "download") {
+  return adsTransport(stage, () => fetch(input, init))
 }
 export async function adsToken(grant: Record<string, string>) {
   const app = amazonAdsApp()
   if (!app) {
     throw new Error("Amazon Ads application is not configured")
   }
-  const response = await adsFetch("https://api.amazon.com/auth/o2/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ ...grant, client_id: app.clientId, client_secret: app.clientSecret }),
-    signal: AbortSignal.timeout(30000)
-  })
+  const response = await adsFetch(
+    "https://api.amazon.com/auth/o2/token",
+    {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ ...grant, client_id: app.clientId, client_secret: app.clientSecret }),
+      signal: AbortSignal.timeout(30000)
+    },
+    "token"
+  )
   if (!response.ok) {
-    throw new AdsRequestError(response.status)
+    throw new AdsRequestError(response.status, "token")
   }
   return z
     .object({ access_token: z.string().min(1), refresh_token: z.string().min(1).optional() })
-    .parse(await response.json())
+    .parse(JSON.parse(await adsTransport("token", () => response.text())))
 }
 export class AmazonAds {
   constructor(private readonly accessToken: string) {}
@@ -104,22 +119,26 @@ export class AmazonAds {
     if (!app) {
       throw new Error("Amazon Ads application is not configured")
     }
-    const response = await adsFetch(`${api}${path}`, {
-      method: body ? "POST" : "GET",
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-        "Amazon-Advertising-API-ClientId": app.clientId,
-        "Amazon-Ads-ClientId": app.clientId,
-        Accept: contentType,
-        ...(body ? { "Content-Type": contentType } : {})
+    const response = await adsFetch(
+      `${api}${path}`,
+      {
+        method: body ? "POST" : "GET",
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Amazon-Advertising-API-ClientId": app.clientId,
+          "Amazon-Ads-ClientId": app.clientId,
+          Accept: contentType,
+          ...(body ? { "Content-Type": contentType } : {})
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+        signal: AbortSignal.timeout(30000)
       },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(30000)
-    })
+      "report"
+    )
     if (!response.ok) {
       throw new AdsRequestError(response.status)
     }
-    return response.json()
+    return JSON.parse(await adsTransport("report", () => response.text()))
   }
   async profiles(sellerId: string): Promise<AdsProfile[]> {
     const profiles = z
@@ -259,9 +278,9 @@ export async function downloadAdsReport(url: string) {
     throw new Error("Unexpected Amazon Ads report location")
   }
   // Signed report downloads must never receive the Ads token or client secret.
-  const response = await adsFetch(location, { redirect: "error", signal: AbortSignal.timeout(60000) })
+  const response = await adsFetch(location, { redirect: "error", signal: AbortSignal.timeout(60000) }, "download")
   if (!response.ok) {
-    throw new AdsRequestError(response.status)
+    throw new AdsRequestError(response.status, "download")
   }
   const limit = 32 * 1024 * 1024
   if (!response.body) {
@@ -269,12 +288,22 @@ export async function downloadAdsReport(url: string) {
   }
   const chunks: Uint8Array[] = []
   let bytes = 0
-  for await (const chunk of response.body) {
-    bytes += chunk.length
-    if (bytes > limit) {
-      throw new Error("Amazon Ads report exceeds download limit")
+  const reader = response.body.getReader()
+  try {
+    for (;;) {
+      const chunk = await adsTransport("download", () => reader.read())
+      if (chunk.done) {
+        break
+      }
+      bytes += chunk.value.length
+      if (bytes > limit) {
+        throw new Error("Amazon Ads report exceeds download limit")
+      }
+      chunks.push(chunk.value)
     }
-    chunks.push(chunk)
+  } finally {
+    await reader.cancel().catch(() => undefined)
+    reader.releaseLock()
   }
   const buffer = Buffer.concat(chunks)
   const decoded = buffer[0] === 0x1f && buffer[1] === 0x8b ? gunzipSync(buffer, { maxOutputLength: limit }) : buffer

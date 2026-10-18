@@ -17,6 +17,12 @@ last checked more than 30 days ago. Older retained rows outside the moving targe
 Requested history is a target, not a guarantee of account availability. A newly completed month appears as missing
 until imported. Monthly estimates can change on refresh and never become settled charges merely because a month ends.
 
+Incomplete monthly imports first look for completed reports created within the previous 24 hours. Reuse requires the
+exact report type, marketplace set and start/end instants, with no unverifiable report options. The bounded, paginated
+lookup is shared across months within a client. Missing matches request a new report; successful coverage refreshes
+always request fresh evidence. This lets parser repairs recover existing documents without consuming create-report
+quota again. Reused documents still pass the same parsing, period, account and revision checks.
+
 ## Evidence and accounting boundary
 
 `amazon_storage_fees` stores workspace, seller, request marketplace, source kind and cost basis (`estimate` or

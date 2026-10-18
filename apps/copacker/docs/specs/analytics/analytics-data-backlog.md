@@ -221,3 +221,30 @@ These observations are account-specific and do not establish reconciliation or c
 
 The parser and search fixes require deployment and live verification. Shopify completion, provider-side report
 failures, storage/Ads acceptance and source-to-posting allocations remain open. No reporting UX was added.
+
+### Post-release acceptance: 2026-10-17 23:40 UTC
+
+Release `05a88c4` is deployed and its production smoke checks passed. The first live retry recovered the recent
+reimbursement reports: returns and reimbursements now have all 13 target windows imported (478 and 102 rows).
+Monthly storage still has no imported rows: creation throttling prevented the repaired parser from receiving files.
+The follow-up change reuses recently completed exact-scope reports for incomplete imports. Acceptance remains open
+until those rows are persisted. Older movements, aged storage, removals and FBM periods are still incomplete.
+
+Shopify financial history is complete through 2026-09-27, starting 2024-01-10, and the final window through the current
+checkpoint is processing without errors. This is updated-order coverage, not proof every historical order date is covered.
+Ads jobs remain active with repeated generic 503 retries; that code also represents transport exceptions. Safe stage
+diagnostics distinguish token, report API and download failures. Only the previously completed zero-spend profile's
+90 empty product-detail days were verified; the spending profile remains unaccepted.
+
+October reconciliation returned candidates for all 28 returns and eight reimbursements; 27 returns and three
+reimbursements had order-reference candidates. September's 11 reimbursement rows include five with order-reference
+candidates. Product-only sales can crowd out reimbursement postings, so the follow-up ranks relevant posting types
+before search/display bounds. Historical product mappings remain absent and all source links remain unconfirmed.
+Do not turn these candidates into additional costs, recovery income or claim receivables.
+
+At 23:45 UTC Shopify completed its final window through `2026-10-17T23:33:11.192Z` without errors. A consistent,
+six-page evidence audit found 505 native orders, 58 refund objects, 11 returns, 835 payment transactions and 393 fee
+entries. No test orders or Amazon/eBay-tagged copies leaked into this evidence set, and all included orders had imported returns
+coverage. There were 38 refund-payment references also present in order transactions; those must be counted once by
+transaction ID. These are evidence counts, not recognized revenue or profit, and ordinary sales-order history has
+different coverage. Shopify historical economics acquisition is accepted through this cutoff; accounting remains open.

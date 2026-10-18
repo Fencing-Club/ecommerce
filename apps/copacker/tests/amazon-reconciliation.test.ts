@@ -37,6 +37,25 @@ const posting: ReconciliationPosting = {
 }
 const inventory = [{ sku: "SKU1", asin: "A1", fnsku: "FN1" }]
 describe("Amazon reconciliation evidence", () => {
+  it.each([
+    ["returns", "Refund"],
+    ["reimbursements", "FBAInventoryReimbursement"]
+  ])("keeps relevant %s postings visible ahead of unrelated sales without certifying a match", (source, type) => {
+    const postings = Array.from({ length: 25 }, (_, i) => ({
+      ...posting,
+      orderId: null,
+      type: "Shipment",
+      transactionId: `A${i}`
+    }))
+    postings.push({ ...posting, orderId: null, type, transactionId: "Z-near" })
+    postings.push({ ...posting, orderId: null, type, transactionId: "Z-far", postedAt: new Date("2025-01-01") })
+    const result = reconcileAmazonEvidence([{ ...row, source, orderId: null }], inventory, postings)[0]
+    expect(result?.finance.candidates.slice(0, 2).map((candidate) => candidate.transactionId)).toEqual([
+      "Z-near",
+      "Z-far"
+    ])
+    expect(result?.finance).toMatchObject({ candidateCount: 27, reconciled: false })
+  })
   it("links observed product identity and order/product candidates without recognizing money twice", () => {
     const [result] = reconcileAmazonEvidence([row], inventory, [posting])
     expect(result?.product.status).toBe("matched_current")

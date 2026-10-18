@@ -224,6 +224,8 @@ describe("Amazon storage acquisition", () => {
       "2025-10"
     ])
     expect(starts.slice(9)).toEqual(["2026-08", "2026-07", "2026-09"])
+    expect(report.mock.calls[0]?.[1].reuseCreatedSince).toBeDefined()
+    expect(report.mock.calls.at(-1)?.[1].reuseCreatedSince).toBeUndefined()
   })
   it("records access denial once per source without claiming zero costs", async () => {
     report.mockRejectedValue(new ProviderError(403, null, "denied"))
