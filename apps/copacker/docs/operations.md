@@ -178,6 +178,10 @@ Migration `0060_validate_shopify_payments` also checks each stored Shopify payme
 current contract. Invalid payment data stops deployment without changing records; use the same refresh-and-retry
 process. This is a separate migration because `0059_customer_coverage` has already run in preview environments.
 
+Migration `0061_validate_shopify_line_money` extends that read-only check to line prices and every nested discount
+allocation. Amounts must be decimal strings and currency codes must be three-character strings. It leaves both
+previously deployed migrations unchanged and blocks deployment on invalid data without rewriting or deleting records.
+
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
 `drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
 `tests/migrations.test.ts` checks schema coverage, journal ordering, fresh initialization and repeat migration runs.

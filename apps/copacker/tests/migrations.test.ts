@@ -16,6 +16,7 @@ import { migrationSql } from "./migrations"
 // production without the change; add a new migration with `pnpm db:generate` instead. Line endings are normalized
 // because Windows checkouts use CRLF.
 const applied: Record<string, string> = {
+  "0060_validate_shopify_payments": "4f8ceaed6cfce1f07652b6edc41d530b15206c41cecd3d511322e5e96f4ad75d",
   "0059_customer_coverage": "b33d7ae10731f6630e21d63a7bd4cf82203c09f8f4c43537d6c6aff650cb54c8",
   "0000_copacker": "294906ff9375edefaba8e22358763e37eb091d7afc5e7ea9ef663a1ae5c85f6e",
   "0001_optional_amazon_seller": "bdd9c66153a5c4738722d4dc9c3d8e3ebeb68d2f9475211ca4420a6b758e16c2",
@@ -341,6 +342,105 @@ describe("migrations", () => {
       await migrate(database, options)
       await migrate(database, options)
       expect((await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t`)).rows).toEqual(before)
+      expect((await pg.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`)).rows).toEqual([
+        { count: journal.entries.length }
+      ])
+    } finally {
+      await pg.close()
+      await rm(folder, { recursive: true, force: true })
+    }
+  })
+
+  it("validates line prices and discounts after deployed migrations without changing records", async () => {
+    const folder = await mkdtemp(join(tmpdir(), "copacker-line-money-"))
+    const pg = new PGlite()
+    try {
+      const prior = journal.entries.filter((entry) => entry.idx < 61)
+      await mkdir(join(folder, "meta"))
+      await writeFile(join(folder, "meta/_journal.json"), JSON.stringify({ ...journal, entries: prior }))
+      for (const entry of prior) {
+        await cp(new URL(`../drizzle/${entry.tag}.sql`, import.meta.url), join(folder, `${entry.tag}.sql`))
+      }
+      const database = drizzle(pg)
+      await migrate(database, { migrationsFolder: folder })
+      await pg.exec(`
+        INSERT INTO organizations (id, name, kind) VALUES ('00000000-0000-4000-8000-000000000001', 'Line money', 'buyer');
+        INSERT INTO sales_orders ("orgId", source, "externalAccountId", "orderId", "orderedAt", data) VALUES
+          ('00000000-0000-4000-8000-000000000001', 'shopify', 'lines.myshopify.com', 'retained-order', now(), '{}'),
+          ('00000000-0000-4000-8000-000000000001', 'amazon', 'amazon-account', 'other-source', now(), '{}');
+      `)
+      const options = { migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)) }
+      const money = { amount: "12.34", currencyCode: "USD" }
+      const allocation = { allocatedAmountSet: { shopMoney: money } }
+      const line = { originalUnitPriceSet: { shopMoney: money }, discountAllocations: [allocation] }
+      const malformed: unknown[] = [
+        null,
+        {},
+        [null],
+        [{}],
+        [{ ...line, originalUnitPriceSet: null }],
+        [{ ...line, originalUnitPriceSet: {} }],
+        [{ ...line, discountAllocations: undefined }],
+        [{ ...line, discountAllocations: null }],
+        [{ ...line, discountAllocations: {} }],
+        [{ ...line, discountAllocations: [null] }],
+        [{ ...line, discountAllocations: [{}] }],
+        [{ ...line, discountAllocations: [{ allocatedAmountSet: null }] }],
+        [{ ...line, discountAllocations: [{ allocatedAmountSet: {} }] }],
+        [{ ...line, discountAllocations: Array.from({ length: 251 }, () => allocation) }]
+      ]
+      for (const invalid of [
+        null,
+        {},
+        { amount: "1" },
+        { currencyCode: "USD" },
+        { amount: 1, currencyCode: "USD" },
+        ...["", "oops", "NaN", "Infinity", "1e3", ".5", "1.", " 1", "1\n"].map((amount) => ({
+          amount,
+          currencyCode: "USD"
+        })),
+        { amount: "1", currencyCode: "US" },
+        { amount: "1", currencyCode: 123 }
+      ]) {
+        malformed.push(
+          [{ ...line, originalUnitPriceSet: { shopMoney: invalid } }],
+          [{ ...line, discountAllocations: [allocation, { allocatedAmountSet: { shopMoney: invalid } }] }]
+        )
+      }
+      for (const lines of malformed) {
+        await pg.query(`UPDATE sales_orders SET data = $1::jsonb WHERE source = 'shopify'`, [
+          JSON.stringify({ tags: [], transactions: [], lines, merchantNote: "Preserve financial evidence" })
+        ])
+        const before = (await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t ORDER BY source`)).rows
+        await expect(migrate(database, options)).rejects.toMatchObject({
+          cause: {
+            message: expect.stringContaining("Stored Shopify line price or discount allocation data needs a refresh")
+          }
+        })
+        expect((await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t ORDER BY source`)).rows).toEqual(before)
+        expect((await pg.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`)).rows).toEqual([
+          { count: 61 }
+        ])
+      }
+      const valid = {
+        tags: [],
+        transactions: [],
+        merchantNote: "Preserve financial evidence",
+        lines: [
+          line,
+          { ...line, discountAllocations: [] },
+          {
+            originalUnitPriceSet: { shopMoney: { amount: "0", currencyCode: "CAD" } },
+            discountAllocations: [{ allocatedAmountSet: { shopMoney: { amount: "-1.23", currencyCode: "CAD" } } }]
+          },
+          { ...line, discountAllocations: Array.from({ length: 250 }, () => allocation) }
+        ]
+      }
+      await pg.query(`UPDATE sales_orders SET data = $1::jsonb WHERE source = 'shopify'`, [JSON.stringify(valid)])
+      const before = (await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t ORDER BY source`)).rows
+      await migrate(database, options)
+      await migrate(database, options)
+      expect((await pg.query(`SELECT to_jsonb(t) AS row FROM sales_orders t ORDER BY source`)).rows).toEqual(before)
       expect((await pg.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`)).rows).toEqual([
         { count: journal.entries.length }
       ])

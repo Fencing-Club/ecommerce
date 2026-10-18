@@ -159,7 +159,12 @@ ingestion plumbing and do not migrate to outbound Novu workflows.
 - [ ] Preserve exact producer, eligibility, recipient, revision, locale, template and attachments for every migrated flow.
 - [ ] Add team invitations and owner-only customer-data reports to phase 2.
 - [ ] Close partner-creation/publication gaps and preserve merged runtime job wakes.
-- [ ] Replace the existing delivery path directly; prelaunch jobs need no migration or replay.
+- [ ] Before enabling Novu dispatch, pause new queued-email production and checkpoint the existing delivery owner.
+  Drain pending jobs through that owner and let leased jobs finish, then reconcile completed, failed and ambiguous
+  outcomes against provider evidence. If draining is not possible, transfer only confirmed unsent intents with their
+  original identities after stopping the old owner and fencing its leases. Enable Novu only after every outstanding
+  intent has one recorded owner; never run both delivery paths for one intent or replay completed jobs. Resume queued
+  production through Novu while retaining the shared sender for excluded direct flows.
 - [ ] Give each new delivery intent one persistent identity and one delivery owner.
 - [ ] Test crash-after-send, lease expiry, ambiguous responses and retries beyond provider deduplication windows.
 - [ ] Pin PO revision/PDF and release revision, and suppress superseded release jobs.
