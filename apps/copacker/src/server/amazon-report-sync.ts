@@ -1,5 +1,6 @@
 import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
+import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"
 
@@ -100,7 +101,7 @@ export async function syncMonthlyAmazonReport<Row>(
   const { orgId, externalAccountId, revision } = input
   const windows = monthlyReportWindows(now, source.wholeMonths)
   // Spend the provider's limited report budget on missing history before refreshing covered months.
-  // Preserve newest-first ordering within each group, including an initial empty backfill.
+  // Rotate attempted gaps by their last attempt so a throttled recent month cannot starve older history.
   windows.sort((a, b) => {
     const priority = (window: Window) => {
       const prior = source.reports.find((report) => report.from.getTime() === window.from.getTime())
@@ -109,7 +110,13 @@ export async function syncMonthlyAmazonReport<Row>(
       }
       return prior.coveredTo && prior.coveredTo >= window.to ? 2 : 1
     }
-    return priority(a) - priority(b)
+    const difference = priority(a) - priority(b)
+    if (difference || priority(a) !== 1) {
+      return difference
+    }
+    const checked = (window: Window) =>
+      source.reports.find((report) => report.from.getTime() === window.from.getTime())!.checkedAt.getTime()
+    return checked(a) - checked(b)
   })
   const previousMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (source.wholeMonths ? 2 : 1), 1))
   const stale = source.reports
@@ -196,7 +203,32 @@ export async function syncMonthlyAmazonReport<Row>(
         }
       }
     } catch (error) {
-      // Do not log source rows or input-bearing validation errors.
+      // Never log source rows, provider messages, URLs or input-bearing validation errors.
+      const fields = new Set(["periodDay", "currency", "amount", "quantity", "volume", "rate"])
+      console.warn("Amazon monthly report failed", {
+        reportType: source.reportType,
+        from: window.from.toISOString(),
+        stage,
+        errorCode: amazonReportFailure(error, stage),
+        httpStatus: error instanceof ProviderError ? error.status : undefined,
+        validation:
+          error instanceof z.ZodError
+            ? error.issues.slice(0, 10).map((issue) => ({
+                code: issue.code,
+                field: typeof issue.path[0] === "string" && fields.has(issue.path[0]) ? issue.path[0] : "other"
+              }))
+            : undefined,
+        structure:
+          error instanceof Error &&
+          [
+            "Invalid quoted report field",
+            "Unclosed report field",
+            "Missing or duplicate report columns",
+            "Incomplete report row"
+          ].includes(error.message)
+            ? error.message
+            : undefined
+      })
       rows = null
       errorCode = amazonReportFailure(error, stage)
     }

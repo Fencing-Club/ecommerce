@@ -262,3 +262,15 @@ changes. Five retain order-reference candidates. All remain unconfirmed, with no
 Both Ads profiles successfully requested reports, but downloads fail with `transport_TypeError`. The local Workers
 runtime reproduces rejection of `redirect: "error"` before fetching. The fix uses manual redirects and explicitly
 rejects redirect responses. Ads acquisition remains unaccepted until the repaired download persists real spend.
+
+### Ads detail acceptance: 2026-10-18
+
+The download runtime fix in PR #58 is deployed. Both profiles have 90 saved product-detail days (180 day records),
+with 150 product-detail rows across the spending profile's 90 populated days. A consistent two-page evidence snapshot
+confirmed these counts; the Ads connection reports no active job and no failure. Ads detail acquisition is accepted.
+Aged storage still fails document validation for September 2026; older report generation failures and throttled
+inventory/removal windows remain open. A fresh Amazon sync is running; do not treat these gaps as zero activity.
+
+The latest saved checkpoint also has all 13 inventory-movement windows imported. Monthly storage retains all
+8,446 rows, but a throttled September refresh currently leaves 11 windows marked complete. Older aged-storage
+requests now report cancellation instead of generation failure; no zero-cost coverage is inferred from cancellation.

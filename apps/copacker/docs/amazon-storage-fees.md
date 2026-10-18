@@ -63,3 +63,6 @@ Scientific-notation decimals emitted by Amazon (for example `8.0E-4`) expand to 
 floating-point arithmetic. Raw source values remain in evidence. Unknown/malformed values still reject the document.
 The shared monthly importer requests untouched windows first, then incomplete windows, then covered refreshes,
 so a limited provider budget does not repeatedly prevent older history from being attempted.
+
+Failed monthly windows rotate by oldest attempt after untouched history. Safe failure logs include the report type,
+month, stage, HTTP status and allowlisted validation fields; source values and provider messages are excluded.

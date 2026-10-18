@@ -26,7 +26,7 @@ Product-attributable advertising costs belong in P0. Campaign optimization remai
 ## Documents
 
 - [Amazon financial audit](amazon-financial-audit.md): current ingestion findings and the read-only evidence inventory command.
-- [Analytics data backlog](analytics-data-backlog.md): missing P0 analytics inputs, sources, dependencies, acquisition order and readiness criteria.
+- [Analytics data backlog](analytics-data-backlog.md): missing P0 analytics inputs, sources, dependencies, acquisition order, live acceptance and readiness criteria.
 - [Reporting requirements](reporting.md): product economics, returns, recoveries and Shopify behavior.
 - [Competitive context](competitive-context.md): Sellerboard's audience, focus and implications for positioning.
 

@@ -227,6 +227,50 @@ describe("Amazon storage acquisition", () => {
     expect(report.mock.calls[0]?.[1].reuseCreatedSince).toBeDefined()
     expect(report.mock.calls.at(-1)?.[1].reuseCreatedSince).toBeUndefined()
   })
+  it("rotates attempted missing months after throttling and logs no provider contents", async () => {
+    await sync("monthly")
+    await database.update(tables.amazonStorageFeeReports).set({
+      status: "failed",
+      coveredTo: null,
+      checkedAt: new Date("2026-10-15")
+    })
+    await database
+      .update(tables.amazonStorageFeeReports)
+      .set({ checkedAt: new Date("2026-10-14") })
+      .where(eq(tables.amazonStorageFeeReports.from, new Date("2026-02-01")))
+    const log = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    try {
+      report.mockClear()
+      report.mockRejectedValueOnce(new ProviderError(429, null, "PRIVATE PROVIDER CONTENT"))
+      await sync("monthly")
+      expect(report.mock.calls[0]?.[0].dataStartTime).toBe("2026-02-01T00:00:00.000Z")
+      expect(report).toHaveBeenCalledTimes(1)
+      expect(JSON.stringify(log.mock.calls)).not.toContain("PRIVATE")
+      report.mockClear()
+      report.mockRejectedValueOnce(new ProviderError(429, null, "PRIVATE PROVIDER CONTENT"))
+      await sync("monthly")
+      expect(report.mock.calls[0]?.[0].dataStartTime).toBe("2026-09-01T00:00:00.000Z")
+    } finally {
+      log.mockRestore()
+    }
+  })
+  it("logs only allowlisted validation fields without rejected financial values", async () => {
+    const log = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    try {
+      report.mockResolvedValue(monthlyStorageReport([{ estimated_monthly_storage_fee: "PRIVATE VALUE" }]))
+      await sync("monthly")
+      expect(log).toHaveBeenCalledWith(
+        "Amazon monthly report failed",
+        expect.objectContaining({
+          stage: "parse",
+          validation: [{ code: "invalid_format", field: "amount" }]
+        })
+      )
+      expect(JSON.stringify(log.mock.calls)).not.toContain("PRIVATE")
+    } finally {
+      log.mockRestore()
+    }
+  })
   it("records access denial once per source without claiming zero costs", async () => {
     report.mockRejectedValue(new ProviderError(403, null, "denied"))
     await sync("aged")
