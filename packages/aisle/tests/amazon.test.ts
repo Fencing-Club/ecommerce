@@ -53,7 +53,7 @@ describe("AWD current stock", () => {
 
   it("rejects retry delays beyond the collection deadline", async () => {
     const { api, calls } = client([new Response(null, { status: 429, headers: { "retry-after": "600" } })])
-    await expect(api.awdStock()).rejects.toThrow("timed out")
+    await expect(api.awdStock()).rejects.toMatchObject({ status: 429 })
     expect(calls).toHaveLength(1)
   })
 
@@ -359,7 +359,7 @@ describe("FBA complete stock", () => {
     await good.api.fbaStock("ATVPDKIKX0DER")
     expect(good.calls[1]?.href).toBe(good.calls[2]?.href)
     const expired = client([page([], "next"), new Response(null, { status: 429, headers: { "retry-after": "30" } })])
-    await expect(expired.api.fbaStock("ATVPDKIKX0DER")).rejects.toThrow("timed out")
+    await expect(expired.api.fbaStock("ATVPDKIKX0DER")).rejects.toMatchObject({ status: 429 })
     expect(expired.calls).toHaveLength(2)
   })
   it("rejects incomplete reads and lost ownership", async () => {
@@ -678,5 +678,54 @@ describe("recovering completed reports", () => {
     await expect(api.report(input, options())).resolves.toBe("report text")
     expect(calls[1]?.pathname).toBe("/reports/2021-06-30/reports")
     expect(calls[2]?.pathname).toMatch(/\/existing$/)
+  })
+})
+
+describe("report throttling", () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+  const input = {
+    reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+    marketplaceIds: ["US"],
+    dataStartTime: "2026-09-01T00:00:00Z",
+    dataEndTime: "2026-10-01T00:00:00Z"
+  }
+  it("waits for quota refill and retries the same document without recreating the report", async () => {
+    const { api, calls, times } = client([
+      { reportId: "report" },
+      { processingStatus: "DONE", reportDocumentId: "document" },
+      new Response(null, { status: 429 }),
+      { url: "https://reports.example.com/report" },
+      new Response("data")
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 300000 })).resolves.toBe("data"),
+      vi.runAllTimersAsync()
+    ])
+    expect(times[3]! - times[2]!).toBeGreaterThanOrEqual(60000)
+    expect(calls[2]?.href).toBe(calls[3]?.href)
+    expect(calls.filter((url) => url.pathname === "/reports/2021-06-30/reports")).toHaveLength(1)
+  })
+  it("honors a longer Retry-After and reports the failed operation when the deadline cannot fit it", async () => {
+    const { api, calls } = client([new Response(null, { status: 429, headers: { "retry-after": "300" } })])
+    await expect(api.report(input, { deadline: Date.now() + 120000 })).rejects.toMatchObject({
+      status: 429,
+      operation: "createReport",
+      retryAfterMs: 300000
+    })
+    expect(calls).toHaveLength(1)
+  })
+  it("distinguishes Amazon processing failure from HTTP or parser failures without exposing provider text", async () => {
+    const { api } = client([
+      { reportId: "report" },
+      { processingStatus: "FATAL", reportDocumentId: "private-document" }
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 120000 })).rejects.toMatchObject({
+        message: "Amazon report processing failed",
+        hasDiagnosticDocument: true
+      }),
+      vi.runAllTimersAsync()
+    ])
   })
 })

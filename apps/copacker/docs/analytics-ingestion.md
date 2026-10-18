@@ -42,3 +42,15 @@ on access denial or throttling, leaving unattempted older months missing; indepe
 FBM and shared monthly FBA importers distinguish document parsing (`report_invalid_document`) from date-window
 validation (`report_outside_period`) and provider requests (`report_failed`). No source rows or validation messages
 are exposed in these failure codes. Failed refreshes preserve previously imported evidence and coverage bounds.
+
+
+Report HTTP throttling now waits at least 60 seconds before retrying, doubles that interval for the final retry,
+and respects longer Retry-After values within the request deadline. Poll/document retries keep the existing report ID.
+Budgeted fulfillment-shipment creates still disable automatic creation retries. FBM recovery can reuse an exact completed
+report created within the last day, and no longer disables ordinary creation retries.
+
+AWD/FBA receipt collection checkpoints each successful shipment. A malformed individual shipment does not discard other
+snapshots or prevent later shipments from being attempted; access and rate failures stop that network. Partial failure
+remains visible. Diagnostics identify the report operation, Amazon FATAL processing outcome and allowlisted schema fields,
+without logging source rows or provider messages. These changes need live acceptance for the remaining reimbursement,
+AWD and older FBM failures; they do not establish complete coverage.

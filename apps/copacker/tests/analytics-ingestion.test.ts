@@ -376,3 +376,45 @@ it.each([401, 403, 429, 503])(
     expect(feeds.find((row) => row.dataset === "awd_costs")?.state.error).toBeNull()
   }
 )
+
+it("keeps successful receipt snapshots when another shipment has an invalid document", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  await syncAmazonReceipts(
+    {
+      orgId,
+      externalAccountId: "seller",
+      revision: 1,
+      amazon: {
+        fbaShipments: async () => [],
+        fbaReceiptItems: async () => [],
+        awdShipments: async () =>
+          ["good", "bad", "later"].map((shipmentId) => ({
+            shipmentId,
+            orderId: "order",
+            status: "CLOSED",
+            createdAt: null
+          })),
+        awdReceiptItems: async (shipmentId) => {
+          if (shipmentId === "bad") {throw new Error("Invalid document")}
+          return {
+            shipmentId,
+            shipmentStatus: "CLOSED",
+            shipmentSkuQuantities: [{ sku: "SKU", expectedQuantity: { quantity: 2, unitOfMeasurement: "UNITS" } }]
+          }
+        }
+      }
+    },
+    async () => undefined
+  )
+  expect((await database.select().from(tables.analyticsEvidence)).map((row) => row.sourceId).sort()).toEqual([
+    "good",
+    "later"
+  ])
+  expect(
+    (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "awd_inbound_receipts")?.state
+      .error
+  ).toBe("collection_failed")
+})
