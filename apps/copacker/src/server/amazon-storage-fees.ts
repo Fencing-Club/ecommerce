@@ -31,7 +31,7 @@ export async function syncAmazonStorageFees(
   await syncMonthlyAmazonReport(input, assertOwned, now, {
     reportType: storageFeeReportTypes[kind],
     wholeMonths: true,
-    unavailableRefreshMs: kind === "aged" ? 30 * 86400000 : undefined,
+    unavailableRefreshMs: kind === "aged" ? { recent: 7 * 86400000, older: 30 * 86400000 } : undefined,
     reports,
     parse: kind === "monthly" ? parseMonthlyStorageFees : parseAgedStorageFees,
     timestamp: (row) => new Date(`${row.periodDay}T00:00:00Z`),

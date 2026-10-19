@@ -53,6 +53,34 @@ beforeEach(async () => {
 const sync = (kind: "monthly" | "aged", date = now) => syncAmazonStorageFees(input, kind, owned, date)
 const status = (kind: "monthly" | "aged", date = now) => amazonStorageFeesStatus(orgId, "SELLER1", kind, date)
 describe("Amazon storage acquisition", () => {
+  it("retries recent unavailable months weekly and older months every thirty days", async () => {
+    report.mockResolvedValue(null)
+    await sync("aged")
+    const setAge = async (days: number) => {
+      await database
+        .update(tables.amazonStorageFeeReports)
+        .set({ checkedAt: new Date(now.getTime() - days * 86400000) })
+      report.mockClear()
+    }
+    await setAge(6)
+    await sync("aged")
+    expect(report).not.toHaveBeenCalled()
+    await setAge(7)
+    await sync("aged")
+    expect(report.mock.calls.map(([request]) => request.dataStartTime.slice(0, 7))).toEqual(["2026-09", "2026-08"])
+    await setAge(29)
+    await sync("aged")
+    expect(report).toHaveBeenCalledTimes(2)
+    await setAge(30)
+    await sync("aged")
+    expect(report).toHaveBeenCalledTimes(12)
+
+    // In November, August ages out of the weekly tier; October is new history.
+    await database.update(tables.amazonStorageFeeReports).set({ checkedAt: new Date("2026-10-24T00:00:00Z") })
+    report.mockClear()
+    await sync("aged", new Date("2026-11-01T00:00:00Z"))
+    expect(report.mock.calls.map(([request]) => request.dataStartTime.slice(0, 7))).toEqual(["2026-10", "2026-09"])
+  })
   it("backs off unavailable aged months and preserves them when a later refresh fails", async () => {
     report.mockResolvedValue(null)
     await sync("aged")

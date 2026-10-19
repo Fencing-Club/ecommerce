@@ -92,7 +92,7 @@ export async function syncMonthlyAmazonReport<Row>(
     beforeRequest?: () => Promise<boolean>
     minimumRefreshMs?: number
     // Unavailable is evidence of cancellation, never proof of zero charges.
-    unavailableRefreshMs?: number
+    unavailableRefreshMs?: { recent: number; older: number }
     // Covered windows can reuse an exact completed report within this content-refresh interval.
     refreshReuseMs?: number
     retryCreate?: boolean
@@ -182,7 +182,9 @@ export async function syncMonthlyAmazonReport<Row>(
       source.unavailableRefreshMs &&
       previous?.status === "unavailable" &&
       previous.requestedTo >= window.to &&
-      previous.checkedAt.getTime() > now.getTime() - source.unavailableRefreshMs
+      previous.checkedAt.getTime() >
+        now.getTime() -
+          (window.from >= previousMonth ? source.unavailableRefreshMs.recent : source.unavailableRefreshMs.older)
     ) {
       continue
     }

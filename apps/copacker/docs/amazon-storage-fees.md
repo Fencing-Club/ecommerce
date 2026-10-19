@@ -82,7 +82,8 @@ not imported or zero-charge evidence. This recovers earlier no-data/cancellation
 was throttled. Other report sources continue to reuse DONE only. Report-option equivalence and exact account,
 marketplace and period checks still apply; the selected report status is read again before reuse.
 
-An unavailable aged month is attempted at most once per 30 days, including recent completed months. A failed
+Unavailable aged months retry every seven days for the two most recent completed months and every 30 days for
+older months. The age tier is recalculated at each sync, including calendar rollover. A failed
 refresh retains its unavailable status and existing rows/bounds, while errorCode and checkedAt describe the latest
 attempt. A new successful document replaces that state normally. The interval is application policy, not a claim
 about Amazon's quota reset or a guarantee of zero fees. The daily scheduler continues to discover new months.
