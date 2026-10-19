@@ -8,6 +8,7 @@ import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { AccessError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
+import { amazonReportPolicy } from "./amazon-report-policy"
 import { DemoShopify, demoShopConnection } from "./demo-shopify"
 import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
@@ -95,11 +96,15 @@ export async function amazonFor(orgId: string, expectedSellerId?: string | null)
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
     throw new Error("Amazon developer credentials are not configured")
   }
-  return new Amazon({
-    clientId: process.env.AMAZON_CLIENT_ID,
-    clientSecret: process.env.AMAZON_CLIENT_SECRET,
-    refreshToken: c.token
-  })
+  return new Amazon(
+    {
+      clientId: process.env.AMAZON_CLIENT_ID,
+      clientSecret: process.env.AMAZON_CLIENT_SECRET,
+      refreshToken: c.token
+    },
+    undefined,
+    amazonReportPolicy(c.externalId, process.env.AMAZON_CLIENT_ID)
+  )
 }
 // Copacker's eBay app: its keys and the redirect URL name (RuName) sign-in returns through. Null when not configured.
 export function ebayApp() {

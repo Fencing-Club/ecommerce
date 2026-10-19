@@ -1,4 +1,4 @@
-import { ProviderError, ReportProcessingError } from "@repo/aisle/amazon"
+import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/aisle/amazon"
 import { parseFbmReturns } from "@repo/aisle/fbm-returns"
 import { expect, it } from "vitest"
 import { z } from "zod"
@@ -38,4 +38,10 @@ it("retains only the shape of an unsupported return date", () => {
   expect(details.dateFormat).toBe("00/00/0000")
   expect(details.validation).toEqual([{ code: "invalid_format", field: "occurredAt" }])
   expect(JSON.stringify(details)).not.toMatch(/PRIVATE|2026|17/)
+})
+
+it("distinguishes a local quota deferral from an Amazon HTTP failure", () => {
+  const details = amazonFailureDetails(new ReportDeferredError(new Date("2026-10-19T02:00:00Z")))
+  expect(details).toMatchObject({ locallyDeferred: true, retryAt: "2026-10-19T02:00:00.000Z" })
+  expect(details.httpStatus).toBeUndefined()
 })

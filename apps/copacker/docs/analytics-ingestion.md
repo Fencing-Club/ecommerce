@@ -44,10 +44,11 @@ validation (`report_outside_period`) and provider requests (`report_failed`). No
 are exposed in these failure codes. Failed refreshes preserve previously imported evidence and coverage bounds.
 
 
-Report creation throttling waits five minutes, then ten minutes for the final retry; report reads wait one minute,
-then two. Both respect longer Retry-After values within the request deadline. Poll/document retries keep the existing report ID.
-Budgeted fulfillment-shipment creates still disable automatic creation retries. FBM recovery can reuse an exact completed
-report created within the last day, and no longer disables ordinary creation retries.
+Production report creation uses [shared pacing and persistent cooldowns](amazon-report-limits.md), including across
+restarts and report types. Report reads wait one minute, then two after throttling, respecting longer Retry-After values
+within the request deadline. Poll/document retries keep the existing report ID.
+Every managed creation makes one attempt; the durable cooldown governs later jobs. FBM recovery can reuse an exact
+completed report created within the last day.
 
 AWD/FBA receipt collection checkpoints each successful shipment. A malformed individual shipment does not discard other
 snapshots or prevent later shipments from being attempted; access and rate failures stop that network. Partial failure

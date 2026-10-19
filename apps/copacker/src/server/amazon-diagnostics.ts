@@ -1,4 +1,4 @@
-import { ProviderError, ReportProcessingError } from "@repo/aisle/amazon"
+import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/aisle/amazon"
 import { FbmReturnsError } from "@repo/aisle/fbm-returns"
 import { z } from "zod"
 
@@ -37,6 +37,8 @@ const operations = new Set(["createReport", "getReports", "getReport", "getRepor
 export function amazonFailureDetails(error: unknown) {
   const validationError = error instanceof FbmReturnsError ? error.validation : error
   return {
+    locallyDeferred: error instanceof ReportDeferredError ? true : undefined,
+    retryAt: error instanceof ReportDeferredError ? error.retryAt.toISOString() : undefined,
     dateFormat: error instanceof FbmReturnsError ? error.dateFormat : undefined,
     httpStatus: error instanceof ProviderError ? error.status : undefined,
     operation:

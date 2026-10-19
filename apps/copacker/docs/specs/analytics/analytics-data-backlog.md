@@ -302,3 +302,12 @@ in production; the five saved order rows and four shipment rows remain intact. S
 refreshes again returned FATAL, preserving all 102 rows but leaving those refreshes incomplete. The follow-up reuses
 recent exact daily reimbursement reports and extends creation-throttle waits to five then ten minutes. These refreshes
 and the remaining aged-storage/removal coverage are still pending live acceptance.
+
+
+### Report quota investigation: 2026-10-19 00:50 UTC
+
+The preceding removal run finished: both combined reports remained throttled after extended waits. Stored removal
+rows survived (five orders, four shipments). Reimbursements recovered at 23:15 UTC with 102 rows; the next UTC day
+now makes current-month coverage due for extension, not a failed refresh. Aged storage still has seven September rows
+and eleven unresolved months. See [request-limit investigation and pacing policy](../../amazon-report-limits.md).
+The next change coordinates initial creations across workers and persists cooldowns; live recovery remains unverified.

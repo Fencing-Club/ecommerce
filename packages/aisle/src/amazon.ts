@@ -6,6 +6,8 @@ export type AmazonCredentials =
   | { clientId: string; clientSecret: string; refreshToken: string }
   // Grantless operations, such as managing notification destinations, act for the app rather than a seller.
   | { clientId: string; clientSecret: string; grantlessScope: string }
+const requestTimeoutMs = 30000
+const reportDownloadTimeoutMs = 120000
 const stockQuantity = z.number().int().nonnegative().safe()
 const awdStockPage = z.object({
   inventory: z
@@ -325,6 +327,21 @@ export class ProviderError extends Error {
     super(message)
   }
 }
+export class ReportDeferredError extends Error {
+  constructor(public readonly retryAt: Date) {
+    super("Amazon report creation is waiting for its request allowance")
+  }
+}
+export type ReportRequestPolicy = {
+  acquire: (input: { reportType: string; deadline: number; assertActive?: () => Promise<void> }) => Promise<void>
+  observe: (input: {
+    reportType: string
+    status: number
+    rateLimit: number | null
+    retryAfterMs: number | null
+    requestId: string | null
+  }) => Promise<void>
+}
 export class ReportProcessingError extends Error {
   constructor(public readonly hasDiagnosticDocument: boolean) {
     super("Amazon report processing failed")
@@ -383,7 +400,8 @@ export class Amazon {
   private reportLookups = new Map<string, Promise<unknown[]>>()
   constructor(
     private credentials: AmazonCredentials,
-    private transport: typeof fetch = fetch.bind(globalThis)
+    private transport: typeof fetch = fetch.bind(globalThis),
+    private reportPolicy?: ReportRequestPolicy
   ) {}
   private async token() {
     if (this.access && this.access.expires > Date.now()) {
@@ -398,7 +416,7 @@ export class Amazon {
         client_id: this.credentials.clientId,
         client_secret: this.credentials.clientSecret
       }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
     if (!response.ok) {
       throw new ProviderError(response.status, null, "Amazon authorization must be renewed")
@@ -407,13 +425,14 @@ export class Amazon {
     this.access = { token: token.access_token, expires: Date.now() + (token.expires_in - 60) * 1000 }
     return token.access_token
   }
-  async request(method: string, path: string, body?: unknown) {
+  async request(method: string, path: string, body?: unknown, observe?: (response: Response) => Promise<void>) {
     const response = await this.transport(`https://sellingpartnerapi-na.amazon.com${path}`, {
       method,
       headers: { "x-amz-access-token": await this.token(), "content-type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
+    await observe?.(response)
     if (!response.ok) {
       // Amazon explains a rejection in its errors list; the codes and messages describe the request, not seller data.
       const reasons = z
@@ -1165,15 +1184,44 @@ export class Amazon {
       reportId = matching[0]?.reportId
     }
     if (!reportId) {
-      reportId = z
-        .object({ reportId: z.string().min(1) })
-        .parse(
-          await read(
-            "createReport",
-            () => this.request("POST", "/reports/2021-06-30/reports", input),
-            options.retryCreate !== false
-          )
-        ).reportId
+      // Managed creation must leave room for creation, two status reads separated by one poll interval,
+      // document metadata and download, using their actual transport timeouts. This is a minimum attempt
+      // budget, not a guarantee that Amazon will finish generating the report within one polling cycle.
+      const processingBudget = 4 * requestTimeoutMs + reportDownloadTimeoutMs + (options.pollMs ?? 15000)
+      const creationDeadline = this.reportPolicy ? options.deadline - processingBudget : options.deadline
+      reportId = z.object({ reportId: z.string().min(1) }).parse(
+        await read(
+          "createReport",
+          async () => {
+            if (this.reportPolicy) {
+              await this.token()
+            }
+            await this.reportPolicy?.acquire({
+              reportType: input.reportType,
+              deadline: creationDeadline,
+              assertActive: options.assertActive
+            })
+            await options.assertActive?.()
+            if (Date.now() >= creationDeadline) {
+              throw new ReportDeferredError(new Date(Date.now()))
+            }
+            return this.request("POST", "/reports/2021-06-30/reports", input, async (response) => {
+              const rate = Number(response.headers.get("x-amzn-RateLimit-Limit"))
+              const retry = response.headers.get("retry-after")
+              const seconds = retry === null ? NaN : Number(retry)
+              const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retry ?? "") - Date.now()
+              await this.reportPolicy?.observe({
+                reportType: input.reportType,
+                status: response.status,
+                rateLimit: Number.isFinite(rate) && rate > 0 ? rate : null,
+                retryAfterMs: Number.isFinite(delay) ? Math.max(0, delay) : null,
+                requestId: response.headers.get("x-amzn-RequestId")
+              })
+            })
+          },
+          options.retryCreate !== false && !this.reportPolicy
+        )
+      ).reportId
     }
     for (;;) {
       const report = z
@@ -1202,7 +1250,7 @@ export class Amazon {
             )
           )
         const response = await read("downloadReport", async () => {
-          const response = await this.transport(document.url, { signal: AbortSignal.timeout(120000) })
+          const response = await this.transport(document.url, { signal: AbortSignal.timeout(reportDownloadTimeoutMs) })
           if (!response.ok) {
             throw new ProviderError(response.status, null, "Amazon report download failed")
           }
@@ -1364,7 +1412,7 @@ export async function downloadAmazonLabels(raw: string) {
     throw new Error("Amazon returned an unsupported label download host")
   }
   // Workers supports manual redirects; the status check below rejects them without following another host.
-  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(30000) })
+  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(requestTimeoutMs) })
   if (!response.ok || !response.body) {
     throw new Error("Amazon label download failed")
   }

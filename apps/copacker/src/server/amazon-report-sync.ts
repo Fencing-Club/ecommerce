@@ -1,4 +1,4 @@
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError, ReportDeferredError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"
@@ -8,6 +8,9 @@ import { amazonFailureDetails } from "./amazon-diagnostics"
 export const fbaReportMarketplace = "ATVPDKIKX0DER"
 const day = 86400000
 export function amazonReportFailure(error: unknown, stage: "request" | "parse" | "period") {
+  if (error instanceof ReportDeferredError) {
+    return "report_throttled"
+  }
   if (error instanceof ProviderError) {
     if ([401, 403].includes(error.status)) {
       return "report_access_denied"
