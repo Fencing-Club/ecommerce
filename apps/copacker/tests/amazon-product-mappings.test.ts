@@ -344,3 +344,56 @@ it("detects financial changes even when the source row count is unchanged", asyn
   expect(response.status).toBe(409)
   expect(await response.json()).toMatchObject({ code: "snapshot_changed" })
 })
+
+it("filters postings, follows account-scoped release links outside the period and keeps overlapping report totals separate", async () => {
+  const row = {
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "CURRENT",
+    orderId: null,
+    postedAt: new Date("2026-10-05"),
+    type: "ServiceFee",
+    currency: "USD",
+    totalMinor: -100,
+    feesMinor: -100,
+    data: {
+      relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "EARLIER" }]
+    }
+  }
+  await database
+    .insert(tables.amazonTransactions)
+    .values([
+      row,
+      { ...row, transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} },
+      { ...row, orgId: otherId, transactionId: "FOREIGN", data: {} }
+    ])
+  for (const kind of ["orders", "shipments"] as const) {
+    await database.insert(tables.amazonRemovals).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      kind,
+      requestedAt: new Date("2026-10-01"),
+      shippedAt: new Date("2026-10-02"),
+      orderId: "R",
+      removalFee: "1.25",
+      currency: "USD"
+    })
+  }
+  const result = await amazonAllocations(orgId, {
+    from: "2026-10-01",
+    to: "2026-11-01",
+    page: 0,
+    postingType: "ServiceFee"
+  })
+  expect(result.postings.map((r) => r.transactionId)).toEqual(["CURRENT"])
+  expect(result.linkedPostings?.map((r) => r.transactionId)).toEqual(["EARLIER"])
+  expect(result.reportComparison).toMatchObject({
+    reconciled: false,
+    additionalRecognizedAmount: null,
+    totals: expect.arrayContaining([
+      { source: "removals:orders", currency: "USD", rows: 1, knownAmountRows: 1, amount: "1.25" },
+      { source: "removals:shipments", currency: "USD", rows: 1, knownAmountRows: 1, amount: "1.25" }
+    ])
+  })
+})

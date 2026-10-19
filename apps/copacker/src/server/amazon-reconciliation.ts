@@ -134,7 +134,8 @@ export function postingEvidence(posting: ReconciliationPosting) {
 export function reconcileAmazonEvidence(
   rows: AmazonEvidence[],
   inventory: Product[],
-  postings: ReconciliationPosting[]
+  postings: ReconciliationPosting[],
+  candidatePage = 0
 ) {
   const products = [...new Map(inventory.map((product) => [JSON.stringify(product), product])).values()]
   const financial = postings.map((posting) => ({ ...postingEvidence(posting), total: posting.data.totalAmount }))
@@ -183,7 +184,9 @@ export function reconcileAmazonEvidence(
       finance: {
         status: candidates.length ? "candidates" : "unmatched",
         candidateCount: candidates.length,
-        candidates: candidates.slice(0, 20),
+        candidates: candidates.slice(candidatePage * 20, (candidatePage + 1) * 20),
+        candidatePage,
+        nextCandidatePage: candidates.length > (candidatePage + 1) * 20 ? candidatePage + 1 : null,
         reconciled: false
       }
     }

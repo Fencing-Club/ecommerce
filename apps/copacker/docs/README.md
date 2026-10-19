@@ -16,7 +16,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Amazon report request limits](amazon-report-limits.md): shared pacing, durable cooldowns and investigation evidence
 - [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, unavailable-month backoff and safe failure diagnostics
 - [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
-- [Amazon reconciliation evidence](amazon-reconciliation.md)
+- [Amazon reconciliation evidence](amazon-reconciliation.md): continued search, reimbursement chains and fee comparisons
 - [Historical inventory cost inputs](historical-inventory-basis.md): unknown cost basis and historical product validation
 - [Analytics HTTP contract](analytics-api.md)
 - [Historical product mappings and Amazon allocations](amazon-cost-allocation.md)

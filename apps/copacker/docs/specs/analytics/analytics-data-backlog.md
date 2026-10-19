@@ -335,3 +335,19 @@ and zero received each. The other three closed shipments balance. Cancelled/crea
 September reimbursement evidence has 11 records: nine with reimbursement-posting candidates, five with order-reference
 candidates, and zero confirmed historical product mappings. The financial search is truncated; these figures describe
 the bounded candidate search, not completed reconciliation or missing recoveries.
+
+### Receipt and financial investigation: October 19, 2026 (Pacific)
+
+The owner confirmed these closed AWD shipments were unused plans, not goods actually dispatched:
+`STAR-U7Z2DYWKH4YAY`, `STAR-UH2FMV4QXH6WX`, `STAR-W3T2ZHQNQ5WXS`. Their 18 expected cases are not missing stock.
+They were created January 28 within 19 minutes and updated to closed approximately 90 days later. This documented
+merchant confirmation does not change Amazon evidence or establish an automatic rule for other closed shipments.
+January 31 shipment `STAR-RDBKBGHGZMXXU` contains the same six-case SKU mix and reports all six cases received.
+
+The FBA review list contains 46 quantity-difference rows across 20 closed shipments. Saved snapshots lack sufficient
+dispatch, correction and transfer lineage to prove loss. No claim or inventory value has been recorded.
+
+Backend additions provide financial-search continuation, separate cash/inventory reimbursement quantities, explicit
+original/reversal references, filtered posting inspection, deferred/release links and validated signed fee components.
+US storage/removal report totals remain separate by kind/currency, with known-amount counts. They are not added to
+postings and matching amounts do not certify source links. Production acceptance awaits release. No UX or backfill.
