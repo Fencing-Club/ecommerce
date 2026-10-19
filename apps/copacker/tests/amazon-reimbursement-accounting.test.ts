@@ -49,6 +49,26 @@ it("nets a referenced cash reversal separately from inventory recovery without r
   })
   expect(result.sourceRowIds).toEqual(["row1", "row2"])
 })
+it("finds stored originals by ID without certifying an uncertain item identity", () => {
+  for (const incomplete of [
+    { ...original, sku: null },
+    { ...original, fnsku: null },
+    { ...original, sku: "OTHER" }
+  ]) {
+    for (const row of [reversal, { ...reversal, sku: null }]) {
+      const result = reimbursementAccounting(row, [incomplete, row], false)
+      expect(result.originalLookup).toMatchObject({
+        status: "found",
+        itemIdentity: "unresolved",
+        absenceMeaning: null
+      })
+      expect(result.blockers).toContain("original_item_identity_unresolved")
+      expect(result.blockers).not.toContain("missing_original")
+      expect(result.quantities).toBeNull()
+      expect(result.signedReportAmounts).toBeNull()
+    }
+  }
+})
 it("withholds family totals for missing, ambiguous, conflicting and truncated evidence", () => {
   const fixtures = [
     { rows: [reversal], truncated: false, blocker: "missing_original" },

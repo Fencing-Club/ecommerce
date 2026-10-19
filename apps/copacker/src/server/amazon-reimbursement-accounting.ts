@@ -33,6 +33,7 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     ).values()
   ]
   const blockers: string[] = []
+  const hasStoredOriginal = records.some((other) => other.id === rootId)
   const roots = family.filter((other) => other.id === rootId)
   if (truncated) {
     blockers.push("related_records_truncated")
@@ -41,7 +42,11 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     blockers.push("missing_product_identity")
   }
   if (roots.length !== 1) {
-    blockers.push(roots.length ? "ambiguous_original" : "missing_original")
+    if (roots.length) {
+      blockers.push("ambiguous_original")
+    } else {
+      blockers.push(hasStoredOriginal ? "original_item_identity_unresolved" : "missing_original")
+    }
   }
   if (family.some((other) => other.id === rootId && other.originalId !== null)) {
     blockers.push("multi_step_chain_requires_review")
@@ -101,9 +106,10 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
   return {
     rootReimbursementId: rootId,
     originalLookup: {
-      status: roots.length === 1 ? "found" : "unresolved",
+      status: hasStoredOriginal ? "found" : "unresolved",
+      itemIdentity: roots.length === 1 ? "matched" : "unresolved",
       search: truncated ? "truncated" : "all_stored_records_in_account_marketplace",
-      absenceMeaning: roots.length === 0 ? "not_found_in_stored_evidence_not_proof_of_provider_absence" : null
+      absenceMeaning: hasStoredOriginal ? null : "not_found_in_stored_evidence_not_proof_of_provider_absence"
     },
     sourceRowIds: family.map((other) => other.sourceRowId).sort(),
     status: available ? "report_family_calculated" : "requires_review",

@@ -76,6 +76,8 @@ Reimbursement responses include all stored report coverage windows for the selle
 of the selected month. An absent original is distinguished from a truncated family search. Its date and cause remain
 unknown; a gap before the collection horizon is a possibility, not a proven explanation. Original-type mismatch is
 reported only when an unambiguous original with a known reason actually contradicts the reversal.
+Original existence is checked by reimbursement ID before item matching. A stored original with incomplete or
+conflicting product identifiers is reported as found with unresolved item identity; family totals remain withheld.
 
 Shopify `orderComparison` exposes the exact successful-net-payment minus current-order-total difference, pending and
 failed payment IDs, and foreign-presentment context. These observations do not establish the cause of a difference;
