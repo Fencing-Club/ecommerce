@@ -1185,7 +1185,11 @@ export class Amazon {
             ? [report]
             : []
         })
-        .sort((a, b) => Date.parse(b.createdTime) - Date.parse(a.createdTime))
+        .sort(
+          (a, b) =>
+            Number(b.processingStatus === "DONE") - Number(a.processingStatus === "DONE") ||
+            Date.parse(b.createdTime) - Date.parse(a.createdTime)
+        )
       reportId = matching[0]?.reportId
     }
     if (!reportId) {

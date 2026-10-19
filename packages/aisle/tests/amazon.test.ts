@@ -636,6 +636,28 @@ describe("recovering completed reports", () => {
     expect(calls[1]?.pathname).toMatch(/\/existing$/)
   })
 
+  it("prefers the newest usable document over newer cancellation evidence", async () => {
+    const { api, calls } = client([
+      {
+        reports: [
+          {
+            ...existing,
+            reportId: "cancelled",
+            processingStatus: "CANCELLED",
+            reportDocumentId: undefined,
+            createdTime: "2026-10-17T12:00:00Z"
+          },
+          { ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" },
+          existing
+        ]
+      },
+      ...download()
+    ])
+    await expect(api.report(input, { ...options(), reuseCancelled: true })).resolves.toBe("report text")
+    expect(calls[1]?.pathname).toMatch(/\/existing$/)
+    expect(calls).toHaveLength(4)
+  })
+
   it("reuses the newest exact report across pages and caches the listing for other months", async () => {
     const { api, calls } = client([
       { reports: [{ ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" }], nextToken: "page2" },

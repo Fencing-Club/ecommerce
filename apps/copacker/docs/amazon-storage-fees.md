@@ -79,7 +79,8 @@ addresses a known Amazon output variant; a live retry must still verify that the
 
 Aged-storage recovery also reuses exact CANCELLED reports from the previous 24 hours. They remain unavailable,
 not imported or zero-charge evidence. This recovers earlier no-data/cancellation outcomes even if a later creation
-was throttled. Other report sources continue to reuse DONE only. Report-option equivalence and exact account,
+was throttled. Usable DONE documents take priority over cancellation evidence; within each status, the newest
+matching report wins. Other report sources continue to reuse DONE only. Report-option equivalence and exact account,
 marketplace and period checks still apply; the selected report status is read again before reuse.
 
 Unavailable aged months retry every seven days for the two most recent completed months and every 30 days for
