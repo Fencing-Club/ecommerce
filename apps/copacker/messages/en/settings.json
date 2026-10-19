@@ -101,7 +101,6 @@
       "amazon": "Orders, inventory, expenses, shipments",
       "ebay": "Orders, expenses"
     },
-    "comingSoon": "Coming soon",
     "connect": "Connect",
     "notConnected": "Not connected",
     "connected": "Connected",

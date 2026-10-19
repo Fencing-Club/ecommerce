@@ -31,7 +31,6 @@ const meta = preview.meta({
   args: {
     admin: true,
     amazonAdsAvailable: true,
-    ebayAvailable: false,
     shopify: null,
     amazon: null,
     ebay: null,
@@ -86,33 +85,31 @@ export const AmazonAdsConnected = meta.story({
   }
 })
 
-// Without Copacker's eBay keys, eBay is coming.
+// All implemented stores offer a connection action.
 export const NothingConnected = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
     await expect(canvas.getByRole("button", { name: "Connect Amazon" })).toHaveTextContent("Connect")
     await expect(canvas.getByText("eBay")).toBeVisible()
-    await expect(canvas.getByText("Coming soon")).toBeVisible()
     await expect(canvas.getByText("Orders, inventory, expenses, shipments")).toBeVisible()
-    await expect(canvas.queryByRole("link", { name: "Connect eBay" })).toBeNull()
+    await expect(canvas.getByRole("link", { name: "Connect eBay" })).toHaveAttribute("href", "/api/connections/ebay")
   }
 })
 
-// With Copacker's eBay keys, eBay's card goes to its sign-in and consent page.
-export const EbayAvailable = meta.story({
-  args: { ebayAvailable: true },
+// eBay connects through its sign-in and consent page.
+export const EbayNotConnected = meta.story({
+  args: {},
   play: async ({ canvas }) => {
     const card = canvas.getByRole("link", { name: "Connect eBay" })
     await expect(card).toHaveAttribute("href", "/api/connections/ebay")
     await expect(canvas.getByRole("article", { name: "eBay" })).toHaveTextContent("Orders, expenses")
     await expect(card).toHaveTextContent("Connect")
-    await expect(canvas.queryByText("Coming soon")).toBeNull()
   }
 })
 
 // A member sees eBay isn't connected, without connecting it.
-export const EbayAvailableMember = meta.story({
-  args: { admin: false, ebayAvailable: true },
+export const EbayNotConnectedMember = meta.story({
+  args: { admin: false },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getAllByText("Not connected")).toHaveLength(4))
     await expect(canvas.queryByRole("link")).toBeNull()
@@ -121,7 +118,7 @@ export const EbayAvailableMember = meta.story({
 
 // A connected eBay account opens its settings: its orders only, since eBay sells the stock Shopify tracks.
 export const EbayConnected = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(ebayAccount)).toBeVisible()
     await expect(await canvas.findByText(/^Synced/)).toBeVisible()
@@ -137,7 +134,7 @@ export const EbayConnected = meta.story({
 })
 
 export const EbayConnectedMember = meta.story({
-  args: { admin: false, ebayAvailable: true, ebay },
+  args: { admin: false, ebay },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Connected")).toBeVisible()
     // A connection's state renders as a status badge: connected is done.
@@ -149,7 +146,7 @@ export const EbayConnectedMember = meta.story({
 
 // eBay's card says while its orders sync, and when the last sync failed; it has no inventory sync.
 export const EbaySyncing = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   beforeEach: ({ msw }) => {
     msw.use(
       ...storeSyncHandlers({
@@ -165,7 +162,7 @@ export const EbaySyncing = meta.story({
 })
 
 export const EbaySyncFailed = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   beforeEach: ({ msw }) => {
     msw.use(...storeSyncHandlers({ sales: [salesSync("ebay", { status: "failed", errorCode: "reconnect" })] }))
   },

@@ -4,7 +4,6 @@ import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } fro
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
-import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -45,7 +44,6 @@ const cardAction = cn(buttonVariants({ variant: "outline", className: "h-11 sm:h
 // Each card has an explicit Connect or Manage action. Members can inspect connection details without changing them.
 export function Integrations({
   admin,
-  ebayAvailable,
   amazonSelfAuth = false,
   amazonAdsAvailable = false,
   shopify,
@@ -56,7 +54,6 @@ export function Integrations({
   ebaySettings
 }: {
   admin: boolean
-  ebayAvailable: boolean
   amazonSelfAuth?: boolean
   amazonAdsAvailable?: boolean
   shopify: Connection | null
@@ -96,14 +93,14 @@ export function Integrations({
       />
     )
   }
-  let ebayCard = <StoreCard store="ebay" status={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
+  let ebayCard = <NotConnected store="ebay" />
   if (ebay) {
     ebayCard = (
       <Connected store="ebay" connection={ebay} admin={admin}>
         {ebaySettings}
       </Connected>
     )
-  } else if (ebayAvailable && admin) {
+  } else if (admin) {
     // eBay's sign-in and consent page, which comes back to Settings.
     ebayCard = (
       <StoreCard
@@ -115,8 +112,6 @@ export function Integrations({
         }
       />
     )
-  } else if (ebayAvailable) {
-    ebayCard = <NotConnected store="ebay" />
   }
   return (
     <div className="@container space-y-8">

@@ -42,8 +42,7 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
     owned,
     computerLocale,
     amazonAdsAvailable,
-    amazonSelfAuth,
-    ebayAvailable
+    amazonSelfAuth
   } = page
   const t = useTranslations("settings")
   return (
@@ -84,7 +83,6 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
               amazonAdsAvailable={amazonAdsAvailable}
               admin={admin}
               amazonSelfAuth={amazonSelfAuth}
-              ebayAvailable={ebayAvailable}
               shopify={
                 shopifyAccount
                   ? { account: shopName ?? shopifyAccount.externalId, externalId: shopifyAccount.externalId }
