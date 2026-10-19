@@ -9,7 +9,7 @@ import { can, isAdmin } from "@/lib/access"
 import { amazonAdsApp } from "@/server/amazon-ads-client"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
-import { amazonSelfAuthEnabled, ebayApp } from "@/server/connections"
+import { amazonSelfAuthEnabled } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { localization } from "@/server/localization"
@@ -134,8 +134,7 @@ export async function settingsPage(_input: { query: Record<string, string | stri
     },
     computerLocale,
     amazonAdsAvailable: amazonAdsApp() !== null,
-    amazonSelfAuth: amazonSelfAuthEnabled(),
-    ebayAvailable: ebayApp() !== null
+    amazonSelfAuth: amazonSelfAuthEnabled()
   }
 }
 function costDetails(

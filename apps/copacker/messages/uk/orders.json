@@ -280,7 +280,16 @@
       "label": "Коментар",
       "placeholder": "Залиште коментар…",
       "post": "Опублікувати",
-      "required": "Напишіть коментар"
+      "required": "Напишіть коментар",
+      "visibility": "Видимість коментаря",
+      "internal": "Внутрішній коментар",
+      "messageSupplier": "Повідомлення постачальнику",
+      "messageCustomer": "Повідомлення клієнту",
+      "internalHint": "Цей коментар бачить лише ваша команда.",
+      "supplierHint": "Це повідомлення бачать ваша команда та постачальник.",
+      "customerHint": "Це повідомлення бачать ваша команда та клієнт.",
+      "sharedSupplier": "Надіслано постачальнику",
+      "sharedCustomer": "Надіслано клієнту"
     },
     "events": {
       "created": "Замовлення на закупівлю створено",
@@ -430,9 +439,13 @@
     "pickupAddress": "Адреса забору",
     "otherAddress": "Інша адреса",
     "readyForPickup": "Готово до забору",
+    "shipFrom": "Адреса забору",
+    "readyDate": "Готово до забору",
     "addCartonProduct": "Додати товар до коробки",
     "removeCartonProduct": "Видалити товар {number} з коробки",
-    "finishPacking": "Завершити пакування"
+    "finishPacking": "Завершити пакування",
+    "addNewAddress": "Додати адресу",
+    "chooseAddress": "Адреса забору"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -459,6 +472,7 @@
     "other": "Інше"
   },
   "cartonEditor": {
+    "addProducts": "Додати товари до коробки",
     "addProductsTo": "Додати товари до коробки {carton}",
     "shipmentProducts": "Товари в цьому відправленні",
     "searchProducts": "Шукати товари в цій відправці",
@@ -484,16 +498,14 @@
     "actions": "Дії з коробкою {carton}",
     "duplicate": "Дублювати коробку",
     "delete": "Видалити коробку",
-    "quantityPerCarton": "Кількість / коробка",
-    "packsPerCarton": "Упаковок / коробка",
-    "unitsPerCarton": "Одиниць / коробка",
+    "quantityPerCarton": "Кількість",
     "productQuantity": "{sku}: кількість у коробці {carton}",
     "unitCount": "{count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
     "removeProduct": "Вилучити {sku} з коробки {carton}",
     "product": "Товар",
     "leftToPack": "Залишилось упакувати",
     "packCount": "{count} пак.",
-    "addToCarton": "Додати до коробки {carton}",
+    "addToCarton": "Додати до коробки",
     "selectedCount": "Вибрано: {count}",
     "cartonGroup": "Коробки {cartons}"
   },

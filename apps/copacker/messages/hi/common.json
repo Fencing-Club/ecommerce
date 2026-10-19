@@ -67,7 +67,9 @@
     "checklist": "पैकिंग चेकलिस्ट",
     "cartonLabel": "कार्टन लेबल",
     "shippingLabel": "शिपिंग लेबल",
-    "productLabel": "प्रोडक्ट लेबल"
+    "productLabel": "प्रोडक्ट लेबल",
+    "cartonLabels": "कार्टन लेबल",
+    "shippingLabels": "शिपिंग लेबल"
   },
   "format": {
     "plusAmounts": "साथ में {amounts}",

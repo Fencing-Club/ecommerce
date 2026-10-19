@@ -61,7 +61,6 @@ type Args = {
   amazonStore: { name: string; marketplaces: string[] } | null
   ebayName: string | null
   // Whether Copacker has its eBay keys.
-  ebayAvailable: boolean
   orderTags: string[]
   // The store's Shopify locations and what each counts as.
   locations: typeof inventoryLocations.locations
@@ -131,8 +130,7 @@ async function SettingsPage(args: Args) {
         },
         computerLocale: args.computerLocale,
         amazonAdsAvailable: false,
-        amazonSelfAuth: true,
-        ebayAvailable: args.ebayAvailable
+        amazonSelfAuth: true
       }}
     />
   )
@@ -238,7 +236,6 @@ const buyerArgs: Args = {
   shopName: "Harbor Goods",
   amazonStore: { name: "Harbor Goods US", marketplaces: ["United States", "Canada"] },
   ebayName: ebayAccount,
-  ebayAvailable: true,
   orderTags: ["Amazon", "wholesale", "sample"],
   locations: inventoryLocations.locations,
   owned: { handOver: [], closing: [workspaces.buyer.name] }
@@ -394,17 +391,6 @@ export const EbayUnnamed = meta.story({
   args: { ebayName: null },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("ebay-user-1234")).toBeVisible()
-  }
-})
-
-// Without Copacker's eBay keys, eBay is coming.
-export const EbayComingSoon = meta.story({
-  ...buyer,
-  args: { linked: [], ebayAvailable: false },
-  play: async ({ canvas }) => {
-    const integrations = canvas.getByRole("region", { name: "Integrations" })
-    await expect(within(integrations).getByText("Coming soon")).toBeVisible()
-    await expect(within(integrations).queryByRole("link", { name: "Connect eBay" })).toBeNull()
   }
 })
 

@@ -184,7 +184,7 @@ describe("rendered shipping PDFs", () => {
         .flatMap((item) => ("str" in item ? [item.str] : []))
         .join(" ")
         .replace(/\s+/g, " ")
-      for (const value of ["A1–A4", "60 packs", "120 pieces", "240 packs", "480 pieces", "Amazon carton labels"]) {
+      for (const value of ["A1–A4", "60 packs", "120 units", "240 packs", "480 units", "Amazon carton labels"]) {
         expect(text).toContain(value)
       }
       for (const carton of awd.cartons) {
@@ -263,4 +263,30 @@ describe("rendered shipping PDFs", () => {
     },
     60000
   )
+})
+
+it("prints a completed packing record before labels or destination addresses are assigned", async () => {
+  const pending = {
+    ...data,
+    destination: { name: "Amazon AWD", address: [] },
+    cartons: data.cartons.map((carton) => ({ ...carton, amazonLabel: undefined, carrierLabel: undefined }))
+  }
+  expect(() => ShippingPdf({ data: pending, kind: "packing", settings: defaultDocumentSettings })).toThrow(
+    /Complete document details/
+  )
+  const bytes = await renderToBuffer(
+    ShippingPdf({ data: pending, kind: "packing", settings: defaultDocumentSettings, packingRecord: true })
+  )
+  const task = getDocument({ data: Uint8Array.from(bytes) })
+  try {
+    const pdf = await task.promise
+    const content = await (await pdf.getPage(1)).getTextContent()
+    const text = content.items.flatMap((item) => ("str" in item ? [item.str] : [])).join(" ")
+    expect(text).toContain("Packing list")
+    expect(text).toContain(pending.products[0]!.supplierSku)
+    expect(text).not.toContain("Amazon carton labels")
+    expect(text).not.toContain("Carrier label numbers")
+  } finally {
+    await task.destroy()
+  }
 })

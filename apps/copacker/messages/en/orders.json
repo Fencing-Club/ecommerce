@@ -280,7 +280,16 @@
       "label": "Comment",
       "placeholder": "Leave a comment…",
       "post": "Post",
-      "required": "Write a comment"
+      "required": "Write a comment",
+      "visibility": "Comment visibility",
+      "internal": "Internal comment",
+      "messageSupplier": "Message supplier",
+      "messageCustomer": "Message customer",
+      "internalHint": "Only your team can see this comment.",
+      "supplierHint": "Your team and the supplier can see this message.",
+      "customerHint": "Your team and the customer can see this message.",
+      "sharedSupplier": "Shared with supplier",
+      "sharedCustomer": "Shared with customer"
     },
     "events": {
       "created": "Purchase order created",
@@ -430,9 +439,13 @@
     "pickupAddress": "Pickup address",
     "otherAddress": "Other address",
     "readyForPickup": "Ready for pickup",
+    "shipFrom": "Ship from",
+    "readyDate": "Ready date",
     "addCartonProduct": "Add product to carton",
     "removeCartonProduct": "Remove product {number} from carton",
-    "finishPacking": "Finish packing"
+    "finishPacking": "Finish packing",
+    "addNewAddress": "Add new address",
+    "chooseAddress": "Choose an address"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -459,6 +472,7 @@
     "other": "Other"
   },
   "cartonEditor": {
+    "addProducts": "Add products to carton",
     "addProductsTo": "Add products to carton {carton}",
     "shipmentProducts": "Products in this shipment",
     "searchProducts": "Search products in this shipment",
@@ -484,16 +498,14 @@
     "actions": "Carton {carton} actions",
     "duplicate": "Duplicate carton",
     "delete": "Delete carton",
-    "quantityPerCarton": "Quantity / carton",
-    "packsPerCarton": "Packs / carton",
-    "unitsPerCarton": "Units / carton",
+    "quantityPerCarton": "Quantity",
     "productQuantity": "{sku}: quantity per carton {carton}",
     "unitCount": "{count, plural, one {# unit} other {# units}}",
     "removeProduct": "Remove {sku} from carton {carton}",
     "product": "Product",
     "leftToPack": "Left to pack",
     "packCount": "{count, plural, one {# pack} other {# packs}}",
-    "addToCarton": "Add to carton {carton}",
+    "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
     "cartonGroup": "Cartons {cartons}"
   },

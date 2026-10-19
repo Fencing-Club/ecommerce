@@ -101,7 +101,6 @@
       "amazon": "Pedidos, inventario, gastos, envíos",
       "ebay": "Pedidos, gastos"
     },
-    "comingSoon": "Próximamente",
     "connect": "Conectar",
     "notConnected": "Sin conectar",
     "connected": "Conectado",
@@ -153,6 +152,16 @@
         "unavailable": "Estado no disponible",
         "scheduled": "Sincronización diaria activa"
       }
+    },
+    "health": {
+      "reconnect": "Es necesario reconectar",
+      "configuration": "Problema de configuración",
+      "unavailable": "No disponible temporalmente",
+      "reconnectHelp": "Amazon rechazó la autorización guardada. Reconecta tu cuenta para restablecer el acceso.",
+      "configurationHelp": "La configuración de la aplicación de Amazon necesita atención. Contacta a soporte.",
+      "unavailableHelp": "No pudimos comprobar Amazon en este momento. Conservamos tu conexión guardada.",
+      "reconnectAction": "Reconectar Amazon",
+      "retry": "Intentar de nuevo"
     }
   },
   "excludedTags": {

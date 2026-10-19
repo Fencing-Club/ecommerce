@@ -48,6 +48,7 @@ export function renderShippingDocument(document: NonNullable<Parameters<typeof p
     registerShippingFonts(fontBase)
     return pdf(document).toBlob()
   })
+
   previousRender = result.catch(() => undefined)
   return result
 }
@@ -146,6 +147,7 @@ function documentLayout(data: ShippingDocumentData, kind: DocumentKind, settings
 
   return { data, kind, settings, t, dir, row, fonts, number, totals, hasAmazon, network, natural, ltr }
 }
+
 const DocumentLayout = createContext<ReturnType<typeof documentLayout> | null>(null)
 function useDocumentLayout() {
   const layout = useContext(DocumentLayout)
@@ -157,23 +159,29 @@ function Code({ children, bold = false }: { children: ReactNode; bold?: boolean 
   const { ltr } = useDocumentLayout()
   return <Text style={[ltr, { fontFamily: "ShippingLatin", fontWeight: bold ? 600 : 400 }]}>{children}</Text>
 }
+
 function TransportName({ shipment }: { shipment: ShippingDocumentData }) {
   const { t } = useDocumentLayout()
   const { service, collection, providerName } = shipment.transport
   if (providerName) {
     return providerName
   }
+
   if (collection === "pickup" && service === "parcel") {
     return t.parcelPickup
   }
+
   if (collection === "pickup" && service === "freight") {
     return t.freightPickup
   }
+
   if (collection === "delivery" || collection === "dropoff") {
     return t.supplierDelivery
   }
+
   return t[service]
 }
+
 function Detail({ label, value, children }: { label: string; value: ReactNode; children?: ReactNode }) {
   return (
     <View style={styles.column}>
@@ -183,6 +191,7 @@ function Detail({ label, value, children }: { label: string; value: ReactNode; c
     </View>
   )
 }
+
 function Metrics({ values }: { values: [string, string][] }) {
   const { row } = useDocumentLayout()
   return (
@@ -196,6 +205,7 @@ function Metrics({ values }: { values: [string, string][] }) {
     </View>
   )
 }
+
 function PackingRoute() {
   const { data, t, row, network } = useDocumentLayout()
   const pickup = data.transport.collection === "pickup"
@@ -231,6 +241,7 @@ function PackingRoute() {
     </>
   )
 }
+
 function PackingReferences() {
   const { data, t, row, number } = useDocumentLayout()
   return (
@@ -297,6 +308,7 @@ function PackingReferences() {
     </>
   )
 }
+
 function Handoff({ shipment }: { shipment: ShippingDocumentData }) {
   const { t } = useDocumentLayout()
   return (
@@ -308,6 +320,7 @@ function Handoff({ shipment }: { shipment: ShippingDocumentData }) {
     </View>
   )
 }
+
 function Address({ label, party }: { label: string; party: ShippingDocumentData["origin"] }) {
   const { ltr } = useDocumentLayout()
   return (
@@ -322,6 +335,7 @@ function Address({ label, party }: { label: string; party: ShippingDocumentData[
     </View>
   )
 }
+
 function Header({ shipmentCount }: { shipmentCount: number }) {
   const { data, kind, t, row, network, settings, number } = useDocumentLayout()
   return (
@@ -351,6 +365,7 @@ function Header({ shipmentCount }: { shipmentCount: number }) {
     </View>
   )
 }
+
 function Footer() {
   const { data, kind, t, row, number, dir } = useDocumentLayout()
   return (
@@ -373,6 +388,7 @@ function Footer() {
     </View>
   )
 }
+
 function AssignmentHeader({ fixed = false }: { fixed?: boolean }) {
   const { data, t, row, hasAmazon } = useDocumentLayout()
   return (
@@ -383,6 +399,7 @@ function AssignmentHeader({ fixed = false }: { fixed?: boolean }) {
     </View>
   )
 }
+
 function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: number }) {
   const { data, row, hasAmazon } = useDocumentLayout()
   return (
@@ -416,6 +433,7 @@ function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: numbe
     </View>
   )
 }
+
 function LabelNumbers({ cartons, label }: { cartons: ShippingCarton[]; label: "amazonLabel" | "carrierLabel" }) {
   const { t, row, data } = useDocumentLayout()
   return (
@@ -439,6 +457,7 @@ function LabelNumbers({ cartons, label }: { cartons: ShippingCarton[]; label: "a
     </View>
   )
 }
+
 function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
   const { data, t, row, hasAmazon } = useDocumentLayout()
   if (!hasAmazon || !data.transport.carrierLabels) {
@@ -449,6 +468,7 @@ function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
       </>
     )
   }
+
   return (
     <View style={styles.packingAssignments}>
       <Text style={[styles.packingDetail, styles.bold]}>{t.assignments}</Text>
@@ -473,6 +493,7 @@ function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
     </View>
   )
 }
+
 function Check({ title, detail, values }: ShippingCheck) {
   const { t, row, settings } = useDocumentLayout()
   return (
@@ -483,6 +504,7 @@ function Check({ title, detail, values }: ShippingCheck) {
     </View>
   )
 }
+
 function Heading({ children, spaced = true }: { children: ReactNode; spaced?: boolean }) {
   return (
     <Text style={[styles.heading, ...(spaced ? [] : [{ marginTop: 0, marginBottom: 0 }])]} minPresenceAhead={45}>
@@ -490,6 +512,7 @@ function Heading({ children, spaced = true }: { children: ReactNode; spaced?: bo
     </Text>
   )
 }
+
 function ChecklistSection({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <View style={{ gap: 9, marginBottom: 15 }}>
@@ -498,19 +521,32 @@ function ChecklistSection({ title, children }: { title: ReactNode; children: Rea
     </View>
   )
 }
+
 export function ShippingPdf({
   data,
   kind,
   settings,
-  shipments = [data]
+  shipments = [data],
+  packingRecord = false
 }: {
   data: ShippingDocumentData
   kind: DocumentKind
   settings: DocumentSettings
   shipments?: ShippingDocumentData[]
+  packingRecord?: boolean
 }) {
   invariant(
-    (kind === "overview" ? shipments : [data]).every((shipment) => !documentIssues(shipment, kind).length),
+    (kind === "overview" ? shipments : [data]).every(
+      (shipment) =>
+        !documentIssues(shipment, kind).filter(
+          (issue) =>
+            !(
+              packingRecord &&
+              kind === "packing" &&
+              ["missingAmazon", "missingCarrier", "missingAddress"].includes(issue.code)
+            )
+        ).length
+    ),
     "Complete document details and resolve oversized carton groups before generating."
   )
   const layout = documentLayout(data, kind, settings)
@@ -520,10 +556,12 @@ export function ShippingPdf({
   if (data.receiving?.repack) {
     cartonHeading = t.repack
   }
+
   let handoffHeading = data.transport.palletized ? t.palletHandoff : t.handoff
   if (data.receiving) {
     handoffHeading = data.receiving.repack ? t.labelHandoff : t.preparePickup
   }
+
   const taskDetails = {
     polybag: "polybagText",
     sealedPolybag: "sealedPolybagText",
@@ -542,8 +580,12 @@ export function ShippingPdf({
           {kind === "packing" && (
             <>
               <View wrap={false}>
-                <Handoff shipment={data} />
-                <PackingRoute />
+                {!packingRecord && (
+                  <>
+                    <Handoff shipment={data} />
+                    <PackingRoute />
+                  </>
+                )}
                 <Metrics
                   values={[
                     [t.cartons, number(totals.cartons)],
@@ -569,6 +611,7 @@ export function ShippingPdf({
                 if (!carton) {
                   return null
                 }
+
                 return (
                   <View key={carton.id} style={styles.group} wrap={false}>
                     {carton.contents.map((item, index) => {
@@ -576,7 +619,7 @@ export function ShippingPdf({
                       if (!product) {
                         return null
                       }
-                      const unit = product.piecesPerPack > 1 ? t.packs : t.units
+
                       return (
                         <View style={[styles.packingRow, row]} key={item.productId}>
                           <View style={styles.packingCarton}>
@@ -590,54 +633,50 @@ export function ShippingPdf({
                             )}
                           </View>
                           <View style={styles.packingProduct}>
-                            <Code bold>{product.supplierSku}</Code>
-                            <Text style={styles.packingDetail}>{product.description}</Text>
+                            <Text style={styles.bold}>{product.description}</Text>
+                            {product.variant && <Text style={styles.packingDetail}>{product.variant}</Text>}
+                            <View style={styles.packingDetail}>
+                              <Code>{product.supplierSku}</Code>
+                            </View>
                           </View>
                           <View style={styles.packingQuantity}>
                             <Text style={styles.bold}>
-                              {number(item.packs)} {unit}
+                              {number(item.packs * product.piecesPerPack)} {t.units}
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs * product.piecesPerPack)} {t.pieces}
+                                {number(item.packs)} {t.packs}
                               </Text>
-                            )}
-                            {carton.contents.length === 1 && product.piecesPerPack > 1 && (
-                              <View style={styles.packingDetail}>
-                                <Code>
-                                  {carton.dimensions.map(number).join(" × ")} cm / {number(carton.weight)} kg
-                                </Code>
-                              </View>
                             )}
                           </View>
                           <View style={styles.packingTotal}>
                             <Text style={styles.bold}>
-                              {number(item.packs * group.length)} {unit}
+                              {number(item.packs * group.length * product.piecesPerPack)} {t.units}
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs * group.length * product.piecesPerPack)} {t.pieces}
+                                {number(item.packs * group.length)} {t.packs}
                               </Text>
                             )}
                           </View>
                         </View>
                       )
                     })}
-                    {(carton.contents.length > 1 ||
-                      data.products.find((product) => product.id === carton.contents[0]?.productId)?.piecesPerPack ===
-                        1) && (
-                      <View style={[styles.packingDetail, row, { gap: 3 }]}>
-                        <Text>{t.eachCarton}:</Text>
-                        <Code>
+                    <View style={[styles.packingRow, row, { marginTop: 4 }]}>
+                      <View style={styles.packingCarton} />
+                      <View style={styles.packingProduct}>
+                        <Code bold>
                           {carton.dimensions.map(number).join(" × ")} cm / {number(carton.weight)} kg
                         </Code>
                       </View>
-                    )}
-                    <PackingAssignments cartons={group} />
+                      <View style={styles.packingQuantity} />
+                      <View style={styles.packingTotal} />
+                    </View>
+                    {!packingRecord && <PackingAssignments cartons={group} />}
                   </View>
                 )
               })}
-              <PackingReferences />
+              {!packingRecord && <PackingReferences />}
             </>
           )}
           {kind === "reference" && (

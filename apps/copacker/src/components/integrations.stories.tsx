@@ -11,9 +11,8 @@ import {
   stockSync,
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
+import { IntegrationSyncSection } from "./integration-panel"
 import { Integrations } from "./integrations"
-import { InventorySyncRow } from "./inventory-sync"
-import { OrdersSyncRow } from "./sales-orders"
 
 const sent: ActionRequest[] = []
 // The Shopify address a valid Connect form sends to Shopify's approval, kept instead of leaving the story.
@@ -32,13 +31,12 @@ const meta = preview.meta({
   args: {
     admin: true,
     amazonAdsAvailable: true,
-    ebayAvailable: false,
     shopify: null,
     amazon: null,
     ebay: null,
-    shopifySettings: <p>Shopify sync settings</p>,
-    amazonSettings: <p>Amazon sync settings</p>,
-    ebaySettings: <p>eBay sync settings</p>
+    shopifySettings: <IntegrationSyncSection store="shopify" />,
+    amazonSettings: <IntegrationSyncSection store="amazon" />,
+    ebaySettings: <IntegrationSyncSection store="ebay" />
   },
   beforeEach: ({ msw }) => {
     sent.length = 0
@@ -87,33 +85,31 @@ export const AmazonAdsConnected = meta.story({
   }
 })
 
-// Without Copacker's eBay keys, eBay is coming.
+// All implemented stores offer a connection action.
 export const NothingConnected = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
     await expect(canvas.getByRole("button", { name: "Connect Amazon" })).toHaveTextContent("Connect")
-    await expect(canvas.getByText("eBay")).toBeVisible()
-    await expect(canvas.getByText("Coming soon")).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "eBay" })).toBeVisible()
     await expect(canvas.getByText("Orders, inventory, expenses, shipments")).toBeVisible()
-    await expect(canvas.queryByRole("link", { name: "Connect eBay" })).toBeNull()
+    await expect(canvas.getByRole("link", { name: "Connect eBay" })).toHaveAttribute("href", "/api/connections/ebay")
   }
 })
 
-// With Copacker's eBay keys, eBay's card goes to its sign-in and consent page.
-export const EbayAvailable = meta.story({
-  args: { ebayAvailable: true },
+// eBay connects through its sign-in and consent page.
+export const EbayNotConnected = meta.story({
+  args: {},
   play: async ({ canvas }) => {
     const card = canvas.getByRole("link", { name: "Connect eBay" })
     await expect(card).toHaveAttribute("href", "/api/connections/ebay")
     await expect(canvas.getByRole("article", { name: "eBay" })).toHaveTextContent("Orders, expenses")
     await expect(card).toHaveTextContent("Connect")
-    await expect(canvas.queryByText("Coming soon")).toBeNull()
   }
 })
 
 // A member sees eBay isn't connected, without connecting it.
-export const EbayAvailableMember = meta.story({
-  args: { admin: false, ebayAvailable: true },
+export const EbayNotConnectedMember = meta.story({
+  args: { admin: false },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getAllByText("Not connected")).toHaveLength(4))
     await expect(canvas.queryByRole("link")).toBeNull()
@@ -122,13 +118,13 @@ export const EbayAvailableMember = meta.story({
 
 // A connected eBay account opens its settings: its orders only, since eBay sells the stock Shopify tracks.
 export const EbayConnected = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(ebayAccount)).toBeVisible()
     await expect(await canvas.findByText(/^Synced/)).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Manage eBay" }))
     const sheet = await screen.findByRole("dialog", { name: "eBay" })
-    await expect(within(sheet).getByText("eBay sync settings")).toBeInTheDocument()
+    await expect(within(sheet).getByRole("button", { name: "Sync eBay orders" })).toBeInTheDocument()
     await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
     const confirm = await screen.findByRole("alertdialog", { name: "Disconnect eBay?" })
     await expect(confirm).toHaveTextContent(`Copacker stops reading sales from ${ebayAccount}.`)
@@ -138,7 +134,7 @@ export const EbayConnected = meta.story({
 })
 
 export const EbayConnectedMember = meta.story({
-  args: { admin: false, ebayAvailable: true, ebay },
+  args: { admin: false, ebay },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Connected")).toBeVisible()
     // A connection's state renders as a status badge: connected is done.
@@ -150,7 +146,7 @@ export const EbayConnectedMember = meta.story({
 
 // eBay's card says while its orders sync, and when the last sync failed; it has no inventory sync.
 export const EbaySyncing = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   beforeEach: ({ msw }) => {
     msw.use(
       ...storeSyncHandlers({
@@ -166,7 +162,7 @@ export const EbaySyncing = meta.story({
 })
 
 export const EbaySyncFailed = meta.story({
-  args: { ebayAvailable: true, ebay },
+  args: { ebay },
   beforeEach: ({ msw }) => {
     msw.use(...storeSyncHandlers({ sales: [salesSync("ebay", { status: "failed", errorCode: "reconnect" })] }))
   },
@@ -178,12 +174,7 @@ export const EbaySyncFailed = meta.story({
 export const ShopifySignInExpired = meta.story({
   args: {
     shopify,
-    shopifySettings: (
-      <div className="grid gap-3 sm:grid-cols-2">
-        <OrdersSyncRow source="shopify" />
-        <InventorySyncRow provider="shopify" />
-      </div>
-    )
+    shopifySettings: <IntegrationSyncSection store="shopify" />
   },
   beforeEach: ({ msw }) => {
     msw.use(
@@ -264,15 +255,15 @@ export const Connected = meta.story({
     await expect(await canvas.findAllByText(/^Synced/)).toHaveLength(2)
     await userEvent.click(canvas.getByRole("button", { name: "Manage Shopify" }))
     const sheet = await screen.findByRole("dialog", { name: "Shopify" })
-    await expect(within(sheet).getByText("Shopify sync settings")).toBeInTheDocument()
-    await expect(within(sheet).queryByText("Amazon sync settings")).toBeNull()
+    await expect(within(sheet).getByRole("button", { name: "Sync Shopify orders" })).toBeInTheDocument()
+    await expect(within(sheet).queryByRole("button", { name: "Sync Amazon orders" })).toBeNull()
   }
 })
 
 export const AmazonMarketplacesUnavailable = meta.story({
   args: { amazon: { ...amazon, marketplaces: null } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Connected")).toBeVisible()
+    await expect(canvas.getByText("Temporarily unavailable")).toBeVisible()
     await expect(canvas.getByText("Couldn’t load from Amazon")).toBeVisible()
     await expect(canvas.queryByText("United States")).toBeNull()
   }
@@ -415,5 +406,71 @@ export const AdsUnavailable = meta.story({
     await expect(within(ads).getByText("Ads setup required.")).toBeVisible()
     await expect(within(ads).queryByRole("link")).toBeNull()
     await expect(within(ads).queryByRole("button")).toBeNull()
+  }
+})
+
+export const AmazonReconnectRequired = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "reconnect" }, amazonSelfAuth: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Reconnect required")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await expect(within(panel).queryByText("Connected")).toBeNull()
+    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
+    const reconnect = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    await expect(within(reconnect).getByLabelText(/Refresh token/i)).toHaveAttribute("type", "password")
+  }
+})
+export const AmazonConfigurationIssue = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "configuration" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Configuration issue")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await expect(within(panel).queryByRole("button", { name: "Reconnect Amazon" })).toBeNull()
+    await waitFor(() => expect(within(panel).getByText(/Contact support/)).toBeVisible())
+  }
+})
+
+export const AmazonReconnectOAuth = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "reconnect" }, amazonSelfAuth: false },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    await expect(within(dialog).queryByLabelText(/Refresh token/)).toBeNull()
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
+  }
+})
+
+export const AmazonConnectionStatus = meta.story({
+  args: {
+    amazon: { ...amazon, health: "connected" },
+    amazonSettings: <IntegrationSyncSection store="amazon" />
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
+    await waitFor(() => expect(within(dialog).getByText("Connected", { exact: true })).toBeVisible())
+    await expect(within(dialog).getByText("Harbor Goods US")).toBeVisible()
+    await expect(within(dialog).getByText("United States")).toBeVisible()
+  }
+})
+
+export const AmazonReconnectStatus = meta.story({
+  args: {
+    amazon: { ...amazon, marketplaces: null, health: "reconnect" },
+    amazonSelfAuth: true,
+    amazonSettings: <IntegrationSyncSection store="amazon" />
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
+    await waitFor(() => expect(within(dialog).getByText("Reconnect required", { exact: true })).toBeVisible())
+    await expect(within(dialog).getByRole("button", { name: "Reconnect Amazon" })).toBeVisible()
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
   }
 })

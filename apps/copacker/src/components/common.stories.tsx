@@ -284,6 +284,26 @@ export const Documents = meta.story({
   }
 })
 
+export const CombinedLabels = meta.story({
+  render: () => (
+    <DocumentList
+      documents={[
+        { id: "a1", name: "A1.pdf", kind: "carton_label", cartonId: "A1", shipmentId: "shipment-1" },
+        { id: "a2", name: "A2.pdf", kind: "carton_label", cartonId: "A2", shipmentId: "shipment-1" },
+        { id: "carrier1", name: "carrier1.pdf", kind: "shipping_label", cartonId: "A1", shipmentId: "shipment-1" },
+        { id: "carrier2", name: "carrier2.pdf", kind: "shipping_label", cartonId: "A2", shipmentId: "shipment-1" }
+      ]}
+    />
+  ),
+  play: async ({ canvas }) => {
+    const links = canvas.getAllByRole("link")
+    await expect(links).toHaveLength(2)
+    await expect(links[0]).toHaveAttribute("href", "/api/documents/a1?bundle=true")
+    await expect(links[1]).toHaveAttribute("href", "/api/documents/carrier1?bundle=true")
+    await expect(canvas.queryByText("A1.pdf")).not.toBeInTheDocument()
+  }
+})
+
 // Where a text's last character ends on screen, rather than its element's box.
 function textRight(element: HTMLElement) {
   const range = document.createRange()

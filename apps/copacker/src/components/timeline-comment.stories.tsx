@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw"
-import { expect, userEvent, waitFor } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { held, recordActions } from "@/stories/fixtures/shared"
@@ -8,6 +8,28 @@ import { TimelineComment } from "./timeline-comment"
 const meta = preview.meta({
   component: TimelineComment,
   args: { orderId: "order-1045" }
+})
+
+export const SharedMessage = meta.story({
+  play: async ({ canvas, canvasElement, msw }) => {
+    const posted = recordActions(msw)
+    await expect(canvas.getByText("Only your team can see this comment.")).toBeVisible()
+    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
+    await userEvent.click(
+      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message supplier" })
+    )
+    await expect(canvas.getByText("Your team and the supplier can see this message.")).toBeVisible()
+    await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Please check the labels")
+    await userEvent.click(canvas.getByRole("button", { name: "Post" }))
+    await waitFor(() =>
+      expect(posted).toEqual([
+        {
+          action: "order.comment",
+          data: { orderId: "order-1045", message: "Please check the labels", visibility: "shared" }
+        }
+      ])
+    )
+  }
 })
 
 export const Post = meta.story({
@@ -25,7 +47,10 @@ export const Post = meta.story({
     await userEvent.click(post)
     await waitFor(() =>
       expect(posted).toEqual([
-        { action: "order.comment", data: { orderId: "order-1045", message: "Cartons ship Friday" } }
+        {
+          action: "order.comment",
+          data: { orderId: "order-1045", message: "Cartons ship Friday", visibility: "internal" }
+        }
       ])
     )
     // The box clears for the next comment.
@@ -44,7 +69,10 @@ export const KeyboardShortcut = meta.story({
     )
     await waitFor(() =>
       expect(posted).toEqual([
-        { action: "order.comment", data: { orderId: "order-1045", message: "Labels are attached" } }
+        {
+          action: "order.comment",
+          data: { orderId: "order-1045", message: "Labels are attached", visibility: "internal" }
+        }
       ])
     )
   }
@@ -70,5 +98,26 @@ export const Fails = meta.story({
     await expect(await canvas.findByRole("alert")).toHaveTextContent("This purchase order is closed")
     // The comment stays to post again.
     await expect(box).toHaveValue("Cartons ship Friday")
+  }
+})
+
+export const SupplierMessage = meta.story({
+  args: { counterparty: "customer" },
+  play: async ({ canvas, canvasElement, msw }) => {
+    const posted = recordActions(msw)
+    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
+    await userEvent.click(
+      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message customer" })
+    )
+    await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Ready for collection")
+    await userEvent.click(canvas.getByRole("button", { name: "Post" }))
+    await waitFor(() =>
+      expect(posted).toEqual([
+        {
+          action: "order.comment",
+          data: { orderId: "order-1045", message: "Ready for collection", visibility: "shared" }
+        }
+      ])
+    )
   }
 })

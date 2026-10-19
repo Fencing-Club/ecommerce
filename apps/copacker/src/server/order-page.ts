@@ -1,7 +1,7 @@
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
-import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
+import { contacts, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
 import { storedEvent } from "@/lib/timeline-events"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
@@ -15,6 +15,7 @@ import { forwarderLeg } from "@/server/shipment-legs"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
+import { orderEvents } from "./comments"
 import { forwarderPage } from "./forwarder-page"
 import { unpricedChanges, unpricedOrder } from "./prices"
 
@@ -39,7 +40,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
     db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
-    db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
+    orderEvents(s, id),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision)),
     // The supplier reads the buyer's note as from the buyer, by its workspace's name.
     s.org.kind === "supplier"
@@ -93,6 +94,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
       comment: event.kind === "comment",
       author: event.author,
       authorOrg: event.authorOrg,
+      visibility: event.internalOrgId ? ("internal" as const) : ("shared" as const),
       revision: null,
       revisionNumber: null
     })),

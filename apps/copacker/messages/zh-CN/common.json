@@ -67,7 +67,9 @@
     "checklist": "装箱核对清单",
     "cartonLabel": "箱标",
     "shippingLabel": "运输标签",
-    "productLabel": "产品标签"
+    "productLabel": "产品标签",
+    "cartonLabels": "箱唛",
+    "shippingLabels": "运输标签"
   },
   "format": {
     "plusAmounts": "另加 {amounts}",

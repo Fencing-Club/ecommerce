@@ -55,7 +55,7 @@ export const PostComment = meta.story({
     await waitFor(() =>
       expect(actions).toHaveBeenCalledWith({
         action: "order.comment",
-        data: { orderId, message: "Labels are attached" }
+        data: { orderId, message: "Labels are attached", visibility: "internal" }
       })
     )
     // The box clears for the next comment.

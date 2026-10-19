@@ -2544,7 +2544,7 @@ async function release(id: string, revision = 1) {
     new Request("http://localhost:3000/api/action", {
       method: "POST",
       headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({ action: "shipment.release", data: { id, revision, bookingReference: "BOOKING-1" } })
+      body: JSON.stringify({ action: "shipment.release", data: { id, revision } })
     })
   )
 }
@@ -5597,7 +5597,7 @@ describe("timeline comments", () => {
       new Request("http://localhost:3000/api/action", {
         method: "POST",
         headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-        body: JSON.stringify({ action: "order.comment", data })
+        body: JSON.stringify({ action: "order.comment", data: { visibility: "shared", ...data } })
       })
     )
 
@@ -5616,6 +5616,24 @@ describe("timeline comments", () => {
     context.actor = actor("buyer", otherId)
     expect((await send({ orderId, message: "Not mine" })).status).not.toBe(200)
     context.actor = buyer
+  })
+
+  it("keeps internal comments within the author's workspace, even for a user who belongs to both", async () => {
+    const { orderEvents } = await import("../src/server/comments")
+    expect(
+      (await send({ orderId, message: "Buyer only", visibility: "internal", internalOrgId: supplier.org.id })).status
+    ).toBe(200)
+    expect((await send({ orderId, message: "Shared", visibility: "shared" })).status).toBe(200)
+    const buyerRows = await orderEvents(buyer, orderId)
+    expect(buyerRows.filter((event) => event.kind === "comment").map((event) => event.message)).toEqual(
+      expect.arrayContaining(["Buyer only", "Shared"])
+    )
+    expect(buyerRows.find((event) => event.message === "Buyer only")?.internalOrgId).toBe(buyer.org.id)
+    const supplierRows = await orderEvents({ ...supplier, user: buyer.user }, orderId)
+    expect(supplierRows.some((event) => event.message === "Buyer only")).toBe(false)
+    expect(supplierRows.some((event) => event.message === "Shared")).toBe(true)
+    await expect(orderEvents(actor("buyer", otherId), orderId)).rejects.toThrow("not found")
+    expect((await send({ orderId, message: "Unknown audience", visibility: "everyone" })).status).toBe(400)
   })
 })
 

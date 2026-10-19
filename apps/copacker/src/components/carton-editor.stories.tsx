@@ -55,6 +55,8 @@ export const MixedProducts = meta.story({
   play: async ({ canvas, args }) => {
     await expect(canvas.getAllByText("2 per pack").some((element) => element.checkVisibility())).toBe(true)
     await expect(canvas.queryByText("1 per pack")).toBeNull()
+    await expect(canvas.getAllByText("Supplier SKU").some((element) => element.checkVisibility())).toBe(true)
+    await expect(canvas.getByText(products[0]!.supplierSku, { exact: true })).toBeVisible()
     const quantity = canvas.getByRole("spinbutton", { name: `${products[2]!.buyerSku}: quantity per carton 1` })
     await userEvent.clear(quantity)
     await userEvent.type(quantity, "12")
@@ -76,12 +78,12 @@ export const AddProduct = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add products to carton 1" }))
-    const dialog = await shownDialog("Add products to carton 1")
+    const dialog = await shownDialog("Add products to carton")
     await expect(
       dialog.getByRole("checkbox", { name: `${products[0]!.name} ${products[0]!.variant}` })
     ).toHaveAttribute("aria-disabled", "true")
     await userEvent.click(dialog.getByRole("checkbox", { name: `${products[2]!.name} ${products[2]!.variant}` }))
-    await userEvent.click(dialog.getByRole("button", { name: /^Add to carton / }))
+    await userEvent.click(dialog.getByRole("button", { name: "Add to carton" }))
     await expect(
       canvas.getByRole("spinbutton", { name: `${products[2]!.buyerSku}: quantity per carton 1` })
     ).toBeVisible()
@@ -159,7 +161,10 @@ export const MobilePacked = meta.story({
 export const LongSku = meta.story({
   args: {
     readOnly: true,
-    products: products.map((item) => ({ ...item, buyerSku: `${item.buyerSku}-LONG-SUPPLIER-REFERENCE-1234567890` }))
+    products: products.map((item) => ({
+      ...item,
+      supplierSku: `${item.supplierSku}-LONG-SUPPLIER-REFERENCE-1234567890`
+    }))
   },
   decorators: [
     (Story) => (
@@ -171,5 +176,28 @@ export const LongSku = meta.story({
   play: async ({ canvas }) => {
     const sku = canvas.getAllByText(/LONG-SUPPLIER-REFERENCE/)[0]!
     await expect(sku.scrollWidth).toBeLessThanOrEqual(sku.clientWidth)
+  }
+})
+
+export const OnlyUnpackedProducts = meta.story({
+  args: { value, remainingPieces: { [products[0]!.id]: 0, [products[1]!.id]: 0, [products[2]!.id]: 12 } },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Add products to carton 1" }))
+    const dialog = await shownDialog("Add products to carton")
+    await expect(dialog.queryByText("Waffle bath towel")).toBeNull()
+    await expect(dialog.getByText("6 packs")).toBeVisible()
+    await expect(dialog.getAllByRole("checkbox")).toHaveLength(1)
+    await userEvent.click(dialog.getByRole("checkbox"))
+    await expect(dialog.getByRole("button", { name: "Add to carton" })).toBeEnabled()
+  }
+})
+
+export const PackedUnitsFirst = meta.story({
+  args: { readOnly: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("20 units", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("10 packs of 2", { exact: true })).toBeVisible()
+    await expect(canvas.queryByText("2 per pack", { exact: true })).toBeNull()
+    await expect(canvas.queryByRole("spinbutton")).toBeNull()
   }
 })

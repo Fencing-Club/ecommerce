@@ -63,6 +63,7 @@ import type { StockAt } from "./add-products-dialog"
 import { AddProductsDialog } from "./add-products-dialog"
 import { DateInput, FormInput, FormLabel, FormTextarea } from "./form-controls"
 import { FormSelect } from "./form-select"
+import { QuantityDisplay } from "./quantity-display"
 
 // Where a purchase order can go, each labeled under orders.builder.destinations.
 const destinations = ["amazon", "warehouse"] as const
@@ -590,20 +591,14 @@ export function OrderBuilder({
                                   )}
                                 </td>
                                 <td className="px-2 py-2">
-                                  <CellNumber
-                                    name={`items.${index}.pieces`}
-                                    label={tb("quantityOf", { name: line.name })}
-                                    min={line.piecesPerSet}
-                                    step={line.piecesPerSet}
-                                  />
-                                  {line.piecesPerSet > 1 && item?.pieces ? (
-                                    <p className="mt-1 text-end text-xs whitespace-nowrap text-muted-foreground">
-                                      {tb("packCount", {
-                                        count: item.pieces / line.piecesPerSet,
-                                        size: line.piecesPerSet
-                                      })}
-                                    </p>
-                                  ) : null}
+                                  <QuantityDisplay pieces={item?.pieces ?? Number.NaN} packSize={line.piecesPerSet}>
+                                    <CellNumber
+                                      name={`items.${index}.pieces`}
+                                      label={tb("quantityOf", { name: line.name })}
+                                      min={line.piecesPerSet}
+                                      step={line.piecesPerSet}
+                                    />
+                                  </QuantityDisplay>
                                   {available !== null && (
                                     <p
                                       className={cn(

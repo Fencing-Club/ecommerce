@@ -280,7 +280,16 @@
       "label": "कमेंट",
       "placeholder": "कमेंट लिखें…",
       "post": "पोस्ट करें",
-      "required": "कमेंट लिखें"
+      "required": "कमेंट लिखें",
+      "visibility": "टिप्पणी की दृश्यता",
+      "internal": "आंतरिक टिप्पणी",
+      "messageSupplier": "आपूर्तिकर्ता को संदेश",
+      "messageCustomer": "ग्राहक को संदेश",
+      "internalHint": "केवल आपकी टीम यह टिप्पणी देख सकती है।",
+      "supplierHint": "आपकी टीम और आपूर्तिकर्ता यह संदेश देख सकते हैं।",
+      "customerHint": "आपकी टीम और ग्राहक यह संदेश देख सकते हैं।",
+      "sharedSupplier": "आपूर्तिकर्ता के साथ साझा किया गया",
+      "sharedCustomer": "ग्राहक के साथ साझा किया गया"
     },
     "events": {
       "created": "खरीद ऑर्डर बनाया गया",
@@ -430,9 +439,13 @@
     "pickupAddress": "पिकअप का पता",
     "otherAddress": "दूसरा पता",
     "readyForPickup": "पिकअप के लिए तैयार",
+    "shipFrom": "पिकअप का पता",
+    "readyDate": "पिकअप के लिए तैयार",
     "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
-    "finishPacking": "पैकिंग पूरी करें"
+    "finishPacking": "पैकिंग पूरी करें",
+    "addNewAddress": "पता जोड़ें",
+    "chooseAddress": "पिकअप का पता"
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -459,6 +472,7 @@
     "other": "अन्य"
   },
   "cartonEditor": {
+    "addProducts": "कार्टन में उत्पाद जोड़ें",
     "addProductsTo": "कार्टन {carton} में उत्पाद जोड़ें",
     "shipmentProducts": "इस शिपमेंट के उत्पाद",
     "searchProducts": "इस शिपमेंट में उत्पाद खोजें",
@@ -484,16 +498,14 @@
     "actions": "कार्टन {carton} की कार्रवाइयाँ",
     "duplicate": "कार्टन की प्रतिलिपि बनाएँ",
     "delete": "कार्टन हटाएँ",
-    "quantityPerCarton": "मात्रा / कार्टन",
-    "packsPerCarton": "पैक / कार्टन",
-    "unitsPerCarton": "इकाइयाँ / कार्टन",
+    "quantityPerCarton": "मात्रा",
     "productQuantity": "{sku}: कार्टन {carton} में मात्रा",
     "unitCount": "{count} इकाइयाँ",
     "removeProduct": "कार्टन {carton} से {sku} हटाएँ",
     "product": "उत्पाद",
     "leftToPack": "पैक करना बाकी",
     "packCount": "{count} पैक",
-    "addToCarton": "कार्टन {carton} में जोड़ें",
+    "addToCarton": "कार्टन में जोड़ें",
     "selectedCount": "{count} चुने गए",
     "cartonGroup": "कार्टन {cartons}"
   },

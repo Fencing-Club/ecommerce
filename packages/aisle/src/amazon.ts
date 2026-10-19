@@ -327,6 +327,23 @@ export class ProviderError extends Error {
     super(message)
   }
 }
+
+export type AmazonConnectionHealth = "connected" | "reconnect" | "configuration" | "unavailable"
+
+// Token failures retain a safe recovery category, never credentials or Amazon's raw response.
+export class AmazonAuthorizationError extends ProviderError {
+  constructor(
+    status: number,
+    readonly recovery: "reconnect" | "configuration"
+  ) {
+    super(
+      status,
+      null,
+      recovery === "reconnect" ? "Amazon authorization must be renewed" : "Amazon app configuration needs attention"
+    )
+  }
+}
+
 export class ReportDeferredError extends Error {
   constructor(public readonly retryAt: Date) {
     super("Amazon report creation is waiting for its request allowance")
@@ -419,7 +436,19 @@ export class Amazon {
       signal: AbortSignal.timeout(requestTimeoutMs)
     })
     if (!response.ok) {
-      throw new ProviderError(response.status, null, "Amazon authorization must be renewed")
+      const result = z.object({ error: z.string() }).safeParse(await response.json().catch(() => null))
+      const code = result.success ? result.data.error : undefined
+      if (response.status < 500 && response.status !== 429) {
+        if ("refreshToken" in this.credentials && (code === "invalid_grant" || code === "unauthorized_client")) {
+          throw new AmazonAuthorizationError(response.status, "reconnect")
+        }
+        if (
+          ["invalid_client", "unauthorized_client", "unsupported_grant_type", "invalid_request"].includes(code ?? "")
+        ) {
+          throw new AmazonAuthorizationError(response.status, "configuration")
+        }
+      }
+      throw new ProviderError(response.status, null, "Amazon authorization is temporarily unavailable")
     }
     const token = z.object({ access_token: z.string(), expires_in: z.number() }).parse(await response.json())
     this.access = { token: token.access_token, expires: Date.now() + (token.expires_in - 60) * 1000 }

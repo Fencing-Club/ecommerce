@@ -95,3 +95,25 @@ shipments, whoever created them: FBA from `GET /fba/inbound/v0/shipments` in eve
 read from Amazon when the page loads and cached for two minutes; if Amazon can't be read, the page says so and shows the
 purchase order shipments. Open shipments come first, then FBA before AWD, newest first (FBA lists no dates, so its
 shipment IDs order it).
+
+
+## Future improvement: FBA capacity preflight
+
+Research checked October 18, 2026. No documented public SP-API endpoint exposing the Capacity Monitor's live
+capacity limit, usage, and remaining volume was identified. Automatic capacity retrieval remains an unverified
+dependency, not an available integration.
+
+- [Catalog Items getCatalogItem](https://developer-docs.amazon.com/sp-api/reference/getcatalogitem) returns package
+  dimensions. Estimate volume from sellable-unit dimensions and quantities, not outer cartons. Missing dimensions
+  must remain unknown.
+- [getItemEligibilityPreview](https://developer-docs.amazon.com/sp-api/reference/getitemeligibilitypreview) checks
+  ASIN eligibility, but takes no shipment quantity and does not guarantee remaining space.
+- Inbound plan creation and its asynchronous operation result provide shipment-specific validation. Surface
+  capacity errors such as FBA_INB_0132 before placement or transport charge approval.
+- [Capacity Monitor](https://sellercentral.amazon.com/help/hub/reference/external/GAFNWEYTJUV2GBFC) remains the
+  source for limits and usage. A manually supplied figure needs a checked-at timestamp and an estimate label.
+  Passing a local comparison does not reserve capacity.
+
+If a supported capacity endpoint becomes available, refresh by seller, marketplace, storage type and period.
+Show freshness and estimated shipment volume versus available space. Revalidate before booking. Never silently
+reduce quantities, change physical packing, or accept charges to pass validation.

@@ -1,10 +1,12 @@
+import { combinePdfs } from "@repo/aisle/documents"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Database, type Transaction } from "@/db"
-import { documents, shipments } from "@/db/schema"
+import { documents, orders, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder, forwarderOrder } from "./access"
 import { requireAccess } from "./authorization"
+import { shipmentDocumentFilename } from "./document-filenames"
 import { errorTextResponse } from "./errors"
 import { releasedStates } from "./readiness"
 import { readFile } from "./storage"
@@ -43,7 +45,12 @@ async function canRead(s: Session, doc: typeof documents.$inferSelect, executor:
 
 // Authorization finishes before ownership of the storage stream passes to the response. A withdrawn document or
 // membership cancels the unread stream; private bytes never enter an error response or a shared cache.
-export async function downloadDocument(s: Session, rawId: string, executor: Executor = db()) {
+export async function downloadDocument(
+  s: Session,
+  rawId: string,
+  executor: Executor = db(),
+  bundle = false
+): Promise<Response> {
   const id = z.uuid().parse(rawId)
   const [doc] = await executor
     .select()
@@ -55,6 +62,67 @@ export async function downloadDocument(s: Session, rawId: string, executor: Exec
   await canRead(s, doc, executor)
   if (s.org.kind !== "buyer" && !(await labelsReleased(doc, executor))) {
     return errorTextResponse("labelsAwaitingRelease", 409)
+  }
+  if (bundle && doc.shipmentId && (doc.kind === "carton_label" || doc.kind === "shipping_label")) {
+    const selected = await executor
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.shipmentId, doc.shipmentId),
+          eq(documents.kind, doc.kind),
+          eq(documents.shipmentRevision, doc.shipmentRevision!),
+          eq(documents.outdated, 0)
+        )
+      )
+    selected.sort((a, b) => (a.cartonId ?? "").localeCompare(b.cartonId ?? "", undefined, { numeric: true }))
+    const files: Uint8Array[] = []
+    for (const item of selected) {
+      const response = await downloadDocument(s, item.id, executor)
+      if (!response.ok) {
+        return response
+      }
+      files.push(new Uint8Array(await response.arrayBuffer()))
+    }
+    const bytes = await combinePdfs(files)
+    const member = await requireMembership(s.user.id, s.org.id, executor)
+    const currentSession = { ...s, role: member.role, access: member.access }
+    // Recheck every source after assembling: revocation/replacement must never leak a stale combined packet.
+    for (const item of selected) {
+      await canRead(currentSession, item, executor)
+      const [current] = await executor
+        .select()
+        .from(documents)
+        .where(and(eq(documents.id, item.id), eq(documents.outdated, 0)))
+      if (!current || current.objectKey !== item.objectKey) {
+        return errorTextResponse("documentChanged", 409)
+      }
+      if (s.org.kind !== "buyer" && !(await labelsReleased(current, executor))) {
+        return errorTextResponse("labelsAwaitingRelease", 409)
+      }
+    }
+    const [shipment] = await executor.select().from(shipments).where(eq(shipments.id, doc.shipmentId))
+    if (!shipment || shipment.revision !== doc.shipmentRevision) {
+      return errorTextResponse("documentChanged", 409)
+    }
+    const [order] = await executor.select().from(orders).where(eq(orders.id, doc.orderId))
+    if (!order) {
+      return errorTextResponse("documentChanged", 409)
+    }
+    const filename = shipmentDocumentFilename(doc.kind, {
+      orderReference: order.data.reference,
+      shipmentReference: shipment.amazonShipmentId ?? shipment.id,
+      revision: shipment.revision
+    })
+    return new Response(Buffer.from(bytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "sandbox"
+      }
+    })
   }
   const file = await readFile(doc.objectKey)
   let transferred = false

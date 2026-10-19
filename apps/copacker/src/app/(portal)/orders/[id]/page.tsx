@@ -379,7 +379,9 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 {documentGroups.map((group) => (
                   <div key={group.key} className="flex flex-col gap-2">
                     {group.title && <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>}
-                    <DocumentList documents={group.documents} />
+                    <DocumentList
+                      documents={group.documents.map((doc) => ({ ...doc, shipmentId: group.shipmentId }))}
+                    />
                   </div>
                 ))}
               </CardContent>
@@ -392,6 +394,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
             timeZone={timeZone}
             entries={timeline}
             prices={prices}
+            counterparty={buyer ? "supplier" : "customer"}
           />
         </div>
 

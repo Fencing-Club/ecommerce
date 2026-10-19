@@ -280,7 +280,16 @@
       "label": "Commento",
       "placeholder": "Lascia un commento…",
       "post": "Pubblica",
-      "required": "Scrivi un commento"
+      "required": "Scrivi un commento",
+      "visibility": "Visibilità del commento",
+      "internal": "Commento interno",
+      "messageSupplier": "Messaggio al fornitore",
+      "messageCustomer": "Messaggio al cliente",
+      "internalHint": "Solo il tuo team può vedere questo commento.",
+      "supplierHint": "Il tuo team e il fornitore possono vedere questo messaggio.",
+      "customerHint": "Il tuo team e il cliente possono vedere questo messaggio.",
+      "sharedSupplier": "Condiviso con il fornitore",
+      "sharedCustomer": "Condiviso con il cliente"
     },
     "events": {
       "created": "Ordine di acquisto creato",
@@ -430,9 +439,13 @@
     "pickupAddress": "Indirizzo di ritiro",
     "otherAddress": "Altro indirizzo",
     "readyForPickup": "Pronto per il ritiro",
+    "shipFrom": "Indirizzo di ritiro",
+    "readyDate": "Pronto per il ritiro",
     "addCartonProduct": "Aggiungi prodotto al cartone",
     "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone",
-    "finishPacking": "Completa imballaggio"
+    "finishPacking": "Completa imballaggio",
+    "addNewAddress": "Aggiungi indirizzo",
+    "chooseAddress": "Indirizzo di ritiro"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -459,6 +472,7 @@
     "other": "Altro"
   },
   "cartonEditor": {
+    "addProducts": "Aggiungi prodotti al cartone",
     "addProductsTo": "Aggiungi prodotti al cartone {carton}",
     "shipmentProducts": "Prodotti di questa spedizione",
     "searchProducts": "Cerca prodotti in questa spedizione",
@@ -484,16 +498,14 @@
     "actions": "Azioni del cartone {carton}",
     "duplicate": "Duplica cartone",
     "delete": "Elimina cartone",
-    "quantityPerCarton": "Quantità / cartone",
-    "packsPerCarton": "Confezioni / cartone",
-    "unitsPerCarton": "Unità / cartone",
+    "quantityPerCarton": "Quantità",
     "productQuantity": "{sku}: quantità per cartone {carton}",
     "unitCount": "{count} unità",
     "removeProduct": "Rimuovi {sku} dal cartone {carton}",
     "product": "Prodotto",
     "leftToPack": "Da imballare",
     "packCount": "{count, plural, one {# confezione} other {# confezioni}}",
-    "addToCarton": "Aggiungi al cartone {carton}",
+    "addToCarton": "Aggiungi al cartone",
     "selectedCount": "{count} selezionati",
     "cartonGroup": "Cartoni {cartons}"
   },

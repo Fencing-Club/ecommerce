@@ -10,6 +10,5 @@ export const packingLabelOptions = [
   { value: "sku", label: "SKU label" },
   { value: "fnsku", label: "FNSKU label" },
   { value: "suffocation", label: "Suffocation warning" },
-  { value: "choking", label: "Choking hazard label" },
-  { value: "countryOfOrigin", label: "Country of origin label" }
+  { value: "choking", label: "Choking hazard label" }
 ] as const

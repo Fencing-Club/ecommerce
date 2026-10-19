@@ -89,10 +89,10 @@ export const ToWarehouse = meta.story({
     await expect(canvas.getByText("2 cartons")).toBeVisible()
     // Carton labels show once the buyer releases the shipment.
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
-    await expect(documents.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Download Commercial invoiceCommercial invoice PO-1042.pdf",
-      "Download Packing listPacking list.pdf",
-      "Download Carton label C1Carton labels.pdf"
+    await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
+      "Download Commercial invoice",
+      "Download Packing list",
+      "Download Carton label C1"
     ])
   }
 })

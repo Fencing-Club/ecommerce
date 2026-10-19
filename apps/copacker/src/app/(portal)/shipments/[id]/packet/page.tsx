@@ -1,11 +1,10 @@
-import { combinePdfs } from "@repo/aisle/documents"
 import { Download } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"
 import { ShippingDocumentPreview } from "@/components/shipping-document-preview"
 import { Button } from "@/components/ui/button"
 import { type DocumentSettings } from "@/documents/shipping-model"
-import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
+import { renderSupplierPacket } from "@/documents/supplier-packet"
 import type { shipmentPacketPage, shipmentPacketResult } from "@/server/shipment-packet"
 
 const labelNames = {
@@ -71,10 +70,6 @@ function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPac
   async function downloadPacket(settings: DocumentSettings) {
     await verify()
     const files: Uint8Array[] = []
-    for (const kind of ["packing", "checklist", "reference"] as const) {
-      const blob = await renderShippingDocument(<ShippingPdf data={page.data} kind={kind} settings={settings} />)
-      files.push(new Uint8Array(await blob.arrayBuffer()))
-    }
     for (const { section } of sections) {
       const response = await fetch(url(section), { cache: "no-store", redirect: "error" })
       if (!response.ok || !response.headers.get("Content-Type")?.includes("application/pdf")) {
@@ -82,7 +77,7 @@ function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPac
       }
       files.push(new Uint8Array(await response.arrayBuffer()))
     }
-    const bytes = await combinePdfs(files)
+    const bytes = await renderSupplierPacket(page.data, settings, files)
     await verify()
     const objectUrl = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/pdf" }))
     const anchor = document.createElement("a")

@@ -730,6 +730,25 @@ describe("recovering completed reports", () => {
   })
 })
 
+describe("Amazon token recovery", () => {
+  it.each([
+    ["invalid_grant", 400, "reconnect"],
+    ["unauthorized_client", 400, "reconnect"],
+    ["invalid_client", 401, "configuration"],
+    ["invalid_request", 400, "configuration"],
+    ["server_error", 503, undefined],
+    ["slow_down", 429, undefined]
+  ])("classifies %s without exposing the token response", async (code, status, recovery) => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ error: code, error_description: "private diagnostic" }, { status })
+    )
+    const api = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "secret" }, transport)
+    await expect(api.sellerAccount()).rejects.toMatchObject(recovery ? { recovery } : { status })
+    await expect(api.sellerAccount()).rejects.not.toThrow("private diagnostic")
+    expect(transport).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe("report throttling", () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())

@@ -101,7 +101,6 @@
       "amazon": "Commandes, stock, dépenses, expéditions",
       "ebay": "Commandes, dépenses"
     },
-    "comingSoon": "Bientôt disponible",
     "connect": "Connecter",
     "notConnected": "Non connecté",
     "connected": "Connecté",
@@ -153,6 +152,16 @@
         "unavailable": "Statut indisponible",
         "scheduled": "Synchronisation quotidienne activée"
       }
+    },
+    "health": {
+      "reconnect": "Reconnexion nécessaire",
+      "configuration": "Problème de configuration",
+      "unavailable": "Temporairement indisponible",
+      "reconnectHelp": "Amazon a refusé l’autorisation enregistrée. Reconnectez votre compte pour rétablir l’accès.",
+      "configurationHelp": "La configuration de l’application Amazon doit être vérifiée. Contactez l’assistance.",
+      "unavailableHelp": "Impossible de vérifier Amazon pour le moment. Votre connexion enregistrée est conservée.",
+      "reconnectAction": "Reconnecter Amazon",
+      "retry": "Réessayer"
     }
   },
   "excludedTags": {

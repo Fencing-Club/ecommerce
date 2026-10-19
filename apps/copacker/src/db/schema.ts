@@ -552,6 +552,8 @@ export const events = pgTable(
     // Who left a comment and their workspace, as named when they wrote it.
     author: text(),
     authorOrg: text(),
+    // Null means shared with the order's participants. Internal comments belong to a workspace, not a user.
+    internalOrgId: uuid().references(() => organizations.id),
     createdAt: createdAt()
   },
   (t) => [check("events_message", sql`${t.messageKey} IS NOT NULL OR ${t.message} IS NOT NULL`)]

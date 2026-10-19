@@ -239,7 +239,7 @@ export const PackingSupplier = meta.story({
     await expect(canvas.getByRole("heading", { name: /Shipment 1/ })).toBeVisible()
     const breadcrumb = canvas.getByRole("navigation", { name: "Breadcrumb" })
     await expect(within(breadcrumb).getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders")
-    await expect(canvas.getByText("Portland warehouse")).toBeVisible()
+    await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
     await expect(canvas.getAllByText("Packing").length).toBeGreaterThan(0)
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
@@ -364,7 +364,7 @@ export const ApprovalWithoutPrices = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Price per unit/)).toBeNull()
-    await expect(canvas.getByText(/Supplier SKU/)).toBeVisible()
+    await expect(canvas.getByText(/Supplier SKU LM-TOTE/)).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Approve changes" })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
     // Purchase orders aren't linked for someone who can't open them.
@@ -408,7 +408,7 @@ export const WaitingForLabels = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Labels")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Save transport" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Edit" })).toBeVisible()
     await expect(canvas.getByText("Upload the shipping label for carton C2")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Release labels to supplier" })).toBeNull()
     // The buyer's Amazon shipment opens in Seller Central.
@@ -453,7 +453,7 @@ export const WaitingForLabelsSupplier = meta.story({
     await expect(canvas.getByText("Amazon AWD US, 2 cartons, STAR-8KQ2M7-1")).toBeVisible()
     await expect(canvas.queryByRole("link", { name: /STAR-8KQ2M7-1/ })).toBeNull()
     // Labels reach the supplier once they're released.
-    await expect(canvas.queryByText("AGL labels.pdf")).toBeNull()
+    await expect(canvas.queryByRole("link", { name: "Download Shipping labels" })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
   }
 })
@@ -477,7 +477,10 @@ export const ReadySupplier = meta.story({
     await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute("href", packet)
     await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
-    await expect(canvas.getByText("AGL labels.pdf")).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Download Shipping labels" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("?bundle=true")
+    )
     await expect(canvas.getByText("Mei Chen")).toBeVisible()
     await expect(canvas.getByRole("link", { name: /\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))

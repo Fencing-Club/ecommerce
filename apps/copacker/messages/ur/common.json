@@ -67,7 +67,9 @@
     "checklist": "پیکنگ چیک لسٹ",
     "cartonLabel": "کارٹن لیبل",
     "shippingLabel": "شپنگ لیبل",
-    "productLabel": "پروڈکٹ لیبل"
+    "productLabel": "پروڈکٹ لیبل",
+    "cartonLabels": "کارٹن لیبل",
+    "shippingLabels": "شپنگ لیبل"
   },
   "format": {
     "plusAmounts": "مزید {amounts}",

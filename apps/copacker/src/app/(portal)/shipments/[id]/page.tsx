@@ -19,6 +19,7 @@ import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
+import { ShipmentAddress, ShipmentPackingDetails } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -65,6 +66,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const t = useTranslations("shipments.detail"),
     format = useFormatter(),
     locale = useLocale()
+  const packingText = useTranslations("orders.packing")
   const nextAction: Record<string, React.ReactNode> = {
     prepareAmazon: isBuyer && (
       <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
@@ -136,17 +138,92 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         {editsShipments ? nextAction[step.next.step] || null : null}
       </PageHeader>
 
-      {!editable && <ShipmentDestination {...delivery} />}
-      <ShipmentTransportSettings
-        key={JSON.stringify(shipment.transport)}
-        id={id}
-        revision={shipment.revision}
-        initial={shipment.transport}
-        hasForwarder={!!snapshot.via}
-        editable={
-          isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
-        }
-      />
+      {!editable && (
+        <ShipmentPackingDetails
+          route={[
+            supplier.name,
+            ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
+            destinationName
+          ]}
+          shipFrom={
+            <div className="space-y-3">
+              <ShipmentAddress
+                readOnly
+                label={packingText("shipFrom")}
+                name={origin?.name ?? supplier.name}
+                address={
+                  origin
+                    ? [
+                        origin.addressLine1,
+                        origin.addressLine2,
+                        origin.city,
+                        origin.stateOrRegion,
+                        origin.postalCode,
+                        origin.countryCode
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
+                    : ""
+                }
+                contact={
+                  origin && (
+                    <>
+                      {origin.phoneNumber && (
+                        <a className="block tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                          {formatPhone(origin.phoneNumber)}
+                        </a>
+                      )}
+                      {origin.email && <span>{origin.email}</span>}
+                    </>
+                  )
+                }
+              />
+              {shipment.packing && (
+                <CardDescription>
+                  {t("pickup.ready", {
+                    date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC"
+                    })
+                  })}
+                </CardDescription>
+              )}
+            </div>
+          }
+          shipTo={<ShipmentDestination {...delivery} compact readOnly />}
+          transport={
+            shipment.transport && (
+              <ShipmentTransportSettings
+                compact
+                key={JSON.stringify(shipment.transport)}
+                id={id}
+                revision={shipment.revision}
+                initial={shipment.transport}
+                hasForwarder={!!snapshot.via}
+                editable={
+                  isBuyer &&
+                  editsShipments &&
+                  canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+                }
+              />
+            )
+          }
+        />
+      )}
+      {(editable || !shipment.transport) && (
+        <ShipmentTransportSettings
+          key={JSON.stringify(shipment.transport)}
+          id={id}
+          revision={shipment.revision}
+          initial={shipment.transport}
+          hasForwarder={!!snapshot.via}
+          editable={
+            isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+          }
+        />
+      )}
       <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
       {shipment.status === "packed" && <p className="text-sm text-muted-foreground">{step.next.message}</p>}
       {shipment.issue && (
@@ -168,7 +245,14 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       {editable ? (
         <PackingForm
           shipmentName={title}
-          destination={<ShipmentDestination {...delivery} />}
+          shippingDetails={{
+            route: [
+              supplier.name,
+              ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
+              destinationName
+            ],
+            shipTo: <ShipmentDestination {...delivery} compact />
+          }}
           shipmentId={id}
           linkedAmazonShipmentId={
             isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
@@ -356,54 +440,18 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             ))}
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("pickup.title")}</CardTitle>
-                {shipment.packing && (
-                  <CardDescription>
-                    {t("pickup.ready", {
-                      date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        timeZone: "UTC"
-                      })
-                    })}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                {origin && (
-                  <address className="flex flex-col gap-0.5 text-sm text-muted-foreground not-italic">
-                    <span className="font-medium text-foreground">{origin.name}</span>
-                    <span>{[origin.addressLine1, origin.addressLine2].filter(Boolean).join(", ")}</span>
-                    <span>
-                      {origin.city}, {origin.stateOrRegion} {origin.postalCode}, {origin.countryCode}
-                    </span>
-                    {origin.phoneNumber && (
-                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
-                        {formatPhone(origin.phoneNumber)}
-                      </a>
-                    )}
-                    {origin.email && <span>{origin.email}</span>}
-                  </address>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("documents.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {visibleDocs.length ? (
-                  <DocumentList documents={visibleDocs} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("documents.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {visibleDocs.length ? (
+                <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+              ) : (
+                <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
+              )}
+            </CardContent>
+          </Card>
 
           {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
           {editsShipments &&

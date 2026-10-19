@@ -88,7 +88,8 @@ export function shippingDocumentSnapshot(input: {
       return {
         id: item.id,
         supplierSku: item.supplierSku,
-        description: [item.name, item.variant === "Default Title" ? "" : item.variant].filter(Boolean).join(" / "),
+        description: item.name,
+        variant: item.variant === "Default Title" ? undefined : item.variant,
         piecesPerPack: item.piecesPerSet,
         tasks: packingTasks(item.packingRequirements),
         countryCode: item.packingRequirements.countryCode || undefined
