@@ -93,6 +93,21 @@ it("withholds family totals for missing, ambiguous, conflicting and truncated ev
     expect(result.quantities).toBeNull()
   }
 })
+it("does not treat shared missing item identifiers as a resolved original match", () => {
+  for (const key of ["sku", "asin", "fnsku", "condition"] as const) {
+    for (const value of [null, ""]) {
+      const incompleteOriginal = { ...original, [key]: value }
+      const incompleteReversal = { ...reversal, [key]: value }
+      for (const row of [incompleteOriginal, incompleteReversal]) {
+        const result = reimbursementAccounting(row, [incompleteOriginal, incompleteReversal], false)
+        expect(result.originalLookup).toMatchObject({ status: "found", itemIdentity: "unresolved" })
+        expect(result.blockers).toContain("original_item_identity_unresolved")
+        expect(result.quantities).toBeNull()
+        expect(result.signedReportAmounts).toBeNull()
+      }
+    }
+  }
+})
 it("does not net different products sharing a reimbursement ID", () => {
   const result = reimbursementAccounting(
     reversal,

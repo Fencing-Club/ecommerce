@@ -20,7 +20,7 @@ export type ReimbursementRecord = {
 export function reimbursementAccounting(row: ReimbursementRecord, records: ReimbursementRecord[], truncated: boolean) {
   const rootId = row.originalId ?? row.id
   const sameItem = (other: ReimbursementRecord) =>
-    row.sku !== null &&
+    Boolean(row.sku && row.asin && row.fnsku && row.condition) &&
     row.sku === other.sku &&
     row.asin === other.asin &&
     row.fnsku === other.fnsku &&
