@@ -1,5 +1,11 @@
 import { z } from "zod"
-import { checkPostingTotal, postingAmount, postingEvidence, type ReconciliationPosting } from "./amazon-reconciliation"
+import {
+  checkPostingTotal,
+  formatPostingAmount,
+  postingAmount,
+  postingEvidence,
+  type ReconciliationPosting
+} from "./amazon-reconciliation"
 
 const nodes = z.array(z.record(z.string(), z.unknown()))
 export function amazonPostingDetail(posting: ReconciliationPosting) {
@@ -35,9 +41,7 @@ export function amazonPostingDetail(posting: ReconciliationPosting) {
       ) {
         walk(node.breakdowns, node.breakdownAmount, next, depth + 1)
       } else {
-        const digits = (money.integer < 0n ? -money.integer : money.integer).toString().padStart(money.scale + 1, "0")
-        const amount = money.scale ? `${digits.slice(0, -money.scale)}.${digits.slice(-money.scale)}` : digits
-        leaves.push({ path: next, amount: `${money.integer < 0n ? "-" : ""}${amount}`, currency: money.currency })
+        leaves.push({ path: next, amount: formatPostingAmount(money), currency: money.currency })
       }
     }
   }

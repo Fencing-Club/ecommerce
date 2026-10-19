@@ -365,7 +365,8 @@ it("filters postings, follows account-scoped release links outside the period an
     .values([
       row,
       { ...row, transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} },
-      { ...row, orgId: otherId, transactionId: "FOREIGN", data: {} }
+      { ...row, orgId: otherId, transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} },
+      { ...row, externalAccountId: "SELLER2", transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} }
     ])
   for (const kind of ["orders", "shipments"] as const) {
     await database.insert(tables.amazonRemovals).values({
@@ -388,6 +389,7 @@ it("filters postings, follows account-scoped release links outside the period an
   })
   expect(result.postings.map((r) => r.transactionId)).toEqual(["CURRENT"])
   expect(result.linkedPostings?.map((r) => r.transactionId)).toEqual(["EARLIER"])
+  expect(result.missingLinkedTransactionIds).toEqual([])
   expect(result.reportComparison).toMatchObject({
     reconciled: false,
     additionalRecognizedAmount: null,

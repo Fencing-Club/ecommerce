@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -13,7 +14,7 @@ import { analyticsJob, queueShopifyEconomics } from "../src/server/analytics-job
 vi.mock("../src/server/connections", () => ({ shopifyFor: async () => ({ graphql: context.graphql }) }))
 import { economicsQueries } from "@repo/aisle/shopify-economics"
 import { importAnalyticsCosts, getCostImport, previewAnalyticsCosts } from "../src/server/analytics-cost-imports"
-import { listIngestionEvidence } from "../src/server/analytics-ingestion"
+import { ingestionStatus, listIngestionEvidence } from "../src/server/analytics-ingestion"
 import { syncShopifyEconomics } from "../src/server/shopify-economics"
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables }),
@@ -45,6 +46,32 @@ const expense = {
   evidence: "Carrier invoice",
   attribution: { kind: "shared", reason: "No order reference" }
 }
+it("reports missing cost basis as unknown while excluding retired and foreign inputs", async () => {
+  for (const [workspace, retiredAt, sourceKey] of [
+    [orgId, null, "active"],
+    [orgId, "2026-01-02", "retired"],
+    [otherId, null, "foreign"]
+  ] as const) {
+    await database.execute(sql`
+      insert into inventory_basis_records
+        ("orgId", kind, "shopifyDomain", "variantId", "occurredAt", "sourceKey", quantity, "piecesPerUnit", data, request, "createdBy", "retiredAt")
+      values (${workspace}, 'purchase', 'shop', 'variant', '2026-01-01', ${sourceKey}, 1, 1, '{}', '{}', 'test', ${retiredAt})
+    `)
+    await database.execute(sql`
+      insert into inventory_landed_charges
+        (id, "orgId", "sourceKey", "occurredAt", data, allocations, "createdBy", "retiredAt")
+      values (${randomUUID()}, ${workspace}, ${sourceKey}, '2026-01-01', '{}', '[]', 'test', ${retiredAt})
+    `)
+  }
+  const status = await ingestionStatus(orgId)
+  expect(status.accountingInputs.counts).toEqual(
+    expect.arrayContaining([
+      { input: "purchase", basis: "unknown", count: 1 },
+      { input: "landed_charges", basis: "unknown", count: 1 }
+    ])
+  )
+  expect(status.accountingInputs.coverage).toBe("not_assessed")
+})
 it("imports atomically, replays safely and rejects other workspaces", async () => {
   const key = randomUUID(),
     id = randomUUID(),

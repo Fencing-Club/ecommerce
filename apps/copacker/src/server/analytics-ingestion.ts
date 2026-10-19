@@ -74,10 +74,10 @@ export async function ingestionStatus(orgId: string) {
       .from(connections)
       .where(eq(connections.orgId, orgId)),
     db().execute(sql`
-      select kind as input, data->>'costBasis' as basis, count(*)::int as count
-        from inventory_basis_records where "orgId"=${orgId} and "retiredAt" is null group by kind, data->>'costBasis'
-      union all select 'landed_charges', data->>'costBasis', count(*)::int
-        from inventory_landed_charges where "orgId"=${orgId} and "retiredAt" is null group by data->>'costBasis'
+      select kind as input, coalesce(data->>'costBasis', 'unknown') as basis, count(*)::int as count
+        from inventory_basis_records where "orgId"=${orgId} and "retiredAt" is null group by 1, 2
+      union all select 'landed_charges', coalesce(data->>'costBasis', 'unknown'), count(*)::int
+        from inventory_landed_charges where "orgId"=${orgId} and "retiredAt" is null group by 2
       union all select 'product_mappings', 'dated', count(*)::int
         from amazon_product_mappings where "orgId"=${orgId} and "retiredAt" is null
       union all select 'unit_mappings', 'dated', count(*)::int

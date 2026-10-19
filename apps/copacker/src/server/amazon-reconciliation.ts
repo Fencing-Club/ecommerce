@@ -71,6 +71,14 @@ export function postingAmount(value: unknown) {
   const currency = text(raw?.currencyCode)
   return number && currency ? { ...number, currency } : null
 }
+export function formatPostingAmount(value: NonNullable<ReturnType<typeof postingAmount>>) {
+  const digits = (value.integer < 0n ? -value.integer : value.integer).toString().padStart(value.scale + 1, "0")
+  const sign = value.integer < 0n ? "-" : ""
+  if (!value.scale) {
+    return sign + digits
+  }
+  return `${sign}${digits.slice(0, -value.scale)}.${digits.slice(-value.scale)}`
+}
 export function checkPostingTotal(totalValue: unknown, parts: unknown[]) {
   const total = postingAmount(totalValue)
   const amounts = parts.map(postingAmount)
