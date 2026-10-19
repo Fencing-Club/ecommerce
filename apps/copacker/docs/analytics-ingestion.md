@@ -69,3 +69,19 @@ Date-only records retain day precision; numeric day/month order and timestamps w
 Explicit unavailable monetary placeholders stay null, while decimal amounts remain exact signed strings. Invalid
 dates and malformed amounts still reject the complete file. Diagnostics retain a masked date format (letters and
 digits replaced), never the source date, order, customer text or monetary values. Live revalidation is required.
+
+## Cost-basis input inventory
+
+`GET /api/analytics/ingestion-status` includes workspace-scoped active accounting-input counts by record kind and
+actual/estimated/missing cost basis, plus dated product and unit mapping counts. Missing categories mean not recorded.
+These counts do not assess historical period coverage or establish complete profit; retired records are excluded.
+No provider fetch, backfill or accounting write is triggered by this read.
+
+Receipt evidence responses include `receiptQuantities`: expected/sent and received amounts in their original units,
+shortfalls/overages only for comparable units, and explicit missing/duplicate-SKU/unit-mismatch states. Current exact-SKU
+Shopify candidates help identify products but never establish historical identity. Case counts remain cases; physical
+piece quantity, receipt date and cost basis remain unknown. These snapshots do not confirm acquisition or claim eligibility.
+
+Receipt `reviewState` distinguishes inactive (cancelled/deleted), not-final, closed-quantity-review and unknown-status
+shipments. Raw differences remain visible for audit but only closed shipments become quantity-review candidates;
+closed status still does not prove loss, completed receiving, or reimbursement eligibility.

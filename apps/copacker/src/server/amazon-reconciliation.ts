@@ -137,7 +137,7 @@ export function reconcileAmazonEvidence(
   postings: ReconciliationPosting[]
 ) {
   const products = [...new Map(inventory.map((product) => [JSON.stringify(product), product])).values()]
-  const financial = postings.map(postingEvidence)
+  const financial = postings.map((posting) => ({ ...postingEvidence(posting), total: posting.data.totalAmount }))
   return rows.map((row) => {
     const candidates = financial
       .flatMap((posting) => {
@@ -161,10 +161,11 @@ export function reconcileAmazonEvidence(
         }
         return [
           {
-            ...posting,
+            ...postingEvidenceFields(posting),
             basis: orderReference ? "order_reference" : "product_only",
             itemIndexes: matchedItems.map((item) => item.itemIndex),
-            currencyMatches: row.currency ? row.currency === posting.currency : null
+            currencyMatches: row.currency ? row.currency === posting.currency : null,
+            checks: reconciliationChecks(row, posting, orderReference, matchedItems.length)
           }
         ]
       })
@@ -187,4 +188,51 @@ export function reconcileAmazonEvidence(
       }
     }
   })
+}
+
+function postingEvidenceFields(posting: ReturnType<typeof postingEvidence> & { total: unknown }) {
+  const { total: _total, ...fields } = posting
+  return fields
+}
+
+function reconciliationChecks(
+  row: AmazonEvidence,
+  posting: ReturnType<typeof postingEvidence> & { total: unknown },
+  hasOrderReference: boolean,
+  itemCount: number
+) {
+  const blockers: string[] = []
+  if (!hasOrderReference) {
+    blockers.push("no_order_reference")
+  }
+  if (!itemCount) {
+    blockers.push("no_item_identity")
+  }
+  if (!posting.marketplaceId) {
+    blockers.push("marketplace_missing")
+  }
+  if (posting.status !== "RELEASED") {
+    blockers.push("not_released")
+  }
+  if (posting.hasReleaseLink) {
+    blockers.push("deferred_release_requires_review")
+  }
+  if (posting.type !== preferredPostingType(row.source)) {
+    blockers.push("posting_type_requires_review")
+  }
+  if (!row.currency) {
+    blockers.push("source_currency_missing")
+  } else if (row.currency !== posting.currency) {
+    blockers.push("currency_mismatch")
+  }
+  if (posting.totals.breakdowns !== "balanced" || posting.totals.items !== "balanced") {
+    blockers.push("posting_totals_unresolved")
+  }
+  const totalComparison =
+    row.amount && row.currency
+      ? checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }])
+      : "unavailable"
+  // Even equality compares different granularities. It never certifies an allocation or reversal.
+  blockers.push("source_to_posting_allocation_required", "reversal_review_required")
+  return { blockers, signedSourceToTransactionTotal: totalComparison, additionalRecognizedAmount: null }
 }

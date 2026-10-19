@@ -1,9 +1,10 @@
-import { and, eq, isNull, lt, gt, or, sql } from "drizzle-orm"
+import { and, eq, isNull, lt, gt, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonProductMappings, connections } from "@/db/schema"
 import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsSnapshot } from "./analytics-snapshot"
+import { hasInventoryProduct } from "./inventory-product"
 
 const id = z.string().trim().min(1).max(512)
 export const productMappingInput = z
@@ -105,10 +106,7 @@ export async function saveAmazonProductMapping(
       eq(amazonProductMappings.externalAccountId, account.externalId),
       eq(amazonProductMappings.marketplaceId, fbaReportMarketplace)
     )
-    const target =
-      await tx.execute(sql`select 1 from variant_fields where "orgId"=${orgId} and "shopifyDomain"=${input.shopifyDomain} and "variantId"=${input.variantId}
-      union all select 1 from stock_snapshots s where s."orgId"=${orgId} and s.source='shopify' and s."externalAccountId"=${input.shopifyDomain} and exists(select 1 from jsonb_array_elements(case when jsonb_typeof(s.data->'rows')='array' then s.data->'rows' else '[]'::jsonb end) r where r->>'variantId'=${input.variantId}) limit 1`)
-    if (!target.rows.length) {
+    if (!(await hasInventoryProduct(tx, orgId, input.shopifyDomain, input.variantId))) {
       return { ok: false as const, reason: "target_not_in_workspace" }
     }
     if (input.supersedes) {

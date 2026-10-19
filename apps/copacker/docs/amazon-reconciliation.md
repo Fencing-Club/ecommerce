@@ -71,3 +71,16 @@ The analytics data-readiness criteria remain open. Historical COGS, opening inve
 remain separate P0 dependencies.
 
 Reference: [Amazon Finances model](https://github.com/amzn/selling-partner-api-models/blob/main/models/finances-api-model/finances_2024-06-19.json).
+
+## Candidate diagnostics
+
+Each financial candidate includes `checks.blockers`: missing order/item identity, missing marketplace, unreleased
+status, deferred/release links, unexpected posting type, currency gaps and unbalanced totals. The signed source amount
+is compared to the whole transaction using exact decimal arithmetic (`signedSourceToTransactionTotal`). Equality is
+only a diagnostic: report rows and transaction totals can have different granularity. Amounts are never compared by
+absolute value. Source allocation and reversal review remain mandatory even when all other checks pass.
+`additionalRecognizedAmount` stays null; these diagnostics never add report amounts to postings or certify a recovery.
+
+`currentCatalogProduct` supplies exact, case-sensitive SKU candidates from the connected Shopify account's saved stock
+snapshot, with observation time and snapshot status. Multiple targets remain ambiguous. These observations neither
+create nor confirm a dated mapping and never establish a cost or historical pack conversion.

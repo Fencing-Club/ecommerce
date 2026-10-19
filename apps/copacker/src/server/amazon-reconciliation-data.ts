@@ -6,6 +6,7 @@ import { historicalProductMatch } from "./amazon-product-mappings"
 import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconciliation"
 import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsPagination } from "./analytics-contract"
+import { importedProductCatalog, importedProductMatch } from "./analytics-product-evidence"
 import { analyticsSnapshot } from "./analytics-snapshot"
 
 export const reconciliationInput = z
@@ -72,6 +73,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         sql`select * from (${sources[input.source]}) evidence where "occurredAt">=${`${input.from}T00:00:00Z`}::timestamptz and "occurredAt"<${`${input.to}T00:00:00Z`}::timestamptz order by "occurredAt" desc,id limit ${pageSize + 1} offset ${input.page * pageSize}`
       )
       const rows = z.array(evidence).parse(result.rows)
+      const catalogs = await importedProductCatalog(tx, orgId)
       const pageRows = rows.slice(0, pageSize)
       const identifiers = (key: "orderId" | "sku" | "asin") => [
         ...new Set(pageRows.map((row) => row[key]).filter((value) => value !== null))
@@ -168,7 +170,11 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
           inventory?.rows.map((row) => ({ sku: row.sellerSku, asin: row.asin ?? null, fnsku: row.fnSku ?? null })) ??
             [],
           postings.slice(0, postingLimit)
-        ).map((row) => ({ ...row, historicalProduct: historicalProductMatch(row, mappings) })),
+        ).map((row) => ({
+          ...row,
+          historicalProduct: historicalProductMatch(row, mappings),
+          currentCatalogProduct: importedProductMatch(row.sku, catalogs)
+        })),
         coverage: {
           reports: coverage.rows,
           finances: sync ?? null,
