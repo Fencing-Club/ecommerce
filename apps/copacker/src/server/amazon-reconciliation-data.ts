@@ -11,6 +11,7 @@ import {
 } from "@/db/schema"
 import { historicalProductMatch } from "./amazon-product-mappings"
 import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconciliation"
+import { reimbursementAccounting } from "./amazon-reimbursement-accounting"
 import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog, importedProductMatch } from "./analytics-product-evidence"
@@ -99,36 +100,14 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
       const originalIds = pageRows.flatMap((row) =>
         row.reimbursement?.originalId ? [row.reimbursement.originalId] : []
       )
-      const relatedReimbursements = reimbursementIds.length
-        ? await tx
-            .select({
-              id: amazonReimbursements.reimbursementId,
-              originalId: amazonReimbursements.originalReimbursementId,
-              originalType: amazonReimbursements.originalReimbursementType,
-              approvedAt: amazonReimbursements.approvedAt,
-              sku: amazonReimbursements.sku,
-              reason: amazonReimbursements.reason,
-              currency: amazonReimbursements.currency,
-              amount: amazonReimbursements.amountTotal,
-              quantityCash: amazonReimbursements.quantityCash,
-              quantityInventory: amazonReimbursements.quantityInventory,
-              quantityTotal: amazonReimbursements.quantityTotal
-            })
-            .from(amazonReimbursements)
-            .where(
-              and(
-                eq(amazonReimbursements.orgId, orgId),
-                eq(amazonReimbursements.externalAccountId, externalAccountId),
-                eq(amazonReimbursements.marketplaceId, marketplaceId),
-                or(
-                  originalIds.length ? inArray(amazonReimbursements.reimbursementId, originalIds) : undefined,
-                  inArray(amazonReimbursements.originalReimbursementId, reimbursementIds)
-                )
-              )
-            )
-            .orderBy(amazonReimbursements.approvedAt, amazonReimbursements.id)
-            .limit(1001)
-        : []
+      const relatedReimbursements = await reimbursementFamily(
+        tx,
+        orgId,
+        externalAccountId,
+        marketplaceId,
+        [...reimbursementIds, ...originalIds],
+        pageRows.filter((row) => row.reimbursement).map((row) => row.id)
+      )
       const identifiers = (key: "orderId" | "sku" | "asin") => [
         ...new Set(pageRows.map((row) => row[key]).filter((value) => value !== null))
       ]
@@ -218,8 +197,8 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         marketplaceId,
         window: { from: input.from, to: input.to },
         source: input.source,
-        relatedReimbursements: relatedReimbursements.slice(0, 1000),
-        relatedReimbursementsTruncated: relatedReimbursements.length > 1000,
+        relatedReimbursements: relatedReimbursements.rows,
+        relatedReimbursementsTruncated: relatedReimbursements.truncated,
         page: input.page,
         hasMore: rows.length > pageSize,
         rows: reconcileAmazonEvidence(
@@ -231,6 +210,12 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         ).map((row) => ({
           ...row,
           reimbursement: pageRows.find((source) => source.id === row.id)?.reimbursement ?? null,
+          reimbursementAccounting: (() => {
+            const source = relatedReimbursements.rows.find((record) => record.sourceRowId === row.id)
+            return source
+              ? reimbursementAccounting(source, relatedReimbursements.rows, relatedReimbursements.truncated)
+              : null
+          })(),
           historicalProduct: historicalProductMatch(row, mappings),
           currentCatalogProduct: importedProductMatch(row.sku, catalogs)
         })),
@@ -262,4 +247,82 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   )
+}
+
+async function reimbursementFamily(
+  tx: Pick<ReturnType<typeof db>, "select">,
+  orgId: string,
+  externalAccountId: string,
+  marketplaceId: string,
+  seed: string[],
+  pageSourceRowIds: string[]
+) {
+  const select = {
+    sourceRowId: amazonReimbursements.id,
+    id: amazonReimbursements.reimbursementId,
+    originalId: amazonReimbursements.originalReimbursementId,
+    originalType: amazonReimbursements.originalReimbursementType,
+    approvedAt: amazonReimbursements.approvedAt,
+    sku: amazonReimbursements.sku,
+    asin: amazonReimbursements.asin,
+    fnsku: amazonReimbursements.fnsku,
+    condition: amazonReimbursements.condition,
+    reason: amazonReimbursements.reason,
+    currency: amazonReimbursements.currency,
+    amount: amazonReimbursements.amountTotal,
+    quantityCash: amazonReimbursements.quantityCash,
+    quantityInventory: amazonReimbursements.quantityInventory,
+    quantityTotal: amazonReimbursements.quantityTotal
+  }
+  const query = (ids: string[]) =>
+    tx
+      .select(select)
+      .from(amazonReimbursements)
+      .where(
+        and(
+          eq(amazonReimbursements.orgId, orgId),
+          eq(amazonReimbursements.externalAccountId, externalAccountId),
+          eq(amazonReimbursements.marketplaceId, marketplaceId),
+          or(
+            inArray(amazonReimbursements.reimbursementId, ids),
+            inArray(amazonReimbursements.originalReimbursementId, ids)
+          )
+        )
+      )
+      .orderBy(amazonReimbursements.approvedAt, amazonReimbursements.id)
+      .limit(1001)
+  const records = new Map<string, Awaited<ReturnType<typeof query>>[number]>()
+  // Keep the current page first so the cap cannot remove its explicit accounting diagnostics.
+  if (pageSourceRowIds.length) {
+    const own = await tx
+      .select(select)
+      .from(amazonReimbursements)
+      .where(
+        and(
+          eq(amazonReimbursements.orgId, orgId),
+          eq(amazonReimbursements.externalAccountId, externalAccountId),
+          eq(amazonReimbursements.marketplaceId, marketplaceId),
+          inArray(amazonReimbursements.id, pageSourceRowIds)
+        )
+      )
+    for (const row of own) {
+      records.set(row.sourceRowId, row)
+    }
+  }
+  const visited = new Set<string>()
+  let pending = [...new Set(seed)]
+  for (let depth = 0; depth < 8 && pending.length; depth++) {
+    const rows = await query(pending)
+    pending.forEach((id) => visited.add(id))
+    for (const row of rows) {
+      records.set(row.sourceRowId, row)
+    }
+    if (rows.length > 1000 || records.size > 1000) {
+      return { rows: [...records.values()].slice(0, 1000), truncated: true }
+    }
+    pending = [...new Set(rows.flatMap((row) => [row.id, ...(row.originalId ? [row.originalId] : [])]))].filter(
+      (id) => !visited.has(id)
+    )
+  }
+  return { rows: [...records.values()], truncated: pending.length > 0 }
 }

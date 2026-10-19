@@ -1,11 +1,20 @@
-import { and, eq, isNull, sql } from "drizzle-orm"
+import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { analyticsEvidence, analyticsFeeds, operatingCosts, connections, organizations } from "@/db/schema"
+import {
+  analyticsEvidence,
+  analyticsFeeds,
+  operatingCosts,
+  connections,
+  organizations,
+  shopifyBalanceTransactions
+} from "@/db/schema"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
 import { analyticsSnapshot } from "./analytics-snapshot"
 import { receiptQuantities } from "./receipt-quantities"
+import { shopifyBalanceComparison } from "./shopify-balance-comparison"
+import { reconcileShopifyPayments } from "./shopify-payment-reconciliation"
 import { normalizeTags, taggedWith } from "./shopify-tags"
 export const ingestionQuery = z.strictObject({
   ...analyticsPagination,
@@ -54,10 +63,39 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
         input.source === "amazon" && ["fba_inbound_receipts", "awd_inbound_receipts"].includes(input.dataset)
           ? await importedProductCatalog(tx, orgId)
           : []
+      const orderIds =
+        input.source === "shopify" && input.dataset === "order_economics"
+          ? rows.slice(0, 100).map((row) => row.sourceId)
+          : []
+      const balances = orderIds.length
+        ? await tx
+            .select()
+            .from(shopifyBalanceTransactions)
+            .where(
+              and(
+                eq(shopifyBalanceTransactions.orgId, orgId),
+                eq(shopifyBalanceTransactions.externalAccountId, input.externalAccountId),
+                inArray(shopifyBalanceTransactions.orderId, orderIds)
+              )
+            )
+            .orderBy(shopifyBalanceTransactions.transactionId)
+            .limit(5001)
+        : []
       return {
-        rows: rows
-          .slice(0, 100)
-          .map((row) => ({ ...row, receiptQuantities: receiptQuantities(input.dataset, row.data, catalogs) })),
+        rows: rows.slice(0, 100).map((row) => ({
+          ...row,
+          receiptQuantities: receiptQuantities(input.dataset, row.data, catalogs),
+          paymentReconciliation:
+            input.source === "shopify" && input.dataset === "order_economics"
+              ? {
+                  ...reconcileShopifyPayments(row.data),
+                  balanceComparison: shopifyBalanceComparison(
+                    balances.slice(0, 5000).filter((balance) => balance.orderId === row.sourceId),
+                    balances.length > 5000
+                  )
+                }
+              : null
+        })),
         snapshot,
         nextPage: rows.length > 100 ? input.page + 1 : null,
         basis: "source_evidence_not_additional_postings"

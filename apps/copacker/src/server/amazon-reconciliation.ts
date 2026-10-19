@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { exactMoney } from "@/lib/financial-money"
 
 const object = z.record(z.string(), z.unknown())
 const objects = (value: unknown) => z.array(object).safeParse(value).data ?? []
@@ -53,31 +54,9 @@ function productMatch(row: AmazonEvidence, products: Product[]) {
   return { status, candidates: selected.slice(0, 20), candidateCount: selected.length }
 }
 
-// Decimal comparison never rounds evidence into cents. JSON numbers have already lost any original lexical precision.
-function decimal(value: unknown) {
-  if (typeof value === "number" && Math.abs(value) > Number.MAX_SAFE_INTEGER) {
-    return null
-  }
-  const raw = typeof value === "number" && Number.isFinite(value) ? String(value) : value
-  if (typeof raw !== "string" || raw.length > 100 || !/^-?\d+(\.\d+)?$/.test(raw)) {
-    return null
-  }
-  const [whole, fraction = ""] = raw.split(".")
-  return { integer: BigInt(`${whole}${fraction}`), scale: fraction.length }
-}
 export function postingAmount(value: unknown) {
   const raw = object.safeParse(value).data
-  const number = decimal(raw?.currencyAmount)
-  const currency = text(raw?.currencyCode)
-  return number && currency ? { ...number, currency } : null
-}
-export function formatPostingAmount(value: NonNullable<ReturnType<typeof postingAmount>>) {
-  const digits = (value.integer < 0n ? -value.integer : value.integer).toString().padStart(value.scale + 1, "0")
-  const sign = value.integer < 0n ? "-" : ""
-  if (!value.scale) {
-    return sign + digits
-  }
-  return `${sign}${digits.slice(0, -value.scale)}.${digits.slice(-value.scale)}`
+  return exactMoney(raw?.currencyAmount, raw?.currencyCode)
 }
 export function checkPostingTotal(totalValue: unknown, parts: unknown[]) {
   const total = postingAmount(totalValue)
@@ -95,14 +74,17 @@ export function checkPostingTotal(totalValue: unknown, parts: unknown[]) {
     ? "balanced"
     : "amount_mismatch"
 }
-export function postingEvidence(posting: ReconciliationPosting) {
-  const items = objects(posting.data.items)
-  const breakdowns = objects(posting.data.breakdowns)
-  const references = objects(posting.data.relatedIdentifiers).flatMap((ref) => {
+export function postingReferences(data: Record<string, unknown>) {
+  return objects(data.relatedIdentifiers).flatMap((ref) => {
     const name = text(ref.relatedIdentifierName),
       value = text(ref.relatedIdentifierValue)
     return name && value ? [{ name, value }] : []
   })
+}
+export function postingEvidence(posting: ReconciliationPosting) {
+  const items = objects(posting.data.items)
+  const breakdowns = objects(posting.data.breakdowns)
+  const references = postingReferences(posting.data)
   const products = items.flatMap((item, index) =>
     objects(item.contexts).flatMap((context) => {
       if (context.contextType !== "ProductContext") {
