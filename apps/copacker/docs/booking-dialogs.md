@@ -37,7 +37,6 @@ radios. Their copy is in the `booking` message namespace.
 
 - Settle the open product question: `src/server/fba-shipments.ts` books with the buyer's own carrier by default, while
   the design leads with Amazon's quotes.
-- Then replace the earlier booking stories: `WaitingForLabels`, `Release` and `WaitingForLabelsSupplier` in
-  `src/app/(portal)/shipments/[id]/page.stories.tsx`, `Release` and `ReconcileFba` in
-  `src/components/shipment-actions.stories.tsx`, and the `Workflows/Shipments/FBA booking` prototype in
-  `src/stories/fba-booking.tsx`.
+- Then replace the stories of the live booking flow: `WaitingForLabels`, `Release` and `WaitingForLabelsSupplier` in
+  `src/app/(portal)/shipments/[id]/page.stories.tsx`, and `Release` and `ReconcileFba` in
+  `src/components/shipment-actions.stories.tsx`.
