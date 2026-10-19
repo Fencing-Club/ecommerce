@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Separator } from "./separator"
 
 const meta = preview.meta({
+  title: "Foundations/Separator",
   component: Separator,
   render: () => (
     <div className="max-w-sm text-sm">

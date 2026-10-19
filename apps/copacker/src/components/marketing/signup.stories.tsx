@@ -8,6 +8,7 @@ const received = fn()
 
 // The waitlist as the home page closes on it: on the orange stage.
 const meta = preview.meta({
+  title: "Components/Marketing/Signup",
   component: Signup,
   parameters: { layout: "fullscreen" },
   decorators: [

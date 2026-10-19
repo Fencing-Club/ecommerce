@@ -6,6 +6,7 @@ import { held, recordActions } from "@/stories/fixtures/shared"
 import { TimelineComment } from "./timeline-comment"
 
 const meta = preview.meta({
+  title: "Components/Display/Timeline comment",
   component: TimelineComment,
   args: { orderId: "order-1045" }
 })

@@ -19,6 +19,7 @@ function catchPost(form: HTMLFormElement) {
 }
 
 const meta = preview.meta({
+  title: "Components/Marketing/Unsubscribe",
   component: Unsubscribe,
   args: { email, token, state: "confirm" as const },
   parameters: { layout: "fullscreen" }

@@ -79,7 +79,12 @@ function Gallery({
   )
 }
 
-const meta = preview.meta({ component: ToastProvider, args: { children: null }, render: () => <Gallery /> })
+const meta = preview.meta({
+  title: "Components/Display/Toast provider",
+  component: ToastProvider,
+  args: { children: null },
+  render: () => <Gallery />
+})
 
 export const Saved = meta.story({
   render: () => <Gallery single />,

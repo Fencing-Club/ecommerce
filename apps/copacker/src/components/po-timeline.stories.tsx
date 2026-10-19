@@ -9,6 +9,7 @@ import { PoTimeline } from "./po-timeline"
 const actions = fn()
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/PO timeline",
   ...serverStory((props: ComponentProps<typeof PoTimeline>) => <PoTimeline {...props} />),
   args: {
     orderId,

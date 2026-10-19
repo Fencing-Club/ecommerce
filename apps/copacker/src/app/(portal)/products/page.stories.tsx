@@ -47,7 +47,7 @@ function syncStatus(refresh: { status: string; errorCode: string | null }, obser
 const synced = syncStatus({ status: "idle", errorCode: null }, daysAgo(0).toISOString())
 
 const meta = preview.meta({
-  title: "Pages/Shared/Products",
+  title: "Pages/Products/List",
   // Each story renders its workspace's page, whose loaders and portal come with it.
   render: buyer.render,
   args: {

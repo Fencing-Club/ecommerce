@@ -43,6 +43,7 @@ function OrdersTable({ onRemind }: { onRemind: () => void }) {
 }
 
 const meta = preview.meta({
+  title: "Components/App shell/Link row",
   component: OrdersTable,
   args: { onRemind: fn() }
 })

@@ -8,6 +8,7 @@ const writeText = fn(async (_text: string) => undefined)
 
 // The agents' setups and the CLI, on the dark stage the home page sets them on.
 const meta = preview.meta({
+  title: "Components/Marketing/Connect",
   component: Connect,
   parameters: { layout: "fullscreen" },
   decorators: [

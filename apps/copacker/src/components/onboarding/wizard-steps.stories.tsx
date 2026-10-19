@@ -68,6 +68,7 @@ function Step({
 const about: React.ComponentProps<typeof Step> = { step: "about", kind: "", onSubmit: fn() }
 
 const meta = preview.meta({
+  title: "Components/Onboarding/Wizard steps",
   component: Step,
   args: about
 })

@@ -14,6 +14,7 @@ const orderId = "5e9b2d71-4b3e-4f5a-8c6d-000000000001"
 const proposalId = "0c3e7b52-4b3e-4f5a-8c6d-000000000001"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Proposal panel",
   component: ProposalPanel,
   args: {
     proposal: { id: proposalId, status: "pending", note: "Cotton costs went down.\nBaskets are back.", reason: null },

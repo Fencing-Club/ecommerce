@@ -39,6 +39,7 @@ function PasswordForm({
 }
 
 const meta = preview.meta({
+  title: "Components/Auth/Password field",
   component: PasswordForm,
   args: { onSubmit: fn() }
 })

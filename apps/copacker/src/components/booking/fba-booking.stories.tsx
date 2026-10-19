@@ -8,6 +8,7 @@ import { fba } from "./fixtures"
 // dialog height AGL's booking keeps. Each story is a booking from the fixtures and the step it opens on, in a dialog
 // held open as the shipment page holds it.
 const meta = preview.meta({
+  title: "Unused/Booking/FBA booking",
   component: FbaBookingDialog,
   args: {
     booking: fba.choose,

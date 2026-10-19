@@ -8,6 +8,7 @@ import { agl, chestProtectors, templateIssues } from "./fixtures"
 // dialog height. Each story is a booking from the fixtures and the step it opens on, in a dialog held open as the
 // shipment page holds it.
 const meta = preview.meta({
+  title: "Unused/Booking/AGL booking",
   component: AglBookingDialog,
   args: {
     booking: agl.start,

@@ -33,6 +33,7 @@ function boxes(canvasElement: HTMLElement) {
 }
 
 const meta = preview.meta({
+  title: "Components/Auth/Code field",
   component: CodeForm,
   args: { onComplete: fn(), onSubmit: fn() }
 })

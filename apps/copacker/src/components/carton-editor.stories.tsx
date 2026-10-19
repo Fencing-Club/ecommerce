@@ -38,6 +38,7 @@ const value = {
   ]
 }
 const meta = preview.meta({
+  title: "Components/Shipments/Carton editor",
   component: Controlled,
   args: { value: prototype, products, onChange: fn(), onDelete: fn(), onDuplicate: fn() }
 })

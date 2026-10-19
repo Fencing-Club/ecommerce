@@ -7,6 +7,7 @@ import { OptionList } from "./option-list"
 const Options = controlled(OptionList)
 
 const meta = preview.meta({
+  title: "Unused/Booking/Option list",
   component: Options,
   args: {
     "aria-label": "Choose how to ship",

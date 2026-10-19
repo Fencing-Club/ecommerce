@@ -8,6 +8,7 @@ import { Landing } from "./landing"
 const joined = fn()
 
 const meta = preview.meta({
+  title: "Components/Marketing/Landing",
   component: Landing,
   parameters: { layout: "fullscreen" },
   beforeEach: ({ msw }) => {

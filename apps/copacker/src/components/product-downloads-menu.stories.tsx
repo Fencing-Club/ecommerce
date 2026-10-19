@@ -2,6 +2,7 @@ import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ProductDownloadsMenu } from "./product-downloads-menu"
 const meta = preview.meta({
+  title: "Unused/Products/Product downloads menu",
   component: ProductDownloadsMenu,
   args: {
     items: [

@@ -5,7 +5,7 @@ import PortalNotFound from "./not-found"
 
 // A portal page that can't find its record, such as another workspace's purchase order.
 const meta = preview.meta({
-  title: "Pages/Shared/Errors/Portal not found"
+  title: "Pages/Errors/Portal not found"
 })
 
 export const Default = meta.story({

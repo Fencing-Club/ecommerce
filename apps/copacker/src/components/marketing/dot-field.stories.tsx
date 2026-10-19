@@ -5,6 +5,7 @@ import { DotField } from "./dot-field"
 
 // The field fills the dark stage it's set in, as the hero's backdrop.
 const meta = preview.meta({
+  title: "Components/Marketing/Dot field",
   component: DotField,
   parameters: { layout: "fullscreen" },
   decorators: [

@@ -13,7 +13,7 @@ function shown(element: HTMLElement) {
   return element.closest(".col-start-1")?.classList.contains("opacity-100")
 }
 
-const meta = preview.meta({ component: Ticker, args: { lines, every: 300 } })
+const meta = preview.meta({ title: "Components/Marketing/Ticker", component: Ticker, args: { lines, every: 300 } })
 
 export const Default = meta.story({
   play: async ({ canvas }) => {

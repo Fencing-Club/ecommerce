@@ -10,6 +10,7 @@ let assigned: unknown[] = []
 let listed = 0
 
 const meta = preview.meta({
+  title: "Components/Products/Products without supplier",
   component: ProductsWithoutSupplier,
   args: { syncKey: "synced" },
   beforeEach: ({ msw }) => {

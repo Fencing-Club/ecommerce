@@ -6,6 +6,7 @@ import { Film } from "./film"
 
 // The button as the hero draws it, on a dark stage.
 const meta = preview.meta({
+  title: "Components/Marketing/Film",
   component: Film,
   decorators: [
     (Story) => (

@@ -58,7 +58,7 @@ function Example({
   )
 }
 
-const meta = preview.meta({ title: "Components/Shipment packing details", component: Example })
+const meta = preview.meta({ title: "Components/Shipments/Shipment packing details", component: Example })
 
 export const Editing = meta.story({
   play: async ({ canvas }) => {

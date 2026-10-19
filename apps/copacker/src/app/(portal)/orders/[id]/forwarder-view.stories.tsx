@@ -37,6 +37,7 @@ const forwarded = shipmentRecord({
 })
 
 const meta = preview.meta({
+  title: "Pages/Purchase orders/Forwarder view",
   ...serverStory(async (props: Props) => <ForwarderView page={await forwarderPage(props.row, props.editable)} />),
   args: {
     row: { order: orderRecord({ data: { ...order, via } }), supplier: supplierRecord(), forwarder },

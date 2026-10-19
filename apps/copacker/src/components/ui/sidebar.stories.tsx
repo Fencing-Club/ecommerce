@@ -170,6 +170,7 @@ function Controlled({ onOpenChange }: { onOpenChange: (open: boolean) => void })
 }
 
 const meta = preview.type<{ args: Args & { defaultOpen?: boolean } }>().meta({
+  title: "Foundations/Sidebar",
   component: SidebarProvider,
   args: { onNewOrder: fn(), onMore: fn() },
   parameters: { layout: "fullscreen" },

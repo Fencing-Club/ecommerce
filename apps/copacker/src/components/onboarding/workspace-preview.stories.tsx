@@ -27,6 +27,7 @@ function spots(canvasElement: HTMLElement) {
 const blank: React.ComponentProps<typeof Preview> = { step: "about", kind: "", values: blankWizard() }
 
 const meta = preview.meta({
+  title: "Components/Onboarding/Workspace preview",
   component: Preview,
   args: blank
 })

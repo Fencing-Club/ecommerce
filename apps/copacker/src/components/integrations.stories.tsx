@@ -27,6 +27,7 @@ const amazon = {
 const ebay = { account: ebayAccount, externalId: ebayAccount }
 
 const meta = preview.meta({
+  title: "Components/Integrations/Integrations",
   component: Integrations,
   args: {
     admin: true,

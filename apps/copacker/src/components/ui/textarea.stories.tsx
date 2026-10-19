@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Textarea } from "./textarea"
 
 const meta = preview.meta({
+  title: "Foundations/Textarea",
   component: Textarea,
   args: { "aria-label": "Note to supplier", placeholder: "Write a note", onChange: fn(), className: "max-w-md" }
 })

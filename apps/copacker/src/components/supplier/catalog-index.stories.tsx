@@ -4,6 +4,7 @@ import { catalogIds, catalogRows, catalogViewer } from "@/stories/fixtures/suppl
 import { CatalogIndex } from "./catalog-index"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Catalog index",
   component: CatalogIndex,
   args: { catalogs: catalogRows }
 })

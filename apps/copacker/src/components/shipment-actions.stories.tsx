@@ -14,6 +14,7 @@ const sent: ActionRequest[] = []
 const linked = fn(async (_shipmentId: string | null) => undefined)
 
 const meta = preview.meta({
+  title: "Components/Shipments/Shipment actions",
   component: ApproveInvoice,
   args: { id: shipmentId, revision: 3 },
   beforeEach: ({ msw }) => {

@@ -10,6 +10,7 @@ import { ProductIndex } from "./product-index"
 const statusChanged = fn()
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Product index",
   component: ProductIndex,
   args: { products: productRows },
   beforeEach: ({ msw }) => {

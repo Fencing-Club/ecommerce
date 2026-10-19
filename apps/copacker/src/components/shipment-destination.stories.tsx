@@ -2,7 +2,11 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ShipmentDestination } from "./shipment-destination"
 
-const meta = preview.meta({ component: ShipmentDestination, args: { addresses: [], pending: true } })
+const meta = preview.meta({
+  title: "Components/Shipments/Shipment destination",
+  component: ShipmentDestination,
+  args: { addresses: [], pending: true }
+})
 export const Pending = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Amazon assigns the delivery address after shipment creation.")).toBeVisible()

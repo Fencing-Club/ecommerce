@@ -9,6 +9,7 @@ import { agl, chestProtectors, fba } from "./fixtures"
 const { file, sellerCentralUrl } = agl.start
 
 const meta = preview.meta({
+  title: "Unused/Booking/File row",
   component: FileRow,
   args: {
     icon: <FileSpreadsheet aria-hidden />,

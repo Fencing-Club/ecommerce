@@ -27,6 +27,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Dropdown menu",
   args: { onAction: fn(), onCheckedChange: fn(), onSortChange: fn(), onOpenChange: fn() },
   render: ({ onAction, onCheckedChange, onSortChange, onOpenChange }) => (
     <DropdownMenu onOpenChange={onOpenChange}>

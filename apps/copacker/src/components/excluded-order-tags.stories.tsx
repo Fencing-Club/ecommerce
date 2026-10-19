@@ -7,6 +7,7 @@ import { ExcludedOrderTags } from "./excluded-order-tags"
 const sent: ActionRequest[] = []
 
 const meta = preview.meta({
+  title: "Components/Integrations/Excluded order tags",
   component: ExcludedOrderTags,
   args: {
     tags: ["Amazon", "wholesale"],

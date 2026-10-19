@@ -36,6 +36,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Select",
   args: { onValueChange: fn() },
   // A supplier picker as the products page builds one: the trigger shows the chosen label, or a prompt.
   render: ({ onValueChange, size, disabled, invalid, defaultValue }) => (

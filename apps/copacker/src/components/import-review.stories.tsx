@@ -27,6 +27,7 @@ const market = {
 }
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Import review",
   component: ImportReview,
   args: {
     id: importId,

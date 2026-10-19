@@ -17,6 +17,7 @@ function catchSubmit() {
 }
 
 const meta = preview.meta({
+  title: "Components/Onboarding/Signed in as",
   component: SignedInAs,
   args: { email: "alex@example.com" },
   beforeEach: catchSubmit

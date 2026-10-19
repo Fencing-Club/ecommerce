@@ -5,6 +5,7 @@ import { buyerOverview } from "@/stories/fixtures/overview"
 import { OverviewContent } from "./content"
 
 const meta = preview.meta({
+  title: "Pages/Overview/Content",
   component: OverviewContent,
   args: {
     page: { kind: "buyer", admin: true, data: buyerOverview },

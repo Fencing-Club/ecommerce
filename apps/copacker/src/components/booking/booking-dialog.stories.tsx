@@ -39,6 +39,7 @@ function Step({
 }
 
 const meta = preview.meta({
+  title: "Unused/Booking/Booking dialog",
   component: Step,
   args: { rows: 3, step: { current: 1, total: 2 }, onOpenChange: fn() }
 })

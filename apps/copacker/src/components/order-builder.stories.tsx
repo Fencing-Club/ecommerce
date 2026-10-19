@@ -23,6 +23,7 @@ const [tote, apron, basket] = order.items
 const sand = catalogProducts[0]!
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Order builder",
   component: OrderBuilder,
   args: {
     suppliers: builderSuppliers,

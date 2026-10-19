@@ -6,6 +6,7 @@ import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSk
 const noSales = buyerOverview.sales.daily.map((day) => ({ ...day, amazon: null, shopify: null }))
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Overview",
   component: OverviewDashboard,
   args: { data: buyerOverview, refresh: fn() },
   parameters: { layout: "fullscreen" }

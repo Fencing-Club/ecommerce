@@ -2,7 +2,7 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { FormError, SubmitButton } from "./form-feedback"
 
-const meta = preview.meta({ component: FormError })
+const meta = preview.meta({ title: "Components/Forms/Form feedback", component: FormError })
 
 export const Errors = meta.story({
   render: () => (

@@ -23,6 +23,7 @@ function Controlled({ file: initial, onFileChange, ...props }: Props) {
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/File dropzone",
   component: Controlled,
   args: {
     accept: pdfFiles,

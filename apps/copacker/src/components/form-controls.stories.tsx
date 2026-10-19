@@ -47,6 +47,7 @@ function LineForm({ values, onSubmit }: { values: Partial<Values>; onSubmit: (va
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/Form controls",
   component: LineForm,
   args: { values: {}, onSubmit: fn() }
 })

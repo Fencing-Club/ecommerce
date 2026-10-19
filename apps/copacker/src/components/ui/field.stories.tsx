@@ -18,6 +18,7 @@ import { Switch } from "./switch"
 import { Textarea } from "./textarea"
 
 const meta = preview.meta({
+  title: "Foundations/Field",
   component: Field,
   render: ({ orientation }) => (
     <Field orientation={orientation} className="max-w-md">

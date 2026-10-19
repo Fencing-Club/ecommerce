@@ -12,6 +12,7 @@ const zones = ["UTC", "America/Los_Angeles", "America/New_York", "America/Argent
 )
 
 const meta = preview.meta({
+  title: "Components/Settings/Settings forms",
   component: RestockSettingsForm,
   args: { salesDays: 60, leadTimeDays: 45 },
   beforeEach: ({ msw }) => {

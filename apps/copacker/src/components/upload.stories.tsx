@@ -37,6 +37,7 @@ function fileName(form: FormData | undefined) {
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/Upload",
   component: Upload,
   args: { orderId: "order-1045", kind: "invoice" } satisfies React.ComponentProps<typeof Upload>,
   decorators: [(Story) => <div className="max-w-xl">{Story()}</div>]

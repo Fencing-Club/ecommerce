@@ -11,6 +11,7 @@ const filled: TemplateSlotState = { status: "filled", cartons, units }
 const issue: TemplateSlotState = { status: "issue", issue: { ...cartonIssue, onAction: fn() } }
 
 const meta = preview.meta({
+  title: "Unused/Booking/Template slot",
   component: TemplateSlot,
   args: { state: empty, onFile: fn() },
   decorators: [dialogWidth]

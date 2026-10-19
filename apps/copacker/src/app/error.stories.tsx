@@ -6,7 +6,7 @@ import ErrorPage from "./error"
 // A page outside the portal that failed, or the portal's own layout. The root layout around it adds only the
 // document, fonts and skip link.
 const meta = preview.meta({
-  title: "Pages/Shared/Errors/Error",
+  title: "Pages/Errors/Error",
   ...serverStory(({ retry }: { retry: () => void }) => <ErrorPage retry={retry} />),
   args: { retry: fn() },
   parameters: { layout: "fullscreen" }

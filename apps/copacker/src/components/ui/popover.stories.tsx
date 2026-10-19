@@ -12,6 +12,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Popover",
   args: { onOpenChange: fn() },
   render: ({ onOpenChange, defaultOpen }) => (
     <Popover onOpenChange={onOpenChange} defaultOpen={defaultOpen}>

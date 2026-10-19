@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Skeleton } from "./skeleton"
 
 const meta = preview.meta({
+  title: "Foundations/Skeleton",
   component: Skeleton,
   args: { className: "h-4 w-48" }
 })

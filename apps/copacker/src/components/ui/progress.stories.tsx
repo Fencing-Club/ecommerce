@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Progress, ProgressLabel, ProgressValue } from "./progress"
 
 const meta = preview.meta({
+  title: "Foundations/Progress",
   component: Progress,
   args: { value: 40, className: "w-72" }
 })

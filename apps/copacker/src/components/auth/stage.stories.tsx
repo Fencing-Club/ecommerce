@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { BrandMark, Stage } from "./stage"
 
 const meta = preview.meta({
+  title: "Components/Auth/Stage",
   component: Stage,
   args: {
     className: "h-[32rem]",

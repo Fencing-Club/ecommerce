@@ -7,6 +7,7 @@ import { ContactForm } from "./contact-form"
 const received = fn()
 
 const meta = preview.meta({
+  title: "Components/Marketing/Contact form",
   component: ContactForm,
   decorators: [
     (Story) => (

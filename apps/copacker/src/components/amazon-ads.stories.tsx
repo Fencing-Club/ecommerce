@@ -5,6 +5,7 @@ import { AmazonAdsSettings } from "./amazon-ads"
 import { Dialog } from "./ui/dialog"
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Amazon ads",
   component: AmazonAdsSettings,
   args: { available: true },
   decorators: [

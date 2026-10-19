@@ -17,6 +17,7 @@ const last30: PickerPeriod = {
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/Period picker",
   component: PeriodPicker,
   args: { period: last30, onChange: fn() },
   parameters: { router: { navigation: { pathname: "/overview" } } }

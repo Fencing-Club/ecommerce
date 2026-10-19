@@ -35,6 +35,7 @@ function ImportFlow(props: Props) {
   )
 }
 const meta = preview.meta({
+  title: "Components/Shipments/Carton import dialog",
   component: ImportFlow,
   args: {
     open: true,

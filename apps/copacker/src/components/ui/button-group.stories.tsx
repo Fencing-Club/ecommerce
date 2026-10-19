@@ -6,6 +6,7 @@ import { ButtonGroup, ButtonGroupSeparator } from "./button-group"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "./popover"
 
 const meta = preview.meta({
+  title: "Foundations/Button group",
   component: ButtonGroup,
   args: { "aria-label": "Download actions" }
 })

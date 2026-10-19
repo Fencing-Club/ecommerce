@@ -11,6 +11,7 @@ const orderId = "5e9b2d71-4b3e-4f5a-8c6d-000000000001"
 const current = { paymentTerms: "Net 30", readyDate: null }
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Order reviser",
   component: OrderReviser,
   args: {
     orderId,

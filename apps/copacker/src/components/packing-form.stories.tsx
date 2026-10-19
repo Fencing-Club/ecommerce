@@ -50,6 +50,7 @@ function packingActions(check: { canSubmit: boolean; requiresApproval: boolean; 
 }
 
 const meta = preview.meta({
+  title: "Components/Shipments/Packing form",
   component: PackingForm,
   args: {
     shipmentId: shipment.id,

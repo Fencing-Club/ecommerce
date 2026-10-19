@@ -14,6 +14,7 @@ const purchaseOrder: LifecycleStage[] = [
 ]
 
 const meta = preview.meta({
+  title: "Unused/Purchase orders/Lifecycle tracker",
   component: LifecycleTracker,
   args: { label: "Purchase order progress", stages: purchaseOrder }
 })

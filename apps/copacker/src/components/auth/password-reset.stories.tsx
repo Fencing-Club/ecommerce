@@ -7,6 +7,7 @@ import { ForgotPassword, ResetPasswordForm } from "./password-reset"
 const actions = actionRecorder()
 
 const meta = preview.meta({
+  title: "Components/Auth/Password reset",
   component: ForgotPassword,
   beforeEach: ({ msw }) => {
     msw.use(actions.handler())

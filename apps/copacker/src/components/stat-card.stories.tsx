@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { StatCard, StatGrid } from "./stat-card"
 
 const meta = preview.meta({
+  title: "Components/Display/Stat card",
   component: StatCard,
   args: { label: "Open purchase orders", value: 12 }
 })

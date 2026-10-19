@@ -2,7 +2,7 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ShipmentStateMap } from "./shipment-state-map"
 
-const meta = preview.meta({ title: "Workflows/Shipments/States and actions", component: ShipmentStateMap })
+const meta = preview.meta({ title: "Prototypes/Shipment states and actions", component: ShipmentStateMap })
 export const AllArrangements = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole("table")).toHaveLength(8)

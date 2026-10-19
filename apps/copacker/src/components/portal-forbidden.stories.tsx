@@ -3,7 +3,7 @@ import preview from "#.storybook/preview"
 import { english } from "@/i18n/messages"
 import { PortalForbidden } from "./portal-forbidden"
 
-const meta = preview.meta({ component: PortalForbidden })
+const meta = preview.meta({ title: "Components/App shell/Portal forbidden", component: PortalForbidden })
 export const Denied = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: english.common.pages.forbidden.title })).toBeVisible()

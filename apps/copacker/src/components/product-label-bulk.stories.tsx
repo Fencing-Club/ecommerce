@@ -36,6 +36,7 @@ async function openSheet() {
 }
 
 const meta = preview.meta({
+  title: "Components/Products/Product label bulk",
   component: ProductLabelBulk,
   args: { onChanged: fn() },
   beforeEach: ({ msw }) => {

@@ -48,6 +48,7 @@ function SupplierForm({
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/Form select",
   component: SupplierForm,
   args: { values: {}, onSubmit: fn() }
 })

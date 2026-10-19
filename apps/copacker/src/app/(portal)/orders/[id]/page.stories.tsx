@@ -355,7 +355,7 @@ const actions = fn()
 const answered = fn()
 
 const meta = preview.meta({
-  title: "Pages/Shared/Purchase orders/Detail",
+  title: "Pages/Purchase orders/Detail",
   // Each story shows it in its workspace's portal; the render is the same for all.
   render: pageStory(`/orders/${orderId}`, OrderPage).render,
   args: {

@@ -24,6 +24,7 @@ const noProducts = {
 }
 
 const meta = preview.meta({
+  title: "Components/Integrations/Inventory sync",
   component: InventorySync,
   args: { providers: ["shopify", "amazon"] },
   beforeEach: ({ msw }) => {
