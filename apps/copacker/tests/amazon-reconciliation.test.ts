@@ -201,3 +201,30 @@ describe("Amazon reconciliation evidence", () => {
     expect(result?.finance.candidates).toHaveLength(20)
   })
 })
+
+it("explains financial match blockers without recognizing duplicate recovery or mistaking signed amounts", () => {
+  const released = reconcileAmazonEvidence([row], inventory, [posting])[0]!.finance.candidates[0]!
+  expect(released.checks).toMatchObject({
+    signedSourceToTransactionTotal: "balanced",
+    additionalRecognizedAmount: null
+  })
+  expect(released.checks.blockers).toEqual(["source_to_posting_allocation_required", "reversal_review_required"])
+  const deferred = {
+    ...posting,
+    orderId: null,
+    data: {
+      ...posting.data,
+      transactionStatus: "DEFERRED",
+      relatedIdentifiers: [{ relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "T2" }]
+    }
+  }
+  const result = reconcileAmazonEvidence([{ ...row, amount: "-0.3" }], inventory, [deferred])[0]!.finance.candidates[0]!
+  expect(result.checks.signedSourceToTransactionTotal).toBe("amount_mismatch")
+  expect(result.checks.blockers).toEqual(
+    expect.arrayContaining(["no_order_reference", "not_released", "deferred_release_requires_review"])
+  )
+  expect(
+    reconcileAmazonEvidence([{ ...row, amount: null, currency: null }], inventory, [posting])[0]!.finance.candidates[0]!
+      .checks.signedSourceToTransactionTotal
+  ).toBe("unavailable")
+})

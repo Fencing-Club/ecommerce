@@ -12,6 +12,7 @@ import {
 import { AnalyticsProblem, analyticsPagination } from "./analytics-contract"
 import { analyticsSnapshot } from "./analytics-snapshot"
 import { assertNoLandedDependencies } from "./inventory-landed-costs"
+import { hasInventoryProduct } from "./inventory-product"
 import { resolveSaleEvidence, resolveDepletionDate } from "./inventory-sale-evidence"
 const fail = (status: number, code: string, detail: string): never => {
   throw new AnalyticsProblem(status, code, detail)
@@ -291,10 +292,7 @@ export async function saveInventoryBasisInTransaction(
     isHistoricalProduct = true
   }
   if (!isHistoricalProduct) {
-    const target =
-      await tx.execute(sql`select 1 from variant_fields where "orgId"=${orgId} and "shopifyDomain"=${shopifyDomain} and "variantId"=${variantId}
-      union all select 1 from stock_snapshots s where s."orgId"=${orgId} and s.source='shopify' and s."externalAccountId"=${shopifyDomain} and exists(select 1 from jsonb_array_elements(case when jsonb_typeof(s.data->'rows')='array' then s.data->'rows' else '[]'::jsonb end) r where r->>'variantId'=${variantId}) limit 1`)
-    if (!target.rows.length) {
+    if (!(await hasInventoryProduct(tx, orgId, shopifyDomain, variantId))) {
       return fail(422, "product_not_in_workspace", "Choose a product recorded in this workspace.")
     }
   }

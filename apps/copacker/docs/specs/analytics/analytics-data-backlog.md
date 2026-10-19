@@ -311,3 +311,43 @@ rows survived (five orders, four shipments). Reimbursements recovered at 23:15 U
 now makes current-month coverage due for extension, not a failed refresh. Aged storage still has seven September rows
 and eleven unresolved months. See [request-limit investigation and pacing policy](../../amazon-report-limits.md).
 The next change coordinates initial creations across workers and persists cooldowns; live recovery remains unverified.
+
+### Imported-evidence accounting audit: October 18, 2026 (Pacific)
+
+The user confirmed Copacker is greenfield, with no real purchase orders. No draft/demo PO values may seed historical
+cost basis. Read-only account checks found no saved purchase costs, opening balances, historical product mappings or
+unit conversions. Purchase cost, landed cost and inventory value remain unknown. Further backfill and UX are deferred.
+
+Backend work adds current exact-SKU Shopify product candidates beside explicitly dated Amazon mappings, candidate
+financial blockers and signed amount comparisons, and normalized FBA/AWD received-quantity diagnostics. Candidate
+matches are not historical mappings or confirmed recovery allocations. Quantity differences preserve source units;
+case counts are never converted to pieces without evidence. No receipt date, acquisition, cost or claim is inferred.
+
+Financial source allocations, reversal review, transfer accounting and return-to-stock original-lot restoration remain
+open. Imported statements can support further reconciliation, but refunds and reimbursements do not prove physical
+inventory restoration. Actual cost basis requires an independent future source of purchase and opening-balance evidence.
+
+Read-only saved-evidence audit (no sync triggered): FBA has 64 shipment snapshots, including 57 closed, five cancelled
+and two shipped. The closed shipments contain 443 SKU rows: 397 balanced, 26 shortfall rows (94 provider units), and
+20 overage rows (62 provider units). These gross differences are not netted or valued and do not establish losses.
+AWD has 12 snapshots: six closed, five cancelled and one created. Three closed shipments report six expected cases
+and zero received each. The other three closed shipments balance. Cancelled/created shipments are not shortage claims.
+September reimbursement evidence has 11 records: nine with reimbursement-posting candidates, five with order-reference
+candidates, and zero confirmed historical product mappings. The financial search is truncated; these figures describe
+the bounded candidate search, not completed reconciliation or missing recoveries.
+
+### Receipt and financial investigation: October 19, 2026 (Pacific)
+
+The owner confirmed these closed AWD shipments were unused plans, not goods actually dispatched:
+`STAR-U7Z2DYWKH4YAY`, `STAR-UH2FMV4QXH6WX`, `STAR-W3T2ZHQNQ5WXS`. Their 18 expected cases are not missing stock.
+They were created January 28 within 19 minutes and updated to closed approximately 90 days later. This documented
+merchant confirmation does not change Amazon evidence or establish an automatic rule for other closed shipments.
+January 31 shipment `STAR-RDBKBGHGZMXXU` contains the same six-case SKU mix and reports all six cases received.
+
+The FBA review list contains 46 quantity-difference rows across 20 closed shipments. Saved snapshots lack sufficient
+dispatch, correction and transfer lineage to prove loss. No claim or inventory value has been recorded.
+
+Backend additions provide financial-search continuation, separate cash/inventory reimbursement quantities, explicit
+original/reversal references, filtered posting inspection, deferred/release links and validated signed fee components.
+US storage/removal report totals remain separate by kind/currency, with known-amount counts. They are not added to
+postings and matching amounts do not certify source links. Production acceptance awaits release. No UX or backfill.

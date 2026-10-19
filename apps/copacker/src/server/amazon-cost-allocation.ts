@@ -1,6 +1,12 @@
 import { z } from "zod"
 import { type HistoricalProductMapping, historicalProductMatch } from "./amazon-product-mappings"
-import { type ReconciliationPosting, postingAmount, checkPostingTotal, postingEvidence } from "./amazon-reconciliation"
+import {
+  type ReconciliationPosting,
+  postingAmount,
+  checkPostingTotal,
+  postingEvidence,
+  formatPostingAmount
+} from "./amazon-reconciliation"
 
 const object = z.record(z.string(), z.unknown())
 const list = z.array(object)
@@ -12,14 +18,6 @@ function sum(values: Money[], currency: string): Money {
     scale,
     integer: values.reduce((total, value) => total + value.integer * 10n ** BigInt(scale - value.scale), 0n)
   }
-}
-function format(value: Money) {
-  const digits = (value.integer < 0n ? -value.integer : value.integer).toString().padStart(value.scale + 1, "0")
-  const sign = value.integer < 0n ? "-" : ""
-  if (!value.scale) {
-    return sign + digits
-  }
-  return `${sign}${digits.slice(0, -value.scale)}.${digits.slice(-value.scale)}`
 }
 const isFee = (path: string[]) =>
   path.includes("AmazonFees") || ["Commission", "FBAPerUnitFulfillmentFee"].includes(path.at(-1) ?? "")
@@ -141,8 +139,8 @@ export function allocateAmazonPosting(posting: ReconciliationPosting, mappings: 
             status: target ? "allocated" : "unallocated",
             reason: target ? null : (match?.status ?? "product_context_ambiguous"),
             mapping: target ?? null,
-            net: format(postingAmount(item.totalAmount)!),
-            fee: balancedFees ? format(sum(itemFees[index]!.fees, posting.currency)) : null
+            net: formatPostingAmount(postingAmount(item.totalAmount)!),
+            fee: balancedFees ? formatPostingAmount(sum(itemFees[index]!.fees, posting.currency)) : null
           }
         })
       : []
@@ -170,12 +168,12 @@ export function allocateAmazonPosting(posting: ReconciliationPosting, mappings: 
     status: reason ? "unallocated" : "item_totals_reconciled",
     reason,
     allocationDateBasis: "posting_date",
-    total: total ? format(total) : null,
-    allocatedNet: format(allocatedNet),
-    unallocatedNet: unallocated ? format(unallocated) : null,
-    allocatedFees: allocatedFees ? format(allocatedFees) : null,
-    unallocatedFees: unallocatedFees ? format(unallocatedFees) : null,
-    recognizedFees: balancedFees && reason === null ? format(feeTotal) : null,
+    total: total ? formatPostingAmount(total) : null,
+    allocatedNet: formatPostingAmount(allocatedNet),
+    unallocatedNet: unallocated ? formatPostingAmount(unallocated) : null,
+    allocatedFees: allocatedFees ? formatPostingAmount(allocatedFees) : null,
+    unallocatedFees: unallocatedFees ? formatPostingAmount(unallocatedFees) : null,
+    recognizedFees: balancedFees && reason === null ? formatPostingAmount(feeTotal) : null,
     feeCheck: balancedFees && reason === null ? "balanced" : "unavailable",
     feeScope: "AmazonFees, Commission, FBAPerUnitFulfillmentFee",
     allocations

@@ -98,6 +98,20 @@ describe("Amazon reconciliation endpoint", () => {
       const result = await amazonReconciliation(orgId, input)
       expect(result.rows[0]?.finance.candidates[0]?.transactionId).toBe("EARLY")
       expect(result.coverage?.financialSearch.truncated).toBe(true)
+      expect(result.coverage?.financialSearch.nextPostingPage).toBe(1)
+      const tail = await amazonReconciliation(orgId, { ...input, postingPage: 1, snapshot: result.snapshot })
+      expect(tail.rows[0]?.finance.candidates.map((r) => r.transactionId)).toEqual(["LATE"])
+      expect(tail.coverage?.financialSearch.nextPostingPage).toBeNull()
+      await expect(amazonReconciliation(orgId, { ...input, postingPage: 1 })).rejects.toMatchObject({
+        code: "snapshot_required"
+      })
+      const candidatePage = await amazonReconciliation(orgId, { ...input, candidatePage: 1, snapshot: result.snapshot })
+      expect(candidatePage.rows[0]?.finance.candidates).toHaveLength(20)
+      expect(
+        candidatePage.rows[0]?.finance.candidates.some((r) =>
+          result.rows[0]?.finance.candidates.some((first) => first.transactionId === r.transactionId)
+        )
+      ).toBe(false)
     } finally {
       await pg.exec("SET TIME ZONE 'UTC'")
     }
@@ -358,4 +372,49 @@ describe("Amazon reconciliation endpoint", () => {
     await database.delete(tables.connections)
     expect(await amazonReconciliation(orgId, input)).toMatchObject({ connected: false, rows: [], hasMore: false })
   })
+})
+
+it("retains inventory replacements and follows explicit reimbursement reversals outside the period", async () => {
+  await database.insert(tables.amazonReimbursements).values([
+    {
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      approvedAt: new Date("2026-10-02"),
+      reimbursementId: "R1",
+      quantityCash: 1,
+      quantityInventory: 2,
+      quantityTotal: 3,
+      amountTotal: "4",
+      currency: "USD"
+    },
+    {
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      approvedAt: new Date("2026-11-02"),
+      reimbursementId: "REV",
+      originalReimbursementId: "R1",
+      originalReimbursementType: "CASH",
+      quantityCash: -1,
+      amountTotal: "-4",
+      currency: "USD"
+    },
+    {
+      orgId: otherId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      approvedAt: new Date("2026-11-02"),
+      reimbursementId: "FOREIGN",
+      originalReimbursementId: "R1"
+    }
+  ])
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows[0]?.reimbursement).toMatchObject({
+    id: "R1",
+    quantityCash: 1,
+    quantityInventory: 2,
+    quantityTotal: 3
+  })
+  expect(result.relatedReimbursements).toEqual([expect.objectContaining({ id: "REV", originalId: "R1", amount: "-4" })])
 })
