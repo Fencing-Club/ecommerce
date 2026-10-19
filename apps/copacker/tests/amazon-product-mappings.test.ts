@@ -399,3 +399,61 @@ it("filters postings, follows account-scoped release links outside the period an
     ])
   })
 })
+
+it("resolves one-sided release references outside the page and detects a second release in the stored chain", async () => {
+  const amount = { currencyCode: "USD", currencyAmount: "20.45" }
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    orderId: null,
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 2045,
+    feesMinor: 0
+  }
+  const data = {
+    totalAmount: amount,
+    breakdowns: [{ breakdownAmount: amount }],
+    marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" }
+  }
+  const d = {
+    ...base,
+    transactionId: "D",
+    postedAt: new Date("2026-09-01"),
+    data: {
+      ...data,
+      transactionStatus: "DEFERRED_RELEASED",
+      relatedIdentifiers: [{ relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "R" }]
+    }
+  }
+  const r = {
+    ...base,
+    transactionId: "R",
+    postedAt: new Date("2026-10-05"),
+    data: { ...data, transactionStatus: "RELEASED" }
+  }
+  await database
+    .insert(tables.amazonTransactions)
+    .values([d, r, { ...d, orgId: otherId }, { ...d, externalAccountId: "SELLER2" }])
+  const query = { from: "2026-10-01", to: "2026-11-01", page: 0, transactionId: "R" }
+  const result = await amazonAllocations(orgId, query)
+  expect(result.postings[0]?.accounting).toMatchObject({
+    status: "included_released_posting",
+    linkedTransactionIds: ["D"],
+    releasedPostingAmount: { amount: "20.45", currency: "USD" }
+  })
+  expect(result.linkedPostings).toHaveLength(1)
+  await database.insert(tables.amazonTransactions).values({
+    ...r,
+    transactionId: "R2",
+    postedAt: new Date("2026-12-01"),
+    data: {
+      ...data,
+      transactionStatus: "RELEASED",
+      relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "D" }]
+    }
+  })
+  const updated = await amazonAllocations(orgId, query)
+  expect(updated.postings[0]?.accounting.blockers).toContain("ambiguous_release_chain")
+  expect(updated.postings[0]?.accounting.releasedPostingAmount).toBeNull()
+})

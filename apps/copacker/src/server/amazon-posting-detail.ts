@@ -1,11 +1,6 @@
 import { z } from "zod"
-import {
-  checkPostingTotal,
-  formatPostingAmount,
-  postingAmount,
-  postingEvidence,
-  type ReconciliationPosting
-} from "./amazon-reconciliation"
+import { formatMoney } from "@/lib/financial-money"
+import { checkPostingTotal, postingAmount, postingEvidence, type ReconciliationPosting } from "./amazon-reconciliation"
 
 const nodes = z.array(z.record(z.string(), z.unknown()))
 export function amazonPostingDetail(posting: ReconciliationPosting) {
@@ -41,7 +36,7 @@ export function amazonPostingDetail(posting: ReconciliationPosting) {
       ) {
         walk(node.breakdowns, node.breakdownAmount, next, depth + 1)
       } else {
-        leaves.push({ path: next, amount: formatPostingAmount(money), currency: money.currency })
+        leaves.push({ path: next, amount: formatMoney(money), currency: money.currency })
       }
     }
   }

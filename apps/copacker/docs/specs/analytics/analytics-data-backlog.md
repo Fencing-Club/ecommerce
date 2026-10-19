@@ -350,4 +350,19 @@ dispatch, correction and transfer lineage to prove loss. No claim or inventory v
 Backend additions provide financial-search continuation, separate cash/inventory reimbursement quantities, explicit
 original/reversal references, filtered posting inspection, deferred/release links and validated signed fee components.
 US storage/removal report totals remain separate by kind/currency, with known-amount counts. They are not added to
-postings and matching amounts do not certify source links. Production acceptance awaits release. No UX or backfill.
+postings and matching amounts do not certify source links. PR #69 was deployed as `6b96d7e9`; read-only live verification
+passed for 12 AWD and 64 FBA snapshots, 11 September reimbursements, continuation beyond 5,000 postings, 44 service-fee
+breakdowns and explicit release references. No sync or backfill was started.
+
+### Payment and recovery accounting follow-up
+
+Backend [stored payment reconciliation](../../payment-reconciliation.md) deduplicates Shopify order/refund payment
+references, separates successful receipts/refunds from authorizations and unsuccessful payments, and compares refund
+and current-order totals without treating shipping refunds as additional outflows. Reported processing fees and saved
+balance amounts remain alternative evidence, with explicit missing external-gateway and settlement coverage.
+
+Amazon reimbursement families now derive signed report amounts and separate cash/inventory quantities only for
+unambiguous stored originals/corrections. Explicit release chains select one released posting contribution and exclude
+the deferred copy. Missing or conflicting chains remain unresolved. These calculations make no accounting writes,
+assign no costs, and trigger no provider collection. Local verification and deployment acceptance are tracked separately;
+historical costs, source-to-posting reimbursement allocation and inventory-lot restoration remain open.

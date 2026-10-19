@@ -1,10 +1,11 @@
-import { and, eq, gte, lt, desc, inArray, sql } from "drizzle-orm"
+import { and, eq, gte, lt, desc, inArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonProductMappings, amazonTransactions, connections, salesSyncs } from "@/db/schema"
 import { allocateAmazonPosting } from "./amazon-cost-allocation"
+import { amazonPostingAccounting, postingLinks } from "./amazon-posting-accounting"
 import { amazonPostingDetail } from "./amazon-posting-detail"
-import { postingEvidence } from "./amazon-reconciliation"
+import type { ReconciliationPosting } from "./amazon-reconciliation"
 import { analyticsPagination } from "./analytics-contract"
 import { analyticsSnapshot } from "./analytics-snapshot"
 export const allocationInput = z
@@ -58,28 +59,11 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
         .orderBy(desc(amazonTransactions.postedAt), amazonTransactions.transactionId)
         .limit(101)
         .offset(input.page * 100)
-      const allLinkedIds = [
-        ...new Set(
-          rows.slice(0, 100).flatMap((row) =>
-            postingEvidence(row)
-              .references.filter((ref) => ["DEFERRED_TRANSACTION_ID", "RELEASE_TRANSACTION_ID"].includes(ref.name))
-              .map((ref) => ref.value)
-          )
-        )
-      ]
-      const linkedIds = allLinkedIds.slice(0, 1000)
-      const linked = linkedIds.length
-        ? await tx
-            .select()
-            .from(amazonTransactions)
-            .where(
-              and(
-                eq(amazonTransactions.orgId, orgId),
-                eq(amazonTransactions.externalAccountId, account.externalId),
-                inArray(amazonTransactions.transactionId, linkedIds)
-              )
-            )
-        : []
+      const linkedResult = await releaseFamily(tx, orgId, account.externalId, rows.slice(0, 100))
+      const linked = linkedResult.rows
+      const linkedTruncated = linkedResult.truncated
+      const accountingRows = [...rows.slice(0, 100), ...linked]
+      const linkedIds = [...new Set(rows.slice(0, 100).flatMap((row) => postingLinks(row).map((ref) => ref.value)))]
       const reportTotals = await tx.execute(sql`
         select 'storage:' || kind as source, currency, count(*)::int as rows, count(amount)::int as "knownAmountRows", sum(amount::numeric)::text as amount
         from amazon_storage_fees where "orgId"=${orgId} and "externalAccountId"=${account.externalId}
@@ -114,12 +98,14 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
         externalAccountId: account.externalId,
         page: input.page,
         hasMore: rows.length > 100,
-        postings: rows
-          .slice(0, 100)
-          .map((row) => ({ ...allocateAmazonPosting(row, mappings), evidence: amazonPostingDetail(row) })),
-        linkedPostings: linked.map(amazonPostingDetail),
-        linkedPostingsTruncated: allLinkedIds.length > linkedIds.length,
-        missingLinkedTransactionIds: linkedIds.filter((id) => !linked.some((row) => row.transactionId === id)),
+        postings: rows.slice(0, 100).map((row) => ({
+          ...allocateAmazonPosting(row, mappings),
+          evidence: amazonPostingDetail(row),
+          accounting: amazonPostingAccounting(row, accountingRows, linkedTruncated)
+        })),
+        linkedPostings: linked.slice(0, 1000).map(amazonPostingDetail),
+        linkedPostingsTruncated: linkedTruncated,
+        missingLinkedTransactionIds: linkedIds.filter((id) => !accountingRows.some((row) => row.transactionId === id)),
         reportComparison: {
           marketplaceId: "ATVPDKIKX0DER",
           from: input.from,
@@ -141,4 +127,48 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   )
+}
+
+async function releaseFamily(
+  tx: Pick<ReturnType<typeof db>, "select">,
+  orgId: string,
+  externalAccountId: string,
+  seeds: ReconciliationPosting[]
+) {
+  const query = (ids: string[]) =>
+    tx
+      .select()
+      .from(amazonTransactions)
+      .where(
+        and(
+          eq(amazonTransactions.orgId, orgId),
+          eq(amazonTransactions.externalAccountId, externalAccountId),
+          or(
+            inArray(amazonTransactions.transactionId, ids),
+            sql`exists (select 1 from jsonb_array_elements(case when jsonb_typeof(${amazonTransactions.data}->'relatedIdentifiers')='array' then ${amazonTransactions.data}->'relatedIdentifiers' else '[]'::jsonb end) ref where ref->>'relatedIdentifierName' in ('RELEASE_TRANSACTION_ID','DEFERRED_TRANSACTION_ID') and ref->>'relatedIdentifierValue'=any(${sql.param(ids)}::text[]))`
+          )
+        )
+      )
+      .orderBy(amazonTransactions.transactionId)
+      .limit(1001)
+  const records = new Map<string, Awaited<ReturnType<typeof query>>[number]>()
+  const visited = new Set<string>()
+  let pending = [...new Set(seeds.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)]))]
+  for (let depth = 0; depth < 8 && pending.length; depth++) {
+    const rows = await query(pending)
+    pending.forEach((id) => visited.add(id))
+    for (const row of rows) {
+      records.set(row.transactionId, row)
+    }
+    if (rows.length > 1000 || records.size > 1000) {
+      return { rows: [...records.values()].slice(0, 1000), truncated: true }
+    }
+    pending = [
+      ...new Set(rows.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)]))
+    ].filter((id) => !visited.has(id))
+  }
+  return {
+    rows: [...records.values()].filter((row) => !seeds.some((seed) => seed.transactionId === row.transactionId)),
+    truncated: pending.length > 0
+  }
 }

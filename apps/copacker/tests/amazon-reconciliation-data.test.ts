@@ -416,5 +416,89 @@ it("retains inventory replacements and follows explicit reimbursement reversals 
     quantityInventory: 2,
     quantityTotal: 3
   })
-  expect(result.relatedReimbursements).toEqual([expect.objectContaining({ id: "REV", originalId: "R1", amount: "-4" })])
+  expect(result.relatedReimbursements).toEqual([
+    expect.objectContaining({ id: "R1" }),
+    expect.objectContaining({ id: "REV", originalId: "R1", amount: "-4" })
+  ])
+})
+
+it("calculates a complete stored reimbursement family across periods and excludes other sellers", async () => {
+  const original = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    approvedAt: new Date("2026-09-02"),
+    reimbursementId: "ORIG",
+    reason: "Lost_Warehouse",
+    sku: "SKU",
+    amountTotal: "20.45",
+    currency: "USD",
+    quantityCash: 1,
+    quantityInventory: 0,
+    quantityTotal: 1
+  }
+  const reversal = {
+    ...original,
+    approvedAt: new Date("2026-10-02"),
+    reimbursementId: "REV",
+    originalReimbursementId: "ORIG",
+    originalReimbursementType: "Lost_Warehouse",
+    reason: "Reimbursement_Reversal",
+    amountTotal: "-20.45",
+    quantityCash: -1,
+    quantityInventory: 1,
+    quantityTotal: 0
+  }
+  await database
+    .insert(tables.amazonReimbursements)
+    .values([original, reversal, { ...reversal, externalAccountId: "SELLER2" }, { ...reversal, orgId: otherId }])
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows).toHaveLength(1)
+  expect(result.rows[0]?.reimbursementAccounting).toMatchObject({
+    status: "report_family_calculated",
+    signedReportAmounts: [{ currency: "USD", amount: "0.00" }],
+    quantities: { cash: 0, inventory: 1, total: 1 }
+  })
+  expect(result.relatedReimbursements).toHaveLength(2)
+  await database.insert(tables.amazonReimbursements).values({
+    ...reversal,
+    reimbursementId: "REV2",
+    originalReimbursementId: "REV",
+    approvedAt: new Date("2026-12-01")
+  })
+  const updated = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(updated.relatedReimbursements).toHaveLength(3)
+  expect(updated.rows[0]?.reimbursementAccounting?.blockers).toContain("multi_step_chain_requires_review")
+})
+
+it("discloses a truncated reimbursement family instead of returning a partial net", async () => {
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    sku: "SKU",
+    amountTotal: "1",
+    currency: "USD",
+    quantityCash: 1,
+    quantityInventory: 0,
+    quantityTotal: 1
+  }
+  await database
+    .insert(tables.amazonReimbursements)
+    .values({ ...base, reimbursementId: "ROOT", approvedAt: new Date("2026-10-01") })
+  await database.insert(tables.amazonReimbursements).values(
+    Array.from({ length: 1001 }, (_, index) => ({
+      ...base,
+      reimbursementId: `CHILD-${index}`,
+      originalReimbursementId: "ROOT",
+      approvedAt: new Date("2026-11-01")
+    }))
+  )
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.relatedReimbursementsTruncated).toBe(true)
+  expect(result.rows[0]?.reimbursementAccounting).toMatchObject({
+    signedReportAmounts: null,
+    quantities: null,
+    blockers: expect.arrayContaining(["related_records_truncated"])
+  })
 })

@@ -27,6 +27,7 @@ export async function analyticsSnapshot(
     "inventory_landed_charges",
     "amazon_product_mappings",
     "amazon_transactions",
+    "shopify_balance_transactions",
     "stock_snapshots",
     "sales_syncs",
     "sales_orders",

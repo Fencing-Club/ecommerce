@@ -129,6 +129,58 @@ it("filters marketplace copies and scopes paginated financial evidence", async (
   })
   expect(result.rows.map((r) => r.sourceId)).toEqual(["2"])
 })
+it("reconciles saved Shopify evidence with only the same account's balances and invalidates changed balances", async () => {
+  const amount = { amount: "10", currencyCode: "USD" }
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "shopify",
+    externalAccountId: "shop",
+    dataset: "order_economics",
+    sourceId: "ORDER",
+    data: {
+      tags: [],
+      test: false,
+      currentTotalPriceSet: { shopMoney: amount },
+      refunds: [],
+      transactions: [
+        {
+          id: "T",
+          kind: "SALE",
+          status: "SUCCESS",
+          gateway: "shopify_payments",
+          fees: [],
+          amountSet: { shopMoney: amount }
+        }
+      ]
+    }
+  })
+  const row = {
+    orgId,
+    externalAccountId: "shop",
+    transactionId: "B",
+    orderId: "ORDER",
+    type: "CHARGE",
+    processedAt: new Date("2025-01-01"),
+    currency: "USD",
+    amountMinor: 1000,
+    feeMinor: 0,
+    netMinor: 1000,
+    data: { amount, fee: { ...amount, amount: "0" }, net: amount }
+  }
+  await database
+    .insert(tables.shopifyBalanceTransactions)
+    .values([row, { ...row, orgId: otherId }, { ...row, externalAccountId: "foreign" }])
+  const query = { source: "shopify" as const, externalAccountId: "shop", dataset: "order_economics" as const, page: 0 }
+  const result = await listIngestionEvidence(orgId, query)
+  expect(result.rows[0]?.paymentReconciliation).toMatchObject({
+    orderTotalCheck: "balanced",
+    balanceComparison: { totals: [{ rows: 1 }], arithmetic: [{ transactionId: "B", check: "balanced" }] }
+  })
+  await database.update(tables.shopifyBalanceTransactions).set({ feeMinor: 100 })
+  await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toMatchObject({
+    code: "snapshot_changed"
+  })
+})
 it("preserves missing receipt quantities and isolates network failures", async () => {
   await database
     .insert(tables.connections)
