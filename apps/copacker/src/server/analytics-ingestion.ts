@@ -7,11 +7,13 @@ import {
   operatingCosts,
   connections,
   organizations,
-  shopifyBalanceTransactions
+  shopifyBalanceTransactions,
+  amazonInventoryMovements
 } from "@/db/schema"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
 import { analyticsSnapshot } from "./analytics-snapshot"
+import { reconcileReceiptMovements } from "./receipt-movement-reconciliation"
 import { receiptQuantities } from "./receipt-quantities"
 import { shopifyBalanceComparison } from "./shopify-balance-comparison"
 import { reconcileShopifyPayments } from "./shopify-payment-reconciliation"
@@ -67,6 +69,26 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
         input.source === "shopify" && input.dataset === "order_economics"
           ? rows.slice(0, 100).map((row) => row.sourceId)
           : []
+      const shipmentIds =
+        input.source === "amazon" && input.dataset === "fba_inbound_receipts"
+          ? rows.slice(0, 100).map((row) => row.sourceId)
+          : []
+      const movements = shipmentIds.length
+        ? await tx
+            .select()
+            .from(amazonInventoryMovements)
+            .where(
+              and(
+                eq(amazonInventoryMovements.orgId, orgId),
+                eq(amazonInventoryMovements.externalAccountId, input.externalAccountId),
+                eq(amazonInventoryMovements.marketplaceId, "ATVPDKIKX0DER"),
+                inArray(amazonInventoryMovements.referenceId, shipmentIds),
+                eq(amazonInventoryMovements.eventType, "Receipts")
+              )
+            )
+            .orderBy(amazonInventoryMovements.eventDay, amazonInventoryMovements.id)
+            .limit(5001)
+        : []
       const balances = orderIds.length
         ? await tx
             .select()
@@ -85,6 +107,16 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
         rows: rows.slice(0, 100).map((row) => ({
           ...row,
           receiptQuantities: receiptQuantities(input.dataset, row.data, catalogs),
+          receiptReconciliation:
+            input.source === "amazon"
+              ? reconcileReceiptMovements(
+                  input.dataset,
+                  row.sourceId,
+                  receiptQuantities(input.dataset, row.data, catalogs),
+                  movements.slice(0, 5000),
+                  movements.length > 5000
+                )
+              : null,
           paymentReconciliation:
             input.source === "shopify" && input.dataset === "order_economics"
               ? {

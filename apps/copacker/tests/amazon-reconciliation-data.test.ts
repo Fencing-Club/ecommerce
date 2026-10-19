@@ -40,6 +40,28 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
 const request = (query = "source=returns&from=2026-10-01&to=2026-11-01") =>
   new Request(`https://example.test/api/analytics/amazon/reconciliation?${query}`)
 const input = { source: "returns" as const, from: "2026-10-01", to: "2026-11-01", page: 0 }
+it("exposes all stored reimbursement coverage without claiming the missing original's date", async () => {
+  const report = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    from: new Date("2025-10-01"),
+    requestedTo: new Date("2025-11-01"),
+    coveredTo: new Date("2025-11-01"),
+    status: "imported" as const,
+    rowCount: 1,
+    checkedAt: new Date("2026-10-01")
+  }
+  await database
+    .insert(tables.amazonReimbursementReports)
+    .values([report, { ...report, orgId: otherId }, { ...report, externalAccountId: "OTHER" }])
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.reimbursementCoverage?.windows).toHaveLength(1)
+  expect(result.reimbursementCoverage).toMatchObject({
+    missingOriginalDate: "unknown",
+    missingOriginalCause: "undetermined_without_original_date"
+  })
+})
 const baseRow = {
   externalAccountId: "SELLER1",
   marketplaceId: "ATVPDKIKX0DER",

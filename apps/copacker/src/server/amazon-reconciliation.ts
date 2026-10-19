@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { exactMoney } from "@/lib/financial-money"
+import { exactMoney, formatMoney, sumMoney } from "@/lib/financial-money"
 
 const object = z.record(z.string(), z.unknown())
 const objects = (value: unknown) => z.array(object).safeParse(value).data ?? []
@@ -154,7 +154,7 @@ export function reconcileAmazonEvidence(
           {
             ...postingEvidenceFields(posting),
             basis: orderReference ? "order_reference" : "product_only",
-            itemIndexes: matchedItems.map((item) => item.itemIndex),
+            itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
             currencyMatches: row.currency ? row.currency === posting.currency : null,
             checks: reconciliationChecks(row, posting, orderReference, matchedItems.length)
           }
@@ -164,6 +164,10 @@ export function reconcileAmazonEvidence(
         (a, b) =>
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
           Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
+          (row.source === "reimbursements"
+            ? Number(b.checks.signedSourceToTransactionTotal === "balanced") -
+              Number(a.checks.signedSourceToTransactionTotal === "balanced")
+            : 0) ||
           Math.abs(Date.parse(a.postedAt) - Date.parse(row.occurredAt)) -
             Math.abs(Date.parse(b.postedAt) - Date.parse(row.occurredAt)) ||
           a.transactionId.localeCompare(b.transactionId)
@@ -177,7 +181,19 @@ export function reconcileAmazonEvidence(
         candidates: candidates.slice(candidatePage * 20, (candidatePage + 1) * 20),
         candidatePage,
         nextCandidatePage: candidates.length > (candidatePage + 1) * 20 ? candidatePage + 1 : null,
-        reconciled: false
+        reconciled: false,
+        matching: {
+          scope: "current_posting_search_page",
+          candidateCount: candidates.length,
+          sameSignedAmountCount: candidates.filter(
+            (candidate) =>
+              candidate.checks.signedSourceToTransactionTotal === "balanced" &&
+              candidate.type === preferredPostingType(row.source)
+          ).length,
+          ambiguity: candidates.length > 1 ? "multiple_candidates" : "unconfirmed",
+          confirmation: "source_identifier_or_reviewed_allocation_required",
+          amountAndProductAreNotUniqueIdentifiers: true
+        }
       }
     }
   })
@@ -225,7 +241,25 @@ function reconciliationChecks(
     row.amount && row.currency
       ? checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }])
       : "unavailable"
+  const sourceAmount = exactMoney(row.amount, row.currency)
+  const postingTotal = postingAmount(posting.total)
+  const difference =
+    sourceAmount && postingTotal && sourceAmount.currency === postingTotal.currency
+      ? {
+          currency: sourceAmount.currency,
+          amount: formatMoney(
+            sumMoney([postingTotal, { ...sourceAmount, integer: -sourceAmount.integer }], sourceAmount.currency)
+          )
+        }
+      : null
   // Even equality compares different granularities. It never certifies an allocation or reversal.
   blockers.push("source_to_posting_allocation_required", "reversal_review_required")
-  return { blockers, signedSourceToTransactionTotal: totalComparison, additionalRecognizedAmount: null }
+  return {
+    blockers,
+    signedSourceToTransactionTotal: totalComparison,
+    transactionMinusSource: difference,
+    dateDistanceDays: Math.abs(Date.parse(posting.postedAt) - Date.parse(row.occurredAt)) / 86400000,
+    amountComparisonMeaning: "whole_transaction_not_item_allocation",
+    additionalRecognizedAmount: null
+  }
 }

@@ -59,7 +59,11 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
   if (new Set(family.map((other) => other.id)).size !== family.length) {
     blockers.push("ambiguous_reimbursement_lines")
   }
-  if (family.some((other) => other.originalId && other.originalType && roots[0]?.reason !== other.originalType)) {
+  if (
+    roots.length === 1 &&
+    roots[0]!.reason &&
+    family.some((other) => other.originalId && other.originalType && roots[0]!.reason !== other.originalType)
+  ) {
     blockers.push("original_type_mismatch")
   }
   if (
@@ -96,6 +100,11 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
   const available = blockers.length === 0
   return {
     rootReimbursementId: rootId,
+    originalLookup: {
+      status: roots.length === 1 ? "found" : "unresolved",
+      search: truncated ? "truncated" : "all_stored_records_in_account_marketplace",
+      absenceMeaning: roots.length === 0 ? "not_found_in_stored_evidence_not_proof_of_provider_absence" : null
+    },
     sourceRowIds: family.map((other) => other.sourceRowId).sort(),
     status: available ? "report_family_calculated" : "requires_review",
     blockers,

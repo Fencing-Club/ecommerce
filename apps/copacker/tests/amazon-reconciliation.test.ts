@@ -36,6 +36,27 @@ const posting: ReconciliationPosting = {
   }
 }
 const inventory = [{ sku: "SKU1", asin: "A1", fnsku: "FN1" }]
+it("ranks signed reimbursement equality above proximity without promoting it to a match", () => {
+  const source = { ...row, source: "reimbursements", orderId: null }
+  const exact = {
+    ...posting,
+    orderId: null,
+    type: "FBAInventoryReimbursement",
+    transactionId: "exact",
+    postedAt: new Date("2025-01-01")
+  }
+  const opposite = {
+    ...exact,
+    transactionId: "opposite",
+    postedAt: new Date("2026-10-01"),
+    data: { ...exact.data, totalAmount: money("-0.3") }
+  }
+  const result = reconcileAmazonEvidence([source], inventory, [opposite, exact])[0]!
+  expect(result.finance.candidates.map((r) => r.transactionId)).toEqual(["exact", "opposite"])
+  expect(result.finance.matching).toMatchObject({ sameSignedAmountCount: 1, ambiguity: "multiple_candidates" })
+  expect(result.finance.reconciled).toBe(false)
+  expect(result.finance.candidates[1]?.checks.transactionMinusSource).toEqual({ currency: "USD", amount: "-0.6" })
+})
 describe("Amazon reconciliation evidence", () => {
   it.each([
     ["returns", "Refund"],

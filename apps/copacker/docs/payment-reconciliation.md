@@ -70,8 +70,31 @@ Reference: [Amazon Finances model](https://github.com/amzn/selling-partner-api-m
 
 ## Acceptance
 
+### Stored-evidence diagnostics
+
+Reimbursement responses include all stored report coverage windows for the seller/workspace/marketplace, independent
+of the selected month. An absent original is distinguished from a truncated family search. Its date and cause remain
+unknown; a gap before the collection horizon is a possibility, not a proven explanation. Original-type mismatch is
+reported only when an unambiguous original with a known reason actually contradicts the reversal.
+
+Shopify `orderComparison` exposes the exact successful-net-payment minus current-order-total difference, pending and
+failed payment IDs, and foreign-presentment context. These observations do not establish the cause of a difference;
+no rounding adjustment or inferred refund is applied. Refund comparisons expose the same signed difference.
+
+Amazon financial candidates expose exact whole-posting minus source differences, date distance, and search-page
+ambiguity. Reimbursement candidates prefer equal signed amounts within the existing reference/type ordering. Neither
+amount equality nor a unique candidate proves a reimbursement link, allocation, or settlement.
+
+Receipt evidence adds `receiptReconciliation` using stored FBA `Receipts` movements with the exact shipment reference
+and SKU. The query is seller/workspace/US-marketplace scoped and capped at 5,000 rows per page; truncation withholds
+comparison totals. Signed movement quantities may agree or differ from shipment-received units; neither confirms
+acquisition, losses, a receipt date or a lot. Missing movement history remains unknown. AWD case quantities require
+explicit network/reference and unit mappings and are not compared to FBA movements.
+
 Regression tests cover duplicate/conflicting payments, pending refunds, exact precision, currency separation,
 cross-account isolation, changed balance snapshots, reversals outside the period, multi-step chains, one-sided release
-references and ambiguous releases. Deployment and read-only live acceptance of these new calculations remain pending.
+references and ambiguous releases. PR #70 deployed as `d93964ff`; read-only live checks confirmed Shopify deduplication,
+reimbursement reversal netting and single released-posting contribution. The subsequent stored-evidence diagnostics
+and receipt-movement comparison described above await their own deployment and live acceptance.
 External gateway fees, refund duty components, payout matching, historical product identity and return-to-stock lot
 restoration remain separate data/accounting gaps.

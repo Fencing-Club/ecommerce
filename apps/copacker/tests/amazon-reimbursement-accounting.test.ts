@@ -28,6 +28,15 @@ const reversal: ReimbursementRecord = {
   quantityInventory: 1,
   quantityTotal: 0
 }
+it("distinguishes an absent original from a contradictory original type", () => {
+  const missing = reimbursementAccounting(reversal, [reversal], false)
+  expect(missing.blockers).toEqual(["missing_original"])
+  expect(missing.originalLookup.search).toBe("all_stored_records_in_account_marketplace")
+  expect(reimbursementAccounting(reversal, [reversal], true).originalLookup.search).toBe("truncated")
+  expect(
+    reimbursementAccounting(reversal, [{ ...original, reason: "Damaged_Warehouse" }, reversal], false).blockers
+  ).toContain("original_type_mismatch")
+})
 it("nets a referenced cash reversal separately from inventory recovery without recognizing new income", () => {
   const result = reimbursementAccounting(reversal, [original, reversal, original], false)
   expect(result).toMatchObject({
