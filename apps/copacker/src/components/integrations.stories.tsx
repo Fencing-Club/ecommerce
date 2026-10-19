@@ -11,9 +11,8 @@ import {
   stockSync,
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
+import { IntegrationSyncSection } from "./integration-panel"
 import { Integrations } from "./integrations"
-import { InventorySyncRow } from "./inventory-sync"
-import { OrdersSyncRow } from "./sales-orders"
 
 const sent: ActionRequest[] = []
 // The Shopify address a valid Connect form sends to Shopify's approval, kept instead of leaving the story.
@@ -36,9 +35,9 @@ const meta = preview.meta({
     shopify: null,
     amazon: null,
     ebay: null,
-    shopifySettings: <p>Shopify sync settings</p>,
-    amazonSettings: <p>Amazon sync settings</p>,
-    ebaySettings: <p>eBay sync settings</p>
+    shopifySettings: <IntegrationSyncSection store="shopify" />,
+    amazonSettings: <IntegrationSyncSection store="amazon" />,
+    ebaySettings: <IntegrationSyncSection store="ebay" />
   },
   beforeEach: ({ msw }) => {
     sent.length = 0
@@ -128,7 +127,7 @@ export const EbayConnected = meta.story({
     await expect(await canvas.findByText(/^Synced/)).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Manage eBay" }))
     const sheet = await screen.findByRole("dialog", { name: "eBay" })
-    await expect(within(sheet).getByText("eBay sync settings")).toBeInTheDocument()
+    await expect(within(sheet).getByRole("button", { name: "Sync eBay orders" })).toBeInTheDocument()
     await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
     const confirm = await screen.findByRole("alertdialog", { name: "Disconnect eBay?" })
     await expect(confirm).toHaveTextContent(`Copacker stops reading sales from ${ebayAccount}.`)
@@ -178,12 +177,7 @@ export const EbaySyncFailed = meta.story({
 export const ShopifySignInExpired = meta.story({
   args: {
     shopify,
-    shopifySettings: (
-      <div className="grid gap-3 sm:grid-cols-2">
-        <OrdersSyncRow source="shopify" />
-        <InventorySyncRow provider="shopify" />
-      </div>
-    )
+    shopifySettings: <IntegrationSyncSection store="shopify" />
   },
   beforeEach: ({ msw }) => {
     msw.use(
@@ -264,8 +258,8 @@ export const Connected = meta.story({
     await expect(await canvas.findAllByText(/^Synced/)).toHaveLength(2)
     await userEvent.click(canvas.getByRole("button", { name: "Manage Shopify" }))
     const sheet = await screen.findByRole("dialog", { name: "Shopify" })
-    await expect(within(sheet).getByText("Shopify sync settings")).toBeInTheDocument()
-    await expect(within(sheet).queryByText("Amazon sync settings")).toBeNull()
+    await expect(within(sheet).getByRole("button", { name: "Sync Shopify orders" })).toBeInTheDocument()
+    await expect(within(sheet).queryByRole("button", { name: "Sync Amazon orders" })).toBeNull()
   }
 })
 
@@ -458,12 +452,7 @@ export const AmazonReconnectOAuth = meta.story({
 export const AmazonConnectionStatus = meta.story({
   args: {
     amazon: { ...amazon, health: "connected" },
-    amazonSettings: (
-      <>
-        <OrdersSyncRow source="amazon" />
-        <InventorySyncRow provider="amazon" />
-      </>
-    )
+    amazonSettings: <IntegrationSyncSection store="amazon" />
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
@@ -478,12 +467,7 @@ export const AmazonReconnectStatus = meta.story({
   args: {
     amazon: { ...amazon, marketplaces: null, health: "reconnect" },
     amazonSelfAuth: true,
-    amazonSettings: (
-      <>
-        <OrdersSyncRow source="amazon" />
-        <InventorySyncRow provider="amazon" />
-      </>
-    )
+    amazonSettings: <IntegrationSyncSection store="amazon" />
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))

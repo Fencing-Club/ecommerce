@@ -2,13 +2,11 @@ import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
-import { IntegrationSection } from "@/components/integration-panel"
+import { IntegrationSection, IntegrationSyncSection } from "@/components/integration-panel"
 import { Integrations } from "@/components/integrations"
 import { InventoryLocations } from "@/components/inventory-locations"
-import { InventorySyncRow } from "@/components/inventory-sync"
 import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
-import { OrdersSyncRow } from "@/components/sales-orders"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { TeamSettings } from "@/components/team-settings"
@@ -104,12 +102,7 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
               }
               shopifySettings={
                 <>
-                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <OrdersSyncRow source="shopify" />
-                      <InventorySyncRow provider="shopify" />
-                    </div>
-                  </IntegrationSection>
+                  <IntegrationSyncSection store="shopify" />
                   <IntegrationSection title={t("integrations.panel.preferencesTitle")}>
                     <div className="divide-y rounded-lg border bg-card">
                       <InventoryLocations />
@@ -127,21 +120,10 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
                   ? { account: ebayName ?? ebayAccount.externalId, externalId: ebayName ?? ebayAccount.externalId }
                   : null
               }
-              ebaySettings={
-                <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <OrdersSyncRow source="ebay" />
-                  </div>
-                </IntegrationSection>
-              }
+              ebaySettings={<IntegrationSyncSection store="ebay" />}
               amazonSettings={
                 <>
-                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <OrdersSyncRow source="amazon" />
-                      <InventorySyncRow provider="amazon" />
-                    </div>
-                  </IntegrationSection>
+                  <IntegrationSyncSection store="amazon" />
                 </>
               }
             />

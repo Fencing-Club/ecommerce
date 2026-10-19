@@ -94,6 +94,6 @@ export const SelfAuthorizationModal = meta.story({
     const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
     await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
     await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveValue("")
-    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Connect", exact: true })).toBeVisible())
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: /^Connect$/ })).toBeVisible())
   }
 })
