@@ -234,5 +234,202 @@
     "document": "Документ",
     "issues": "Виправте ці проблеми перед завантаженням документів.",
     "pages": "{count, plural, one {# сторінка} few {# сторінки} many {# сторінок} other {# сторінки}} / {paper}"
+  },
+  "booking": {
+    "step": "Крок {current} з {total}",
+    "continue": "Продовжити",
+    "back": "Назад",
+    "done": "Готово",
+    "review": "Переглянути",
+    "checkAgain": "Перевірити знову",
+    "tryAgain": "Спробувати ще раз",
+    "download": "Скачати",
+    "open": "Відкрити",
+    "newTab": "(відкривається в новій вкладці)",
+    "sellerCentral": "Seller Central",
+    "gettingLabels": "Отримуємо етикетки",
+    "labelsShared": "{count, plural, one {# етикетка} few {# етикетки} many {# етикеток} other {# етикетки}}, надіслано постачальнику",
+    "labelsPending": "Отримуємо їх від {source}",
+    "template": {
+      "drop": "Перетягніть сюди шаблон вмісту коробок",
+      "browse": "або <browse>виберіть файл</browse>",
+      "filling": "Заповнюємо шаблон",
+      "matching": "Звіряємо {units, plural, one {# одиницю} few {# одиниці} many {# одиниць} other {# одиниці}}",
+      "filled": "Шаблон заповнено",
+      "matched": "Звірено {cartons, plural, one {# коробку} few {# коробки} many {# коробок} other {# коробки}} і {units, plural, one {# одиницю} few {# одиниці} many {# одиниць} other {# одиниці}}",
+      "replace": "Замінити"
+    },
+    "picker": {
+      "search": "Пошук за назвою або ID",
+      "refresh": "Оновити відправлення",
+      "recent": "Останні відправлення",
+      "results": "Результати",
+      "matchCount": "{count, plural, =0 {Збігів ще немає} one {# збіг} few {# збіги} many {# збігів} other {# збігу}}",
+      "resultCount": "{count, plural, one {# результат} few {# результати} many {# результатів} other {# результату}}",
+      "matches": "Збігається",
+      "differs": "Не збігається",
+      "counts": "{cartons, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+      "planCounts": "{shipments, plural, one {# відправлення} few {# відправлення} many {# відправлень} other {# відправлення}}, {cartons, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+      "noResults": "Відправлень не знайдено",
+      "noResultsDescription": "Перевірте ID або оновіть за кілька хвилин.",
+      "none": "Відправлень ще немає",
+      "noneDescription": "Amazon може знадобитися кілька хвилин, щоб показати нове відправлення."
+    },
+    "agl": {
+      "start": {
+        "title": "Почніть відправлення в Seller Central",
+        "description": "Завантажте туди файл запасів, а потім поверніться із шаблоном вмісту коробок, який надасть Amazon.",
+        "counts": "{units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}} у {cartons, plural, one {# коробці} few {# коробках} many {# коробках} other {# коробки}}",
+        "sellerCentral": "Виберіть Amazon Global Logistics, потім завантажте файл"
+      },
+      "book": {
+        "title": "Забронюйте відправлення в Seller Central",
+        "description": "Завантажте заповнений файл у те саме відправлення й забронюйте там перевезення.",
+        "filledFor": "Заповнено для {cartons, plural, one {# коробки} few {# коробок} many {# коробок} other {# коробки}}, {units, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+        "sellerCentral": "Завантажте файл, виберіть забір Amazon і прийміть плату"
+      },
+      "casePacks": {
+        "description": "Упаковки містять власні дані коробок, тож можна бронювати одразу.",
+        "counts": "{units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}} в {packs, plural, one {# упаковці} few {# упаковках} many {# упаковках} other {# упаковки}}",
+        "sellerCentral": "Виберіть Amazon Global Logistics, завантажте файл і забронюйте"
+      },
+      "awd": {
+        "title": "Забронюйте відправлення AWD у Seller Central",
+        "description": "AWD бронює за упаковками. Використайте кількості й розміри з цього пакувального листа.",
+        "counts": "{packs, plural, one {# упаковка} few {# упаковки} many {# упаковок} other {# упаковки}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+        "sellerCentral": "У розділі «Warehousing and distribution» створіть його з AGL"
+      },
+      "link": {
+        "title": "Пов’яжіть відправлення Amazon",
+        "description": "Виберіть відправлення, яке ви щойно забронювали. Найновіші вгорі.",
+        "submit": "Пов’язати відправлення"
+      },
+      "done": {
+        "title": "Відправлення пов’язано",
+        "description": "Скачайте етикетки коробок, а потім завершіть митне оформлення в Seller Central.",
+        "shipment": "{id}: {cartons, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}} і {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+        "linked": "Пов’язано",
+        "labels": "Етикетки коробок",
+        "labelsFailed": "Не вдалося отримати етикетки коробок",
+        "labelsFailedDescription": "Amazon не відповів. Спробуйте ще раз за мить.",
+        "customs": "Митні документи",
+        "customsDescription": "Заповніть їх у Seller Central"
+      },
+      "missingSkus": {
+        "title": "{count, plural, one {# товару потрібен SKU Amazon} few {# товарам потрібен SKU Amazon} many {# товарам потрібен SKU Amazon} other {# товару потрібен SKU Amazon}}",
+        "description": "Amazon потрібен власний SKU для кожного товару, тому ми ще не можемо створити файл запасів."
+      },
+      "templateIssues": {
+        "summary": "{count, plural, one {# проблема в шаблоні} few {# проблеми в шаблоні} many {# проблем у шаблоні} other {# проблеми в шаблоні}}",
+        "summaryDescription": "Виправте їх у Copacker, а потім перевірте знову",
+        "title": "{count, plural, one {Виправте # проблему в шаблоні} few {Виправте # проблеми в шаблоні} many {Виправте # проблем у шаблоні} other {Виправте # проблеми в шаблоні}}",
+        "description": "Виправте їх у Copacker, а потім перевірте шаблон знову."
+      },
+      "issues": {
+        "supplierSku": "SKU постачальника {sku}",
+        "addSku": "Додати SKU",
+        "carton": "Коробка {carton}",
+        "editCarton": "Редагувати коробку",
+        "editThisCarton": "Редагувати коробку {carton}",
+        "editPacking": "Редагувати пакування",
+        "mixedGroups": "{first} і {second} належать до різних груп пакування",
+        "mixedGroupsTitle": "У коробці {carton} змішано дві групи пакування",
+        "mixedGroupsDescription": "{first} і {second} потрібно пакувати в окремі коробки",
+        "noWeight": "Не вказано вагу брутто",
+        "noWeightTitle": "Для коробки {carton} не вказано вагу брутто",
+        "noWeightDescription": "Вона потрібна Amazon, щоб заповнити шаблон",
+        "unitsDiffer": "Amazon очікує {expected, plural, one {# одиницю} few {# одиниці} many {# одиниць} other {# одиниці}}, у пакуванні {packed}",
+        "unitsDifferTitle": "{product} не збігається із шаблоном"
+      },
+      "mismatch": {
+        "summary": "{count, plural, one {# товар не збігається} few {# товари не збігаються} many {# товарів не збігаються} other {# товару не збігаються}}",
+        "summaryDescription": "{count, plural, one {Пов’язати можна буде, коли він збігатиметься} few {Пов’язати можна буде, коли вони збігатимуться} many {Пов’язати можна буде, коли вони збігатимуться} other {Пов’язати можна буде, коли вони збігатимуться}}",
+        "title": "{count, plural, one {# товар не збігається з Amazon} few {# товари не збігаються з Amazon} many {# товарів не збігаються з Amazon} other {# товару не збігаються з Amazon}}",
+        "description": "Виправте бронювання в Seller Central або пакування в Copacker, а потім перевірте знову.",
+        "counts": "В Amazon {amazon}, у пакуванні {packing}"
+      }
+    },
+    "fba": {
+      "choose": {
+        "title": "Виберіть спосіб доставки",
+        "description": "Суми включають плату Amazon за розміщення й найдешевшого перевізника.",
+        "lowest": "Найменша сума",
+        "warehouses": "{count, plural, one {# склад} few {# склади} many {# складів} other {# складу}}",
+        "withFee": "{codes}, з платою за розміщення {fee}",
+        "noFee": "{codes}, без плати за розміщення",
+        "cheapestFor": "Найдешевший перевізник до {destination}",
+        "change": "Змінити"
+      },
+      "carrier": {
+        "title": "Виберіть перевізника",
+        "description": "До {destination}. Суми включають плату за розміщення {fee}.",
+        "descriptionNoFee": "До {destination}. Плати за розміщення немає.",
+        "cheapest": "Найдешевше",
+        "quote": "{service}, {mode}",
+        "own": "Власний перевізник",
+        "ownDescription": "Лише плата за розміщення, перевізнику ви платите напряму",
+        "noEstimates": "Amazon не надав оцінок доставки для цих пропозицій.",
+        "use": "Вибрати цього перевізника"
+      },
+      "own": {
+        "title": "Використайте власного перевізника",
+        "description": "Ви платите перевізнику напряму й додаєте його етикетки до {shipment}.",
+        "method": "Спосіб доставки",
+        "carrier": "Перевізник",
+        "window": "Вікно доставки Amazon",
+        "windowPlaceholder": "Виберіть вікно доставки",
+        "methods": {
+          "smallParcel": "Посилки",
+          "lessThanTruckload": "Збірний вантаж",
+          "fullTruckload": "Повна вантажівка"
+        }
+      },
+      "review": {
+        "title": "Перевірте й забронюйте",
+        "heldUntil": "Ціни зафіксовано до {time}.",
+        "expiredAt": "Ціни втратили чинність {time}.",
+        "warehouse": "Склад",
+        "warehouses": "Склади",
+        "carrier": "Перевізник",
+        "pickup": "Забір",
+        "ready": "Готове {date}",
+        "placementFee": "Плата за розміщення",
+        "shipping": "Доставка",
+        "total": "Разом",
+        "terms": "Бронюючи, ви приймаєте <terms>умови перевізника</terms>",
+        "book": "Забронювати за {total}",
+        "bookUnpriced": "Забронювати",
+        "expired": "Ціни застаріли",
+        "expiredDescription": "Оновіть, щоб побачити актуальні ціни. Нічого не заброньовано.",
+        "refresh": "Оновити ціни"
+      },
+      "booked": {
+        "title": "Відправлення заброньовано",
+        "description": "Скачайте етикетки зараз або знайдіть їх у {shipment} будь-коли.",
+        "summary": "{service}, {total}",
+        "booked": "Заброньовано",
+        "amazonLabels": "Етикетки коробок Amazon",
+        "carrierLabels": "Етикетки перевізника",
+        "carrierReady": "Від {carrier}, надіслано постачальнику"
+      },
+      "problems": {
+        "reconnect": "Підключіть Amazon повторно, щоб побачити варіанти",
+        "reconnectDescription": "Термін доступу Copacker до вашого облікового запису Amazon минув.",
+        "reconnectAction": "Підключити повторно",
+        "failed": "Не вдалося завантажити варіанти доставки",
+        "failedDescription": "Amazon не відповів. Ваше пакування збережено."
+      },
+      "packingIssues": {
+        "summary": "{count, plural, one {# проблема пакування від Amazon} few {# проблеми пакування від Amazon} many {# проблем пакування від Amazon} other {# проблеми пакування від Amazon}}",
+        "summaryDescription": "{count, plural, one {Виправте її, а потім перевірте знову} few {Виправте їх, а потім перевірте знову} many {Виправте їх, а потім перевірте знову} other {Виправте їх, а потім перевірте знову}}",
+        "title": "{count, plural, one {Виправте # проблему пакування} few {Виправте # проблеми пакування} many {Виправте # проблем пакування} other {Виправте # проблеми пакування}}",
+        "description": "Amazon позначив їх перед розрахунком ціни. Виправте їх, а потім перевірте знову.",
+        "carton": "Коробка {number}",
+        "cartons": "Коробки {first}–{last}",
+        "cartonVolume": "Об’єм коробки менший за об’єм товарів усередині",
+        "editCartons": "Редагувати коробки",
+        "notEligible": "Ще не доступно для FBA в Seller Central"
+      }
+    }
   }
 }

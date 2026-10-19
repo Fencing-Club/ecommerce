@@ -234,5 +234,202 @@
     "document": "Document",
     "issues": "Resolve these document issues before downloading.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "booking": {
+    "step": "Step {current} of {total}",
+    "continue": "Continue",
+    "back": "Back",
+    "done": "Done",
+    "review": "Review",
+    "checkAgain": "Check again",
+    "tryAgain": "Try again",
+    "download": "Download",
+    "open": "Open",
+    "newTab": "(opens in a new tab)",
+    "sellerCentral": "Seller Central",
+    "gettingLabels": "Getting labels",
+    "labelsShared": "{count, plural, one {# label} other {# labels}}, shared with the supplier",
+    "labelsPending": "Getting them from {source}",
+    "template": {
+      "drop": "Drop the box-content template here",
+      "browse": "or <browse>browse your files</browse>",
+      "filling": "Filling the template",
+      "matching": "Matching {units, plural, one {# unit} other {# units}}",
+      "filled": "Template filled",
+      "matched": "{cartons, plural, one {# carton} other {# cartons}} and {units, plural, one {# unit} other {# units}} matched",
+      "replace": "Replace"
+    },
+    "picker": {
+      "search": "Search by name or ID",
+      "refresh": "Refresh shipments",
+      "recent": "Recent shipments",
+      "results": "Results",
+      "matchCount": "{count, plural, =0 {No match yet} one {# match} other {# matches}}",
+      "resultCount": "{count, plural, one {# result} other {# results}}",
+      "matches": "Matches",
+      "differs": "Doesn’t match",
+      "counts": "{cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unit} other {# units}}",
+      "planCounts": "{shipments, plural, one {# shipment} other {# shipments}}, {cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unit} other {# units}}",
+      "noResults": "No shipments found",
+      "noResultsDescription": "Check the ID, or refresh in a few minutes.",
+      "none": "No shipments yet",
+      "noneDescription": "Amazon can take a few minutes to list a new shipment."
+    },
+    "agl": {
+      "start": {
+        "title": "Start the shipment in Seller Central",
+        "description": "Upload your inventory file there, then bring back the box-content template Amazon gives you.",
+        "counts": "{units, plural, one {# unit} other {# units}} in {cartons, plural, one {# carton} other {# cartons}}",
+        "sellerCentral": "Choose Amazon Global Logistics, then upload the file"
+      },
+      "book": {
+        "title": "Book the shipment in Seller Central",
+        "description": "Upload the filled file to the same shipment and book the transport there.",
+        "filledFor": "Filled for {cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unit} other {# units}}",
+        "sellerCentral": "Upload the file, choose Amazon pickup and accept the charges"
+      },
+      "casePacks": {
+        "description": "Case packs carry their own carton details, so you can book straight away.",
+        "counts": "{units, plural, one {# unit} other {# units}} in {packs, plural, one {# case pack} other {# case packs}}",
+        "sellerCentral": "Choose Amazon Global Logistics, upload the file and book it"
+      },
+      "awd": {
+        "title": "Book the AWD shipment in Seller Central",
+        "description": "AWD books by case pack. Use the quantities and sizes in this packing list.",
+        "counts": "{packs, plural, one {# case pack} other {# case packs}}, {units, plural, one {# unit} other {# units}}",
+        "sellerCentral": "In Warehousing and distribution, create it with AGL"
+      },
+      "link": {
+        "title": "Link your Amazon shipment",
+        "description": "Choose the shipment you just booked. The newest are listed first.",
+        "submit": "Link shipment"
+      },
+      "done": {
+        "title": "Shipment linked",
+        "description": "Download the carton labels, then finish customs in Seller Central.",
+        "shipment": "{id} with {cartons, plural, one {# carton} other {# cartons}} and {units, plural, one {# unit} other {# units}}",
+        "linked": "Linked",
+        "labels": "Carton labels",
+        "labelsFailed": "Couldn’t get the carton labels",
+        "labelsFailedDescription": "Amazon didn’t respond. Try again in a moment.",
+        "customs": "Customs documents",
+        "customsDescription": "Complete them in Seller Central"
+      },
+      "missingSkus": {
+        "title": "{count, plural, one {# product needs an Amazon SKU} other {# products need an Amazon SKU}}",
+        "description": "Amazon needs its own SKU for every product, so we can’t make the inventory file yet."
+      },
+      "templateIssues": {
+        "summary": "{count, plural, one {# issue in the template} other {# issues in the template}}",
+        "summaryDescription": "Fix them in Copacker, then check again",
+        "title": "{count, plural, one {Fix # issue in the template} other {Fix # issues in the template}}",
+        "description": "Fix them in Copacker, then check the template again."
+      },
+      "issues": {
+        "supplierSku": "Supplier SKU {sku}",
+        "addSku": "Add SKU",
+        "carton": "Carton {carton}",
+        "editCarton": "Edit carton",
+        "editThisCarton": "Edit carton {carton}",
+        "editPacking": "Edit packing",
+        "mixedGroups": "{first} and {second} are in different packing groups",
+        "mixedGroupsTitle": "Carton {carton} mixes two packing groups",
+        "mixedGroupsDescription": "{first} and {second} need separate cartons",
+        "noWeight": "Gross weight is missing",
+        "noWeightTitle": "Carton {carton} has no gross weight",
+        "noWeightDescription": "Amazon needs it to fill the template",
+        "unitsDiffer": "Amazon expects {expected, plural, one {# unit} other {# units}}, packing has {packed}",
+        "unitsDifferTitle": "{product} doesn’t match the template"
+      },
+      "mismatch": {
+        "summary": "{count, plural, one {# product doesn’t match} other {# products don’t match}}",
+        "summaryDescription": "{count, plural, one {Linking is blocked until it does} other {Linking is blocked until they do}}",
+        "title": "{count, plural, one {# product doesn’t match Amazon} other {# products don’t match Amazon}}",
+        "description": "Fix the booking in Seller Central or the packing in Copacker, then check again.",
+        "counts": "Amazon has {amazon}, packing has {packing}"
+      }
+    },
+    "fba": {
+      "choose": {
+        "title": "Choose how to ship",
+        "description": "Totals include Amazon’s placement fee and the cheapest carrier.",
+        "lowest": "Lowest total",
+        "warehouses": "{count, plural, one {# warehouse} other {# warehouses}}",
+        "withFee": "{codes}, includes a {fee} placement fee",
+        "noFee": "{codes}, no placement fee",
+        "cheapestFor": "Cheapest carrier for {destination}",
+        "change": "Change"
+      },
+      "carrier": {
+        "title": "Choose a carrier",
+        "description": "To {destination}. Totals include the {fee} placement fee.",
+        "descriptionNoFee": "To {destination}. There’s no placement fee.",
+        "cheapest": "Cheapest",
+        "quote": "{service}, {mode}",
+        "own": "Your own carrier",
+        "ownDescription": "Placement fee only, you pay your carrier directly",
+        "noEstimates": "Amazon hasn’t shared delivery estimates for these quotes.",
+        "use": "Use this carrier"
+      },
+      "own": {
+        "title": "Use your own carrier",
+        "description": "You pay your carrier directly and add their labels to {shipment}.",
+        "method": "Delivery method",
+        "carrier": "Carrier",
+        "window": "Amazon delivery window",
+        "windowPlaceholder": "Choose a delivery window",
+        "methods": {
+          "smallParcel": "Small parcel",
+          "lessThanTruckload": "Less than truckload",
+          "fullTruckload": "Full truckload"
+        }
+      },
+      "review": {
+        "title": "Review and book",
+        "heldUntil": "Prices are held until {time}.",
+        "expiredAt": "Prices expired at {time}.",
+        "warehouse": "Warehouse",
+        "warehouses": "Warehouses",
+        "carrier": "Carrier",
+        "pickup": "Pickup",
+        "ready": "Ready {date}",
+        "placementFee": "Placement fee",
+        "shipping": "Shipping",
+        "total": "Total",
+        "terms": "Booking accepts the <terms>carrier terms</terms>",
+        "book": "Book for {total}",
+        "bookUnpriced": "Book",
+        "expired": "Prices expired",
+        "expiredDescription": "Refresh for current prices. Nothing was booked.",
+        "refresh": "Refresh prices"
+      },
+      "booked": {
+        "title": "Shipment booked",
+        "description": "Download the labels now, or find them on {shipment} anytime.",
+        "summary": "{service}, {total}",
+        "booked": "Booked",
+        "amazonLabels": "Amazon carton labels",
+        "carrierLabels": "Carrier labels",
+        "carrierReady": "From {carrier}, shared with the supplier"
+      },
+      "problems": {
+        "reconnect": "Reconnect Amazon to see options",
+        "reconnectDescription": "Copacker’s access to your Amazon account expired.",
+        "reconnectAction": "Reconnect",
+        "failed": "Couldn’t load shipping options",
+        "failedDescription": "Amazon didn’t respond. Your packing is saved."
+      },
+      "packingIssues": {
+        "summary": "{count, plural, one {# packing issue from Amazon} other {# packing issues from Amazon}}",
+        "summaryDescription": "{count, plural, one {Fix it, then check again} other {Fix them, then check again}}",
+        "title": "{count, plural, one {Fix # packing issue} other {Fix # packing issues}}",
+        "description": "Amazon flagged these before quoting. Fix them, then check again.",
+        "carton": "Carton {number}",
+        "cartons": "Cartons {first}–{last}",
+        "cartonVolume": "Carton volume is smaller than the products inside",
+        "editCartons": "Edit cartons",
+        "notEligible": "Not yet eligible for FBA in Seller Central"
+      }
+    }
   }
 }
