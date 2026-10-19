@@ -1084,6 +1084,8 @@ export class Amazon {
       assertActive?: () => Promise<void>
       retryCreate?: boolean
       reuseCreatedSince?: string
+      // Preserve cancellation as unavailable; callers must not interpret it as an empty document.
+      reuseCancelled?: boolean
     }
   ) {
     // Report reads need minute-scale backoff; creation can remain throttled for a five-minute quota window.
@@ -1114,7 +1116,7 @@ export class Amazon {
       const query = new URLSearchParams({
         reportTypes: input.reportType,
         marketplaceIds: [...input.marketplaceIds].sort().join(","),
-        processingStatuses: "DONE",
+        processingStatuses: options.reuseCancelled ? "DONE,CANCELLED" : "DONE",
         createdSince: since,
         pageSize: "100"
       })
@@ -1160,8 +1162,8 @@ export class Amazon {
               reportId: z.string().min(1),
               reportType: z.string(),
               marketplaceIds: z.array(z.string()),
-              processingStatus: z.literal("DONE"),
-              reportDocumentId: z.string().min(1),
+              processingStatus: z.enum(["DONE", "CANCELLED"]),
+              reportDocumentId: z.string().min(1).optional(),
               createdTime: z.iso.datetime({ offset: true }),
               dataStartTime: z.iso.datetime({ offset: true }),
               dataEndTime: z.iso.datetime({ offset: true })
@@ -1171,7 +1173,10 @@ export class Amazon {
             return []
           }
           const report = parsed.data
-          return report.reportType === input.reportType &&
+          return (report.processingStatus === "DONE"
+            ? Boolean(report.reportDocumentId)
+            : options.reuseCancelled === true) &&
+            report.reportType === input.reportType &&
             JSON.stringify([...new Set(report.marketplaceIds)].sort()) ===
               JSON.stringify([...new Set(input.marketplaceIds)].sort()) &&
             Date.parse(report.createdTime) >= Date.parse(since) &&
@@ -1180,7 +1185,11 @@ export class Amazon {
             ? [report]
             : []
         })
-        .sort((a, b) => Date.parse(b.createdTime) - Date.parse(a.createdTime))
+        .sort(
+          (a, b) =>
+            Number(b.processingStatus === "DONE") - Number(a.processingStatus === "DONE") ||
+            Date.parse(b.createdTime) - Date.parse(a.createdTime)
+        )
       reportId = matching[0]?.reportId
     }
     if (!reportId) {

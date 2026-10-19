@@ -91,6 +91,8 @@ export async function syncMonthlyAmazonReport<Row>(
     reportType: string
     beforeRequest?: () => Promise<boolean>
     minimumRefreshMs?: number
+    // Unavailable is evidence of cancellation, never proof of zero charges.
+    unavailableRefreshMs?: { recent: number; older: number }
     // Covered windows can reuse an exact completed report within this content-refresh interval.
     refreshReuseMs?: number
     retryCreate?: boolean
@@ -176,6 +178,16 @@ export async function syncMonthlyAmazonReport<Row>(
     ) {
       continue
     }
+    if (
+      source.unavailableRefreshMs &&
+      previous?.status === "unavailable" &&
+      previous.requestedTo >= window.to &&
+      previous.checkedAt.getTime() >
+        now.getTime() -
+          (window.from >= previousMonth ? source.unavailableRefreshMs.recent : source.unavailableRefreshMs.older)
+    ) {
+      continue
+    }
     await assertOwned()
     const [active] = await db().select({ revision: salesSyncs.revision }).from(salesSyncs).where(syncScope)
     const [connected] = await db()
@@ -208,6 +220,7 @@ export async function syncMonthlyAmazonReport<Row>(
           deadline: Date.now() + 20 * 60 * 1000,
           assertActive: assertOwned,
           retryCreate: source.retryCreate,
+          reuseCancelled: Boolean(source.unavailableRefreshMs && recovering && !previous?.coveredTo),
           reuseCreatedSince: reuseMs ? new Date(now.getTime() - reuseMs).toISOString() : undefined
         }
       )
@@ -257,7 +270,10 @@ export async function syncMonthlyAmazonReport<Row>(
         if (periodRows !== null) {
           await source.replace(tx, period, periodRows, checkedAt)
           status = "imported"
-        } else if (errorCode === "report_cancelled") {
+        } else if (
+          errorCode === "report_cancelled" ||
+          (source.unavailableRefreshMs && saved?.status === "unavailable" && saved.requestedTo >= period.to)
+        ) {
           status = "unavailable"
         }
         await source.save(tx, {

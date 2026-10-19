@@ -57,3 +57,5 @@ ownership checks; neither path retries mutations or suppresses invalid documents
 Shopify stock always includes product identity and display fields. Shopify sales always include tags, line prices,
 discount allocations and payment transactions. Readers validate those fields instead of accepting historical partial
 shapes. Customer IDs remain permission-dependent; Amazon proceeds remain optional until Amazon prices an order.
+
+Report recovery may explicitly opt into CANCELLED history as unavailable evidence. It never turns cancellation into an empty document; exact scope and creation cutoff still apply. See [aged-storage retry policy](../../../apps/copacker/docs/amazon-storage-fees.md#unavailable-aged-storage-months).
