@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Bestellstatus",
-    "tabs": {
-      "all": {
-        "label": "Alle",
-        "empty": "Keine Bestellungen"
-      },
-      "draft": {
-        "label": "Entwurf",
-        "empty": "Keine Entwürfe"
-      },
-      "submitted": {
-        "label": "Beim Lieferanten",
-        "empty": "Keine Bestellungen bei Lieferanten"
-      },
-      "closed": {
-        "label": "Abgeschlossen",
-        "empty": "Keine abgeschlossenen Bestellungen"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Bestellung",
-      "supplier": "Lieferant",
-      "destination": "Ziel",
-      "created": "Erstellt",
-      "status": "Status",
-      "value": "Wert"
-    },
-    "products": "{count, plural, one {# Produkt} other {# Produkte}}"
-  },
   "index": {
     "title": "Bestellungen",
     "supplierTitle": "Aufträge",
@@ -46,11 +16,6 @@
         "description": "Laden Sie Ihren Lieferanten ein und erstellen Sie dann Ihre erste Bestellung.",
         "action": "Lieferanten einladen"
       }
-    },
-    "stats": {
-      "open": "Offene Bestellungen",
-      "withSuppliers": "Bei Lieferanten",
-      "drafts": "Entwürfe"
     },
     "empty": {
       "guidedTitle": "Hier beginnt Ihre nächste Sendung",

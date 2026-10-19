@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "Envíos",
-    "stats": {
-      "packing": "Empacando",
-      "actionNeeded": "Requiere acción",
-      "waitingOnBuyer": "Esperando al comprador",
-      "readyForPickup": "Listo para recolección"
-    },
     "amazonFailed": {
       "title": "No se cargaron los envíos de Amazon",
       "description": "Actualiza la página para intentarlo de nuevo."
     },
-    "tabsLabel": "Estado del envío",
-    "tabs": {
-      "active": "Activos",
-      "received": "Recibidos",
-      "cancelled": "Cancelados",
-      "all": "Todos"
-    },
-    "empty": {
-      "active": "No hay envíos activos",
-      "received": "No hay envíos recibidos",
-      "cancelled": "No hay envíos cancelados",
-      "all": "No hay envíos"
-    },
-    "columns": {
-      "shipment": "Envío",
-      "supplier": "Proveedor",
-      "customer": "Cliente",
-      "destination": "Destino",
-      "cartons": "Cajas",
-      "readyDate": "Fecha de disponibilidad",
-      "status": "Estado"
-    },
-    "shipmentNumber": "Envío {number}",
-    "opensInSellerCentral": "(se abre en Seller Central)",
     "none": {
       "title": "Aún no hay envíos",
       "buyerDescription": "Crea uno desde una orden de compra enviada.",

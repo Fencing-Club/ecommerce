@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "采购订单状态",
-    "tabs": {
-      "all": {
-        "label": "全部",
-        "empty": "没有采购订单"
-      },
-      "draft": {
-        "label": "草稿",
-        "empty": "没有草稿"
-      },
-      "submitted": {
-        "label": "供应商处理中",
-        "empty": "没有供应商处理中的采购订单"
-      },
-      "closed": {
-        "label": "已关闭",
-        "empty": "没有已关闭的采购订单"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "采购订单",
-      "supplier": "供应商",
-      "destination": "目的地",
-      "created": "创建时间",
-      "status": "状态",
-      "value": "金额"
-    },
-    "products": "{count, plural, other {# 个产品}}"
-  },
   "index": {
     "title": "采购订单",
     "supplierTitle": "订单",
@@ -46,11 +16,6 @@
         "description": "邀请供应商，然后创建你的第一个采购订单。",
         "action": "邀请供应商"
       }
-    },
-    "stats": {
-      "open": "未结订单",
-      "withSuppliers": "供应商处理中",
-      "drafts": "草稿"
     },
     "empty": {
       "guidedTitle": "从这里开始你的下一批货件",

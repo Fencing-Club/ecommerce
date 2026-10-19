@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "Відправлення",
-    "stats": {
-      "packing": "Пакування",
-      "actionNeeded": "Потрібна дія",
-      "waitingOnBuyer": "Очікує покупця",
-      "readyForPickup": "Готово до забору"
-    },
     "amazonFailed": {
       "title": "Не вдалося завантажити відправлення Amazon",
       "description": "Оновіть сторінку, щоб спробувати ще раз."
     },
-    "tabsLabel": "Статус відправлення",
-    "tabs": {
-      "active": "Активні",
-      "received": "Отримані",
-      "cancelled": "Скасовані",
-      "all": "Усі"
-    },
-    "empty": {
-      "active": "Немає активних відправлень",
-      "received": "Немає отриманих відправлень",
-      "cancelled": "Немає скасованих відправлень",
-      "all": "Немає відправлень"
-    },
-    "columns": {
-      "shipment": "Відправлення",
-      "supplier": "Постачальник",
-      "customer": "Клієнт",
-      "destination": "Пункт призначення",
-      "cartons": "Коробки",
-      "readyDate": "Дата готовності",
-      "status": "Статус"
-    },
-    "shipmentNumber": "Відправлення {number}",
-    "opensInSellerCentral": "(відкривається в Seller Central)",
     "none": {
       "title": "Відправлень ще немає",
       "buyerDescription": "Створіть його з надісланого замовлення на закупівлю.",

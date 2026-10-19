@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "शिपमेंट",
-    "stats": {
-      "packing": "पैकिंग जारी",
-      "actionNeeded": "कार्रवाई ज़रूरी",
-      "waitingOnBuyer": "खरीदार का इंतज़ार",
-      "readyForPickup": "पिकअप के लिए तैयार"
-    },
     "amazonFailed": {
       "title": "Amazon शिपमेंट लोड नहीं हुए",
       "description": "फिर से कोशिश करने के लिए पेज रीफ़्रेश करें।"
     },
-    "tabsLabel": "शिपमेंट की स्थिति",
-    "tabs": {
-      "active": "सक्रिय",
-      "received": "प्राप्त",
-      "cancelled": "रद्द",
-      "all": "सभी"
-    },
-    "empty": {
-      "active": "कोई सक्रिय शिपमेंट नहीं",
-      "received": "कोई प्राप्त शिपमेंट नहीं",
-      "cancelled": "कोई रद्द शिपमेंट नहीं",
-      "all": "कोई शिपमेंट नहीं"
-    },
-    "columns": {
-      "shipment": "शिपमेंट",
-      "supplier": "सप्लायर",
-      "customer": "ग्राहक",
-      "destination": "गंतव्य",
-      "cartons": "कार्टन",
-      "readyDate": "तैयार होने की तारीख",
-      "status": "स्थिति"
-    },
-    "shipmentNumber": "शिपमेंट {number}",
-    "opensInSellerCentral": "(Seller Central में खुलता है)",
     "none": {
       "title": "अभी कोई शिपमेंट नहीं",
       "buyerDescription": "भेजे गए खरीद ऑर्डर से शुरू करें।",

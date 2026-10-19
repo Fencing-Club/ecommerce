@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Statut du bon de commande",
-    "tabs": {
-      "all": {
-        "label": "Tous",
-        "empty": "Aucun bon de commande"
-      },
-      "draft": {
-        "label": "Brouillon",
-        "empty": "Aucun brouillon"
-      },
-      "submitted": {
-        "label": "Chez le fournisseur",
-        "empty": "Aucun bon de commande chez les fournisseurs"
-      },
-      "closed": {
-        "label": "Clôturés",
-        "empty": "Aucun bon de commande clôturé"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Bon de commande",
-      "supplier": "Fournisseur",
-      "destination": "Destination",
-      "created": "Créé le",
-      "status": "Statut",
-      "value": "Valeur"
-    },
-    "products": "{count, plural, one {# produit} other {# produits}}"
-  },
   "index": {
     "title": "Bons de commande",
     "supplierTitle": "Commandes",
@@ -46,11 +16,6 @@
         "description": "Invitez votre fournisseur, puis créez votre premier bon de commande.",
         "action": "Inviter un fournisseur"
       }
-    },
-    "stats": {
-      "open": "Commandes en cours",
-      "withSuppliers": "Chez les fournisseurs",
-      "drafts": "Brouillons"
     },
     "empty": {
       "guidedTitle": "Votre prochaine expédition commence ici",

@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "شپمنٹس",
-    "stats": {
-      "packing": "پیکنگ",
-      "actionNeeded": "کارروائی درکار",
-      "waitingOnBuyer": "خریدار کا انتظار",
-      "readyForPickup": "پک اپ کے لیے تیار"
-    },
     "amazonFailed": {
       "title": "Amazon شپمنٹس لوڈ نہیں ہوئیں",
       "description": "دوبارہ کوشش کے لیے صفحہ ریفریش کریں۔"
     },
-    "tabsLabel": "شپمنٹ کا اسٹیٹس",
-    "tabs": {
-      "active": "فعال",
-      "received": "موصول",
-      "cancelled": "منسوخ",
-      "all": "تمام"
-    },
-    "empty": {
-      "active": "کوئی فعال شپمنٹ نہیں",
-      "received": "کوئی موصول شدہ شپمنٹ نہیں",
-      "cancelled": "کوئی منسوخ شدہ شپمنٹ نہیں",
-      "all": "کوئی شپمنٹ نہیں"
-    },
-    "columns": {
-      "shipment": "شپمنٹ",
-      "supplier": "سپلائر",
-      "customer": "کسٹمر",
-      "destination": "منزل",
-      "cartons": "کارٹن",
-      "readyDate": "تیاری کی تاریخ",
-      "status": "اسٹیٹس"
-    },
-    "shipmentNumber": "شپمنٹ {number}",
-    "opensInSellerCentral": "(Seller Central میں کھلتا ہے)",
     "none": {
       "title": "ابھی کوئی شپمنٹ نہیں",
       "buyerDescription": "بھیجے گئے خریداری آرڈر سے شروع کریں۔",

@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "Expéditions",
-    "stats": {
-      "packing": "Emballage",
-      "actionNeeded": "Action requise",
-      "waitingOnBuyer": "En attente de l’acheteur",
-      "readyForPickup": "Prêt pour l’enlèvement"
-    },
     "amazonFailed": {
       "title": "Les expéditions Amazon n’ont pas pu être chargées",
       "description": "Actualisez la page pour réessayer."
     },
-    "tabsLabel": "Statut de l’expédition",
-    "tabs": {
-      "active": "En cours",
-      "received": "Reçues",
-      "cancelled": "Annulées",
-      "all": "Toutes"
-    },
-    "empty": {
-      "active": "Aucune expédition en cours",
-      "received": "Aucune expédition reçue",
-      "cancelled": "Aucune expédition annulée",
-      "all": "Aucune expédition"
-    },
-    "columns": {
-      "shipment": "Expédition",
-      "supplier": "Fournisseur",
-      "customer": "Client",
-      "destination": "Destination",
-      "cartons": "Cartons",
-      "readyDate": "Date de disponibilité",
-      "status": "Statut"
-    },
-    "shipmentNumber": "Expédition {number}",
-    "opensInSellerCentral": "(s’ouvre dans Seller Central)",
     "none": {
       "title": "Aucune expédition pour l’instant",
       "buyerDescription": "Créez-en une à partir d’un bon de commande envoyé.",

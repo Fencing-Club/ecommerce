@@ -112,7 +112,7 @@ Depth: **L1** is a sidebar page, **L2** a record or sub-flow reached from one, *
 
 | Level | Page            | Route          | Holds                                                                                                                  |
 | ----- | --------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| L1    | Purchase orders | `/orders`      | The buyer's list, reused: stats Open orders, With suppliers, Drafts; tabs All, With supplier, Closed; no prices          |
+| L1    | Purchase orders | `/orders`      | The shared list (`LogisticsList`): views Active, Closed and All; no drafts, Needs you or prices                      |
 | L2    | Purchase order  | `/orders/[id]` | `forwarder-view.tsx`: route, ship-on address, products and quantities, shipments with Mark shipped (freight cost, carrier, reference), documents |
 
 ### Settings (every kind, one page)

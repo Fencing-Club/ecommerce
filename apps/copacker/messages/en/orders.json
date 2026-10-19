@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Purchase order status",
-    "tabs": {
-      "all": {
-        "label": "All",
-        "empty": "No purchase orders"
-      },
-      "draft": {
-        "label": "Draft",
-        "empty": "No drafts"
-      },
-      "submitted": {
-        "label": "With supplier",
-        "empty": "No purchase orders with suppliers"
-      },
-      "closed": {
-        "label": "Closed",
-        "empty": "No closed purchase orders"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Purchase order",
-      "supplier": "Supplier",
-      "destination": "Destination",
-      "created": "Created",
-      "status": "Status",
-      "value": "Value"
-    },
-    "products": "{count, plural, one {# product} other {# products}}"
-  },
   "index": {
     "title": "Purchase orders",
     "supplierTitle": "Orders",
@@ -46,11 +16,6 @@
         "description": "Invite your supplier, then create your first purchase order.",
         "action": "Invite a supplier"
       }
-    },
-    "stats": {
-      "open": "Open orders",
-      "withSuppliers": "With suppliers",
-      "drafts": "Drafts"
     },
     "empty": {
       "guidedTitle": "Your next shipment starts here",

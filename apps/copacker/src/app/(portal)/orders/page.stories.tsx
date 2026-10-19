@@ -1,9 +1,10 @@
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { can, isAdmin, type Permissions } from "@/lib/access"
 import { orderListRows } from "@/server/order-list"
 import type { ListedOrder } from "@/server/supplier-workspace"
+import { packingFor, shipmentRow } from "@/stories/fixtures/logistics"
 import { orderRows } from "@/stories/fixtures/orders"
 import { supplierOrders, warehouse } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
@@ -19,7 +20,8 @@ type Args = {
   rows: Row[]
   // A supplier's orders, as supplierOrders returns them.
   orders: ListedOrder[]
-  status?: string
+  // The ?view= the URL asks for.
+  view?: string
   tab?: string
   // Whether the buyer connected Shopify, and has a supplier.
   shopify: boolean
@@ -27,7 +29,7 @@ type Args = {
 }
 
 // The Purchase orders page (page.tsx) with the rows the database would return, for each kind of workspace.
-async function OrdersPage({ kind, permissions: s, rows: queried, orders, status, tab, shopify, supplierLinked }: Args) {
+async function OrdersPage({ kind, permissions: s, rows: queried, orders, view, tab, shopify, supplierLinked }: Args) {
   const t = await translateStory("orders.index")
   if (kind === "supplier") {
     return (
@@ -72,14 +74,11 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
       page={{
         view: "other",
         rows: await orderListRows(rows, showValue),
-        showValue,
-        isBuyer,
         creates,
         nextStep,
         guided,
         kind,
-        status,
-        timeZone: "UTC"
+        listView: view
       }}
     />
   )
@@ -103,31 +102,75 @@ const meta = preview.meta({
     shopify: true,
     supplierLinked: true
   } satisfies Args,
-  // The delivery address the purchase orders go to.
-  parameters: { db: { contacts: [warehouse] } }
+  // The delivery address the purchase orders go to, PO-1045's shipment on its way, and PO-1044's supplier proposing
+  // changes.
+  parameters: {
+    db: {
+      contacts: [warehouse],
+      shipments: [
+        shipmentRow({
+          orderId: "order-PO-1045",
+          status: "shipped",
+          packing: packingFor(orderRows[1]!.order.data)
+        })
+      ],
+      order_proposals: [{ orderId: "order-PO-1044", status: "pending" }]
+    }
+  }
 })
 
+// What waits on the buyer: its draft, and the proposal its supplier sent.
 export const Default = meta.story({
   ...page("buyer"),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Purchase orders" })).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "PO-1046" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: /Create purchase order/ })).toHaveAttribute("href", "/orders/new")
     await expect(canvas.getByRole("button", { name: /Import/ })).toHaveAttribute("href", "/orders/import")
-    // Newest first, with counts by status and each one's value.
+    const tabs = canvas.getByRole("navigation", { name: "Purchase order views" })
+    await expect(within(tabs).getByRole("link", { name: /Needs you/ })).toHaveAttribute("aria-current", "page")
     const links = canvas.getAllByRole("link", { name: /^PO-/ })
-    await expect(links.map((link) => link.textContent)).toEqual(["PO-1046", "PO-1045", "PO-1044", "PO-1043", "PO-1042"])
-    await expect(canvas.getByText("Open orders")).toBeVisible()
-    await expect(canvas.getByRole("columnheader", { name: "Value" })).toBeVisible()
+    await expect(links.map((link) => link.textContent)).toEqual(["PO-1046", "PO-1044"])
+    await expect(canvas.getByText("Changes proposed")).toBeVisible()
+    await expect(canvas.getByRole("columnheader", { name: "Total" })).toBeVisible()
   }
 })
 
-export const SubmittedTab = meta.story({
+// Every order, newest first, with how much of each has shipped.
+export const All = meta.story({
   ...page("buyer"),
-  args: { status: "submitted" },
+  args: { view: "all" },
+  play: async ({ canvas }) => {
+    const links = canvas.getAllByRole("link", { name: /^PO-/ })
+    await expect(links.map((link) => link.textContent)).toEqual(["PO-1046", "PO-1045", "PO-1044", "PO-1043", "PO-1042"])
+    await expect(canvas.getByRole("progressbar", { name: "PO-1045 shipped", hidden: true })).toHaveAttribute(
+      "value",
+      "300"
+    )
+    await expect(canvas.getAllByText("300 of 420 shipped")[0]).toBeInTheDocument()
+    await expect(canvas.getByText("5 purchase orders")).toBeVisible()
+  }
+})
+
+// Links from before the views still open the matching orders.
+export const LegacyStatusLink = meta.story({
+  ...page("buyer"),
+  args: { view: "active" },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
     await expect(canvas.queryByRole("link", { name: "PO-1046" })).toBeNull()
+  }
+})
+
+// Selected orders export as a spreadsheet.
+export const Selection = meta.story({
+  ...page("buyer"),
+  args: { view: "all" },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Select PO-1045" }))
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Select PO-1044" }))
+    await expect(canvas.getByText("2 selected")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Clear selection" }))
+    await expect(canvas.queryByText("2 selected")).toBeNull()
   }
 })
 
@@ -140,7 +183,7 @@ export const Empty = meta.story({
       canvas.getByText("Choose products from your catalog, then send the purchase order to your supplier.")
     ).toBeVisible()
     await expect(canvas.getAllByRole("button", { name: /Create purchase order/ })).toHaveLength(2)
-    await expect(canvas.queryByText("Open orders")).toBeNull()
+    await expect(canvas.queryByRole("table")).toBeNull()
   }
 })
 
@@ -176,7 +219,7 @@ export const MemberWithoutEdit = meta.story({
     await expect(canvas.getByRole("link", { name: "PO-1046" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: /Create purchase order/ })).toBeNull()
     await expect(canvas.queryByRole("button", { name: /Import/ })).toBeNull()
-    await expect(canvas.queryByRole("columnheader", { name: "Value" })).toBeNull()
+    await expect(canvas.queryByRole("columnheader", { name: "Total" })).toBeNull()
   }
 })
 
@@ -223,10 +266,10 @@ export const Forwarder = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Purchase orders" })).toBeVisible()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
-    await expect(canvas.queryByRole("link", { name: /^Draft/ })).toBeNull()
-    // Forwarders never have drafts, so there's no count of them.
-    await expect(canvas.queryByText("Drafts")).toBeNull()
-    await expect(canvas.queryByRole("columnheader", { name: "Value" })).toBeNull()
+    // Forwarders never have drafts, and never act on a purchase order themselves.
+    await expect(canvas.queryByRole("link", { name: /^Drafts/ })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: /^Needs you/ })).toBeNull()
+    await expect(canvas.queryByRole("columnheader", { name: "Total" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: /Create purchase order/ })).toBeNull()
   }
 })
