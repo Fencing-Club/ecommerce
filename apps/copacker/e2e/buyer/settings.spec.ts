@@ -277,9 +277,11 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   await expect(amazonDialog.getByLabel(/merchant token/i)).toHaveCount(0)
   await expect(amazonDialog.getByRole("button", { name: "Connect", exact: true })).toBeVisible()
   await amazonDialog.getByRole("button", { name: "Close", exact: true }).click()
-  if (!deployed) {
-    await expect(integrations.getByText("Coming soon")).toBeVisible()
-  }
+  // eBay connects like the other stores.
+  await expect(integrations.getByRole("link", { name: "Connect eBay" })).toHaveAttribute(
+    "href",
+    "/api/connections/ebay"
+  )
 
   await shopify.getByRole("button", { name: "Manage Shopify" }).click()
   const sheet = page.getByRole("dialog", { name: "Shopify" })
