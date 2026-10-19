@@ -1,7 +1,7 @@
+import { AmazonAuthorizationError, type AmazonConnectionHealth } from "@repo/aisle/amazon"
 import { z } from "zod"
 import { amazonFor, ebayFor, shopifyFor } from "./connections"
 import { amazonMarketplaces } from "./overview-sales"
-import { amazonSellerAccount } from "./sales-orders"
 
 // What Settings shows about each connected account. Read live, kept for a few hours, and never enough to stop
 // Settings loading: each falls back to what Copacker already stores.
@@ -54,17 +54,30 @@ export async function ebayUsername(orgId: string, userId: string, now = Date.now
 
 // The Amazon store's name and the North American marketplaces it sells in, which Copacker reads orders from. Null
 // when Amazon can't be reached.
-export async function amazonStore(orgId: string, sellerId: string) {
+export async function amazonStore(
+  orgId: string,
+  sellerId: string
+): Promise<{
+  name: string
+  marketplaces: string[] | null
+  health?: AmazonConnectionHealth
+}> {
   try {
-    const account = await amazonSellerAccount(sellerId, await amazonFor(orgId))
+    // Settings checks live authorization; cached account metadata cannot establish connection health.
+    const account = await (await amazonFor(orgId, sellerId)).sellerAccount()
     return {
-      name: account.storeName,
+      health: "connected",
+      name: account.storeName ?? "Amazon",
       marketplaces: amazonMarketplaces
         .filter((marketplace) => account.marketplaceIds.includes(marketplace.id))
         .map((marketplace) => countries[marketplace.code])
     }
   } catch (error) {
     console.warn("Couldn't read the Amazon store", error)
-    return null
+    return {
+      name: "Amazon",
+      marketplaces: null,
+      health: error instanceof AmazonAuthorizationError ? error.recovery : "unavailable"
+    }
   }
 }

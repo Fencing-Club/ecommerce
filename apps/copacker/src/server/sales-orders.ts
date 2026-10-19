@@ -113,18 +113,6 @@ export async function amazonSalesMarketplaces(
   return ids
 }
 
-// The seller's store name and marketplaces, for Settings, kept for a few hours for the same reason.
-const accountCache = new Map<string, { account: Awaited<ReturnType<Amazon["sellerAccount"]>>; at: number }>()
-export async function amazonSellerAccount(sellerId: string, amazon: Pick<Amazon, "sellerAccount">, now = Date.now()) {
-  const cached = accountCache.get(sellerId)
-  if (cached && now - cached.at < 6 * 3600000) {
-    return cached.account
-  }
-  const account = await amazon.sellerAccount()
-  accountCache.set(sellerId, { account, at: now })
-  return account
-}
-
 // How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
 export function historyDaysFor(source: SalesSource, scopes: string) {
   return source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays

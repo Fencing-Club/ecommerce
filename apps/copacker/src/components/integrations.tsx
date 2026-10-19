@@ -1,5 +1,6 @@
+import type { AmazonConnectionHealth } from "@repo/aisle/amazon"
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
-import { ArrowRight, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
+import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
@@ -29,7 +30,12 @@ import { useOrderSync } from "./sales-orders"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
 type Store = "shopify" | "amazon" | "ebay"
-type Connection = { account: string; externalId: string; marketplaces?: string[] | null }
+type Connection = {
+  account: string
+  externalId: string
+  marketplaces?: string[] | null
+  health?: AmazonConnectionHealth
+}
 
 // Each store's name. What connecting it brings is under settings.integrations.stores.
 const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
@@ -74,7 +80,7 @@ export function Integrations({
   let amazonCard = <NotConnected store="amazon" />
   if (amazon) {
     amazonCard = (
-      <Connected store="amazon" connection={amazon} admin={admin}>
+      <Connected store="amazon" connection={amazon} admin={admin} selfAuth={amazonSelfAuth}>
         {amazonSettings}
       </Connected>
     )
@@ -189,22 +195,32 @@ function Connected({
   store,
   connection,
   admin,
+  selfAuth = false,
   children
 }: {
   store: Store
   connection: Connection
+  selfAuth?: boolean
   admin: boolean
   children: React.ReactNode
 }) {
   const t = useTranslations("settings.integrations")
+  const [open, setOpen] = useState(false)
+  const [reconnecting, setReconnecting] = useState(false)
+  const health =
+    connection.health ?? (store === "amazon" && connection.marketplaces === null ? "unavailable" : "connected")
+  const status = (
+    <StatusBadge
+      tone={health === "connected" ? "success" : "warning"}
+      icon={health === "connected" ? <CircleCheck aria-hidden /> : <CircleAlert aria-hidden />}
+    >
+      {t(health === "connected" ? "connected" : `health.${health}`)}
+    </StatusBadge>
+  )
   const card = (
     <StoreCard
       store={store}
-      status={
-        <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
-          {t("connected")}
-        </StatusBadge>
-      }
+      status={status}
       action={
         admin && (
           <DialogTrigger render={<Button variant="outline" className="h-11 sm:h-[34px]" />}>
@@ -237,6 +253,7 @@ function Connected({
       {store === "amazon" && !admin && Boolean(connection.marketplaces?.length) && (
         <p className="text-xs leading-relaxed text-muted-foreground">{connection.marketplaces?.join(", ")}</p>
       )}
+      {health !== "connected" && <p className="text-sm">{t(`health.${health}Help`)}</p>}
       <div className="pt-1">
         <StoreSync store={store} />
       </div>
@@ -246,38 +263,71 @@ function Connected({
     return card
   }
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value)
+        if (!value) {
+          setReconnecting(false)
+        }
+      }}
+    >
       {card}
-      <IntegrationPanel
-        store={store}
-        title={storeNames[store]}
-        account={connection.account}
-        domain={store === "shopify" && connection.account !== connection.externalId ? connection.externalId : undefined}
-      >
-        <div className="min-h-0 space-y-6 overflow-y-auto bg-muted/20 p-5 sm:p-6">
-          {children}
-          {store === "amazon" && (
-            <IntegrationSection title={t("marketplaces")}>
-              {connection.marketplaces?.length ? (
-                <ul className="flex flex-wrap gap-2">
-                  {connection.marketplaces.map((marketplace) => (
-                    <li key={marketplace} className="rounded-md border bg-card px-3 py-2 text-xs">
-                      {marketplace}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
-                </p>
-              )}
-            </IntegrationSection>
-          )}
-        </div>
-        <IntegrationPanelFooter>
-          <DisconnectButton provider={store} account={connection.account} />
-        </IntegrationPanelFooter>
-      </IntegrationPanel>
+      {reconnecting ? (
+        <AmazonConnect
+          embedded
+          selfAuth={selfAuth}
+          onConnected={() => {
+            setOpen(false)
+            setReconnecting(false)
+          }}
+        />
+      ) : (
+        <IntegrationPanel
+          store={store}
+          title={storeNames[store]}
+          account={connection.account}
+          status={status}
+          domain={
+            store === "shopify" && connection.account !== connection.externalId ? connection.externalId : undefined
+          }
+        >
+          <div className="min-h-0 space-y-6 overflow-y-auto bg-muted/20 p-5 sm:p-6">
+            {health !== "connected" && <p className="text-sm">{t(`health.${health}Help`)}</p>}
+            {children}
+            {store === "amazon" && (
+              <IntegrationSection title={t("marketplaces")}>
+                {connection.marketplaces?.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {connection.marketplaces.map((marketplace) => (
+                      <li key={marketplace} className="rounded-md border bg-card px-3 py-2 text-xs">
+                        {marketplace}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
+                  </p>
+                )}
+              </IntegrationSection>
+            )}
+          </div>
+          <IntegrationPanelFooter>
+            {store === "amazon" && health === "reconnect" && (
+              <Button variant="outline" onClick={() => setReconnecting(true)}>
+                {t("health.reconnectAction")}
+              </Button>
+            )}
+            {store === "amazon" && health === "unavailable" && (
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                {t("health.retry")}
+              </Button>
+            )}
+            <DisconnectButton provider={store} account={connection.account} />
+          </IntegrationPanelFooter>
+        </IntegrationPanel>
+      )}
     </Dialog>
   )
 }

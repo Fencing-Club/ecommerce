@@ -153,6 +153,16 @@
         "unavailable": "Stato non disponibile",
         "scheduled": "Sincronizzazione giornaliera attiva"
       }
+    },
+    "health": {
+      "reconnect": "Riconnessione necessaria",
+      "configuration": "Problema di configurazione",
+      "unavailable": "Temporaneamente non disponibile",
+      "reconnectHelp": "Amazon ha rifiutato l’autorizzazione salvata. Ricollega il tuo account per ripristinare l’accesso.",
+      "configurationHelp": "La configurazione dell’app Amazon richiede attenzione. Contatta l’assistenza.",
+      "unavailableHelp": "Impossibile verificare Amazon al momento. La connessione salvata è stata mantenuta.",
+      "reconnectAction": "Ricollega Amazon",
+      "retry": "Riprova"
     }
   },
   "excludedTags": {

@@ -12,11 +12,13 @@ export function IntegrationPanel({
   title,
   account,
   domain,
+  status,
   children
 }: {
   store: "shopify" | "amazon" | "ebay"
   title: string
   account: string
+  status?: React.ReactNode
   domain?: string
   children: React.ReactNode
 }) {
@@ -34,9 +36,11 @@ export function IntegrationPanel({
             <DialogTitle ref={titleRef} tabIndex={-1} className="text-xl leading-6 tracking-tight outline-none">
               {title}
             </DialogTitle>
-            <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
-              {t("connected")}
-            </StatusBadge>
+            {status ?? (
+              <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
+                {t("connected")}
+              </StatusBadge>
+            )}
           </div>
           <DialogDescription className="break-words text-foreground">{account}</DialogDescription>
           {domain && <p className="break-all text-xs text-muted-foreground">{domain}</p>}

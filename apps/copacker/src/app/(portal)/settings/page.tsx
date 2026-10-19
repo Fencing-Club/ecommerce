@@ -97,7 +97,8 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
                   ? {
                       account: amazon?.name ?? "Amazon",
                       externalId: amazonAccount.externalId,
-                      marketplaces: amazon?.marketplaces ?? null
+                      marketplaces: amazon?.marketplaces ?? null,
+                      health: amazon?.health ?? (amazon ? "connected" : "unavailable")
                     }
                   : null
               }

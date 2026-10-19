@@ -153,6 +153,16 @@
         "unavailable": "Status unavailable",
         "scheduled": "Daily sync enabled"
       }
+    },
+    "health": {
+      "reconnect": "Reconnect required",
+      "configuration": "Configuration issue",
+      "unavailable": "Temporarily unavailable",
+      "reconnectHelp": "Amazon rejected the saved authorization. Reconnect your account to restore access.",
+      "configurationHelp": "The Amazon app configuration needs attention. Contact support.",
+      "unavailableHelp": "We could not check Amazon right now. Your saved connection has been kept.",
+      "reconnectAction": "Reconnect Amazon",
+      "retry": "Try again"
     }
   },
   "excludedTags": {

@@ -272,7 +272,7 @@ export const Connected = meta.story({
 export const AmazonMarketplacesUnavailable = meta.story({
   args: { amazon: { ...amazon, marketplaces: null } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Connected")).toBeVisible()
+    await expect(canvas.getByText("Temporarily unavailable")).toBeVisible()
     await expect(canvas.getByText("Couldn’t load from Amazon")).toBeVisible()
     await expect(canvas.queryByText("United States")).toBeNull()
   }
@@ -415,5 +415,29 @@ export const AdsUnavailable = meta.story({
     await expect(within(ads).getByText("Ads setup required.")).toBeVisible()
     await expect(within(ads).queryByRole("link")).toBeNull()
     await expect(within(ads).queryByRole("button")).toBeNull()
+  }
+})
+
+export const AmazonReconnectRequired = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "reconnect" }, amazonSelfAuth: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Reconnect required")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await expect(within(panel).queryByText("Connected")).toBeNull()
+    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
+    const reconnect = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    await expect(within(reconnect).getByLabelText(/Refresh token/i)).toHaveAttribute("type", "password")
+  }
+})
+export const AmazonConfigurationIssue = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "configuration" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Configuration issue")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await expect(within(panel).queryByRole("button", { name: "Reconnect Amazon" })).toBeNull()
+    await waitFor(() => expect(within(panel).getByText(/Contact support/)).toBeVisible())
   }
 })
