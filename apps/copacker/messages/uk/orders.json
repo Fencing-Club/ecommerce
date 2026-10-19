@@ -439,9 +439,13 @@
     "pickupAddress": "Адреса забору",
     "otherAddress": "Інша адреса",
     "readyForPickup": "Готово до забору",
+    "shipFrom": "Адреса забору",
+    "readyDate": "Готово до забору",
     "addCartonProduct": "Додати товар до коробки",
     "removeCartonProduct": "Видалити товар {number} з коробки",
-    "finishPacking": "Завершити пакування"
+    "finishPacking": "Завершити пакування",
+    "addNewAddress": "Додати адресу",
+    "chooseAddress": "Адреса забору"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",

@@ -55,6 +55,8 @@ export const MixedProducts = meta.story({
   play: async ({ canvas, args }) => {
     await expect(canvas.getAllByText("2 per pack").some((element) => element.checkVisibility())).toBe(true)
     await expect(canvas.queryByText("1 per pack")).toBeNull()
+    await expect(canvas.getAllByText("Supplier SKU").some((element) => element.checkVisibility())).toBe(true)
+    await expect(canvas.getByText(products[0]!.supplierSku, { exact: true })).toBeVisible()
     const quantity = canvas.getByRole("spinbutton", { name: `${products[2]!.buyerSku}: quantity per carton 1` })
     await userEvent.clear(quantity)
     await userEvent.type(quantity, "12")
@@ -159,7 +161,10 @@ export const MobilePacked = meta.story({
 export const LongSku = meta.story({
   args: {
     readOnly: true,
-    products: products.map((item) => ({ ...item, buyerSku: `${item.buyerSku}-LONG-SUPPLIER-REFERENCE-1234567890` }))
+    products: products.map((item) => ({
+      ...item,
+      supplierSku: `${item.supplierSku}-LONG-SUPPLIER-REFERENCE-1234567890`
+    }))
   },
   decorators: [
     (Story) => (

@@ -143,6 +143,20 @@ export const pickupAddress: Address = {
   email: ""
 }
 
+export const pickupLocations = [
+  { id: "supplier-origin", name: "Northwind Textiles / Main factory", address: pickupAddress },
+  {
+    id: "supplier-warehouse",
+    name: "Northwind Textiles / Ningbo warehouse",
+    address: { ...pickupAddress, addressLine1: "26 Yongjiang Road", addressLine2: "Building 2", postalCode: "315020" }
+  },
+  {
+    id: "supplier-hangzhou",
+    name: "Northwind Textiles / Hangzhou factory",
+    address: { ...pickupAddress, addressLine1: "118 Binsheng Road", city: "Hangzhou", postalCode: "310051" }
+  }
+]
+
 // A shipment's packing, one carton of each product.
 export function packed(cartons: number) {
   return {

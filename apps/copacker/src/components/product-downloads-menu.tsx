@@ -1,4 +1,5 @@
-import { ChevronDown, Download } from "lucide-react"
+import { ChevronDown, Download, MoreHorizontal } from "lucide-react"
+import { Attachment, AttachmentContent, attachmentClassName } from "./attachment"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,
@@ -14,21 +15,69 @@ export type ProductDownload = { id: string; label: string; unavailable?: string 
 export function ProductDownloadsMenu({
   items,
   onDownload,
-  busy = false
+  busy = false,
+  productName,
+  attachment = false
 }: {
   items: ProductDownload[]
   onDownload: (ids: string[]) => void
   busy?: boolean
+  productName?: string
+  attachment?: boolean
 }) {
   const available = items.filter((item) => !item.unavailable)
+  if (attachment && available.length === 0) {
+    return null
+  }
+  const single = available.length === 1 ? available[0] : undefined
+  if (single) {
+    const downloadLabel = `Download ${single.label.toLowerCase()}${productName ? ` for ${productName}` : ""}`
+    return attachment ? (
+      <Attachment
+        label={single.label}
+        downloadLabel={downloadLabel}
+        busy={busy}
+        onDownload={() => onDownload([single.id])}
+      />
+    ) : (
+      <Button
+        variant={productName ? "ghost" : "outline"}
+        size={productName ? "icon-sm" : "default"}
+        aria-label={downloadLabel}
+        disabled={busy}
+        onClick={() => onDownload([single.id])}
+      >
+        <Download />
+        {!productName && single.label}
+      </Button>
+    )
+  }
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" disabled={busy || !items.length} />}>
-        Product labels
-        <ChevronDown />
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant={productName ? "ghost" : "outline"}
+            size={productName ? "icon-sm" : "default"}
+            aria-label={productName ? `Labels for ${productName}` : undefined}
+            className={attachment && !productName ? attachmentClassName : undefined}
+            disabled={busy || !items.length}
+          />
+        }
+      >
+        {productName && <MoreHorizontal />}
+        {!productName && attachment && <AttachmentContent label="Product labels" expandable />}
+        {!productName && !attachment && (
+          <>
+            <Download />
+            <span className="flex-1 text-start">Product labels</span>
+            <ChevronDown />
+          </>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-60">
-        {items.map((item) => (
+        {(attachment ? available : items).map((item) => (
           <DropdownMenuItem key={item.id} disabled={Boolean(item.unavailable)} onClick={() => onDownload([item.id])}>
             <span>
               {item.label}

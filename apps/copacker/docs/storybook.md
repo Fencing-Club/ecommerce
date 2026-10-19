@@ -116,3 +116,23 @@ uses local packing state and does not persist documents or alter production rele
 
 Product SKU/FNSKU and suffocation downloads use the existing shared printable label generators. Country-of-origin and choking-hazard label files are unavailable until supplied; the menu never substitutes a placeholder for these files.
 `DetailFields` renders the shared label-above-value fields for PO details and shipment summaries. The packing form supplies live carton, weight, and volume totals to its sidebar slot.
+
+Product rows in the purchase-order prototype and shipment Products table reuse `ProductDownloadsMenu` with an
+icon trigger. Row downloads contain only that variant; page-level menus retain bulk downloads.
+
+
+### Shipment workflow reference and toast feedback
+
+`Workflows/Shipments/States and actions/All Arrangements` documents the intended eight shipping arrangements in one
+page. Each action shows its approval gate, next badge, canonical email event/template, recipients, default delivery,
+and actor toast. Email mappings follow the Notifications session's shipment action contract; draft saves, downloads,
+and routine background processing send no email. Physical pickup is distinct from dispatch.
+
+`Components/toast-provider` covers saved drafts, shipment-action confirmations, and save failures using the shared
+`ToastProvider`. Its action examples and the workflow reference share `src/lib/shipment-action-feedback.ts`; these
+English review examples are not a production event publisher or a replacement for localized runtime copy.
+
+Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
+`PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
+and required ready date. The standalone shipment-packing-details stories cover editing, read-only, forwarder,
+and mobile layouts; the prototype sidebar reads the date from the live form.

@@ -114,8 +114,8 @@ export const Empty = meta.story({
     await expect(canvas.getByText("No cartons yet")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
     await expect(canvas.getByText("0 cartons, 0 units")).toBeVisible()
-    // Without a saved address, the pickup address is typed in.
-    await expect(canvas.queryByRole("combobox", { name: "Pickup address" })).toBeNull()
+    // A new address is entered in the address dialog.
+    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toBeVisible()
 
     await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
     await expect(canvas.getByText("1 carton, 0 units")).toBeVisible()
@@ -166,8 +166,8 @@ export const CheckFindsIssues = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
-    await expect(canvas.getByRole("combobox", { name: "Pickup address" })).toHaveTextContent("Ningbo factory")
-    await expect(canvas.getByText(/88 Harbour Road/)).toBeVisible()
+    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(pickupAddress.addressLine1)
+    await expect(canvas.getAllByText(/88 Harbour Road/)[0]).toBeVisible()
     await expect(canvas.getByText("2 cartons, 80 units")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await expect(within(canvas.getByRole("table")).getByText("80 of 80")).toBeVisible()
@@ -294,16 +294,17 @@ export const AwdCartons = meta.story({
   }
 })
 
-// A pickup address typed in stays while a saved one is chosen, and comes back with Other address.
+// Opening and dismissing a new address preserves the selected location.
 export const PickupAddress = meta.story({
   args: { addresses: [savedAddress] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/88 Harbour Road/)).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Pickup address" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Other address" }))
-    await waitFor(() => expect(canvas.queryByText(/88 Harbour Road/)).toBeNull())
-    const street = canvas.getByRole("textbox", { name: "Street address" })
-    await expect(street).toHaveValue("")
+    await expect(canvas.getAllByText(/88 Harbour Road/)[0]).toBeVisible()
+    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
+    const dialog = await shownDialog("Add new address")
+    await expect(dialog.getByRole("textbox", { name: "Street address" })).toHaveValue("")
+    await userEvent.keyboard("{Escape}")
+    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent("88 Harbour Road")
   }
 })
 
@@ -332,7 +333,8 @@ export const ForSupplier = meta.story({
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await expect(canvas.queryByRole("textbox", { name: "Supplier SKU" })).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: "Add address" }))
+    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
     const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
     await expect(dialog.getAllByRole("textbox").length).toBeGreaterThan(3)
   }

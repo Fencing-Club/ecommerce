@@ -8,8 +8,6 @@ import {
   Clock,
   Download,
   ExternalLink,
-  Factory,
-  MapPin,
   Loader2,
   PackageCheck
 } from "lucide-react"
@@ -21,6 +19,7 @@ import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
+import { ShipmentAddress, ShipmentPackingDetails } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -67,6 +66,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const t = useTranslations("shipments.detail"),
     format = useFormatter(),
     locale = useLocale()
+  const packingText = useTranslations("orders.packing")
   const nextAction: Record<string, React.ReactNode> = {
     prepareAmazon: isBuyer && (
       <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
@@ -139,78 +139,78 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       </PageHeader>
 
       {!editable && (
-        <div className="overflow-hidden rounded-lg border">
-          <div className="flex flex-wrap items-center gap-3 border-b bg-muted/50 px-4 py-3 text-sm">
-            <span className="inline-flex items-center gap-2">
-              <Factory className="size-4" aria-hidden />
-              {supplier.name}
-            </span>
-            <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-            {snapshot.via && delivery.addresses[0] && (
-              <>
-                <span>{delivery.addresses[0].name}</span>
-                <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-              </>
-            )}
-            <span className="inline-flex items-center gap-2">
-              <MapPin className="size-4" aria-hidden />
-              {destinationName}
-            </span>
-          </div>
-          <div className="grid gap-6 p-4 sm:grid-cols-2">
-            <section className="min-w-0">
-              <div className="mb-2 flex flex-col gap-1">
-                <CardTitle>{t("pickup.title")}</CardTitle>
-                {shipment.packing && (
-                  <CardDescription>
-                    {t("pickup.ready", {
-                      date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        timeZone: "UTC"
-                      })
-                    })}
-                  </CardDescription>
-                )}
-              </div>
-              <div>
-                {origin && (
-                  <address className="flex flex-col gap-0.5 text-sm text-muted-foreground not-italic">
-                    <span className="font-medium text-foreground">{origin.name}</span>
-                    <span>{[origin.addressLine1, origin.addressLine2].filter(Boolean).join(", ")}</span>
-                    <span>
-                      {origin.city}, {origin.stateOrRegion} {origin.postalCode}, {origin.countryCode}
-                    </span>
-                    {origin.phoneNumber && (
-                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
-                        {formatPhone(origin.phoneNumber)}
-                      </a>
-                    )}
-                    {origin.email && <span>{origin.email}</span>}
-                  </address>
-                )}
-              </div>
-            </section>
-
-            <ShipmentDestination {...delivery} compact />
-          </div>
-          {shipment.transport && (
-            <ShipmentTransportSettings
-              compact
-              key={JSON.stringify(shipment.transport)}
-              id={id}
-              revision={shipment.revision}
-              initial={shipment.transport}
-              hasForwarder={!!snapshot.via}
-              editable={
-                isBuyer &&
-                editsShipments &&
-                canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
-              }
-            />
-          )}
-        </div>
+        <ShipmentPackingDetails
+          route={[
+            supplier.name,
+            ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
+            destinationName
+          ]}
+          shipFrom={
+            <div className="space-y-3">
+              <ShipmentAddress
+                readOnly
+                label={packingText("shipFrom")}
+                name={origin?.name ?? supplier.name}
+                address={
+                  origin
+                    ? [
+                        origin.addressLine1,
+                        origin.addressLine2,
+                        origin.city,
+                        origin.stateOrRegion,
+                        origin.postalCode,
+                        origin.countryCode
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
+                    : ""
+                }
+                contact={
+                  origin && (
+                    <>
+                      {origin.phoneNumber && (
+                        <a className="block tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                          {formatPhone(origin.phoneNumber)}
+                        </a>
+                      )}
+                      {origin.email && <span>{origin.email}</span>}
+                    </>
+                  )
+                }
+              />
+              {shipment.packing && (
+                <CardDescription>
+                  {t("pickup.ready", {
+                    date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC"
+                    })
+                  })}
+                </CardDescription>
+              )}
+            </div>
+          }
+          shipTo={<ShipmentDestination {...delivery} compact readOnly />}
+          transport={
+            shipment.transport && (
+              <ShipmentTransportSettings
+                compact
+                key={JSON.stringify(shipment.transport)}
+                id={id}
+                revision={shipment.revision}
+                initial={shipment.transport}
+                hasForwarder={!!snapshot.via}
+                editable={
+                  isBuyer &&
+                  editsShipments &&
+                  canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+                }
+              />
+            )
+          }
+        />
       )}
       {(editable || !shipment.transport) && (
         <ShipmentTransportSettings
@@ -245,7 +245,14 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       {editable ? (
         <PackingForm
           shipmentName={title}
-          destination={<ShipmentDestination {...delivery} />}
+          shippingDetails={{
+            route: [
+              supplier.name,
+              ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
+              destinationName
+            ],
+            shipTo: <ShipmentDestination {...delivery} compact />
+          }}
           shipmentId={id}
           linkedAmazonShipmentId={
             isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined

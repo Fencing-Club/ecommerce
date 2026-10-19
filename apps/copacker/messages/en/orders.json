@@ -439,9 +439,13 @@
     "pickupAddress": "Pickup address",
     "otherAddress": "Other address",
     "readyForPickup": "Ready for pickup",
+    "shipFrom": "Ship from",
+    "readyDate": "Ready date",
     "addCartonProduct": "Add product to carton",
     "removeCartonProduct": "Remove product {number} from carton",
-    "finishPacking": "Finish packing"
+    "finishPacking": "Finish packing",
+    "addNewAddress": "Add new address",
+    "chooseAddress": "Choose an address"
   },
   "paymentTerms": {
     "net7": "Net 7",

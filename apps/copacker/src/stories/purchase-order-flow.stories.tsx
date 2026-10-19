@@ -156,9 +156,9 @@ export const InvoiceNeedsUpdating = meta.story({
 export const SupplierAcceptedOrder = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true }),
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Pack shipment" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "View shipment" })).toBeVisible()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: "Pack shipment" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
     await expect(canvas.getByRole("heading", { name: "Shipment 1" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Import cartons" })).toBeVisible()
     await expect(canvas.queryByRole("heading", { name: "Invoice" })).toBeNull()
@@ -202,7 +202,7 @@ export const SupplierPaidOrder = meta.story({
     await expect(
       within(canvas.getByRole("region", { name: "Payment" })).getByText("Paid", { exact: true })
     ).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Pack shipment" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "View shipment" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark as paid" })).toBeNull()
   }
 })
@@ -426,17 +426,14 @@ export const PackingRequirements = meta.story({
     await expect(details.getByRole("checkbox", { name: "FNSKU label" })).not.toBeChecked()
     await expect(details.getByRole("checkbox", { name: "SKU label" })).toBeChecked()
     await userEvent.click(details.getByRole("checkbox", { name: "Choking hazard label" }))
-    await userEvent.click(details.getByRole("checkbox", { name: "Country of origin label" }))
-    await expect(details.getByRole("button", { name: "Done" })).toBeDisabled()
-    await userEvent.click(details.getByRole("combobox", { name: "Country of origin" }))
-    await userEvent.click(await screen.findByRole("option", { name: "China" }))
+    await expect(details.queryByRole("checkbox", { name: "Country of origin label" })).toBeNull()
     await userEvent.click(details.getByRole("button", { name: "Done" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await userEvent.click(canvas.getAllByRole("button", { name: "Packing details" })[0]!)
     const reopened = await shownDialog("Packing details")
     await expect(reopened.getByRole("checkbox", { name: "FNSKU label" })).not.toBeChecked()
     await expect(reopened.getByRole("checkbox", { name: "Choking hazard label" })).toBeChecked()
-    await expect(reopened.getByRole("combobox", { name: "Country of origin" })).toHaveTextContent("China")
+    await expect(reopened.queryByRole("combobox", { name: "Country of origin" })).toBeNull()
   }
 })
 export const SupplierOrderMobile = meta.story({
@@ -556,7 +553,7 @@ export const SupplierPackingMobile = meta.story({
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Save draft" })).toBeVisible()
-    await expect(canvas.getByText("Ningbo warehouse", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("Supplier ships to Ningbo warehouse.", { exact: true })).toBeVisible()
   }
 })
 export const SupplierPackingReady = meta.story({
@@ -631,7 +628,7 @@ export const SupplierPackOnOrder = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
     await expect(canvas.getByRole("region", { name: "Purchase order documents" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
-    await userEvent.click(canvas.getByRole("button", { name: "View packing" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
     await expect(canvas.getByText("Packed", { exact: true })).toBeVisible()
   }
 })
@@ -665,9 +662,16 @@ export const ShipmentDocumentsReady = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Product labels" }))
     await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
     await userEvent.keyboard("{Escape}")
+    await userEvent.click(canvas.getByRole("button", { name: "Products (3)" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-WB-2210" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
     await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-WB-2210" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
     await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
     await expect(canvas.getByRole("button", { name: "Product labels" })).toBeEnabled()
-    await userEvent.click(canvas.getByRole("button", { name: "View packing" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
   }
 })

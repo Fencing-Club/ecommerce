@@ -598,8 +598,8 @@ export const MemberWithoutPrices = meta.story({
     await expect(canvas.queryByText(/\$/)).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Continue packing" })).toBeNull()
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
-    await expect(documents.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Download Packing listPacking list.pdf"
+    await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
+      "Download Packing list"
     ])
   }
 })

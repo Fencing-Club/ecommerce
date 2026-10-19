@@ -61,6 +61,7 @@ export const Default = meta.story({
     const trigger = canvas.getByRole("combobox", { name: "Supplier" })
     await expect(trigger).toHaveTextContent("Choose a supplier")
     await expect(trigger).toHaveAttribute("data-size", "default")
+    await expect(trigger).toHaveStyle({ height: "36px" })
 
     await userEvent.click(trigger)
     const listbox = await screen.findByRole("listbox")

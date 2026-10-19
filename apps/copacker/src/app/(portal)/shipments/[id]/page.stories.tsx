@@ -239,7 +239,7 @@ export const PackingSupplier = meta.story({
     await expect(canvas.getByRole("heading", { name: /Shipment 1/ })).toBeVisible()
     const breadcrumb = canvas.getByRole("navigation", { name: "Breadcrumb" })
     await expect(within(breadcrumb).getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders")
-    await expect(canvas.getByText("Portland warehouse")).toBeVisible()
+    await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
     await expect(canvas.getAllByText("Packing").length).toBeGreaterThan(0)
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
@@ -364,7 +364,7 @@ export const ApprovalWithoutPrices = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Price per unit/)).toBeNull()
-    await expect(canvas.getByText(/Supplier SKU/)).toBeVisible()
+    await expect(canvas.getByText(/Supplier SKU LM-TOTE/)).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Approve changes" })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
     // Purchase orders aren't linked for someone who can't open them.

@@ -439,9 +439,13 @@
     "pickupAddress": "Dirección de recolección",
     "otherAddress": "Otra dirección",
     "readyForPickup": "Listo para recolección",
+    "shipFrom": "Dirección de recolección",
+    "readyDate": "Listo para recolección",
     "addCartonProduct": "Agregar producto a la caja",
     "removeCartonProduct": "Quitar producto {number} de la caja",
-    "finishPacking": "Terminar empaque"
+    "finishPacking": "Terminar empaque",
+    "addNewAddress": "Agregar dirección",
+    "chooseAddress": "Dirección de recolección"
   },
   "paymentTerms": {
     "net7": "Neto 7 días",

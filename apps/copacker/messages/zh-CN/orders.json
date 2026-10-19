@@ -439,9 +439,13 @@
     "pickupAddress": "提货地址",
     "otherAddress": "其他地址",
     "readyForPickup": "可提货日期",
+    "shipFrom": "提货地址",
+    "readyDate": "可提货日期",
     "addCartonProduct": "向纸箱添加商品",
     "removeCartonProduct": "从纸箱移除商品 {number}",
-    "finishPacking": "完成装箱"
+    "finishPacking": "完成装箱",
+    "addNewAddress": "添加地址",
+    "chooseAddress": "提货地址"
   },
   "paymentTerms": {
     "net7": "7 天账期",

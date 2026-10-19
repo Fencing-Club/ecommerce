@@ -11,7 +11,7 @@ import {
   money
 } from "@repo/aisle"
 import { useRouter } from "@tanstack/react-router"
-import { Ellipsis, MapPinPlus, Plus, Upload } from "lucide-react"
+import { Ellipsis, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
@@ -21,27 +21,24 @@ import { useCan } from "@/components/access"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { cartonTotals, expandCartonGroups, groupCartons, nextCartonId, packingEditorSchema } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
-import { AddressFields, emptyAddress } from "./address-fields"
+import { emptyAddress } from "./address-fields"
 import { CartonEditor } from "./carton-editor"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
-import { SelectField } from "./form-fields"
-import { AddressSummary, type PartnerAddress, PartnerAddressDialog } from "./partner-address"
+import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
+import { PickupAddressSelect } from "./pickup-address-select"
 import { ProductIdentity } from "./product-identity"
 import { LinkExistingShipment } from "./shipment-actions"
+import { ShipmentAddress, ShipmentPackingDetails } from "./shipment-packing-details"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
-
 type Values = z.input<typeof packingEditorSchema>
-
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
 // number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
@@ -51,19 +48,16 @@ const withoutBlanks = (values: z.input<typeof packingSchema>): PackingDraft =>
       value === null || (typeof value === "number" && Number.isNaN(value)) ? undefined : value
     )
   )
-
 const checkResult = z.object({
   canSubmit: z.boolean(),
   requiresApproval: z.boolean(),
   issues: z.array(z.object({ message: z.string(), field: z.string().optional(), cartonId: z.string().optional() }))
 })
-
 // The product table's first and last columns line up with the card's header.
 const edgeCells = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 // Which saved address a pickup address is, while it's unchanged.
 const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
   addresses.find(({ address }) => objectKeys(emptyAddress).every((key) => (address[key] ?? "") === (origin[key] ?? "")))
-
 // Enter in a field must not finish packing, so only the Finish packing button
 // submits. Buttons still press and text areas still start a new line, and a dialog opened from here keeps its own
 // Enter: its fields belong to its own form.
@@ -77,7 +71,6 @@ function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
     event.preventDefault()
   }
 }
-
 export function PackingForm({
   shipmentId,
   revision,
@@ -93,16 +86,24 @@ export function PackingForm({
   shipmentName,
   heading,
   renderSidebar,
+  renderProductActions,
   readOnly = false,
   onSubmitted
 }: {
-  renderSidebar?: (summary: { cartons: number; weight: number | null; volume: number | null }) => React.ReactNode
+  renderSidebar?: (summary: {
+    cartons: number
+    units: number
+    readyDate: string
+    weight: number | null
+    volume: number | null
+  }) => React.ReactNode
+  renderProductActions?: (item: OrderInput["items"][number]) => React.ReactNode
   heading?: React.ReactNode
   readOnly?: boolean
   onSubmitted?: (packing: Packing) => void
   shipmentName?: string
   destination?: React.ReactNode
-  shippingDetails?: React.ReactNode
+  shippingDetails?: { route: string[]; shipTo: React.ReactNode; transport?: React.ReactNode }
   shipmentId: string
   revision: number
   orderRevision: number
@@ -141,7 +142,6 @@ export function PackingForm({
     noOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, initial?.origin ?? {})
   // The saved address the cartons leave from, or "" for one typed in.
   const [pickup, setPickup] = useState(startAddress?.id ?? "")
-
   const form = useForm<Values, unknown, z.output<typeof packingEditorSchema>>({
     mode: "onChange",
     resolver: zodResolver(packingEditorSchema, { error: formErrorMap }),
@@ -153,6 +153,7 @@ export function PackingForm({
     }
   })
   const cartons = useFieldArray({ control: form.control, name: "cartons" })
+  const readyDate = useWatch({ control: form.control, name: "readyDate" })
   const cartonValues = useWatch({ control: form.control, name: "cartons" }) ?? []
   const totals = cartonTotals(cartonValues)
   const physicalCartons = totals.cartons > 1000 ? [] : expandCartonGroups(cartonValues)
@@ -164,7 +165,6 @@ export function PackingForm({
     order.items.some((item) => (availablePieces[item.id] ?? 0) > 0) &&
     order.items.every((item) => packed(item.id) === (availablePieces[item.id] ?? 0))
   const cartonsError = form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message
-
   const completeCartons = physicalCartons.flatMap((carton) => {
     const result = cartonInputSchema.safeParse(carton)
     return result.success ? [result.data] : []
@@ -176,7 +176,6 @@ export function PackingForm({
   ).issues
   const issueText = (issue: (typeof packingIssues)[number]) =>
     "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-
   // Drafts save incomplete values; submission runs authoritative checks after field validation.
   async function saveDraft(draft: Values) {
     if (cartonTotals(draft.cartons).cartons > 1000) {
@@ -196,7 +195,6 @@ export function PackingForm({
     setSavedRevision(saved.revision)
     return saved.revision
   }
-
   async function perform(mode: "save" | "submit", values: Values) {
     setWorking(mode)
     setServerError("")
@@ -226,7 +224,6 @@ export function PackingForm({
       setWorking(null)
     }
   }
-
   async function linkShipment(amazonShipmentId: string | null) {
     setWorking("link")
     setServerError("")
@@ -246,19 +243,13 @@ export function PackingForm({
       setWorking(null)
     }
   }
-
   const validated = () =>
     form.handleSubmit(
       () => perform("submit", form.getValues()),
-      (errors) => {
-        // A saved address that doesn't pass, such as one without a phone number, opens its fields to fix here.
-        if (errors.origin) {
-          setPickup("")
-        }
+      () => {
         setServerError(t("fixFields"))
       }
     )
-
   function addCarton() {
     cartons.append({
       cartonId: nextCartonId(cartonValues),
@@ -271,7 +262,6 @@ export function PackingForm({
       items: []
     })
   }
-
   return (
     <FormProvider {...form}>
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
@@ -322,18 +312,16 @@ export function PackingForm({
             {linkedId !== undefined && (
               <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
             )}
-            {shippingDetails ?? (
-              <div className={cn("grid gap-6", destination && "lg:grid-cols-2")}>
-                <PickupCard
-                  addresses={addresses}
-                  addAddressTo={addAddressTo}
-                  pickup={pickup}
-                  onPickupChange={setPickup}
-                />
-                {destination}
-              </div>
-            )}
-
+            <PackingDetailsFields
+              addresses={addresses}
+              addAddressTo={addAddressTo}
+              pickup={pickup}
+              onPickupChange={setPickup}
+              readOnly={readOnly}
+              route={shippingDetails?.route}
+              shipTo={shippingDetails?.shipTo ?? destination}
+              transport={shippingDetails?.transport}
+            />
             {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
             {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
             <form
@@ -365,6 +353,11 @@ export function PackingForm({
                           <TableHead className="px-6 text-end">{t("packed")}</TableHead>
                           <TableHead className="px-6">{t("supplierSku")}</TableHead>
                           {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
+                          {renderProductActions && (
+                            <TableHead className="w-10">
+                              <span className="sr-only">Actions</span>
+                            </TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -405,6 +398,9 @@ export function PackingForm({
                                   {money(item.unitPrice, order.currency, locale)}
                                 </TableCell>
                               )}
+                              {renderProductActions && (
+                                <TableCell className="w-10 text-end">{renderProductActions(item)}</TableCell>
+                              )}
                             </TableRow>
                           )
                         })}
@@ -413,7 +409,6 @@ export function PackingForm({
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-
               <section className="flex flex-col gap-5" aria-label={t("cartons")}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-3">
@@ -510,7 +505,6 @@ export function PackingForm({
                 {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
               </section>
             </form>
-
             <div
               className={cn(
                 "flex flex-col gap-3 text-sm",
@@ -598,6 +592,8 @@ export function PackingForm({
             <aside className="min-w-0">
               {renderSidebar({
                 cartons: totals.cartons,
+                units: pieces,
+                readyDate,
                 weight:
                   completeCartons.length === physicalCartons.length && physicalCartons.length > 0
                     ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
@@ -628,98 +624,125 @@ export function PackingForm({
     </FormProvider>
   )
 }
-
-function PickupCard({
+export function PackingDetailsFields({
   addresses,
   addAddressTo,
   pickup,
-  onPickupChange
+  onPickupChange,
+  readOnly = false,
+  route,
+  shipTo,
+  transport
 }: {
   addresses: PartnerAddress[]
   addAddressTo?: { id: string; name: string }
   pickup: string
   onPickupChange: (id: string) => void
+  readOnly?: boolean
+  route?: string[]
+  shipTo?: React.ReactNode
+  transport?: React.ReactNode
 }) {
   const t = useTranslations("orders.packing")
   const form = useFormContext<Values>()
-  const selectId = useId()
+  const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
   const [adding, setAdding] = useState(false)
+  const [editingOrigin, setEditingOrigin] = useState(false)
+  const { errors } = useFormState({ control: form.control })
+  const addressText = useTranslations("partners.address")
   // Addresses added here, until the refreshed page lists them.
   const [added, setAdded] = useState<PartnerAddress[]>([])
-  // The address typed in, kept while a saved one is chosen.
-  const [typed, setTyped] = useState<Values["origin"]>(emptyAddress)
-  const origin = useWatch({ control: form.control, name: "origin" })
-  const { errors } = useFormState({ control: form.control, name: "origin" })
-  const saved = [...addresses, ...added.filter((address) => !addresses.some((row) => row.id === address.id))]
-  const chosen = saved.find((address) => address.id === pickup)
-
-  function choose(next: PartnerAddress | undefined) {
-    if (!chosen) {
-      setTyped(form.getValues("origin"))
-    }
+  const current: PartnerAddress | undefined = origin.addressLine1
+    ? { id: "shipment-origin", name: origin.name || t("shipFrom"), address: { ...emptyAddress, ...origin } }
+    : undefined
+  const saved = [...addresses, ...added.filter((address) => !addresses.some((known) => known.id === address.id))]
+  const chosen = saved.find((address) => address.id === pickup) ?? (current && savedAddress(saved, current.address))
+  const options = chosen || !current ? saved : [current, ...saved]
+  const choose = (next: PartnerAddress) => {
     form.clearErrors("origin")
-    form.setValue("origin", { ...emptyAddress, ...(next ? next.address : typed) }, { shouldDirty: true })
-    onPickupChange(next?.id ?? "")
+    form.setValue("origin", next.address, { shouldDirty: true, shouldValidate: true })
+    onPickupChange(next.id)
   }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("pickup")}</CardTitle>
-        {addAddressTo && (
-          <CardAction>
-            <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
-              <MapPinPlus data-icon="inline-start" />
-              {t("addAddress")}
-            </Button>
-            <PartnerAddressDialog
-              partner={{ kind: "supplier", ...addAddressTo }}
-              // What's typed here becomes the new address's starting point.
-              draft={chosen ? undefined : origin}
-              open={adding}
-              onOpenChange={setAdding}
-              onSaved={({ id, name, address }) => {
-                if (id) {
-                  setAdded((list) => [...list, { id, name, address }])
-                  choose({ id, name, address })
-                }
-              }}
+    <ShipmentPackingDetails
+      route={route}
+      shipTo={shipTo}
+      transport={transport}
+      shipFrom={
+        <>
+          {readOnly ? (
+            <ShipmentAddress
+              readOnly
+              label={t("shipFrom")}
+              name={chosen?.name ?? origin.name ?? ""}
+              address={[
+                origin.addressLine1,
+                origin.addressLine2,
+                origin.city,
+                origin.stateOrRegion,
+                origin.postalCode,
+                origin.countryCode
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              contact={[origin.name, origin.phoneNumber].filter(Boolean).join(", ")}
             />
-          </CardAction>
-        )}
-      </CardHeader>
-      <CardContent>
-        <FieldGroup>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {saved.length > 0 && (
-              <SelectField
-                label={t("pickupAddress")}
-                id={selectId}
-                value={chosen?.id ?? ""}
-                onChange={(event) => {
-                  const next = saved.find((address) => address.id === event.target.value)
-                  if (next || chosen) {
+          ) : (
+            <>
+              <PickupAddressSelect
+                addresses={options}
+                value={chosen?.id ?? current?.id ?? ""}
+                onChange={(id) => {
+                  const next = options.find((address) => address.id === id)
+                  if (next) {
                     choose(next)
                   }
                 }}
-                options={[
-                  ...saved.map((address) => ({ value: address.id, label: address.name })),
-                  { value: "", label: t("otherAddress") }
-                ]}
+                onAdd={() => {
+                  setEditingOrigin(false)
+                  setAdding(true)
+                }}
               />
-            )}
-            <FormInput name="readyDate" required label={t("readyForPickup")} type="date" />
-          </div>
-          {chosen && !errors.origin ? (
-            <AddressSummary address={origin} className="rounded-lg bg-muted/50 p-3" />
-          ) : (
-            <>
-              <FieldSeparator />
-              <AddressFields path="origin" requirePhone />
+              {errors.origin && (
+                <div className="space-y-2">
+                  <p className="text-sm text-destructive">{t("fixFields")}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingOrigin(true)
+                      setAdding(true)
+                    }}
+                  >
+                    {addressText("edit")}
+                  </Button>
+                </div>
+              )}
+              <PartnerAddressDialog
+                draft={editingOrigin ? origin : undefined}
+                partner={addAddressTo ? { kind: "supplier", ...addAddressTo } : undefined}
+                open={adding}
+                onOpenChange={setAdding}
+                onSaved={(address) => {
+                  if (address.id) {
+                    const saved = { ...address, id: address.id }
+                    setAdded((list) => [...list, saved])
+                    choose(saved)
+                  }
+                }}
+              />
             </>
           )}
-        </FieldGroup>
-      </CardContent>
-    </Card>
+        </>
+      }
+      packing={
+        !readOnly && (
+          <div className="max-w-72">
+            <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+          </div>
+        )
+      }
+    />
   )
 }

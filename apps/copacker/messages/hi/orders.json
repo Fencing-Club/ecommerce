@@ -439,9 +439,13 @@
     "pickupAddress": "पिकअप का पता",
     "otherAddress": "दूसरा पता",
     "readyForPickup": "पिकअप के लिए तैयार",
+    "shipFrom": "पिकअप का पता",
+    "readyDate": "पिकअप के लिए तैयार",
     "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
-    "finishPacking": "पैकिंग पूरी करें"
+    "finishPacking": "पैकिंग पूरी करें",
+    "addNewAddress": "पता जोड़ें",
+    "chooseAddress": "पिकअप का पता"
   },
   "paymentTerms": {
     "net7": "नेट 7",

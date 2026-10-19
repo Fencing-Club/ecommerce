@@ -439,9 +439,13 @@
     "pickupAddress": "Adresse d’enlèvement",
     "otherAddress": "Autre adresse",
     "readyForPickup": "Prêt pour l’enlèvement",
+    "shipFrom": "Adresse d’enlèvement",
+    "readyDate": "Prêt pour l’enlèvement",
     "addCartonProduct": "Ajouter un produit au carton",
     "removeCartonProduct": "Retirer le produit {number} du carton",
-    "finishPacking": "Terminer l’emballage"
+    "finishPacking": "Terminer l’emballage",
+    "addNewAddress": "Ajouter une adresse",
+    "chooseAddress": "Adresse d’enlèvement"
   },
   "paymentTerms": {
     "net7": "7 jours net",

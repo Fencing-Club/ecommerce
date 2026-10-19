@@ -439,9 +439,13 @@
     "pickupAddress": "Abholadresse",
     "otherAddress": "Andere Adresse",
     "readyForPickup": "Abholbereit",
+    "shipFrom": "Abholadresse",
+    "readyDate": "Abholbereit",
     "addCartonProduct": "Produkt zum Karton hinzufügen",
     "removeCartonProduct": "Produkt {number} aus dem Karton entfernen",
-    "finishPacking": "Verpacken abschließen"
+    "finishPacking": "Verpacken abschließen",
+    "addNewAddress": "Adresse hinzufügen",
+    "chooseAddress": "Abholadresse"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",

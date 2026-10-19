@@ -439,9 +439,13 @@
     "pickupAddress": "پک اپ کا پتہ",
     "otherAddress": "دوسرا پتہ",
     "readyForPickup": "پک اپ کے لیے تیار",
+    "shipFrom": "پک اپ کا پتہ",
+    "readyDate": "پک اپ کے لیے تیار",
     "addCartonProduct": "کارٹن میں پروڈکٹ شامل کریں",
     "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
-    "finishPacking": "پیکنگ مکمل کریں"
+    "finishPacking": "پیکنگ مکمل کریں",
+    "addNewAddress": "پتہ شامل کریں",
+    "chooseAddress": "پک اپ کا پتہ"
   },
   "paymentTerms": {
     "net7": "Net 7",

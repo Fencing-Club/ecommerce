@@ -1,46 +1,47 @@
-import { Download, FileText } from "lucide-react"
+import { Attachment } from "./attachment"
 import { ProductDownloadsMenu, type ProductDownload } from "./product-downloads-menu"
-import { Button } from "./ui/button"
 
-export type ShipmentDownload = { id: string; label: string; unavailable?: string }
+export type ShipmentDownload = { id: string; label: string; fileName?: string }
 
 export function ShipmentDocuments({
   documents,
   productLabels,
   onDownload,
   onProductDownload,
+  onDownloadPacket,
   busy = false
 }: {
   documents: ShipmentDownload[]
   productLabels: ProductDownload[]
   onDownload: (id: string) => void
   onProductDownload: (ids: string[]) => void
+  onDownloadPacket?: () => void
   busy?: boolean
 }) {
   return (
-    <section aria-label="Shipment documents" className="overflow-hidden rounded-xl border">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-3">
-        <h2 className="text-sm font-semibold">Documents</h2>
-        <ProductDownloadsMenu items={productLabels} onDownload={onProductDownload} busy={busy} />
-      </div>
-      <div className="divide-y">
+    <section aria-label="Shipment documents" className="space-y-3">
+      <h2 className="text-sm font-semibold">Documents</h2>
+      {onDownloadPacket && (
+        <Attachment
+          kind="packet"
+          label="Shipment packet"
+          description="All shipment documents"
+          downloadLabel="Download shipment packet"
+          busy={busy}
+          onDownload={onDownloadPacket}
+        />
+      )}
+      <div className="space-y-2">
+        <ProductDownloadsMenu attachment items={productLabels} onDownload={onProductDownload} busy={busy} />
         {documents.map((doc) => (
-          <div key={doc.id} className="flex items-center gap-3 p-4 text-sm">
-            <FileText className="size-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p>{doc.label}</p>
-              {doc.unavailable && <p className="text-xs text-muted-foreground">{doc.unavailable}</p>}
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label={`Download ${doc.label.toLowerCase()}`}
-              disabled={busy || Boolean(doc.unavailable)}
-              onClick={() => onDownload(doc.id)}
-            >
-              <Download />
-            </Button>
-          </div>
+          <Attachment
+            key={doc.id}
+            label={doc.label}
+            fileName={doc.fileName}
+            downloadLabel={`Download ${doc.label.toLowerCase()}`}
+            busy={busy}
+            onDownload={() => onDownload(doc.id)}
+          />
         ))}
       </div>
     </section>

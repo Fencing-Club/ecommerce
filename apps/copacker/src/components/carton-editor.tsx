@@ -378,8 +378,9 @@ export function CartonEditor({
           </DropdownMenu>
         )}
       </div>
-      <div className="hidden justify-between gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground @sm/carton:flex">
+      <div className="hidden grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto] gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground @sm/carton:grid">
         <span>{packing("product")}</span>
+        <span>{packing("supplierSku")}</span>
         <span className={cn("w-24 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
       </div>
       <div className={cn("divide-y", invalid("items") && "ring-1 ring-inset ring-destructive")}>
@@ -392,12 +393,17 @@ export function CartonEditor({
           return (
             <div
               key={content.itemId}
-              className="flex flex-wrap items-start justify-between gap-4 p-4 @sm/carton:flex-nowrap"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 p-4 @sm/carton:grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto]"
             >
-              <div className="w-full min-w-0 [overflow-wrap:anywhere] @sm/carton:flex-1">
-                <ProductIdentity item={item} showPackSize={false} />
+              <div className="col-span-2 min-w-0 [overflow-wrap:anywhere] @sm/carton:col-span-1">
+                <ProductIdentity item={item} showPackSize={false} showSku={false} />
               </div>
-              <span className="self-center text-xs @sm/carton:hidden">{t("quantityPerCarton")}</span>
+              <div className="min-w-0 break-all">
+                <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
+                  {packing("supplierSku")}
+                </span>
+                {item.supplierSku || "—"}
+              </div>
               <div className="ms-auto flex items-start gap-3">
                 <QuantityDisplay
                   pieces={content.pieces}
@@ -405,6 +411,9 @@ export function CartonEditor({
                   basis={readOnly ? "units" : "packs"}
                   className="w-24"
                 >
+                  <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
+                    {t("quantityPerCarton")}
+                  </span>
                   {readOnly ? (
                     <span>{t("unitCount", { count: content.pieces })}</span>
                   ) : (
@@ -431,7 +440,7 @@ export function CartonEditor({
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="size-11 sm:size-9"
+                    className="mt-5 size-11 sm:size-9 @sm/carton:mt-0"
                     aria-label={t("removeProduct", { sku: item.buyerSku, carton: value.cartonId })}
                     onClick={() => update({ items: value.items.filter((_, i) => i !== index) })}
                   >
