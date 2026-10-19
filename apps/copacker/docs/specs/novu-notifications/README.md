@@ -19,6 +19,8 @@ alongside the business workflows that make them reliable. The first useful relea
 - [Purchase order flow](../purchase-order-flow/README.md): current and planned operational workflows.
 - [Provider notifications](../../notifications.md): inbound commerce events, distinct from these user notifications.
 
+- [Shipment action notification contract](shipment-action-handoff.md): canonical events, recipients, templates, and actor feedback.
+
 ## Current behavior and boundaries
 
 The app has a durable Postgres job queue, Resend email delivery, React Email templates in `@repo/copacker-emails`,
