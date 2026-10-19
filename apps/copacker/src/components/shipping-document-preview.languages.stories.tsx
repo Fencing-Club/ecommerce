@@ -6,7 +6,7 @@ import { shippingSettingsKey } from "./shipping-document-preview"
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/Languages"
+  title: "Components/Shipping documents/Languages"
 })
 
 export const GermanLetter = meta.story({

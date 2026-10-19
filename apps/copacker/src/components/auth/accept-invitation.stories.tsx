@@ -16,6 +16,7 @@ const team: React.ComponentProps<typeof AcceptInvitation> = {
 }
 
 const meta = preview.meta({
+  title: "Components/Auth/Accept invitation",
   component: AcceptInvitation,
   args: team,
   beforeEach: ({ msw }) => {

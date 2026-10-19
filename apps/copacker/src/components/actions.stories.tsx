@@ -12,6 +12,7 @@ import { ActionButton } from "./actions"
 import { FormInput } from "./form-controls"
 
 const meta = preview.meta({
+  title: "Components/Forms/Actions",
   component: ActionButton,
   args: {
     action: "order.remind",

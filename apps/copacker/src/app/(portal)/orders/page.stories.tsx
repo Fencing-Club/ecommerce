@@ -92,7 +92,7 @@ function page(kind: WorkspaceKind, permissions: Permissions = owner) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Purchase orders",
+  title: "Pages/Purchase orders/List",
   // Each story shows it in its workspace's portal; the render is the same for all.
   render: pageStory("/orders", OrdersPage).render,
   args: {

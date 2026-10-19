@@ -5,6 +5,7 @@ import { owner } from "@/stories/workspace"
 import { OverviewPagePending, OverviewPageView } from "./overview-page"
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Overview page",
   component: OverviewPageView,
   args: {
     refresh: fn(),

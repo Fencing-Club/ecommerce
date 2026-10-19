@@ -14,7 +14,7 @@ async function NewProductPage() {
 let saved: unknown[] = []
 
 const meta = preview.meta({
-  title: "Pages/Supplier/Products/New",
+  title: "Pages/Products/New",
   ...pageStory("/products/new", NewProductPage, "supplier"),
   beforeEach: ({ msw }) => {
     saved = []

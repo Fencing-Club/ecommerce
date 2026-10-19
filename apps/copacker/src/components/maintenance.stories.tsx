@@ -7,6 +7,7 @@ import { Maintenance } from "./maintenance"
 const asked = fn()
 
 const meta = preview.meta({
+  title: "Components/App shell/Maintenance",
   component: Maintenance,
   parameters: { layout: "fullscreen" },
   beforeEach: ({ msw }) => {

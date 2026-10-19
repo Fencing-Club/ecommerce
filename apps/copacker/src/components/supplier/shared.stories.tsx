@@ -7,6 +7,7 @@ import { Amounts, IndexToolbar, matches, Pager, ProductThumb, SaveBar, StatusBad
 // The pieces every supplier list and form shares: the save bar, a product's photo, status badges, amounts, the tabs and
 // search above a table, and its pages.
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Shared",
   component: SaveBar,
   args: { dirty: true, pending: false, onDiscard: fn(), onSave: fn() }
 })

@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Slider } from "./slider"
 
 const meta = preview.meta({
+  title: "Foundations/Slider",
   component: Slider,
   args: { onValueChange: fn(), defaultValue: [40] },
   // Labelled by the text above it, as the planner's sliders are.

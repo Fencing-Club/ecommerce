@@ -10,6 +10,7 @@ const actions = fn()
 const [tote, apron] = order.items
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Order actions",
   component: OrderMenu,
   args: { id: orderId, reference: "PO-1042", draft: true, closable: false, labels: true },
   beforeEach: ({ msw }) => {

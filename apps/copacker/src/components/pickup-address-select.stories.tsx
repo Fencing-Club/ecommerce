@@ -12,7 +12,7 @@ function Example() {
     </div>
   )
 }
-const meta = preview.meta({ title: "Components/Pickup address select", component: Example })
+const meta = preview.meta({ title: "Components/Shipments/Pickup address select", component: Example })
 export const Default = meta.story({
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("combobox", { name: "Ship from" })

@@ -14,6 +14,7 @@ function announcement(root: HTMLElement) {
 
 // The button is drawn for the dark stages it sits on.
 const meta = preview.meta({
+  title: "Components/Marketing/Copy button",
   component: CopyButton,
   args: { copied: false, onCopy: fn() },
   decorators: [

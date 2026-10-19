@@ -4,6 +4,7 @@ import { Legal, Rows } from "./legal"
 
 // A short policy with the parts the real ones use: a list, subheadings, a link and a table of providers.
 const meta = preview.meta({
+  title: "Components/Marketing/Legal",
   component: Legal,
   args: {
     title: "Privacy policy",

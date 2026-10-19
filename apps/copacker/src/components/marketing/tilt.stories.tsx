@@ -5,6 +5,7 @@ import { Tilt } from "./tilt"
 
 // The shot starts a screen down the page, so it leans back until it's scrolled up into view.
 const meta = preview.meta({
+  title: "Components/Marketing/Tilt",
   component: Tilt,
   args: { children: <div className="h-80 rounded-2xl bg-muted p-6 text-2xl font-semibold">Restock</div> },
   parameters: { layout: "fullscreen" },

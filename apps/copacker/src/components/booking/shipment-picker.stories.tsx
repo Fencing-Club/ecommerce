@@ -8,6 +8,7 @@ import { ShipmentPicker } from "./shipment-picker"
 const Picker = controlled(ShipmentPicker)
 
 const meta = preview.meta({
+  title: "Unused/Booking/Shipment picker",
   component: Picker,
   args: {
     shipments: agl.start.shipments,

@@ -6,6 +6,7 @@ import { Dialog } from "./ui/dialog"
 
 const submitted = fn<(marketplace: FormDataEntryValue | null) => void>()
 const meta = preview.meta({
+  title: "Components/Integrations/Amazon connect",
   component: AmazonConnect,
   args: { children: "Connect Amazon" },
   beforeEach: () => {

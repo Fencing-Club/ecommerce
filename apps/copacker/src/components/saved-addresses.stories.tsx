@@ -17,6 +17,7 @@ const sent: ActionRequest[] = []
 const [warehouse] = buyerContacts
 
 const meta = preview.meta({
+  title: "Components/Settings/Saved addresses",
   component: SavedAddresses,
   args: { contacts: buyerContacts, locations: shopifyLocations, admin: true },
   beforeEach: ({ msw }) => {

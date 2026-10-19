@@ -4,6 +4,7 @@ import { QuantityDisplay } from "./quantity-display"
 import { Input } from "./ui/input"
 
 const meta = preview.meta({
+  title: "Components/Display/Quantity display",
   component: QuantityDisplay,
   args: { pieces: 60, packSize: 2, children: <Input aria-label="Quantity" defaultValue={60} className="text-end" /> },
   decorators: [

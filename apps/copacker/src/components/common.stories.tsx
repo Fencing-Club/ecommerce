@@ -8,6 +8,7 @@ import { DocumentList, EmptyState, formatDestination, PageHeader, Status, Status
 import { TabLinks } from "./tab-links"
 
 const meta = preview.meta({
+  title: "Components/Display/Common",
   component: Status,
   args: { status: "submitted" }
 })

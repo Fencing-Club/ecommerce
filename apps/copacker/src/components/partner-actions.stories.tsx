@@ -79,6 +79,7 @@ function ForwarderStory(props: Partial<ForwarderDetails> & { editable?: boolean;
 }
 
 const meta = preview.meta({
+  title: "Components/Partners/Partner actions",
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))

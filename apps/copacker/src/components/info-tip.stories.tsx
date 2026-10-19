@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { InfoTip } from "./info-tip"
 
 const meta = preview.meta({
+  title: "Components/Display/Info tip",
   component: InfoTip,
   args: {
     label: "About days of stock",

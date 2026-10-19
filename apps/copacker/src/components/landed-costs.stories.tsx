@@ -9,6 +9,7 @@ const actions = fn()
 const freight = [{ reference: "FBA17XK2", amount: 31_000 }]
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Landed costs",
   component: LandedCosts,
   args: {
     orderId,

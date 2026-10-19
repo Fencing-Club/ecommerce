@@ -4,6 +4,7 @@ import { Planner } from "./planner"
 
 // The forecast as the home page sets it, on the paper.
 const meta = preview.meta({
+  title: "Components/Marketing/Planner",
   component: Planner,
   parameters: { layout: "fullscreen" },
   decorators: [

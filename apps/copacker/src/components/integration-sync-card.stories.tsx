@@ -4,6 +4,7 @@ import preview from "#.storybook/preview"
 import { IntegrationSyncCard } from "./integration-sync-card"
 
 const meta = preview.meta({
+  title: "Components/Integrations/Integration sync card",
   component: IntegrationSyncCard,
   args: { title: "Orders", label: "Amazon orders", icon: <ShoppingBag />, status: "synced" as const, onSync: fn() },
   decorators: [

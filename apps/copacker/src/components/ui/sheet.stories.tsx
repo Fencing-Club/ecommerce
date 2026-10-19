@@ -25,6 +25,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Sheet",
   args: { onOpenChange: fn(), onSave: fn() },
   // A side panel with a form, as product details and partner addresses open in one.
   render: ({ side, showCloseButton, onOpenChange, onSave, defaultOpen }) => (

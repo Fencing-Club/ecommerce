@@ -11,7 +11,7 @@ function CatalogsPage({ catalogs, permissions }: { catalogs: typeof catalogRows;
 }
 
 const meta = preview.meta({
-  title: "Pages/Supplier/Catalogs",
+  title: "Pages/Catalogs/List",
   ...pageStory("/catalogs", CatalogsPage, "supplier"),
   args: { catalogs: catalogRows, permissions: owner }
 })

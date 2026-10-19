@@ -9,6 +9,7 @@ const sizes = ["xs", "sm", "default", "lg"] as const
 const iconSizes = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const
 
 const meta = preview.meta({
+  title: "Foundations/Button",
   component: Button,
   args: { children: "Create purchase order", onClick: fn() }
 })

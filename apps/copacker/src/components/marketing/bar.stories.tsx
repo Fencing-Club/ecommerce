@@ -4,6 +4,7 @@ import { Bar } from "./bar"
 
 // The bar over a page of paper with a dark stage a screen and a half down.
 const meta = preview.meta({
+  title: "Components/Marketing/Bar",
   component: Bar,
   args: { tone: "light" as const, children: <div className="flex h-16 items-center px-6 font-semibold">Copacker</div> },
   parameters: { layout: "fullscreen" },

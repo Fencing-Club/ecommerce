@@ -24,7 +24,7 @@ function CustomerPage({ detail, permissions }: { detail: typeof harborDetail; pe
 }
 
 const meta = preview.meta({
-  title: "Pages/Supplier/Customers/Detail",
+  title: "Pages/Customers/Detail",
   ...pageStory(`/customers/${customerIds.harbor}`, CustomerPage, "supplier"),
   args: { detail: harborDetail, permissions: owner }
 })

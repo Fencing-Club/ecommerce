@@ -52,6 +52,7 @@ function fileInput(sheet: ReturnType<typeof within>) {
 }
 
 const meta = preview.meta({
+  title: "Components/Products/Bulk barcode upload",
   component: BulkBarcodeUpload,
   args: { onChanged: fn() },
   beforeEach: ({ msw }) => {

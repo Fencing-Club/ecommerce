@@ -9,7 +9,7 @@ import ShipmentPacketPage from "./page"
 
 const id = "9ce7504a-df81-4255-9436-f4181c941071"
 const meta = preview.meta({
-  title: "Pages/Shared/Shipments/Supplier packet",
+  title: "Pages/Shipments/Supplier packet",
   component: ShipmentPacketPage,
   ...portalPage(`/shipments/${id}/packet`, "supplier"),
   args: {

@@ -247,7 +247,7 @@ const supplier = portalPage("/settings", "supplier")
 const forwarder = portalPage("/settings", "forwarder")
 
 const meta = preview.meta({
-  title: "Pages/Shared/Settings",
+  title: "Pages/Settings",
   ...serverStory(SettingsPage),
   args: buyerArgs,
   beforeEach: ({ msw }) => {

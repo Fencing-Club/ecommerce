@@ -2,6 +2,7 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ShipmentDetails } from "./shipment-details"
 const meta = preview.meta({
+  title: "Unused/Shipments/Shipment details",
   component: ShipmentDetails,
   args: { readyDate: "2026-10-21", cartons: 5, units: 100, weight: 34.5, volume: 0.53 }
 })

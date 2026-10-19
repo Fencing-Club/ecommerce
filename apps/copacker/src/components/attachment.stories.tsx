@@ -2,6 +2,7 @@ import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Attachment } from "./attachment"
 const meta = preview.meta({
+  title: "Components/Display/Attachment",
   component: Attachment,
   args: {
     label: "Packing list",

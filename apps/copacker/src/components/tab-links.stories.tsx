@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { TabLinks } from "./tab-links"
 
 const meta = preview.meta({
+  title: "Components/App shell/Tab links",
   component: TabLinks,
   args: {
     label: "Status",

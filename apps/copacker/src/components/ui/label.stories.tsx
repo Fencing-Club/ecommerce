@@ -4,6 +4,7 @@ import { Input } from "./input"
 import { Label } from "./label"
 
 const meta = preview.meta({
+  title: "Foundations/Label",
   component: Label,
   args: { htmlFor: "supplier-sku", children: "Supplier SKU" },
   render: (args) => (

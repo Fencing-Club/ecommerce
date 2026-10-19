@@ -6,6 +6,7 @@ import { cartonIssue } from "./fixtures"
 import { type Issue, IssueSummary, IssuesView } from "./issues"
 
 const meta = preview.meta({
+  title: "Unused/Booking/Issues",
   component: IssueSummary,
   args: { ...cartonIssue, onAction: fn() },
   decorators: [dialogWidth]

@@ -140,6 +140,10 @@ export default definePreview({
   initialGlobals: { theme: "light", locale: "en" },
   parameters: {
     layout: "padded",
+    // The sidebar's sections, described in docs/storybook.md. Stories keep their file order within each component.
+    options: {
+      storySort: { method: "alphabetical", order: ["Foundations", "Components", "Pages", "Prototypes", "Unused"] }
+    },
     router: {},
     viewport: { options: INITIAL_VIEWPORTS },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },

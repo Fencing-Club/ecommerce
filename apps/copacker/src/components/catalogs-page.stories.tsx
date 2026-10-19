@@ -3,7 +3,7 @@ import preview from "#.storybook/preview"
 import { catalogRows } from "@/stories/fixtures/supplier"
 import { CatalogsPageView } from "./catalogs-page"
 
-const meta = preview.meta({})
+const meta = preview.meta({ title: "Components/Partners/Catalogs page" })
 
 export const Catalogs = meta.story({
   render: () => <CatalogsPageView catalogs={catalogRows} editable />,

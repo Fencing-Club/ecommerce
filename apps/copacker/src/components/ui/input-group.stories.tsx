@@ -33,6 +33,7 @@ function Password() {
 }
 
 const meta = preview.type<{ args: { onSearch: (query: string) => void; onSend: () => void } }>().meta({
+  title: "Foundations/Input group",
   component: InputGroup,
   args: { onSearch: fn(), onSend: fn() },
   // A search box with an icon before the text and a shortcut after it, as the partners page has.

@@ -4,6 +4,7 @@ import { Button } from "./button"
 import { Spinner } from "./spinner"
 
 const meta = preview.meta({
+  title: "Foundations/Spinner",
   component: Spinner
 })
 

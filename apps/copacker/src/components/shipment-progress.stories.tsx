@@ -4,6 +4,7 @@ import { getStoryRouter } from "#.storybook/router"
 import { ShipmentProgress } from "./shipment-progress"
 
 const meta = preview.meta({
+  title: "Components/Shipments/Shipment progress",
   component: ShipmentProgress,
   args: { processing: false, message: "The forwarder ships it on next." }
 })

@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { ProductIdentity } from "./product-identity"
 
 const meta = preview.meta({
+  title: "Components/Products/Product identity",
   component: ProductIdentity,
   args: { item: { name: "Novus Kids Jacket 350N", variant: "128 / Left", buyerSku: "fc-cjkn-lh-128", piecesPerSet: 1 } }
 })

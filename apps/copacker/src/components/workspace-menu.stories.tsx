@@ -5,6 +5,7 @@ import { workspaces } from "@/stories/workspace"
 import { WorkspaceMenu } from "./workspace-menu"
 
 const meta = preview.meta({
+  title: "Components/App shell/Workspace menu",
   component: WorkspaceMenu,
   args: { active: workspaces.buyer.id, fallbackName: workspaces.buyer.name, workspaces: Object.values(workspaces) }
 })

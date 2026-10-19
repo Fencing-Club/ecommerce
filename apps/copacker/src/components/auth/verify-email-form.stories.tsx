@@ -19,6 +19,7 @@ function fastCountdown() {
 }
 
 const meta = preview.meta({
+  title: "Components/Auth/Verify email form",
   component: VerifyEmailForm,
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/onboarding")))

@@ -23,6 +23,7 @@ const args: React.ComponentProps<typeof SalesTrend> = {
 }
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Overview charts",
   component: SalesTrend,
   args,
   decorators: [

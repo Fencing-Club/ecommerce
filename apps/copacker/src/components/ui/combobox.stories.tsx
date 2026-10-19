@@ -74,6 +74,7 @@ function CustomerChips({ onValueChange }: { onValueChange: (value: Customer[], d
 const meta = preview
   .type<{ args: { onValueChange: (value: unknown, details: unknown) => void; disabled?: boolean } }>()
   .meta({
+    title: "Foundations/Combobox",
     args: { onValueChange: fn() },
     render: ({ onValueChange, disabled }) => (
       <Combobox items={suppliers} onValueChange={onValueChange}>

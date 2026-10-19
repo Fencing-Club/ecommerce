@@ -13,6 +13,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Tooltip",
   args: { onOpenChange: fn() },
   render: ({ side, ...args }) => (
     <div className="p-16">

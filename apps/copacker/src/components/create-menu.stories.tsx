@@ -4,6 +4,7 @@ import type { Permissions } from "@/lib/access"
 import { CreateMenu } from "./create-menu"
 
 const meta = preview.meta({
+  title: "Components/App shell/Create menu",
   component: CreateMenu,
   args: { kind: "buyer" }
 })

@@ -9,6 +9,7 @@ import { SearchCommand } from "./search-command"
 const salesSearched = fn<(query: string | null) => void>()
 
 const meta = preview.meta({
+  title: "Components/App shell/Search command",
   component: SearchCommand,
   args: { kind: "buyer", navigate: fn() },
   decorators: [(Story) => <div className="mx-auto max-w-xl">{Story()}</div>],

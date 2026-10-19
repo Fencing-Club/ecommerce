@@ -23,6 +23,7 @@ const { sales, restock, purchasing, upcoming, period, attention } = buyerOvervie
 const customers = sales.customers!
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Overview sections",
   component: Attention,
   args: { items: attention }
 })

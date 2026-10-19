@@ -21,6 +21,7 @@ function ordersApi(respond: (query: URLSearchParams) => { orders: typeof salesOr
 const lastQuery = () => Object.fromEntries(queries.at(-1) ?? [])
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Sales orders",
   component: SalesOrders,
   args: { initialSearch: "" },
   beforeEach: ({ msw }) => {

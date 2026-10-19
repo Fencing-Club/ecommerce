@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs"
 type Args = { variant?: "default" | "line" }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Tabs",
   component: Tabs,
   args: { onValueChange: fn(), defaultValue: "open" },
   render: ({ variant, ...args }) => (

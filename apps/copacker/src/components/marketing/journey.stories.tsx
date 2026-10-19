@@ -5,6 +5,7 @@ import { Journey } from "./journey"
 
 // The trip on the home page's paper, from the top of the section. Scrolling plays it, and the steps jump to a chapter.
 const meta = preview.meta({
+  title: "Components/Marketing/Journey",
   component: Journey,
   parameters: { layout: "fullscreen" },
   decorators: [

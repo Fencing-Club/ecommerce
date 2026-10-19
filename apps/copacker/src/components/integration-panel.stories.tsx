@@ -5,6 +5,7 @@ import { Button } from "./ui/button"
 import { Dialog, DialogTrigger } from "./ui/dialog"
 
 const meta = preview.meta({
+  title: "Components/Integrations/Integration panel",
   component: IntegrationPanel,
   args: {
     children: null,

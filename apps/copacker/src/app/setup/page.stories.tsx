@@ -6,7 +6,7 @@ import Setup from "./page"
 // Where sign-in sends everyone until WorkOS is configured. The page reads nothing, so the story renders it as it is;
 // its layout is only AppProviders, the story frame's own providers.
 const meta = preview.meta({
-  title: "Pages/Shared/Setup",
+  title: "Pages/Setup",
   component: Setup,
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/setup" } } },
   beforeEach: skipAnimations

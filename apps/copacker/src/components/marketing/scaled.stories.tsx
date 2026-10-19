@@ -4,6 +4,7 @@ import { Scaled } from "./scaled"
 
 // A shot drawn at 1280 by 800, in a column half as wide.
 const meta = preview.meta({
+  title: "Components/Marketing/Scaled",
   component: Scaled,
   args: {
     width: 1280,

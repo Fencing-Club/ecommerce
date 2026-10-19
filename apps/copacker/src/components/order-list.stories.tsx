@@ -11,6 +11,7 @@ import { OrderList } from "./order-list"
 type Props = Omit<ComponentProps<typeof OrderList>, "rows"> & { rows: typeof orderRows }
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Order list",
   ...serverStory(async (props: Props) => (
     <OrderList {...props} rows={await orderListRows(props.rows, props.showValue)} />
   )),

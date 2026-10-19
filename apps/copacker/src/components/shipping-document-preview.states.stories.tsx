@@ -5,7 +5,7 @@ import { shippingSettingsKey } from "./shipping-document-preview"
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/States and settings"
+  title: "Components/Shipping documents/States"
 })
 
 export const Loading = meta.story({

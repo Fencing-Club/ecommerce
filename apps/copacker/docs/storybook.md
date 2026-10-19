@@ -38,6 +38,31 @@ pnpm --filter copacker exec vitest run --project storybook
 `tests/stories.test.ts` fails when a page or component has no stories. Components with nothing to show (providers,
 contexts, effects that render nothing) are listed there instead.
 
+## The sidebar
+
+Every story file sets an explicit `title` in one of five sections. `tests/stories.test.ts` checks each rule.
+
+| Section | Holds | Title |
+| --- | --- | --- |
+| Foundations | The shadcn primitives in `src/components/ui` | `Foundations/<Name>` |
+| Components | App components, grouped by product area | `Components/<Area>/<Name>` |
+| Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
+| Prototypes | Designs built only in Storybook, in `src/stories` | `Prototypes/<Name>` |
+| Unused | Components no app code renders yet | `Unused/<Area>/<Name>` |
+
+Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booking, Products, Inventory, Sales and
+costs, Integrations, Partners, Settings, Shipping documents, Supplier workspace, Auth, Onboarding and Marketing. Pages
+are grouped by route, not by workspace kind: buyer and supplier views of a route are stories of the same page.
+
+A `Pages/` story must live in `src/app` and render the route itself. Apart from fixtures and the `server`, `workspace`
+and `shipping-documents` helpers, it may not import from `src/stories`, so a page story can't quietly show a copy of
+the page.
+
+`Unused` is computed, not curated. The test follows imports from every route, server module and library, and a
+component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
+fails the test until its stories move to `Components`, and removing its last use fails it until they move to `Unused`.
+Review that section for components awaiting app work or ready to delete.
+
 ## The toolbar
 
 - **Theme**: light or dark. It sets the `dark` class and the choice the app's ThemeProvider reads.
@@ -49,7 +74,7 @@ contexts, effects that render nothing) are listed there instead.
 
 ### List design review
 
-`Pages/Buyer/Purchase orders/List` and `Pages/Buyer/Shipments/List` present the approved Pen list layouts
+`Prototypes/List designs/Purchase orders` and `Prototypes/List designs/Shipments` present the approved Pen list layouts
 (`awIJu` and `OzQcA`) in the current app shell. They share `src/stories/logistics-lists.tsx` and fictional fixtures.
 Search, filters, saved views, column visibility, selection, pagination and CSV export operate on those fixtures only.
 They do not replace the live list routes yet. The older Required by column/filter is intentionally omitted;
@@ -77,7 +102,7 @@ export const Default = meta.story({
 
 - **Pages** receive explicit rendering data from server functions. Page stories provide typed fixtures to the same
   components. `pageStory(pathname, render, kind)` from `@/stories/server` shows them in the real portal shell. Cover each
-  workspace kind, empty state and permission branch; title them `Pages/<Sidebar name>/...`.
+  workspace kind, empty state and permission branch; title them `Pages/<Route>/<View>`.
 - **Server data** can be prepared through `serverStory(render)`, which resolves asynchronous fixtures in a loader.
   The localization context answers from the toolbar language. The `@/db` mock supplies each table from
   `parameters: { db: { contacts: [...] } }`.
@@ -123,7 +148,7 @@ icon trigger. Row downloads contain only that variant; page-level menus retain b
 
 ### Shipment workflow reference and toast feedback
 
-`Workflows/Shipments/States and actions/All Arrangements` documents the intended eight shipping arrangements in one
+`Prototypes/Shipment states and actions/All Arrangements` documents the intended eight shipping arrangements in one
 page. Each action shows its approval gate, next badge, canonical email event/template, recipients, default delivery,
 and actor toast. Email mappings follow the Notifications session's shipment action contract; draft saves, downloads,
 and routine background processing send no email. Physical pickup is distinct from dispatch.

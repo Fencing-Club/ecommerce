@@ -5,6 +5,7 @@ import { Button } from "./button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card"
 
 const meta = preview.type<{ args: { onAction: () => void } }>().meta({
+  title: "Foundations/Card",
   component: Card,
   args: { onAction: fn() },
   render: ({ size, onAction }) => (

@@ -16,7 +16,7 @@ function Login({ next, email, error }: { next: string; email?: string; error?: s
 }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Auth/Sign in",
+  title: "Pages/Auth/Sign in",
   component: Login,
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/login" } } },
   args: { next: "/" },

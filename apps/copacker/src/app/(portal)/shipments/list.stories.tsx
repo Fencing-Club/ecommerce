@@ -8,7 +8,7 @@ function ListPage(props: Omit<React.ComponentProps<typeof LogisticsList>, "kind"
 }
 
 const meta = preview.meta({
-  title: "Pages/Buyer/Shipments/List",
+  title: "Prototypes/List designs/Shipments",
   component: ListPage,
   ...portalPage("/shipments")
 })

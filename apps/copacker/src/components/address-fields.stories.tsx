@@ -39,6 +39,7 @@ function AddressForm({
 }
 
 const meta = preview.meta({
+  title: "Components/Forms/Address fields",
   component: AddressForm,
   args: { requirePhone: false, address: emptyAddress, onSubmit: fn() }
 })

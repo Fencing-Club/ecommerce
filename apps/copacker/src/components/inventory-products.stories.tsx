@@ -19,6 +19,7 @@ function productsApi(page: (query: Record<string, string>) => JsonBodyType) {
 const [tote, apron] = listedProducts
 
 const meta = preview.meta({
+  title: "Components/Inventory/Inventory products",
   component: InventoryProducts,
   args: { syncKey: "synced", search: "" },
   beforeEach: ({ msw }) => {

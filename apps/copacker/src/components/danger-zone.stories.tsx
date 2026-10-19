@@ -7,6 +7,7 @@ import { person, workspaces } from "@/stories/workspace"
 import { DangerZone } from "./danger-zone"
 
 const meta = preview.meta({
+  title: "Components/Forms/Danger zone",
   component: DangerZone,
   args: {
     workspace: workspaces.buyer.name,

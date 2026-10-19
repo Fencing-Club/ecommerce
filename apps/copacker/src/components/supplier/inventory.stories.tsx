@@ -11,6 +11,7 @@ const counted = fn()
 const tracked = fn()
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Inventory",
   component: InventoryTable,
   args: { rows: inventoryRows },
   beforeEach: ({ msw }) => {

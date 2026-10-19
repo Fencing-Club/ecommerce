@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { ShipmentDetails } from "./shipment-details"
 import { ShipmentDocuments } from "./shipment-documents"
 const meta = preview.meta({
+  title: "Unused/Shipments/Shipment documents",
   component: ShipmentDocuments,
   render: (args) => (
     <aside className="w-full max-w-80 space-y-6">

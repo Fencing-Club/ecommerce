@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ActionBar } from "./action-bar"
 
 const meta = preview.meta({
+  title: "Unused/Display/Action bar",
   component: ActionBar,
   args: {
     tone: "warning",

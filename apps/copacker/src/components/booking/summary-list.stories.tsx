@@ -4,6 +4,7 @@ import { dialogWidth } from "@/stories/booking"
 import { SummaryList } from "./summary-list"
 
 const meta = preview.meta({
+  title: "Unused/Booking/Summary list",
   component: SummaryList,
   args: {
     items: [
