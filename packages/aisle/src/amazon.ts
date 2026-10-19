@@ -325,6 +325,21 @@ export class ProviderError extends Error {
     super(message)
   }
 }
+export class ReportDeferredError extends Error {
+  constructor(public readonly retryAt: Date) {
+    super("Amazon report creation is waiting for its request allowance")
+  }
+}
+export type ReportRequestPolicy = {
+  acquire: (input: { reportType: string; deadline: number; assertActive?: () => Promise<void> }) => Promise<void>
+  observe: (input: {
+    reportType: string
+    status: number
+    rateLimit: number | null
+    retryAfterMs: number | null
+    requestId: string | null
+  }) => Promise<void>
+}
 export class ReportProcessingError extends Error {
   constructor(public readonly hasDiagnosticDocument: boolean) {
     super("Amazon report processing failed")
@@ -383,7 +398,8 @@ export class Amazon {
   private reportLookups = new Map<string, Promise<unknown[]>>()
   constructor(
     private credentials: AmazonCredentials,
-    private transport: typeof fetch = fetch.bind(globalThis)
+    private transport: typeof fetch = fetch.bind(globalThis),
+    private reportPolicy?: ReportRequestPolicy
   ) {}
   private async token() {
     if (this.access && this.access.expires > Date.now()) {
@@ -407,13 +423,14 @@ export class Amazon {
     this.access = { token: token.access_token, expires: Date.now() + (token.expires_in - 60) * 1000 }
     return token.access_token
   }
-  async request(method: string, path: string, body?: unknown) {
+  async request(method: string, path: string, body?: unknown, observe?: (response: Response) => Promise<void>) {
     const response = await this.transport(`https://sellingpartnerapi-na.amazon.com${path}`, {
       method,
       headers: { "x-amz-access-token": await this.token(), "content-type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(30000)
     })
+    await observe?.(response)
     if (!response.ok) {
       // Amazon explains a rejection in its errors list; the codes and messages describe the request, not seller data.
       const reasons = z
@@ -1165,15 +1182,39 @@ export class Amazon {
       reportId = matching[0]?.reportId
     }
     if (!reportId) {
-      reportId = z
-        .object({ reportId: z.string().min(1) })
-        .parse(
-          await read(
-            "createReport",
-            () => this.request("POST", "/reports/2021-06-30/reports", input),
-            options.retryCreate !== false
-          )
-        ).reportId
+      reportId = z.object({ reportId: z.string().min(1) }).parse(
+        await read(
+          "createReport",
+          async () => {
+            if (this.reportPolicy) {
+              await this.token()
+            }
+            await this.reportPolicy?.acquire({
+              reportType: input.reportType,
+              deadline: options.deadline,
+              assertActive: options.assertActive
+            })
+            await options.assertActive?.()
+            if (Date.now() >= options.deadline) {
+              throw new ReportDeferredError(new Date(Date.now()))
+            }
+            return this.request("POST", "/reports/2021-06-30/reports", input, async (response) => {
+              const rate = Number(response.headers.get("x-amzn-RateLimit-Limit"))
+              const retry = response.headers.get("retry-after")
+              const seconds = retry === null ? NaN : Number(retry)
+              const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retry ?? "") - Date.now()
+              await this.reportPolicy?.observe({
+                reportType: input.reportType,
+                status: response.status,
+                rateLimit: Number.isFinite(rate) && rate > 0 ? rate : null,
+                retryAfterMs: Number.isFinite(delay) ? Math.max(0, delay) : null,
+                requestId: response.headers.get("x-amzn-RequestId")
+              })
+            })
+          },
+          options.retryCreate !== false && !this.reportPolicy
+        )
+      ).reportId
     }
     for (;;) {
       const report = z

@@ -292,6 +292,20 @@ export const connections = pgTable(
   },
   (t) => [uniqueIndex("connection_org_provider").on(t.orgId, t.provider)]
 )
+// Shared across workspaces that connect the same selling partner/application in the NA region.
+export const amazonReportQuotas = pgTable(
+  "amazon_report_quotas",
+  {
+    scope: text().notNull(),
+    reportType: text().notNull(),
+    nextRequestAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    intervalMs: integer().notNull().default(120000),
+    throttleCount: integer().notNull().default(0),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.scope, t.reportType] })]
+)
+
 export const oauthStates = pgTable("oauth_states", {
   hash: text().primaryKey(),
   orgId: uuid()

@@ -43,9 +43,11 @@ The shopify-economics collector reads bounded financial/return evidence independ
 
 Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
 a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries. Opt-in reuse requires an exact report scope and a caller-defined creation-time cutoff, including the reimbursement daily-content refresh interval.
-Report creation uses five- then ten-minute backoff for HTTP 429, within the caller deadline; report reads retain
-minute-scale retries. This accommodates the [SP-API team's three-per-five-minute clarification](https://github.com/amzn/selling-partner-api-models/discussions/3686)
-without treating the nominal reference-page rate as a guarantee. Longer `Retry-After` values still take precedence.
+Copacker installs a durable creation policy shared across workers. It spaces new reports, observes rate-limit headers,
+and persists per-type cooldowns after HTTP 429. Existing report lookup, polling and downloads remain available during
+creation cooldown. A local deferral is distinct from an Amazon response. Standalone callers without that policy retain
+bounded five- then ten-minute creation retries. The three-per-five-minute forum clarification originated with Sales and
+Traffic; it is not proof of a universal FBA quota. See [report limits](../../../apps/copacker/docs/amazon-report-limits.md).
 
 AWD shipment lists and receipt details also retry transient read failures with a five-minute bound and optional
 ownership checks; neither path retries mutations or suppresses invalid documents.

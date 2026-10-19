@@ -16,6 +16,7 @@ import { migrationSql } from "./migrations"
 // production without the change; add a new migration with `pnpm db:generate` instead. Line endings are normalized
 // because Windows checkouts use CRLF.
 const applied: Record<string, string> = {
+  "0062_shocking_the_twelve": "f146149790462b1464d02ba565672de7894791392fdafd5b9b6777eef8453404",
   "0061_validate_shopify_line_money": "cc26cca4ed95709146b226147cfe7f9df2e78984966ab095290d60918264796a",
   "0060_validate_shopify_payments": "4f8ceaed6cfce1f07652b6edc41d530b15206c41cecd3d511322e5e96f4ad75d",
   "0059_customer_coverage": "b33d7ae10731f6630e21d63a7bd4cf82203c09f8f4c43537d6c6aff650cb54c8",

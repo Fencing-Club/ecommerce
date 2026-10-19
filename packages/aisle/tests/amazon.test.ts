@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { Amazon } from "../src/amazon"
+import { Amazon, ReportDeferredError, type ReportRequestPolicy } from "../src/amazon"
 
-function client(responses: unknown[]) {
+function client(responses: unknown[], policy?: ReportRequestPolicy) {
   const calls: URL[] = []
   const times: number[] = []
   const transport = vi.fn<typeof fetch>(async (input) => {
@@ -17,7 +17,11 @@ function client(responses: unknown[]) {
     }
     return response instanceof Response ? response : Response.json(response)
   })
-  return { api: new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport), calls, times }
+  return {
+    api: new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, policy),
+    calls,
+    times
+  }
 }
 const listing = (sku: string, marketplaceId = "ATVPDKIKX0DER") => ({
   sku,
@@ -657,6 +661,17 @@ describe("recovering completed reports", () => {
     expect(calls[2]?.pathname).toMatch(/\/new$/)
   })
 
+  it("can reuse validated evidence while new creations are in cooldown", async () => {
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>(async () => {
+      throw new ReportDeferredError(new Date(Date.now() + 3600000))
+    })
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const { api } = client([{ reports: [existing] }, ...download()], { acquire, observe })
+    await expect(api.report(input, options())).resolves.toBe("report text")
+    expect(acquire).not.toHaveBeenCalled()
+    expect(observe).not.toHaveBeenCalled()
+  })
+
   it("does not reuse option-specific reports whose options cannot be verified", async () => {
     const { api, calls } = client([{ reportId: "new" }, ...download()])
     await api.report({ ...input, reportOptions: { view: "different" } }, options())
@@ -792,5 +807,59 @@ describe("AWD receipt reads", () => {
       await expect(api.awdReceiptItems("S1")).rejects.toThrow(response instanceof Response ? "403" : "shipmentId")
       expect(calls).toHaveLength(1)
     }
+  })
+})
+
+describe("durable report request policy", () => {
+  const input = {
+    reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+    marketplaceIds: ["US"],
+    dataStartTime: "2026-09-01T00:00:00Z",
+    dataEndTime: "2026-10-01T00:00:00Z"
+  }
+  it("does not create a report when the shared allowance defers it", async () => {
+    const transport = vi.fn<typeof fetch>(async () => Response.json({ access_token: "test", expires_in: 3600 }))
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>(async () => {
+      throw new ReportDeferredError(new Date(Date.now() + 3600000))
+    })
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const api = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, {
+      acquire,
+      observe
+    })
+    await expect(api.report(input, { deadline: Date.now() + 10000 })).rejects.toThrow(
+      "waiting for its request allowance"
+    )
+    expect(transport).toHaveBeenCalledTimes(1)
+    expect(observe).not.toHaveBeenCalled()
+  })
+  it("records quota headers and leaves creation retry to the persistent policy", async () => {
+    const transport = vi.fn<typeof fetch>(async (url) =>
+      String(url).includes("api.amazon.com/auth")
+        ? Response.json({ access_token: "test", expires_in: 3600 })
+        : new Response(null, {
+            status: 429,
+            headers: { "retry-after": "7200", "x-amzn-RateLimit-Limit": "0.002", "x-amzn-RequestId": "trace-id" }
+          })
+    )
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>().mockResolvedValue(undefined)
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const api = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, {
+      acquire,
+      observe
+    })
+    await expect(api.report(input, { deadline: Date.now() + 1200000 })).rejects.toMatchObject({
+      status: 429,
+      operation: "createReport"
+    })
+    expect(acquire).toHaveBeenCalledTimes(1)
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(observe).toHaveBeenCalledWith({
+      reportType: input.reportType,
+      status: 429,
+      rateLimit: 0.002,
+      retryAfterMs: 7200000,
+      requestId: "trace-id"
+    })
   })
 })

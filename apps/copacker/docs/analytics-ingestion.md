@@ -44,8 +44,9 @@ validation (`report_outside_period`) and provider requests (`report_failed`). No
 are exposed in these failure codes. Failed refreshes preserve previously imported evidence and coverage bounds.
 
 
-Report creation throttling waits five minutes, then ten minutes for the final retry; report reads wait one minute,
-then two. Both respect longer Retry-After values within the request deadline. Poll/document retries keep the existing report ID.
+Production report creation uses [shared pacing and persistent cooldowns](amazon-report-limits.md), including across
+restarts and report types. Report reads wait one minute, then two after throttling, respecting longer Retry-After values
+within the request deadline. Poll/document retries keep the existing report ID.
 Budgeted fulfillment-shipment creates still disable automatic creation retries. FBM recovery can reuse an exact completed
 report created within the last day, and no longer disables ordinary creation retries.
 
