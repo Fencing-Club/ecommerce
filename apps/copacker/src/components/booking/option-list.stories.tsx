@@ -1,30 +1,14 @@
-import { useState } from "react"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { StatusBadge } from "@/components/common"
+import { controlled, dialogWidth } from "@/stories/booking"
 import { OptionList } from "./option-list"
 
-type Props = React.ComponentProps<typeof OptionList>
-
 // The list with its parent keeping the choice, as the FBA steps do.
-function Controlled({ value: initial, onValueChange, ...props }: Props) {
-  const [value, setValue] = useState(initial)
-  return (
-    <div className="max-w-lg">
-      <OptionList
-        {...props}
-        value={value}
-        onValueChange={(next) => {
-          setValue(next)
-          onValueChange(next)
-        }}
-      />
-    </div>
-  )
-}
+const Options = controlled(OptionList)
 
 const meta = preview.meta({
-  component: Controlled,
+  component: Options,
+  tags: ["vrt"],
   args: {
     "aria-label": "Choose how to ship",
     value: "hgr6",
@@ -33,11 +17,7 @@ const meta = preview.meta({
       {
         value: "hgr6",
         title: "Hagerstown, MD",
-        badge: (
-          <StatusBadge tone="success" icon={false}>
-            Lowest total
-          </StatusBadge>
-        ),
+        badge: "Lowest total",
         description: "HGR6, includes a $40.20 placement fee",
         price: "$144.12"
       },
@@ -55,7 +35,8 @@ const meta = preview.meta({
         price: "$184.78"
       }
     ]
-  }
+  },
+  decorators: [dialogWidth]
 })
 
 // Where Amazon places the shipment: each choice a radio row named by its title and described by its badge, its line
@@ -100,11 +81,7 @@ export const Carriers = meta.story({
       {
         value: "amass-standard",
         title: "Amass",
-        badge: (
-          <StatusBadge tone="success" icon={false}>
-            Cheapest
-          </StatusBadge>
-        ),
+        badge: "Cheapest",
         description: "Standard truck, Ocean LCL",
         price: "$144.12"
       },

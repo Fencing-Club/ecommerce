@@ -1,24 +1,18 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import {
-  aglBooking,
-  bookingDialog,
-  chestProtectors,
-  differingShipment,
-  filledTemplate,
-  linkedBooking,
-  otherShipments,
-  templateIssues
-} from "@/stories/fixtures/booking"
-import { type AglBooking, AglBookingDialog } from "./agl-booking"
+import { bookingDialog } from "@/stories/booking"
+import { AglBookingDialog } from "./agl-booking"
+import { agl, chestProtectors, templateIssues } from "./fixtures"
 
-// Booking Amazon Global Logistics, as copacker.pen's 06.18 draws it: every step and every problem, each in the one
-// dialog height.
+// Booking Amazon Global Logistics, as copacker.pen's 10.03 draws it: every step and every problem, each in the one
+// dialog height. Each story is a booking from the fixtures and the step it opens on, in a dialog held open as the
+// shipment page holds it.
 const meta = preview.meta({
   component: AglBookingDialog,
+  tags: ["vrt"],
   args: {
-    booking: aglBooking,
-    defaultOpen: true,
+    booking: agl.start,
+    open: true,
     onOpenChange: fn(),
     onTemplate: fn(),
     onFix: fn(),
@@ -61,7 +55,7 @@ export const Start = meta.story({
 
 // The template filled in place, at the slot's height, and Continue goes on to booking.
 export const TemplateFilled = meta.story({
-  args: { booking: { ...aglBooking, template: filledTemplate } },
+  args: { booking: agl.templateFilled },
   play: async () => {
     const dialog = await bookingDialog("Start the shipment in Seller Central")
     await expect(dialog.getByText("Template filled")).toBeVisible()
@@ -80,7 +74,7 @@ export const TemplateFilled = meta.story({
 
 // Step 2: the filled file to upload to the same shipment, where the transport is booked.
 export const Book = meta.story({
-  args: { booking: { ...aglBooking, template: filledTemplate }, initialStep: "book" },
+  args: { booking: agl.templateFilled, initialStep: "book" },
   play: async () => {
     const dialog = await bookingDialog("Book the shipment in Seller Central")
     await expect(dialog.getByRole("progressbar", { name: "Step 2 of 3" })).toBeVisible()
@@ -94,7 +88,7 @@ export const Book = meta.story({
 
 // Step 3: the four newest shipments, with the one that matches the packing chosen.
 export const Link = meta.story({
-  args: { booking: { ...aglBooking, template: filledTemplate }, initialStep: "link" },
+  args: { booking: agl.templateFilled, initialStep: "link" },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Link your Amazon shipment")
     await expect(dialog.getByRole("progressbar", { name: "Step 3 of 3" })).toBeVisible()
@@ -107,9 +101,9 @@ export const Link = meta.story({
   }
 })
 
-// Linked: the labels ready to download, and customs left in Seller Central. Done closes the dialog.
+// Linked: the labels ready to download, and customs left in Seller Central. Done asks to close the dialog.
 export const Done = meta.story({
-  args: { booking: linkedBooking },
+  args: { booking: agl.linked },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Shipment linked")
     await expect(dialog.queryByRole("progressbar")).toBeNull()
@@ -128,23 +122,15 @@ export const Done = meta.story({
 
 // Products without an Amazon SKU stop the inventory file, so the dialog opens on them, with nothing to go back to.
 export const MissingAmazonSkus = meta.story({
-  args: {
-    booking: {
-      ...aglBooking,
-      missingSkus: [
-        { product: "Chest protector / Men / XS", supplierSku: "CP-M-XS" },
-        { product: "Chest protector / Men / S", supplierSku: "CP-M-S" }
-      ]
-    }
-  },
+  args: { booking: agl.missingSkus },
   play: async ({ args }) => {
     const dialog = await bookingDialog("2 products need an Amazon SKU")
     await expect(dialog.getByText("Supplier SKU CP-M-XS")).toBeVisible()
     await expect(dialog.queryByRole("button", { name: "Back" })).toBeNull()
     const [first] = dialog.getAllByRole("button", { name: "Add SKU" })
     await expect(first).toHaveAccessibleDescription("Chest protector / Men / XS Supplier SKU CP-M-XS")
-    await userEvent.click(first!)
-    await expect(args.onFix).toHaveBeenCalledWith({ product: "Chest protector / Men / XS", supplierSku: "CP-M-XS" })
+    await userEvent.click(first)
+    await expect(args.onFix).toHaveBeenCalledWith(agl.missingSkus.missingSkus[0])
     await userEvent.click(dialog.getByRole("button", { name: "Check again" }))
     await expect(args.onCheckAgain).toHaveBeenCalledWith("skus")
   }
@@ -152,7 +138,7 @@ export const MissingAmazonSkus = meta.story({
 
 // A few seconds after the drop: the same slot fills, and Continue waits until it's done.
 export const FillingTheTemplate = meta.story({
-  args: { booking: { ...aglBooking, template: { status: "filling", progress: 66 } } },
+  args: { booking: agl.filling },
   play: async () => {
     const dialog = await bookingDialog("Start the shipment in Seller Central")
     const progress = dialog.getByRole("progressbar", { name: "Filling the template" })
@@ -164,15 +150,7 @@ export const FillingTheTemplate = meta.story({
 
 // Case packs carry their own carton details, so the template step goes and the booking takes two steps.
 export const SingleSkuCasePacks = meta.story({
-  args: {
-    booking: {
-      ...aglBooking,
-      kind: "casePacks",
-      file: { name: "PO36-Shipment-3-inventory.xlsx", href: "/api/shipments/ship_3/agl/inventory" },
-      cartons: 6,
-      units: 120
-    }
-  },
+  args: { booking: agl.casePacks },
   play: async () => {
     const dialog = await bookingDialog("Book the shipment in Seller Central")
     await expect(
@@ -188,15 +166,7 @@ export const SingleSkuCasePacks = meta.story({
 
 // AWD books by case pack from the packing list, kept apart until AWD's file rules are confirmed.
 export const AwdDestination = meta.story({
-  args: {
-    booking: {
-      ...aglBooking,
-      kind: "awd",
-      file: { name: "PO36-Shipment-4-packing-list.pdf", href: "/api/shipments/ship_4/packing-list" },
-      cartons: 6,
-      units: 144
-    }
-  },
+  args: { booking: agl.awd },
   play: async () => {
     const dialog = await bookingDialog("Book the AWD shipment in Seller Central")
     await expect(dialog.getByText("6 case packs, 144 units")).toBeVisible()
@@ -208,7 +178,7 @@ export const AwdDestination = meta.story({
 
 // Amazon can take a few minutes to list a new shipment: nothing is chosen, and Refresh asks again.
 export const NotListedYet = meta.story({
-  args: { booking: { ...aglBooking, template: filledTemplate, shipments: otherShipments }, initialStep: "link" },
+  args: { booking: agl.notListedYet, initialStep: "link" },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Link your Amazon shipment")
     await expect(dialog.getByText("No match yet")).toBeVisible()
@@ -222,10 +192,8 @@ export const NotListedYet = meta.story({
 })
 
 // A single problem with the template shows where the template goes, with the one action that fixes it.
-export const OneIssue = meta.story({
-  args: {
-    booking: { ...aglBooking, template: { status: "issues", issues: [templateIssues[0]!] } }
-  },
+export const CartonNeedsRepacking = meta.story({
+  args: { booking: agl.cartonNeedsRepacking },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Start the shipment in Seller Central")
     await expect(dialog.getByText("Carton 3 mixes two packing groups")).toBeVisible()
@@ -238,7 +206,7 @@ export const OneIssue = meta.story({
 
 // Several problems collapse into a count where the template goes. Review opens them, and Back returns.
 export const SeveralIssues = meta.story({
-  args: { booking: { ...aglBooking, template: { status: "issues", issues: templateIssues } } },
+  args: { booking: agl.severalIssues },
   play: async () => {
     const dialog = await bookingDialog("Start the shipment in Seller Central")
     await expect(dialog.getByText("3 issues in the template")).toBeVisible()
@@ -253,7 +221,7 @@ export const SeveralIssues = meta.story({
 
 // Every problem with the template: where, what, and the fix.
 export const IssuesViewTemplate = meta.story({
-  args: { booking: { ...aglBooking, template: { status: "issues", issues: templateIssues } } },
+  args: { booking: agl.severalIssues },
   play: async ({ args }) => {
     const start = await bookingDialog("Start the shipment in Seller Central")
     await userEvent.click(start.getByRole("button", { name: "Review" }))
@@ -263,7 +231,11 @@ export const IssuesViewTemplate = meta.story({
     await expect(dialog.getByText("Gross weight is missing")).toBeVisible()
     await expect(dialog.getByText("Amazon expects 13 units, packing has 15")).toBeVisible()
     await expect(dialog.getAllByRole("button", { name: "Edit carton" })).toHaveLength(2)
-    await userEvent.click(dialog.getByRole("button", { name: "Edit packing" }))
+    const editPacking = dialog.getByRole("button", { name: "Edit packing" })
+    await expect(editPacking).toHaveAccessibleDescription(
+      "Chest protector / Women / M Amazon expects 13 units, packing has 15"
+    )
+    await userEvent.click(editPacking)
     await expect(args.onFix).toHaveBeenCalledWith(templateIssues[2])
     await userEvent.click(dialog.getByRole("button", { name: "Check again" }))
     await expect(args.onCheckAgain).toHaveBeenCalledWith("template")
@@ -272,14 +244,13 @@ export const IssuesViewTemplate = meta.story({
 
 // A search with nothing to show keeps the list at its height.
 export const NoSearchResults = meta.story({
-  args: { booking: { ...aglBooking, template: filledTemplate }, initialStep: "link" },
+  args: { booking: agl.templateFilled, initialStep: "link" },
   play: async () => {
     const dialog = await bookingDialog("Link your Amazon shipment")
-    const picker = dialog
-      .getByRole("searchbox", { name: "Search by name or ID" })
-      .closest("[data-slot=shipment-picker]")
+    const search = dialog.getByRole("searchbox", { name: "Search by name or ID" })
+    const picker = search.closest("[data-slot=shipment-picker]")
     const height = picker?.getBoundingClientRect().height
-    await userEvent.type(dialog.getByRole("searchbox", { name: "Search by name or ID" }), "FBA19Q7M2KLX")
+    await userEvent.type(search, "FBA19Q7M2KLX")
     await expect(dialog.getByText("No shipments found")).toBeVisible()
     await expect(dialog.getByText("Check the ID, or refresh in a few minutes.")).toBeVisible()
     await expect(picker?.getBoundingClientRect().height).toBe(height)
@@ -287,15 +258,9 @@ export const NoSearchResults = meta.story({
   }
 })
 
-const differing: AglBooking = {
-  ...aglBooking,
-  template: filledTemplate,
-  shipments: [differingShipment, ...otherShipments]
-}
-
 // The shipment as booked doesn't match the packing: a count where the problem is, and linking waits.
 export const DoesNotMatchThePacking = meta.story({
-  args: { booking: differing, initialStep: "link" },
+  args: { booking: agl.differs, initialStep: "link" },
   play: async () => {
     const dialog = await bookingDialog("Link your Amazon shipment")
     await userEvent.type(dialog.getByRole("searchbox", { name: "Search by name or ID" }), "PO36")
@@ -311,7 +276,7 @@ export const DoesNotMatchThePacking = meta.story({
 
 // After Review on the shipment: each product with Amazon's count and the packing's.
 export const IssuesViewMismatch = meta.story({
-  args: { booking: differing, initialStep: "link" },
+  args: { booking: agl.differs, initialStep: "link" },
   play: async ({ args }) => {
     const link = await bookingDialog("Link your Amazon shipment")
     await userEvent.type(link.getByRole("searchbox", { name: "Search by name or ID" }), "PO36")
@@ -329,7 +294,7 @@ export const IssuesViewMismatch = meta.story({
 
 // While Amazon makes the labels, Download waits in its place with a spinner.
 export const GettingLabels = meta.story({
-  args: { booking: { ...linkedBooking, linked: { ...linkedBooking.linked!, labels: { status: "pending" } } } },
+  args: { booking: agl.gettingLabels },
   play: async () => {
     const dialog = await bookingDialog("Shipment linked")
     await expect(dialog.getByText("Getting them from Amazon")).toBeVisible()
@@ -340,7 +305,7 @@ export const GettingLabels = meta.story({
 
 // When Amazon doesn't send them, the labels row becomes the problem, with its fix.
 export const LabelsDidNotComeThrough = meta.story({
-  args: { booking: { ...linkedBooking, linked: { ...linkedBooking.linked!, labels: { status: "failed" } } } },
+  args: { booking: agl.labelsFailed },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Shipment linked")
     await expect(dialog.getByText("Couldn’t get the carton labels")).toBeVisible()

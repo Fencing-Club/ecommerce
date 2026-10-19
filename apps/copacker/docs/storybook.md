@@ -27,10 +27,6 @@ The preview records ordinary internal anchor clicks through the navigation mock 
 Route-controlled filters, refreshes and search navigation receive explicit callbacks in their component stories.
 The integrated browser remains required for actual document navigation, Start transitions and cross-tab behavior.
 
-A browser that can't register the mock service worker, such as the Claude desktop app's, still renders every story:
-the preview logs the failure, and requests MSW would answer go unanswered. Play functions that type or press keys can
-fail there although the story works; Vitest's Chromium is the reference.
-
 ```bash
 pnpm --filter copacker storybook
 ```
@@ -140,17 +136,3 @@ Shipment packing headers use `ShipmentPackingDetails` in both the app and the pu
 `PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
 and required ready date. The standalone shipment-packing-details stories cover editing, read-only, forwarder,
 and mobile layouts; the prototype sidebar reads the date from the live form.
-
-## Amazon booking dialogs
-
-`Components/Booking` holds the AGL and FBA booking dialogs from `copacker.pen` (06.18 and 06.17). They are UI only:
-nothing is wired to the server or Amazon yet. The `AglBookingDialog` and `FbaBookingDialog` stories cover every step and
-problem, and each checks that the dialog keeps its one height (`bookingDialog` in `src/stories/fixtures/booking.ts`).
-
-Both flows build on one component per concept in `src/components/booking`: `BookingDialog` (512px wide, one height,
-a body that scrolls and takes focus only when it overflows), `IssueSummary` and `IssuesView` (one problem in place with
-its fix, several as a count with Review), `ShipmentPicker`, `TemplateSlot`, `FileRow` with `DownloadAction` and
-`OpenAction`, `OptionList` and `SummaryList`.
-
-Before wiring FBA, settle the open product question: `src/server/fba-shipments.ts` books with the buyer's own carrier
-by default, while the design leads with Amazon's quotes.

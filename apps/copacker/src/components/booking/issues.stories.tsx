@@ -1,25 +1,15 @@
-import { RefreshCw } from "lucide-react"
-import { expect, fn, screen, userEvent } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { bookingDialog } from "@/stories/fixtures/booking"
+import { bookingDialog, dialogBody, dialogWidth } from "@/stories/booking"
 import { BookingDialog } from "./booking-dialog"
+import { cartonIssue } from "./fixtures"
 import { type Issue, IssueSummary, IssuesView } from "./issues"
 
 const meta = preview.meta({
   component: IssueSummary,
-  args: {
-    title: "Carton 3 mixes two packing groups",
-    description: "Men / XS and Men / S need separate cartons",
-    action: "Edit carton 3",
-    onAction: fn()
-  },
-  decorators: [
-    (Story) => (
-      <div className="max-w-lg">
-        <Story />
-      </div>
-    )
-  ]
+  tags: ["vrt"],
+  args: { ...cartonIssue, onAction: fn() },
+  decorators: [dialogWidth]
 })
 
 // One problem where it is, in the warning tone, with the one action that fixes it.
@@ -51,17 +41,18 @@ export const SeveralIssues = meta.story({
   }
 })
 
-// A problem with nothing to fix but trying again, such as Amazon not answering.
+// A problem with nothing to fix but trying again, such as Amazon not answering: the action shows the refresh icon.
 export const TryAgain = meta.story({
   args: {
     title: "Couldn’t get the carton labels",
     description: "Amazon didn’t respond. Try again in a moment.",
     action: "Try again",
-    actionIcon: <RefreshCw data-icon="inline-start" aria-hidden />
+    retry: true
   },
   play: async ({ canvas, args }) => {
     const retry = canvas.getByRole("button", { name: "Try again" })
     await expect(retry).toHaveAccessibleDescription("Couldn’t get the carton labels")
+    await expect(retry.querySelector("svg")).not.toBeNull()
     await userEvent.click(retry)
     await expect(args.onAction).toHaveBeenCalledOnce()
   }
@@ -71,8 +62,8 @@ const onFix = fn()
 const onBack = fn()
 const onCheckAgain = fn()
 
-// Problems in the template, the third with no fix in Copacker.
-const templateIssues: Issue[] = [
+// Problems in a template, the third with no fix in Copacker.
+const issues: Issue[] = [
   {
     id: "mixed",
     where: "Carton 3",
@@ -83,13 +74,21 @@ const templateIssues: Issue[] = [
   { id: "units", where: "Chest protector / Women / M", what: "Amazon expects 13 units, packing has 15" }
 ]
 
-function Issues({ issues, checking }: { issues: Issue[]; checking?: boolean }) {
+// Any number of problems: one carton after another without a weight.
+const manyIssues: Issue[] = Array.from({ length: 14 }, (_, index) => ({
+  id: `carton-${index + 1}`,
+  where: `Carton ${index + 1}`,
+  what: "Gross weight is missing",
+  fix: { label: "Edit carton", onFix }
+}))
+
+function Issues({ issues: shown, checking }: { issues: Issue[]; checking?: boolean }) {
   return (
-    <BookingDialog defaultOpen>
+    <BookingDialog open>
       <IssuesView
-        title={`Fix ${issues.length} issues in the template`}
+        title={`Fix ${shown.length} issues in the template`}
         description="Fix them in Copacker, then check the template again."
-        issues={issues}
+        issues={shown}
         step={{ current: 1, total: 3 }}
         onBack={onBack}
         onCheckAgain={onCheckAgain}
@@ -102,7 +101,7 @@ function Issues({ issues, checking }: { issues: Issue[]; checking?: boolean }) {
 // Every problem as a step of its own: where each is, what's wrong, and its fix when Copacker has one. Back returns to
 // the step the problems came from, and Check again asks for the check.
 export const EveryIssue = meta.story({
-  render: () => <Issues issues={templateIssues} />,
+  render: () => <Issues issues={issues} />,
   play: async () => {
     onFix.mockClear()
     onBack.mockClear()
@@ -124,7 +123,7 @@ export const EveryIssue = meta.story({
 
 // While the check runs, Check again shows it and waits, still reachable by keyboard.
 export const Checking = meta.story({
-  render: () => <Issues issues={templateIssues} checking />,
+  render: () => <Issues issues={issues} checking />,
   play: async () => {
     onCheckAgain.mockClear()
     const dialog = await bookingDialog("Fix 3 issues in the template")
@@ -138,24 +137,11 @@ export const Checking = meta.story({
 
 // Any number of problems fits: the list scrolls within the dialog, which keeps its height.
 export const ManyIssues = meta.story({
-  render: () => (
-    <Issues
-      issues={Array.from({ length: 14 }, (_, index) => ({
-        id: `carton-${index + 1}`,
-        where: `Carton ${index + 1}`,
-        what: "Gross weight is missing",
-        fix: { label: "Edit carton", onFix }
-      }))}
-    />
-  ),
+  render: () => <Issues issues={manyIssues} />,
   play: async () => {
     const dialog = await bookingDialog("Fix 14 issues in the template")
     await expect(dialog.getAllByRole("listitem")).toHaveLength(14)
-    const body = screen.getByRole("dialog").querySelector("[data-slot=booking-dialog-body]")
-    if (!(body instanceof HTMLElement)) {
-      throw new Error("The dialog has no body")
-    }
-    await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight)
+    await expect(dialogBody().scrollHeight).toBeGreaterThan(dialogBody().clientHeight)
     await expect(dialog.getByRole("button", { name: "Check again" })).toBeVisible()
   }
 })

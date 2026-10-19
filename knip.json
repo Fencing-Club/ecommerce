@@ -29,6 +29,7 @@
     "apps/copacker": {
       "entry": [
         ".storybook/mocks/*.ts",
+        ".storybook/vrt.setup.ts",
         "tests/start-runtime/{cloudflare,vite}.config.ts",
         "tests/start-runtime/src/router.tsx",
         "tests/start-runtime/src/start.ts",

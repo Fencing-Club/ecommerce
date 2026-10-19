@@ -105,17 +105,12 @@ export default definePreview({
     addonA11y(),
     addonMsw(async () => {
       const worker = setupWorker(...handlers)
-      try {
-        await worker.start({
-          onUnhandledRequest: "bypass",
-          quiet: true,
-          serviceWorker: { url: new URL("mockServiceWorker.js", window.location.href).href }
-        })
-      } catch (error) {
-        // Some embedded browsers, such as the Claude desktop app's, can't register a service worker. Their stories
-        // still render; only the requests the mocks answer go unanswered.
-        console.warn(error)
-      }
+      const starting = worker.start({
+        onUnhandledRequest: "bypass",
+        quiet: true,
+        serviceWorker: { url: new URL("mockServiceWorker.js", window.location.href).href }
+      })
+      await starting.catch((error: unknown) => console.warn(error))
       return worker
     })
   ],

@@ -1,33 +1,20 @@
 import { expect, fireEvent, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { IssueSummary } from "./issues"
+import { dialogWidth } from "@/stories/booking"
+import { agl, cartonIssue } from "./fixtures"
 import { TemplateSlot, type TemplateSlotState } from "./template-slot"
 
+const { cartons, units } = agl.start
 const empty: TemplateSlotState = { status: "empty" }
-const filling: TemplateSlotState = { status: "filling", progress: 60, units: 100 }
-const filled: TemplateSlotState = { status: "filled", cartons: 5, units: 100 }
-const issue: TemplateSlotState = {
-  status: "issue",
-  summary: (
-    <IssueSummary
-      title="Carton 3 mixes two packing groups"
-      description="Men / XS and Men / S need separate cartons"
-      action="Edit carton 3"
-      onAction={fn()}
-    />
-  )
-}
+const filling: TemplateSlotState = { status: "filling", progress: 66, units }
+const filled: TemplateSlotState = { status: "filled", cartons, units }
+const issue: TemplateSlotState = { status: "issue", issue: { ...cartonIssue, onAction: fn() } }
 
 const meta = preview.meta({
   component: TemplateSlot,
+  tags: ["vrt"],
   args: { state: empty, onFile: fn() },
-  decorators: [
-    (Story) => (
-      <div className="max-w-lg">
-        <Story />
-      </div>
-    )
-  ]
+  decorators: [dialogWidth]
 })
 
 const template = () =>
@@ -74,7 +61,7 @@ export const Filling = meta.story({
   args: { state: filling },
   play: async ({ canvas }) => {
     const progress = canvas.getByRole("progressbar", { name: "Filling the template" })
-    await expect(progress).toHaveAttribute("aria-valuenow", "60")
+    await expect(progress).toHaveAttribute("aria-valuenow", "66")
     await expect(progress).toHaveAccessibleDescription("Matching 100 units")
     await expect(canvas.queryByRole("button")).toBeNull()
   }

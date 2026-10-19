@@ -1,13 +1,11 @@
-import { Check, ExternalLink, RefreshCw, Tags, Truck, Warehouse } from "lucide-react"
+import { ExternalLink, Tags, Truck, Warehouse } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useLocale, useTimeZone, useTranslations } from "use-intl"
-import { StatusBadge } from "@/components/common"
 import { SelectControl } from "@/components/form-select"
 import { Button } from "@/components/ui/button"
-import { DialogClose } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { BookingDialog, BookingDialogBody, BookingDialogFooter, BookingDialogHeader } from "./booking-dialog"
-import { DownloadAction, FileRow } from "./file-row"
+import { BookingDialog, type BookingDialogState, BookingStep, DoneAction } from "./booking-dialog"
+import { FileRow, LabelsRow, RowStatus } from "./file-row"
 import { IssueSummary, IssuesView } from "./issues"
 import { OptionList } from "./option-list"
 import { SummaryList } from "./summary-list"
@@ -84,21 +82,16 @@ type Own = { method: FbaMethod; carrier: string; windowId: string | null }
 // thing, through the callbacks.
 export function FbaBookingDialog({
   booking,
-  open,
-  defaultOpen,
-  onOpenChange,
   initialStep = "choose",
   onReconnect,
   onRetry,
   onCheckAgain,
   onFix,
   onRefreshPrices,
-  onBook
-}: {
+  onBook,
+  ...dialog
+}: BookingDialogState & {
   booking: FbaBooking
-  open?: boolean
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
   initialStep?: FbaStep
   onReconnect: () => void
   onRetry: () => void
@@ -107,7 +100,7 @@ export function FbaBookingDialog({
   onRefreshPrices: () => void
   onBook: (choice: FbaChoice) => void
 }) {
-  const t = useTranslations("shipments.booking")
+  const t = useTranslations("booking")
   const format = useFormatter()
   const id = useId()
   const [screen, setScreen] = useState<Screen>(initialStep)
@@ -136,50 +129,63 @@ export function FbaBookingDialog({
       timeZoneName: "shortGeneric",
       timeZone
     }).format(date)
-
-  const dialog = (key: string, content: React.ReactNode) => (
-    <BookingDialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} screen={key}>
-      {content}
-    </BookingDialog>
+  const back = (to: Screen) => (
+    <Button
+      variant="outline"
+      onClick={() => {
+        setDraft(null)
+        setScreen(to)
+      }}
+    >
+      {t("back")}
+    </Button>
   )
 
   if (booking.booked) {
-    return dialog("booked", <Booked booking={booking} booked={booking.booked} money={money} />)
+    return (
+      <BookingDialog {...dialog} screen="booked">
+        <Booked booking={booking} booked={booking.booked} money={money} />
+      </BookingDialog>
+    )
   }
 
   if (options.status === "issues" && reviewing) {
-    return dialog(
-      "issues",
-      <IssuesView
-        title={t("fba.packingIssues.title", { count: options.issues.length })}
-        description={t("fba.packingIssues.description")}
-        issues={options.issues.map((issue) =>
-          issue.kind === "cartonVolume"
-            ? {
-                id: `cartons-${issue.first}-${issue.last}`,
-                where:
-                  issue.first === issue.last
-                    ? t("fba.packingIssues.carton", { number: issue.first })
-                    : t("fba.packingIssues.cartons", { first: issue.first, last: issue.last }),
-                what: t("fba.packingIssues.cartonVolume"),
-                fix: { label: t("fba.packingIssues.editCartons"), onFix: () => onFix(issue) }
-              }
-            : { id: `eligible-${issue.product}`, where: issue.product, what: t("fba.packingIssues.notEligible") }
-        )}
-        step={{ current: 1, total: 2 }}
-        onBack={() => setReviewing(false)}
-        onCheckAgain={onCheckAgain}
-      />
+    return (
+      <BookingDialog {...dialog} screen="issues">
+        <IssuesView
+          title={t("fba.packingIssues.title", { count: options.issues.length })}
+          description={t("fba.packingIssues.description")}
+          issues={options.issues.map((issue) =>
+            issue.kind === "cartonVolume"
+              ? {
+                  id: `cartons-${issue.first}-${issue.last}`,
+                  where:
+                    issue.first === issue.last
+                      ? t("fba.packingIssues.carton", { number: issue.first })
+                      : t("fba.packingIssues.cartons", { first: issue.first, last: issue.last }),
+                  what: t("fba.packingIssues.cartonVolume"),
+                  fix: { label: t("fba.packingIssues.editCartons"), onFix: () => onFix(issue) }
+                }
+              : { id: `eligible-${issue.product}`, where: issue.product, what: t("fba.packingIssues.notEligible") }
+          )}
+          step={{ current: 1, total: 2 }}
+          onBack={() => setReviewing(false)}
+          onCheckAgain={onCheckAgain}
+        />
+      </BookingDialog>
     )
   }
 
   if (options.status !== "ready") {
     // Nothing to choose until the problem is dealt with, so it shows where the options would.
-    return dialog(
-      "choose",
-      <>
-        <BookingDialogHeader title={t("fba.choose.title")} description={t("fba.choose.description")} />
-        <BookingDialogBody>
+    return (
+      <BookingDialog {...dialog} screen="choose">
+        <BookingStep
+          title={t("fba.choose.title")}
+          description={t("fba.choose.description")}
+          step={{ current: 1, total: 2 }}
+          actions={<Button disabled>{t("continue")}</Button>}
+        >
           {options.status === "reconnect" && (
             <IssueSummary
               title={t("fba.problems.reconnect")}
@@ -193,7 +199,7 @@ export function FbaBookingDialog({
               title={t("fba.problems.failed")}
               description={t("fba.problems.failedDescription")}
               action={t("tryAgain")}
-              actionIcon={<RefreshCw data-icon="inline-start" aria-hidden />}
+              retry
               onAction={onRetry}
             />
           )}
@@ -205,11 +211,8 @@ export function FbaBookingDialog({
               onAction={() => setReviewing(true)}
             />
           )}
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 1, total: 2 }}>
-          <Button disabled>{t("continue")}</Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
@@ -232,18 +235,31 @@ export function FbaBookingDialog({
 
   if (screen === "carrier") {
     const chosen = draft ?? carrierId
-    return dialog(
-      "carrier",
-      <>
-        <BookingDialogHeader
+    return (
+      <BookingDialog {...dialog} screen="carrier">
+        <BookingStep
           title={t("fba.carrier.title")}
           description={
             placement.placementFee
               ? t("fba.carrier.description", { destination, fee: money(placement.placementFee) })
               : t("fba.carrier.descriptionNoFee", { destination })
           }
-        />
-        <BookingDialogBody>
+          step={{ current: 1, total: 2 }}
+          actions={
+            <>
+              {back("choose")}
+              <Button
+                onClick={() => {
+                  setCarriers({ ...carriers, [placement.id]: chosen })
+                  setDraft(null)
+                  setScreen(chosen === "own" ? "own" : "choose")
+                }}
+              >
+                {t("fba.carrier.use")}
+              </Button>
+            </>
+          }
+        >
           <OptionList
             aria-label={t("fba.carrier.title")}
             value={chosen}
@@ -252,7 +268,7 @@ export function FbaBookingDialog({
               ...placement.quotes.map((candidate, index) => ({
                 value: candidate.id,
                 title: candidate.carrier,
-                badge: index === 0 && <Recommended>{t("fba.carrier.cheapest")}</Recommended>,
+                badge: index === 0 ? t("fba.carrier.cheapest") : undefined,
                 description: t("fba.carrier.quote", { service: candidate.service, mode: candidate.mode }),
                 price: money(placement.placementFee + candidate.shipping)
               })),
@@ -265,40 +281,28 @@ export function FbaBookingDialog({
             ]}
           />
           <p className="text-xs text-muted-foreground">{t("fba.carrier.noEstimates")}</p>
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 1, total: 2 }}>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setDraft(null)
-              setScreen("choose")
-            }}
-          >
-            {t("back")}
-          </Button>
-          <Button
-            onClick={() => {
-              setCarriers({ ...carriers, [placement.id]: chosen })
-              setDraft(null)
-              setScreen(chosen === "own" ? "own" : "choose")
-            }}
-          >
-            {t("fba.carrier.use")}
-          </Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
   if (screen === "own") {
-    return dialog(
-      "own",
-      <>
-        <BookingDialogHeader
+    return (
+      <BookingDialog {...dialog} screen="own">
+        <BookingStep
           title={t("fba.own.title")}
           description={t("fba.own.description", { shipment: booking.shipment })}
-        />
-        <BookingDialogBody className="gap-4">
+          step={{ current: 1, total: 2 }}
+          actions={
+            <>
+              {back("carrier")}
+              <Button disabled={!own.windowId || !own.carrier} onClick={() => setScreen("review")}>
+                {t("continue")}
+              </Button>
+            </>
+          }
+          bodyClassName="gap-4"
+        >
           <Field>
             <FieldLabel htmlFor={`${id}-method`}>{t("fba.own.method")}</FieldLabel>
             <SelectControl
@@ -333,16 +337,8 @@ export function FbaBookingDialog({
               onValueChange={(windowId) => setOwn({ ...own, windowId: windowId ?? null })}
             />
           </Field>
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 1, total: 2 }}>
-          <Button variant="outline" onClick={() => setScreen("carrier")}>
-            {t("back")}
-          </Button>
-          <Button disabled={!own.windowId || !own.carrier} onClick={() => setScreen("review")}>
-            {t("continue")}
-          </Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
@@ -352,24 +348,33 @@ export function FbaBookingDialog({
     const split = placement.warehouses.length > 1
     const choice = bookingChoice(placement.id, quote, own)
     const carrierDetail = quote ? quote.mode : own.carrier
-    return dialog(
-      "review",
-      <>
-        <BookingDialogHeader
+    return (
+      <BookingDialog {...dialog} screen="review">
+        <BookingStep
           title={t("fba.review.title")}
           description={
             options.expired
               ? t("fba.review.expiredAt", { time: time(options.heldUntil) })
               : t("fba.review.heldUntil", { time: time(options.heldUntil) })
           }
-        />
-        <BookingDialogBody>
+          step={{ current: 2, total: 2 }}
+          actions={
+            <>
+              {back("choose")}
+              <Button disabled={options.expired || !choice} onClick={() => choice && onBook(choice)}>
+                {options.expired
+                  ? t("fba.review.bookUnpriced")
+                  : t("fba.review.book", { total: money(fee + (shipping ?? 0)) })}
+              </Button>
+            </>
+          }
+        >
           {options.expired && (
             <IssueSummary
               title={t("fba.review.expired")}
               description={t("fba.review.expiredDescription")}
               action={t("fba.review.refresh")}
-              actionIcon={<RefreshCw data-icon="inline-start" aria-hidden />}
+              retry
               onAction={onRefreshPrices}
             />
           )}
@@ -412,18 +417,8 @@ export function FbaBookingDialog({
               {t.rich("fba.review.terms", { terms: termsLink(booking.termsUrl, t("newTab")) })}
             </p>
           )}
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 2, total: 2 }}>
-          <Button variant="outline" onClick={() => setScreen("choose")}>
-            {t("back")}
-          </Button>
-          <Button disabled={options.expired || !choice} onClick={() => choice && onBook(choice)}>
-            {options.expired
-              ? t("fba.review.bookUnpriced")
-              : t("fba.review.book", { total: money(fee + (shipping ?? 0)) })}
-          </Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
@@ -438,11 +433,14 @@ export function FbaBookingDialog({
     return t("fba.carrier.quote", { service: quote.service, mode: quote.mode })
   }
 
-  return dialog(
-    "choose",
-    <>
-      <BookingDialogHeader title={t("fba.choose.title")} description={t("fba.choose.description")} />
-      <BookingDialogBody>
+  return (
+    <BookingDialog {...dialog} screen="choose">
+      <BookingStep
+        title={t("fba.choose.title")}
+        description={t("fba.choose.description")}
+        step={{ current: 1, total: 2 }}
+        actions={<Button onClick={() => setScreen(carrierId === "own" ? "own" : "review")}>{t("continue")}</Button>}
+      >
         <OptionList
           aria-label={t("fba.choose.title")}
           value={placement.id}
@@ -453,7 +451,7 @@ export function FbaBookingDialog({
               candidate.warehouses.length === 1 && candidate.warehouses[0]
                 ? candidate.warehouses[0].place
                 : t("fba.choose.warehouses", { count: candidate.warehouses.length }),
-            badge: index === 0 && <Recommended>{t("fba.choose.lowest")}</Recommended>,
+            badge: index === 0 ? t("fba.choose.lowest") : undefined,
             description: candidate.placementFee
               ? t("fba.choose.withFee", { codes: codes(candidate), fee: money(candidate.placementFee) })
               : t("fba.choose.noFee", { codes: codes(candidate) }),
@@ -476,11 +474,8 @@ export function FbaBookingDialog({
             {t("fba.choose.change")}
           </Button>
         </FileRow>
-      </BookingDialogBody>
-      <BookingDialogFooter step={{ current: 1, total: 2 }}>
-        <Button onClick={() => setScreen(carrierId === "own" ? "own" : "review")}>{t("continue")}</Button>
-      </BookingDialogFooter>
-    </>
+      </BookingStep>
+    </BookingDialog>
   )
 }
 
@@ -516,15 +511,6 @@ function total(placement: FbaPlacement) {
   return placement.placementFee + (placement.quotes[0]?.shipping ?? 0)
 }
 
-// The option worth noticing, such as the lowest total.
-function Recommended({ children }: { children: React.ReactNode }) {
-  return (
-    <StatusBadge tone="success" icon={false}>
-      {children}
-    </StatusBadge>
-  )
-}
-
 // The booked shipment and its labels, each with its own download, waiting in place until it arrives.
 function Booked({
   booking,
@@ -535,63 +521,38 @@ function Booked({
   booked: NonNullable<FbaBooking["booked"]>
   money: (amount: number) => string
 }) {
-  const t = useTranslations("shipments.booking")
-  const { amazonLabels, carrierLabels } = booked
+  const t = useTranslations("booking")
+  const { carrierLabels } = booked
   return (
-    <>
-      <BookingDialogHeader
-        title={t("fba.booked.title")}
-        description={t("fba.booked.description", { shipment: booking.shipment })}
-      />
-      <BookingDialogBody>
-        <FileRow
-          icon={<Warehouse aria-hidden />}
-          title={booked.place}
-          description={t("fba.booked.summary", { service: booked.service, total: money(booked.total) })}
-        >
-          <StatusBadge tone="success" icon={<Check aria-hidden />}>
-            {t("fba.booked.booked")}
-          </StatusBadge>
-        </FileRow>
-        {/* Says when each file arrives. */}
-        <div aria-live="polite" className="flex flex-col gap-3">
-          <FileRow
-            icon={<Tags aria-hidden />}
-            title={t("fba.booked.amazonLabels")}
-            description={
-              amazonLabels.status === "ready"
-                ? t("labelsShared", { count: amazonLabels.count })
-                : t("labelsPending", { source: "Amazon" })
-            }
-          >
-            {amazonLabels.status === "ready" ? (
-              <DownloadAction href={amazonLabels.href} />
-            ) : (
-              <DownloadAction pending={t("gettingLabels")} />
-            )}
-          </FileRow>
-          {carrierLabels && (
-            <FileRow
-              icon={<Truck aria-hidden />}
-              title={t("fba.booked.carrierLabels")}
-              description={
-                carrierLabels.labels.status === "ready"
-                  ? t("fba.booked.carrierReady", { carrier: carrierLabels.carrier })
-                  : t("labelsPending", { source: carrierLabels.carrier })
-              }
-            >
-              {carrierLabels.labels.status === "ready" ? (
-                <DownloadAction href={carrierLabels.labels.href} />
-              ) : (
-                <DownloadAction pending={t("gettingLabels")} />
-              )}
-            </FileRow>
-          )}
-        </div>
-      </BookingDialogBody>
-      <BookingDialogFooter>
-        <DialogClose render={<Button />}>{t("done")}</DialogClose>
-      </BookingDialogFooter>
-    </>
+    <BookingStep
+      title={t("fba.booked.title")}
+      description={t("fba.booked.description", { shipment: booking.shipment })}
+      actions={<DoneAction />}
+    >
+      <FileRow
+        icon={<Warehouse aria-hidden />}
+        title={booked.place}
+        description={t("fba.booked.summary", { service: booked.service, total: money(booked.total) })}
+      >
+        <RowStatus>{t("fba.booked.booked")}</RowStatus>
+      </FileRow>
+      {/* Says when each file arrives. */}
+      <div aria-live="polite" className="flex flex-col gap-3">
+        <LabelsRow
+          icon={<Tags aria-hidden />}
+          title={t("fba.booked.amazonLabels")}
+          from="Amazon"
+          labels={booked.amazonLabels}
+        />
+        {carrierLabels && (
+          <LabelsRow
+            icon={<Truck aria-hidden />}
+            title={t("fba.booked.carrierLabels")}
+            from={carrierLabels.carrier}
+            labels={carrierLabels.labels}
+          />
+        )}
+      </div>
+    </BookingStep>
   )
 }

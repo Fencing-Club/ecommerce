@@ -1,12 +1,11 @@
-import { Check, FileCheck, FileSpreadsheet, FileText, LinkIcon, RefreshCw, Store, Tags } from "lucide-react"
+import { FileCheck, FileSpreadsheet, FileText, LinkIcon, Store, Tags } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
-import { fileName, StatusBadge } from "@/components/common"
+import { fileName } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { DialogClose } from "@/components/ui/dialog"
-import { BookingDialog, BookingDialogBody, BookingDialogFooter, BookingDialogHeader } from "./booking-dialog"
-import { DownloadAction, FileRow, OpenAction } from "./file-row"
-import { type Issue, IssueSummary, IssuesView } from "./issues"
+import { BookingDialog, type BookingDialogState, BookingStep, DoneAction } from "./booking-dialog"
+import { DownloadAction, FileRow, LabelsRow, OpenAction, RowStatus } from "./file-row"
+import { type Issue, IssueSummary, type IssueSummaryProps, IssuesView } from "./issues"
 import { type PickerShipment, ShipmentPicker } from "./shipment-picker"
 import { TemplateSlot, type TemplateSlotState } from "./template-slot"
 
@@ -61,7 +60,7 @@ export type AglStep = "start" | "book" | "link"
 // What Check again checks: the products' SKUs, the template, or the chosen shipment against the packing.
 export type AglCheck = "skus" | "template" | "match"
 
-type Words = ReturnType<typeof useTranslations<"shipments.booking">>
+type Words = ReturnType<typeof useTranslations<"booking">>
 
 // Booking Amazon Global Logistics, which the buyer books in Seller Central: Copacker makes the inventory file, fills
 // Amazon's box-content template, finds the booked shipment and fetches its labels. It reopens where the buyer left off
@@ -69,21 +68,16 @@ type Words = ReturnType<typeof useTranslations<"shipments.booking">>
 // callbacks.
 export function AglBookingDialog({
   booking,
-  open,
-  defaultOpen,
-  onOpenChange,
   initialStep = "start",
   onTemplate,
   onFix,
   onCheckAgain,
   onRefreshShipments,
   onLink,
-  onRetryLabels
-}: {
+  onRetryLabels,
+  ...dialog
+}: BookingDialogState & {
   booking: AglBooking
-  open?: boolean
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
   initialStep?: AglStep
   onTemplate: (file: File) => void
   onFix: (issue: AglTemplateIssue | AglMissingSku) => void
@@ -92,7 +86,7 @@ export function AglBookingDialog({
   onLink: (shipmentId: string) => void
   onRetryLabels: () => void
 }) {
-  const t = useTranslations("shipments.booking")
+  const t = useTranslations("booking")
   const [chosenStep, setStep] = useState<AglStep>(initialStep)
   // The IssuesView, open over the step its problems belong to.
   const [reviewing, setReviewing] = useState(false)
@@ -106,39 +100,42 @@ export function AglBookingDialog({
   const shipment = booking.shipments.find((candidate) => candidate.id === shipmentId)
   const differences = shipment?.match === "differs" ? (shipment.differences ?? []) : []
   const templateIssues = template.status === "issues" ? template.issues : []
-
-  const dialog = (screen: string, content: React.ReactNode) => (
-    <BookingDialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} screen={screen}>
-      {content}
-    </BookingDialog>
+  const back = (to: AglStep) => (
+    <Button variant="outline" onClick={() => setStep(to)}>
+      {t("back")}
+    </Button>
   )
 
   if (booking.missingSkus.length) {
-    return dialog(
-      "missingSkus",
-      <IssuesView
-        title={t("agl.missingSkus.title", { count: booking.missingSkus.length })}
-        description={t("agl.missingSkus.description")}
-        issues={booking.missingSkus.map((missing) => ({
-          id: missing.supplierSku,
-          where: missing.product,
-          what: t("agl.issues.supplierSku", { sku: missing.supplierSku }),
-          fix: { label: t("agl.issues.addSku"), onFix: () => onFix(missing) }
-        }))}
-        step={{ current: 1, total }}
-        onCheckAgain={() => onCheckAgain("skus")}
-      />
+    return (
+      <BookingDialog {...dialog} screen="missingSkus">
+        <IssuesView
+          title={t("agl.missingSkus.title", { count: booking.missingSkus.length })}
+          description={t("agl.missingSkus.description")}
+          issues={booking.missingSkus.map((missing) => ({
+            id: missing.supplierSku,
+            where: missing.product,
+            what: t("agl.issues.supplierSku", { sku: missing.supplierSku }),
+            fix: { label: t("agl.issues.addSku"), onFix: () => onFix(missing) }
+          }))}
+          step={{ current: 1, total }}
+          onCheckAgain={() => onCheckAgain("skus")}
+        />
+      </BookingDialog>
     )
   }
 
   if (booking.linked) {
-    return dialog("done", <Done linked={booking.linked} onRetryLabels={onRetryLabels} />)
+    return (
+      <BookingDialog {...dialog} screen="done">
+        <Done linked={booking.linked} onRetryLabels={onRetryLabels} />
+      </BookingDialog>
+    )
   }
 
-  if (step === "link") {
-    if (reviewing && differences.length) {
-      return dialog(
-        "mismatch",
+  if (step === "link" && reviewing && differences.length) {
+    return (
+      <BookingDialog {...dialog} screen="mismatch">
         <IssuesView
           title={t("agl.mismatch.title", { count: differences.length })}
           description={t("agl.mismatch.description")}
@@ -151,48 +148,62 @@ export function AglBookingDialog({
           onBack={() => setReviewing(false)}
           onCheckAgain={() => onCheckAgain("match")}
         />
-      )
-    }
-    return dialog(
-      "link",
-      <>
-        <BookingDialogHeader title={t("agl.link.title")} description={t("agl.link.description")} />
-        <BookingDialogBody>
+      </BookingDialog>
+    )
+  }
+
+  if (step === "link") {
+    return (
+      <BookingDialog {...dialog} screen="link">
+        <BookingStep
+          title={t("agl.link.title")}
+          description={t("agl.link.description")}
+          step={{ current: total, total }}
+          actions={
+            <>
+              {back(kind === "cartons" ? "book" : "start")}
+              <Button disabled={!shipment || differences.length > 0} onClick={() => shipment && onLink(shipment.id)}>
+                <LinkIcon data-icon="inline-start" aria-hidden />
+                {t("agl.link.submit")}
+              </Button>
+            </>
+          }
+        >
           <ShipmentPicker
             shipments={booking.shipments}
             value={shipmentId}
             onValueChange={setChosen}
             onRefresh={onRefreshShipments}
-          >
-            {differences.length > 0 && (
-              <IssueSummary
-                title={t("agl.mismatch.summary", { count: differences.length })}
-                description={t("agl.mismatch.summaryDescription", { count: differences.length })}
-                action={t("review")}
-                onAction={() => setReviewing(true)}
-              />
-            )}
-          </ShipmentPicker>
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: total, total }}>
-          <Button variant="outline" onClick={() => setStep(kind === "cartons" ? "book" : "start")}>
-            {t("back")}
-          </Button>
-          <Button disabled={!shipment || differences.length > 0} onClick={() => shipment && onLink(shipment.id)}>
-            <LinkIcon data-icon="inline-start" aria-hidden />
-            {t("agl.link.submit")}
-          </Button>
-        </BookingDialogFooter>
-      </>
+            issue={
+              differences.length
+                ? {
+                    title: t("agl.mismatch.summary", { count: differences.length }),
+                    description: t("agl.mismatch.summaryDescription", { count: differences.length }),
+                    action: t("review"),
+                    onAction: () => setReviewing(true)
+                  }
+                : undefined
+            }
+          />
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
   if (step === "book" && template.status === "filled") {
-    return dialog(
-      "book",
-      <>
-        <BookingDialogHeader title={t("agl.book.title")} description={t("agl.book.description")} />
-        <BookingDialogBody>
+    return (
+      <BookingDialog {...dialog} screen="book">
+        <BookingStep
+          title={t("agl.book.title")}
+          description={t("agl.book.description")}
+          step={{ current: 2, total }}
+          actions={
+            <>
+              {back("start")}
+              <Button onClick={() => setStep("link")}>{t("continue")}</Button>
+            </>
+          }
+        >
           <FileRow
             icon={<FileCheck className="text-success" aria-hidden />}
             title={fileName(template.file.name, { title: template.file.name })}
@@ -203,28 +214,22 @@ export function AglBookingDialog({
           <FileRow icon={<Store aria-hidden />} title={t("sellerCentral")} description={t("agl.book.sellerCentral")}>
             <OpenAction href={booking.sellerCentralUrl} />
           </FileRow>
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 2, total }}>
-          <Button variant="outline" onClick={() => setStep("start")}>
-            {t("back")}
-          </Button>
-          <Button onClick={() => setStep("link")}>{t("continue")}</Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
   if (kind !== "cartons") {
     // Case packs and AWD book straight away: the file goes to Seller Central as it is.
     const awd = kind === "awd"
-    return dialog(
-      "start",
-      <>
-        <BookingDialogHeader
+    return (
+      <BookingDialog {...dialog} screen="start">
+        <BookingStep
           title={awd ? t("agl.awd.title") : t("agl.book.title")}
           description={awd ? t("agl.awd.description") : t("agl.casePacks.description")}
-        />
-        <BookingDialogBody>
+          step={{ current: 1, total }}
+          actions={<Button onClick={() => setStep("link")}>{t("continue")}</Button>}
+        >
           <FileRow
             icon={awd ? <FileText aria-hidden /> : <FileSpreadsheet aria-hidden />}
             title={fileName(booking.file.name, { title: booking.file.name })}
@@ -243,33 +248,38 @@ export function AglBookingDialog({
           >
             <OpenAction href={booking.sellerCentralUrl} />
           </FileRow>
-        </BookingDialogBody>
-        <BookingDialogFooter step={{ current: 1, total }}>
-          <Button onClick={() => setStep("link")}>{t("continue")}</Button>
-        </BookingDialogFooter>
-      </>
+        </BookingStep>
+      </BookingDialog>
     )
   }
 
   if (reviewing && templateIssues.length) {
-    return dialog(
-      "templateIssues",
-      <IssuesView
-        title={t("agl.templateIssues.title", { count: templateIssues.length })}
-        description={t("agl.templateIssues.description")}
-        issues={templateIssues.map((issue) => templateIssue(t, issue, () => onFix(issue)))}
-        step={{ current: 1, total }}
-        onBack={() => setReviewing(false)}
-        onCheckAgain={() => onCheckAgain("template")}
-      />
+    return (
+      <BookingDialog {...dialog} screen="templateIssues">
+        <IssuesView
+          title={t("agl.templateIssues.title", { count: templateIssues.length })}
+          description={t("agl.templateIssues.description")}
+          issues={templateIssues.map((issue) => templateIssue(t, issue, () => onFix(issue)))}
+          step={{ current: 1, total }}
+          onBack={() => setReviewing(false)}
+          onCheckAgain={() => onCheckAgain("template")}
+        />
+      </BookingDialog>
     )
   }
 
-  return dialog(
-    "start",
-    <>
-      <BookingDialogHeader title={t("agl.start.title")} description={t("agl.start.description")} />
-      <BookingDialogBody>
+  return (
+    <BookingDialog {...dialog} screen="start">
+      <BookingStep
+        title={t("agl.start.title")}
+        description={t("agl.start.description")}
+        step={{ current: 1, total }}
+        actions={
+          <Button disabled={template.status !== "filled"} onClick={() => setStep("book")}>
+            {t("continue")}
+          </Button>
+        }
+      >
         <FileRow
           icon={<FileSpreadsheet aria-hidden />}
           title={fileName(booking.file.name, { title: booking.file.name })}
@@ -281,13 +291,8 @@ export function AglBookingDialog({
           <OpenAction href={booking.sellerCentralUrl} />
         </FileRow>
         <TemplateSlot state={slotState(t, booking, () => setReviewing(true), onFix)} onFile={onTemplate} />
-      </BookingDialogBody>
-      <BookingDialogFooter step={{ current: 1, total }}>
-        <Button disabled={template.status !== "filled"} onClick={() => setStep("book")}>
-          {t("continue")}
-        </Button>
-      </BookingDialogFooter>
-    </>
+      </BookingStep>
+    </BookingDialog>
   )
 }
 
@@ -309,18 +314,16 @@ function slotState(
     case "issues": {
       const [only] = template.issues
       if (only && template.issues.length === 1) {
-        return { status: "issue", summary: <IssueSummary {...aloneIssue(t, only)} onAction={() => onFix(only)} /> }
+        return { status: "issue", issue: { ...aloneIssue(t, only), onAction: () => onFix(only) } }
       }
       return {
         status: "issue",
-        summary: (
-          <IssueSummary
-            title={t("agl.templateIssues.summary", { count: template.issues.length })}
-            description={t("agl.templateIssues.summaryDescription")}
-            action={t("review")}
-            onAction={onReview}
-          />
-        )
+        issue: {
+          title: t("agl.templateIssues.summary", { count: template.issues.length }),
+          description: t("agl.templateIssues.summaryDescription"),
+          action: t("review"),
+          onAction: onReview
+        }
       }
     }
   }
@@ -354,7 +357,7 @@ function templateIssue(t: Words, issue: AglTemplateIssue, onFix: () => void): Is
 }
 
 // A template problem on its own, where the template goes: a headline, a line, and its fix.
-function aloneIssue(t: Words, issue: AglTemplateIssue) {
+function aloneIssue(t: Words, issue: AglTemplateIssue): Omit<IssueSummaryProps, "onAction"> {
   switch (issue.kind) {
     case "mixedGroups":
       return {
@@ -380,60 +383,38 @@ function aloneIssue(t: Words, issue: AglTemplateIssue) {
 // The booked shipment, linked: its labels to download, or the problem getting them, and the customs left in Seller
 // Central. The labels row keeps its place while Amazon sends them.
 function Done({ linked, onRetryLabels }: { linked: NonNullable<AglBooking["linked"]>; onRetryLabels: () => void }) {
-  const t = useTranslations("shipments.booking")
+  const t = useTranslations("booking")
   const { shipment, labels } = linked
   return (
-    <>
-      <BookingDialogHeader title={t("agl.done.title")} description={t("agl.done.description")} />
-      <BookingDialogBody>
-        <FileRow
-          icon={<LinkIcon aria-hidden />}
-          title={shipment.name}
-          description={t("agl.done.shipment", { id: shipment.id, cartons: shipment.cartons, units: shipment.units })}
-        >
-          <StatusBadge tone="success" icon={<Check aria-hidden />}>
-            {t("agl.done.linked")}
-          </StatusBadge>
-        </FileRow>
-        {/* Says when the labels arrive, or why they didn't. */}
-        <div aria-live="polite">
-          {labels.status === "failed" ? (
-            <IssueSummary
-              title={t("agl.done.labelsFailed")}
-              description={t("agl.done.labelsFailedDescription")}
-              action={t("tryAgain")}
-              actionIcon={<RefreshCw data-icon="inline-start" aria-hidden />}
-              onAction={onRetryLabels}
-            />
-          ) : (
-            <FileRow
-              icon={<Tags aria-hidden />}
-              title={t("agl.done.labels")}
-              description={
-                labels.status === "ready"
-                  ? t("labelsShared", { count: labels.count })
-                  : t("labelsPending", { source: "Amazon" })
-              }
-            >
-              {labels.status === "ready" ? (
-                <DownloadAction href={labels.href} />
-              ) : (
-                <DownloadAction pending={t("gettingLabels")} />
-              )}
-            </FileRow>
-          )}
-        </div>
-        <FileRow
-          icon={<FileText aria-hidden />}
-          title={t("agl.done.customs")}
-          description={t("agl.done.customsDescription")}
-        >
-          <OpenAction href={linked.customsUrl} />
-        </FileRow>
-      </BookingDialogBody>
-      <BookingDialogFooter>
-        <DialogClose render={<Button />}>{t("done")}</DialogClose>
-      </BookingDialogFooter>
-    </>
+    <BookingStep title={t("agl.done.title")} description={t("agl.done.description")} actions={<DoneAction />}>
+      <FileRow
+        icon={<LinkIcon aria-hidden />}
+        title={shipment.name}
+        description={t("agl.done.shipment", { id: shipment.id, cartons: shipment.cartons, units: shipment.units })}
+      >
+        <RowStatus>{t("agl.done.linked")}</RowStatus>
+      </FileRow>
+      {/* Says when the labels arrive, or why they didn't. */}
+      <div aria-live="polite">
+        {labels.status === "failed" ? (
+          <IssueSummary
+            title={t("agl.done.labelsFailed")}
+            description={t("agl.done.labelsFailedDescription")}
+            action={t("tryAgain")}
+            retry
+            onAction={onRetryLabels}
+          />
+        ) : (
+          <LabelsRow icon={<Tags aria-hidden />} title={t("agl.done.labels")} from="Amazon" labels={labels} />
+        )}
+      </div>
+      <FileRow
+        icon={<FileText aria-hidden />}
+        title={t("agl.done.customs")}
+        description={t("agl.done.customsDescription")}
+      >
+        <OpenAction href={linked.customsUrl} />
+      </FileRow>
+    </BookingStep>
   )
 }

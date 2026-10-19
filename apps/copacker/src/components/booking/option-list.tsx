@@ -1,12 +1,13 @@
 import { useId } from "react"
+import { StatusBadge } from "@/components/common"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
 
 export type Option = {
   value: string
   title: React.ReactNode
-  // Beside the title, such as Lowest total.
-  badge?: React.ReactNode
+  // Beside the title, for the one worth noticing, such as Lowest total.
+  badge?: string
   description: React.ReactNode
   price: React.ReactNode
 }
@@ -58,7 +59,7 @@ export function OptionRow({
 }: {
   value: string
   title: React.ReactNode
-  badge?: React.ReactNode
+  badge?: string
   description: React.ReactNode
   end?: React.ReactNode
   className?: string
@@ -87,7 +88,9 @@ export function OptionRow({
           </span>
           {badge && (
             <span id={`${id}-badge`} className="flex shrink-0">
-              {badge}
+              <StatusBadge tone="success" icon={false}>
+                {badge}
+              </StatusBadge>
             </span>
           )}
         </span>

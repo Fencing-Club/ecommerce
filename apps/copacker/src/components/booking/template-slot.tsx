@@ -5,6 +5,7 @@ import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Progress, ProgressLabel } from "@/components/ui/progress"
+import { IssueSummary, type IssueSummaryProps } from "./issues"
 
 // Amazon's box-content template is a spreadsheet.
 const templateTypes = [
@@ -15,12 +16,12 @@ const templateTypes = [
 ]
 
 // Where the template Amazon gives back goes: empty until it's dropped or chosen, then filling while Copacker matches it
-// to the packing, then filled, or the problem that stopped it (an IssueSummary). `progress` is a percentage.
+// to the packing, then filled, or the problem that stopped it, shown as an IssueSummary. `progress` is a percentage.
 export type TemplateSlotState =
   | { status: "empty" }
   | { status: "filling"; progress: number; units: number }
   | { status: "filled"; cartons: number; units: number }
-  | { status: "issue"; summary: React.ReactNode }
+  | { status: "issue"; issue: IssueSummaryProps }
 
 function browseLink(chunks: React.ReactNode) {
   return <span className="font-medium text-primary">{chunks}</span>
@@ -29,7 +30,7 @@ function browseLink(chunks: React.ReactNode) {
 // The AGL start step's place for Amazon's box-content template. Every state keeps the slot's height, so the step never
 // jumps as the template fills. A template can be dropped on the empty slot or on a filled one, to replace it.
 export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFile: (file: File) => void }) {
-  const t = useTranslations("shipments.booking.template")
+  const t = useTranslations("booking.template")
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const { handlers, isDragging } = useDropzone({
@@ -111,7 +112,7 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
           </ItemActions>
         </Item>
       )}
-      {state.status === "issue" && state.summary}
+      {state.status === "issue" && <IssueSummary {...state.issue} />}
     </div>
   )
 }

@@ -1,9 +1,11 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
+import { dialogWidth } from "@/stories/booking"
 import { SummaryList } from "./summary-list"
 
 const meta = preview.meta({
   component: SummaryList,
+  tags: ["vrt"],
   args: {
     items: [
       { label: "Warehouse", value: "Hagerstown, MD", detail: "HGR6" },
@@ -14,13 +16,7 @@ const meta = preview.meta({
     ],
     total: { label: "Total", value: "$144.12" }
   },
-  decorators: [
-    (Story) => (
-      <div className="max-w-lg">
-        <Story />
-      </div>
-    )
-  ]
+  decorators: [dialogWidth]
 })
 
 // What the booking comes to: each part as a term and its value, details under the values, and the total last and

@@ -1,56 +1,50 @@
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { useTranslations } from "use-intl"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
-import { bookingDialog } from "@/stories/fixtures/booking"
-import { BookingDialog, BookingDialogBody, BookingDialogFooter, BookingDialogHeader } from "./booking-dialog"
+import { bookingDialog, dialogBody } from "@/stories/booking"
+import { BookingDialog, type BookingStepCount, BookingStep } from "./booking-dialog"
 
-// A step in the booking dialog: its header, a body of `rows` rows, and a footer with the step count and its actions.
+// A step in the booking dialog, held open as the shipment page holds it: FBA's first step, its body `rows` rows tall.
 function Step({
   rows,
   step,
   onOpenChange
 }: {
   rows: number
-  step?: { current: number; total: number }
+  step?: BookingStepCount
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useTranslations("booking")
   return (
-    <BookingDialog defaultOpen onOpenChange={onOpenChange}>
-      <BookingDialogHeader
-        title="Choose how to ship"
-        description="Totals include Amazon’s placement fee and the cheapest carrier."
-      />
-      <BookingDialogBody>
+    <BookingDialog open onOpenChange={onOpenChange}>
+      <BookingStep
+        title={t("fba.choose.title")}
+        description={t("fba.choose.description")}
+        step={step}
+        actions={
+          <>
+            <Button variant="outline">{t("back")}</Button>
+            <Button>{t("continue")}</Button>
+          </>
+        }
+      >
         {Array.from({ length: rows }, (_, index) => (
-          <div key={index} className="shrink-0 rounded-lg border p-3 text-sm">
-            Warehouse {index + 1}
-          </div>
+          <div key={index} className="h-12 shrink-0 rounded-lg border bg-muted/50" />
         ))}
-      </BookingDialogBody>
-      <BookingDialogFooter step={step}>
-        <Button variant="outline">Back</Button>
-        <Button>Continue</Button>
-      </BookingDialogFooter>
+      </BookingStep>
     </BookingDialog>
   )
 }
 
 const meta = preview.meta({
   component: Step,
+  tags: ["vrt"],
   args: { rows: 3, step: { current: 1, total: 2 }, onOpenChange: fn() }
 })
 
-// The body of a step that fits.
-function body() {
-  const content = screen.getByRole("dialog").querySelector("[data-slot=booking-dialog-body]")
-  if (!(content instanceof HTMLElement)) {
-    throw new Error("The dialog has no body")
-  }
-  return content
-}
-
-// A step one of a count: the count on the left as a progress bar, the actions on the right. Escape closes it.
+// A step one of a count: the count on the left as a progress bar, the actions on the right. Escape asks to close it.
 export const Default = meta.story({
   play: async ({ args }) => {
     const dialog = await bookingDialog("Choose how to ship")
@@ -59,8 +53,8 @@ export const Default = meta.story({
     await expect(progress).toHaveAttribute("aria-valuemax", "2")
     await expect(dialog.getByText("Step 1 of 2")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Continue" })).toBeVisible()
-    await expect(body().scrollHeight).toBe(body().clientHeight)
-    await expect(body()).not.toHaveAttribute("tabindex")
+    await expect(dialogBody().scrollHeight).toBe(dialogBody().clientHeight)
+    await expect(dialogBody()).not.toHaveAttribute("tabindex")
 
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false))
@@ -73,8 +67,8 @@ export const LongBody = meta.story({
   args: { rows: 14 },
   play: async () => {
     const dialog = await bookingDialog("Choose how to ship")
-    await expect(body().scrollHeight).toBeGreaterThan(body().clientHeight)
-    await waitFor(() => expect(body()).toHaveAttribute("tabindex", "0"))
+    await expect(dialogBody().scrollHeight).toBeGreaterThan(dialogBody().clientHeight)
+    await waitFor(() => expect(dialogBody()).toHaveAttribute("tabindex", "0"))
     await expect(dialog.getByRole("button", { name: "Continue" })).toBeVisible()
   }
 })
@@ -104,25 +98,26 @@ export const OnAPhone = meta.story({
   }
 })
 
-// Two steps of a flow in one dialog.
+// Two steps of a flow in one dialog: AGL's first two.
 function Flow() {
+  const t = useTranslations("booking")
   const [step, setStep] = useState(1)
   return (
-    <BookingDialog defaultOpen screen={String(step)}>
-      <BookingDialogHeader
-        title={step === 1 ? "Start the shipment in Seller Central" : "Book the shipment in Seller Central"}
-        description="Upload the file there."
+    <BookingDialog open screen={String(step)}>
+      <BookingStep
+        title={step === 1 ? t("agl.start.title") : t("agl.book.title")}
+        description={step === 1 ? t("agl.start.description") : t("agl.book.description")}
+        step={{ current: step, total: 2 }}
+        actions={
+          step === 1 ? (
+            <Button onClick={() => setStep(2)}>{t("continue")}</Button>
+          ) : (
+            <Button variant="outline" onClick={() => setStep(1)}>
+              {t("back")}
+            </Button>
+          )
+        }
       />
-      <BookingDialogBody />
-      <BookingDialogFooter step={{ current: step, total: 2 }}>
-        {step === 1 ? (
-          <Button onClick={() => setStep(2)}>Continue</Button>
-        ) : (
-          <Button variant="outline" onClick={() => setStep(1)}>
-            Back
-          </Button>
-        )}
-      </BookingDialogFooter>
     </BookingDialog>
   )
 }

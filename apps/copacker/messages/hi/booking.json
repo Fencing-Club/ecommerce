@@ -1,0 +1,197 @@
+{
+  "step": "{total} में से चरण {current}",
+  "continue": "जारी रखें",
+  "back": "वापस",
+  "done": "हो गया",
+  "review": "समीक्षा करें",
+  "checkAgain": "फिर से जांचें",
+  "tryAgain": "फिर से कोशिश करें",
+  "download": "डाउनलोड करें",
+  "open": "खोलें",
+  "newTab": "(नए टैब में खुलता है)",
+  "sellerCentral": "Seller Central",
+  "gettingLabels": "लेबल मंगाए जा रहे हैं",
+  "labelsShared": "{count, plural, one {# लेबल} other {# लेबल}}, सप्लायर के साथ शेयर किए गए",
+  "labelsPending": "{source} से मंगाए जा रहे हैं",
+  "labelsFrom": "{source} से, सप्लायर के साथ शेयर किए गए",
+  "template": {
+    "drop": "बॉक्स-कंटेंट टेम्पलेट यहां छोड़ें",
+    "browse": "या <browse>अपनी फ़ाइलें ब्राउज़ करें</browse>",
+    "filling": "टेम्पलेट भरा जा रहा है",
+    "matching": "{units, plural, one {# यूनिट} other {# यूनिट}} का मिलान हो रहा है",
+    "filled": "टेम्पलेट भर गया",
+    "matched": "{cartons, plural, one {# कार्टन} other {# कार्टन}} और {units, plural, one {# यूनिट} other {# यूनिट}} का मिलान हो गया",
+    "replace": "बदलें"
+  },
+  "picker": {
+    "search": "नाम या ID से खोजें",
+    "refresh": "शिपमेंट रीफ़्रेश करें",
+    "recent": "हाल के शिपमेंट",
+    "results": "नतीजे",
+    "matchCount": "{count, plural, =0 {अभी कोई मिलान नहीं} one {# मिलान} other {# मिलान}}",
+    "resultCount": "{count, plural, one {# नतीजा} other {# नतीजे}}",
+    "matches": "मेल खाता है",
+    "differs": "मेल नहीं खाता",
+    "counts": "{cartons, plural, one {# कार्टन} other {# कार्टन}}, {units, plural, one {# यूनिट} other {# यूनिट}}",
+    "planCounts": "{shipments, plural, one {# शिपमेंट} other {# शिपमेंट}}, {cartons, plural, one {# कार्टन} other {# कार्टन}}, {units, plural, one {# यूनिट} other {# यूनिट}}",
+    "noResults": "कोई शिपमेंट नहीं मिला",
+    "noResultsDescription": "ID जांचें, या कुछ मिनट बाद रीफ़्रेश करें।",
+    "none": "अभी कोई शिपमेंट नहीं",
+    "noneDescription": "नया शिपमेंट दिखाने में Amazon को कुछ मिनट लग सकते हैं।"
+  },
+  "agl": {
+    "start": {
+      "title": "Seller Central में शिपमेंट शुरू करें",
+      "description": "वहां अपनी इन्वेंटरी फ़ाइल अपलोड करें, फिर Amazon से मिला बॉक्स-कंटेंट टेम्पलेट यहां लाएं।",
+      "counts": "{cartons, plural, one {# कार्टन} other {# कार्टन}} में {units, plural, one {# यूनिट} other {# यूनिट}}",
+      "sellerCentral": "Amazon Global Logistics चुनें, फिर फ़ाइल अपलोड करें"
+    },
+    "book": {
+      "title": "Seller Central में शिपमेंट बुक करें",
+      "description": "भरी हुई फ़ाइल उसी शिपमेंट में अपलोड करें और वहीं ट्रांसपोर्ट बुक करें।",
+      "filledFor": "{cartons, plural, one {# कार्टन} other {# कार्टन}}, {units, plural, one {# यूनिट} other {# यूनिट}} के लिए भरा गया",
+      "sellerCentral": "फ़ाइल अपलोड करें, Amazon पिकअप चुनें और शुल्क स्वीकार करें"
+    },
+    "casePacks": {
+      "description": "केस पैक में कार्टन की जानकारी पहले से होती है, इसलिए आप तुरंत बुक कर सकते हैं।",
+      "counts": "{packs, plural, one {# केस पैक} other {# केस पैक}} में {units, plural, one {# यूनिट} other {# यूनिट}}",
+      "sellerCentral": "Amazon Global Logistics चुनें, फ़ाइल अपलोड करें और बुक करें"
+    },
+    "awd": {
+      "title": "Seller Central में AWD शिपमेंट बुक करें",
+      "description": "AWD केस पैक के हिसाब से बुक करता है। इस पैकिंग लिस्ट की मात्राएं और साइज़ इस्तेमाल करें।",
+      "counts": "{packs, plural, one {# केस पैक} other {# केस पैक}}, {units, plural, one {# यूनिट} other {# यूनिट}}",
+      "sellerCentral": "“Warehousing and distribution” में इसे AGL के साथ बनाएं"
+    },
+    "link": {
+      "title": "अपना Amazon शिपमेंट लिंक करें",
+      "description": "वह शिपमेंट चुनें जो आपने अभी बुक किया है। सबसे नए पहले दिखते हैं।",
+      "submit": "शिपमेंट लिंक करें"
+    },
+    "done": {
+      "title": "शिपमेंट लिंक हो गया",
+      "description": "कार्टन लेबल डाउनलोड करें, फिर Seller Central में कस्टम्स पूरा करें।",
+      "shipment": "{id}, {cartons, plural, one {# कार्टन} other {# कार्टन}} और {units, plural, one {# यूनिट} other {# यूनिट}}",
+      "linked": "लिंक किया गया",
+      "labels": "कार्टन लेबल",
+      "labelsFailed": "कार्टन लेबल नहीं मिल सके",
+      "labelsFailedDescription": "Amazon ने जवाब नहीं दिया। थोड़ी देर बाद फिर से कोशिश करें।",
+      "customs": "कस्टम्स दस्तावेज़",
+      "customsDescription": "इन्हें Seller Central में पूरा करें"
+    },
+    "missingSkus": {
+      "title": "{count, plural, one {# प्रोडक्ट को Amazon SKU चाहिए} other {# प्रोडक्ट को Amazon SKU चाहिए}}",
+      "description": "Amazon को हर प्रोडक्ट के लिए अपना SKU चाहिए, इसलिए हम अभी इन्वेंटरी फ़ाइल नहीं बना सकते।"
+    },
+    "templateIssues": {
+      "summary": "{count, plural, one {टेम्पलेट में # समस्या} other {टेम्पलेट में # समस्याएं}}",
+      "summaryDescription": "इन्हें Copacker में ठीक करें, फिर दोबारा जांचें",
+      "title": "{count, plural, one {टेम्पलेट की # समस्या ठीक करें} other {टेम्पलेट की # समस्याएं ठीक करें}}",
+      "description": "इन्हें Copacker में ठीक करें, फिर टेम्पलेट दोबारा जांचें।"
+    },
+    "issues": {
+      "supplierSku": "सप्लायर SKU {sku}",
+      "addSku": "SKU जोड़ें",
+      "carton": "कार्टन {carton}",
+      "editCarton": "कार्टन एडिट करें",
+      "editThisCarton": "कार्टन {carton} एडिट करें",
+      "editPacking": "पैकिंग एडिट करें",
+      "mixedGroups": "{first} और {second} अलग-अलग पैकिंग ग्रुप में हैं",
+      "mixedGroupsTitle": "कार्टन {carton} में दो पैकिंग ग्रुप मिले हुए हैं",
+      "mixedGroupsDescription": "{first} और {second} के लिए अलग कार्टन चाहिए",
+      "noWeight": "ग्रॉस वज़न नहीं है",
+      "noWeightTitle": "कार्टन {carton} का ग्रॉस वज़न नहीं है",
+      "noWeightDescription": "टेम्पलेट भरने के लिए Amazon को इसकी ज़रूरत है",
+      "unitsDiffer": "Amazon को {expected, plural, one {# यूनिट} other {# यूनिट}} की उम्मीद है, पैकिंग में {packed} हैं",
+      "unitsDifferTitle": "{product} टेम्पलेट से मेल नहीं खाता"
+    },
+    "mismatch": {
+      "summary": "{count, plural, one {# प्रोडक्ट मेल नहीं खाता} other {# प्रोडक्ट मेल नहीं खाते}}",
+      "summaryDescription": "{count, plural, one {मेल खाने तक लिंक नहीं किया जा सकता} other {मेल खाने तक लिंक नहीं किया जा सकता}}",
+      "title": "{count, plural, one {# प्रोडक्ट Amazon से मेल नहीं खाता} other {# प्रोडक्ट Amazon से मेल नहीं खाते}}",
+      "description": "Seller Central में बुकिंग या Copacker में पैकिंग ठीक करें, फिर दोबारा जांचें।",
+      "counts": "Amazon में {amazon}, पैकिंग में {packing}"
+    }
+  },
+  "fba": {
+    "choose": {
+      "title": "शिप करने का तरीका चुनें",
+      "description": "कुल रकम में Amazon का प्लेसमेंट शुल्क और सबसे सस्ता कैरियर शामिल है।",
+      "lowest": "सबसे कम कुल",
+      "warehouses": "{count, plural, one {# वेयरहाउस} other {# वेयरहाउस}}",
+      "withFee": "{codes}, {fee} प्लेसमेंट शुल्क सहित",
+      "noFee": "{codes}, कोई प्लेसमेंट शुल्क नहीं",
+      "cheapestFor": "{destination} के लिए सबसे सस्ता कैरियर",
+      "change": "बदलें"
+    },
+    "carrier": {
+      "title": "कैरियर चुनें",
+      "description": "{destination} तक। कुल रकम में {fee} प्लेसमेंट शुल्क शामिल है।",
+      "descriptionNoFee": "{destination} तक। कोई प्लेसमेंट शुल्क नहीं है।",
+      "cheapest": "सबसे सस्ता",
+      "quote": "{service}, {mode}",
+      "own": "आपका अपना कैरियर",
+      "ownDescription": "सिर्फ़ प्लेसमेंट शुल्क, कैरियर को आप सीधे भुगतान करते हैं",
+      "noEstimates": "Amazon ने इन कोटेशन के लिए डिलीवरी के अनुमान शेयर नहीं किए हैं।",
+      "use": "यह कैरियर इस्तेमाल करें"
+    },
+    "own": {
+      "title": "अपना कैरियर इस्तेमाल करें",
+      "description": "आप अपने कैरियर को सीधे भुगतान करते हैं और उनके लेबल {shipment} में जोड़ते हैं।",
+      "method": "डिलीवरी का तरीका",
+      "carrier": "कैरियर",
+      "window": "Amazon डिलीवरी विंडो",
+      "windowPlaceholder": "डिलीवरी विंडो चुनें",
+      "methods": {
+        "smallParcel": "छोटा पार्सल",
+        "lessThanTruckload": "आंशिक ट्रक लोड",
+        "fullTruckload": "पूरा ट्रक लोड"
+      }
+    },
+    "review": {
+      "title": "समीक्षा करें और बुक करें",
+      "heldUntil": "कीमतें {time} तक तय हैं।",
+      "expiredAt": "कीमतों की समय-सीमा {time} पर खत्म हो गई।",
+      "warehouse": "वेयरहाउस",
+      "warehouses": "वेयरहाउस",
+      "carrier": "कैरियर",
+      "pickup": "पिकअप",
+      "ready": "{date} को तैयार",
+      "placementFee": "प्लेसमेंट शुल्क",
+      "shipping": "शिपिंग",
+      "total": "कुल",
+      "terms": "बुक करने पर आप <terms>कैरियर की शर्तें</terms> स्वीकार करते हैं",
+      "book": "{total} में बुक करें",
+      "bookUnpriced": "बुक करें",
+      "expired": "कीमतों की समय-सीमा खत्म",
+      "expiredDescription": "मौजूदा कीमतों के लिए रीफ़्रेश करें। कुछ भी बुक नहीं हुआ।",
+      "refresh": "कीमतें रीफ़्रेश करें"
+    },
+    "booked": {
+      "title": "शिपमेंट बुक हो गया",
+      "description": "लेबल अभी डाउनलोड करें, या कभी भी {shipment} पर पाएं।",
+      "summary": "{service}, {total}",
+      "booked": "बुक किया गया",
+      "amazonLabels": "Amazon कार्टन लेबल",
+      "carrierLabels": "कैरियर लेबल"
+    },
+    "problems": {
+      "reconnect": "विकल्प देखने के लिए Amazon फिर से कनेक्ट करें",
+      "reconnectDescription": "आपके Amazon अकाउंट तक Copacker की पहुंच की समय-सीमा खत्म हो गई।",
+      "reconnectAction": "फिर से कनेक्ट करें",
+      "failed": "शिपिंग विकल्प लोड नहीं हो सके",
+      "failedDescription": "Amazon ने जवाब नहीं दिया। आपकी पैकिंग सेव है।"
+    },
+    "packingIssues": {
+      "summary": "{count, plural, one {Amazon से # पैकिंग समस्या} other {Amazon से # पैकिंग समस्याएं}}",
+      "summaryDescription": "{count, plural, one {इसे ठीक करें, फिर दोबारा जांचें} other {इन्हें ठीक करें, फिर दोबारा जांचें}}",
+      "title": "{count, plural, one {# पैकिंग समस्या ठीक करें} other {# पैकिंग समस्याएं ठीक करें}}",
+      "description": "Amazon ने कोटेशन से पहले इन्हें चिह्नित किया। इन्हें ठीक करें, फिर दोबारा जांचें।",
+      "carton": "कार्टन {number}",
+      "cartons": "कार्टन {first}–{last}",
+      "cartonVolume": "कार्टन का आयतन अंदर रखे प्रोडक्ट से कम है",
+      "editCartons": "कार्टन एडिट करें",
+      "notEligible": "Seller Central में अभी FBA के लिए योग्य नहीं"
+    }
+  }
+}

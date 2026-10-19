@@ -1,0 +1,197 @@
+{
+  "step": "Schritt {current} von {total}",
+  "continue": "Weiter",
+  "back": "Zurück",
+  "done": "Fertig",
+  "review": "Prüfen",
+  "checkAgain": "Erneut prüfen",
+  "tryAgain": "Erneut versuchen",
+  "download": "Herunterladen",
+  "open": "Öffnen",
+  "newTab": "(öffnet in einem neuen Tab)",
+  "sellerCentral": "Seller Central",
+  "gettingLabels": "Etiketten werden abgerufen",
+  "labelsShared": "{count, plural, one {# Etikett} other {# Etiketten}}, mit dem Lieferanten geteilt",
+  "labelsPending": "Werden von {source} abgerufen",
+  "labelsFrom": "Von {source}, mit dem Lieferanten geteilt",
+  "template": {
+    "drop": "Vorlage für den Karton-Inhalt hier ablegen",
+    "browse": "oder <browse>Dateien durchsuchen</browse>",
+    "filling": "Vorlage wird ausgefüllt",
+    "matching": "{units, plural, one {# Einheit wird abgeglichen} other {# Einheiten werden abgeglichen}}",
+    "filled": "Vorlage ausgefüllt",
+    "matched": "{cartons, plural, one {# Karton} other {# Kartons}} und {units, plural, one {# Einheit} other {# Einheiten}} abgeglichen",
+    "replace": "Ersetzen"
+  },
+  "picker": {
+    "search": "Nach Name oder ID suchen",
+    "refresh": "Sendungen aktualisieren",
+    "recent": "Letzte Sendungen",
+    "results": "Ergebnisse",
+    "matchCount": "{count, plural, =0 {Noch keine Übereinstimmung} one {# Übereinstimmung} other {# Übereinstimmungen}}",
+    "resultCount": "{count, plural, one {# Ergebnis} other {# Ergebnisse}}",
+    "matches": "Stimmt überein",
+    "differs": "Stimmt nicht überein",
+    "counts": "{cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
+    "planCounts": "{shipments, plural, one {# Sendung} other {# Sendungen}}, {cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
+    "noResults": "Keine Sendungen gefunden",
+    "noResultsDescription": "Prüfen Sie die ID oder aktualisieren Sie in ein paar Minuten.",
+    "none": "Noch keine Sendungen",
+    "noneDescription": "Es kann ein paar Minuten dauern, bis Amazon eine neue Sendung anzeigt."
+  },
+  "agl": {
+    "start": {
+      "title": "Starten Sie die Sendung in Seller Central",
+      "description": "Laden Sie dort Ihre Bestandsdatei hoch und bringen Sie dann die Vorlage für den Karton-Inhalt mit, die Amazon Ihnen gibt.",
+      "counts": "{units, plural, one {# Einheit} other {# Einheiten}} in {cartons, plural, one {# Karton} other {# Kartons}}",
+      "sellerCentral": "Wählen Sie Amazon Global Logistics und laden Sie dann die Datei hoch"
+    },
+    "book": {
+      "title": "Buchen Sie die Sendung in Seller Central",
+      "description": "Laden Sie die ausgefüllte Datei in dieselbe Sendung hoch und buchen Sie dort den Transport.",
+      "filledFor": "Ausgefüllt für {cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
+      "sellerCentral": "Laden Sie die Datei hoch, wählen Sie die Abholung durch Amazon und akzeptieren Sie die Gebühren"
+    },
+    "casePacks": {
+      "description": "Umkartons bringen ihre eigenen Kartonangaben mit, daher können Sie sofort buchen.",
+      "counts": "{units, plural, one {# Einheit} other {# Einheiten}} in {packs, plural, one {# Umkarton} other {# Umkartons}}",
+      "sellerCentral": "Wählen Sie Amazon Global Logistics, laden Sie die Datei hoch und buchen Sie"
+    },
+    "awd": {
+      "title": "Buchen Sie die AWD-Sendung in Seller Central",
+      "description": "AWD bucht nach Umkarton. Verwenden Sie die Mengen und Maße aus dieser Packliste.",
+      "counts": "{packs, plural, one {# Umkarton} other {# Umkartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
+      "sellerCentral": "Legen Sie sie unter „Warehousing and distribution“ mit AGL an"
+    },
+    "link": {
+      "title": "Verknüpfen Sie Ihre Amazon-Sendung",
+      "description": "Wählen Sie die Sendung, die Sie gerade gebucht haben. Die neuesten stehen oben.",
+      "submit": "Sendung verknüpfen"
+    },
+    "done": {
+      "title": "Sendung verknüpft",
+      "description": "Laden Sie die Kartonetiketten herunter und erledigen Sie dann den Zoll in Seller Central.",
+      "shipment": "{id} mit {cartons, plural, one {# Karton} other {# Kartons}} und {units, plural, one {# Einheit} other {# Einheiten}}",
+      "linked": "Verknüpft",
+      "labels": "Kartonetiketten",
+      "labelsFailed": "Kartonetiketten konnten nicht abgerufen werden",
+      "labelsFailedDescription": "Amazon hat nicht geantwortet. Versuchen Sie es gleich noch einmal.",
+      "customs": "Zolldokumente",
+      "customsDescription": "Vervollständigen Sie sie in Seller Central"
+    },
+    "missingSkus": {
+      "title": "{count, plural, one {# Produkt braucht eine Amazon-SKU} other {# Produkte brauchen eine Amazon-SKU}}",
+      "description": "Amazon braucht für jedes Produkt eine eigene SKU, daher können wir die Bestandsdatei noch nicht erstellen."
+    },
+    "templateIssues": {
+      "summary": "{count, plural, one {# Problem in der Vorlage} other {# Probleme in der Vorlage}}",
+      "summaryDescription": "Beheben Sie sie in Copacker und prüfen Sie dann erneut",
+      "title": "{count, plural, one {Beheben Sie # Problem in der Vorlage} other {Beheben Sie # Probleme in der Vorlage}}",
+      "description": "Beheben Sie sie in Copacker und prüfen Sie die Vorlage dann erneut."
+    },
+    "issues": {
+      "supplierSku": "Lieferanten-SKU {sku}",
+      "addSku": "SKU hinzufügen",
+      "carton": "Karton {carton}",
+      "editCarton": "Karton bearbeiten",
+      "editThisCarton": "Karton {carton} bearbeiten",
+      "editPacking": "Packliste bearbeiten",
+      "mixedGroups": "{first} und {second} gehören zu verschiedenen Packgruppen",
+      "mixedGroupsTitle": "Karton {carton} mischt zwei Packgruppen",
+      "mixedGroupsDescription": "{first} und {second} brauchen getrennte Kartons",
+      "noWeight": "Bruttogewicht fehlt",
+      "noWeightTitle": "Karton {carton} hat kein Bruttogewicht",
+      "noWeightDescription": "Amazon braucht es, um die Vorlage auszufüllen",
+      "unitsDiffer": "Amazon erwartet {expected, plural, one {# Einheit} other {# Einheiten}}, laut Packliste sind es {packed}",
+      "unitsDifferTitle": "{product} stimmt nicht mit der Vorlage überein"
+    },
+    "mismatch": {
+      "summary": "{count, plural, one {# Produkt stimmt nicht überein} other {# Produkte stimmen nicht überein}}",
+      "summaryDescription": "{count, plural, one {Verknüpfen ist gesperrt, bis es übereinstimmt} other {Verknüpfen ist gesperrt, bis sie übereinstimmen}}",
+      "title": "{count, plural, one {# Produkt stimmt nicht mit Amazon überein} other {# Produkte stimmen nicht mit Amazon überein}}",
+      "description": "Korrigieren Sie die Buchung in Seller Central oder die Packliste in Copacker und prüfen Sie dann erneut.",
+      "counts": "Amazon hat {amazon}, laut Packliste {packing}"
+    }
+  },
+  "fba": {
+    "choose": {
+      "title": "Wählen Sie die Versandart",
+      "description": "Die Summen enthalten die Platzierungsgebühr von Amazon und den günstigsten Transporteur.",
+      "lowest": "Niedrigste Summe",
+      "warehouses": "{count, plural, one {# Lager} other {# Lager}}",
+      "withFee": "{codes}, inklusive {fee} Platzierungsgebühr",
+      "noFee": "{codes}, keine Platzierungsgebühr",
+      "cheapestFor": "Günstigster Transporteur für {destination}",
+      "change": "Ändern"
+    },
+    "carrier": {
+      "title": "Wählen Sie einen Transporteur",
+      "description": "Nach {destination}. Die Summen enthalten die Platzierungsgebühr von {fee}.",
+      "descriptionNoFee": "Nach {destination}. Es fällt keine Platzierungsgebühr an.",
+      "cheapest": "Am günstigsten",
+      "quote": "{service}, {mode}",
+      "own": "Eigener Transporteur",
+      "ownDescription": "Nur Platzierungsgebühr, Sie bezahlen Ihren Transporteur direkt",
+      "noEstimates": "Amazon hat für diese Angebote keine Lieferschätzungen geteilt.",
+      "use": "Diesen Transporteur verwenden"
+    },
+    "own": {
+      "title": "Eigenen Transporteur verwenden",
+      "description": "Sie bezahlen Ihren Transporteur direkt und fügen seine Etiketten zu {shipment} hinzu.",
+      "method": "Versandart",
+      "carrier": "Transporteur",
+      "window": "Amazon-Lieferzeitfenster",
+      "windowPlaceholder": "Lieferzeitfenster wählen",
+      "methods": {
+        "smallParcel": "Paketversand",
+        "lessThanTruckload": "Teilladung",
+        "fullTruckload": "Komplettladung"
+      }
+    },
+    "review": {
+      "title": "Prüfen und buchen",
+      "heldUntil": "Die Preise gelten bis {time}.",
+      "expiredAt": "Die Preise sind am {time} abgelaufen.",
+      "warehouse": "Lager",
+      "warehouses": "Lager",
+      "carrier": "Transporteur",
+      "pickup": "Abholung",
+      "ready": "Bereit ab {date}",
+      "placementFee": "Platzierungsgebühr",
+      "shipping": "Versand",
+      "total": "Gesamt",
+      "terms": "Mit der Buchung akzeptieren Sie die <terms>Bedingungen des Transporteurs</terms>",
+      "book": "Für {total} buchen",
+      "bookUnpriced": "Buchen",
+      "expired": "Preise abgelaufen",
+      "expiredDescription": "Aktualisieren Sie für aktuelle Preise. Es wurde nichts gebucht.",
+      "refresh": "Preise aktualisieren"
+    },
+    "booked": {
+      "title": "Sendung gebucht",
+      "description": "Laden Sie die Etiketten jetzt herunter oder finden Sie sie jederzeit unter {shipment}.",
+      "summary": "{service}, {total}",
+      "booked": "Gebucht",
+      "amazonLabels": "Amazon-Kartonetiketten",
+      "carrierLabels": "Versandetiketten"
+    },
+    "problems": {
+      "reconnect": "Verbinden Sie Amazon erneut, um Optionen zu sehen",
+      "reconnectDescription": "Der Zugriff von Copacker auf Ihr Amazon-Konto ist abgelaufen.",
+      "reconnectAction": "Erneut verbinden",
+      "failed": "Versandoptionen konnten nicht geladen werden",
+      "failedDescription": "Amazon hat nicht geantwortet. Ihre Packliste ist gespeichert."
+    },
+    "packingIssues": {
+      "summary": "{count, plural, one {# Packproblem von Amazon} other {# Packprobleme von Amazon}}",
+      "summaryDescription": "{count, plural, one {Beheben Sie es und prüfen Sie dann erneut} other {Beheben Sie sie und prüfen Sie dann erneut}}",
+      "title": "{count, plural, one {Beheben Sie # Packproblem} other {Beheben Sie # Packprobleme}}",
+      "description": "Amazon hat diese vor dem Angebot gemeldet. Beheben Sie sie und prüfen Sie dann erneut.",
+      "carton": "Karton {number}",
+      "cartons": "Kartons {first}–{last}",
+      "cartonVolume": "Das Kartonvolumen ist kleiner als die Produkte darin",
+      "editCartons": "Kartons bearbeiten",
+      "notEligible": "In Seller Central noch nicht für FBA zugelassen"
+    }
+  }
+}

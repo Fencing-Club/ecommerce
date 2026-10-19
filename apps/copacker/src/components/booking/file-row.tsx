@@ -1,6 +1,7 @@
-import { Download, ExternalLink } from "lucide-react"
+import { Check, Download, ExternalLink } from "lucide-react"
 import { createContext, use, useId } from "react"
 import { useTranslations } from "use-intl"
+import { StatusBadge } from "@/components/common"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
@@ -47,7 +48,7 @@ export function FileRow({
 // Downloads the row's file. Until the file is ready it holds the same place as a disabled button with a spinner that
 // says what it's waiting for, such as "Getting labels", so nothing moves when the file lands.
 export function DownloadAction(props: { href: string } | { pending: string }) {
-  const t = useTranslations("shipments.booking")
+  const t = useTranslations("booking")
   const title = use(RowTitle)
   const id = useId()
   if ("pending" in props) {
@@ -73,9 +74,50 @@ export function DownloadAction(props: { href: string } | { pending: string }) {
   )
 }
 
+// The labels Amazon or a carrier (`from`) makes once a shipment is booked, as a row with their download. Until they
+// arrive, the row says who they're coming from, and Getting labels holds Download's place. Once they're here, it says
+// how many there are, when that's known (`count`), and that the supplier has them too.
+export function LabelsRow({
+  icon,
+  title,
+  from,
+  labels
+}: {
+  icon: React.ReactNode
+  title: React.ReactNode
+  from: string
+  labels: { status: "pending" } | { status: "ready"; href: string; count?: number }
+}) {
+  const t = useTranslations("booking")
+  const description = () => {
+    if (labels.status === "pending") {
+      return t("labelsPending", { source: from })
+    }
+    return labels.count === undefined ? t("labelsFrom", { source: from }) : t("labelsShared", { count: labels.count })
+  }
+  return (
+    <FileRow icon={icon} title={title} description={description()}>
+      {labels.status === "ready" ? (
+        <DownloadAction href={labels.href} />
+      ) : (
+        <DownloadAction pending={t("gettingLabels")} />
+      )}
+    </FileRow>
+  )
+}
+
+// The status a row has reached in place of its action, such as Linked or Booked.
+export function RowStatus({ children }: { children: React.ReactNode }) {
+  return (
+    <StatusBadge tone="success" icon={<Check aria-hidden />}>
+      {children}
+    </StatusBadge>
+  )
+}
+
 // Opens the row's place, such as Seller Central, in a new tab.
 export function OpenAction({ href }: { href: string }) {
-  const t = useTranslations("shipments.booking")
+  const t = useTranslations("booking")
   const title = use(RowTitle)
   const id = useId()
   return (

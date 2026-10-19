@@ -1,0 +1,197 @@
+{
+  "step": "Paso {current} de {total}",
+  "continue": "Continuar",
+  "back": "Atrás",
+  "done": "Listo",
+  "review": "Revisar",
+  "checkAgain": "Revisar de nuevo",
+  "tryAgain": "Intentar de nuevo",
+  "download": "Descargar",
+  "open": "Abrir",
+  "newTab": "(se abre en una pestaña nueva)",
+  "sellerCentral": "Seller Central",
+  "gettingLabels": "Obteniendo etiquetas",
+  "labelsShared": "{count, plural, one {# etiqueta, compartida con el proveedor} other {# etiquetas, compartidas con el proveedor}}",
+  "labelsPending": "Obteniéndolas de {source}",
+  "labelsFrom": "De {source}, compartidas con el proveedor",
+  "template": {
+    "drop": "Suelta aquí la plantilla de contenido de cajas",
+    "browse": "o <browse>busca en tus archivos</browse>",
+    "filling": "Llenando la plantilla",
+    "matching": "Comparando {units, plural, one {# unidad} other {# unidades}}",
+    "filled": "Plantilla completada",
+    "matched": "{cartons, plural, one {# caja} other {# cajas}} y {units, plural, one {# unidad} other {# unidades}} coinciden",
+    "replace": "Reemplazar"
+  },
+  "picker": {
+    "search": "Buscar por nombre o ID",
+    "refresh": "Actualizar envíos",
+    "recent": "Envíos recientes",
+    "results": "Resultados",
+    "matchCount": "{count, plural, =0 {Aún sin coincidencias} one {# coincidencia} other {# coincidencias}}",
+    "resultCount": "{count, plural, one {# resultado} other {# resultados}}",
+    "matches": "Coincide",
+    "differs": "No coincide",
+    "counts": "{cartons, plural, one {# caja} other {# cajas}}, {units, plural, one {# unidad} other {# unidades}}",
+    "planCounts": "{shipments, plural, one {# envío} other {# envíos}}, {cartons, plural, one {# caja} other {# cajas}}, {units, plural, one {# unidad} other {# unidades}}",
+    "noResults": "No se encontraron envíos",
+    "noResultsDescription": "Revisa el ID o actualiza en unos minutos.",
+    "none": "Aún no hay envíos",
+    "noneDescription": "Amazon puede tardar unos minutos en mostrar un envío nuevo."
+  },
+  "agl": {
+    "start": {
+      "title": "Inicia el envío en Seller Central",
+      "description": "Sube ahí tu archivo de inventario y luego trae la plantilla de contenido de cajas que te da Amazon.",
+      "counts": "{units, plural, one {# unidad} other {# unidades}} en {cartons, plural, one {# caja} other {# cajas}}",
+      "sellerCentral": "Elige Amazon Global Logistics y luego sube el archivo"
+    },
+    "book": {
+      "title": "Reserva el envío en Seller Central",
+      "description": "Sube el archivo completado al mismo envío y reserva ahí el transporte.",
+      "filledFor": "Completado para {cartons, plural, one {# caja} other {# cajas}}, {units, plural, one {# unidad} other {# unidades}}",
+      "sellerCentral": "Sube el archivo, elige la recolección de Amazon y acepta los cargos"
+    },
+    "casePacks": {
+      "description": "Las cajas master traen sus propios datos de caja, así que puedes reservar de inmediato.",
+      "counts": "{units, plural, one {# unidad} other {# unidades}} en {packs, plural, one {# caja master} other {# cajas master}}",
+      "sellerCentral": "Elige Amazon Global Logistics, sube el archivo y resérvalo"
+    },
+    "awd": {
+      "title": "Reserva el envío de AWD en Seller Central",
+      "description": "AWD reserva por caja master. Usa las cantidades y medidas de esta lista de empaque.",
+      "counts": "{packs, plural, one {# caja master} other {# cajas master}}, {units, plural, one {# unidad} other {# unidades}}",
+      "sellerCentral": "En “Warehousing and distribution”, créalo con AGL"
+    },
+    "link": {
+      "title": "Vincula tu envío de Amazon",
+      "description": "Elige el envío que acabas de reservar. Los más recientes aparecen primero.",
+      "submit": "Vincular envío"
+    },
+    "done": {
+      "title": "Envío vinculado",
+      "description": "Descarga las etiquetas de cajas y luego completa la aduana en Seller Central.",
+      "shipment": "{id} con {cartons, plural, one {# caja} other {# cajas}} y {units, plural, one {# unidad} other {# unidades}}",
+      "linked": "Vinculado",
+      "labels": "Etiquetas de cajas",
+      "labelsFailed": "No se pudieron obtener las etiquetas de cajas",
+      "labelsFailedDescription": "Amazon no respondió. Inténtalo de nuevo en un momento.",
+      "customs": "Documentos de aduana",
+      "customsDescription": "Complétalos en Seller Central"
+    },
+    "missingSkus": {
+      "title": "{count, plural, one {# producto necesita un SKU de Amazon} other {# productos necesitan un SKU de Amazon}}",
+      "description": "Amazon necesita su propio SKU para cada producto, así que aún no podemos crear el archivo de inventario."
+    },
+    "templateIssues": {
+      "summary": "{count, plural, one {# problema en la plantilla} other {# problemas en la plantilla}}",
+      "summaryDescription": "Corrígelos en Copacker y luego revisa de nuevo",
+      "title": "{count, plural, one {Corrige # problema en la plantilla} other {Corrige # problemas en la plantilla}}",
+      "description": "Corrígelos en Copacker y luego revisa la plantilla de nuevo."
+    },
+    "issues": {
+      "supplierSku": "SKU del proveedor {sku}",
+      "addSku": "Agregar SKU",
+      "carton": "Caja {carton}",
+      "editCarton": "Editar caja",
+      "editThisCarton": "Editar caja {carton}",
+      "editPacking": "Editar empaque",
+      "mixedGroups": "{first} y {second} están en grupos de empaque distintos",
+      "mixedGroupsTitle": "La caja {carton} mezcla dos grupos de empaque",
+      "mixedGroupsDescription": "{first} y {second} necesitan cajas separadas",
+      "noWeight": "Falta el peso bruto",
+      "noWeightTitle": "La caja {carton} no tiene peso bruto",
+      "noWeightDescription": "Amazon lo necesita para llenar la plantilla",
+      "unitsDiffer": "Amazon espera {expected, plural, one {# unidad} other {# unidades}}, el empaque tiene {packed}",
+      "unitsDifferTitle": "{product} no coincide con la plantilla"
+    },
+    "mismatch": {
+      "summary": "{count, plural, one {# producto no coincide} other {# productos no coinciden}}",
+      "summaryDescription": "{count, plural, one {No puedes vincular hasta que coincida} other {No puedes vincular hasta que coincidan}}",
+      "title": "{count, plural, one {# producto no coincide con Amazon} other {# productos no coinciden con Amazon}}",
+      "description": "Corrige la reserva en Seller Central o el empaque en Copacker y luego revisa de nuevo.",
+      "counts": "Amazon tiene {amazon}, el empaque tiene {packing}"
+    }
+  },
+  "fba": {
+    "choose": {
+      "title": "Elige cómo enviar",
+      "description": "Los totales incluyen la tarifa de colocación de Amazon y el transportista más barato.",
+      "lowest": "Total más bajo",
+      "warehouses": "{count, plural, one {# almacén} other {# almacenes}}",
+      "withFee": "{codes}, incluye una tarifa de colocación de {fee}",
+      "noFee": "{codes}, sin tarifa de colocación",
+      "cheapestFor": "Transportista más barato para {destination}",
+      "change": "Cambiar"
+    },
+    "carrier": {
+      "title": "Elige un transportista",
+      "description": "A {destination}. Los totales incluyen la tarifa de colocación de {fee}.",
+      "descriptionNoFee": "A {destination}. No hay tarifa de colocación.",
+      "cheapest": "Más barato",
+      "quote": "{service}, {mode}",
+      "own": "Tu propio transportista",
+      "ownDescription": "Solo la tarifa de colocación, le pagas directamente a tu transportista",
+      "noEstimates": "Amazon no ha compartido estimaciones de entrega para estas cotizaciones.",
+      "use": "Usar este transportista"
+    },
+    "own": {
+      "title": "Usa tu propio transportista",
+      "description": "Le pagas directamente a tu transportista y agregas sus etiquetas a {shipment}.",
+      "method": "Método de entrega",
+      "carrier": "Transportista",
+      "window": "Ventana de entrega de Amazon",
+      "windowPlaceholder": "Elige una ventana de entrega",
+      "methods": {
+        "smallParcel": "Paquetería",
+        "lessThanTruckload": "Carga consolidada",
+        "fullTruckload": "Carga completa"
+      }
+    },
+    "review": {
+      "title": "Revisa y reserva",
+      "heldUntil": "Los precios se mantienen hasta el {time}.",
+      "expiredAt": "Los precios vencieron el {time}.",
+      "warehouse": "Almacén",
+      "warehouses": "Almacenes",
+      "carrier": "Transportista",
+      "pickup": "Recolección",
+      "ready": "Listo el {date}",
+      "placementFee": "Tarifa de colocación",
+      "shipping": "Envío",
+      "total": "Total",
+      "terms": "Al reservar aceptas los <terms>términos del transportista</terms>",
+      "book": "Reservar por {total}",
+      "bookUnpriced": "Reservar",
+      "expired": "Los precios vencieron",
+      "expiredDescription": "Actualiza para ver los precios vigentes. No se reservó nada.",
+      "refresh": "Actualizar precios"
+    },
+    "booked": {
+      "title": "Envío reservado",
+      "description": "Descarga las etiquetas ahora o encuéntralas en {shipment} cuando quieras.",
+      "summary": "{service}, {total}",
+      "booked": "Reservado",
+      "amazonLabels": "Etiquetas de cajas de Amazon",
+      "carrierLabels": "Etiquetas del transportista"
+    },
+    "problems": {
+      "reconnect": "Vuelve a conectar Amazon para ver opciones",
+      "reconnectDescription": "El acceso de Copacker a tu cuenta de Amazon venció.",
+      "reconnectAction": "Volver a conectar",
+      "failed": "No se pudieron cargar las opciones de envío",
+      "failedDescription": "Amazon no respondió. Tu empaque está guardado."
+    },
+    "packingIssues": {
+      "summary": "{count, plural, one {# problema de empaque de Amazon} other {# problemas de empaque de Amazon}}",
+      "summaryDescription": "{count, plural, one {Corrígelo y luego revisa de nuevo} other {Corrígelos y luego revisa de nuevo}}",
+      "title": "{count, plural, one {Corrige # problema de empaque} other {Corrige # problemas de empaque}}",
+      "description": "Amazon los marcó antes de cotizar. Corrígelos y luego revisa de nuevo.",
+      "carton": "Caja {number}",
+      "cartons": "Cajas {first}–{last}",
+      "cartonVolume": "El volumen de la caja es menor que el de los productos que contiene",
+      "editCartons": "Editar cajas",
+      "notEligible": "Aún no es apto para FBA en Seller Central"
+    }
+  }
+}

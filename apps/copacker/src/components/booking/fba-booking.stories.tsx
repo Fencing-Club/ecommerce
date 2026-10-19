@@ -1,15 +1,18 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { bookedFba, bookingDialog, fbaBooking } from "@/stories/fixtures/booking"
-import { type FbaBooking, FbaBookingDialog } from "./fba-booking"
+import { bookingDialog } from "@/stories/booking"
+import { FbaBookingDialog } from "./fba-booking"
+import { fba } from "./fixtures"
 
-// Booking FBA transport through Amazon, as copacker.pen's 06.17 draws it: every step and every problem, each in the one
-// dialog height AGL's booking keeps.
+// Booking FBA transport through Amazon, as copacker.pen's 10.02 draws it: every step and every problem, each in the one
+// dialog height AGL's booking keeps. Each story is a booking from the fixtures and the step it opens on, in a dialog
+// held open as the shipment page holds it.
 const meta = preview.meta({
   component: FbaBookingDialog,
+  tags: ["vrt"],
   args: {
-    booking: fbaBooking,
-    defaultOpen: true,
+    booking: fba.choose,
+    open: true,
     onOpenChange: fn(),
     onReconnect: fn(),
     onRetry: fn(),
@@ -19,14 +22,6 @@ const meta = preview.meta({
     onBook: fn()
   }
 })
-
-const expired: FbaBooking = {
-  ...fbaBooking,
-  options: { status: "ready", placements: [], heldUntil: new Date("2026-10-22T05:31:00Z"), expired: true }
-}
-if (fbaBooking.options.status === "ready" && expired.options.status === "ready") {
-  expired.options.placements = fbaBooking.options.placements
-}
 
 // Step 1: where Amazon places the shipment and who carries it, as one choice that starts on the lowest total. Each
 // price already has the placement fee and the cheapest carrier in it.
@@ -93,9 +88,9 @@ export const ReviewAndBook = meta.story({
   }
 })
 
-// Booked: what was booked, then each label with its own download. Done closes the dialog.
+// Booked: what was booked, then each label with its own download. Done asks to close the dialog.
 export const Booked = meta.story({
-  args: { booking: bookedFba },
+  args: { booking: fba.booked },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Shipment booked")
     await expect(dialog.getByText("Download the labels now, or find them on Shipment 2 anytime.")).toBeVisible()
@@ -111,7 +106,7 @@ export const Booked = meta.story({
 
 // Copacker can't reach Amazon: one problem, in place, with its fix. Nothing chosen so far is lost.
 export const ReconnectAmazon = meta.story({
-  args: { booking: { ...fbaBooking, options: { status: "reconnect" } } },
+  args: { booking: fba.reconnect },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Choose how to ship")
     await expect(dialog.getByText("Copacker’s access to your Amazon account expired.")).toBeVisible()
@@ -123,7 +118,7 @@ export const ReconnectAmazon = meta.story({
 
 // A failure worth retrying uses the same row as every other problem.
 export const OptionsDidNotLoad = meta.story({
-  args: { booking: { ...fbaBooking, options: { status: "failed" } } },
+  args: { booking: fba.failed },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Choose how to ship")
     await expect(dialog.getByText("Couldn’t load shipping options")).toBeVisible()
@@ -133,20 +128,9 @@ export const OptionsDidNotLoad = meta.story({
   }
 })
 
-const packingIssues: FbaBooking = {
-  ...fbaBooking,
-  options: {
-    status: "issues",
-    issues: [
-      { kind: "cartonVolume", first: 1, last: 5 },
-      { kind: "notEligible", product: "Chest protector / Women / XL" }
-    ]
-  }
-}
-
 // Amazon can flag several things at once, so they collapse into a count with Review. Back returns from them.
 export const PackingIssues = meta.story({
-  args: { booking: packingIssues },
+  args: { booking: fba.packingIssues },
   play: async () => {
     const dialog = await bookingDialog("Choose how to ship")
     await expect(dialog.getByText("2 packing issues from Amazon")).toBeVisible()
@@ -161,7 +145,7 @@ export const PackingIssues = meta.story({
 
 // The issues view AGL shares: where, what and the fix, then Check again.
 export const IssuesView = meta.story({
-  args: { booking: packingIssues },
+  args: { booking: fba.packingIssues },
   play: async ({ args }) => {
     const choose = await bookingDialog("Choose how to ship")
     await userEvent.click(choose.getByRole("button", { name: "Review" }))
@@ -255,7 +239,7 @@ export const FiveWarehouses = meta.story({
 
 // Nothing is booked when prices expire: the fix sits where the problem is, and Book waits for current prices.
 export const PricesExpired = meta.story({
-  args: { booking: expired, initialStep: "review" },
+  args: { booking: fba.expired, initialStep: "review" },
   play: async ({ args }) => {
     const dialog = await bookingDialog("Review and book")
     await expect(dialog.getByText("Prices expired at Oct 21, 10:31 PM PT.")).toBeVisible()
@@ -270,16 +254,7 @@ export const PricesExpired = meta.story({
 
 // While Amazon and the carrier make the labels, each download waits in place with a spinner.
 export const GettingLabels = meta.story({
-  args: {
-    booking: {
-      ...bookedFba,
-      booked: {
-        ...bookedFba.booked!,
-        amazonLabels: { status: "pending" },
-        carrierLabels: { carrier: "Amass", labels: { status: "pending" } }
-      }
-    }
-  },
+  args: { booking: fba.gettingLabels },
   play: async () => {
     const dialog = await bookingDialog("Shipment booked")
     await expect(dialog.getByText("Getting them from Amazon")).toBeVisible()

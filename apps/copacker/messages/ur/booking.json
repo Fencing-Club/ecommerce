@@ -1,0 +1,197 @@
+{
+  "step": "{total} میں سے مرحلہ {current}",
+  "continue": "جاری رکھیں",
+  "back": "واپس",
+  "done": "ہو گیا",
+  "review": "جائزہ لیں",
+  "checkAgain": "دوبارہ چیک کریں",
+  "tryAgain": "دوبارہ کوشش کریں",
+  "download": "ڈاؤن لوڈ کریں",
+  "open": "کھولیں",
+  "newTab": "(نئے ٹیب میں کھلتا ہے)",
+  "sellerCentral": "Seller Central",
+  "gettingLabels": "لیبلز حاصل کیے جا رہے ہیں",
+  "labelsShared": "{count, plural, one {# لیبل} other {# لیبلز}}، سپلائر کے ساتھ شیئر کیے گئے",
+  "labelsPending": "{source} سے حاصل کیے جا رہے ہیں",
+  "labelsFrom": "{source} سے، سپلائر کے ساتھ شیئر کیے گئے",
+  "template": {
+    "drop": "باکس کنٹینٹ ٹیمپلیٹ یہاں ڈالیں",
+    "browse": "یا <browse>اپنی فائلیں براؤز کریں</browse>",
+    "filling": "ٹیمپلیٹ بھرا جا رہا ہے",
+    "matching": "{units, plural, one {# یونٹ ملایا جا رہا ہے} other {# یونٹس ملائے جا رہے ہیں}}",
+    "filled": "ٹیمپلیٹ بھر گیا",
+    "matched": "{cartons, plural, one {# کارٹن} other {# کارٹن}} اور {units, plural, one {# یونٹ} other {# یونٹس}} مل گئے",
+    "replace": "تبدیل کریں"
+  },
+  "picker": {
+    "search": "نام یا ID سے تلاش کریں",
+    "refresh": "شپمنٹس ریفریش کریں",
+    "recent": "حالیہ شپمنٹس",
+    "results": "نتائج",
+    "matchCount": "{count, plural, =0 {ابھی کوئی مماثلت نہیں} one {# مماثلت} other {# مماثلتیں}}",
+    "resultCount": "{count, plural, one {# نتیجہ} other {# نتائج}}",
+    "matches": "مماثل ہے",
+    "differs": "مماثل نہیں",
+    "counts": "{cartons, plural, one {# کارٹن} other {# کارٹن}}، {units, plural, one {# یونٹ} other {# یونٹس}}",
+    "planCounts": "{shipments, plural, one {# شپمنٹ} other {# شپمنٹس}}، {cartons, plural, one {# کارٹن} other {# کارٹن}}، {units, plural, one {# یونٹ} other {# یونٹس}}",
+    "noResults": "کوئی شپمنٹ نہیں ملی",
+    "noResultsDescription": "ID چیک کریں، یا چند منٹ بعد ریفریش کریں۔",
+    "none": "ابھی کوئی شپمنٹ نہیں",
+    "noneDescription": "Amazon کو نئی شپمنٹ دکھانے میں چند منٹ لگ سکتے ہیں۔"
+  },
+  "agl": {
+    "start": {
+      "title": "Seller Central میں شپمنٹ شروع کریں",
+      "description": "وہاں اپنی انوینٹری فائل اپ لوڈ کریں، پھر Amazon کا دیا ہوا باکس کنٹینٹ ٹیمپلیٹ یہاں لائیں۔",
+      "counts": "{cartons, plural, one {# کارٹن} other {# کارٹن}} میں {units, plural, one {# یونٹ} other {# یونٹس}}",
+      "sellerCentral": "Amazon Global Logistics منتخب کریں، پھر فائل اپ لوڈ کریں"
+    },
+    "book": {
+      "title": "Seller Central میں شپمنٹ بک کریں",
+      "description": "بھری ہوئی فائل اسی شپمنٹ میں اپ لوڈ کریں اور وہیں ٹرانسپورٹ بک کریں۔",
+      "filledFor": "{cartons, plural, one {# کارٹن} other {# کارٹن}}، {units, plural, one {# یونٹ} other {# یونٹس}} کے لیے بھرا گیا",
+      "sellerCentral": "فائل اپ لوڈ کریں، Amazon پک اپ منتخب کریں اور چارجز قبول کریں"
+    },
+    "casePacks": {
+      "description": "کیس پیک میں کارٹن کی تفصیلات پہلے سے ہوتی ہیں، اس لیے آپ فوراً بک کر سکتے ہیں۔",
+      "counts": "{packs, plural, one {# کیس پیک} other {# کیس پیک}} میں {units, plural, one {# یونٹ} other {# یونٹس}}",
+      "sellerCentral": "Amazon Global Logistics منتخب کریں، فائل اپ لوڈ کریں اور بک کریں"
+    },
+    "awd": {
+      "title": "Seller Central میں AWD شپمنٹ بک کریں",
+      "description": "AWD کیس پیک کے حساب سے بک کرتا ہے۔ اس پیکنگ لسٹ کی مقداریں اور سائز استعمال کریں۔",
+      "counts": "{packs, plural, one {# کیس پیک} other {# کیس پیک}}، {units, plural, one {# یونٹ} other {# یونٹس}}",
+      "sellerCentral": "“Warehousing and distribution” میں اسے AGL کے ساتھ بنائیں"
+    },
+    "link": {
+      "title": "اپنی Amazon شپمنٹ منسلک کریں",
+      "description": "وہ شپمنٹ منتخب کریں جو آپ نے ابھی بک کی ہے۔ سب سے نئی شپمنٹس پہلے دکھائی گئی ہیں۔",
+      "submit": "شپمنٹ منسلک کریں"
+    },
+    "done": {
+      "title": "شپمنٹ منسلک ہو گئی",
+      "description": "کارٹن لیبلز ڈاؤن لوڈ کریں، پھر Seller Central میں کسٹمز مکمل کریں۔",
+      "shipment": "{id}، {cartons, plural, one {# کارٹن} other {# کارٹن}} اور {units, plural, one {# یونٹ} other {# یونٹس}}",
+      "linked": "منسلک",
+      "labels": "کارٹن لیبلز",
+      "labelsFailed": "کارٹن لیبلز حاصل نہیں ہو سکے",
+      "labelsFailedDescription": "Amazon نے جواب نہیں دیا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+      "customs": "کسٹمز دستاویزات",
+      "customsDescription": "انہیں Seller Central میں مکمل کریں"
+    },
+    "missingSkus": {
+      "title": "{count, plural, one {# پروڈکٹ کو Amazon SKU درکار ہے} other {# پروڈکٹس کو Amazon SKU درکار ہے}}",
+      "description": "Amazon کو ہر پروڈکٹ کے لیے اپنا SKU درکار ہے، اس لیے ہم ابھی انوینٹری فائل نہیں بنا سکتے۔"
+    },
+    "templateIssues": {
+      "summary": "{count, plural, one {ٹیمپلیٹ میں # مسئلہ} other {ٹیمپلیٹ میں # مسائل}}",
+      "summaryDescription": "انہیں Copacker میں درست کریں، پھر دوبارہ چیک کریں",
+      "title": "{count, plural, one {ٹیمپلیٹ کا # مسئلہ درست کریں} other {ٹیمپلیٹ کے # مسائل درست کریں}}",
+      "description": "انہیں Copacker میں درست کریں، پھر ٹیمپلیٹ دوبارہ چیک کریں۔"
+    },
+    "issues": {
+      "supplierSku": "سپلائر SKU {sku}",
+      "addSku": "SKU شامل کریں",
+      "carton": "کارٹن {carton}",
+      "editCarton": "کارٹن میں ترمیم کریں",
+      "editThisCarton": "کارٹن {carton} میں ترمیم کریں",
+      "editPacking": "پیکنگ میں ترمیم کریں",
+      "mixedGroups": "{first} اور {second} الگ الگ پیکنگ گروپس میں ہیں",
+      "mixedGroupsTitle": "کارٹن {carton} میں دو پیکنگ گروپس ملے ہوئے ہیں",
+      "mixedGroupsDescription": "{first} اور {second} کے لیے الگ کارٹن درکار ہیں",
+      "noWeight": "مجموعی وزن موجود نہیں",
+      "noWeightTitle": "کارٹن {carton} کا مجموعی وزن موجود نہیں",
+      "noWeightDescription": "ٹیمپلیٹ بھرنے کے لیے Amazon کو اس کی ضرورت ہے",
+      "unitsDiffer": "Amazon کو {expected, plural, one {# یونٹ} other {# یونٹس}} کی توقع ہے، پیکنگ میں {packed} ہیں",
+      "unitsDifferTitle": "{product} ٹیمپلیٹ سے مماثل نہیں"
+    },
+    "mismatch": {
+      "summary": "{count, plural, one {# پروڈکٹ مماثل نہیں} other {# پروڈکٹس مماثل نہیں}}",
+      "summaryDescription": "{count, plural, one {مماثل ہونے تک منسلک نہیں کیا جا سکتا} other {مماثل ہونے تک منسلک نہیں کیا جا سکتا}}",
+      "title": "{count, plural, one {# پروڈکٹ Amazon سے مماثل نہیں} other {# پروڈکٹس Amazon سے مماثل نہیں}}",
+      "description": "Seller Central میں بکنگ یا Copacker میں پیکنگ درست کریں، پھر دوبارہ چیک کریں۔",
+      "counts": "Amazon میں {amazon}، پیکنگ میں {packing}"
+    }
+  },
+  "fba": {
+    "choose": {
+      "title": "بھیجنے کا طریقہ منتخب کریں",
+      "description": "کل رقم میں Amazon کی پلیسمنٹ فیس اور سب سے سستا کیریئر شامل ہے۔",
+      "lowest": "سب سے کم کل رقم",
+      "warehouses": "{count, plural, one {# گودام} other {# گودام}}",
+      "withFee": "{codes}، {fee} پلیسمنٹ فیس سمیت",
+      "noFee": "{codes}، کوئی پلیسمنٹ فیس نہیں",
+      "cheapestFor": "{destination} کے لیے سب سے سستا کیریئر",
+      "change": "تبدیل کریں"
+    },
+    "carrier": {
+      "title": "کیریئر منتخب کریں",
+      "description": "{destination} تک۔ کل رقم میں {fee} پلیسمنٹ فیس شامل ہے۔",
+      "descriptionNoFee": "{destination} تک۔ کوئی پلیسمنٹ فیس نہیں ہے۔",
+      "cheapest": "سب سے سستا",
+      "quote": "{service}، {mode}",
+      "own": "آپ کا اپنا کیریئر",
+      "ownDescription": "صرف پلیسمنٹ فیس، کیریئر کو آپ براہ راست ادائیگی کرتے ہیں",
+      "noEstimates": "Amazon نے ان کوٹس کے لیے ڈیلیوری کے تخمینے شیئر نہیں کیے۔",
+      "use": "یہ کیریئر استعمال کریں"
+    },
+    "own": {
+      "title": "اپنا کیریئر استعمال کریں",
+      "description": "آپ اپنے کیریئر کو براہ راست ادائیگی کرتے ہیں اور ان کے لیبلز {shipment} میں شامل کرتے ہیں۔",
+      "method": "ڈیلیوری کا طریقہ",
+      "carrier": "کیریئر",
+      "window": "Amazon ڈیلیوری ونڈو",
+      "windowPlaceholder": "ڈیلیوری ونڈو منتخب کریں",
+      "methods": {
+        "smallParcel": "چھوٹا پارسل",
+        "lessThanTruckload": "جزوی ٹرک لوڈ",
+        "fullTruckload": "پورا ٹرک لوڈ"
+      }
+    },
+    "review": {
+      "title": "جائزہ لیں اور بک کریں",
+      "heldUntil": "قیمتیں {time} تک برقرار ہیں۔",
+      "expiredAt": "قیمتوں کی میعاد {time} پر ختم ہو گئی۔",
+      "warehouse": "گودام",
+      "warehouses": "گودام",
+      "carrier": "کیریئر",
+      "pickup": "پک اپ",
+      "ready": "{date} کو تیار",
+      "placementFee": "پلیسمنٹ فیس",
+      "shipping": "شپنگ",
+      "total": "کل",
+      "terms": "بک کرنے سے آپ <terms>کیریئر کی شرائط</terms> قبول کرتے ہیں",
+      "book": "{total} میں بک کریں",
+      "bookUnpriced": "بک کریں",
+      "expired": "قیمتوں کی میعاد ختم",
+      "expiredDescription": "موجودہ قیمتوں کے لیے ریفریش کریں۔ کچھ بھی بک نہیں ہوا۔",
+      "refresh": "قیمتیں ریفریش کریں"
+    },
+    "booked": {
+      "title": "شپمنٹ بک ہو گئی",
+      "description": "لیبلز ابھی ڈاؤن لوڈ کریں، یا کسی بھی وقت {shipment} پر حاصل کریں۔",
+      "summary": "{service}، {total}",
+      "booked": "بک ہو گئی",
+      "amazonLabels": "Amazon کارٹن لیبلز",
+      "carrierLabels": "کیریئر لیبلز"
+    },
+    "problems": {
+      "reconnect": "آپشنز دیکھنے کے لیے Amazon دوبارہ منسلک کریں",
+      "reconnectDescription": "آپ کے Amazon اکاؤنٹ تک Copacker کی رسائی کی میعاد ختم ہو گئی۔",
+      "reconnectAction": "دوبارہ منسلک کریں",
+      "failed": "شپنگ آپشنز لوڈ نہیں ہو سکے",
+      "failedDescription": "Amazon نے جواب نہیں دیا۔ آپ کی پیکنگ محفوظ ہے۔"
+    },
+    "packingIssues": {
+      "summary": "{count, plural, one {Amazon کی طرف سے # پیکنگ مسئلہ} other {Amazon کی طرف سے # پیکنگ مسائل}}",
+      "summaryDescription": "{count, plural, one {اسے درست کریں، پھر دوبارہ چیک کریں} other {انہیں درست کریں، پھر دوبارہ چیک کریں}}",
+      "title": "{count, plural, one {# پیکنگ مسئلہ درست کریں} other {# پیکنگ مسائل درست کریں}}",
+      "description": "Amazon نے کوٹ دینے سے پہلے ان کی نشاندہی کی۔ انہیں درست کریں، پھر دوبارہ چیک کریں۔",
+      "carton": "کارٹن {number}",
+      "cartons": "کارٹن {first}–{last}",
+      "cartonVolume": "کارٹن کا حجم اندر موجود پروڈکٹس سے کم ہے",
+      "editCartons": "کارٹنز میں ترمیم کریں",
+      "notEligible": "Seller Central میں ابھی FBA کے لیے اہل نہیں"
+    }
+  }
+}

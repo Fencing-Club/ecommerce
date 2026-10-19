@@ -4,6 +4,7 @@ import { useTranslations } from "use-intl"
 import { EmptyState, StatusBadge } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { RadioGroup } from "@/components/ui/radio-group"
+import { IssueSummary, type IssueSummaryProps } from "./issues"
 import { OptionRow } from "./option-list"
 
 // How many of the newest shipments show before a search.
@@ -22,7 +23,7 @@ export type PickerShipment = {
 
 // Picks one of the shipments in Amazon, newest first. The four newest show until a search, which looks through them all
 // by name or ID. The box keeps its height whatever it holds, a search with no results included, and Refresh in the
-// search bar asks Amazon again. `children` shows under the list, such as the chosen shipment's problems.
+// search bar asks Amazon again. `issue` shows under the list: the chosen shipment's problem.
 export function ShipmentPicker({
   shipments,
   value,
@@ -30,7 +31,7 @@ export function ShipmentPicker({
   onRefresh,
   refreshing = false,
   defaultQuery = "",
-  children
+  issue
 }: {
   shipments: PickerShipment[]
   value: string | null
@@ -38,9 +39,9 @@ export function ShipmentPicker({
   onRefresh: () => void
   refreshing?: boolean
   defaultQuery?: string
-  children?: React.ReactNode
+  issue?: IssueSummaryProps
 }) {
-  const t = useTranslations("shipments.booking.picker")
+  const t = useTranslations("booking.picker")
   const id = useId()
   const [query, setQuery] = useState(defaultQuery)
   const search = query.trim().toLowerCase()
@@ -118,7 +119,11 @@ export function ShipmentPicker({
                 />
               ))}
             </RadioGroup>
-            {children && <div className="pt-1">{children}</div>}
+            {issue && (
+              <div className="pt-1">
+                <IssueSummary {...issue} />
+              </div>
+            )}
           </>
         ) : (
           <div aria-live="polite" className="flex flex-1 items-center">
@@ -139,7 +144,7 @@ export function ShipmentPicker({
 }
 
 function MatchBadge({ match }: { match: "matches" | "differs" }) {
-  const t = useTranslations("shipments.booking.picker")
+  const t = useTranslations("booking.picker")
   return match === "matches" ? (
     <StatusBadge tone="success" icon={<Check aria-hidden />}>
       {t("matches")}

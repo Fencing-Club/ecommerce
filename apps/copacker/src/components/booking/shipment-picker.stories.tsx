@@ -1,37 +1,22 @@
-import { useState } from "react"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { chestProtectors, differingShipment, otherShipments } from "@/stories/fixtures/booking"
-import { IssueSummary } from "./issues"
+import { controlled, dialogWidth } from "@/stories/booking"
+import { agl, chestProtectors, differingShipment } from "./fixtures"
 import { ShipmentPicker } from "./shipment-picker"
 
-type Props = React.ComponentProps<typeof ShipmentPicker>
-
 // The picker with its parent keeping the chosen shipment, as the link step does.
-function Controlled({ value: initial, onValueChange, ...props }: Props) {
-  const [value, setValue] = useState(initial)
-  return (
-    <div className="max-w-lg">
-      <ShipmentPicker
-        {...props}
-        value={value}
-        onValueChange={(id) => {
-          setValue(id)
-          onValueChange(id)
-        }}
-      />
-    </div>
-  )
-}
+const Picker = controlled(ShipmentPicker)
 
 const meta = preview.meta({
-  component: Controlled,
+  component: Picker,
+  tags: ["vrt"],
   args: {
-    shipments: [chestProtectors, ...otherShipments],
+    shipments: agl.start.shipments,
     value: chestProtectors.id,
     onValueChange: fn(),
     onRefresh: fn()
-  }
+  },
+  decorators: [dialogWidth]
 })
 
 // The picker's box, which keeps one height whatever it holds.
@@ -123,16 +108,14 @@ export const Refreshing = meta.story({
 // within the box rather than growing it.
 export const DoesNotMatch = meta.story({
   args: {
-    shipments: [differingShipment, ...otherShipments],
+    shipments: agl.differs.shipments,
     value: differingShipment.id,
-    children: (
-      <IssueSummary
-        title="3 products don’t match"
-        description="Linking is blocked until they do"
-        action="Review"
-        onAction={fn()}
-      />
-    )
+    issue: {
+      title: "3 products don’t match",
+      description: "Linking is blocked until they do",
+      action: "Review",
+      onAction: fn()
+    }
   },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByText("Doesn’t match")).toBeVisible()

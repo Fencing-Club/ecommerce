@@ -22,6 +22,7 @@
     "typegen:start-runtime": "pnpm --dir tests/start-runtime exec cf workers types",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:vrt": "vitest run --project vrt",
     "test:e2e": "node --use-system-ca --import tsx scripts/test-e2e.ts test",
     "test:start-runtime": "node --import tsx scripts/test-start-runtime.ts",
     "test:worker-webhooks": "node --import tsx scripts/test-worker-webhooks.ts",
