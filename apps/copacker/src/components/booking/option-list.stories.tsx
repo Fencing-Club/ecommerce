@@ -30,7 +30,7 @@ const meta = preview.meta({
       {
         value: "split",
         title: "5 warehouses",
-        description: "BJC1, IAH3, RDU2, SWF2, MCC1, no placement fee",
+        description: "BJC1, IAH3, RDU2, SWF2, MCC1, includes a $0.00 placement fee",
         price: "$184.78"
       }
     ]

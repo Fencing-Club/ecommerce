@@ -120,14 +120,12 @@
       "lowest": "सबसे कम कुल",
       "warehouses": "{count, plural, one {# वेयरहाउस} other {# वेयरहाउस}}",
       "withFee": "{codes}, {fee} प्लेसमेंट शुल्क सहित",
-      "noFee": "{codes}, कोई प्लेसमेंट शुल्क नहीं",
       "cheapestFor": "{destination} के लिए सबसे सस्ता कैरियर",
       "change": "बदलें"
     },
     "carrier": {
       "title": "कैरियर चुनें",
       "description": "{destination} तक। कुल रकम में {fee} प्लेसमेंट शुल्क शामिल है।",
-      "descriptionNoFee": "{destination} तक। कोई प्लेसमेंट शुल्क नहीं है।",
       "cheapest": "सबसे सस्ता",
       "quote": "{service}, {mode}",
       "own": "आपका अपना कैरियर",

@@ -120,14 +120,12 @@
       "lowest": "Totale più basso",
       "warehouses": "{count, plural, one {# magazzino} other {# magazzini}}",
       "withFee": "{codes}, include una commissione di posizionamento di {fee}",
-      "noFee": "{codes}, nessuna commissione di posizionamento",
       "cheapestFor": "Corriere più economico per {destination}",
       "change": "Cambia"
     },
     "carrier": {
       "title": "Scegli un corriere",
       "description": "Verso {destination}. I totali includono la commissione di posizionamento di {fee}.",
-      "descriptionNoFee": "Verso {destination}. Non c’è nessuna commissione di posizionamento.",
       "cheapest": "Più economico",
       "quote": "{service}, {mode}",
       "own": "Il tuo corriere",

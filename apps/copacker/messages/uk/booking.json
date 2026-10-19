@@ -120,14 +120,12 @@
       "lowest": "Найменша сума",
       "warehouses": "{count, plural, one {# склад} few {# склади} many {# складів} other {# складу}}",
       "withFee": "{codes}, з платою за розміщення {fee}",
-      "noFee": "{codes}, без плати за розміщення",
       "cheapestFor": "Найдешевший перевізник до {destination}",
       "change": "Змінити"
     },
     "carrier": {
       "title": "Виберіть перевізника",
       "description": "До {destination}. Суми включають плату за розміщення {fee}.",
-      "descriptionNoFee": "До {destination}. Плати за розміщення немає.",
       "cheapest": "Найдешевше",
       "quote": "{service}, {mode}",
       "own": "Власний перевізник",

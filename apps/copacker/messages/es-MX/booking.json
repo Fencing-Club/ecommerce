@@ -120,14 +120,12 @@
       "lowest": "Total más bajo",
       "warehouses": "{count, plural, one {# almacén} other {# almacenes}}",
       "withFee": "{codes}, incluye una tarifa de colocación de {fee}",
-      "noFee": "{codes}, sin tarifa de colocación",
       "cheapestFor": "Transportista más barato para {destination}",
       "change": "Cambiar"
     },
     "carrier": {
       "title": "Elige un transportista",
       "description": "A {destination}. Los totales incluyen la tarifa de colocación de {fee}.",
-      "descriptionNoFee": "A {destination}. No hay tarifa de colocación.",
       "cheapest": "Más barato",
       "quote": "{service}, {mode}",
       "own": "Tu propio transportista",

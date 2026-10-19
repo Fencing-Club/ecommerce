@@ -120,14 +120,12 @@
       "lowest": "Lowest total",
       "warehouses": "{count, plural, one {# warehouse} other {# warehouses}}",
       "withFee": "{codes}, includes a {fee} placement fee",
-      "noFee": "{codes}, no placement fee",
       "cheapestFor": "Cheapest carrier for {destination}",
       "change": "Change"
     },
     "carrier": {
       "title": "Choose a carrier",
       "description": "To {destination}. Totals include the {fee} placement fee.",
-      "descriptionNoFee": "To {destination}. There’s no placement fee.",
       "cheapest": "Cheapest",
       "quote": "{service}, {mode}",
       "own": "Your own carrier",

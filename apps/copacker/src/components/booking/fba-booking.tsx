@@ -1,4 +1,4 @@
-import { ExternalLink, Tags, Truck, Warehouse } from "lucide-react"
+import { ExternalLink, Info, Tags, Truck, Warehouse } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useLocale, useTimeZone, useTranslations } from "use-intl"
 import { SelectControl } from "@/components/form-select"
@@ -239,11 +239,7 @@ export function FbaBookingDialog({
       <BookingDialog {...dialog} screen="carrier">
         <BookingStep
           title={t("fba.carrier.title")}
-          description={
-            placement.placementFee
-              ? t("fba.carrier.description", { destination, fee: money(placement.placementFee) })
-              : t("fba.carrier.descriptionNoFee", { destination })
-          }
+          description={t("fba.carrier.description", { destination, fee: money(placement.placementFee) })}
           step={{ current: 1, total: 2 }}
           actions={
             <>
@@ -280,7 +276,10 @@ export function FbaBookingDialog({
               }
             ]}
           />
-          <p className="text-xs text-muted-foreground">{t("fba.carrier.noEstimates")}</p>
+          <p className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Info className="mt-px size-3.5 shrink-0" aria-hidden />
+            {t("fba.carrier.noEstimates")}
+          </p>
         </BookingStep>
       </BookingDialog>
     )
@@ -452,9 +451,7 @@ export function FbaBookingDialog({
                 ? candidate.warehouses[0].place
                 : t("fba.choose.warehouses", { count: candidate.warehouses.length }),
             badge: index === 0 ? t("fba.choose.lowest") : undefined,
-            description: candidate.placementFee
-              ? t("fba.choose.withFee", { codes: codes(candidate), fee: money(candidate.placementFee) })
-              : t("fba.choose.noFee", { codes: codes(candidate) }),
+            description: t("fba.choose.withFee", { codes: codes(candidate), fee: money(candidate.placementFee) }),
             price: money(total(candidate))
           }))}
         />

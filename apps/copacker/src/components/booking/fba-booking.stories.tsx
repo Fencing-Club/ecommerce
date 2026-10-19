@@ -34,7 +34,7 @@ export const ChooseHowToShip = meta.story({
     await expect(hagerstown).toHaveAttribute("aria-checked", "true")
     await expect(hagerstown).toHaveAccessibleDescription("Lowest total HGR6, includes a $40.20 placement fee $144.12")
     await expect(dialog.getByRole("radio", { name: "5 warehouses" })).toHaveAccessibleDescription(
-      "BJC1, IAH3, RDU2, SWF2, MCC1, no placement fee $184.78"
+      "BJC1, IAH3, RDU2, SWF2, MCC1, includes a $0.00 placement fee $184.78"
     )
     await expect(dialog.getByText("Amass standard truck")).toBeVisible()
     await expect(dialog.getByText("Cheapest carrier for Hagerstown, MD")).toBeVisible()

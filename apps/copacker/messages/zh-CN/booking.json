@@ -120,14 +120,12 @@
       "lowest": "总价最低",
       "warehouses": "{count, plural, other {# 个仓库}}",
       "withFee": "{codes}，含 {fee} 入库配置费",
-      "noFee": "{codes}，无入库配置费",
       "cheapestFor": "{destination} 最便宜的承运商",
       "change": "更改"
     },
     "carrier": {
       "title": "选择承运商",
       "description": "运往 {destination}。总价包含 {fee} 入库配置费。",
-      "descriptionNoFee": "运往 {destination}。无入库配置费。",
       "cheapest": "最便宜",
       "quote": "{service}，{mode}",
       "own": "你自己的承运商",

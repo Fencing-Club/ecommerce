@@ -120,14 +120,12 @@
       "lowest": "Total le plus bas",
       "warehouses": "{count, plural, one {# entrepôt} other {# entrepôts}}",
       "withFee": "{codes}, frais de placement de {fee} inclus",
-      "noFee": "{codes}, sans frais de placement",
       "cheapestFor": "Transporteur le moins cher pour {destination}",
       "change": "Modifier"
     },
     "carrier": {
       "title": "Choisissez un transporteur",
       "description": "Vers {destination}. Les totaux incluent les frais de placement de {fee}.",
-      "descriptionNoFee": "Vers {destination}. Il n’y a pas de frais de placement.",
       "cheapest": "Le moins cher",
       "quote": "{service}, {mode}",
       "own": "Votre propre transporteur",

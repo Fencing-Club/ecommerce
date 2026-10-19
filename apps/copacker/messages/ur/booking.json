@@ -120,14 +120,12 @@
       "lowest": "سب سے کم کل رقم",
       "warehouses": "{count, plural, one {# گودام} other {# گودام}}",
       "withFee": "{codes}، {fee} پلیسمنٹ فیس سمیت",
-      "noFee": "{codes}، کوئی پلیسمنٹ فیس نہیں",
       "cheapestFor": "{destination} کے لیے سب سے سستا کیریئر",
       "change": "تبدیل کریں"
     },
     "carrier": {
       "title": "کیریئر منتخب کریں",
       "description": "{destination} تک۔ کل رقم میں {fee} پلیسمنٹ فیس شامل ہے۔",
-      "descriptionNoFee": "{destination} تک۔ کوئی پلیسمنٹ فیس نہیں ہے۔",
       "cheapest": "سب سے سستا",
       "quote": "{service}، {mode}",
       "own": "آپ کا اپنا کیریئر",

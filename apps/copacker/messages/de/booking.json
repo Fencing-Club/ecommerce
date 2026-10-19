@@ -120,14 +120,12 @@
       "lowest": "Niedrigste Summe",
       "warehouses": "{count, plural, one {# Lager} other {# Lager}}",
       "withFee": "{codes}, inklusive {fee} Platzierungsgebühr",
-      "noFee": "{codes}, keine Platzierungsgebühr",
       "cheapestFor": "Günstigster Transporteur für {destination}",
       "change": "Ändern"
     },
     "carrier": {
       "title": "Wählen Sie einen Transporteur",
       "description": "Nach {destination}. Die Summen enthalten die Platzierungsgebühr von {fee}.",
-      "descriptionNoFee": "Nach {destination}. Es fällt keine Platzierungsgebühr an.",
       "cheapest": "Am günstigsten",
       "quote": "{service}, {mode}",
       "own": "Eigener Transporteur",
