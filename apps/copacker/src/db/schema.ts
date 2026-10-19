@@ -1222,7 +1222,8 @@ export const amazonTransactions = pgTable(
   (t) => [
     primaryKey({ columns: [t.orgId, t.externalAccountId, t.transactionId] }),
     index("amazon_transaction_order").on(t.orgId, t.orderId),
-    index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt)
+    index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt),
+    index("amazon_transaction_identifiers").using("gin", sql`(${t.data}->'relatedIdentifiers') jsonb_path_ops`)
   ]
 )
 // What getting a PO's goods to the buyer cost beyond the supplier's price: freight, duty and other charges, in the

@@ -100,10 +100,14 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
       const originalIds = pageRows.flatMap((row) =>
         row.reimbursement?.originalId ? [row.reimbursement.originalId] : []
       )
-      const relatedReimbursements = await reimbursementFamily(tx, orgId, externalAccountId, marketplaceId, [
-        ...reimbursementIds,
-        ...originalIds
-      ])
+      const relatedReimbursements = await reimbursementFamily(
+        tx,
+        orgId,
+        externalAccountId,
+        marketplaceId,
+        [...reimbursementIds, ...originalIds],
+        pageRows.filter((row) => row.reimbursement).map((row) => row.id)
+      )
       const identifiers = (key: "orderId" | "sku" | "asin") => [
         ...new Set(pageRows.map((row) => row[key]).filter((value) => value !== null))
       ]
@@ -250,7 +254,8 @@ async function reimbursementFamily(
   orgId: string,
   externalAccountId: string,
   marketplaceId: string,
-  seed: string[]
+  seed: string[],
+  pageSourceRowIds: string[]
 ) {
   const select = {
     sourceRowId: amazonReimbursements.id,
@@ -287,6 +292,23 @@ async function reimbursementFamily(
       .orderBy(amazonReimbursements.approvedAt, amazonReimbursements.id)
       .limit(1001)
   const records = new Map<string, Awaited<ReturnType<typeof query>>[number]>()
+  // Keep the current page first so the cap cannot remove its explicit accounting diagnostics.
+  if (pageSourceRowIds.length) {
+    const own = await tx
+      .select(select)
+      .from(amazonReimbursements)
+      .where(
+        and(
+          eq(amazonReimbursements.orgId, orgId),
+          eq(amazonReimbursements.externalAccountId, externalAccountId),
+          eq(amazonReimbursements.marketplaceId, marketplaceId),
+          inArray(amazonReimbursements.id, pageSourceRowIds)
+        )
+      )
+    for (const row of own) {
+      records.set(row.sourceRowId, row)
+    }
+  }
   const visited = new Set<string>()
   let pending = [...new Set(seed)]
   for (let depth = 0; depth < 8 && pending.length; depth++) {

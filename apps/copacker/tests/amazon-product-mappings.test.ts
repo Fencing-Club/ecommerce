@@ -457,3 +457,36 @@ it("resolves one-sided release references outside the page and detects a second 
   expect(updated.postings[0]?.accounting.blockers).toContain("ambiguous_release_chain")
   expect(updated.postings[0]?.accounting.releasedPostingAmount).toBeNull()
 })
+
+it("excludes page postings from truncated linked context without consuming its limit", async () => {
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    type: "Refund",
+    currency: "USD",
+    totalMinor: 100,
+    feesMinor: 0,
+    postedAt: new Date("2026-10-01"),
+    data: {}
+  }
+  await database.insert(tables.amazonTransactions).values({ ...base, transactionId: "A-SEED" })
+  await database.insert(tables.amazonTransactions).values(
+    Array.from({ length: 1001 }, (_, index) => ({
+      ...base,
+      transactionId: `LINK-${index}`,
+      data: {
+        relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "A-SEED" }]
+      }
+    }))
+  )
+  const result = await amazonAllocations(orgId, {
+    from: "2026-10-01",
+    to: "2026-11-01",
+    page: 0,
+    transactionId: "A-SEED"
+  })
+  expect(result.linkedPostingsTruncated).toBe(true)
+  expect(result.linkedPostings).toHaveLength(1000)
+  expect(result.linkedPostings?.some((row) => row.transactionId === "A-SEED")).toBe(false)
+  expect(result.postings[0]?.accounting.blockers).toContain("linked_search_truncated")
+})

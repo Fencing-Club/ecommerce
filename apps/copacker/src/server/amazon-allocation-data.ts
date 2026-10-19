@@ -145,13 +145,20 @@ async function releaseFamily(
           eq(amazonTransactions.externalAccountId, externalAccountId),
           or(
             inArray(amazonTransactions.transactionId, ids),
-            sql`exists (select 1 from jsonb_array_elements(case when jsonb_typeof(${amazonTransactions.data}->'relatedIdentifiers')='array' then ${amazonTransactions.data}->'relatedIdentifiers' else '[]'::jsonb end) ref where ref->>'relatedIdentifierName' in ('RELEASE_TRANSACTION_ID','DEFERRED_TRANSACTION_ID') and ref->>'relatedIdentifierValue'=any(${sql.param(ids)}::text[]))`
+            ...ids.flatMap((id) =>
+              ["RELEASE_TRANSACTION_ID", "DEFERRED_TRANSACTION_ID"].map(
+                (name) =>
+                  sql`(${amazonTransactions.data}->'relatedIdentifiers') @> ${JSON.stringify([{ relatedIdentifierName: name, relatedIdentifierValue: id }])}::jsonb`
+              )
+            )
           )
         )
       )
       .orderBy(amazonTransactions.transactionId)
-      .limit(1001)
+      .limit(1001 + seeds.length)
   const records = new Map<string, Awaited<ReturnType<typeof query>>[number]>()
+  const seedIds = new Set(seeds.map((seed) => seed.transactionId))
+  const linkedRows = () => [...records.values()].filter((row) => !seedIds.has(row.transactionId))
   const visited = new Set<string>()
   let pending = [...new Set(seeds.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)]))]
   for (let depth = 0; depth < 8 && pending.length; depth++) {
@@ -160,15 +167,15 @@ async function releaseFamily(
     for (const row of rows) {
       records.set(row.transactionId, row)
     }
-    if (rows.length > 1000 || records.size > 1000) {
-      return { rows: [...records.values()].slice(0, 1000), truncated: true }
+    if (rows.length > 1000 + seeds.length || linkedRows().length > 1000) {
+      return { rows: linkedRows().slice(0, 1000), truncated: true }
     }
     pending = [
       ...new Set(rows.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)]))
     ].filter((id) => !visited.has(id))
   }
   return {
-    rows: [...records.values()].filter((row) => !seeds.some((seed) => seed.transactionId === row.transactionId)),
+    rows: linkedRows(),
     truncated: pending.length > 0
   }
 }

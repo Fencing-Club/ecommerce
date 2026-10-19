@@ -501,4 +501,23 @@ it("discloses a truncated reimbursement family instead of returning a partial ne
     quantities: null,
     blockers: expect.arrayContaining(["related_records_truncated"])
   })
+  await database.insert(tables.amazonReimbursements).values({
+    ...base,
+    reimbursementId: "LATEST",
+    originalReimbursementId: "ROOT",
+    approvedAt: new Date("2026-12-01")
+  })
+  const latest = await amazonReconciliation(orgId, {
+    ...input,
+    source: "reimbursements",
+    from: "2026-12-01",
+    to: "2027-01-01"
+  })
+  expect(latest.rows).toHaveLength(1)
+  expect(latest.relatedReimbursements).toHaveLength(1000)
+  expect(latest.rows[0]?.reimbursementAccounting).toMatchObject({
+    status: "requires_review",
+    signedReportAmounts: null,
+    blockers: expect.arrayContaining(["related_records_truncated"])
+  })
 })

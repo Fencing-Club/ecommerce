@@ -55,7 +55,10 @@ future/uningested corrections remain a coverage limitation even for an internall
 `GET /api/analytics/amazon/allocations` adds `accounting` to each paginated posting. Forward and reverse
 DEFERRED_TRANSACTION_ID/RELEASE_TRANSACTION_ID references are followed across dates in the current seller account.
 Missing links, ambiguous chains, inconsistent statuses, currency/type/marketplace/order differences, or unbalanced
-breakdowns withhold the contribution. The same 1,000-row/eight-pass traversal bounds are explicit.
+breakdowns withhold the contribution. Traversal allows 1,000 linked rows in addition to the current page and eight
+expansion passes. Page postings never appear again in linked context, including truncated results. Reverse lookup
+uses JSON containment supported by the `amazon_transaction_identifiers` GIN index; its migration indexes existing
+stored evidence without requesting provider history or changing financial records.
 
 An internally consistent RELEASED posting contributes its signed amount once under its transaction ID. A matching
 DEFERRED_RELEASED copy contributes no second amount; DEFERRED remains excluded. No reference is inferred from amount,
