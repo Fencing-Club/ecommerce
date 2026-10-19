@@ -36,7 +36,6 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Domains and provider configuration across environments](domains.md)
 - [Local development domains with Buildkit and Portless](development.md)
 - [End-to-end tests: the Playwright suite](e2e.md)
-- [Visual regression: reference screenshots of tagged stories](visual-regression.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [Styling](styling.md)
 - [Storybook: stories and play tests](storybook.md)

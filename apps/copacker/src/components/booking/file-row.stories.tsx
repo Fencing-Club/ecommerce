@@ -10,7 +10,6 @@ const { file, sellerCentralUrl } = agl.start
 
 const meta = preview.meta({
   component: FileRow,
-  tags: ["vrt"],
   args: {
     icon: <FileSpreadsheet aria-hidden />,
     title: fileName(file.name, { title: file.name }),

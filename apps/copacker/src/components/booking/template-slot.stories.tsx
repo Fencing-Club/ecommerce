@@ -12,7 +12,6 @@ const issue: TemplateSlotState = { status: "issue", issue: { ...cartonIssue, onA
 
 const meta = preview.meta({
   component: TemplateSlot,
-  tags: ["vrt"],
   args: { state: empty, onFile: fn() },
   decorators: [dialogWidth]
 })

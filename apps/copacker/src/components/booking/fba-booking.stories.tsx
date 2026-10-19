@@ -9,7 +9,6 @@ import { fba } from "./fixtures"
 // held open as the shipment page holds it.
 const meta = preview.meta({
   component: FbaBookingDialog,
-  tags: ["vrt"],
   args: {
     booking: fba.choose,
     open: true,

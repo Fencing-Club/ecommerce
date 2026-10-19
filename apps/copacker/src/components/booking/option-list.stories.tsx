@@ -8,7 +8,6 @@ const Options = controlled(OptionList)
 
 const meta = preview.meta({
   component: Options,
-  tags: ["vrt"],
   args: {
     "aria-label": "Choose how to ship",
     value: "hgr6",

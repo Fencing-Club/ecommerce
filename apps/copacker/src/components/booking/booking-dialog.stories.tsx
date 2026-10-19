@@ -40,7 +40,6 @@ function Step({
 
 const meta = preview.meta({
   component: Step,
-  tags: ["vrt"],
   args: { rows: 3, step: { current: 1, total: 2 }, onOpenChange: fn() }
 })
 

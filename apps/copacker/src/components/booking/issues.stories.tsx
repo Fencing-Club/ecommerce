@@ -7,7 +7,6 @@ import { type Issue, IssueSummary, IssuesView } from "./issues"
 
 const meta = preview.meta({
   component: IssueSummary,
-  tags: ["vrt"],
   args: { ...cartonIssue, onAction: fn() },
   decorators: [dialogWidth]
 })

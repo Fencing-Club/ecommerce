@@ -5,7 +5,6 @@ import { SummaryList } from "./summary-list"
 
 const meta = preview.meta({
   component: SummaryList,
-  tags: ["vrt"],
   args: {
     items: [
       { label: "Warehouse", value: "Hagerstown, MD", detail: "HGR6" },

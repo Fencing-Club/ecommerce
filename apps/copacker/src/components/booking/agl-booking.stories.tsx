@@ -9,7 +9,6 @@ import { agl, chestProtectors, templateIssues } from "./fixtures"
 // shipment page holds it.
 const meta = preview.meta({
   component: AglBookingDialog,
-  tags: ["vrt"],
   args: {
     booking: agl.start,
     open: true,

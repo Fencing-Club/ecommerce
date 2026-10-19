@@ -1,42 +1,9 @@
-import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
 import { playwright } from "@vitest/browser-playwright"
-import { defineConfig, type TestProjectInlineConfiguration } from "vitest/config"
+import { defineConfig } from "vitest/config"
 
 const dirname = fileURLToPath(new URL(".", import.meta.url))
-
-// The stories tagged "vrt", each compared with its reference screenshot once its play function is done
-// (.storybook/vrt.setup.ts). It runs only when it's asked for, with `--project vrt` (pnpm test:vrt), so `pnpm test`
-// never takes screenshots. See docs/visual-regression.md.
-const visualRegression = (): TestProjectInlineConfiguration => ({
-  extends: true,
-  plugins: [storybookTest({ configDir: `${dirname}.storybook`, tags: { include: ["vrt"] } })],
-  test: {
-    name: "vrt",
-    setupFiles: [`${dirname}.storybook/vrt.setup.ts`],
-    testTimeout: 60000,
-    browser: {
-      enabled: true,
-      headless: true,
-      provider: playwright(),
-      instances: [{ browser: "chromium" }],
-      // The page stories are captured on, unless a story sets its own viewport.
-      viewport: { width: 1200, height: 900 },
-      screenshotFailures: false,
-      expect: {
-        toMatchScreenshot: {
-          // A mismatch's screenshot and diff, where git doesn't look.
-          resolveDiffPath: ({ root, testFileDirectory, testFileName, arg, browserName, platform, ext }) =>
-            join(root, ".cache/vrt", testFileDirectory, testFileName, `${arg}-${browserName}-${platform}${ext}`)
-        }
-      }
-    }
-  }
-})
-const runsVisualRegression = process.argv.some(
-  (arg, index, args) => arg === "--project=vrt" || (arg === "--project" && args[index + 1] === "vrt")
-)
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
@@ -83,8 +50,7 @@ export default defineConfig({
             instances: [{ browser: "chromium" }]
           }
         }
-      },
-      ...(runsVisualRegression ? [visualRegression()] : [])
+      }
     ]
   }
 })

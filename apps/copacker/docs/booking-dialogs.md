@@ -31,7 +31,6 @@ radios. Their copy is in the `booking` message namespace.
 - `src/stories/booking.tsx` has what the stories share: `bookingDialog(name)` finds the dialog and checks its one height,
   `dialogBody()`, the `dialogWidth` decorator and `controlled()` for a choice whose parent keeps the value.
 - The dialogs are held open (`open: true`), as the shipment page will hold them, so Done asks to close without closing.
-- Every booking story is tagged `vrt` for [visual regression](visual-regression.md).
 
 ## Before wiring them in
 

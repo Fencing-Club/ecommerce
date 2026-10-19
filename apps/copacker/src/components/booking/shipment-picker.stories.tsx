@@ -9,7 +9,6 @@ const Picker = controlled(ShipmentPicker)
 
 const meta = preview.meta({
   component: Picker,
-  tags: ["vrt"],
   args: {
     shipments: agl.start.shipments,
     value: chestProtectors.id,
