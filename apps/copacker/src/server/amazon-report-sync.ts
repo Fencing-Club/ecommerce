@@ -1,13 +1,16 @@
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError, ReportDeferredError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"
+import { amazonFailureDetails } from "./amazon-diagnostics"
 
 // Request scope, not proof of a row's sales marketplace. Matches the app's US FBA inventory scope.
 export const fbaReportMarketplace = "ATVPDKIKX0DER"
 const day = 86400000
 export function amazonReportFailure(error: unknown, stage: "request" | "parse" | "period") {
+  if (error instanceof ReportDeferredError) {
+    return "report_throttled"
+  }
   if (error instanceof ProviderError) {
     if ([401, 403].includes(error.status)) {
       return "report_access_denied"
@@ -88,9 +91,15 @@ export async function syncMonthlyAmazonReport<Row>(
     reportType: string
     beforeRequest?: () => Promise<boolean>
     minimumRefreshMs?: number
+    // Unavailable is evidence of cancellation, never proof of zero charges.
+    unavailableRefreshMs?: { recent: number; older: number }
+    // Covered windows can reuse an exact completed report within this content-refresh interval.
+    refreshReuseMs?: number
     retryCreate?: boolean
     // Storage fees require completed calendar months and a request spanning exactly one calendar month.
     wholeMonths?: boolean
+    // Removal reports support a date range. One complete file can establish coverage for sparse months.
+    combineMonths?: boolean
     reports: ReportState[]
     parse: (text: string) => Row[]
     timestamp: (row: Row) => Date
@@ -139,10 +148,20 @@ export async function syncMonthlyAmazonReport<Row>(
     eq(connections.provider, "amazon"),
     eq(connections.externalId, externalAccountId)
   )
-  for (const window of windows) {
+  const requests = source.combineMonths
+    ? [
+        {
+          from: new Date(Math.min(...windows.map((window) => window.from.getTime()))),
+          to: new Date(Math.max(...windows.map((window) => window.to.getTime())))
+        }
+      ]
+    : windows
+  for (const window of requests) {
+    const periods = source.combineMonths ? windows : [window]
     const previous = source.reports.find((report) => report.from.getTime() === window.from.getTime())
     // Refresh the newest two months and incomplete windows; rotate one older stale successful month per run.
     if (
+      !source.combineMonths &&
       window.from < previousMonth &&
       previous?.status === "imported" &&
       previous.coveredTo &&
@@ -159,6 +178,16 @@ export async function syncMonthlyAmazonReport<Row>(
     ) {
       continue
     }
+    if (
+      source.unavailableRefreshMs &&
+      previous?.status === "unavailable" &&
+      previous.requestedTo >= window.to &&
+      previous.checkedAt.getTime() >
+        now.getTime() -
+          (window.from >= previousMonth ? source.unavailableRefreshMs.recent : source.unavailableRefreshMs.older)
+    ) {
+      continue
+    }
     await assertOwned()
     const [active] = await db().select({ revision: salesSyncs.revision }).from(salesSyncs).where(syncScope)
     const [connected] = await db()
@@ -171,6 +200,11 @@ export async function syncMonthlyAmazonReport<Row>(
     if (source.beforeRequest && !(await source.beforeRequest())) {
       return
     }
+    const recovering = periods.some((period) => {
+      const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
+      return !saved?.coveredTo || saved.coveredTo < period.to
+    })
+    const reuseMs = recovering ? day : source.refreshReuseMs
     let rows: Row[] | null = null
     let errorCode: string | null = null
     let stage: "request" | "parse" | "period" = "request"
@@ -186,10 +220,8 @@ export async function syncMonthlyAmazonReport<Row>(
           deadline: Date.now() + 20 * 60 * 1000,
           assertActive: assertOwned,
           retryCreate: source.retryCreate,
-          reuseCreatedSince:
-            !previous?.coveredTo || previous.coveredTo < window.to
-              ? new Date(now.getTime() - day).toISOString()
-              : undefined
+          reuseCancelled: Boolean(source.unavailableRefreshMs && recovering && !previous?.coveredTo),
+          reuseCreatedSince: reuseMs ? new Date(now.getTime() - reuseMs).toISOString() : undefined
         }
       )
       if (text === null) {
@@ -204,30 +236,12 @@ export async function syncMonthlyAmazonReport<Row>(
       }
     } catch (error) {
       // Never log source rows, provider messages, URLs or input-bearing validation errors.
-      const fields = new Set(["periodDay", "currency", "amount", "quantity", "volume", "rate"])
       console.warn("Amazon monthly report failed", {
         reportType: source.reportType,
         from: window.from.toISOString(),
         stage,
         errorCode: amazonReportFailure(error, stage),
-        httpStatus: error instanceof ProviderError ? error.status : undefined,
-        validation:
-          error instanceof z.ZodError
-            ? error.issues.slice(0, 10).map((issue) => ({
-                code: issue.code,
-                field: typeof issue.path[0] === "string" && fields.has(issue.path[0]) ? issue.path[0] : "other"
-              }))
-            : undefined,
-        structure:
-          error instanceof Error &&
-          [
-            "Invalid quoted report field",
-            "Unclosed report field",
-            "Missing or duplicate report columns",
-            "Incomplete report row"
-          ].includes(error.message)
-            ? error.message
-            : undefined
+        ...amazonFailureDetails(error)
       })
       rows = null
       errorCode = amazonReportFailure(error, stage)
@@ -248,23 +262,31 @@ export async function syncMonthlyAmazonReport<Row>(
         throw new Error("Amazon report sync was superseded")
       }
       const checkedAt = new Date()
-      let status: ReportState["status"] = "failed"
-      if (rows !== null) {
-        await source.replace(tx, window, rows, checkedAt)
-        status = "imported"
-      } else if (errorCode === "report_cancelled") {
-        status = "unavailable"
+      for (const period of periods) {
+        const saved = source.reports.find((report) => report.from.getTime() === period.from.getTime())
+        const periodRows =
+          rows?.filter((row) => source.timestamp(row) >= period.from && source.timestamp(row) < period.to) ?? null
+        let status: ReportState["status"] = "failed"
+        if (periodRows !== null) {
+          await source.replace(tx, period, periodRows, checkedAt)
+          status = "imported"
+        } else if (
+          errorCode === "report_cancelled" ||
+          (source.unavailableRefreshMs && saved?.status === "unavailable" && saved.requestedTo >= period.to)
+        ) {
+          status = "unavailable"
+        }
+        await source.save(tx, {
+          from: period.from,
+          requestedTo: period.to,
+          status,
+          errorCode,
+          checkedAt,
+          coveredTo: periodRows !== null ? period.to : (saved?.coveredTo ?? null),
+          rowCount: periodRows !== null ? periodRows.length : (saved?.rowCount ?? null),
+          importedAt: periodRows !== null ? checkedAt : (saved?.importedAt ?? null)
+        })
       }
-      await source.save(tx, {
-        from: window.from,
-        requestedTo: window.to,
-        status,
-        errorCode,
-        checkedAt,
-        coveredTo: rows !== null ? window.to : (previous?.coveredTo ?? null),
-        rowCount: rows !== null ? rows.length : (previous?.rowCount ?? null),
-        importedAt: rows !== null ? checkedAt : (previous?.importedAt ?? null)
-      })
     })
     // A denied or throttled source won't improve on older windows. Leave them missing and let the next sync retry.
     if (errorCode === "report_access_denied" || errorCode === "report_throttled") {

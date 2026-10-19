@@ -52,7 +52,6 @@
     "needLabelHint": "Variantes dont l’étiquette doit être importée",
     "withoutCountryFilter": "{count, plural, one {# sans pays} other {# sans pays}}",
     "withoutCountryHint": "Variantes sans pays d’origine dans Shopify : leurs étiquettes omettent « Made in »",
-    "needsResync": "Synchronisez Shopify pour charger les derniers détails produits",
     "noMatch": "Aucun produit ne correspond",
     "noProducts": "Aucun produit",
     "loading": "Chargement des produits",

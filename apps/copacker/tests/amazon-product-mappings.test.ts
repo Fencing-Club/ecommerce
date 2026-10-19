@@ -344,3 +344,149 @@ it("detects financial changes even when the source row count is unchanged", asyn
   expect(response.status).toBe(409)
   expect(await response.json()).toMatchObject({ code: "snapshot_changed" })
 })
+
+it("filters postings, follows account-scoped release links outside the period and keeps overlapping report totals separate", async () => {
+  const row = {
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "CURRENT",
+    orderId: null,
+    postedAt: new Date("2026-10-05"),
+    type: "ServiceFee",
+    currency: "USD",
+    totalMinor: -100,
+    feesMinor: -100,
+    data: {
+      relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "EARLIER" }]
+    }
+  }
+  await database
+    .insert(tables.amazonTransactions)
+    .values([
+      row,
+      { ...row, transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} },
+      { ...row, orgId: otherId, transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} },
+      { ...row, externalAccountId: "SELLER2", transactionId: "EARLIER", postedAt: new Date("2026-09-01"), data: {} }
+    ])
+  for (const kind of ["orders", "shipments"] as const) {
+    await database.insert(tables.amazonRemovals).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      marketplaceId: "ATVPDKIKX0DER",
+      kind,
+      requestedAt: new Date("2026-10-01"),
+      shippedAt: new Date("2026-10-02"),
+      orderId: "R",
+      removalFee: "1.25",
+      currency: "USD"
+    })
+  }
+  const result = await amazonAllocations(orgId, {
+    from: "2026-10-01",
+    to: "2026-11-01",
+    page: 0,
+    postingType: "ServiceFee"
+  })
+  expect(result.postings.map((r) => r.transactionId)).toEqual(["CURRENT"])
+  expect(result.linkedPostings?.map((r) => r.transactionId)).toEqual(["EARLIER"])
+  expect(result.missingLinkedTransactionIds).toEqual([])
+  expect(result.reportComparison).toMatchObject({
+    reconciled: false,
+    additionalRecognizedAmount: null,
+    totals: expect.arrayContaining([
+      { source: "removals:orders", currency: "USD", rows: 1, knownAmountRows: 1, amount: "1.25" },
+      { source: "removals:shipments", currency: "USD", rows: 1, knownAmountRows: 1, amount: "1.25" }
+    ])
+  })
+})
+
+it("resolves one-sided release references outside the page and detects a second release in the stored chain", async () => {
+  const amount = { currencyCode: "USD", currencyAmount: "20.45" }
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    orderId: null,
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 2045,
+    feesMinor: 0
+  }
+  const data = {
+    totalAmount: amount,
+    breakdowns: [{ breakdownAmount: amount }],
+    marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" }
+  }
+  const d = {
+    ...base,
+    transactionId: "D",
+    postedAt: new Date("2026-09-01"),
+    data: {
+      ...data,
+      transactionStatus: "DEFERRED_RELEASED",
+      relatedIdentifiers: [{ relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "R" }]
+    }
+  }
+  const r = {
+    ...base,
+    transactionId: "R",
+    postedAt: new Date("2026-10-05"),
+    data: { ...data, transactionStatus: "RELEASED" }
+  }
+  await database
+    .insert(tables.amazonTransactions)
+    .values([d, r, { ...d, orgId: otherId }, { ...d, externalAccountId: "SELLER2" }])
+  const query = { from: "2026-10-01", to: "2026-11-01", page: 0, transactionId: "R" }
+  const result = await amazonAllocations(orgId, query)
+  expect(result.postings[0]?.accounting).toMatchObject({
+    status: "included_released_posting",
+    linkedTransactionIds: ["D"],
+    releasedPostingAmount: { amount: "20.45", currency: "USD" }
+  })
+  expect(result.linkedPostings).toHaveLength(1)
+  await database.insert(tables.amazonTransactions).values({
+    ...r,
+    transactionId: "R2",
+    postedAt: new Date("2026-12-01"),
+    data: {
+      ...data,
+      transactionStatus: "RELEASED",
+      relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "D" }]
+    }
+  })
+  const updated = await amazonAllocations(orgId, query)
+  expect(updated.postings[0]?.accounting.blockers).toContain("ambiguous_release_chain")
+  expect(updated.postings[0]?.accounting.releasedPostingAmount).toBeNull()
+})
+
+it("excludes page postings from truncated linked context without consuming its limit", async () => {
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    type: "Refund",
+    currency: "USD",
+    totalMinor: 100,
+    feesMinor: 0,
+    postedAt: new Date("2026-10-01"),
+    data: {}
+  }
+  await database.insert(tables.amazonTransactions).values({ ...base, transactionId: "A-SEED" })
+  await database.insert(tables.amazonTransactions).values(
+    Array.from({ length: 1001 }, (_, index) => ({
+      ...base,
+      transactionId: `LINK-${index}`,
+      data: {
+        relatedIdentifiers: [{ relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "A-SEED" }]
+      }
+    }))
+  )
+  const result = await amazonAllocations(orgId, {
+    from: "2026-10-01",
+    to: "2026-11-01",
+    page: 0,
+    transactionId: "A-SEED"
+  })
+  expect(result.linkedPostingsTruncated).toBe(true)
+  expect(result.linkedPostings).toHaveLength(1000)
+  expect(result.linkedPostings?.some((row) => row.transactionId === "A-SEED")).toBe(false)
+  expect(result.postings[0]?.accounting.blockers).toContain("linked_search_truncated")
+})

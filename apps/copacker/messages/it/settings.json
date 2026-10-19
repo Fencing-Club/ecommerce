@@ -166,7 +166,6 @@
   },
   "excludedTags": {
     "title": "Tag degli ordini esclusi",
-    "syncing": "Sincronizzazione dei tag da Shopify",
     "none": "Nessuno",
     "edit": "Modifica",
     "editLabel": "Modifica i tag degli ordini esclusi",

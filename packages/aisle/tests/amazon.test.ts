@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { Amazon } from "../src/amazon"
+import { Amazon, ReportDeferredError, type ReportRequestPolicy } from "../src/amazon"
 
-function client(responses: unknown[]) {
+function client(responses: unknown[], policy?: ReportRequestPolicy) {
   const calls: URL[] = []
   const times: number[] = []
   const transport = vi.fn<typeof fetch>(async (input) => {
@@ -17,7 +17,11 @@ function client(responses: unknown[]) {
     }
     return response instanceof Response ? response : Response.json(response)
   })
-  return { api: new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport), calls, times }
+  return {
+    api: new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, policy),
+    calls,
+    times
+  }
 }
 const listing = (sku: string, marketplaceId = "ATVPDKIKX0DER") => ({
   sku,
@@ -53,7 +57,7 @@ describe("AWD current stock", () => {
 
   it("rejects retry delays beyond the collection deadline", async () => {
     const { api, calls } = client([new Response(null, { status: 429, headers: { "retry-after": "600" } })])
-    await expect(api.awdStock()).rejects.toThrow("timed out")
+    await expect(api.awdStock()).rejects.toMatchObject({ status: 429 })
     expect(calls).toHaveLength(1)
   })
 
@@ -359,7 +363,7 @@ describe("FBA complete stock", () => {
     await good.api.fbaStock("ATVPDKIKX0DER")
     expect(good.calls[1]?.href).toBe(good.calls[2]?.href)
     const expired = client([page([], "next"), new Response(null, { status: 429, headers: { "retry-after": "30" } })])
-    await expect(expired.api.fbaStock("ATVPDKIKX0DER")).rejects.toThrow("timed out")
+    await expect(expired.api.fbaStock("ATVPDKIKX0DER")).rejects.toMatchObject({ status: 429 })
     expect(expired.calls).toHaveLength(2)
   })
   it("rejects incomplete reads and lost ownership", async () => {
@@ -621,6 +625,39 @@ describe("recovering completed reports", () => {
   beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
   afterEach(() => vi.useRealTimers())
 
+  it("reuses cancellation only when opted in and returns unavailable without creating a report", async () => {
+    const { api, calls } = client([
+      { reports: [{ ...existing, processingStatus: "CANCELLED", reportDocumentId: undefined }] },
+      { processingStatus: "CANCELLED" }
+    ])
+    await expect(api.report(input, { ...options(), reuseCancelled: true })).resolves.toBeNull()
+    expect(calls).toHaveLength(2)
+    expect(calls[0]?.searchParams.get("processingStatuses")).toBe("DONE,CANCELLED")
+    expect(calls[1]?.pathname).toMatch(/\/existing$/)
+  })
+
+  it("prefers the newest usable document over newer cancellation evidence", async () => {
+    const { api, calls } = client([
+      {
+        reports: [
+          {
+            ...existing,
+            reportId: "cancelled",
+            processingStatus: "CANCELLED",
+            reportDocumentId: undefined,
+            createdTime: "2026-10-17T12:00:00Z"
+          },
+          { ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" },
+          existing
+        ]
+      },
+      ...download()
+    ])
+    await expect(api.report(input, { ...options(), reuseCancelled: true })).resolves.toBe("report text")
+    expect(calls[1]?.pathname).toMatch(/\/existing$/)
+    expect(calls).toHaveLength(4)
+  })
+
   it("reuses the newest exact report across pages and caches the listing for other months", async () => {
     const { api, calls } = client([
       { reports: [{ ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" }], nextToken: "page2" },
@@ -650,11 +687,23 @@ describe("recovering completed reports", () => {
     { dataEndTime: "2026-09-30T23:59:59Z" },
     { createdTime: "2026-10-16T23:59:59Z" },
     { processingStatus: "FATAL" },
+    { processingStatus: "CANCELLED", reportDocumentId: undefined },
     { reportDocumentId: undefined }
   ])("creates fresh evidence when a previous report differs: %j", async (different) => {
     const { api, calls } = client([{ reports: [{ ...existing, ...different }] }, { reportId: "new" }, ...download()])
     await expect(api.report(input, options())).resolves.toBe("report text")
     expect(calls[2]?.pathname).toMatch(/\/new$/)
+  })
+
+  it("can reuse validated evidence while new creations are in cooldown", async () => {
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>(async () => {
+      throw new ReportDeferredError(new Date(Date.now() + 3600000))
+    })
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const { api } = client([{ reports: [existing] }, ...download()], { acquire, observe })
+    await expect(api.report(input, options())).resolves.toBe("report text")
+    expect(acquire).not.toHaveBeenCalled()
+    expect(observe).not.toHaveBeenCalled()
   })
 
   it("does not reuse option-specific reports whose options cannot be verified", async () => {
@@ -697,5 +746,188 @@ describe("Amazon token recovery", () => {
     await expect(api.sellerAccount()).rejects.toMatchObject(recovery ? { recovery } : { status })
     await expect(api.sellerAccount()).rejects.not.toThrow("private diagnostic")
     expect(transport).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe("report throttling", () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+  const input = {
+    reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+    marketplaceIds: ["US"],
+    dataStartTime: "2026-09-01T00:00:00Z",
+    dataEndTime: "2026-10-01T00:00:00Z"
+  }
+  it("waits for quota refill and retries the same document without recreating the report", async () => {
+    const { api, calls, times } = client([
+      { reportId: "report" },
+      { processingStatus: "DONE", reportDocumentId: "document" },
+      new Response(null, { status: 429 }),
+      { url: "https://reports.example.com/report" },
+      new Response("data")
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 300000 })).resolves.toBe("data"),
+      vi.runAllTimersAsync()
+    ])
+    expect(times[3]! - times[2]!).toBeGreaterThanOrEqual(60000)
+    expect(calls[2]?.href).toBe(calls[3]?.href)
+    expect(calls.filter((url) => url.pathname === "/reports/2021-06-30/reports")).toHaveLength(1)
+  })
+  it("waits five then ten minutes for report creation quota without changing the requested scope", async () => {
+    const { api, calls, times } = client([
+      new Response(null, { status: 429 }),
+      new Response(null, { status: 429 }),
+      { reportId: "report" },
+      { processingStatus: "DONE", reportDocumentId: "document" },
+      { url: "https://reports.example.com/report" },
+      new Response("data")
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 20 * 60 * 1000 })).resolves.toBe("data"),
+      vi.runAllTimersAsync()
+    ])
+    expect(times[1]! - times[0]!).toBeGreaterThanOrEqual(300000)
+    expect(times[2]! - times[1]!).toBeGreaterThanOrEqual(600000)
+    expect(calls.slice(0, 3).map((url) => url.href)).toEqual(Array(3).fill(calls[0]?.href))
+  })
+  it("honors a longer Retry-After and reports the failed operation when the deadline cannot fit it", async () => {
+    const { api, calls } = client([new Response(null, { status: 429, headers: { "retry-after": "300" } })])
+    await expect(api.report(input, { deadline: Date.now() + 120000 })).rejects.toMatchObject({
+      status: 429,
+      operation: "createReport",
+      retryAfterMs: 300000
+    })
+    expect(calls).toHaveLength(1)
+  })
+  it("distinguishes Amazon processing failure from HTTP or parser failures without exposing provider text", async () => {
+    const { api } = client([
+      { reportId: "report" },
+      { processingStatus: "FATAL", reportDocumentId: "private-document" }
+    ])
+    await Promise.all([
+      expect(api.report(input, { deadline: Date.now() + 120000 })).rejects.toMatchObject({
+        message: "Amazon report processing failed",
+        hasDiagnosticDocument: true
+      }),
+      vi.runAllTimersAsync()
+    ])
+  })
+})
+
+describe("AWD receipt reads", () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+  it("retries the same receipt after throttling without losing unknown received quantities", async () => {
+    const { api, calls, times } = client([
+      new Response(null, { status: 429, headers: { "retry-after": "2" } }),
+      {
+        shipmentId: "S1",
+        shipmentStatus: "RECEIVING",
+        shipmentSkuQuantities: [{ sku: "SKU", expectedQuantity: { quantity: 10, unitOfMeasurement: "PRODUCT_UNITS" } }]
+      }
+    ])
+    const result = await api.awdReceiptItems("S1")
+    expect(result.shipmentSkuQuantities?.[0]?.receivedQuantity).toBeUndefined()
+    expect(calls.map(String)).toEqual([String(calls[0]), String(calls[0])])
+    expect(calls[0]?.searchParams.get("skuQuantities")).toBe("SHOW")
+    expect(times[1]! - times[0]!).toBeGreaterThanOrEqual(2000)
+  })
+  it("preserves the listing cursor after a retry and checks ownership before retrying", async () => {
+    const { api, calls } = client([
+      { shipments: [], nextToken: "next" },
+      new Response(null, { status: 503 }),
+      { shipments: [] }
+    ])
+    expect(await api.awdShipments()).toEqual([])
+    expect(calls[1]?.searchParams.get("nextToken")).toBe("next")
+    expect(String(calls[2])).toBe(String(calls[1]))
+    const denied = client([new Response(null, { status: 429 })])
+    const owned = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValue(new Error("Lease lost"))
+    await expect(denied.api.awdReceiptItems("S1", owned)).rejects.toThrow("Lease lost")
+    expect(denied.calls).toHaveLength(1)
+  })
+  it("does not retry forbidden or malformed receipt responses", async () => {
+    for (const response of [new Response(null, { status: 403 }), { shipmentId: "OTHER", shipmentStatus: "CLOSED" }]) {
+      const { api, calls } = client([response])
+      await expect(api.awdReceiptItems("S1")).rejects.toThrow(response instanceof Response ? "403" : "shipmentId")
+      expect(calls).toHaveLength(1)
+    }
+  })
+})
+
+describe("durable report request policy", () => {
+  const input = {
+    reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+    marketplaceIds: ["US"],
+    dataStartTime: "2026-09-01T00:00:00Z",
+    dataEndTime: "2026-10-01T00:00:00Z"
+  }
+  it("does not create a report when the shared allowance defers it", async () => {
+    const transport = vi.fn<typeof fetch>(async () => Response.json({ access_token: "test", expires_in: 3600 }))
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>(async () => {
+      throw new ReportDeferredError(new Date(Date.now() + 3600000))
+    })
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const api = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, {
+      acquire,
+      observe
+    })
+    await expect(api.report(input, { deadline: Date.now() + 10000 })).rejects.toThrow(
+      "waiting for its request allowance"
+    )
+    expect(transport).toHaveBeenCalledTimes(1)
+    expect(observe).not.toHaveBeenCalled()
+  })
+  it("does not create when admission leaves insufficient time for a processing cycle", async () => {
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>().mockResolvedValue(undefined)
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const { api, calls } = client([], { acquire, observe })
+    await expect(api.report(input, { deadline: Date.now() + 10000 })).rejects.toThrow(
+      "waiting for its request allowance"
+    )
+    expect(calls).toHaveLength(0)
+    expect(observe).not.toHaveBeenCalled()
+  })
+  it("records quota headers and leaves creation retry to the persistent policy", async () => {
+    const transport = vi.fn<typeof fetch>(async (url) =>
+      String(url).includes("api.amazon.com/auth")
+        ? Response.json({ access_token: "test", expires_in: 3600 })
+        : new Response(null, {
+            status: 429,
+            headers: { "retry-after": "7200", "x-amzn-RateLimit-Limit": "0.002", "x-amzn-RequestId": "trace-id" }
+          })
+    )
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>().mockResolvedValue(undefined)
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const api = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport, {
+      acquire,
+      observe
+    })
+    const deadline = Date.now() + 1200000
+    await expect(api.report(input, { deadline })).rejects.toMatchObject({
+      status: 429,
+      operation: "createReport"
+    })
+    expect(acquire).toHaveBeenCalledWith({
+      reportType: input.reportType,
+      deadline: deadline - 255000,
+      assertActive: undefined
+    })
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(observe).toHaveBeenCalledWith({
+      reportType: input.reportType,
+      status: 429,
+      rateLimit: 0.002,
+      retryAfterMs: 7200000,
+      requestId: "trace-id"
+    })
   })
 })

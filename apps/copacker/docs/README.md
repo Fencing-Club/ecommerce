@@ -9,16 +9,18 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Shipment document inventory](shipment-document-inventory.md)
 - [Supplier packet templates, downloads and shipment snapshots](shipping-document-templates.md)
 - [Amazon booking dialogs: AGL and FBA in Storybook](booking-dialogs.md)
-- [Sales demand integration contract](sales-demand.md)
+- [Sales demand integration contract](sales-demand.md): Orders and Financial data sync cards
 - [Overview page](overview.md)
 - [Amazon Ads expense reporting](amazon-ads.md)
 - [Amazon FBA returns ingestion](amazon-returns.md)
-- [Amazon FBA reimbursement ingestion](amazon-reimbursements.md)
+- [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): daily-report reuse and refresh coverage
 - [Detailed Amazon inventory movements](amazon-inventory-movements.md)
-- [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, retries and safe failure diagnostics
-- [Amazon removal and disposal evidence](amazon-removals.md)
-- [Amazon reconciliation evidence](amazon-reconciliation.md)
-- [Historical inventory cost inputs](historical-inventory-basis.md)
+- [Amazon report request limits](amazon-report-limits.md): shared pacing, durable cooldowns and investigation evidence
+- [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, unavailable-month backoff and safe failure diagnostics
+- [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
+- [Amazon reconciliation evidence](amazon-reconciliation.md): continued search, reimbursement chains and fee comparisons
+- [Stored payment and recovery reconciliation](payment-reconciliation.md): payment differences, missing-original coverage, financial candidates and receipt movements
+- [Historical inventory cost inputs](historical-inventory-basis.md): unknown cost basis and historical product validation
 - [Analytics HTTP contract](analytics-api.md)
 - [Historical product mappings and Amazon allocations](amazon-cost-allocation.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
@@ -59,4 +61,4 @@ See [shipment-date evidence](shipment-date-evidence.md) for Shopify fulfillment 
 
 [Dated conversions and automatic depletion imports](automatic-depletion-imports.md) now provide opt-in processing after sales sync; live coverage and return-to-stock accounting remain pending.
 
-- [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events, Amazon evidence and report failure diagnostics.
+- [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events, Amazon evidence, receipt checkpoints and quota-aware report retry diagnostics.

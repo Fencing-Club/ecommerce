@@ -625,3 +625,9 @@ receipt resources under `/api/analytics`, including audited revisions, exact mon
 quantity limits. These records do not yet change Overview or calculate historical COGS.
 
 See [historical landed costs and FIFO](inventory-costing.md) for landed charges, depletion records and calculation resources.
+
+## Inventory snapshots
+
+Shopify stock snapshots always include product IDs, product titles, variation titles and nullable image URLs.
+Products are grouped and searched by product ID; variant IDs are not substitute product identities. The inventory API
+does not expose an upgrade or resync flag for old snapshots. Sync remains available for ordinary inventory refreshes.

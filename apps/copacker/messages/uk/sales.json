@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {замовлення} few {замовлення} many {замовлень} other {замовлення}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {одиниця} few {одиниці} many {одиниць} other {одиниці}}",
     "orders": "Замовлення",
-    "sourceOrders": "Замовлення {source}"
+    "sourceOrders": "Замовлення {source}",
+    "financialData": "Фінансові дані",
+    "amazonFinancialData": "Фінансові дані Amazon",
+    "financialFailed": "Не вдалося завантажити деякі фінансові звіти. Збережені дані залишаються.",
+    "financialImported": "Фінансові звіти імпортовано",
+    "financialIncomplete": "Деякі фінансові звіти ще недоступні."
   },
   "list": {
     "label": "Замовлення",

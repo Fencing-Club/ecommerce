@@ -1,5 +1,5 @@
 {
-  "id": "2c26fcdf-4c2d-489b-9418-2cb46b9b846e",
+  "id": "bd1d6d6c-5deb-4042-9b93-fd4f6b4ea519",
   "prevId": "9d9caa19-9e31-4992-b170-ce8b2a42045c",
   "version": "7",
   "dialect": "postgresql",
@@ -3291,12 +3291,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "internalOrgId": {
-          "name": "internalOrgId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3312,15 +3306,6 @@
           "tableFrom": "events",
           "tableTo": "orders",
           "columnsFrom": ["orderId"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "events_internalOrgId_organizations_id_fk": {
-          "name": "events_internalOrgId_organizations_id_fk",
-          "tableFrom": "events",
-          "tableTo": "organizations",
-          "columnsFrom": ["internalOrgId"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -5843,6 +5828,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "customersIncluded": {
+          "name": "customersIncluded",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "feesCoveredFrom": {
           "name": "feesCoveredFrom",

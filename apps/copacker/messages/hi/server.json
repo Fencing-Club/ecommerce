@@ -76,8 +76,6 @@
       "shopifyChargesFailed": "Shopify शुल्क कॉपी नहीं हो सके",
       "amazonFeesFailedDetail": "अगले सिंक तक मार्जिन में ये शामिल नहीं होंगी",
       "shopifyChargesFailedDetail": "अगले सिंक तक सकल लाभ में ये शामिल नहीं होंगे",
-      "unpriced": "कीमतों के लिए {source, select, amazon {Amazon} ebay {eBay} other {Shopify}} ऑर्डर फिर से सिंक करें",
-      "unpricedDetail": "{count, plural, one {इस अवधि के # ऑर्डर की} other {इस अवधि के # ऑर्डर की}} कोई कीमत नहीं है",
       "stockFailed": "स्टॉक सिंक नहीं हो सका",
       "stockFailedDetail": "स्टॉक की गिनती पुरानी हो सकती है",
       "viewProducts": "प्रोडक्ट देखें",

@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {ऑर्डर} other {ऑर्डर}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {यूनिट} other {यूनिट}}",
     "orders": "ऑर्डर",
-    "sourceOrders": "{source} ऑर्डर"
+    "sourceOrders": "{source} ऑर्डर",
+    "financialData": "वित्तीय डेटा",
+    "amazonFinancialData": "Amazon का वित्तीय डेटा",
+    "financialFailed": "कुछ वित्तीय रिपोर्ट विफल हुईं। सहेजा गया डेटा सुरक्षित है।",
+    "financialImported": "वित्तीय रिपोर्ट आयात की गईं",
+    "financialIncomplete": "कुछ वित्तीय रिपोर्ट अभी उपलब्ध नहीं हैं।"
   },
   "list": {
     "label": "ऑर्डर",

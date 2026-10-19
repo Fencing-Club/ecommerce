@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {Auftrag} other {Aufträge}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {Einheit} other {Einheiten}}",
     "orders": "Aufträge",
-    "sourceOrders": "{source}-Aufträge"
+    "sourceOrders": "{source}-Aufträge",
+    "financialData": "Finanzdaten",
+    "amazonFinancialData": "Amazon-Finanzdaten",
+    "financialFailed": "Einige Finanzberichte sind fehlgeschlagen. Gespeicherte Daten bleiben erhalten.",
+    "financialImported": "Finanzberichte importiert",
+    "financialIncomplete": "Einige Finanzberichte sind noch nicht verfügbar."
   },
   "list": {
     "label": "Aufträge",

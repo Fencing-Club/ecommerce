@@ -16,40 +16,16 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
 
 // Shopify order tags whose orders Copacker leaves out, shown in the Shopify connection card like its locations.
-export function ExcludedOrderTags({
-  tags,
-  suggestions,
-  copying
-}: {
-  tags: string[]
-  suggestions: string[]
-  // Some orders were copied before tags were read; the next Shopify sync reads them.
-  copying: boolean
-}) {
+export function ExcludedOrderTags({ tags, suggestions }: { tags: string[]; suggestions: string[] }) {
   const t = useTranslations("settings.excludedTags")
   return (
-    <DetailRow
-      icon={<Tags />}
-      title={
-        <>
-          {t("title")}
-          {copying && (
-            <output title={t("syncing")} className="inline-flex">
-              <Spinner className="size-3.5 text-muted-foreground" />
-              <span className="sr-only">{t("syncing")}</span>
-            </output>
-          )}
-        </>
-      }
-      action={<EditTags tags={tags} suggestions={suggestions} />}
-    >
+    <DetailRow icon={<Tags />} title={t("title")} action={<EditTags tags={tags} suggestions={suggestions} />}>
       {tags.length > 0 ? (
         <ul className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (

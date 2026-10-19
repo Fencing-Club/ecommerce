@@ -3,7 +3,7 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { salesOrders, syncState } from "@/stories/fixtures/catalog"
 import { member } from "@/stories/workspace"
-import { OrdersSyncRow, SalesOrders } from "./sales-orders"
+import { FinancialDataSyncCard, OrdersSyncRow, SalesOrders } from "./sales-orders"
 
 const bothSources = { sources: [syncState("shopify"), syncState("amazon")] }
 
@@ -309,5 +309,173 @@ export const ListFailed = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("alert")).toHaveTextContent("Orders are being updated")
+  }
+})
+
+const importedReport = { windows: [{ complete: true, status: "imported", checkedAt: "2026-10-18T00:00:00Z" }] }
+const financialReports = {
+  fees: { coveredFrom: "2024-10-18T00:00:00Z", coveredTo: "2026-10-18T00:00:00Z", errorCode: null },
+  returns: importedReport,
+  reimbursements: importedReport,
+  storageFees: { monthly: importedReport, aged: importedReport },
+  removals: { orders: importedReport, shipments: importedReport }
+}
+
+export const FinancialImported = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [{ ...syncState("amazon"), ...financialReports }]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Financial reports imported")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Sync Amazon financial data" })).toBeEnabled()
+  }
+})
+
+export const FinancialFailed = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) => {
+    let queued = false
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            {
+              ...syncState("amazon", { status: queued ? "queued" : "idle" }),
+              ...financialReports,
+              storageFees: {
+                monthly: importedReport,
+                aged: { windows: [{ complete: false, status: "failed", checkedAt: "2026-10-18T00:00:00Z" }] }
+              }
+            }
+          ]
+        })
+      ),
+      http.post("/api/sales/sync", async ({ request }) => {
+        await expect(await request.json()).toEqual({ source: "amazon" })
+        queued = true
+        return HttpResponse.json({ status: "queued" }, { status: 202 })
+      })
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports failed. Saved data is retained.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
+    const button = canvas.getByRole("button", { name: "Sync Amazon financial data" })
+    await userEvent.click(button)
+    await expect(await canvas.findByText("Queued")).toBeVisible()
+    await expect(button).toBeDisabled()
+    await expect(canvas.queryByRole("progressbar")).toBeNull()
+  }
+})
+
+export const FinancialIncomplete = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [{ ...syncState("amazon"), returns: importedReport }]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports are not available yet.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
+  }
+})
+
+export const FinancialReconnect = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [syncState("amazon", { status: "failed", errorCode: "reconnect" })]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("link", { name: "Reconnect" })).toHaveAttribute(
+      "href",
+      "/api/connections/amazon"
+    )
+    await expect(canvas.queryByRole("button", { name: "Sync Amazon financial data" })).toBeNull()
+  }
+})
+
+export const FinancialUnavailable = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) => msw.use(http.get("/api/sales", () => new HttpResponse(null, { status: 500 }))),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Status unavailable", { selector: "span" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Sync Amazon financial data" })).toBeDisabled()
+  }
+})
+
+export const FinancialFeesFailed = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            {
+              ...syncState("amazon"),
+              ...financialReports,
+              fees: { ...financialReports.fees, errorCode: "fees_failed" }
+            }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports failed. Saved data is retained.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
+  }
+})
+
+export const FinancialIndependentOfOrders = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            { ...syncState("amazon", { status: "failed", errorCode: "provider_unavailable" }), ...financialReports }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Financial reports imported")).toBeVisible()
+    await expect(canvas.queryByText("Last sync failed")).toBeNull()
+  }
+})
+
+export const FinancialFeesMissing = meta.story({
+  render: () => <FinancialDataSyncCard />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({
+          sources: [
+            {
+              ...syncState("amazon"),
+              ...financialReports,
+              fees: { coveredFrom: null, coveredTo: null, errorCode: null }
+            }
+          ]
+        })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Some financial reports are not available yet.")).toBeVisible()
+    await expect(canvas.queryByText("Synced", { exact: true })).toBeNull()
   }
 })

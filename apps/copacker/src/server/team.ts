@@ -76,19 +76,13 @@ export async function teamOf(org: Pick<Session["org"], "id" | "timeZone">) {
   ])
   const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: org.timeZone ?? undefined })
   const now = Date.now()
-  // Someone invited twice before invitations replaced each other has one row, for the newest link.
-  const invitations = new Map(
-    invited.map((invitation) => [
-      invitation.email,
-      {
-        email: invitation.email,
-        role: invitation.role,
-        access: invitation.access,
-        expires: day.format(invitation.expiresAt),
-        expired: invitation.expiresAt.getTime() < now
-      }
-    ])
-  )
+  const invitations = invited.map((invitation) => ({
+    email: invitation.email,
+    role: invitation.role,
+    access: invitation.access,
+    expires: day.format(invitation.expiresAt),
+    expired: invitation.expiresAt.getTime() < now
+  }))
   return {
     members: people
       .map((person) => ({
@@ -99,7 +93,7 @@ export async function teamOf(org: Pick<Session["org"], "id" | "timeZone">) {
         access: person.access
       }))
       .toSorted((a, b) => Number(b.role === "owner") - Number(a.role === "owner") || a.name.localeCompare(b.name)),
-    invitations: [...invitations.values()]
+    invitations
   }
 }
 

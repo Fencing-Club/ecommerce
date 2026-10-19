@@ -209,7 +209,7 @@ export async function saveProductBarcode(s: Session, form: FormData) {
     target: {
       variantId: row.variantId,
       sku: row.buyerSku,
-      product: row.productTitle ?? row.buyerSku ?? "Untitled product",
+      product: row.productTitle,
       variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
     } satisfies BarcodeTarget
   }
@@ -296,7 +296,7 @@ export async function productLabelFiles(s: Session, variantIds: string[]): Promi
       if (!row) {
         return { variantId: id, problem: problems.get(id)! }
       }
-      const title = labelTitle(row.productTitle ?? row.buyerSku ?? "Untitled product", row.variantTitle ?? null)
+      const title = labelTitle(row.productTitle, row.variantTitle ?? null)
       const bytes = await standardProductLabels({
         code: codes.get(row.buyerSku!)!,
         title,
@@ -654,10 +654,10 @@ export async function productLabelChoices(s: Session) {
   const products = new Map<string, { productId: string; title: string; variations: number }>()
   // Shopify Collective items are partners' stock, with nothing to label.
   for (const row of rows.filter((item) => !isCollective(item))) {
-    const productId = row.productId ?? row.variantId
+    const productId = row.productId
     const product = products.get(productId) ?? {
       productId,
-      title: row.productTitle ?? row.buyerSku ?? "Untitled product",
+      title: row.productTitle,
       variations: 0
     }
     product.variations++

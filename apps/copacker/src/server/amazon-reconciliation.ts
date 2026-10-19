@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { exactMoney, formatMoney, sumMoney } from "@/lib/financial-money"
 
 const object = z.record(z.string(), z.unknown())
 const objects = (value: unknown) => z.array(object).safeParse(value).data ?? []
@@ -53,23 +54,9 @@ function productMatch(row: AmazonEvidence, products: Product[]) {
   return { status, candidates: selected.slice(0, 20), candidateCount: selected.length }
 }
 
-// Decimal comparison never rounds evidence into cents. JSON numbers have already lost any original lexical precision.
-function decimal(value: unknown) {
-  if (typeof value === "number" && Math.abs(value) > Number.MAX_SAFE_INTEGER) {
-    return null
-  }
-  const raw = typeof value === "number" && Number.isFinite(value) ? String(value) : value
-  if (typeof raw !== "string" || raw.length > 100 || !/^-?\d+(\.\d+)?$/.test(raw)) {
-    return null
-  }
-  const [whole, fraction = ""] = raw.split(".")
-  return { integer: BigInt(`${whole}${fraction}`), scale: fraction.length }
-}
 export function postingAmount(value: unknown) {
   const raw = object.safeParse(value).data
-  const number = decimal(raw?.currencyAmount)
-  const currency = text(raw?.currencyCode)
-  return number && currency ? { ...number, currency } : null
+  return exactMoney(raw?.currencyAmount, raw?.currencyCode)
 }
 export function checkPostingTotal(totalValue: unknown, parts: unknown[]) {
   const total = postingAmount(totalValue)
@@ -87,14 +74,17 @@ export function checkPostingTotal(totalValue: unknown, parts: unknown[]) {
     ? "balanced"
     : "amount_mismatch"
 }
-export function postingEvidence(posting: ReconciliationPosting) {
-  const items = objects(posting.data.items)
-  const breakdowns = objects(posting.data.breakdowns)
-  const references = objects(posting.data.relatedIdentifiers).flatMap((ref) => {
+export function postingReferences(data: Record<string, unknown>) {
+  return objects(data.relatedIdentifiers).flatMap((ref) => {
     const name = text(ref.relatedIdentifierName),
       value = text(ref.relatedIdentifierValue)
     return name && value ? [{ name, value }] : []
   })
+}
+export function postingEvidence(posting: ReconciliationPosting) {
+  const items = objects(posting.data.items)
+  const breakdowns = objects(posting.data.breakdowns)
+  const references = postingReferences(posting.data)
   const products = items.flatMap((item, index) =>
     objects(item.contexts).flatMap((context) => {
       if (context.contextType !== "ProductContext") {
@@ -134,10 +124,11 @@ export function postingEvidence(posting: ReconciliationPosting) {
 export function reconcileAmazonEvidence(
   rows: AmazonEvidence[],
   inventory: Product[],
-  postings: ReconciliationPosting[]
+  postings: ReconciliationPosting[],
+  candidatePage = 0
 ) {
   const products = [...new Map(inventory.map((product) => [JSON.stringify(product), product])).values()]
-  const financial = postings.map(postingEvidence)
+  const financial = postings.map((posting) => ({ ...postingEvidence(posting), total: posting.data.totalAmount }))
   return rows.map((row) => {
     const candidates = financial
       .flatMap((posting) => {
@@ -161,10 +152,11 @@ export function reconcileAmazonEvidence(
         }
         return [
           {
-            ...posting,
+            ...postingEvidenceFields(posting),
             basis: orderReference ? "order_reference" : "product_only",
-            itemIndexes: matchedItems.map((item) => item.itemIndex),
-            currencyMatches: row.currency ? row.currency === posting.currency : null
+            itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
+            currencyMatches: row.currency ? row.currency === posting.currency : null,
+            checks: reconciliationChecks(row, posting, orderReference, matchedItems.length)
           }
         ]
       })
@@ -172,6 +164,10 @@ export function reconcileAmazonEvidence(
         (a, b) =>
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
           Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
+          (row.source === "reimbursements"
+            ? Number(b.checks.signedSourceToTransactionTotal === "balanced") -
+              Number(a.checks.signedSourceToTransactionTotal === "balanced")
+            : 0) ||
           Math.abs(Date.parse(a.postedAt) - Date.parse(row.occurredAt)) -
             Math.abs(Date.parse(b.postedAt) - Date.parse(row.occurredAt)) ||
           a.transactionId.localeCompare(b.transactionId)
@@ -182,9 +178,88 @@ export function reconcileAmazonEvidence(
       finance: {
         status: candidates.length ? "candidates" : "unmatched",
         candidateCount: candidates.length,
-        candidates: candidates.slice(0, 20),
-        reconciled: false
+        candidates: candidates.slice(candidatePage * 20, (candidatePage + 1) * 20),
+        candidatePage,
+        nextCandidatePage: candidates.length > (candidatePage + 1) * 20 ? candidatePage + 1 : null,
+        reconciled: false,
+        matching: {
+          scope: "current_posting_search_page",
+          candidateCount: candidates.length,
+          sameSignedAmountCount: candidates.filter(
+            (candidate) =>
+              candidate.checks.signedSourceToTransactionTotal === "balanced" &&
+              candidate.type === preferredPostingType(row.source)
+          ).length,
+          ambiguity: candidates.length > 1 ? "multiple_candidates" : "unconfirmed",
+          confirmation: "source_identifier_or_reviewed_allocation_required",
+          amountAndProductAreNotUniqueIdentifiers: true
+        }
       }
     }
   })
+}
+
+function postingEvidenceFields(posting: ReturnType<typeof postingEvidence> & { total: unknown }) {
+  const { total: _total, ...fields } = posting
+  return fields
+}
+
+function reconciliationChecks(
+  row: AmazonEvidence,
+  posting: ReturnType<typeof postingEvidence> & { total: unknown },
+  hasOrderReference: boolean,
+  itemCount: number
+) {
+  const blockers: string[] = []
+  if (!hasOrderReference) {
+    blockers.push("no_order_reference")
+  }
+  if (!itemCount) {
+    blockers.push("no_item_identity")
+  }
+  if (!posting.marketplaceId) {
+    blockers.push("marketplace_missing")
+  }
+  if (posting.status !== "RELEASED") {
+    blockers.push("not_released")
+  }
+  if (posting.hasReleaseLink) {
+    blockers.push("deferred_release_requires_review")
+  }
+  if (posting.type !== preferredPostingType(row.source)) {
+    blockers.push("posting_type_requires_review")
+  }
+  if (!row.currency) {
+    blockers.push("source_currency_missing")
+  } else if (row.currency !== posting.currency) {
+    blockers.push("currency_mismatch")
+  }
+  if (posting.totals.breakdowns !== "balanced" || posting.totals.items !== "balanced") {
+    blockers.push("posting_totals_unresolved")
+  }
+  const totalComparison =
+    row.amount && row.currency
+      ? checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }])
+      : "unavailable"
+  const sourceAmount = exactMoney(row.amount, row.currency)
+  const postingTotal = postingAmount(posting.total)
+  const difference =
+    sourceAmount && postingTotal && sourceAmount.currency === postingTotal.currency
+      ? {
+          currency: sourceAmount.currency,
+          amount: formatMoney(
+            sumMoney([postingTotal, { ...sourceAmount, integer: -sourceAmount.integer }], sourceAmount.currency)
+          )
+        }
+      : null
+  // Even equality compares different granularities. It never certifies an allocation or reversal.
+  blockers.push("source_to_posting_allocation_required", "reversal_review_required")
+  return {
+    blockers,
+    signedSourceToTransactionTotal: totalComparison,
+    transactionMinusSource: difference,
+    dateDistanceDays: Math.abs(Date.parse(posting.postedAt) - Date.parse(row.occurredAt)) / 86400000,
+    amountComparisonMeaning: "whole_transaction_not_item_allocation",
+    additionalRecognizedAmount: null
+  }
 }

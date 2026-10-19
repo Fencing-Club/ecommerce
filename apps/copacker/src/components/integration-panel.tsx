@@ -3,7 +3,7 @@ import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "./common"
 import { InventorySyncRow } from "./inventory-sync"
-import { OrdersSyncRow } from "./sales-orders"
+import { FinancialDataSyncCard, OrdersSyncRow } from "./sales-orders"
 import { StoreLogo } from "./store-logos"
 import { Button } from "./ui/button"
 import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
@@ -85,6 +85,7 @@ export function IntegrationSyncSection({ store }: { store: "shopify" | "amazon" 
       <div className="grid gap-3 sm:grid-cols-2">
         <OrdersSyncRow source={store} />
         {store !== "ebay" && <InventorySyncRow provider={store} />}
+        {store === "amazon" && <FinancialDataSyncCard />}
       </div>
     </IntegrationSection>
   )

@@ -66,3 +66,30 @@ so a limited provider budget does not repeatedly prevent older history from bein
 
 Failed monthly windows rotate by oldest attempt after untouched history. Safe failure logs include the report type,
 month, stage, HTTP status and allowlisted validation fields; source values and provider messages are excluded.
+
+### Aged snapshot dates
+
+Aged charges accept ISO calendar dates, US month/day/year dates, and validated timezone-bearing ISO timestamps.
+Timestamp normalization keeps the source calendar day rather than shifting it through UTC; the original snapshot
+value remains in source evidence. Invalid dates, missing timestamp timezones and trailing garbage remain errors.
+The October 18 live diagnostic identified `periodDay` as the September report's rejected field. Timestamp support
+addresses a known Amazon output variant; a live retry must still verify that the affected report imports successfully.
+
+### Unavailable aged-storage months
+
+Aged-storage recovery also reuses exact CANCELLED reports from the previous 24 hours. They remain unavailable,
+not imported or zero-charge evidence. This recovers earlier no-data/cancellation outcomes even if a later creation
+was throttled. Usable DONE documents take priority over cancellation evidence; within each status, the newest
+matching report wins. Other report sources continue to reuse DONE only. Report-option equivalence and exact account,
+marketplace and period checks still apply; the selected report status is read again before reuse.
+
+Unavailable aged months retry every seven days for the two most recent completed months and every 30 days for
+older months. The age tier is recalculated at each sync, including calendar rollover. A failed
+refresh retains its unavailable status and existing rows/bounds, while errorCode and checkedAt describe the latest
+attempt. A new successful document replaces that state normally. The interval is application policy, not a claim
+about Amazon's quota reset or a guarantee of zero fees. The daily scheduler continues to discover new months.
+
+The October 18 investigation matched June report 402432020744 (CANCELLED; Seller Central: No Data Available)
+against later retry 402504020744 (FATAL). All eleven unresolved months had earlier cancellation outcomes.
+Repeated requests were replacing useful unavailable state with newer failures. Provider FATAL causes and the
+precise aged-storage quota remain unconfirmed. No historical months are marked imported by this repair.

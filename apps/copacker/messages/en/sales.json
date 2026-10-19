@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {order} other {orders}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {unit} other {units}}",
     "orders": "Orders",
-    "sourceOrders": "{source} orders"
+    "sourceOrders": "{source} orders",
+    "financialData": "Financial data",
+    "amazonFinancialData": "Amazon financial data",
+    "financialFailed": "Some financial reports failed. Saved data is retained.",
+    "financialImported": "Financial reports imported",
+    "financialIncomplete": "Some financial reports are not available yet."
   },
   "list": {
     "label": "Orders",

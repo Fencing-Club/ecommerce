@@ -17,7 +17,7 @@ reported calendar dates and raw source clock text. Missing optional values and u
 continues to supply stockout-day balances separately.
 
 `@repo/aisle/storage-fees` parses monthly storage estimates and aged-inventory charges separately, retaining exact
-decimals, calendar dates and raw fee components without summing or inventing missing product mappings. See
+decimals, calendar dates (including timezone-bearing aged-fee snapshots) and raw fee components without summing or inventing missing product mappings. See
 [storage ingestion](../../../apps/copacker/docs/amazon-storage-fees.md).
 
 `@repo/aisle/removals` parses removal orders and shipments with distinct quantities, exact fees and timezone-bearing
@@ -39,4 +39,23 @@ See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the pu
 
 `@repo/aisle/fulfillment-shipments` parses dated FBA shipment items with stable identities and an accounting-only field allowlist. Sales readers also retain Shopify fulfillment creation and in-transit times. See [shipment-date evidence](../../../apps/copacker/docs/shipment-date-evidence.md).
 
-The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text.
+The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text, including unambiguous named-month dates and unavailable monetary placeholders. Invalid records expose field diagnostics and a masked date shape, never source values.
+
+Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
+a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries. Opt-in reuse requires an exact report scope and a caller-defined creation-time cutoff, including the reimbursement daily-content refresh interval.
+Copacker installs a durable creation policy shared across workers. It spaces new reports, observes rate-limit headers,
+and persists per-type cooldowns after HTTP 429. Existing report lookup, polling and downloads remain available during
+creation cooldown. A local deferral is distinct from an Amazon response. Standalone callers without that policy retain
+bounded five- then ten-minute creation retries. The three-per-five-minute forum clarification originated with Sales and
+Traffic; it is not proof of a universal FBA quota. See [report limits](../../../apps/copacker/docs/amazon-report-limits.md).
+
+AWD shipment lists and receipt details also retry transient read failures with a five-minute bound and optional
+ownership checks; neither path retries mutations or suppresses invalid documents.
+
+## Commerce snapshots
+
+Shopify stock always includes product identity and display fields. Shopify sales always include tags, line prices,
+discount allocations and payment transactions. Readers validate those fields instead of accepting historical partial
+shapes. Customer IDs remain permission-dependent; Amazon proceeds remain optional until Amazon prices an order.
+
+Report recovery may explicitly opt into CANCELLED history as unavailable evidence. It never turns cancellation into an empty document; exact scope and creation cutoff still apply. See [aged-storage retry policy](../../../apps/copacker/docs/amazon-storage-fees.md#unavailable-aged-storage-months).

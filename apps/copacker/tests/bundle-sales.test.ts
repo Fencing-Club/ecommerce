@@ -52,6 +52,8 @@ describe("Shopify bundle lines", () => {
   it("records which bundle a component line was sold in", () => {
     const location = "gid://shopify/Location/1"
     const line = (id: string, bundle: boolean) => ({
+      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+      discountAllocations: [],
       id,
       quantity: 3,
       currentQuantity: 3,
@@ -62,6 +64,8 @@ describe("Shopify bundle lines", () => {
     const { rows } = attributeShopifySales(
       [
         {
+          tags: [],
+          transactions: [],
           id: "gid://shopify/Order/1",
           name: "#1001",
           createdAt: "2026-09-01T00:00:00Z",

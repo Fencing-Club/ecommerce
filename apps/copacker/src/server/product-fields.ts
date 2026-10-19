@@ -165,9 +165,8 @@ export async function refreshStoredStockFields(orgId: string, domain: string) {
   })
 }
 
-// Copies the store's metafields into Copacker once, before the first stock sync that no longer reads them. A value
-// Copacker already has is kept. Each Shopify Supplier name joins the buyer's suppliers (as before) and becomes the
-// product's supplier.
+// Imports a newly connected store's existing metafields once. Copacker owns subsequent edits and keeps any values
+// already entered here. Supplier names are matched to the buyer's suppliers and assigned to their products.
 export async function copyShopifyFields(
   orgId: string,
   domain: string,

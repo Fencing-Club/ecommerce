@@ -418,8 +418,43 @@
     {
       "idx": 59,
       "version": "7",
-      "when": 1792310597018,
-      "tag": "0059_curly_energizer",
+      "when": 1792309033097,
+      "tag": "0059_customer_coverage",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792311442576,
+      "tag": "0060_validate_shopify_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792353261160,
+      "tag": "0061_validate_shopify_line_money",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792370997294,
+      "tag": "0062_shocking_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792399659291,
+      "tag": "0063_keen_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792443224467,
+      "tag": "0064_red_slipstream",
       "breakpoints": true
     }
   ]

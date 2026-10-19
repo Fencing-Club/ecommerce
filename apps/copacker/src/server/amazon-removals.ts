@@ -30,6 +30,7 @@ export async function syncAmazonRemovals(
     )
   await syncMonthlyAmazonReport(input, assertOwned, now, {
     reportType: removalReportTypes[kind],
+    combineMonths: true,
     reports,
     parse: (text) => parseRemovalReport(text, kind),
     timestamp: (row) => (kind === "orders" ? row.requestedAt : row.shippedAt!),
