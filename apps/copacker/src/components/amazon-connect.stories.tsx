@@ -2,6 +2,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
 import { AmazonConnect } from "./amazon-connect"
+import { Dialog } from "./ui/dialog"
 
 const submitted = fn<(marketplace: FormDataEntryValue | null) => void>()
 const meta = preview.meta({
@@ -65,5 +66,34 @@ export const PrivateAuthorization = meta.story({
         }
       ])
     )
+  }
+})
+
+// Keep preview forms open and empty so visual tests never depend on a click or submitted credentials.
+export const ConnectionModal = meta.story({
+  render: (args) => (
+    <Dialog open>
+      <AmazonConnect {...args} embedded />
+    </Dialog>
+  ),
+  play: async () => {
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
+    await expect(within(dialog).queryByLabelText(/Refresh token/)).toBeNull()
+  }
+})
+
+export const SelfAuthorizationModal = meta.story({
+  args: { selfAuth: true },
+  render: (args) => (
+    <Dialog open>
+      <AmazonConnect {...args} embedded />
+    </Dialog>
+  ),
+  play: async () => {
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveValue("")
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Connect", exact: true })).toBeVisible())
   }
 })

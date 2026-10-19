@@ -441,3 +441,55 @@ export const AmazonConfigurationIssue = meta.story({
     await waitFor(() => expect(within(panel).getByText(/Contact support/)).toBeVisible())
   }
 })
+
+export const AmazonReconnectOAuth = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null, health: "reconnect" }, amazonSelfAuth: false },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    await expect(within(dialog).queryByLabelText(/Refresh token/)).toBeNull()
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
+  }
+})
+
+export const AmazonConnectionStatus = meta.story({
+  args: {
+    amazon: { ...amazon, health: "connected" },
+    amazonSettings: (
+      <>
+        <OrdersSyncRow source="amazon" />
+        <InventorySyncRow provider="amazon" />
+      </>
+    )
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
+    await waitFor(() => expect(within(dialog).getByText("Connected", { exact: true })).toBeVisible())
+    await expect(within(dialog).getByText("Harbor Goods US")).toBeVisible()
+    await expect(within(dialog).getByText("United States")).toBeVisible()
+  }
+})
+
+export const AmazonReconnectStatus = meta.story({
+  args: {
+    amazon: { ...amazon, marketplaces: null, health: "reconnect" },
+    amazonSelfAuth: true,
+    amazonSettings: (
+      <>
+        <OrdersSyncRow source="amazon" />
+        <InventorySyncRow provider="amazon" />
+      </>
+    )
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
+    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
+    await waitFor(() => expect(within(dialog).getByText("Reconnect required", { exact: true })).toBeVisible())
+    await expect(within(dialog).getByRole("button", { name: "Reconnect Amazon" })).toBeVisible()
+    await expect(screen.getAllByRole("dialog")).toHaveLength(1)
+  }
+})
