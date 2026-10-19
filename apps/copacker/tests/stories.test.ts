@@ -54,11 +54,38 @@ function resolveImport(from: string, specifier: string) {
   )
 }
 
+// `import type { A }` and `import { type A, type B }` load nothing.
+function typeOnly(clause: string) {
+  if (/^type\s/.test(clause)) {
+    return true
+  }
+  const names = clause
+    .trim()
+    .match(/^\{([^}]*)\}$/)?.[1]
+    ?.split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+  return names !== undefined && names.length > 0 && names.every((name) => name.startsWith("type "))
+}
+
+// The modules a file loads when it runs: static imports and re-exports, side-effect imports and dynamic imports.
+// Comments and type-only imports load nothing, so they don't count.
+function runtimeImports(text: string) {
+  const code = text.replaceAll(/\/\*[\s\S]*?\*\//g, "").replaceAll(/(^|[^:"'`])\/\/.*$/gm, "$1")
+  return [
+    ...[...code.matchAll(/\b(?:import|export)\s+([^;"'`]*?)\s+from\s*["']([^"']+)["']/g)]
+      .filter((match) => !typeOnly(match[1]!))
+      .map((match) => match[2]!),
+    ...[...code.matchAll(/\bimport\s*["']([^"']+)["']/g)].map((match) => match[1]!),
+    ...[...code.matchAll(/\bimport\(\s*["']([^"']+)["']\s*\)/g)].map((match) => match[1]!)
+  ]
+}
+
 const imports = new Map(
   sources.map((file) => [
     file,
-    [...read(file).matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)]
-      .map((match) => resolveImport(file, match[1]!))
+    runtimeImports(read(file))
+      .map((specifier) => resolveImport(file, specifier))
       .filter((target) => target !== undefined)
   ])
 )
@@ -87,6 +114,22 @@ describe("story titles", () => {
 
   it.each(stories.filter(({ file }) => file.startsWith("src/components/ui/")))("$file is a foundation", ({ title }) => {
     expect(title).toMatch(/^Foundations\//)
+  })
+
+  // Every story beside a route is that route's page story, except designs not yet built into it.
+  const routePrototypes = new Set([
+    "src/app/(portal)/orders/list.stories.tsx",
+    "src/app/(portal)/shipments/list.stories.tsx"
+  ])
+  it.each(stories.filter(({ file }) => file.startsWith("src/app/")))(
+    "$file is a page or a listed prototype",
+    ({ file, title }) => {
+      expect(title).toMatch(routePrototypes.has(file) ? /^Prototypes\// : /^Pages\//)
+    }
+  )
+
+  it.each([...routePrototypes])("%s, listed as a route prototype, exists", (file) => {
+    expect(existsSync(`${app}${file}`)).toBe(true)
   })
 
   // A page story renders the route itself, with fixtures, so a change to the page changes the story.

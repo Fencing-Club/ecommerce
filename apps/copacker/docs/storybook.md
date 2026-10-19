@@ -47,7 +47,7 @@ Every story file sets an explicit `title` in one of five sections. `tests/storie
 | Foundations | The shadcn primitives in `src/components/ui` | `Foundations/<Name>` |
 | Components | App components, grouped by product area | `Components/<Area>/<Name>` |
 | Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
-| Prototypes | Designs built only in Storybook, in `src/stories` | `Prototypes/<Name>` |
+| Prototypes | Designs built only in Storybook: in `src/stories`, or beside the route a design is for until it's built (listed in the test) | `Prototypes/<Name>` |
 | Unused | Components no app code renders yet | `Unused/<Area>/<Name>` |
 
 Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booking, Products, Inventory, Sales and
@@ -56,7 +56,7 @@ are grouped by route, not by workspace kind: buyer and supplier views of a route
 
 A `Pages/` story must live in `src/app` and render the route itself. Apart from fixtures and the `server`, `workspace`
 and `shipping-documents` helpers, it may not import from `src/stories`, so a page story can't quietly show a copy of
-the page.
+the page. Every other story in `src/app` must be a `Pages/` story too, unless the test lists it as a route prototype.
 
 `Unused` is computed, not curated. The test follows imports from every route, server module and library, and a
 component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
