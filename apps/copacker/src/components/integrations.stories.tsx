@@ -90,7 +90,7 @@ export const NothingConnected = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
     await expect(canvas.getByRole("button", { name: "Connect Amazon" })).toHaveTextContent("Connect")
-    await expect(canvas.getByText("eBay")).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "eBay" })).toBeVisible()
     await expect(canvas.getByText("Orders, inventory, expenses, shipments")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Connect eBay" })).toHaveAttribute("href", "/api/connections/ebay")
   }
