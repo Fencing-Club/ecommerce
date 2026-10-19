@@ -22,6 +22,37 @@ const refund = (payments: unknown[]) => ({
   totalRefundedSet: bag("20"),
   shipping: [{ subtotalAmountSet: bag("5"), taxAmountSet: bag("1") }]
 })
+it("explains observed payment states and exact differences without inventing refunds or an FX cause", () => {
+  const result = reconcileShopifyPayments({
+    currentTotalPriceSet: bag("0"),
+    transactions: [
+      payment("S", "SALE", "6.80"),
+      payment("R", "REFUND", "6.80", "PENDING"),
+      payment("F", "REFUND", "6.80", "FAILURE")
+    ],
+    refunds: []
+  })
+  expect(result.orderComparison).toMatchObject({
+    difference: { amount: "6.80", currency: "USD" },
+    pendingPaymentIds: ["R"],
+    failedPaymentIds: ["F"],
+    cause: "not_determined",
+    roundingApplied: false
+  })
+  expect(result.totals?.refunded).toEqual([])
+  const cents = reconcileShopifyPayments({
+    currentTotalPriceSet: bag("6.81"),
+    transactions: [payment("S", "SALE", "6.80")],
+    refunds: []
+  })
+  expect(cents.orderComparison.difference).toEqual({ amount: "-0.01", currency: "USD" })
+  const mixed = reconcileShopifyPayments({
+    currentTotalPriceSet: bag("6.80", "EUR"),
+    transactions: [payment("S", "SALE", "6.80")],
+    refunds: []
+  })
+  expect(mixed.orderComparison.difference).toBeNull()
+})
 it("counts successful payments once across refund and order records without adding shipping or authorizations", () => {
   const r = payment("R1", "REFUND", "20")
   const result = reconcileShopifyPayments({

@@ -32,6 +32,12 @@ function compare(target: ExactMoney | null, values: ExactMoney[], available: boo
   }
   return equalMoney(target, sumMoney(values, target.currency)) ? "balanced" : "amount_mismatch"
 }
+function difference(target: ExactMoney | null, values: ExactMoney[], available: boolean) {
+  if (!target || !available || values.some((value) => value.currency !== target.currency)) {
+    return null
+  }
+  return rendered(sumMoney([...values, { ...target, integer: -target.integer }], target.currency))
+}
 
 // These are successful payment events in an order snapshot, not revenue recognition or a payout ledger.
 export function reconcileShopifyPayments(data: Record<string, unknown>) {
@@ -138,6 +144,7 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
         copies,
         refundIds: [...sources].filter((id) => id !== "order").sort(),
         amount: rendered(amount),
+        presentmentAmount: rendered(money(object.safeParse(payment.amountSet).data?.presentmentMoney)),
         included: exclusion === null,
         exclusion,
         feeEvidence: feeValues.map((fee) => ({ amount: rendered(fee.amount), tax: rendered(fee.tax) })),
@@ -177,6 +184,7 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
       reportedTotal: rendered(shopMoney(refund.totalRefundedSet)),
       successfulRefunds: available ? moneyTotals(paid) : null,
       paymentCheck: compare(shopMoney(refund.totalRefundedSet), paid, available),
+      paymentDifference: difference(shopMoney(refund.totalRefundedSet), paid, available),
       unsuccessfulTransactionIds: linked.filter((row) => row.status !== "SUCCESS").map((row) => row.transactionId),
       shippingSubtotal:
         shipping.success && shippingAmounts.every((v) => v !== null)
@@ -208,6 +216,25 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
       ? { received: moneyTotals(inflows), refunded: moneyTotals(outflows), netPayments: moneyTotals(net) }
       : null,
     orderTotalCheck: compare(shopMoney(data.currentTotalPriceSet), net, totalsAvailable),
+    orderComparison: {
+      currentOrderTotal: rendered(shopMoney(data.currentTotalPriceSet)),
+      difference: difference(shopMoney(data.currentTotalPriceSet), net, totalsAvailable),
+      differenceMeaning: "successful_net_payments_minus_current_order_total",
+      pendingPaymentIds: rows
+        .filter(
+          (r) => ["PENDING", "AWAITING_RESPONSE"].includes(r.status) && ["SALE", "CAPTURE", "REFUND"].includes(r.kind)
+        )
+        .map((r) => r.transactionId),
+      failedPaymentIds: rows
+        .filter((r) => ["FAILURE", "ERROR"].includes(r.status) && ["SALE", "CAPTURE", "REFUND"].includes(r.kind))
+        .map((r) => r.transactionId),
+      foreignPresentmentIds: rows
+        .filter((r) => r.amount && r.presentmentAmount && r.amount.currency !== r.presentmentAmount.currency)
+        .map((r) => r.transactionId),
+      observationMeaning: "context_not_proof_of_difference_cause",
+      cause: "not_determined",
+      roundingApplied: false
+    },
     orderTotalMeaning: "current_order_total_comparison_not_revenue",
     reportedFees:
       totalsAvailable && feeAmounts.every((v) => v !== null) ? moneyTotals(feeAmounts.filter((v) => v !== null)) : null,

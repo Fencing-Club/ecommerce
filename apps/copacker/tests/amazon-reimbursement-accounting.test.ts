@@ -28,6 +28,15 @@ const reversal: ReimbursementRecord = {
   quantityInventory: 1,
   quantityTotal: 0
 }
+it("distinguishes an absent original from a contradictory original type", () => {
+  const missing = reimbursementAccounting(reversal, [reversal], false)
+  expect(missing.blockers).toEqual(["missing_original"])
+  expect(missing.originalLookup.search).toBe("all_stored_records_in_account_marketplace")
+  expect(reimbursementAccounting(reversal, [reversal], true).originalLookup.search).toBe("truncated")
+  expect(
+    reimbursementAccounting(reversal, [{ ...original, reason: "Damaged_Warehouse" }, reversal], false).blockers
+  ).toContain("original_type_mismatch")
+})
 it("nets a referenced cash reversal separately from inventory recovery without recognizing new income", () => {
   const result = reimbursementAccounting(reversal, [original, reversal, original], false)
   expect(result).toMatchObject({
@@ -39,6 +48,26 @@ it("nets a referenced cash reversal separately from inventory recovery without r
     inventoryRestorationConfirmed: false
   })
   expect(result.sourceRowIds).toEqual(["row1", "row2"])
+})
+it("finds stored originals by ID without certifying an uncertain item identity", () => {
+  for (const incomplete of [
+    { ...original, sku: null },
+    { ...original, fnsku: null },
+    { ...original, sku: "OTHER" }
+  ]) {
+    for (const row of [reversal, { ...reversal, sku: null }]) {
+      const result = reimbursementAccounting(row, [incomplete, row], false)
+      expect(result.originalLookup).toMatchObject({
+        status: "found",
+        itemIdentity: "unresolved",
+        absenceMeaning: null
+      })
+      expect(result.blockers).toContain("original_item_identity_unresolved")
+      expect(result.blockers).not.toContain("missing_original")
+      expect(result.quantities).toBeNull()
+      expect(result.signedReportAmounts).toBeNull()
+    }
+  }
 })
 it("withholds family totals for missing, ambiguous, conflicting and truncated evidence", () => {
   const fixtures = [
@@ -62,6 +91,21 @@ it("withholds family totals for missing, ambiguous, conflicting and truncated ev
     expect(result.blockers).toContain(fixture.blocker)
     expect(result.signedReportAmounts).toBeNull()
     expect(result.quantities).toBeNull()
+  }
+})
+it("does not treat shared missing item identifiers as a resolved original match", () => {
+  for (const key of ["sku", "asin", "fnsku", "condition"] as const) {
+    for (const value of [null, ""]) {
+      const incompleteOriginal = { ...original, [key]: value }
+      const incompleteReversal = { ...reversal, [key]: value }
+      for (const row of [incompleteOriginal, incompleteReversal]) {
+        const result = reimbursementAccounting(row, [incompleteOriginal, incompleteReversal], false)
+        expect(result.originalLookup).toMatchObject({ status: "found", itemIdentity: "unresolved" })
+        expect(result.blockers).toContain("original_item_identity_unresolved")
+        expect(result.quantities).toBeNull()
+        expect(result.signedReportAmounts).toBeNull()
+      }
+    }
   }
 })
 it("does not net different products sharing a reimbursement ID", () => {

@@ -20,7 +20,7 @@ export type ReimbursementRecord = {
 export function reimbursementAccounting(row: ReimbursementRecord, records: ReimbursementRecord[], truncated: boolean) {
   const rootId = row.originalId ?? row.id
   const sameItem = (other: ReimbursementRecord) =>
-    row.sku !== null &&
+    Boolean(row.sku && row.asin && row.fnsku && row.condition) &&
     row.sku === other.sku &&
     row.asin === other.asin &&
     row.fnsku === other.fnsku &&
@@ -33,6 +33,7 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     ).values()
   ]
   const blockers: string[] = []
+  const hasStoredOriginal = records.some((other) => other.id === rootId)
   const roots = family.filter((other) => other.id === rootId)
   if (truncated) {
     blockers.push("related_records_truncated")
@@ -41,7 +42,11 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     blockers.push("missing_product_identity")
   }
   if (roots.length !== 1) {
-    blockers.push(roots.length ? "ambiguous_original" : "missing_original")
+    if (roots.length) {
+      blockers.push("ambiguous_original")
+    } else {
+      blockers.push(hasStoredOriginal ? "original_item_identity_unresolved" : "missing_original")
+    }
   }
   if (family.some((other) => other.id === rootId && other.originalId !== null)) {
     blockers.push("multi_step_chain_requires_review")
@@ -59,7 +64,11 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
   if (new Set(family.map((other) => other.id)).size !== family.length) {
     blockers.push("ambiguous_reimbursement_lines")
   }
-  if (family.some((other) => other.originalId && other.originalType && roots[0]?.reason !== other.originalType)) {
+  if (
+    roots.length === 1 &&
+    roots[0]!.reason &&
+    family.some((other) => other.originalId && other.originalType && roots[0]!.reason !== other.originalType)
+  ) {
     blockers.push("original_type_mismatch")
   }
   if (
@@ -96,6 +105,12 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
   const available = blockers.length === 0
   return {
     rootReimbursementId: rootId,
+    originalLookup: {
+      status: hasStoredOriginal ? "found" : "unresolved",
+      itemIdentity: roots.length === 1 ? "matched" : "unresolved",
+      search: truncated ? "truncated" : "all_stored_records_in_account_marketplace",
+      absenceMeaning: hasStoredOriginal ? null : "not_found_in_stored_evidence_not_proof_of_provider_absence"
+    },
     sourceRowIds: family.map((other) => other.sourceRowId).sort(),
     status: available ? "report_family_calculated" : "requires_review",
     blockers,

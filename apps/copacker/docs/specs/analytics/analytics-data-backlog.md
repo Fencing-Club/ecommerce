@@ -366,3 +366,20 @@ unambiguous stored originals/corrections. Explicit release chains select one rel
 the deferred copy. Missing or conflicting chains remain unresolved. These calculations make no accounting writes,
 assign no costs, and trigger no provider collection. Local verification and deployment acceptance are tracked separately;
 historical costs, source-to-posting reimbursement allocation and inventory-lot restoration remain open.
+
+PR #70 deployed as `d93964ff` on October 19. Read-only checks covered 100 Shopify orders (16 duplicate payment copies
+removed), the September reimbursement reversal netting to $0 and one inventory unit, and the deferred/released refund
+pair contributing only once. No sync or backfill was started.
+
+### Stored-evidence diagnostics follow-up
+
+- [x] Distinguish missing originals from known type contradictions and expose seller-scoped report coverage outside the selected month.
+- [x] Expose exact Shopify order/refund payment differences and pending/failed/foreign-presentment context without inferring causes.
+- [x] Expose signed financial-candidate differences and ambiguity; rank equal-signed reimbursement candidates without confirming links.
+- [x] Compare FBA received units to stored receipt movements by exact shipment/SKU, with account isolation and truncation blockers.
+- [ ] Deploy and verify this diagnostics follow-up against saved live evidence.
+
+Missing original `19235273231` remains unconfirmed. Its reversal is -$6.80; a same-SKU +$6.80 financial posting exists
+on September 11, 2025, before the report collection horizon of October 2025. The financial posting lacks the
+reimbursement ID, so this remains a candidate explanation. No older report was requested. AWD-to-FBA mappings,
+confirmed source/posting allocations, receipt dates, physical restoration and cost basis remain unresolved.

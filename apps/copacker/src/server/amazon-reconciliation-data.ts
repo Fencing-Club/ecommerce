@@ -4,6 +4,7 @@ import { db } from "@/db"
 import {
   amazonTransactions,
   amazonReimbursements,
+  amazonReimbursementReports,
   amazonProductMappings,
   connections,
   salesSyncs,
@@ -108,6 +109,26 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         [...reimbursementIds, ...originalIds],
         pageRows.filter((row) => row.reimbursement).map((row) => row.id)
       )
+      const reimbursementCoverage =
+        input.source === "reimbursements"
+          ? await tx
+              .select({
+                from: amazonReimbursementReports.from,
+                coveredTo: amazonReimbursementReports.coveredTo,
+                requestedTo: amazonReimbursementReports.requestedTo,
+                status: amazonReimbursementReports.status,
+                errorCode: amazonReimbursementReports.errorCode
+              })
+              .from(amazonReimbursementReports)
+              .where(
+                and(
+                  eq(amazonReimbursementReports.orgId, orgId),
+                  eq(amazonReimbursementReports.externalAccountId, externalAccountId),
+                  eq(amazonReimbursementReports.marketplaceId, marketplaceId)
+                )
+              )
+              .orderBy(amazonReimbursementReports.from)
+          : []
       const identifiers = (key: "orderId" | "sku" | "asin") => [
         ...new Set(pageRows.map((row) => row[key]).filter((value) => value !== null))
       ]
@@ -199,6 +220,15 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         source: input.source,
         relatedReimbursements: relatedReimbursements.rows,
         relatedReimbursementsTruncated: relatedReimbursements.truncated,
+        reimbursementCoverage:
+          input.source === "reimbursements"
+            ? {
+                windows: reimbursementCoverage,
+                missingOriginalDate: "unknown",
+                missingOriginalCause: "undetermined_without_original_date",
+                boundsMeaning: "stored_report_windows_not_provider_retention"
+              }
+            : null,
         page: input.page,
         hasMore: rows.length > pageSize,
         rows: reconcileAmazonEvidence(

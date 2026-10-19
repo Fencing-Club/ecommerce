@@ -46,6 +46,49 @@ const expense = {
   evidence: "Carrier invoice",
   attribution: { kind: "shared", reason: "No order reference" }
 }
+it("reconciles receipt movements only within the seller, workspace and marketplace", async () => {
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "amazon",
+    externalAccountId: "seller",
+    dataset: "fba_inbound_receipts",
+    sourceId: "SHIP",
+    data: { status: "CLOSED", items: [{ sku: "SKU", sent: 8, received: 8, unit: "UNITS" }] }
+  })
+  const movement = {
+    orgId,
+    externalAccountId: "seller",
+    marketplaceId: "ATVPDKIKX0DER",
+    eventDay: "2026-09-01",
+    eventType: "Receipts",
+    referenceId: "SHIP",
+    sku: "SKU",
+    quantity: 8
+  }
+  await database
+    .insert(tables.amazonInventoryMovements)
+    .values([
+      movement,
+      { ...movement, orgId: otherId, quantity: 99 },
+      { ...movement, externalAccountId: "other", quantity: 99 },
+      { ...movement, marketplaceId: "other", quantity: 99 }
+    ])
+  const query = {
+    source: "amazon" as const,
+    externalAccountId: "seller",
+    dataset: "fba_inbound_receipts" as const,
+    page: 0
+  }
+  const result = await listIngestionEvidence(orgId, query)
+  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
+    status: "quantity_agrees",
+    movementQuantity: 8
+  })
+  await database.insert(tables.amazonInventoryMovements).values({ ...movement, quantity: 1 })
+  await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toThrow(
+    "Data changed"
+  )
+})
 it("reports missing cost basis as unknown while excluding retired and foreign inputs", async () => {
   for (const [workspace, retiredAt, sourceKey] of [
     [orgId, null, "active"],
