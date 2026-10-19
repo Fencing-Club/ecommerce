@@ -53,6 +53,38 @@ beforeEach(async () => {
 const sync = (kind: "monthly" | "aged", date = now) => syncAmazonStorageFees(input, kind, owned, date)
 const status = (kind: "monthly" | "aged", date = now) => amazonStorageFeesStatus(orgId, "SELLER1", kind, date)
 describe("Amazon storage acquisition", () => {
+  it("backs off unavailable aged months and preserves them when a later refresh fails", async () => {
+    report.mockResolvedValue(null)
+    await sync("aged")
+    expect(report).toHaveBeenCalledTimes(12)
+    expect(report.mock.calls[0]?.[1].reuseCancelled).toBe(true)
+    await database.update(tables.amazonStorageFeeReports).set({ checkedAt: now })
+    report.mockClear()
+    await sync("aged")
+    expect(report).not.toHaveBeenCalled()
+    expect(
+      (await status("aged")).windows.every(
+        (window) => window.status === "unavailable" && !window.complete && window.rows === null
+      )
+    ).toBe(true)
+
+    await database.update(tables.amazonStorageFeeReports).set({ checkedAt: new Date(now.getTime() - 31 * 86400000) })
+    report.mockRejectedValue(new ProviderError(429, null, "throttled"))
+    await sync("aged")
+    expect(report).toHaveBeenCalledTimes(1)
+    expect((await status("aged")).windows[0]).toMatchObject({
+      status: "unavailable",
+      errorCode: "report_throttled",
+      complete: false,
+      rows: null
+    })
+
+    // A subsequent fresh document still replaces unavailable evidence normally.
+    await database.update(tables.amazonStorageFeeReports).set({ checkedAt: new Date(now.getTime() - 31 * 86400000) })
+    report.mockResolvedValue(agedStorageReport())
+    await sync("aged")
+    expect((await status("aged")).windows.every((window) => window.complete && window.rows === 0)).toBe(true)
+  })
   it("backfills twelve completed months for each source with exact decimals and separate cost bases", async () => {
     await sync("monthly")
     await sync("aged")

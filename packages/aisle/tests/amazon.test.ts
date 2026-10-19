@@ -625,6 +625,17 @@ describe("recovering completed reports", () => {
   beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
   afterEach(() => vi.useRealTimers())
 
+  it("reuses cancellation only when opted in and returns unavailable without creating a report", async () => {
+    const { api, calls } = client([
+      { reports: [{ ...existing, processingStatus: "CANCELLED", reportDocumentId: undefined }] },
+      { processingStatus: "CANCELLED" }
+    ])
+    await expect(api.report(input, { ...options(), reuseCancelled: true })).resolves.toBeNull()
+    expect(calls).toHaveLength(2)
+    expect(calls[0]?.searchParams.get("processingStatuses")).toBe("DONE,CANCELLED")
+    expect(calls[1]?.pathname).toMatch(/\/existing$/)
+  })
+
   it("reuses the newest exact report across pages and caches the listing for other months", async () => {
     const { api, calls } = client([
       { reports: [{ ...existing, reportId: "older", createdTime: "2026-10-17T01:00:00Z" }], nextToken: "page2" },
@@ -654,6 +665,7 @@ describe("recovering completed reports", () => {
     { dataEndTime: "2026-09-30T23:59:59Z" },
     { createdTime: "2026-10-16T23:59:59Z" },
     { processingStatus: "FATAL" },
+    { processingStatus: "CANCELLED", reportDocumentId: undefined },
     { reportDocumentId: undefined }
   ])("creates fresh evidence when a previous report differs: %j", async (different) => {
     const { api, calls } = client([{ reports: [{ ...existing, ...different }] }, { reportId: "new" }, ...download()])

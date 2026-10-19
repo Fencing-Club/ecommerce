@@ -74,3 +74,20 @@ Timestamp normalization keeps the source calendar day rather than shifting it th
 value remains in source evidence. Invalid dates, missing timestamp timezones and trailing garbage remain errors.
 The October 18 live diagnostic identified `periodDay` as the September report's rejected field. Timestamp support
 addresses a known Amazon output variant; a live retry must still verify that the affected report imports successfully.
+
+### Unavailable aged-storage months
+
+Aged-storage recovery also reuses exact CANCELLED reports from the previous 24 hours. They remain unavailable,
+not imported or zero-charge evidence. This recovers earlier no-data/cancellation outcomes even if a later creation
+was throttled. Other report sources continue to reuse DONE only. Report-option equivalence and exact account,
+marketplace and period checks still apply; the selected report status is read again before reuse.
+
+An unavailable aged month is attempted at most once per 30 days, including recent completed months. A failed
+refresh retains its unavailable status and existing rows/bounds, while errorCode and checkedAt describe the latest
+attempt. A new successful document replaces that state normally. The interval is application policy, not a claim
+about Amazon's quota reset or a guarantee of zero fees. The daily scheduler continues to discover new months.
+
+The October 18 investigation matched June report 402432020744 (CANCELLED; Seller Central: No Data Available)
+against later retry 402504020744 (FATAL). All eleven unresolved months had earlier cancellation outcomes.
+Repeated requests were replacing useful unavailable state with newer failures. Provider FATAL causes and the
+precise aged-storage quota remain unconfirmed. No historical months are marked imported by this repair.
