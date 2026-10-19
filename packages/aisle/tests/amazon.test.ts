@@ -833,6 +833,16 @@ describe("durable report request policy", () => {
     expect(transport).toHaveBeenCalledTimes(1)
     expect(observe).not.toHaveBeenCalled()
   })
+  it("does not create when admission leaves insufficient time for a processing cycle", async () => {
+    const acquire = vi.fn<ReportRequestPolicy["acquire"]>().mockResolvedValue(undefined)
+    const observe = vi.fn<ReportRequestPolicy["observe"]>().mockResolvedValue(undefined)
+    const { api, calls } = client([], { acquire, observe })
+    await expect(api.report(input, { deadline: Date.now() + 10000 })).rejects.toThrow(
+      "waiting for its request allowance"
+    )
+    expect(calls).toHaveLength(0)
+    expect(observe).not.toHaveBeenCalled()
+  })
   it("records quota headers and leaves creation retry to the persistent policy", async () => {
     const transport = vi.fn<typeof fetch>(async (url) =>
       String(url).includes("api.amazon.com/auth")
@@ -848,11 +858,16 @@ describe("durable report request policy", () => {
       acquire,
       observe
     })
-    await expect(api.report(input, { deadline: Date.now() + 1200000 })).rejects.toMatchObject({
+    const deadline = Date.now() + 1200000
+    await expect(api.report(input, { deadline })).rejects.toMatchObject({
       status: 429,
       operation: "createReport"
     })
-    expect(acquire).toHaveBeenCalledTimes(1)
+    expect(acquire).toHaveBeenCalledWith({
+      reportType: input.reportType,
+      deadline: deadline - 255000,
+      assertActive: undefined
+    })
     expect(transport).toHaveBeenCalledTimes(2)
     expect(observe).toHaveBeenCalledWith({
       reportType: input.reportType,

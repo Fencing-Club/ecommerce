@@ -36,7 +36,9 @@ workspaces and worker instances using that account. This is operational quota st
 - Space new report creations by at least two minutes. This is our conservative baseline, not an Amazon guarantee.
   Slower advertised rates increase the stored interval. Successful higher rates do not remove the baseline.
 - Reserve an available slot atomically immediately before creation. Wait outside transactions, recheck after waiting,
-  and honor the caller deadline and ownership checks. Do not reserve a queue of future slots.
+  and honor ownership checks. Admission reserves time before the caller deadline for creation, two status reads with
+  one poll interval, document metadata and download, using their transport timeouts. This minimum budget does not
+  guarantee Amazon generation will complete. Do not reserve a queue of future slots.
 - On HTTP 429, persist a five-minute account pause and a report-type cooldown of one hour, then two, four and eight
   hours for repeated rejection. Longer Retry-After wins. A successful creation resets that type's escalation.
   These cooldowns are an operational response to observed persistent throttling, not a claim about Amazon's reset time.

@@ -6,6 +6,8 @@ export type AmazonCredentials =
   | { clientId: string; clientSecret: string; refreshToken: string }
   // Grantless operations, such as managing notification destinations, act for the app rather than a seller.
   | { clientId: string; clientSecret: string; grantlessScope: string }
+const requestTimeoutMs = 30000
+const reportDownloadTimeoutMs = 120000
 const stockQuantity = z.number().int().nonnegative().safe()
 const awdStockPage = z.object({
   inventory: z
@@ -414,7 +416,7 @@ export class Amazon {
         client_id: this.credentials.clientId,
         client_secret: this.credentials.clientSecret
       }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
     if (!response.ok) {
       throw new ProviderError(response.status, null, "Amazon authorization must be renewed")
@@ -428,7 +430,7 @@ export class Amazon {
       method,
       headers: { "x-amz-access-token": await this.token(), "content-type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
     await observe?.(response)
     if (!response.ok) {
@@ -1182,6 +1184,11 @@ export class Amazon {
       reportId = matching[0]?.reportId
     }
     if (!reportId) {
+      // Managed creation must leave room for creation, two status reads separated by one poll interval,
+      // document metadata and download, using their actual transport timeouts. This is a minimum attempt
+      // budget, not a guarantee that Amazon will finish generating the report within one polling cycle.
+      const processingBudget = 4 * requestTimeoutMs + reportDownloadTimeoutMs + (options.pollMs ?? 15000)
+      const creationDeadline = this.reportPolicy ? options.deadline - processingBudget : options.deadline
       reportId = z.object({ reportId: z.string().min(1) }).parse(
         await read(
           "createReport",
@@ -1191,11 +1198,11 @@ export class Amazon {
             }
             await this.reportPolicy?.acquire({
               reportType: input.reportType,
-              deadline: options.deadline,
+              deadline: creationDeadline,
               assertActive: options.assertActive
             })
             await options.assertActive?.()
-            if (Date.now() >= options.deadline) {
+            if (Date.now() >= creationDeadline) {
               throw new ReportDeferredError(new Date(Date.now()))
             }
             return this.request("POST", "/reports/2021-06-30/reports", input, async (response) => {
@@ -1243,7 +1250,7 @@ export class Amazon {
             )
           )
         const response = await read("downloadReport", async () => {
-          const response = await this.transport(document.url, { signal: AbortSignal.timeout(120000) })
+          const response = await this.transport(document.url, { signal: AbortSignal.timeout(reportDownloadTimeoutMs) })
           if (!response.ok) {
             throw new ProviderError(response.status, null, "Amazon report download failed")
           }
@@ -1405,7 +1412,7 @@ export async function downloadAmazonLabels(raw: string) {
     throw new Error("Amazon returned an unsupported label download host")
   }
   // Workers supports manual redirects; the status check below rejects them without following another host.
-  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(30000) })
+  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(requestTimeoutMs) })
   if (!response.ok || !response.body) {
     throw new Error("Amazon label download failed")
   }
