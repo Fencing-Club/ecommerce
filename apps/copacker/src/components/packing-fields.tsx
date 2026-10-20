@@ -55,7 +55,8 @@ export function NumberField({
 
 export type Dimensions = { length: number; width: number; height: number }
 
-// Length, width and height in one field, as a packing list writes them: L × W × H in centimetres.
+// Length, width and height in one field, as a packing list writes them: L × W × H in centimetres. In a table narrower
+// than the design's, the column heading names the field and the L × W × H hint makes way for the numbers.
 export function DimensionsField({
   label,
   value,
@@ -78,12 +79,12 @@ export function DimensionsField({
   const sides = ["length", "width", "height"] as const
   return (
     <InputGroup className={cn("h-11 bg-background sm:h-9", className)}>
-      <InputGroupAddon className="text-xs font-normal whitespace-nowrap" aria-hidden>
+      <InputGroupAddon className="text-xs font-normal whitespace-nowrap wide:hidden wider:flex" aria-hidden>
         {sides.map((side) => t(`axis.${side}`)).join(" × ")}
       </InputGroupAddon>
-      <div className="ms-auto flex h-full min-w-0 items-center">
+      <div className="ms-auto flex h-full min-w-0 items-center wide:ms-0 wide:flex-1">
         {sides.map((side, index) => (
-          <span key={side} className="flex h-full min-w-0 items-center">
+          <span key={side} className="flex h-full min-w-0 items-center wide:flex-1">
             {index > 0 && (
               <span aria-hidden className="text-xs text-muted-foreground">
                 ×
@@ -100,7 +101,7 @@ export function DimensionsField({
               value={Number.isFinite(value[side]) ? value[side] : ""}
               onChange={(event) => onChange({ [side]: event.currentTarget.valueAsNumber })}
               onBlur={() => onBlur?.(side)}
-              className={cn(numberInput, "w-11 px-1.5 text-center")}
+              className={cn(numberInput, "w-11 px-1.5 text-center wide:w-auto wide:flex-1")}
             />
           </span>
         ))}

@@ -74,6 +74,22 @@ export const Editing = meta.story({
   }
 })
 
+// On a tablet, or beside Shipment details on a laptop, the rows stay a table. Its columns give a little, the dimensions
+// drop their L × W × H hint, and the products still line up under the carton's columns.
+export const Tablet = meta.story({
+  globals: { viewport: { value: "ipad" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Contents")).toBeVisible()
+    const row = canvas.getByRole("region", { name: "Carton A1" })
+    await expect(within(row).getByText("L × W × H")).not.toBeVisible()
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+    await userEvent.click(canvas.getByRole("button", { name: "Products in A1–A10" }))
+    const weight = canvas.getByRole("spinbutton", { name: "Carton A1: Weight (kg)" }).closest("[data-slot=input-group]")
+    const sku = within(row).getByText("NT-WB-2210")
+    await expect(Math.round(sku.getBoundingClientRect().left)).toBe(Math.round(weight!.getBoundingClientRect().left))
+  }
+})
+
 // Quantities are units. A multipack says how many packs they make, and an odd number of units for a 2-pack is an
 // error under the product.
 export const QuantityInUnits = meta.story({

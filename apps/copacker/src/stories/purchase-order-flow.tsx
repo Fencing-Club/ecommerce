@@ -717,7 +717,7 @@ export function PurchaseOrderFlow({
     if (mixedFba) {
       return [
         {
-          cartonId: "1",
+          cartonId: "A1",
           length: 60,
           width: 40,
           height: 40,
@@ -728,7 +728,7 @@ export function PurchaseOrderFlow({
           ]
         },
         {
-          cartonId: "2",
+          cartonId: "B1",
           length: 60,
           width: 40,
           height: 40,
@@ -740,7 +740,7 @@ export function PurchaseOrderFlow({
           ]
         },
         {
-          cartonId: "3",
+          cartonId: "C1",
           length: 60,
           width: 40,
           height: 40,
@@ -755,7 +755,7 @@ export function PurchaseOrderFlow({
     if (initialPacking) {
       return packing.items.flatMap((item, index) =>
         Array.from({ length: [10, 6, 2][index]! }, (_, carton) => ({
-          cartonId: String([0, 10, 16][index]! + carton + 1),
+          cartonId: `${"ABC"[index]}${carton + 1}`,
           length: index === 2 ? 50 : 60,
           width: index === 2 ? 35 : 40,
           height: [40, 50, 30][index]!,

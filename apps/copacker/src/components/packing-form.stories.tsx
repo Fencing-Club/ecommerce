@@ -29,7 +29,7 @@ const completeDraft: PackingDraft = {
   changes: [],
   cartons: order.items.flatMap((item, index) =>
     Array.from({ length: item.pieces / 60 }, (_, carton) => ({
-      cartonId: `${index + 1}-${carton + 1}`,
+      cartonId: `${"ABC"[index]}${carton + 1}`,
       length: 60,
       width: 40,
       height: 40,
@@ -566,12 +566,12 @@ export const PackedOnPallets = meta.story({
     await userEvent.type(pallet.getByRole("spinbutton", { name: "Pallet 1: Weight (kg)" }), "110")
     await userEvent.click(pallet.getByRole("button", { name: "Choose cartons for Pallet 1" }))
     const dialog = await shownDialog("Choose cartons for Pallet 1")
-    await userEvent.click(dialog.getByRole("checkbox", { name: "1-1–1-4" }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "A1–A4" }))
     await expect(dialog.getByText("4 cartons, 48 kg")).toBeVisible()
     await userEvent.click(dialog.getByRole("button", { name: "Save cartons" }))
-    await expect(pallet.getByRole("listitem")).toHaveTextContent("1-1–1-4")
+    await expect(pallet.getByRole("listitem")).toHaveTextContent("A1–A4")
     await expect(pallets.getByText("4 of 7 cartons on pallets")).toBeVisible()
-    await expect(pallets.getByText(/^3 cartons aren’t on a pallet: 2-1–2-2, 3-1\./)).toBeVisible()
+    await expect(pallets.getByText(/^3 cartons aren’t on a pallet: B1–B2, C1\./)).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
 
     // A second pallet takes the rest, and the totals are the pallets'.
@@ -580,8 +580,8 @@ export const PackedOnPallets = meta.story({
     const second = within(canvas.getByRole("region", { name: "Pallet 2" }))
     await userEvent.click(second.getByRole("button", { name: "Choose cartons for Pallet 2" }))
     const chooser = await shownDialog("Choose cartons for Pallet 2")
-    await userEvent.click(chooser.getByRole("checkbox", { name: "2-1–2-2" }))
-    await userEvent.click(chooser.getByRole("checkbox", { name: "3-1" }))
+    await userEvent.click(chooser.getByRole("checkbox", { name: "B1–B2" }))
+    await userEvent.click(chooser.getByRole("checkbox", { name: "C1" }))
     await userEvent.click(chooser.getByRole("button", { name: "Save cartons" }))
     await expect(pallets.getByText("7 of 7 cartons on pallets")).toBeVisible()
     await expect(canvas.getByText("220 kg, 2.88 m³")).toBeVisible()
@@ -595,8 +595,8 @@ export const PackedOnPallets = meta.story({
         draft: expect.objectContaining({
           palletized: true,
           pallets: [
-            expect.objectContaining({ palletId: "1", cartonIds: ["1-1", "1-2", "1-3", "1-4"], stackable: true }),
-            expect.objectContaining({ palletId: "2", cartonIds: ["2-1", "2-2", "3-1"], weight: 110 })
+            expect.objectContaining({ palletId: "1", cartonIds: ["A1", "A2", "A3", "A4"], stackable: true }),
+            expect.objectContaining({ palletId: "2", cartonIds: ["B1", "B2", "C1"], weight: 110 })
           ]
         })
       })
@@ -611,7 +611,7 @@ export const NotPackedOnPallets = meta.story({
       ...completeDraft,
       palletized: true,
       pallets: [
-        { palletId: "1", length: 120, width: 100, height: 120, weight: 110, stackable: false, cartonIds: ["1-1"] }
+        { palletId: "1", length: 120, width: 100, height: 120, weight: 110, stackable: false, cartonIds: ["A1"] }
       ]
     },
     addresses: [savedAddress]
