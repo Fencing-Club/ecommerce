@@ -626,8 +626,8 @@ export const ImportPallets = meta.story({
     }
     const file = [
       "Pallet ID,Length (cm),Width (cm),Height (cm),Weight (kg),Stacking,Carton IDs",
-      "1,120,100,120,110,Stackable,1-1–1-4",
-      '2,120,100,120,110,Not stackable,"2-1, 2-2, 3-1"'
+      "1,120,100,120,110,Stackable,A1–A4",
+      '2,120,100,120,110,Not stackable,"B1–B2, C1"'
     ].join("\n")
     await userEvent.upload(input, new File([file], "pallets.csv", { type: "text/csv" }))
     await waitFor(() => expect(upload.getByRole("button", { name: "Review import" })).toBeEnabled())
