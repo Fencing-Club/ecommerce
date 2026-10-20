@@ -177,19 +177,10 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
 
   if (editable) {
     // Packing: the route and its legs head the form, and the documents and running totals sit beside the cartons.
+    // The buyer's transport settings follow the header, outside the packing form's fieldset, so saving the packing
+    // doesn't disable them.
     return (
       <>
-        {isBuyer &&
-          editsShipments &&
-          canConfigureTransport(shipment.status, shipment.operation, shipment.transport) && (
-            <ShipmentTransportSettings
-              key={JSON.stringify(shipment.transport)}
-              id={id}
-              revision={shipment.revision}
-              initial={shipment.transport}
-              hasForwarder={!!snapshot.via}
-            />
-          )}
         <PackingForm
           shipmentName={title}
           renderHeader={(actions) => (
@@ -202,6 +193,17 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                 {actions}
               </PageHeader>
               {notices}
+              {isBuyer &&
+                editsShipments &&
+                canConfigureTransport(shipment.status, shipment.operation, shipment.transport) && (
+                  <ShipmentTransportSettings
+                    key={JSON.stringify(shipment.transport)}
+                    id={id}
+                    revision={shipment.revision}
+                    initial={shipment.transport}
+                    hasForwarder={!!snapshot.via}
+                  />
+                )}
             </>
           )}
           renderProductActions={productActions}

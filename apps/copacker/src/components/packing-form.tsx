@@ -286,6 +286,7 @@ export function PackingForm({
     <div className="flex items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger
+          disabled={working !== null}
           render={<Button type="button" variant="outline" size="icon" aria-label={actionsText("actions")} />}
         >
           <Ellipsis />
@@ -302,6 +303,7 @@ export function PackingForm({
         form={formId}
         pending={working === (allUnitsPacked ? "submit" : "save")}
         disabled={
+          working !== null ||
           totals.cartons > 1000 ||
           (allUnitsPacked &&
             (!cartons.fields.length || packingIssues.length > 0 || completeCartons.length !== physicalCartons.length))
@@ -314,377 +316,380 @@ export function PackingForm({
   return (
     <FormProvider {...form}>
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
-      <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+      {/* The page's header sits outside the fieldset, so a form it holds stays usable while packing saves. */}
+      <div className="flex min-w-0 flex-col gap-6">
         {renderHeader?.(actions)}
-        {heading && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {heading}
-            {actions}
-          </div>
-        )}
-        <div
-          className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
-        >
-          <div className="flex min-w-0 flex-col gap-6">
-            {notices}
-            {linkedId !== undefined && (
-              <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
-            )}
-            <PackingDetailsFields
-              addresses={addresses}
-              addAddressTo={addAddressTo}
-              pickup={pickup}
-              onPickupChange={setPickup}
-              readOnly={readOnly}
-              route={shippingDetails?.route}
-              shipTo={shippingDetails?.shipTo ?? destination}
-              transport={shippingDetails?.transport}
-            />
-            {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
-            {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-            <form
-              id={formId}
-              onSubmit={(event) => {
-                if (allUnitsPacked) {
-                  return validated()(event)
-                }
-                event.preventDefault()
-                void perform("save", form.getValues())
-              }}
-              onKeyDown={keepEnterFromSubmitting}
-              noValidate
-              className="flex flex-col gap-6"
-            >
-              <Accordion className="rounded-lg border bg-card">
-                <AccordionItem value="products">
-                  <AccordionTrigger className="items-center gap-3 px-4 py-3.5 text-sm font-medium hover:no-underline">
-                    {detail("columns.products")} ({order.items.length})
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
-                    {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
+        <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+          {heading && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {heading}
+              {actions}
+            </div>
+          )}
+          <div
+            className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
+          >
+            <div className="flex min-w-0 flex-col gap-6">
+              {notices}
+              {linkedId !== undefined && (
+                <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
+              )}
+              <PackingDetailsFields
+                addresses={addresses}
+                addAddressTo={addAddressTo}
+                pickup={pickup}
+                onPickupChange={setPickup}
+                readOnly={readOnly}
+                route={shippingDetails?.route}
+                shipTo={shippingDetails?.shipTo ?? destination}
+                transport={shippingDetails?.transport}
+              />
+              {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
+              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+              <form
+                id={formId}
+                onSubmit={(event) => {
+                  if (allUnitsPacked) {
+                    return validated()(event)
+                  }
+                  event.preventDefault()
+                  void perform("save", form.getValues())
+                }}
+                onKeyDown={keepEnterFromSubmitting}
+                noValidate
+                className="flex flex-col gap-6"
+              >
+                <Accordion className="rounded-lg border bg-card">
+                  <AccordionItem value="products">
+                    <AccordionTrigger className="items-center gap-3 px-4 py-3.5 text-sm font-medium hover:no-underline">
+                      {detail("columns.products")} ({order.items.length})
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
+                      {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
                         are packed. Below 32rem each line stacks, with its column names above the values. */}
-                    <div className="@container/products border-t">
-                      <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
-                        <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead>{t("product")}</TableHead>
-                            <TableHead className="w-36">{t("supplierSku")}</TableHead>
-                            <TableHead className="w-28 text-end">{t("packed")}</TableHead>
-                            {prices && <TableHead className="w-28 text-end">{t("pricePerUnit")}</TableHead>}
-                            {renderProductActions && (
-                              <TableHead className="w-14">
-                                <span className="sr-only">{actionsText("actions")}</span>
-                              </TableHead>
-                            )}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody className="@max-lg/products:block">
-                          {order.items.map((item) => {
-                            const available = availablePieces[item.id] ?? 0
-                            const count = packed(item.id)
-                            return (
-                              <TableRow
-                                key={item.id}
-                                className="hover:bg-transparent @max-lg/products:relative @max-lg/products:grid @max-lg/products:grid-cols-3 @max-lg/products:gap-x-4 @max-lg/products:gap-y-2 @max-lg/products:p-4 [&>td]:py-3 [&>td]:align-top @max-lg/products:[&>td]:p-0"
-                              >
-                                <TableCell className="whitespace-normal [overflow-wrap:anywhere] @max-lg/products:col-span-3 @max-lg/products:ps-0! @max-lg/products:pe-10!">
-                                  <ProductIdentity item={item} showSku={false} showPackSize={false} />
-                                </TableCell>
-                                <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
-                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                    {t("supplierSku")}
-                                  </span>
-                                  {item.components?.length ? (
-                                    <span className="flex flex-col gap-1">
-                                      {item.components.map((component) => (
-                                        <span key={component.variantId}>
-                                          {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
-                                        </span>
-                                      ))}
+                      <div className="@container/products border-t">
+                        <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
+                          <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
+                            <TableRow className="hover:bg-transparent">
+                              <TableHead>{t("product")}</TableHead>
+                              <TableHead className="w-36">{t("supplierSku")}</TableHead>
+                              <TableHead className="w-28 text-end">{t("packed")}</TableHead>
+                              {prices && <TableHead className="w-28 text-end">{t("pricePerUnit")}</TableHead>}
+                              {renderProductActions && (
+                                <TableHead className="w-14">
+                                  <span className="sr-only">{actionsText("actions")}</span>
+                                </TableHead>
+                              )}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody className="@max-lg/products:block">
+                            {order.items.map((item) => {
+                              const available = availablePieces[item.id] ?? 0
+                              const count = packed(item.id)
+                              return (
+                                <TableRow
+                                  key={item.id}
+                                  className="hover:bg-transparent @max-lg/products:relative @max-lg/products:grid @max-lg/products:grid-cols-3 @max-lg/products:gap-x-4 @max-lg/products:gap-y-2 @max-lg/products:p-4 [&>td]:py-3 [&>td]:align-top @max-lg/products:[&>td]:p-0"
+                                >
+                                  <TableCell className="whitespace-normal [overflow-wrap:anywhere] @max-lg/products:col-span-3 @max-lg/products:ps-0! @max-lg/products:pe-10!">
+                                    <ProductIdentity item={item} showSku={false} showPackSize={false} />
+                                  </TableCell>
+                                  <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
+                                    <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                      {t("supplierSku")}
                                     </span>
-                                  ) : (
-                                    item.supplierSku || "—"
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-end tabular-nums @max-lg/products:text-start">
-                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                    {t("packed")}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      "inline-flex items-center gap-1",
-                                      available > 0 && count === available && "text-green-700",
-                                      count > available && "text-destructive"
+                                    {item.components?.length ? (
+                                      <span className="flex flex-col gap-1">
+                                        {item.components.map((component) => (
+                                          <span key={component.variantId}>
+                                            {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                                          </span>
+                                        ))}
+                                      </span>
+                                    ) : (
+                                      item.supplierSku || "—"
                                     )}
-                                  >
-                                    {available > 0 && count === available && (
-                                      <CircleCheck aria-hidden className="size-3.5" />
-                                    )}
-                                    {t("packedOf", { count, available })}
-                                  </span>
-                                  {count < available && (
-                                    <span className="block text-xs text-muted-foreground">
-                                      {t("leftCount", { count: available - count })}
-                                    </span>
-                                  )}
-                                  {count > available && (
-                                    <span className="block text-xs text-destructive">
-                                      {t("overCount", { count: count - available })}
-                                    </span>
-                                  )}
-                                </TableCell>
-                                {prices && (
+                                  </TableCell>
                                   <TableCell className="text-end tabular-nums @max-lg/products:text-start">
                                     <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                      {t("pricePerUnit")}
+                                      {t("packed")}
                                     </span>
-                                    {money(item.unitPrice, order.currency, locale)}
+                                    <span
+                                      className={cn(
+                                        "inline-flex items-center gap-1",
+                                        available > 0 && count === available && "text-green-700",
+                                        count > available && "text-destructive"
+                                      )}
+                                    >
+                                      {available > 0 && count === available && (
+                                        <CircleCheck aria-hidden className="size-3.5" />
+                                      )}
+                                      {t("packedOf", { count, available })}
+                                    </span>
+                                    {count < available && (
+                                      <span className="block text-xs text-muted-foreground">
+                                        {t("leftCount", { count: available - count })}
+                                      </span>
+                                    )}
+                                    {count > available && (
+                                      <span className="block text-xs text-destructive">
+                                        {t("overCount", { count: count - available })}
+                                      </span>
+                                    )}
                                   </TableCell>
-                                )}
-                                {renderProductActions && (
-                                  <TableCell className="py-2! text-end @max-lg/products:absolute @max-lg/products:end-3 @max-lg/products:top-3">
-                                    {renderProductActions(item)}
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
-                    <span
-                      className={cn(
-                        "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-                        pieces === availableUnits && "text-green-700"
-                      )}
-                    >
-                      {t("packedUnits", { count: pieces, available: availableUnits })}
-                    </span>
-                  </div>
-                  {!readOnly && (
-                    <div className="flex gap-2">
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              aria-label={importText("title")}
-                              onClick={() => setImporting(true)}
-                            />
-                          }
-                        >
-                          <Upload />
-                        </TooltipTrigger>
-                        <TooltipContent>{importText("title")}</TooltipContent>
-                      </Tooltip>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="max-sm:w-[34px] max-sm:px-0"
-                        onClick={addCarton}
+                                  {prices && (
+                                    <TableCell className="text-end tabular-nums @max-lg/products:text-start">
+                                      <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                        {t("pricePerUnit")}
+                                      </span>
+                                      {money(item.unitPrice, order.currency, locale)}
+                                    </TableCell>
+                                  )}
+                                  {renderProductActions && (
+                                    <TableCell className="py-2! text-end @max-lg/products:absolute @max-lg/products:end-3 @max-lg/products:top-3">
+                                      {renderProductActions(item)}
+                                    </TableCell>
+                                  )}
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums text-muted-foreground max-sm:hidden",
+                          pieces === availableUnits && "text-green-700"
+                        )}
                       >
-                        <Plus />
-                        <span className="max-sm:sr-only">{t("addCarton")}</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {cartons.fields.length > 0 && (
-                  <div className="flex flex-col gap-6 max-sm:gap-5">
-                    {cartons.fields.map((carton, index) => {
-                      const value = cartonValues[index] ?? carton
-                      const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-                      const issues = packingIssues.filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                      const note = renderCartonNote?.(ids)
-                      const editor = (
-                        <CartonEditor
-                          key={carton.id}
-                          value={value}
-                          products={order.items}
-                          context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                          remainingPieces={Object.fromEntries(
-                            order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
-                          )}
-                          showErrors={
-                            form.formState.submitCount > 0 ||
-                            Boolean(
-                              initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId))
-                            )
-                          }
-                          issues={issues}
-                          readOnly={readOnly}
-                          onChange={(next) =>
-                            form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                          }
-                          onDuplicate={() =>
-                            cartons.append({
-                              ...structuredClone(value),
-                              cartonId: nextCartonId(cartonValues),
-                              cartonIds: []
-                            })
-                          }
-                          onDelete={() => cartons.remove(index)}
-                        />
-                      )
-                      return note ? (
-                        <div key={carton.id} className="flex flex-col gap-2">
-                          {editor}
-                          {note}
-                        </div>
-                      ) : (
-                        editor
-                      )
-                    })}
-                  </div>
-                )}
-                {!cartons.fields.length && (
-                  <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
-                )}
-                {cartonsError && <FormError message={cartonsError} />}
-                {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
-              </section>
-            </form>
-            {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
-            {!(readOnly && renderSidebar) && (
-              <div
-                className={cn(
-                  "flex flex-col gap-3 text-sm",
-                  !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
-                )}
-              >
-                {packingIssues.some((issue) => !issue.cartonId) && (
-                  <ul aria-live="polite" className="text-sm text-destructive">
-                    {packingIssues
-                      .filter((issue) => !issue.cartonId)
-                      .map((issue, index) => (
-                        <li key={index}>
-                          {issue.cartonId
-                            ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                            : issueText(issue)}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-                {serverError && (
-                  <div className="max-h-48 overflow-y-auto">
-                    <FormError message={serverError} />
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                  {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
-                  {renderSidebar && (
-                    <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
-                      <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
-                      <span className="text-muted-foreground">
                         {t("packedUnits", { count: pieces, available: availableUnits })}
                       </span>
-                    </p>
-                  )}
-                  {!renderSidebar && (
-                    <div className="flex flex-col px-1">
-                      <p className="font-medium tabular-nums">
-                        {headed
-                          ? importText("cartonCount", { count: totals.cartons })
-                          : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
-                      </p>
-                      {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
-                        <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                          <span>
-                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                              physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                            )}{" "}
-                            kg
-                          </span>
-                          <span>
-                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                              physicalCartons.reduce(
-                                (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                                0
+                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={importText("title")}
+                                onClick={() => setImporting(true)}
+                              />
+                            }
+                          >
+                            <Upload />
+                          </TooltipTrigger>
+                          <TooltipContent>{importText("title")}</TooltipContent>
+                        </Tooltip>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="max-sm:w-[34px] max-sm:px-0"
+                          onClick={addCarton}
+                        >
+                          <Plus />
+                          <span className="max-sm:sr-only">{t("addCarton")}</span>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {cartons.fields.length > 0 && (
+                    <div className="flex flex-col gap-6 max-sm:gap-5">
+                      {cartons.fields.map((carton, index) => {
+                        const value = cartonValues[index] ?? carton
+                        const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
+                        const issues = packingIssues.filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
+                        const note = renderCartonNote?.(ids)
+                        const editor = (
+                          <CartonEditor
+                            key={carton.id}
+                            value={value}
+                            products={order.items}
+                            context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                            remainingPieces={Object.fromEntries(
+                              order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                            )}
+                            showErrors={
+                              form.formState.submitCount > 0 ||
+                              Boolean(
+                                initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId))
                               )
-                            )}{" "}
-                            m³
-                          </span>
+                            }
+                            issues={issues}
+                            readOnly={readOnly}
+                            onChange={(next) =>
+                              form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                            }
+                            onDuplicate={() =>
+                              cartons.append({
+                                ...structuredClone(value),
+                                cartonId: nextCartonId(cartonValues),
+                                cartonIds: []
+                              })
+                            }
+                            onDelete={() => cartons.remove(index)}
+                          />
+                        )
+                        return note ? (
+                          <div key={carton.id} className="flex flex-col gap-2">
+                            {editor}
+                            {note}
+                          </div>
+                        ) : (
+                          editor
+                        )
+                      })}
+                    </div>
+                  )}
+                  {!cartons.fields.length && (
+                    <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
+                  )}
+                  {cartonsError && <FormError message={cartonsError} />}
+                  {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
+                </section>
+              </form>
+              {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
+              {!(readOnly && renderSidebar) && (
+                <div
+                  className={cn(
+                    "flex flex-col gap-3 text-sm",
+                    !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
+                  )}
+                >
+                  {packingIssues.some((issue) => !issue.cartonId) && (
+                    <ul aria-live="polite" className="text-sm text-destructive">
+                      {packingIssues
+                        .filter((issue) => !issue.cartonId)
+                        .map((issue, index) => (
+                          <li key={index}>
+                            {issue.cartonId
+                              ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
+                              : issueText(issue)}
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                  {serverError && (
+                    <div className="max-h-48 overflow-y-auto">
+                      <FormError message={serverError} />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
+                    {renderSidebar && (
+                      <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+                        <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
+                        <span className="text-muted-foreground">
+                          {t("packedUnits", { count: pieces, available: availableUnits })}
+                        </span>
+                      </p>
+                    )}
+                    {!renderSidebar && (
+                      <div className="flex flex-col px-1">
+                        <p className="font-medium tabular-nums">
+                          {headed
+                            ? importText("cartonCount", { count: totals.cartons })
+                            : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
                         </p>
-                      )}
-                    </div>
-                  )}
-                  {!readOnly && (
-                    <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
-                      <SubmitButton
-                        type="button"
-                        variant="ghost"
-                        className={headed || !allUnitsPacked ? "hidden" : undefined}
-                        pending={working === "save"}
-                        disabled={totals.cartons > 1000}
-                        onClick={() => void perform("save", form.getValues())}
-                      >
-                        {t("saveDraft")}
-                      </SubmitButton>
-                      <SubmitButton
-                        type="submit"
-                        form={formId}
-                        pending={working === (allUnitsPacked ? "submit" : "save")}
-                        className={headed ? "max-sm:flex-1" : undefined}
-                        disabled={
-                          totals.cartons > 1000 ||
-                          (allUnitsPacked &&
-                            (!cartons.fields.length ||
-                              packingIssues.length > 0 ||
-                              completeCartons.length !== physicalCartons.length))
-                        }
-                      >
-                        {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
-                      </SubmitButton>
-                    </div>
-                  )}
+                        {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
+                          <p className="mt-1 flex gap-5 text-xs tabular-nums">
+                            <span>
+                              {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                                physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
+                              )}{" "}
+                              kg
+                            </span>
+                            <span>
+                              {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                                physicalCartons.reduce(
+                                  (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
+                                  0
+                                )
+                              )}{" "}
+                              m³
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {!readOnly && (
+                      <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
+                        <SubmitButton
+                          type="button"
+                          variant="ghost"
+                          className={headed || !allUnitsPacked ? "hidden" : undefined}
+                          pending={working === "save"}
+                          disabled={totals.cartons > 1000}
+                          onClick={() => void perform("save", form.getValues())}
+                        >
+                          {t("saveDraft")}
+                        </SubmitButton>
+                        <SubmitButton
+                          type="submit"
+                          form={formId}
+                          pending={working === (allUnitsPacked ? "submit" : "save")}
+                          className={headed ? "max-sm:flex-1" : undefined}
+                          disabled={
+                            totals.cartons > 1000 ||
+                            (allUnitsPacked &&
+                              (!cartons.fields.length ||
+                                packingIssues.length > 0 ||
+                                completeCartons.length !== physicalCartons.length))
+                          }
+                        >
+                          {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
+                        </SubmitButton>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              {footer}
+            </div>
+            {renderSidebar && (
+              <aside className="min-w-0">
+                {renderSidebar({
+                  cartons: totals.cartons,
+                  units: pieces,
+                  readyDate,
+                  weight:
+                    completeCartons.length === physicalCartons.length && physicalCartons.length > 0
+                      ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
+                      : null,
+                  volume:
+                    completeCartons.length === physicalCartons.length && physicalCartons.length > 0
+                      ? physicalCartons.reduce(
+                          (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
+                          0
+                        )
+                      : null
+                })}
+              </aside>
             )}
-            {footer}
           </div>
-          {renderSidebar && (
-            <aside className="min-w-0">
-              {renderSidebar({
-                cartons: totals.cartons,
-                units: pieces,
-                readyDate,
-                weight:
-                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                    ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                    : null,
-                volume:
-                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                    ? physicalCartons.reduce(
-                        (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                        0
-                      )
-                    : null
-              })}
-            </aside>
-          )}
-        </div>
-        <CartonImportDialog
-          open={importing}
-          onOpenChange={setImporting}
-          order={order}
-          shipmentName={shipmentName ?? t("cartons")}
-          existing={cartonValues}
-          availablePieces={availablePieces}
-          onImport={async (groups, mode) => {
-            cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
-          }}
-        />
-      </fieldset>
+          <CartonImportDialog
+            open={importing}
+            onOpenChange={setImporting}
+            order={order}
+            shipmentName={shipmentName ?? t("cartons")}
+            existing={cartonValues}
+            availablePieces={availablePieces}
+            onImport={async (groups, mode) => {
+              cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
+            }}
+          />
+        </fieldset>
+      </div>
     </FormProvider>
   )
 }
