@@ -14,7 +14,7 @@ import {
   money
 } from "@repo/aisle"
 import { useRouter } from "@tanstack/react-router"
-import { CircleAlert, CircleCheck, Ellipsis, Info, Plus, Upload } from "lucide-react"
+import { CircleAlert, CircleCheck, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
@@ -26,6 +26,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { useCartonTemplate, usePalletTemplate } from "@/hooks/use-import-templates"
 import { useActionMutation } from "@/lib/api"
 import {
   cartonTotals,
@@ -39,12 +40,14 @@ import {
   type PalletValue
 } from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
+import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
@@ -176,7 +179,9 @@ export function PackingForm({
   const [working, setWorking] = useState<"save" | "submit" | "link" | null>(null)
   const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const [importing, setImporting] = useState(false)
+  const [importingPallets, setImportingPallets] = useState(false)
   const importText = useTranslations("orders.cartonImport")
+  const palletImportText = useTranslations("orders.palletImport")
   const palletText = useTranslations("orders.pallets")
   // A packing list without a pickup address yet starts from the supplier's only saved one.
   const noOrigin = objectKeys(emptyAddress).every((key) => !initial?.origin?.[key])
@@ -209,6 +214,16 @@ export function PackingForm({
     ...pallet,
     cartonIds: pallet.cartonIds.filter((id) => physicalIds.has(id))
   }))
+  const cartonTemplate = useCartonTemplate(order)
+  const palletTemplate = usePalletTemplate(physicalCartons.map((carton) => carton.cartonId))
+  // The cartons or pallets in their import template, to edit and import again.
+  async function exportSheet(title: string, build: () => Promise<BlobPart>, failed: string) {
+    try {
+      downloadSpreadsheet(await build(), [title, order.reference, shipmentName ?? t("cartons")])
+    } catch {
+      toast.add({ title: failed })
+    }
+  }
   const contents = physicalCartons.flatMap((carton) => carton.items)
   const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
   const availableUnits = Object.values(availablePieces).reduce((total, value) => total + value, 0)
@@ -241,6 +256,15 @@ export function PackingForm({
     const result = palletInputSchema.safeParse(pallet)
     return result.success ? [result.data] : []
   })
+  // Finishing takes every carton, and every pallet when packed on them, complete, with nothing for the checks to point
+  // out.
+  const cantFinish =
+    totals.cartons > 1000 ||
+    (allUnitsPacked &&
+      (!cartons.fields.length ||
+        packingIssues.length > 0 ||
+        completeCartons.length !== physicalCartons.length ||
+        (palletized && completePallets.length !== pallets.length)))
   // The shipment's weight and volume: its pallets' when packed on them, otherwise its cartons'. Blank until complete.
   const loads = palletized
     ? completePallets.length === pallets.length && pallets.length > 0 && completePallets
@@ -340,8 +364,7 @@ export function PackingForm({
       items: []
     })
   }
-  // A header beside the title takes the actions, which the bar below the cartons keeps only on a phone.
-  const headed = Boolean(heading || renderHeader)
+  // The actions sit at the top, beside the title; on a phone the button moves below the cartons.
   const actions = !readOnly && (
     <div className="flex items-center gap-2">
       <DropdownMenu>
@@ -361,11 +384,7 @@ export function PackingForm({
         type="submit"
         form={formId}
         pending={working === (allUnitsPacked ? "submit" : "save")}
-        disabled={
-          totals.cartons > 1000 ||
-          (allUnitsPacked &&
-            (!cartons.fields.length || packingIssues.length > 0 || completeCartons.length !== physicalCartons.length))
-        }
+        disabled={cantFinish}
       >
         {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
       </SubmitButton>
@@ -373,15 +392,15 @@ export function PackingForm({
   )
   return (
     <FormProvider {...form}>
-      {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
       <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
-        {renderHeader?.(actions)}
-        {heading && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {heading}
-            {actions}
-          </div>
-        )}
+        {renderHeader
+          ? renderHeader(actions)
+          : (heading || actions) && (
+              <div className={cn("flex flex-wrap items-center gap-3", heading ? "justify-between" : "justify-end")}>
+                {heading}
+                {actions}
+              </div>
+            )}
         <div
           className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
         >
@@ -473,7 +492,7 @@ export function PackingForm({
                                   <span
                                     className={cn(
                                       "inline-flex items-center gap-1",
-                                      available > 0 && count === available && "text-green-700",
+                                      available > 0 && count === available && "text-success",
                                       count > available && "text-destructive"
                                     )}
                                   >
@@ -523,7 +542,7 @@ export function PackingForm({
                     <span
                       className={cn(
                         "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-                        pieces === availableUnits && "text-green-700"
+                        pieces === availableUnits && "text-success"
                       )}
                     >
                       {t("packedUnits", { count: pieces, available: availableUnits })}
@@ -531,6 +550,29 @@ export function PackingForm({
                   </div>
                   {!readOnly && (
                     <div className="flex gap-2">
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              aria-label={importText("export")}
+                              disabled={!cartons.fields.length}
+                              onClick={() =>
+                                void exportSheet(
+                                  "Cartons",
+                                  () => cartonTemplate(cartonValues),
+                                  importText("exportFailed")
+                                )
+                              }
+                            />
+                          }
+                        >
+                          <Download />
+                        </TooltipTrigger>
+                        <TooltipContent>{importText("export")}</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -609,28 +651,69 @@ export function PackingForm({
                       </span>
                     </div>
                     {!readOnly && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="max-sm:w-[34px] max-sm:px-0"
-                        onClick={() =>
-                          setPallets([
-                            ...pallets,
-                            {
-                              palletId: nextPalletId(pallets),
-                              length: blank,
-                              width: blank,
-                              height: blank,
-                              weight: blank,
-                              stackable: true,
-                              cartonIds: []
+                      <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={palletImportText("export")}
+                                disabled={!pallets.length}
+                                onClick={() =>
+                                  void exportSheet(
+                                    "Pallets",
+                                    () => palletTemplate(pallets),
+                                    palletImportText("exportFailed")
+                                  )
+                                }
+                              />
                             }
-                          ])
-                        }
-                      >
-                        <Plus />
-                        <span className="max-sm:sr-only">{palletText("addPallet")}</span>
-                      </Button>
+                          >
+                            <Download />
+                          </TooltipTrigger>
+                          <TooltipContent>{palletImportText("export")}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={palletImportText("title")}
+                                onClick={() => setImportingPallets(true)}
+                              />
+                            }
+                          >
+                            <Upload />
+                          </TooltipTrigger>
+                          <TooltipContent>{palletImportText("title")}</TooltipContent>
+                        </Tooltip>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="max-sm:w-[34px] max-sm:px-0"
+                          onClick={() =>
+                            setPallets([
+                              ...pallets,
+                              {
+                                palletId: nextPalletId(pallets),
+                                length: blank,
+                                width: blank,
+                                height: blank,
+                                weight: blank,
+                                stackable: true,
+                                cartonIds: []
+                              }
+                            ])
+                          }
+                        >
+                          <Plus />
+                          <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                        </Button>
+                      </div>
                     )}
                   </div>
                   {pallets.length > 0 ? (
@@ -663,12 +746,7 @@ export function PackingForm({
             </form>
             {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
             {!(readOnly && renderSidebar) && (
-              <div
-                className={cn(
-                  "flex flex-col gap-3 text-sm",
-                  !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
-                )}
-              >
+              <div className="flex flex-col gap-3 text-sm">
                 {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
                   <ul aria-live="polite" className="text-sm text-destructive">
                     {packingIssues
@@ -697,45 +775,14 @@ export function PackingForm({
                       </span>
                     </p>
                   )}
-                  {!renderSidebar && (
-                    <div className="flex flex-col px-1">
-                      <p className="font-medium tabular-nums">
-                        {headed
-                          ? importText("cartonCount", { count: totals.cartons })
-                          : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
-                      </p>
-                      {headed && weight !== null && volume !== null && (
-                        <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                          <span>{new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(weight)} kg</span>
-                          <span>{new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(volume)} m³</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
                   {!readOnly && (
-                    <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
-                      <SubmitButton
-                        type="button"
-                        variant="ghost"
-                        className={headed || !allUnitsPacked ? "hidden" : undefined}
-                        pending={working === "save"}
-                        disabled={totals.cartons > 1000}
-                        onClick={() => void perform("save", form.getValues())}
-                      >
-                        {t("saveDraft")}
-                      </SubmitButton>
+                    <div className="flex flex-wrap gap-2 max-sm:w-full sm:hidden">
                       <SubmitButton
                         type="submit"
                         form={formId}
                         pending={working === (allUnitsPacked ? "submit" : "save")}
-                        className={headed ? "max-sm:flex-1" : undefined}
-                        disabled={
-                          totals.cartons > 1000 ||
-                          (allUnitsPacked &&
-                            (!cartons.fields.length ||
-                              packingIssues.length > 0 ||
-                              completeCartons.length !== physicalCartons.length))
-                        }
+                        className="max-sm:flex-1"
+                        disabled={cantFinish}
                       >
                         {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
                       </SubmitButton>
@@ -767,6 +814,17 @@ export function PackingForm({
           availablePieces={availablePieces}
           onImport={async (groups, mode) => {
             cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
+          }}
+        />
+        <PalletImportDialog
+          open={importingPallets}
+          onOpenChange={setImportingPallets}
+          reference={order.reference}
+          shipmentName={shipmentName ?? t("cartons")}
+          cartonIds={physicalCartons.map((carton) => carton.cartonId)}
+          existing={pallets}
+          onImport={async (next, mode) => {
+            setPallets(mode === "replace" ? next : [...pallets, ...next])
           }}
         />
       </fieldset>

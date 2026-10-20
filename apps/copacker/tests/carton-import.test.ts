@@ -1,11 +1,29 @@
+import { validatePacking } from "@repo/aisle"
 import ExcelJS from "exceljs"
 import { describe, expect, it } from "vitest"
-import { cartonTotals, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
-import { cartonColumns, cartonTemplate, parseCartonTable, readCartonFile } from "@/lib/carton-import"
+import { type CartonGroup, cartonTotals, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
+import {
+  cartonColumns,
+  cartonExample,
+  cartonRows,
+  cartonTemplate,
+  parseCartonTable,
+  readCartonFile
+} from "@/lib/carton-import"
 import { orderData } from "@/stories/fixtures/orders"
 
 const products = orderData().items.map((item, index) => ({ ...item, piecesPerSet: index === 1 ? 2 : 1 }))
 const row = (sku = products[0]!.supplierSku, quantity = "10") => ["01", "2", sku, quantity, "60", "40", "40", "12"]
+// Instructions with a note or two, and each column's example from the first of `example`.
+const guide = (notes: string[], example: (string | number)[][] = []) => ({
+  headings: ["Spalte", "Was eintragen", "Beispiel"] as const,
+  columns: cartonColumns.map((column, index) => ({
+    column,
+    entry: `Eintrag ${index + 1}`,
+    example: example[0]?.[index] ?? ""
+  })),
+  notes
+})
 describe("carton import", () => {
   it("groups products, converts multipacks, and expands physical cartons without losing totals", () => {
     const result = parseCartonTable([[...cartonColumns], row(), row(products[1]!.supplierSku, "5")], products)
@@ -61,12 +79,43 @@ describe("carton import", () => {
     ])
     expect(expanded.map((carton) => carton.cartonId)).toEqual(["A", "B", "A-4", "A-3"])
   })
-  it("generates a usable workbook with text SKU references and imports filled template values", async () => {
+  it("fills the example with a kind of carton for each product, within the order's quantities", () => {
+    expect(cartonExample(products).map((cells) => cells.slice(0, 4))).toEqual([
+      ["A1", 3, products[0]!.supplierSku, Math.min(24, Math.floor(products[0]!.pieces / 3))],
+      ["B1", 2, products[1]!.supplierSku, 24],
+      ["C1", 1, products[2]!.supplierSku, 24]
+    ])
+    // Fewer packs than cartons, and a product without a whole pack, which is left out.
+    const few = [
+      { ...products[0]!, pieces: 2 },
+      { ...products[1]!, pieces: 1 }
+    ]
+    expect(cartonExample(few)).toEqual([
+      ["A1", 2, few[0]!.supplierSku, 1, 60, 40, 40, 12.5, few[0]!.name, few[0]!.variant, 1]
+    ])
+  })
+  it("generates a workbook with text SKU references, an example that imports as it is and a guide to each column", async () => {
+    const example = cartonExample(products)
     const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await cartonTemplate(products, ["Anleitung zum Verpacken"]))
-    expect(book.worksheets.map((sheet) => sheet.name)).toEqual(["Cartons", "Instructions"])
+    await book.xlsx.load(await cartonTemplate(products, guide(["Anleitung zum Verpacken"], example), example))
+    expect(book.worksheets.map((sheet) => sheet.name)).toEqual(["Cartons", "Example", "Instructions"])
     expect(book.getWorksheet("Cartons")?.getCell("C2").value).toBe(products[0]!.supplierSku)
-    expect(book.getWorksheet("Instructions")?.getCell("A1").value).toBe("Anleitung zum Verpacken")
+    const exampleTable = book
+      .getWorksheet("Example")!
+      .getSheetValues()
+      .slice(1)
+      .map((values) => (Array.isArray(values) ? values.slice(1).map((value) => String(value ?? "")) : []))
+    const parsed = parseCartonTable(exampleTable, products)
+    expect(parsed.issues).toEqual([])
+    expect(parsed.groups.map((group) => group.cartonId)).toEqual(["A1", "B1", "C1"])
+    expect(
+      validatePacking({ ...orderData(), items: products }, { cartons: expandCartonGroups(parsed.groups), changes: [] })
+        .issues
+    ).toEqual([])
+    const instructions = book.getWorksheet("Instructions")!
+    expect(instructions.getRow(2).values).toEqual([undefined, "Carton ID", "Eintrag 1", "A1"])
+    expect(instructions.getRow(3).values).toEqual([undefined, "Carton count", "Eintrag 2", 3])
+    expect(instructions.getCell("B14").value).toBe("Anleitung zum Verpacken")
     book.getWorksheet("Cartons")!.addRow(row())
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
     expect(result.issues).toEqual([])
@@ -85,12 +134,13 @@ describe("carton import", () => {
   })
   it("imports a filled localized workbook while ignoring unused product rows", async () => {
     const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await cartonTemplate(products, ["پیکنگ کی ہدایات"], true))
+    await book.xlsx.load(await cartonTemplate(products, guide(["پیکنگ کی ہدایات"]), cartonExample(products), true))
     const sheet = book.getWorksheet("Cartons")!
     row().forEach((value, index) => {
       sheet.getRow(2).getCell(index + 1).value = value
     })
-    expect(book.getWorksheet("Instructions")?.views[0]?.rightToLeft).toBe(true)
+    // Only the instructions turn right to left; the sheets of English headers and values don't.
+    expect(book.worksheets.map((each) => each.views[0]?.rightToLeft)).toEqual([false, false, true])
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
     expect(result.issues).toEqual([])
     expect(result.groups).toHaveLength(1)
@@ -104,7 +154,7 @@ describe("carton import", () => {
       variant: ` ${item.variant} `
     }))
     const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await cartonTemplate(padded, ["Instructions"]))
+    await book.xlsx.load(await cartonTemplate(padded, guide(["Instructions"]), cartonExample(padded)))
     const sheet = book.getWorksheet("Cartons")!
     row().forEach((value, index) => {
       if (index !== 2) {
@@ -114,6 +164,52 @@ describe("carton import", () => {
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), padded)
     expect(result.issues).toEqual([])
     expect(result.groups[0]?.items[0]?.itemId).toBe(padded[0]!.id)
+  })
+  it("exports cartons that import back as the same cartons with the same IDs", async () => {
+    const [tote, apron] = products
+    const carton = (cartonIds: string[], items: { itemId: string; pieces: number }[], weight = 12) => ({
+      cartonId: cartonIds[0]!,
+      cartonIds,
+      count: cartonIds.length,
+      length: 60,
+      width: 40,
+      height: 40,
+      weight,
+      items
+    })
+    // A gap in a kind's IDs and zero-padded IDs, which counting from the first ID wouldn't give back, and a mixed carton.
+    const groups = [
+      carton(["A1", "A2", "A5"], [{ itemId: tote!.id, pieces: 10 }]),
+      carton(
+        ["B01", "B02"],
+        [
+          { itemId: tote!.id, pieces: 4 },
+          { itemId: apron!.id, pieces: 6 }
+        ]
+      )
+    ]
+    const rows = cartonRows(groups, products)
+    expect(rows.map((cells) => cells.slice(0, 4))).toEqual([
+      ["A1", 2, tote!.supplierSku, 10],
+      ["A5", 1, tote!.supplierSku, 10],
+      ["B01", 1, tote!.supplierSku, 4],
+      ["B01", 1, apron!.supplierSku, 3],
+      ["B02", 1, tote!.supplierSku, 4],
+      ["B02", 1, apron!.supplierSku, 3]
+    ])
+    const book = new ExcelJS.Workbook()
+    await book.xlsx.load(await cartonTemplate(products, guide([]), cartonExample(products), false, rows))
+    // The order's products follow the cartons, to copy for more.
+    expect(book.getWorksheet("Cartons")?.getCell("C8").value).toBe(products[0]!.supplierSku)
+    const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
+    expect(result.issues).toEqual([])
+    const physical = (cartons: CartonGroup[]) =>
+      expandCartonGroups(cartons).map(({ cartonId, items, weight }) => ({ cartonId, items, weight }))
+    expect(physical(result.groups)).toEqual(physical(groups))
+    // Unfinished values stay blank, and a carton without products keeps its row.
+    expect(cartonRows([carton(["C1"], [], Number.NaN)], products)).toEqual([
+      ["C1", 1, "", "", 60, 40, 40, "", "", "", ""]
+    ])
   })
   it("reports unreadable files and ignores formula values", async () => {
     expect((await readCartonFile(new File(["broken"], "cartons.xlsx"), products)).issues[0]?.code).toBe("unreadable")

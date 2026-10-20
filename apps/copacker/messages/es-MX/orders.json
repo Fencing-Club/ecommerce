@@ -427,7 +427,6 @@
     "addCarton": "Agregar caja",
     "noCartons": "Aún no hay cajas",
     "noCartonsDescription": "Agrega una caja y luego duplica las idénticas.",
-    "cartonsAndUnits": "{cartons, plural, one {# caja} other {# cajas}}, {units, plural, one {# unidad} other {# unidades}}",
     "saveDraft": "Guardar borrador",
     "check": "Revisar empaque",
     "submit": "Enviar lista de empaque",
@@ -584,7 +583,9 @@
   },
   "cartonImport": {
     "title": "Importar cajas",
-    "reviewTitle": "Revisar importación",
+    "export": "Exportar cajas",
+    "exportFailed": "No se pudieron exportar las cajas.",
+    "reviewTitle": "Revisar importación de cajas",
     "downloadTemplate": "Descargar plantilla",
     "templateHint": "Usa la plantilla para indicar el contenido, las cantidades, las dimensiones y el peso de las cajas.",
     "downloadFailed": "No se pudo descargar la plantilla.",
@@ -622,12 +623,77 @@
       "limit": "Un envío puede contener hasta 1,000 cajas."
     },
     "template": {
-      "identity": "No cambies el SKU del proveedor, producto, variante ni unidades por paquete precargados. Pide al comprador que corrija los datos faltantes o incorrectos.",
-      "rows": "Usa una fila por producto en cada caja. Copia la fila del producto para cajas adicionales. Repite el Carton ID para productos empacados juntos. Deja vacías las celdas de empaque que no uses.",
-      "cartons": "Carton ID es tu referencia, no el número de etiqueta de Amazon. Asigna una letra a cada tipo de caja: A1, B1, C1. Para cajas idénticas, indica más de 1: A1 con cantidad 3 genera A1, A2 y A3. Se omiten los identificadores existentes.",
-      "quantity": "Quantity per carton cuenta paquetes. Para un paquete de 2, una cantidad de 10 equivale a 20 piezas. Todas las cajas de un grupo idéntico deben contener los mismos productos y cantidades.",
-      "measurements": "Ingresa las dimensiones en centímetros y el peso en kilogramos. Repite la cantidad de cajas, dimensiones y peso en cada fila con el mismo Carton ID.",
-      "format": "Llena las celdas blancas de empaque. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la tabla Cartons como CSV."
+      "columns": {
+        "cartonId": "Tu referencia para un tipo de caja, no el número de etiqueta de Amazon: una letra por tipo, numerada desde 1, por ejemplo A1, B1, C1. Repítela en cada fila de una caja con más de un producto.",
+        "cartonCount": "Cuántas cajas idénticas de este tipo. A1 con cantidad 3 genera A1, A2 y A3. Se omiten los identificadores que el envío ya tiene.",
+        "supplierSku": "Precargado del pedido. No lo cambies; pide al comprador que corrija un producto faltante o incorrecto.",
+        "quantity": "Paquetes de este producto en cada caja. Para un paquete de 2, 10 equivale a 20 unidades.",
+        "length": "El largo de la caja en centímetros.",
+        "width": "El ancho de la caja en centímetros.",
+        "height": "El alto de la caja en centímetros.",
+        "weight": "El peso de la caja empacada en kilogramos.",
+        "product": "Precargado del pedido. No lo cambies.",
+        "variant": "Precargada del pedido. No la cambies.",
+        "unitsPerPack": "Precargado del pedido: las unidades de un paquete. No lo cambies."
+      },
+      "notes": {
+        "rows": "Usa una fila por producto en cada caja. Para empacar un producto en más tipos de caja, copia su fila. Deja vacías las filas que no uses. La hoja Example muestra la plantilla llena para este envío.",
+        "sameCarton": "Las filas con el mismo Carton ID son una sola caja: usa la misma cantidad, dimensiones y peso. Las cajas idénticas contienen los mismos productos y cantidades.",
+        "format": "Llena las celdas blancas y no cambies las grises. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la hoja Cartons como CSV."
+      }
     }
+  },
+  "palletImport": {
+    "title": "Importar tarimas",
+    "export": "Exportar tarimas",
+    "exportFailed": "No se pudieron exportar las tarimas.",
+    "reviewTitle": "Revisar importación de tarimas",
+    "review": "Revisar tarimas",
+    "failed": "No se pudieron importar las tarimas. No se realizaron cambios.",
+    "add": "Agregar tarimas",
+    "replace": "Reemplazar tarimas",
+    "import": "Importar tarimas",
+    "importing": "Importando tarimas…",
+    "palletCount": "{count, plural, one {# tarima} other {# tarimas}}",
+    "cartons": "{count, plural, one {Caja {cartons}} other {Cajas {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "El archivo no contiene filas de tarimas.",
+      "worksheet": "El archivo necesita una hoja llamada Pallets.",
+      "palletId": "Ingresa un ID de tarima de 1 a 60 caracteres.",
+      "duplicatePallet": "La tarima {pallet} también está en la fila {other}. Usa una fila por tarima.",
+      "stacking": "Ingresa Stackable o Not stackable.",
+      "cartons": "Ingresa las cajas de esta tarima, por ejemplo A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {La caja {cartons} no está en este envío.} other {Las cajas {cartons} no están en este envío.}}",
+      "cartonTwice": "{count, plural, one {La caja {cartons} también está en la tarima {pallet}.} other {Las cajas {cartons} también están en la tarima {pallet}.}} Pon cada caja en una sola tarima."
+    },
+    "clashes": {
+      "replace": "{count, plural, one {Estas tarimas chocan con la tarima que ya está en este envío.} other {Estas tarimas chocan con las # tarimas que ya están en este envío.}} Elige Reemplazar tarimas para usar solo las tarimas del archivo.",
+      "palletExists": "Ya hay una tarima {pallet}. Dale otro ID a esta.",
+      "cartonsOnPallet": "{count, plural, one {La caja {cartons} ya está en la tarima {pallet}.} other {Las cajas {cartons} ya están en la tarima {pallet}.}}"
+    },
+    "template": {
+      "columns": {
+        "palletId": "Tu referencia para la tarima, por ejemplo 1, 2, 3. Usa cada ID una sola vez.",
+        "length": "El largo de la tarima cargada en centímetros.",
+        "width": "El ancho de la tarima cargada en centímetros.",
+        "height": "El alto de la tarima cargada en centímetros, del piso a la parte superior de las cajas.",
+        "weight": "El peso bruto en kilogramos: la tarima con sus cajas.",
+        "stacking": "Stackable si otra tarima puede ir encima; si no, Not stackable. Elige de la lista.",
+        "cartonIds": "Las cajas de la tarima, con sus IDs de la lista de empaque. Une una secuencia con un guion y separa el resto con comas. Pon cada caja en una sola tarima."
+      },
+      "notes": {
+        "rows": "Usa una fila por tarima. La hoja Example muestra la plantilla llena para este envío.",
+        "shipmentCartons": "Cajas de este envío: {cartons}.",
+        "format": "Conserva los encabezados en inglés, los valores de Stacking y el nombre de hoja Pallets. Sube el archivo XLSX o exporta la hoja Pallets como CSV."
+      }
+    }
+  },
+  "importTemplate": {
+    "column": "Columna",
+    "entry": "Qué anotar",
+    "example": "Ejemplo"
   }
 }

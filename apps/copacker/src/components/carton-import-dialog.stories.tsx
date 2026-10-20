@@ -58,7 +58,7 @@ async function upload(file: File) {
   await userEvent.upload(input, file)
   await waitFor(() => expect(dialog.getByRole("button", { name: "Review import" })).toBeEnabled())
   await userEvent.click(dialog.getByRole("button", { name: "Review import" }))
-  return shownDialog("Review import")
+  return shownDialog("Review carton import")
 }
 export const Upload = meta.story({
   play: async () => {
