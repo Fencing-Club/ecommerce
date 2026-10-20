@@ -170,8 +170,8 @@ describe("packing list", () => {
       expect(text).toContain(value)
     }
     expect(text).toContain("17–18")
-    expect(text).toContain("30 packs of 2")
-    expect(text).toContain("60 packs of 2")
+    expect(text).toContain("30 packs, 2 each")
+    expect(text).toContain("60 packs, 2 each")
     expect(text).not.toContain("Amazon carton labels")
   })
 

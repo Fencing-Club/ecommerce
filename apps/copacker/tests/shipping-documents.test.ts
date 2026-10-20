@@ -219,9 +219,9 @@ describe("rendered shipping PDFs", () => {
         .replace(/\s+/g, " ")
       for (const value of [
         "A1–A4",
-        "60 packs of 2",
+        "60 packs, 2 each",
         "120 units",
-        "240 packs of 2",
+        "240 packs, 2 each",
         "480 units",
         "Amazon carton labels"
       ]) {
