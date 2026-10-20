@@ -560,7 +560,8 @@ export const SupplierPackingReady = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "ready" }),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
-    await expect(canvas.getByText("540 of 540")).toBeVisible()
+    // The cartons header and the phone's action bar both count units; one shows at a time.
+    await expect(canvas.getAllByText("540 of 540 units").some((element) => element.checkVisibility())).toBe(true)
   }
 })
 export const SupplierPacked = meta.story({
@@ -613,7 +614,8 @@ export const ReceivingAddressStop = meta.story({
 export const SupplierFbaMixedCartons = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", initialPacking: "ready", mixedFba: true }),
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("180 of 180")).toBeVisible()
+    // The cartons header and the phone's action bar both count units; one shows at a time.
+    await expect(canvas.getAllByText("180 of 180 units").some((element) => element.checkVisibility())).toBe(true)
     await expect(canvas.getAllByRole("region", { name: /^Carton [123]$/ })).toHaveLength(3)
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     await expect(canvas.queryByText(/Enter.*FNSKU/)).toBeNull()
@@ -653,7 +655,7 @@ export const ShipmentDocumentsReady = meta.story({
   }),
   play: async ({ canvas, canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body)
-    const summary = within(canvas.getByRole("region", { name: "Shipment summary" }))
+    const summary = within(canvas.getByRole("region", { name: "Shipment details" }))
     await expect(summary.getByText("18", { exact: true })).toBeVisible()
     await expect(summary.getByText("230.8 kg")).toBeVisible()
     await expect(summary.getByText("1.79 m\u00b3")).toBeVisible()
