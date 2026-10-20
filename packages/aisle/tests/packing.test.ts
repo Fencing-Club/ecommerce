@@ -110,12 +110,17 @@ describe("Supplier piece and carton contract", () => {
       false
     )
   })
-  it("uses the exact 50-pound boundary", () => {
-    const p = structuredClone(packing)
-    p.cartons.forEach((c) => {
-      c.weight = 22.68
-    })
-    expect(validatePacking(order, p).issues.some((i) => i.code === "cartonWeight")).toBe(true)
+  it("holds cartons to 50 lb as shown, 22.67 kg", () => {
+    // 50 lb is 22.6796185 kg, so 22.68 kg is over it.
+    const weighing = (weight: number) => {
+      const p = structuredClone(packing)
+      p.cartons.forEach((c) => {
+        c.weight = weight
+      })
+      return validatePacking(order, p).issues.some((i) => i.code === "cartonWeight")
+    }
+    expect(weighing(22.67)).toBe(false)
+    expect(weighing(22.68)).toBe(true)
   })
   it("rejects broken multipacks, duplicate carton IDs, and inconsistent configurations", () => {
     const p = structuredClone(packing)
@@ -437,8 +442,8 @@ describe("POs to Amazon with lines for several networks", () => {
       { code: "separateCartons", networks: ["fba", "awd_us"] }
     ])
     expect(rules.filter(isCartonRule).map(requirementText)).toEqual([
-      "FBA cartons: mixed SKUs are allowed; at most 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) and 22.68 kg (50 lb), unless one unit is larger.",
-      "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb).",
+      "FBA cartons: mixed SKUs are allowed; at most 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) and 22.67 kg (50 lb), unless one unit is larger.",
+      "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.67 kg (50 lb).",
       "Pack FBA and AWD US products in separate cartons."
     ])
     expect(destinationName(both)).toBe("Amazon FBA and AWD US")

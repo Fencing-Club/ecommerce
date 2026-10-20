@@ -57,7 +57,7 @@ function cartonRules(network: AmazonNetwork) {
     (size.shape === "cube"
       ? `${size.lengthCm} cm (${size.lengthIn} in) on each side`
       : `${size.lengthCm} × ${size.widthCm} × ${size.heightCm} cm (${size.lengthIn} × ${size.widthIn} × ${size.heightIn} in)`)
-  const weightText = weight && `${Math.round(weight.maxKg * 100) / 100} kg (${weight.maxLb} lb)`
+  const weightText = weight && `${weight.maxKg} kg (${weight.maxLb} lb)`
   const measures = [sizeText, weightText].filter(Boolean).join(" and ")
   return `${amazonNetworkNames[network]} cartons: ${contents.join(", ")}${measures ? `; at most ${measures}` : ""}${limits.exceptOneUnit ? ", unless one unit is larger" : ""}.`
 }

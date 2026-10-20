@@ -103,7 +103,7 @@ Every screen tells one story. Before adding a screen, reuse these facts.
 | PO-1045 proposal           | Revision 2: totes to 240, apron to $9.40, large basket replaced by medium (HG-BASKET-M, LM-MB-M) 120 at $6.95; 480 units, $3,258.00 |
 | Shipment 1                 | 12 cartons, 240 units (180 totes, 60 aprons), invoice INV-LM-2291 for $2,016.00, carton 7 at 23.4 kg    |
 | Forwarder's shipment 2     | 12 cartons, 290 units, 186.4 kg, 0.83 m³, carrier Matson                                                |
-| Amazon carton limit        | 63.5 cm a side and 22.68 kg (50 lb); written as 22.68 kg                                                 |
+| Amazon carton limit        | 63.5 cm a side and 22.67 kg (50 lb); written as 22.67 kg                                                 |
 | Other scenario POs         | PO-1051 to accept (Lotus, 520 units, $3,443.00, required by Dec 20, to FBA, AWD US and Oakland); PO-1047 declined (Cedar Works); PO-1048 Global Logistics (Northwind to AWD US); PO-1049 Amazon GWD (Lotus); PO-1040 receiving |
 | CS-1007                    | Combined shipment at Bayline: PO-1042 shipment 2 (Lotus) and PO-1050 shipment 1 (Northwind), waiting for labels |
 | Sidebar counts             | Buyer: Inbox 8, Purchase orders 4, Shipments 4, Restock 4. Supplier: Inbox 6, Orders 5, Shipments 2, Inventory 5. Forwarder: Inbox 5, Shipments 2 |

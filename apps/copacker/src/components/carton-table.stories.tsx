@@ -173,7 +173,7 @@ const awd = checked(awdBagOrder)
 const [awdLimits, awdMixed, awdIvory] = errorCartons(awdBagOrder, 70)
 const rowErrors = [
   "Dimensions: Length is 70 cm. AWD allows up to 63.5 cm (25 in) on each side.",
-  "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+  "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
 ]
 const productError =
   "Quantity: 160 sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons."
@@ -259,7 +259,7 @@ export const AwdLimitsInGerman = meta.story({
     for (const error of [
       "Menge: 160 verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
       "Abmessungen: Die Länge beträgt 70 cm. Bei AWD darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
-      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,68 kg). Verringern Sie das Gewicht jedes Kartons."
+      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,67 kg). Verringern Sie das Gewicht jedes Kartons."
     ]) {
       await expect(canvas.getByText(error)).toBeVisible()
     }
@@ -301,7 +301,7 @@ export const FbaLimits = meta.story({
   play: async ({ canvas }) => {
     for (const error of [
       "Dimensions: Length is 100 cm. FBA allows up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) for this carton.",
-      "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+      "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
     ]) {
       await expect(canvas.getByText(error)).toBeVisible()
     }
