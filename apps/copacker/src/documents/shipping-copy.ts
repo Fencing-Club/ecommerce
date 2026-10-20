@@ -55,7 +55,7 @@ const en = {
   cartonIdsText: "Match the received carton IDs to the incoming packing list.",
   cartons: "Cartons",
   carton: "Carton",
-  items: "Items",
+  items: "Units",
   weight: "Gross weight",
   product: "Product",
   supplierSku: "Supplier SKU",
@@ -151,9 +151,10 @@ const en = {
     "Use {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} in) wooden pallets with four-way entry, GMA grade B or better, in good condition.",
   fbaPalletText:
     "Load each pallet with the cartons assigned in the packing list. Stack them flush, heaviest at the bottom, with the carton labels facing out and nothing over the edge.",
-  palletSize: "Height and weight",
-  fbaPalletSizeText:
-    "At most {heightCm} cm ({heightIn} in) tall including the pallet, and {kg} kg ({lb} lb). A stackable pallet should be no taller than {stackCm} cm ({stackIn} in).",
+  palletHeight: "Height",
+  fbaPalletHeightText:
+    "At most {heightCm} cm ({heightIn} in) tall including the pallet. A stackable pallet should be no taller than {stackCm} cm ({stackIn} in).",
+  fbaPalletWeightText: "At most {kg} kg ({lb} lb) including the pallet.",
   fbaSecureText:
     "Wrap each pallet in clear stretch wrap and mark it “Do not break stretch wrap”. The cartons must stay stable without the wrap.",
   palletLabel: "Pallet labels",
@@ -231,7 +232,7 @@ const de: ShippingCopy = {
   cartonIdsText: "Gleichen Sie die erhaltenen Karton-IDs mit der eingehenden Packliste ab.",
   cartons: "Kartons",
   carton: "Karton",
-  items: "Artikel",
+  items: "Einheiten",
   weight: "Bruttogewicht",
   product: "Produkt",
   supplierSku: "Lieferanten-SKU",
@@ -328,9 +329,10 @@ const de: ShippingCopy = {
     "Verwenden Sie Holzpaletten mit {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} Zoll), vierseitig einfahrbar, mindestens GMA-Klasse B und in gutem Zustand.",
   fbaPalletText:
     "Beladen Sie jede Palette mit den in der Packliste zugeordneten Kartons. Stapeln Sie bündig, die schwersten unten, mit den Kartonetiketten nach außen und ohne Überstand.",
-  palletSize: "Höhe und Gewicht",
-  fbaPalletSizeText:
-    "Höchstens {heightCm} cm ({heightIn} Zoll) hoch einschließlich Palette und höchstens {kg} kg ({lb} lb). Eine stapelbare Palette sollte höchstens {stackCm} cm ({stackIn} Zoll) hoch sein.",
+  palletHeight: "Höhe",
+  fbaPalletHeightText:
+    "Höchstens {heightCm} cm ({heightIn} Zoll) hoch einschließlich Palette. Eine stapelbare Palette sollte höchstens {stackCm} cm ({stackIn} Zoll) hoch sein.",
+  fbaPalletWeightText: "Höchstens {kg} kg ({lb} lb) einschließlich Palette.",
   fbaSecureText:
     "Umwickeln Sie jede Palette mit klarer Stretchfolie und kennzeichnen Sie sie mit „Do not break stretch wrap“. Die Kartons müssen auch ohne Folie stabil stehen.",
   palletLabel: "Palettenetiketten",
@@ -406,7 +408,7 @@ const zh: ShippingCopy = {
   cartonIdsText: "核对收到的纸箱编号与入库装箱单是否一致。",
   cartons: "纸箱",
   carton: "纸箱",
-  items: "商品",
+  items: "件数",
   weight: "毛重",
   product: "产品",
   supplierSku: "供应商 SKU",
@@ -501,9 +503,10 @@ const zh: ShippingCopy = {
   fbaPalletTypeText:
     "使用 {lengthCm} × {widthCm} 厘米（{lengthIn} × {widthIn} 英寸）、四向进叉、GMA B 级或以上且状况良好的木托盘。",
   fbaPalletText: "按照装箱单，将指定纸箱装载到对应托盘上。码放平齐，重箱在下，箱标签朝外，不得超出托盘边缘。",
-  palletSize: "高度和重量",
-  fbaPalletSizeText:
-    "含托盘在内高度不超过 {heightCm} 厘米（{heightIn} 英寸），重量不超过 {kg} 千克（{lb} 磅）。可堆叠托盘的高度应不超过 {stackCm} 厘米（{stackIn} 英寸）。",
+  palletHeight: "高度",
+  fbaPalletHeightText:
+    "含托盘在内高度不超过 {heightCm} 厘米（{heightIn} 英寸）。可堆叠托盘的高度应不超过 {stackCm} 厘米（{stackIn} 英寸）。",
+  fbaPalletWeightText: "含托盘在内重量不超过 {kg} 千克（{lb} 磅）。",
   fbaSecureText: "用透明缠绕膜包裹每个托盘，并标注“Do not break stretch wrap”。去掉缠绕膜后纸箱也必须稳固。",
   palletLabel: "托盘标签",
   palletLabelText: "每个托盘有四张标签，在四个侧面各贴一张，位于顶部居中、缠绕膜外侧。每个纸箱保留自己的标签。",
@@ -578,7 +581,7 @@ const ur: ShippingCopy = {
   cartonIdsText: "وصول شدہ کارٹن نمبروں کو موصولہ پیکنگ لسٹ سے ملائیں۔",
   cartons: "کارٹن",
   carton: "کارٹن",
-  items: "اشیاء",
+  items: "یونٹ",
   weight: "مجموعی وزن",
   product: "پروڈکٹ",
   supplierSku: "سپلائر SKU",
@@ -676,9 +679,10 @@ const ur: ShippingCopy = {
     "{lengthCm} × {widthCm} سینٹی میٹر ({lengthIn} × {widthIn} انچ) کے لکڑی کے پیلٹ استعمال کریں جن میں چاروں طرف سے فورک لفٹ داخل ہو سکے، GMA گریڈ B یا بہتر، اور اچھی حالت میں۔",
   fbaPalletText:
     "ہر پیلٹ پر پیکنگ لسٹ میں اس کے لیے مختص کارٹن رکھیں۔ انہیں برابر رکھیں، بھاری کارٹن نیچے، کارٹن لیبل باہر کی طرف، اور کچھ بھی کنارے سے باہر نہ ہو۔",
-  palletSize: "اونچائی اور وزن",
-  fbaPalletSizeText:
-    "پیلٹ سمیت زیادہ سے زیادہ {heightCm} سینٹی میٹر ({heightIn} انچ) اونچا اور {kg} کلوگرام ({lb} پاؤنڈ)۔ اسٹیک ہونے والا پیلٹ {stackCm} سینٹی میٹر ({stackIn} انچ) سے اونچا نہ ہو۔",
+  palletHeight: "اونچائی",
+  fbaPalletHeightText:
+    "پیلٹ سمیت زیادہ سے زیادہ {heightCm} سینٹی میٹر ({heightIn} انچ) اونچا۔ اسٹیک ہونے والا پیلٹ {stackCm} سینٹی میٹر ({stackIn} انچ) سے اونچا نہ ہو۔",
+  fbaPalletWeightText: "پیلٹ سمیت زیادہ سے زیادہ {kg} کلوگرام ({lb} پاؤنڈ)۔",
   fbaSecureText:
     "ہر پیلٹ کو شفاف اسٹریچ ریپ میں لپیٹیں اور اس پر “Do not break stretch wrap” لکھیں۔ ریپ کے بغیر بھی کارٹن مستحکم رہیں۔",
   palletLabel: "پیلٹ لیبل",

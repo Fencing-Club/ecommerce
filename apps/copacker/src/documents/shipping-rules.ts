@@ -51,7 +51,8 @@ const palletChecks: Record<"fba" | "other", ShippingCheck[]> = {
   fba: [
     { title: "palletType", detail: "fbaPalletTypeText", values: fbaPalletLimits },
     { title: "pallet", detail: "fbaPalletText" },
-    { title: "palletSize", detail: "fbaPalletSizeText", values: fbaPalletLimits },
+    { title: "palletHeight", detail: "fbaPalletHeightText", values: fbaPalletLimits },
+    { title: "weightLimit", detail: "fbaPalletWeightText", values: fbaPalletLimits },
     { title: "secure", detail: "fbaSecureText" },
     { title: "palletLabel", detail: "palletLabelText" }
   ],

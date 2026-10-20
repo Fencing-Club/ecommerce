@@ -354,7 +354,13 @@ describe("pallet labels", () => {
 
   it("gives Amazon's pallet type, height, weight and wrap for FBA pallets, before the handoff", async () => {
     const checklist = await pageText(ShippingPdf({ data: fba, kind: "checklist", settings: defaultDocumentSettings }))
-    for (const value of ["Pallet type", "121.9 × 101.6 cm (48 × 40 in)", "182.9 cm (72 in)", "680 kg (1,500 lb)"]) {
+    for (const value of [
+      "Pallet type",
+      "121.9 × 101.6 cm (48 × 40 in)",
+      "Height",
+      "182.9 cm (72 in)",
+      "680 kg (1,500 lb)"
+    ]) {
       expect(checklist).toContain(value)
     }
     expect(checklist).toMatch(/Do\s+not\s+break\s+stretch\s+wrap/)
