@@ -269,7 +269,7 @@ export const Documents = meta.story({
   play: async ({ canvas }) => {
     const links = canvas.getAllByRole("link")
     await expect(links).toHaveLength(4)
-    await expect(canvas.getByRole("link", { name: /Download Purchase order/ })).toHaveAttribute(
+    await expect(canvas.getByRole("link", { name: "Download Purchase order PO-1045.pdf" })).toHaveAttribute(
       "href",
       "/api/documents/doc-po"
     )
