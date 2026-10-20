@@ -446,7 +446,9 @@
     "finishPacking": "Verpacken abschließen",
     "addNewAddress": "Adresse hinzufügen",
     "chooseAddress": "Abholadresse",
-    "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}"
+    "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}",
+    "leftCount": "{count} offen",
+    "overCount": "{count} zu viel"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",

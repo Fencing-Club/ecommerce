@@ -446,7 +446,9 @@
     "finishPacking": "Completa imballaggio",
     "addNewAddress": "Aggiungi indirizzo",
     "chooseAddress": "Indirizzo di ritiro",
-    "packedUnits": "{count} di {available} unità"
+    "packedUnits": "{count} di {available} unità",
+    "leftCount": "{count} rimanenti",
+    "overCount": "{count} in eccesso"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",

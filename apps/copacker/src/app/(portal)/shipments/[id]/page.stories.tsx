@@ -352,6 +352,12 @@ export const DraftPacking = meta.story({
     // Each product's row prints just its own labels.
     const [towel, , teaTowel] = towelOrder.items
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    // The products show the supplier's SKU, not the buyer's, and what's left to pack.
+    const products = within(await canvas.findByRole("table"))
+    await expect(products.getByText("NT-WB-2214")).toBeVisible()
+    await expect(products.queryByText("WB-2214")).toBeNull()
+    await expect(products.getByText("144 of 180")).toBeVisible()
+    await expect(products.getByText("36 left")).toBeVisible()
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
     const towelMenu = within(await screen.findByRole("menu"))
     await expect(towelMenu.getByRole("menuitem", { name: "FNSKU labels" })).toHaveAttribute(

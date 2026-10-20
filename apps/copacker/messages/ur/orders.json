@@ -446,7 +446,9 @@
     "finishPacking": "پیکنگ مکمل کریں",
     "addNewAddress": "پتہ شامل کریں",
     "chooseAddress": "پک اپ کا پتہ",
-    "packedUnits": "{available} اکائیوں میں سے {count}"
+    "packedUnits": "{available} اکائیوں میں سے {count}",
+    "leftCount": "{count} باقی",
+    "overCount": "{count} زیادہ"
   },
   "paymentTerms": {
     "net7": "Net 7",

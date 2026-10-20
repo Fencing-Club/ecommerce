@@ -446,7 +446,9 @@
     "finishPacking": "完成装箱",
     "addNewAddress": "添加地址",
     "chooseAddress": "提货地址",
-    "packedUnits": "{count} / {available} 件"
+    "packedUnits": "{count} / {available} 件",
+    "leftCount": "还剩 {count}",
+    "overCount": "多出 {count}"
   },
   "paymentTerms": {
     "net7": "7 天账期",

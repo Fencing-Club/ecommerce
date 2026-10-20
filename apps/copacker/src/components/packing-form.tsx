@@ -11,7 +11,7 @@ import {
   money
 } from "@repo/aisle"
 import { useRouter } from "@tanstack/react-router"
-import { Ellipsis, Plus, Upload } from "lucide-react"
+import { CircleCheck, Ellipsis, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
@@ -339,75 +339,103 @@ export function PackingForm({
               noValidate
               className="flex flex-col gap-6"
             >
-              <Accordion className="rounded-xl border bg-card">
+              <Accordion className="rounded-lg border bg-card">
                 <AccordionItem value="products">
-                  <AccordionTrigger className="items-center gap-3 p-4 text-sm font-semibold hover:no-underline">
-                    <span className="flex flex-wrap items-center gap-x-3">
-                      {detail("columns.products")} ({order.items.length})
-                    </span>
+                  <AccordionTrigger className="items-center gap-3 px-4 py-3.5 text-sm font-medium hover:no-underline">
+                    {detail("columns.products")} ({order.items.length})
                   </AccordionTrigger>
                   <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
-                    {/* Read-only PO values; the table scrolls within the disclosure on narrow screens. */}
-                    <Table framed={false} className={cn("min-w-160", edgeCells)}>
-                      <TableHeader className="[&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
-                        <TableRow>
-                          <TableHead className="w-px">{t("product")}</TableHead>
-                          <TableHead className="px-6 text-end">{t("packed")}</TableHead>
-                          <TableHead className="px-6">{t("supplierSku")}</TableHead>
-                          {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
-                          {renderProductActions && (
-                            <TableHead className="w-10">
-                              <span className="sr-only">{actionsText("actions")}</span>
-                            </TableHead>
-                          )}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.items.map((item) => {
-                          const available = availablePieces[item.id] ?? 0
-                          const count = packed(item.id)
-                          return (
-                            // Keep product details aligned at the top of each row.
-                            <TableRow key={item.id} className="hover:bg-transparent [&>td]:align-top">
-                              <TableCell className="w-px whitespace-normal">
-                                <div className="w-max max-w-sm">
-                                  <ProductIdentity item={item} showPackSize={false} />
-                                </div>
-                              </TableCell>
-                              <TableCell
-                                className={cn(
-                                  "px-6 pt-3.5 text-end tabular-nums",
-                                  count > available && "text-destructive"
-                                )}
+                    {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
+                        are packed. Below 32rem each line stacks, with its column names above the values. */}
+                    <div className="@container/products border-t">
+                      <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
+                        <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead>{t("product")}</TableHead>
+                            <TableHead className="w-36">{t("supplierSku")}</TableHead>
+                            <TableHead className="w-28 text-end">{t("packed")}</TableHead>
+                            {prices && <TableHead className="w-28 text-end">{t("pricePerUnit")}</TableHead>}
+                            {renderProductActions && (
+                              <TableHead className="w-14">
+                                <span className="sr-only">{actionsText("actions")}</span>
+                              </TableHead>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="@max-lg/products:block">
+                          {order.items.map((item) => {
+                            const available = availablePieces[item.id] ?? 0
+                            const count = packed(item.id)
+                            return (
+                              <TableRow
+                                key={item.id}
+                                className="hover:bg-transparent @max-lg/products:relative @max-lg/products:grid @max-lg/products:grid-cols-3 @max-lg/products:gap-x-4 @max-lg/products:gap-y-2 @max-lg/products:p-4 [&>td]:py-3 [&>td]:align-top @max-lg/products:[&>td]:p-0"
                               >
-                                {t("packedOf", { count, available })}
-                              </TableCell>
-                              <TableCell className="px-6 whitespace-normal">
-                                {item.components?.length ? (
-                                  <div className="flex flex-col gap-1 pt-1.5">
-                                    {item.components.map((component) => (
-                                      <p key={component.variantId}>
-                                        {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
-                                      </p>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span>{item.supplierSku || "—"}</span>
-                                )}
-                              </TableCell>
-                              {prices && (
-                                <TableCell className="whitespace-normal">
-                                  {money(item.unitPrice, order.currency, locale)}
+                                <TableCell className="whitespace-normal [overflow-wrap:anywhere] @max-lg/products:col-span-3 @max-lg/products:ps-0! @max-lg/products:pe-10!">
+                                  <ProductIdentity item={item} showSku={false} showPackSize={false} />
                                 </TableCell>
-                              )}
-                              {renderProductActions && (
-                                <TableCell className="w-10 text-end">{renderProductActions(item)}</TableCell>
-                              )}
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+                                <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
+                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                    {t("supplierSku")}
+                                  </span>
+                                  {item.components?.length ? (
+                                    <span className="flex flex-col gap-1">
+                                      {item.components.map((component) => (
+                                        <span key={component.variantId}>
+                                          {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  ) : (
+                                    item.supplierSku || "—"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-end tabular-nums @max-lg/products:text-start">
+                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                    {t("packed")}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center gap-1",
+                                      available > 0 && count === available && "text-green-700",
+                                      count > available && "text-destructive"
+                                    )}
+                                  >
+                                    {available > 0 && count === available && (
+                                      <CircleCheck aria-hidden className="size-3.5" />
+                                    )}
+                                    {t("packedOf", { count, available })}
+                                  </span>
+                                  {count < available && (
+                                    <span className="block text-xs text-muted-foreground">
+                                      {t("leftCount", { count: available - count })}
+                                    </span>
+                                  )}
+                                  {count > available && (
+                                    <span className="block text-xs text-destructive">
+                                      {t("overCount", { count: count - available })}
+                                    </span>
+                                  )}
+                                </TableCell>
+                                {prices && (
+                                  <TableCell className="text-end tabular-nums @max-lg/products:text-start">
+                                    <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                      {t("pricePerUnit")}
+                                    </span>
+                                    {money(item.unitPrice, order.currency, locale)}
+                                  </TableCell>
+                                )}
+                                {renderProductActions && (
+                                  <TableCell className="py-2! text-end @max-lg/products:absolute @max-lg/products:end-3 @max-lg/products:top-3">
+                                    {renderProductActions(item)}
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

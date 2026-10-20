@@ -446,7 +446,9 @@
     "finishPacking": "Finish packing",
     "addNewAddress": "Add new address",
     "chooseAddress": "Choose an address",
-    "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}"
+    "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
+    "leftCount": "{count} left",
+    "overCount": "{count} too many"
   },
   "paymentTerms": {
     "net7": "Net 7",

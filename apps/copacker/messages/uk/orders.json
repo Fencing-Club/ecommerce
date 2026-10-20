@@ -446,7 +446,9 @@
     "finishPacking": "Завершити пакування",
     "addNewAddress": "Додати адресу",
     "chooseAddress": "Адреса забору",
-    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}"
+    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "leftCount": "Залишилось {count}",
+    "overCount": "На {count} більше"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",

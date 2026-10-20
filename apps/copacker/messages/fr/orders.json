@@ -446,7 +446,9 @@
     "finishPacking": "Terminer l’emballage",
     "addNewAddress": "Ajouter une adresse",
     "chooseAddress": "Adresse d’enlèvement",
-    "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}"
+    "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
+    "leftCount": "{count} restant(s)",
+    "overCount": "{count} en trop"
   },
   "paymentTerms": {
     "net7": "7 jours net",
