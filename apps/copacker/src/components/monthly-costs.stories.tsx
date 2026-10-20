@@ -23,6 +23,7 @@ const costs = [
 ]
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Monthly costs",
   component: MonthlyCosts,
   args: { costs, currency: "USD", admin: true },
   beforeEach: ({ msw }) => {

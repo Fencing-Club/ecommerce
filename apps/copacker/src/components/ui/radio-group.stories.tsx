@@ -11,6 +11,7 @@ const roles = [
 ]
 
 const meta = preview.meta({
+  title: "Foundations/Radio group",
   component: RadioGroup,
   args: { onValueChange: fn(), defaultValue: "member", "aria-label": "Role" },
   render: (args) => (

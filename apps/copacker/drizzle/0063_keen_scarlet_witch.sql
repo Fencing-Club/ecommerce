@@ -1,0 +1,1 @@
+CREATE INDEX "amazon_transaction_identifiers" ON "amazon_transactions" USING gin (("data"->'relatedIdentifiers') jsonb_path_ops);

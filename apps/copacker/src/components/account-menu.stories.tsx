@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { AccountMenu } from "./account-menu"
 
 const meta = preview.meta({
+  title: "Components/App shell/Account menu",
   component: AccountMenu,
   args: { name: "Alex Rivera", email: "alex@example.com" }
 })

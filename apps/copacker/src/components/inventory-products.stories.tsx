@@ -19,6 +19,7 @@ function productsApi(page: (query: Record<string, string>) => JsonBodyType) {
 const [tote, apron] = listedProducts
 
 const meta = preview.meta({
+  title: "Components/Inventory/Inventory products",
   component: InventoryProducts,
   args: { syncKey: "synced", search: "" },
   beforeEach: ({ msw }) => {
@@ -168,7 +169,6 @@ export const Problems = meta.story({
     msw.use(
       productsApi(() =>
         productsPage({
-          needsResync: true,
           duplicateSkus: [
             {
               sku: "TOTE-NAT",
@@ -184,8 +184,7 @@ export const Problems = meta.story({
     )
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Sync Shopify to load the latest product details")).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: /1 SKU is used by more than one variation/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /1 SKU is used by more than one variation/ }))
     await expect(await canvas.findByText("Canvas tote bag, Natural")).toBeVisible()
     await expect(canvas.getByText("Tote bag sample")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: /1 Amazon SKU doesn’t match a Shopify product/ }))

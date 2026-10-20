@@ -6,6 +6,7 @@ import { searchIndex } from "@/stories/fixtures/shared"
 import { TopBar } from "./top-bar"
 
 const meta = preview.meta({
+  title: "Components/App shell/Top bar",
   component: TopBar,
   args: { kind: "buyer", navigate: fn() },
   parameters: { layout: "fullscreen" },

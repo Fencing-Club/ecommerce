@@ -23,10 +23,9 @@ const lineRevenue =
   sql.raw(`((line->'originalUnitPriceSet'->'shopMoney'->>'amount')::numeric * (line->>'currentQuantity')::int
   - case when (line->>'quantity')::int > 0 then
       coalesce((select sum((a->'allocatedAmountSet'->'shopMoney'->>'amount')::numeric)
-        from jsonb_array_elements(coalesce(line->'discountAllocations', '[]'::jsonb)) a), 0)
+        from jsonb_array_elements(line->'discountAllocations') a), 0)
       * (line->>'currentQuantity')::int / (line->>'quantity')::int
     else 0 end)`)
-const linePriced = sql.raw(`(line ? 'originalUnitPriceSet')`)
 // One Amazon order item's sales: its ITEM proceeds less discounts, except the part of a discount that was for shipping
 // (free shipping isn't taken off product sales). A discount copied without its breakdown counts in full.
 const itemRevenue = sql.raw(`(select coalesce(sum(case b->>'type'
@@ -92,10 +91,7 @@ else
 end`
 const orderPriced = sql`case when o.source = 'amazon' then
   not exists (select 1 from jsonb_array_elements(o.data->'orderItems') item where not ${itemPriced})
-when o.source = 'ebay' then true
-else
-  not exists (select 1 from jsonb_array_elements(o.data->'lines') line where not ${linePriced})
-end`
+else true end`
 const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',
   jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}',
   o.data #>> '{lineItems,0,lineItemCost,currency}')`)
@@ -343,19 +339,17 @@ export type OrderFees = { orderId: string; revenueMinor: number | null; feesMino
 
 // Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
 // The fees on an order's payment. Refunds and other charges are counted by when they're posted (see platformCharges).
-// A release of a deferred payment repeats that payment's fees, so releases are left out (also for rows copied before
-// the reader stopped counting them).
+// A release of a deferred payment repeats that payment's fees, so releases are left out.
 const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
   where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
     and t.type = 'Shipment' and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
 // eBay's fees on an order, as eBay reports them with the order.
 const ebayOrderFee = sql.raw(`round((o.data->'totalMarketplaceFee'->>'value')::numeric * 100)`)
-// Shopify Payments' fees on an order, with their tax, from its successful payments (null when copied without them).
-const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
+// Shopify Payments' fees on an order, with their tax, from its successful payments.
+const shopifyOrderFee = sql.raw(`
   (select coalesce(sum(round(((fee->'amount'->>'amount')::numeric + (fee->'taxAmount'->>'amount')::numeric) * 100)), 0)
     from jsonb_array_elements(o.data->'transactions') payment, jsonb_array_elements(payment->'fees') fee
-    where payment->>'status' = 'SUCCESS')
-end`)
+    where payment->>'status' = 'SUCCESS')`)
 
 // Each order from one account in a period, with its sales (null without prices) and the platform's fees on it, in
 // `currency`. The fees are converted at the same rate as the order's sales.

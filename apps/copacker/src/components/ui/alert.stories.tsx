@@ -5,6 +5,7 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from "./alert"
 import { Button } from "./button"
 
 const meta = preview.type<{ args: { onAction: () => void } }>().meta({
+  title: "Foundations/Alert",
   component: Alert,
   args: { onAction: fn() },
   render: ({ variant }) => (

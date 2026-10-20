@@ -9,6 +9,7 @@ import { DetailRow, InventoryLocations } from "./inventory-locations"
 const saved: unknown[] = []
 
 const meta = preview.meta({
+  title: "Components/Inventory/Inventory locations",
   component: InventoryLocations,
   beforeEach: ({ msw }) => {
     saved.length = 0

@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} शिपमेंट",
     "shipmentCounts": "{count} वेरिएंट, {pieces, number} इकाइयाँ",
     "selectProduct": "{name} चुनें",
-    "packCount": "{size} के {count, number} पैक",
+    "packCount": "{count, number} पैक, हर एक में {size}",
     "supplierCharges": "आपूर्तिकर्ता लागत",
     "addSupplierCharge": "खर्च जोड़ें",
     "removeSupplierCharge": "खर्च हटाएँ",
@@ -280,7 +280,16 @@
       "label": "कमेंट",
       "placeholder": "कमेंट लिखें…",
       "post": "पोस्ट करें",
-      "required": "कमेंट लिखें"
+      "required": "कमेंट लिखें",
+      "visibility": "टिप्पणी की दृश्यता",
+      "internal": "आंतरिक टिप्पणी",
+      "messageSupplier": "आपूर्तिकर्ता को संदेश",
+      "messageCustomer": "ग्राहक को संदेश",
+      "internalHint": "केवल आपकी टीम यह टिप्पणी देख सकती है।",
+      "supplierHint": "आपकी टीम और आपूर्तिकर्ता यह संदेश देख सकते हैं।",
+      "customerHint": "आपकी टीम और ग्राहक यह संदेश देख सकते हैं।",
+      "sharedSupplier": "आपूर्तिकर्ता के साथ साझा किया गया",
+      "sharedCustomer": "ग्राहक के साथ साझा किया गया"
     },
     "events": {
       "created": "खरीद ऑर्डर बनाया गया",
@@ -310,6 +319,7 @@
       "packingSplit": "पैकिंग सबमिट की गई; {networks} शिपमेंट में बांटी गई और Amazon के लिए कतार में है",
       "forwarderShipped": "{forwarder} ने सामान शिप कर दिया: {tracking}",
       "packingReady": "पैकिंग सबमिट की गई; शिप करने के लिए तैयार",
+      "packingReopened": "बदलाव के लिए पैकिंग फिर से खोली गई",
       "invoiceEntered": "खरीद ऑर्डर में बदलावों के साथ इनवॉइस दर्ज किया गया",
       "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए",
       "existingAwdLinked": "मौजूदा AWD शिपमेंट {shipmentId} लिंक किया गया",
@@ -430,9 +440,16 @@
     "pickupAddress": "पिकअप का पता",
     "otherAddress": "दूसरा पता",
     "readyForPickup": "पिकअप के लिए तैयार",
+    "shipFrom": "पिकअप का पता",
+    "readyDate": "पिकअप के लिए तैयार",
     "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
-    "finishPacking": "पैकिंग पूरी करें"
+    "finishPacking": "पैकिंग पूरी करें",
+    "addNewAddress": "पता जोड़ें",
+    "chooseAddress": "पिकअप का पता",
+    "packedUnits": "{available} इकाइयों में से {count}",
+    "leftCount": "{count} बाकी",
+    "overCount": "{count} ज़्यादा"
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -459,6 +476,7 @@
     "other": "अन्य"
   },
   "cartonEditor": {
+    "addProducts": "कार्टन में उत्पाद जोड़ें",
     "addProductsTo": "कार्टन {carton} में उत्पाद जोड़ें",
     "shipmentProducts": "इस शिपमेंट के उत्पाद",
     "searchProducts": "इस शिपमेंट में उत्पाद खोजें",
@@ -484,18 +502,24 @@
     "actions": "कार्टन {carton} की कार्रवाइयाँ",
     "duplicate": "कार्टन की प्रतिलिपि बनाएँ",
     "delete": "कार्टन हटाएँ",
-    "quantityPerCarton": "मात्रा / कार्टन",
-    "packsPerCarton": "पैक / कार्टन",
-    "unitsPerCarton": "इकाइयाँ / कार्टन",
+    "quantityPerCarton": "मात्रा",
     "productQuantity": "{sku}: कार्टन {carton} में मात्रा",
     "unitCount": "{count} इकाइयाँ",
     "removeProduct": "कार्टन {carton} से {sku} हटाएँ",
     "product": "उत्पाद",
     "leftToPack": "पैक करना बाकी",
     "packCount": "{count} पैक",
-    "addToCarton": "कार्टन {carton} में जोड़ें",
+    "addToCarton": "कार्टन में जोड़ें",
     "selectedCount": "{count} चुने गए",
-    "cartonGroup": "कार्टन {cartons}"
+    "cartonGroup": "कार्टन {cartons}",
+    "addProductsToCartons": "कार्टन {cartons} में उत्पाद जोड़ें",
+    "rules": {
+      "unitsPerCarton": "मात्रा: हर कार्टन में {units, number} बिकने योग्य यूनिट {receiver} की {max, number} की सीमा से ज़्यादा हैं। इन्हें छोटे कार्टन में बाँटें।",
+      "cartonSize": "आयाम: {side, select, width {चौड़ाई} height {ऊँचाई} other {लंबाई}} {size, number} cm है। {receiver} {shape, select, cube {हर साइड {lengthCm, number} cm ({lengthIn, number} in) तक की अनुमति देता है} other {इस कार्टन के लिए {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) तक की अनुमति देता है}}।",
+      "cartonWeight": "वज़न: {weight, number} kg, {maxLb, number} lb ({maxKg, number} kg) की सीमा से ज़्यादा है। हर कार्टन का वज़न कम करें।",
+      "oneSku": "उत्पाद: {receiver} में हर कार्टन में एक ही SKU होना चाहिए। इन SKU को अलग-अलग कार्टन में रखें।",
+      "samePacking": "पैकिंग टेम्पलेट: यह SKU इस शिपमेंट में कहीं और {difference, select, units {हर कार्टन में {units, number} यूनिट} other {{length, number} × {width, number} × {height, number} cm और {weight, number} kg के कार्टन}} इस्तेमाल करता है। इस SKU के हर कार्टन के लिए एक ही पैकिंग टेम्पलेट इस्तेमाल करें।"
+    }
   },
   "cartonImport": {
     "title": "कार्टन आयात करें",
@@ -530,11 +554,19 @@
       "worksheet": "फ़ाइल में Cartons नाम की वर्कशीट होनी चाहिए।",
       "unreadable": "फ़ाइल पढ़ी नहीं जा सकी। टेम्पलेट पर आधारित XLSX या CSV फ़ाइल का उपयोग करें।",
       "number": "{value} में मान्य धनात्मक संख्या दर्ज करें।",
-      "sku": "SKU इस शिपमेंट में नहीं है: {value}।",
+      "sku": "आपूर्तिकर्ता SKU {value} और विवरण इस शिपमेंट के ठीक एक उत्पाद से मेल खाने चाहिए।",
       "cartonId": "1–60 अक्षरों की कार्टन ID दर्ज करें।",
       "measurements": "इस कार्टन की सभी पंक्तियों में कार्टन की संख्या, आयाम और वज़न समान होने चाहिए।",
       "duplicateProduct": "इस कार्टन में {value} एक से अधिक बार है।",
       "limit": "एक शिपमेंट में अधिकतम 1,000 कार्टन हो सकते हैं।"
+    },
+    "template": {
+      "identity": "पहले से भरे आपूर्तिकर्ता SKU, उत्पाद, प्रकार और प्रति पैक इकाइयों को न बदलें। अधूरी या गलत जानकारी ठीक करने के लिए खरीदार से कहें।",
+      "rows": "हर कार्टन में प्रत्येक उत्पाद के लिए एक पंक्ति रखें। अतिरिक्त कार्टन के लिए उत्पाद की पंक्ति कॉपी करें। साथ पैक किए उत्पादों का Carton ID एक ही रखें। उपयोग न की गई पैकिंग कोशिकाएँ खाली छोड़ें।",
+      "cartons": "Carton ID आपका संदर्भ है, Amazon लेबल नंबर नहीं। अलग कार्टन के लिए A1, A2 आदि और Carton count 1 रखें। एक जैसे कार्टन के लिए संख्या 1 से अधिक रखें: A1 की संख्या 3 होने पर A1, A1-2 और A1-3 बनते हैं। मौजूदा ID छोड़ दिए जाते हैं।",
+      "quantity": "Quantity per carton पैक की संख्या है। 2 के पैक में मात्रा 10 का मतलब 20 नग है। एक जैसे समूह के सभी कार्टन में समान उत्पाद और मात्रा होनी चाहिए।",
+      "measurements": "माप सेंटीमीटर में और वजन किलोग्राम में भरें। एक ही Carton ID वाली हर पंक्ति में कार्टन की संख्या, माप और वजन समान रखें।",
+      "format": "सफेद पैकिंग कोशिकाएँ भरें। अंग्रेज़ी शीर्षक और Cartons शीट का नाम न बदलें। XLSX अपलोड करें या Cartons तालिका को CSV के रूप में निर्यात करें।"
     }
   }
 }

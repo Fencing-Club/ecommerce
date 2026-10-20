@@ -79,16 +79,16 @@ to AWD) and packing splits the shipment by network. Planned:
   `warehouse`), a delivery address is required when any line goes to your warehouse, and each shipment records its
   destination.
 
-| Rule                   | FBA                                                        | AWD US                                   | Your warehouse                            |
-| ---------------------- | ---------------------------------------------------------- | ---------------------------------------- | ----------------------------------------- |
-| Products per carton    | Mixed, if they fit one Amazon packing group                | One SKU per carton                       | Mixed                                     |
-| Carton size and weight | At most 63.5 cm a side and 22.68 kg, unless one unit       | At most 63.5 cm a side and 22.68 kg      | No limit                                  |
-| Units per carton       | No limit                                                   | At most 150                              | No limit                                  |
-| Cartons of one SKU     | Can differ                                                 | Must match in contents, size and weight  | Can differ                                |
-| Unit labels            | FNSKU on every unit                                        | FNSKU on every unit                      | Only for products set to get SKU labels   |
-| Unit prep              | Amazon's prep category, such as a polybag with a warning   | Amazon's prep category                   | Your instructions                         |
-| Carton labels          | Amazon's box label                                         | Amazon's SSCC label                      | None                                      |
-| Trucks                 | Can share with other FBA freight                           | Never share a trailer with FBA freight   | Your carrier's rules                      |
+| Rule                   | FBA                                                                    | AWD US                                  | Your warehouse                          |
+| ---------------------- | ---------------------------------------------------------------------- | --------------------------------------- | --------------------------------------- |
+| Products per carton    | Mixed, if they fit one Amazon packing group                            | One SKU per carton                      | Mixed                                   |
+| Carton size and weight | At most 91.44 × 63.5 × 63.5 cm and 22.67 kg, unless one unit is larger | At most 63.5 cm a side and 22.67 kg     | No limit                                |
+| Units per carton       | No limit                                                               | At most 150                             | No limit                                |
+| Cartons of one SKU     | Can differ                                                             | Must match in contents, size and weight | Can differ                              |
+| Unit labels            | FNSKU on every unit                                                    | FNSKU on every unit                     | Only for products set to get SKU labels |
+| Unit prep              | Amazon's prep category, such as a polybag with a warning               | Amazon's prep category                  | Your instructions                       |
+| Carton labels          | Amazon's box label                                                     | Amazon's SSCC label                     | None                                    |
+| Trucks                 | Can share with other FBA freight                                       | Never share a trailer with FBA freight  | Your carrier's rules                    |
 
 ## Combined shipments
 

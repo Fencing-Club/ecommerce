@@ -3,7 +3,7 @@ import preview from "#.storybook/preview"
 import { customerListData } from "@/stories/fixtures/supplier"
 import { CustomersPageView } from "./customers-page"
 
-const meta = preview.meta({})
+const meta = preview.meta({ title: "Components/Partners/Customers page" })
 
 export const Customers = meta.story({
   render: () => <CustomersPageView {...customerListData} />,

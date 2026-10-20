@@ -11,6 +11,7 @@ const photo = `data:image/svg+xml,${encodeURIComponent(
 const sizes = ["sm", "default", "lg"] as const
 
 const meta = preview.meta({
+  title: "Foundations/Avatar",
   component: Avatar,
   render: ({ size }) => (
     <Avatar size={size}>

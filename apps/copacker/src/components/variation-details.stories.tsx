@@ -50,6 +50,7 @@ function ProductForm({ productTitle, variations: list }: { productTitle: string;
 }
 
 const meta = preview.meta({
+  title: "Components/Products/Variation details",
   component: VariationDetails,
   args: { productTitle: "Canvas tote bag", variations },
   render: (args) => <ProductForm productTitle={args.productTitle} variations={variations} />,

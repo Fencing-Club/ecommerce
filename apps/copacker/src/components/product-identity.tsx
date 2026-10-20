@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge"
 export function ProductIdentity({
   item,
   showName = true,
+  showSku = true,
   showPackSize = true
 }: {
   item: { name: string; variant: string; buyerSku: string; piecesPerSet: number }
   showName?: boolean
+  showSku?: boolean
   showPackSize?: boolean
 }) {
   const t = useTranslations("orders.detail")
@@ -24,7 +26,7 @@ export function ProductIdentity({
           ))}
         </Badge>
       )}
-      <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
+      {showSku && <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>}
       {showPackSize && item.piecesPerSet > 1 && (
         <p className="text-xs text-muted-foreground">{t("perPack", { count: item.piecesPerSet })}</p>
       )}

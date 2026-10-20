@@ -24,15 +24,15 @@ pickup/drop-off, FBA/AWD freight, AGL, own warehouses, both supplier-to-forwarde
 
 Product tasks are an explicit list: absence means the recipient has no task. They are not inferred from the destination.
 The approved Pen/Storybook packing modal offers None, Polybag, or Sealed polybag, plus independent optional SKU,
-FNSKU, suffocation, choking hazard, and country-of-origin labels. Origin labelling requires a country. The shared
+FNSKU, suffocation, and choking hazard labels. Country-of-origin labels are outside this scope. The shared
 option IDs and validation live in `@repo/aisle/packing-requirements`, with UI options in `src/lib/packing-requirements.ts`.
 PO items persist explicit tasks in their JSON snapshot through the packing-details modal. Existing items without
 explicit tasks must be confirmed before generating these documents; destination alone does not establish a labelling
 task. Custom packaging with reference photos remains a planned follow-up.
 
 Carton grouping includes contents, quantities, dimensions, and weight. Each physical carton retains its own Amazon
-and carrier label identifier. When both labels are required, the packing list pairs them on one row per carton under
-Carton, Amazon box label, and Carrier label columns. Single-label shipments use the compact label-number grid.
+and carrier label identifier. The packing list leaves label numbers out; the carton label reference lists them, one row
+per carton under Carton, Amazon carton label, and Carrier label columns.
 Carton groups stay intact with repeated headings on each page; a group too large for one page blocks generation for
 layout review. Missing required assignments and duplicate IDs block download. Provider label PDFs
 must be downloaded separately in their original form and page size; these templates are reference documents,
@@ -69,7 +69,7 @@ and verification provenance. It never accesses a database or books transport.
 
 `shippingDocumentSnapshot` validates packing with the same rules as the app and requires one explicit label assignment
 per carton. The exporter matches original PDF labels by SKU, FNSKU and quantity, preserves the original PDF bytes,
-and creates the packing list, checklist, carton reference, and combined packet. A verification manifest records
+and creates the packing list, checklist, carton reference, and combined packet (in the app's packet order). A verification manifest records
 the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
 supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
 
@@ -87,6 +87,17 @@ workspace membership and a snapshot hash before and after reading files. The bro
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
+The packet runs: the packing list, the checklist, the carton label reference, the carton labels (Amazon's, then the
+carrier's), then the product labels. The reference lists every carton with its labels in one table, right before the
+label pages; a packet without carton labels leaves it out. `renderSupplierPacket` owns this order.
+
+Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.
+`GET /api/shipments/:id/packing-list` returns `packingListSnapshot`: the packed cartons and products, with no label
+assignments, handoff or destination address. The browser renders it with the packing-list template's `packingRecord`
+layout, in the language and paper last chosen for shipping documents. A line without a supplier SKU is listed by the
+buyer's, as the packing page shows it. When the packet page can't make its reference documents, it still offers the
+packing list beside the label files.
+
 The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
 labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton
 carrier assignments and explicit freight/forwarder handoff data before enabling them. It rejects missing information
@@ -103,3 +114,12 @@ reference examples for repeated headings and intact carton groups. Stories cover
 mobile, loading, generation failure, and missing carrier assignments. Unit tests inspect actual PDFs for page size,
 continuation headers, label identity, and group integrity. Fonts, complex scripts, and long content also require visual
 review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
+
+## Carton import workbook
+
+The download has one prefilled `Cartons` table and a localized `Instructions` sheet. Supplier SKU, product, variant,
+and units per pack identify each product; unchanged reference cells are shaded. The importer rejects ambiguous supplier
+SKUs instead of guessing, and ignores unused product rows until packing values are entered. Column headers and the
+`Cartons` worksheet name remain stable in English for XLSX and CSV imports. Instructions use the current app language;
+Urdu workbook sheets read right to left. A carton ID identifies a physical carton or an identical-carton group, not an
+Amazon label. Group expansion and numbering follow the shared carton-group implementation.

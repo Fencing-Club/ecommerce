@@ -9,6 +9,7 @@ import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-a
 const sent: ActionRequest[] = []
 
 const meta = preview.meta({
+  title: "Components/Partners/Forwarder actions",
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))

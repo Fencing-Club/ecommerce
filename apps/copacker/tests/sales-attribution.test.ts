@@ -39,13 +39,25 @@ it("separates unfulfilled units from mapping failures and unknown quantities", (
   })
 })
 const order: ShopifySale = {
+  tags: [],
+  transactions: [],
   id: "order1",
   name: "#1001",
   createdAt: "2026-08-20T00:00:00Z",
   cancelledAt: null,
   test: false,
   sourceName: "web",
-  lines: [{ id: "line1", quantity: 4, currentQuantity: 4, sku: "SKU", variant: { id: "v1" } }],
+  lines: [
+    {
+      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+      discountAllocations: [],
+      id: "line1",
+      quantity: 4,
+      currentQuantity: 4,
+      sku: "SKU",
+      variant: { id: "v1" }
+    }
+  ],
   fulfillments: [
     {
       id: "f1",

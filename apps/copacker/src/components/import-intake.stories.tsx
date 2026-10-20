@@ -11,6 +11,7 @@ const changed = fn()
 const started = fn()
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Import intake",
   component: ImportIntake,
   beforeEach: ({ msw }) => {
     msw.use(

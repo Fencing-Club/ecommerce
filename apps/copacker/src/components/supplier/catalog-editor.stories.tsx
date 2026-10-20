@@ -19,6 +19,7 @@ const deleted = fn()
 const newId = "6a2d4f80-4b3e-4f5a-8c6d-000000000009"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Catalog editor",
   component: CatalogEditor,
   args: { data: wholesaleCatalog },
   beforeEach: ({ msw }) => {

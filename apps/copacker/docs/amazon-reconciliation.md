@@ -71,3 +71,47 @@ The analytics data-readiness criteria remain open. Historical COGS, opening inve
 remain separate P0 dependencies.
 
 Reference: [Amazon Finances model](https://github.com/amzn/selling-partner-api-models/blob/main/models/finances-api-model/finances_2024-06-19.json).
+
+## Candidate diagnostics
+
+Each financial candidate includes `checks.blockers`: missing order/item identity, missing marketplace, unreleased
+status, deferred/release links, unexpected posting type, currency gaps and unbalanced totals. The signed source amount
+is compared to the whole transaction using exact decimal arithmetic (`signedSourceToTransactionTotal`). Equality is
+only a diagnostic: report rows and transaction totals can have different granularity. Amounts are never compared by
+absolute value. Source allocation and reversal review remain mandatory even when all other checks pass.
+`additionalRecognizedAmount` stays null; these diagnostics never add report amounts to postings or certify a recovery.
+
+`currentCatalogProduct` supplies exact, case-sensitive SKU candidates from the connected Shopify account's saved stock
+snapshot, with observation time and snapshot status. Multiple targets remain ambiguous. These observations neither
+create nor confirm a dated mapping and never establish a cost or historical pack conversion.
+
+## Continued financial search and reimbursement chains
+
+`postingPage` (default 0) continues the matching financial search in 5,000-posting chunks. `nextPostingPage` in
+`coverage.financialSearch` identifies the next chunk. Within a chunk, `candidatePage` (default 0) continues each source
+row's 20-candidate display; each row returns `nextCandidatePage`. Both require the original snapshot on continuation;
+changed source evidence or postings invalidates it. Reset candidatePage when advancing postingPage. Counts describe
+only the current posting chunk, and later chunks remain explicitly partial. Continue both dimensions to inspect all
+returned candidates; source `page` continues report rows independently. No provider request is made.
+
+Reimbursement rows retain cash and inventory quantities separately, their reason, and original reimbursement IDs/types.
+`relatedReimbursements` includes stored original records and records referring back to the current reimbursement IDs,
+even outside the requested date period. These explicit references support reversal/replacement review, not automatic
+recognition or netting. A 1,000-row related-record cap is disclosed; lack of a related row may reflect coverage gaps.
+
+## Fee comparisons and posting links
+
+`GET /api/analytics/amazon/allocations` accepts optional exact `postingType` and `transactionId` filters, bound into its
+snapshot. Its evidence includes native transaction breakdown leaf paths and signed amounts only when every parent and
+child sum validates. Parent totals and item breakdowns are not added to those leaves. These components are evidence,
+not newly recognized fees. Unknown categories remain native labels for investigation.
+
+Deferred/release references fetch account-scoped linked posting evidence, including postings outside the selected date
+period. Missing IDs and a 1,000-ID truncation flag are explicit. Linked postings are not additional expenses or income.
+The existing period is still required when filtering an individual transaction; linked evidence exposes its posting date.
+
+`reportComparison` groups US storage and removal amounts separately by source kind and currency, with total row and
+known-amount counts. Monthly storage is estimated; aged storage reports charges. Removal orders and shipment reports
+may overlap and must never be added together. Report dates and financial posting dates can differ; the same selected
+calendar window is not an assertion of matching accounting periods. Partial/empty totals do not prove zero charges,
+and this comparison remains unreconciled pending source linkage and coverage checks. Cost basis remains unknown.

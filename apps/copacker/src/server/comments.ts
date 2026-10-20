@@ -1,3 +1,4 @@
+import { and, desc, eq, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { events } from "@/db/schema"
@@ -7,10 +8,20 @@ import type { Session } from "./workspace-session"
 
 export const commentInputSchema = z.object({
   orderId: z.uuid(),
-  message: z.string().trim().min(1, "notifications.comments.write").max(4000)
+  message: z.string().trim().min(1, "notifications.comments.write").max(4000),
+  visibility: z.enum(["internal", "shared"])
 })
 
-// A comment on a PO's timeline, which everyone who can see the PO reads alongside its events.
+export async function orderEvents(s: Session, orderId: string) {
+  await accessibleOrder(s, orderId)
+  return db()
+    .select()
+    .from(events)
+    .where(and(eq(events.orderId, orderId), or(isNull(events.internalOrgId), eq(events.internalOrgId, s.org.id))))
+    .orderBy(desc(events.createdAt))
+}
+
+// The workspace comes from the authenticated session; clients cannot choose another workspace's private audience.
 export async function addComment(s: Session, raw: unknown) {
   const input = commentInputSchema.parse(raw)
   const [{ order }, { profile }] = await Promise.all([accessibleOrder(s, input.orderId), ownProfile(s.user.id)])
@@ -22,7 +33,8 @@ export async function addComment(s: Session, raw: unknown) {
       kind: "comment",
       author: s.user.name ?? s.user.email,
       authorOrg: profile?.company || s.org.name,
-      message: input.message
+      message: input.message,
+      internalOrgId: input.visibility === "internal" ? s.org.id : null
     })
     .returning({ id: events.id })
   return row!

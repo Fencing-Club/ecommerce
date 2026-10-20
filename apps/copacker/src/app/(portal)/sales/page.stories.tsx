@@ -14,7 +14,7 @@ function SalesPage({ q }: { q?: string | string[] }) {
 let queries: Record<string, string>[] = []
 
 const meta = preview.meta({
-  title: "Pages/Buyer/Sales",
+  title: "Pages/Sales",
   ...pageStory("/sales", SalesPage, "buyer"),
   args: {},
   beforeEach: ({ msw }) => {

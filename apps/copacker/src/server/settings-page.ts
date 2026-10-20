@@ -9,7 +9,7 @@ import { can, isAdmin } from "@/lib/access"
 import { amazonAdsApp } from "@/server/amazon-ads-client"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
-import { amazonSelfAuthEnabled, ebayApp } from "@/server/connections"
+import { amazonSelfAuthEnabled } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { localization } from "@/server/localization"
@@ -17,8 +17,7 @@ import type { MonthlyCost } from "@/server/monthly-costs"
 import { listMonthlyCosts, monthlyCostChannels } from "@/server/monthly-costs"
 import { reportingCurrency } from "@/server/overview-sales"
 import { restockSettings } from "@/server/restock-report"
-import { salesHistoryDays } from "@/server/sales-orders"
-import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
+import { shopifyOrderTags } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { teamOf } from "@/server/team"
 import { serverTranslator } from "@/server/translation"
@@ -49,12 +48,11 @@ export async function settingsPage(_input: { query: Record<string, string | stri
   const shopifyAccount = linked.find((c) => c.provider === "shopify")
   const amazonAccount = linked.find((c) => c.provider === "amazon")
   const ebayAccount = linked.find((c) => c.provider === "ebay")
-  const [shopName, amazon, ebayName, orderTags, copyingTags] = await Promise.all([
+  const [shopName, amazon, ebayName, orderTags] = await Promise.all([
     shopifyAccount ? shopifyStoreName(s.org.id, shopifyAccount.externalId) : null,
     amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null,
     ebayAccount ? ebayUsername(s.org.id, ebayAccount.externalId) : null,
-    buyer && shopifyAccount && admin ? shopifyOrderTags(s.org.id) : [],
-    buyer && shopifyAccount && admin ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
+    buyer && shopifyAccount && admin ? shopifyOrderTags(s.org.id) : []
   ])
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
   // Delivery addresses can be linked to one of the store's own Shopify locations.
@@ -120,7 +118,6 @@ export async function settingsPage(_input: { query: Record<string, string | stri
     amazon,
     ebayName,
     orderTags,
-    copyingTags,
     ownLocations,
     person: person
       ? {
@@ -137,8 +134,7 @@ export async function settingsPage(_input: { query: Record<string, string | stri
     },
     computerLocale,
     amazonAdsAvailable: amazonAdsApp() !== null,
-    amazonSelfAuth: amazonSelfAuthEnabled(),
-    ebayAvailable: ebayApp() !== null
+    amazonSelfAuth: amazonSelfAuthEnabled()
   }
 }
 function costDetails(

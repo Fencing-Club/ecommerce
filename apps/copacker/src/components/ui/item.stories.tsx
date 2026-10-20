@@ -24,6 +24,7 @@ const image = `data:image/svg+xml,${encodeURIComponent(
 )}`
 
 const meta = preview.type<{ args: { onAction: () => void } }>().meta({
+  title: "Foundations/Item",
   component: Item,
   args: { onAction: fn() },
   render: ({ variant, size, onAction }) => (

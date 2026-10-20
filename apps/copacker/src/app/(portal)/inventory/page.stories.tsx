@@ -15,7 +15,7 @@ function InventoryPage({ rows, tab }: { rows: InventoryRow[]; tab?: string }) {
 let counts: unknown[] = []
 
 const meta = preview.meta({
-  title: "Pages/Supplier/Inventory",
+  title: "Pages/Inventory",
   ...pageStory("/inventory", InventoryPage, "supplier"),
   args: { rows: supplierInventory },
   beforeEach: ({ msw }) => {

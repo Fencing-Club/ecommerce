@@ -24,6 +24,7 @@ const shown = (elements: HTMLElement[]) => elements.filter((element) => element.
 const lotusGroup = () => screen.findByRole("region", { name: "Lotus Manufacturing" }, loaded)
 
 const meta = preview.meta({
+  title: "Components/Inventory/Restock report",
   component: RestockReport,
   args: { settings: { days: 60, leadTimeDays: 60 } },
   parameters: { router: { navigation: { pathname: "/restock" } } },

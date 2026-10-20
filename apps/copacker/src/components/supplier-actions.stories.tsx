@@ -14,6 +14,7 @@ const contact = {
 const noContact = { website: null, contactName: null, contactEmail: null, phoneNumber: null }
 
 const meta = preview.meta({
+  title: "Components/Partners/Supplier actions",
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))

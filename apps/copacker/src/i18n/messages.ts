@@ -1,6 +1,7 @@
 import { objectKeys } from "ts-extras"
 import type { AbstractIntlMessages } from "use-intl"
 import auth from "../../messages/en/auth.json"
+import booking from "../../messages/en/booking.json"
 import common from "../../messages/en/common.json"
 import emails from "../../messages/en/emails.json"
 import errors from "../../messages/en/errors.json"
@@ -28,6 +29,7 @@ import { defaultLocale } from "./locales"
 // type every translation is checked against (see global.ts).
 export const english = {
   auth,
+  booking,
   common,
   emails,
   errors,

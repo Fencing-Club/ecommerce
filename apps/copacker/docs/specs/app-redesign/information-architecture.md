@@ -89,7 +89,6 @@ Depth: **L1** is a sidebar page, **L2** a record or sub-flow reached from one, *
 | L1    | Shipments                      | `/shipments`                  | Stat cards, tabs Active, Received, Cancelled, All, Copacker shipments and the Amazon account's own inbound shipments                                                  | Shipment, Seller Central                        |
 | L2    | Shipment                       | `/shipments/[id]`             | One page that changes with the workflow step: packing form, approval of invoice changes, Amazon creation, shipping labels, release, packet, cartons, pickup, documents, corrections, reconcile, cancel | PO                          |
 | L1    | Partners                       | `/partners`                   | Tabs All, Suppliers, Forwarders, search, table. Add, edit, invite, addresses and remove in sheets and dialogs.                                                        |                                                 |
-|       | Forwarders (redirect)          | `/forwarders`, `/suppliers`   | Redirect to Partners                                                                                                                                                   |                                                 |
 
 ### Supplier pages
 

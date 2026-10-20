@@ -1,8 +1,17 @@
 import { validatePacking, type OrderInput, type Packing } from "@repo/aisle"
 import type { CartonLabel } from "@repo/aisle/labels"
-import { packingTasks } from "@repo/aisle/packing-requirements"
+import { packingTasks, type ProductTask } from "@repo/aisle/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/aisle/transport"
-import { documentIssues, type DocumentParty, type ShippingDocumentData } from "./shipping-model"
+import {
+  documentIssues,
+  packingRecordIssues,
+  type DocumentParty,
+  type ShippingCarton,
+  type ShippingDocumentData,
+  type ShippingProduct
+} from "./shipping-model"
+
+type Item = OrderInput["items"][number]
 
 // An adapter from an accepted PO and its physical cartons. Addresses and label assignments must be supplied
 // by their owning integrations; templates never infer them from a company name or carton sequence.
@@ -30,8 +39,7 @@ export function shippingDocumentSnapshot(input: {
   if (transport.handoff !== "supplier" || transport.service === "freight") {
     throw new Error("Confirm the forwarder or freight handoff details before exporting")
   }
-  const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
-  const items = order.items.filter((item) => included.has(item.id))
+  const items = packedItems(order, packing)
   const networks = new Set(items.map((item) => item.amazonNetwork))
   if (order.destination === "amazon" && networks.size !== 1) {
     throw new Error("Export one Amazon network at a time")
@@ -50,11 +58,6 @@ export function shippingDocumentSnapshot(input: {
       throw new Error(`${name} labels must match every carton exactly once`)
     }
   }
-  const origin = packing.origin
-  let network: ShippingDocumentData["network"] = "warehouse"
-  if (order.destination === "amazon") {
-    network = items[0]?.amazonNetwork === "awd_us" ? "awd" : "fba"
-  }
   const data: ShippingDocumentData = {
     company: input.company,
     order: order.reference,
@@ -62,19 +65,9 @@ export function shippingDocumentSnapshot(input: {
     generatedDate: input.generatedDate,
     shipment: input.shipmentId,
     recipient: { name: input.supplier, address: [] },
-    origin: {
-      name: input.supplier,
-      address: [
-        origin.addressLine1,
-        origin.addressLine2,
-        `${origin.city}, ${origin.stateOrRegion} ${origin.postalCode}`,
-        origin.countryCode,
-        [origin.name, origin.phoneNumber].filter(Boolean).join(", "),
-        origin.email
-      ].filter(Boolean)
-    },
+    origin: originParty(input.supplier, packing.origin),
     destination: input.destination,
-    network,
+    network: packedNetwork(order, items),
     transport: {
       service: transport.service,
       collection: transport.collection,
@@ -85,25 +78,12 @@ export function shippingDocumentSnapshot(input: {
       if (!item.packingRequirements) {
         throw new Error(`Confirm packing requirements for ${item.supplierSku || item.name}`)
       }
-      return {
-        id: item.id,
-        supplierSku: item.supplierSku,
-        description: [item.name, item.variant === "Default Title" ? "" : item.variant].filter(Boolean).join(" / "),
-        piecesPerPack: item.piecesPerSet,
-        tasks: packingTasks(item.packingRequirements),
-        countryCode: item.packingRequirements.countryCode || undefined
-      }
+      return documentProduct(item, packingTasks(item.packingRequirements), item.supplierSku)
     }),
-    cartons: packing.cartons.map((carton) => ({
-      id: carton.cartonId,
-      dimensions: [carton.length, carton.width, carton.height],
-      weight: carton.weight,
-      contents: carton.items.map((content) => ({
-        productId: content.itemId,
-        packs: content.pieces / items.find((item) => item.id === content.itemId)!.piecesPerSet
-      })),
-      amazonLabel: labels.find((label) => label.cartonId === carton.cartonId)?.labelNumber,
-      carrierLabel: input.carrierLabels?.find((label) => label.cartonId === carton.cartonId)?.labelNumber
+    cartons: documentCartons(packing, items).map((carton) => ({
+      ...carton,
+      amazonLabel: labels.find((label) => label.cartonId === carton.id)?.labelNumber,
+      carrierLabel: input.carrierLabels?.find((label) => label.cartonId === carton.id)?.labelNumber
     })),
     instructions: [
       order.notes,
@@ -120,4 +100,111 @@ export function shippingDocumentSnapshot(input: {
     throw new Error(`Incomplete document: ${issues.map((issue) => `${issue.code}: ${issue.carton}`).join(", ")}`)
   }
   return data
+}
+
+// The packing list alone, from finished packing before the packet exists: the cartons as packed, without the label
+// assignments, destination address and handoff only the packet needs. A line without a supplier SKU of its own is listed
+// by the buyer's, as the packing page shows it.
+export function packingListSnapshot(input: {
+  order: OrderInput
+  packing: Packing
+  transport: ShipmentTransport | null
+  company: string
+  supplier: string
+  destination: string
+  revision: number
+  shipmentId: string
+  generatedDate: string
+}): ShippingDocumentData {
+  const { order, packing, transport } = input
+  const items = packedItems(order, packing)
+  const data: ShippingDocumentData = {
+    company: input.company,
+    order: order.reference,
+    revision: input.revision,
+    generatedDate: input.generatedDate,
+    shipment: input.shipmentId,
+    recipient: { name: input.supplier, address: [] },
+    origin: originParty(input.supplier, packing.origin),
+    destination: { name: input.destination, address: [] },
+    network: packedNetwork(order, items),
+    transport: {
+      service: transport?.service ?? "supplier",
+      collection: transport?.collection ?? "delivery",
+      carrierLabels: shipmentLabelRequirements(order.destination, transport).carrierLabels,
+      palletized: false
+    },
+    products: items.map((item) =>
+      documentProduct(
+        item,
+        item.packingRequirements ? packingTasks(item.packingRequirements) : [],
+        item.supplierSku || item.buyerSku
+      )
+    ),
+    cartons: documentCartons(packing, items),
+    instructions: ""
+  }
+  const issues = packingRecordIssues(data)
+  if (issues.length) {
+    throw new IncompletePackingList(issues.map((issue) => `${issue.code}: ${issue.carton}`))
+  }
+  return data
+}
+
+// Packing that can't make a packing list yet, as opposed to a failure in building one.
+export class IncompletePackingList extends Error {
+  constructor(readonly codes: string[]) {
+    super(`Incomplete packing list: ${codes.join(", ")}`)
+  }
+}
+
+// The PO's lines that some carton holds.
+function packedItems(order: OrderInput, packing: Packing) {
+  const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  return order.items.filter((item) => included.has(item.id))
+}
+
+function packedNetwork(order: OrderInput, items: Item[]): ShippingDocumentData["network"] {
+  if (order.destination !== "amazon") {
+    return "warehouse"
+  }
+  return items[0]?.amazonNetwork === "awd_us" ? "awd" : "fba"
+}
+
+function originParty(supplier: string, origin: Packing["origin"]): DocumentParty {
+  return {
+    name: supplier,
+    address: [
+      origin.addressLine1,
+      origin.addressLine2,
+      `${origin.city}, ${origin.stateOrRegion} ${origin.postalCode}`,
+      origin.countryCode,
+      [origin.name, origin.phoneNumber].filter(Boolean).join(", "),
+      origin.email
+    ].filter(Boolean)
+  }
+}
+
+function documentProduct(item: Item, tasks: ProductTask[], supplierSku: string): ShippingProduct {
+  return {
+    id: item.id,
+    supplierSku,
+    description: item.name,
+    variant: item.variant === "Default Title" ? undefined : item.variant,
+    piecesPerPack: item.piecesPerSet,
+    tasks,
+    countryCode: item.packingRequirements?.countryCode || undefined
+  }
+}
+
+function documentCartons(packing: Packing, items: Item[]): ShippingCarton[] {
+  return packing.cartons.map((carton) => ({
+    id: carton.cartonId,
+    dimensions: [carton.length, carton.width, carton.height],
+    weight: carton.weight,
+    contents: carton.items.map((content) => ({
+      productId: content.itemId,
+      packs: content.pieces / items.find((item) => item.id === content.itemId)!.piecesPerSet
+    }))
+  }))
 }

@@ -78,6 +78,7 @@ function PaletteDialog({ onSelect }: { onSelect: (value: string) => void }) {
 }
 
 const meta = preview.type<{ args: { onSelect: (value: string) => void } }>().meta({
+  title: "Foundations/Command",
   args: { onSelect: fn() },
   render: ({ onSelect }) => (
     <Command className="max-w-sm rounded-lg border">

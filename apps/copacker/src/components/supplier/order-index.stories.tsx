@@ -6,6 +6,7 @@ import { member } from "@/stories/workspace"
 import { SupplierOrderIndex } from "./order-index"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Order index",
   component: SupplierOrderIndex,
   args: { orders: supplierOrders }
 })

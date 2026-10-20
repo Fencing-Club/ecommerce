@@ -12,6 +12,7 @@ export async function readLabelPdfPages(data: Uint8Array, options: { timeoutMs?:
     .max(120000)
     .parse(options.timeoutMs ?? 30000)
   options.signal?.throwIfAborted()
+  await import("./label-pdf-worker")
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs")
   const task = getDocument({
     data: Uint8Array.from(data),

@@ -200,7 +200,7 @@
     "shipmentTo": "Відправлення до {destination}",
     "shipmentCounts": "{count, plural, one {# варіант} few {# варіанти} other {# варіантів}}, {pieces, number} шт.",
     "selectProduct": "Вибрати {name}",
-    "packCount": "{count, number} упаковок по {size}",
+    "packCount": "{count, number} упаковок, по {size} у кожній",
     "supplierCharges": "Витрати постачальника",
     "addSupplierCharge": "Додати витрати",
     "removeSupplierCharge": "Видалити витрати",
@@ -280,7 +280,16 @@
       "label": "Коментар",
       "placeholder": "Залиште коментар…",
       "post": "Опублікувати",
-      "required": "Напишіть коментар"
+      "required": "Напишіть коментар",
+      "visibility": "Видимість коментаря",
+      "internal": "Внутрішній коментар",
+      "messageSupplier": "Повідомлення постачальнику",
+      "messageCustomer": "Повідомлення клієнту",
+      "internalHint": "Цей коментар бачить лише ваша команда.",
+      "supplierHint": "Це повідомлення бачать ваша команда та постачальник.",
+      "customerHint": "Це повідомлення бачать ваша команда та клієнт.",
+      "sharedSupplier": "Надіслано постачальнику",
+      "sharedCustomer": "Надіслано клієнту"
     },
     "events": {
       "created": "Замовлення на закупівлю створено",
@@ -310,6 +319,7 @@
       "packingSplit": "Пакування надіслано; розділено на відправлення {networks} і поставлено в чергу для Amazon",
       "forwarderShipped": "{forwarder} відвантажив товар: {tracking}",
       "packingReady": "Пакування надіслано; готово до відправлення",
+      "packingReopened": "Пакування знову відкрито для змін",
       "invoiceEntered": "Рахунок внесено зі змінами до замовлення на закупівлю",
       "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення",
       "existingAwdLinked": "Пов’язано наявне відправлення AWD {shipmentId}",
@@ -430,9 +440,16 @@
     "pickupAddress": "Адреса забору",
     "otherAddress": "Інша адреса",
     "readyForPickup": "Готово до забору",
+    "shipFrom": "Адреса забору",
+    "readyDate": "Готово до забору",
     "addCartonProduct": "Додати товар до коробки",
     "removeCartonProduct": "Видалити товар {number} з коробки",
-    "finishPacking": "Завершити пакування"
+    "finishPacking": "Завершити пакування",
+    "addNewAddress": "Додати адресу",
+    "chooseAddress": "Адреса забору",
+    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "leftCount": "Залишилось {count}",
+    "overCount": "На {count} більше"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -459,6 +476,7 @@
     "other": "Інше"
   },
   "cartonEditor": {
+    "addProducts": "Додати товари до коробки",
     "addProductsTo": "Додати товари до коробки {carton}",
     "shipmentProducts": "Товари в цьому відправленні",
     "searchProducts": "Шукати товари в цій відправці",
@@ -484,18 +502,24 @@
     "actions": "Дії з коробкою {carton}",
     "duplicate": "Дублювати коробку",
     "delete": "Видалити коробку",
-    "quantityPerCarton": "Кількість / коробка",
-    "packsPerCarton": "Упаковок / коробка",
-    "unitsPerCarton": "Одиниць / коробка",
+    "quantityPerCarton": "Кількість",
     "productQuantity": "{sku}: кількість у коробці {carton}",
     "unitCount": "{count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
     "removeProduct": "Вилучити {sku} з коробки {carton}",
     "product": "Товар",
     "leftToPack": "Залишилось упакувати",
     "packCount": "{count} пак.",
-    "addToCarton": "Додати до коробки {carton}",
+    "addToCarton": "Додати до коробки",
     "selectedCount": "Вибрано: {count}",
-    "cartonGroup": "Коробки {cartons}"
+    "cartonGroup": "Коробки {cartons}",
+    "addProductsToCartons": "Додати товари до коробок {cartons}",
+    "rules": {
+      "unitsPerCarton": "Кількість: {units, number} одиниць для продажу в коробці перевищує ліміт {receiver} у {max, number}. Розподіліть їх на менші коробки.",
+      "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {receiver} дозволяє {shape, select, cube {не більше {lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {для цієї коробки не більше {lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}.",
+      "cartonWeight": "Вага: {weight, number} кг перевищує ліміт {maxLb, number} lb ({maxKg, number} кг). Зменште вагу кожної коробки.",
+      "oneSku": "Товари: {receiver} вимагає один SKU на коробку. Перемістіть ці SKU в окремі коробки.",
+      "samePacking": "Шаблон пакування: цей SKU в іншій частині відправлення використовує {difference, select, units {{units, number} од. на коробку} other {коробки {length, number} × {width, number} × {height, number} см вагою {weight, number} кг}}. Використовуйте однаковий шаблон пакування для кожної коробки цього SKU."
+    }
   },
   "cartonImport": {
     "title": "Імпортувати коробки",
@@ -530,11 +554,19 @@
       "worksheet": "Файл має містити аркуш із назвою Cartons.",
       "unreadable": "Не вдалося прочитати файл. Використайте файл XLSX або CSV на основі шаблону.",
       "number": "Введіть коректне додатне число в полі {value}.",
-      "sku": "SKU не належить до цього відправлення: {value}.",
+      "sku": "SKU постачальника {value} і дані мають відповідати рівно одному товару цього відправлення.",
       "cartonId": "Введіть ідентифікатор коробки з 1–60 символів.",
       "measurements": "Рядки однієї коробки повинні мати однакову кількість коробок, розміри та вагу.",
       "duplicateProduct": "У цій коробці {value} зазначено кілька разів.",
       "limit": "Відправлення може містити до 1 000 коробок."
+    },
+    "template": {
+      "identity": "Не змінюйте попередньо заповнені SKU постачальника, товар, варіант і кількість одиниць в упаковці. Попросіть покупця виправити відсутні або неправильні дані.",
+      "rows": "Використовуйте один рядок на товар у коробці. Копіюйте рядок товару для додаткових коробок. Для товарів, упакованих разом, повторюйте Carton ID. Невикористані клітинки пакування залишайте порожніми.",
+      "cartons": "Carton ID — ваш ідентифікатор, а не номер етикетки Amazon. Для окремих коробок використовуйте A1, A2 тощо з Carton count 1. Для однакових коробок укажіть більше ніж 1: A1 із кількістю 3 створює A1, A1-2 і A1-3. Наявні ідентифікатори пропускаються.",
+      "quantity": "Quantity per carton рахує упаковки. Для упаковки з 2 одиниць кількість 10 означає 20 штук. Усі коробки однакової групи мають містити ті самі товари в однаковій кількості.",
+      "measurements": "Указуйте розміри в сантиметрах, а вагу в кілограмах. Повторюйте кількість коробок, розміри та вагу в кожному рядку з однаковим Carton ID.",
+      "format": "Заповніть білі клітинки пакування. Залиште англійські заголовки та назву аркуша Cartons без змін. Завантажте XLSX або експортуйте таблицю Cartons у CSV."
     }
   }
 }

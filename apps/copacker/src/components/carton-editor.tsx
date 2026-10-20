@@ -1,21 +1,23 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput, ValidationIssue } from "@repo/aisle"
 import { CircleAlert, Copy, Ellipsis, Search, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cartonGroupLabel, type CartonGroup } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
+import { QuantityDisplay } from "./quantity-display"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 
-export type CartonIssue = { message: string; field?: string; fields?: string[] }
+type CartonIssue = { message: string; field?: string; fields?: string[] }
 
 function NumberField({
   label,
   prefix,
+  suffix,
   value,
   onChange,
   onBlur,
@@ -27,6 +29,7 @@ function NumberField({
 }: {
   label: string
   prefix?: string
+  suffix?: string
   value: number
   onChange: (value: number) => void
   onBlur: () => void
@@ -39,9 +42,16 @@ function NumberField({
   const format = useFormatter()
   if (readOnly) {
     return (
-      <span className={cn("flex h-9 items-center justify-end gap-2 px-3 tabular-nums", className)}>
+      <span
+        className={cn(
+          "flex h-9 items-center justify-end gap-2 px-3 tabular-nums",
+          className,
+          "h-auto w-auto flex-none px-0"
+        )}
+      >
         {prefix && <span className="text-xs text-muted-foreground">{prefix}</span>}
         {Number.isFinite(value) ? format.number(value) : "—"}
+        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
       </span>
     )
   }
@@ -61,6 +71,11 @@ function NumberField({
         onBlur={onBlur}
         className="h-full min-w-0 text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
+      {suffix && (
+        <InputGroupAddon align="inline-end" className="text-xs">
+          {suffix}
+        </InputGroupAddon>
+      )}
     </InputGroup>
   )
 }
@@ -83,9 +98,14 @@ function CartonProducts({
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<string[]>([])
   const selectionId = useId()
-  const title = t("addProductsTo", { carton: carton.cartonId })
-  const visible = products.filter((item) =>
-    `${item.name} ${item.variant} ${item.buyerSku}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())
+  const title =
+    carton.count > 1 && carton.cartonIds?.length === carton.count
+      ? t("addProductsToCartons", { cartons: cartonGroupLabel(carton.cartonIds.map((id) => ({ id }))) })
+      : t("addProductsTo", { carton: carton.cartonId })
+  const visible = products.filter(
+    (item) =>
+      (remainingPieces[item.id] ?? 0) > 0 &&
+      `${item.name} ${item.variant} ${item.buyerSku}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())
   )
   return (
     <Dialog
@@ -112,7 +132,7 @@ function CartonProducts({
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{t("addProducts")}</DialogTitle>
           <DialogDescription>{context ?? t("shipmentProducts")}</DialogDescription>
         </DialogHeader>
         <InputGroup>
@@ -185,7 +205,7 @@ function CartonProducts({
               setQuery("")
             }}
           >
-            {t("addToCarton", { carton: carton.cartonId })}
+            {t("addToCarton")}
           </Button>
         </div>
       </DialogContent>
@@ -210,15 +230,16 @@ export function CartonEditor({
   onChange?: (value: CartonGroup) => void
   onDuplicate?: () => void
   onDelete?: () => void
-  issues?: CartonIssue[]
+  // The packing rules this carton breaks, as validatePacking reports them.
+  issues?: ValidationIssue[]
   remainingPieces?: Record<string, number>
   context?: string
   readOnly?: boolean
   showErrors?: boolean
 }) {
   const t = useTranslations("orders.cartonEditor")
+  const rules = useTranslations("server.readiness.packing")
   const packing = useTranslations("orders.packing")
-  const identity = useTranslations("orders.detail")
   const format = useFormatter()
   const errorId = useId()
   const [touched, setTouched] = useState<string[]>([])
@@ -230,7 +251,63 @@ export function CartonEditor({
   const update = (patch: Partial<CartonGroup>) => onChange?.({ ...value, ...patch })
   const touch = (field: string) => setTouched((current) => (current.includes(field) ? current : [...current, field]))
   const fields = ["count", "length", "width", "height", "weight"] as const
-  const errors = [...issues]
+  // Each error names its field, says what's wrong with this carton, then how to fix it, and outlines the fields it
+  // names. Rules without carton-specific copy read as the server states them; a products error outlines nothing.
+  const ruleError = (issue: ValidationIssue): CartonIssue => {
+    const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
+    const index = value.items.findIndex(
+      (content) => products.find((item) => item.id === content.itemId)?.buyerSku === sku
+    )
+    const field = index >= 0 ? `items.${index}` : undefined
+    if (issue.code === "unitsPerCarton") {
+      return { field, message: t("rules.unitsPerCarton", issue.values) }
+    }
+    if (issue.code === "cartonSize") {
+      const side = issue.fields?.find((field): field is "length" | "width" | "height" => field !== "weight") ?? "length"
+      return {
+        fields: issue.fields,
+        message: t("rules.cartonSize", { ...issue.values, side, size: value[side] })
+      }
+    }
+    if (issue.code === "cartonWeight") {
+      return { field: "weight", message: t("rules.cartonWeight", { ...issue.values, weight: value.weight }) }
+    }
+    if (issue.code === "oneSku") {
+      return { message: t("rules.oneSku", issue.values) }
+    }
+    // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
+    if (issue.code === "samePacking") {
+      const content = value.items[index]
+      const item = products.find((product) => product.id === content?.itemId)
+      const units = content && item ? content.pieces / item.piecesPerSet : undefined
+      return {
+        message: t("rules.samePacking", {
+          ...issue.values,
+          difference: units === issue.values.units ? "size" : "units"
+        })
+      }
+    }
+    // Of the rest, only incomplete multi-packs are about a quantity; a missing ASIN or FNSKU outlines nothing.
+    return {
+      field: issue.code === "incompletePacks" ? field : undefined,
+      message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+    }
+  }
+  // A group's cartons break the same rules, so each shows once: products first, then quantities, dimensions and
+  // weight.
+  const rank = (issue: CartonIssue) => {
+    if (issue.fields) {
+      return 2
+    }
+    if (issue.field === "weight") {
+      return 3
+    }
+    return issue.field?.startsWith("items.") ? 1 : 0
+  }
+  const errors = issues
+    .map(ruleError)
+    .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+    .toSorted((a, b) => rank(a) - rank(b))
   for (const field of fields) {
     const number = value[field]
     if (
@@ -257,11 +334,23 @@ export function CartonEditor({
   const invalid = (field: string) => errors.some((issue) => issue.field === field || issue.fields?.includes(field))
   return (
     <section aria-label={title} className="@container/carton overflow-hidden rounded-lg border bg-card">
-      <div className="grid grid-cols-[1fr_auto] items-center gap-3 bg-muted/60 p-4 @3xl/carton:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <h3 className="text-sm font-semibold">{heading}</h3>
-        <div className="order-3 col-span-2 grid grid-cols-2 items-center gap-3 @3xl/carton:order-2 @3xl/carton:col-span-1 @3xl/carton:flex @3xl/carton:gap-5">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("count")}</span>
+      <div
+        className={cn(
+          "grid grid-cols-[1fr_auto] items-center gap-3 bg-muted/60 p-4",
+          readOnly
+            ? "@3xl/carton:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] @3xl/carton:gap-x-8"
+            : "items-start @3xl/carton:grid-cols-[minmax(0,1fr)_auto_auto]"
+        )}
+      >
+        <h3 className={cn("text-sm font-semibold", !readOnly && "flex min-h-11 items-center sm:min-h-9")}>{heading}</h3>
+        <div
+          className={cn(
+            "order-3 col-span-2 flex flex-wrap items-center gap-x-8 gap-y-3 @3xl/carton:order-2 @3xl/carton:col-span-1",
+            readOnly && "@3xl/carton:justify-between"
+          )}
+        >
+          <div className={cn("flex gap-2", readOnly ? "items-center" : "flex-col items-start")}>
+            <span className={cn("text-xs text-muted-foreground", !readOnly && "order-last")}>{t("count")}</span>
             <NumberField
               label={`${title}: ${t("count")}`}
               value={value.count}
@@ -274,9 +363,18 @@ export function CartonEditor({
               className="w-20"
             />
           </div>
-          <div className="order-3 col-span-2 flex flex-col gap-2 @3xl/carton:order-2 @3xl/carton:flex-row @3xl/carton:items-center">
-            <span className="shrink-0 text-xs text-muted-foreground">{t("dimensions")}</span>
-            <div className="flex min-w-0 gap-2">
+          <div
+            className={cn(
+              "flex gap-2",
+              readOnly
+                ? "order-3 w-full flex-wrap items-center @xl/carton:order-2 @xl/carton:w-auto"
+                : "order-3 flex-col items-start @xl/carton:order-2"
+            )}
+          >
+            <span className={cn("shrink-0 text-xs text-muted-foreground", !readOnly && "order-last")}>
+              {t("dimensions")}
+            </span>
+            <div className={cn("flex min-w-0 gap-2", readOnly ? "flex-none gap-3" : "flex-none")}>
               {(["length", "width", "height"] as const).map((field) => (
                 <NumberField
                   key={field}
@@ -288,16 +386,21 @@ export function CartonEditor({
                   invalid={invalid(field)}
                   readOnly={readOnly}
                   errorId={errorId}
-                  className="flex-1 @3xl/carton:w-18"
+                  className={readOnly ? "" : "w-18 flex-none"}
                 />
               ))}
             </div>
           </div>
-          <div className="order-2 flex items-center justify-end gap-2 @3xl/carton:order-3">
-            <span className="text-xs text-muted-foreground">{t("weight")}</span>
+          <div
+            className={cn(
+              "flex gap-2",
+              readOnly ? "order-2 items-center @xl/carton:order-3" : "order-2 flex-col items-start @xl/carton:order-3"
+            )}
+          >
+            <span className={cn("text-xs text-muted-foreground", !readOnly && "order-last")}>{t("weight")}</span>
             <NumberField
               label={`${title}: ${packing("dimensions.weight")}`}
-              prefix="kg"
+              suffix="kg"
               value={value.weight}
               onChange={(weight) => update({ weight })}
               onBlur={() => touch("weight")}
@@ -336,11 +439,12 @@ export function CartonEditor({
           </DropdownMenu>
         )}
       </div>
-      <div className="hidden justify-between gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground sm:flex">
+      <div className="hidden grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto] gap-4 border-b bg-muted/60 px-4 py-2 text-xs text-muted-foreground @sm/carton:grid">
         <span>{packing("product")}</span>
-        <span className={cn("w-36 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
+        <span>{packing("supplierSku")}</span>
+        <span className={cn("w-24 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
       </div>
-      <div className={cn("divide-y", invalid("items") && "ring-1 ring-inset ring-destructive")}>
+      <div className="divide-y">
         {value.items.map((content, index) => {
           const item = products.find((product) => product.id === content.itemId)
           if (!item) {
@@ -348,53 +452,56 @@ export function CartonEditor({
           }
           const field = `items.${index}`
           return (
-            <div key={content.itemId} className="flex flex-wrap items-start justify-between gap-4 p-4 sm:flex-nowrap">
-              <div className="w-full min-w-0 sm:flex-1">
-                <ProductIdentity item={item} showPackSize={false} />
+            <div
+              key={content.itemId}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 p-4 @sm/carton:grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto]"
+            >
+              <div className="col-span-2 min-w-0 text-base [overflow-wrap:anywhere] @sm/carton:col-span-1">
+                <ProductIdentity item={item} showPackSize={false} showSku={false} />
               </div>
-              <span className="self-center text-xs sm:hidden">
-                {item.piecesPerSet > 1 ? t("packsPerCarton") : t("unitsPerCarton")}
-                {item.piecesPerSet > 1 && (
-                  <span className="mt-1 block text-muted-foreground">
-                    {identity("perPack", { count: item.piecesPerSet })}
-                  </span>
-                )}
-              </span>
+              <div className="min-w-0 text-base break-all">
+                <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
+                  {packing("supplierSku")}
+                </span>
+                {item.supplierSku || "—"}
+              </div>
               <div className="ms-auto flex items-start gap-3">
-                <div className="flex w-28 flex-col gap-1 sm:w-36">
-                  {item.piecesPerSet > 1 && (
-                    <p className="hidden text-end text-xs text-muted-foreground sm:block">
-                      {identity("perPack", { count: item.piecesPerSet })}
-                    </p>
+                <QuantityDisplay
+                  pieces={content.pieces}
+                  packSize={item.piecesPerSet}
+                  basis={readOnly ? "units" : "packs"}
+                  className="w-24"
+                >
+                  <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
+                    {t("quantityPerCarton")}
+                  </span>
+                  {readOnly ? (
+                    <span>{t("unitCount", { count: content.pieces })}</span>
+                  ) : (
+                    <NumberField
+                      label={t("productQuantity", { sku: item.buyerSku, carton: value.cartonId })}
+                      value={content.pieces / item.piecesPerSet}
+                      onChange={(quantity) =>
+                        update({
+                          items: value.items.map((row, i) =>
+                            i === index ? { ...row, pieces: quantity * item.piecesPerSet } : row
+                          )
+                        })
+                      }
+                      onBlur={() => touch(field)}
+                      invalid={invalid(field)}
+                      integer
+                      readOnly={readOnly}
+                      errorId={errorId}
+                    />
                   )}
-                  <NumberField
-                    label={t("productQuantity", { sku: item.buyerSku, carton: value.cartonId })}
-                    value={content.pieces / item.piecesPerSet}
-                    onChange={(quantity) =>
-                      update({
-                        items: value.items.map((row, i) =>
-                          i === index ? { ...row, pieces: quantity * item.piecesPerSet } : row
-                        )
-                      })
-                    }
-                    onBlur={() => touch(field)}
-                    invalid={invalid(field)}
-                    integer
-                    readOnly={readOnly}
-                    errorId={errorId}
-                  />
-                  {item.piecesPerSet > 1 && Number.isFinite(content.pieces) && (
-                    <p className="pe-3 text-end text-xs text-muted-foreground">
-                      {t("unitCount", { count: content.pieces })}
-                    </p>
-                  )}
-                </div>
+                </QuantityDisplay>
                 {!readOnly && (
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="size-11 sm:size-9"
+                    className="mt-5 size-11 sm:size-9 @sm/carton:mt-0"
                     aria-label={t("removeProduct", { sku: item.buyerSku, carton: value.cartonId })}
                     onClick={() => update({ items: value.items.filter((_, i) => i !== index) })}
                   >

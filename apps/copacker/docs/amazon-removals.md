@@ -2,7 +2,7 @@
 
 The Amazon sales worker imports removal order detail and removal shipment detail after storage fees on initial
 connection, manual sync and the daily schedule. This implements analytics A05 acquisition for US FBA requests.
-Deployment, live-account validation and financial/inventory reconciliation remain pending.
+Acquisition is deployed; complete live-account validation and financial/inventory reconciliation remain pending.
 
 ## Sources and accounting boundary
 
@@ -23,19 +23,20 @@ of warehouse receipt or a reimbursement entitlement. Order IDs are removal refer
 
 ## History and refresh
 
-The target is twelve completed months plus this month through yesterday, requested in UTC monthly windows for US
+The target is twelve completed months plus this month through yesterday, requested as one continuous UTC date range per source for US
 marketplace `ATVPDKIKX0DER`. The importer validates order windows by request time and shipment windows by shipment time.
 An old request can therefore have a shipment in a recent window; an order's later update stays in its request month.
 The shipment date interpretation must be checked against live-account cross-month examples before rollout; the catalog
 lists both dates but does not explicitly specify which filters the range. Out-of-window rows fail the whole import,
 rather than being silently discarded or expanding claimed coverage. Target history is not verified account availability.
 
-Current/previous months and incomplete windows refresh each sync. One older successful month last checked over 30 days
-ago also refreshes, oldest check first. This catches later corrections on a rotating basis, not immediately for every old
-open removal. Rows outside the moving target remain stored without automatic refresh. Longer history and monitoring old
-unresolved removals are follow-up work. A successfully fetched month is source coverage, not completed removal operations.
+Each sync refreshes the full target range with two reports total, one for orders and one for shipments. This reduces
+report creation pressure and collects sparse history in a single file per source. The complete file must parse and fit
+the requested range before it is partitioned into monthly coverage. Rows outside the moving target remain stored
+without automatic refresh. Longer history and monitoring old unresolved removals are follow-up work. A successfully
+fetched range is source coverage, not completed removal operations.
 
-A successful refresh replaces that source/month atomically with coverage. Identical source rows and split shipments are
+A successful refresh replaces all target months for that source atomically with coverage. Identical source rows and split shipments are
 preserved; repeat imports do not append duplicates. Internal row IDs are not stable reconciliation keys. Cancellation,
 malformed documents or out-of-window rows preserve prior evidence but mark the latest attempt incomplete. Header-only
 reports establish zero rows; missing reports do not. Permission/throttling errors stop that source for the current run.

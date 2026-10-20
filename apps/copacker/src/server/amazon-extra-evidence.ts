@@ -2,6 +2,7 @@ import { parseFbmReturns } from "@repo/aisle/fbm-returns"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsFeeds, amazonTransactions } from "@/db/schema"
+import { amazonFailureDetails } from "./amazon-diagnostics"
 import {
   amazonReportFailure,
   monthlyReportWindows,
@@ -50,7 +51,14 @@ export async function syncAmazonExtraEvidence(
           dataStartTime: window.from.toISOString(),
           dataEndTime: new Date(window.to.getTime() - 1000).toISOString()
         },
-        { deadline: Date.now() + 20 * 60000, assertActive: assertOwned, retryCreate: false }
+        {
+          deadline: Date.now() + 20 * 60000,
+          assertActive: assertOwned,
+          reuseCreatedSince:
+            !prior?.state.coveredTo || Date.parse(prior.state.coveredTo) < window.to.getTime()
+              ? new Date(now.getTime() - 86400000).toISOString()
+              : undefined
+        }
       )
       if (text === null) {
         errorCode = "report_cancelled"
@@ -88,6 +96,12 @@ export async function syncAmazonExtraEvidence(
       )
     } catch (error) {
       errorCode ??= amazonReportFailure(error, stage)
+      console.warn("Amazon seller-fulfilled returns failed", {
+        from: window.from.toISOString(),
+        stage,
+        errorCode,
+        ...amazonFailureDetails(error)
+      })
       failure = errorCode
       await publishAnalyticsFeed(
         input,

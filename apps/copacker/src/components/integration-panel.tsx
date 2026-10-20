@@ -2,6 +2,8 @@ import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "./common"
+import { InventorySyncRow } from "./inventory-sync"
+import { FinancialDataSyncCard, OrdersSyncRow } from "./sales-orders"
 import { StoreLogo } from "./store-logos"
 import { Button } from "./ui/button"
 import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
@@ -12,11 +14,13 @@ export function IntegrationPanel({
   title,
   account,
   domain,
+  status,
   children
 }: {
   store: "shopify" | "amazon" | "ebay"
   title: string
   account: string
+  status?: React.ReactNode
   domain?: string
   children: React.ReactNode
 }) {
@@ -34,9 +38,11 @@ export function IntegrationPanel({
             <DialogTitle ref={titleRef} tabIndex={-1} className="text-xl leading-6 tracking-tight outline-none">
               {title}
             </DialogTitle>
-            <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
-              {t("connected")}
-            </StatusBadge>
+            {status ?? (
+              <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
+                {t("connected")}
+              </StatusBadge>
+            )}
           </div>
           <DialogDescription className="break-words text-foreground">{account}</DialogDescription>
           {domain && <p className="break-all text-xs text-muted-foreground">{domain}</p>}
@@ -68,5 +74,19 @@ export function IntegrationPanelFooter({ children }: { children: React.ReactNode
         {t("close")}
       </DialogClose>
     </div>
+  )
+}
+
+// The app and its stories use the same sync section, including its responsive layout.
+export function IntegrationSyncSection({ store }: { store: "shopify" | "amazon" | "ebay" }) {
+  const t = useTranslations("settings.integrations.panel")
+  return (
+    <IntegrationSection title={t("syncTitle")}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <OrdersSyncRow source={store} />
+        {store !== "ebay" && <InventorySyncRow provider={store} />}
+        {store === "amazon" && <FinancialDataSyncCard />}
+      </div>
+    </IntegrationSection>
   )
 }

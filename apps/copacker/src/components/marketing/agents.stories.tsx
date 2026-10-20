@@ -5,6 +5,7 @@ import { Agents } from "./agents"
 
 // The diagram on the dark stage the home page sets it on.
 const meta = preview.meta({
+  title: "Components/Marketing/Agents",
   component: Agents,
   parameters: { layout: "fullscreen" },
   decorators: [

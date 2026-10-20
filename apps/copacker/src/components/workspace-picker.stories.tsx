@@ -6,6 +6,7 @@ import { workspaces } from "@/stories/workspace"
 import { WorkspacePicker } from "./workspace-picker"
 
 const meta = preview.meta({
+  title: "Components/App shell/Workspace picker",
   component: WorkspacePicker,
   args: { workspaces: Object.values(workspaces), unavailable: true },
   parameters: { layout: "fullscreen" }

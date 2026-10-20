@@ -101,7 +101,6 @@
       "amazon": "Aufträge, Bestand, Ausgaben, Sendungen",
       "ebay": "Aufträge, Ausgaben"
     },
-    "comingSoon": "Demnächst",
     "connect": "Verbinden",
     "notConnected": "Nicht verbunden",
     "connected": "Verbunden",
@@ -153,11 +152,20 @@
         "unavailable": "Status nicht verfügbar",
         "scheduled": "Tägliche Synchronisierung aktiv"
       }
+    },
+    "health": {
+      "reconnect": "Erneut verbinden",
+      "configuration": "Konfigurationsproblem",
+      "unavailable": "Vorübergehend nicht verfügbar",
+      "reconnectHelp": "Amazon hat die gespeicherte Autorisierung abgelehnt. Verbinden Sie Ihr Konto erneut.",
+      "configurationHelp": "Die Amazon-App-Konfiguration muss geprüft werden. Kontaktieren Sie den Support.",
+      "unavailableHelp": "Amazon konnte gerade nicht geprüft werden. Die gespeicherte Verbindung bleibt erhalten.",
+      "reconnectAction": "Amazon erneut verbinden",
+      "retry": "Erneut versuchen"
     }
   },
   "excludedTags": {
     "title": "Ausgeschlossene Auftrags-Tags",
-    "syncing": "Tags werden von Shopify synchronisiert",
     "none": "Keine",
     "edit": "Bearbeiten",
     "editLabel": "Ausgeschlossene Auftrags-Tags bearbeiten",

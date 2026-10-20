@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Banner } from "./banner"
 
 const meta = preview.meta({
+  title: "Unused/Display/Banner",
   component: Banner,
   args: {
     tone: "warning" as const,

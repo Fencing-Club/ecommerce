@@ -4,6 +4,7 @@ import { skipAnimations } from "@/stories/fixtures/auth"
 import { ProductShowcase } from "./product-showcase"
 
 const meta = preview.meta({
+  title: "Components/Auth/Product showcase",
   component: ProductShowcase,
   parameters: { layout: "fullscreen" },
   beforeEach: skipAnimations

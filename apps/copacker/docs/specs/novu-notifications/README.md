@@ -19,6 +19,8 @@ alongside the business workflows that make them reliable. The first useful relea
 - [Purchase order flow](../purchase-order-flow/README.md): current and planned operational workflows.
 - [Provider notifications](../../notifications.md): inbound commerce events, distinct from these user notifications.
 
+- [Shipment action notification contract](shipment-action-handoff.md): canonical events, recipients, templates, and actor feedback.
+
 ## Current behavior and boundaries
 
 The app has a durable Postgres job queue, Resend email delivery, React Email templates in `@repo/copacker-emails`,
@@ -280,7 +282,8 @@ Use local development data and new migrations. Release behind workspace/workflow
 then enable a small cohort. Observe failures, duplicate sends, delivery volume and opt-outs before broad activation.
 All test emails must go to `andrew@fencing.club`, never Chen or another real partner. Enforce the restriction at the
 delivery boundary. Manual packet emails do not establish workflow-trigger or Novu acceptance coverage.
-Keep replay scoped to original event IDs, and prevent a rollback from re-enabling both legacy and Novu delivery.
+Replace the queued business-email delivery path directly. Password resets and other direct flows retain the shared
+Resend sender. Keep replay scoped to original event IDs and use one delivery path per notification.
 
 Update this checklist only when acceptance evidence exists. Record unresolved provider limits and current SDK behavior
 in implementation docs rather than assuming this plan verifies an external integration.

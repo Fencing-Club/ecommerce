@@ -7,6 +7,7 @@ import { ForwardShipment } from "./forward-shipment"
 const sent: ActionRequest[] = []
 
 const meta = preview.meta({
+  title: "Components/Shipments/Forward shipment",
   component: ForwardShipment,
   args: { shipmentId, currency: "USD" },
   beforeEach: ({ msw }) => {

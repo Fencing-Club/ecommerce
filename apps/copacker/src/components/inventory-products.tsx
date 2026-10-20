@@ -6,7 +6,6 @@ import {
   ChevronRight,
   CircleAlert,
   Ellipsis,
-  Info,
   PackagePlus,
   Pencil,
   Search,
@@ -41,7 +40,6 @@ import type { ProductDefaults } from "@/server/product-defaults"
 
 type ProductsPage = {
   observedAt: string | null
-  needsResync: boolean
   page: number
   pageSize: number
   totalPages: number
@@ -703,12 +701,6 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
             <ProductLabelBulk onChanged={refresh} />
           </div>
         </div>
-        {data.needsResync && (
-          <p className="flex items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
-            <Info className="size-3.5 shrink-0" aria-hidden="true" />
-            {t("needsResync")}
-          </p>
-        )}
         {data.products.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">
             {filtered ? t("noMatch") : t("noProducts")}

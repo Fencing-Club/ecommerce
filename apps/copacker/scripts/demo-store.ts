@@ -16,7 +16,6 @@ import {
   suppliers
 } from "../src/db/schema"
 import { demoShopDomain } from "../src/server/demo-shopify"
-import { salesDataVersion } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
 
 // Staging administration must explicitly select its environment and database; never seed production.
@@ -51,6 +50,8 @@ const variant = (id: number, product: number, fields: Partial<Row>): Row => ({
   inventoryItemId: `gid://shopify/InventoryItem/${id}`,
   buyerSku: `demo-${id}`,
   productId: `gid://shopify/Product/${product}`,
+  productTitle: `Demo product ${product}`,
+  variantTitle: "Default Title",
   imageUrl: null,
   tracked: true,
   unit: "shopify_inventory_unit",
@@ -149,6 +150,7 @@ function demoOrders() {
           : []
     }))
     sales.push({
+      tags: [],
       id: `gid://shopify/Order/${ago}`,
       name: `#${2000 - ago}`,
       createdAt: new Date(today - ago * day + 12 * 3600000).toISOString(),
@@ -275,8 +277,8 @@ export async function seedDemoStore(org: { id: string; name: string }) {
     coveredFrom: new Date(today - 120 * day),
     coveredTo: new Date(today),
     finishedAt: new Date(),
-    // The orders above carry prices, so they're stored in the current shape.
-    dataVersion: salesDataVersion
+    // This demo does not include customer identities.
+    customersIncluded: false
   }
   await db()
     .insert(salesSyncs)

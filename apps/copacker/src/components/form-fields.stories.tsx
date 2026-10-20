@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { SelectField } from "./form-fields"
 
 const meta = preview.meta({
+  title: "Components/Forms/Form fields",
   component: SelectField,
   args: {
     label: "Payment terms",

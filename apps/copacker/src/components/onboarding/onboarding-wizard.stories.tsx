@@ -57,6 +57,7 @@ const newAccount: React.ComponentProps<typeof OnboardingWizard> = {
 }
 
 const meta = preview.meta({
+  title: "Components/Onboarding/Onboarding wizard",
   component: OnboardingWizard,
   parameters: { layout: "fullscreen" },
   args: newAccount,

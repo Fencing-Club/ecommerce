@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { NextStepCard } from "./next-step"
 
 const meta = preview.meta({
+  title: "Unused/Display/Next step",
   component: NextStepCard,
   args: {
     title: "Approve the invoice for shipment 1",

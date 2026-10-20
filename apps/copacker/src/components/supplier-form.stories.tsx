@@ -5,6 +5,7 @@ import { SupplierForm } from "./supplier-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
+  title: "Components/Partners/Supplier form",
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))

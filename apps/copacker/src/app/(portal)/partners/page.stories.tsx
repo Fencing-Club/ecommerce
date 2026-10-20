@@ -173,7 +173,7 @@ const partners: Partner[] = [
 const viewer: Permissions = { role: "member", access: { partners: "view" } }
 
 const meta = preview.meta({
-  title: "Pages/Buyer/Partners",
+  title: "Pages/Partners/List",
   ...pageStory("/partners", PartnersPage),
   args: { permissions: owner, partners, restockLeadTimeDays: null } satisfies Args
 })

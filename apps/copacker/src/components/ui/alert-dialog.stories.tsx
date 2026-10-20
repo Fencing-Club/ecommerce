@@ -51,6 +51,7 @@ function DeleteDraft({ onAction, onOpenChange }: { onAction: () => void; onOpenC
 }
 
 const meta = preview.type<{ args: { onAction: () => void; onToggle: (open: boolean) => void } }>().meta({
+  title: "Foundations/Alert dialog",
   args: { onAction: fn(), onToggle: fn() },
   render: ({ onAction, onToggle }) => <DeleteDraft onAction={onAction} onOpenChange={onToggle} />
 })

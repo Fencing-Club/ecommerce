@@ -159,9 +159,13 @@ ingestion plumbing and do not migrate to outbound Novu workflows.
 - [ ] Preserve exact producer, eligibility, recipient, revision, locale, template and attachments for every migrated flow.
 - [ ] Add team invitations and owner-only customer-data reports to phase 2.
 - [ ] Close partner-creation/publication gaps and preserve merged runtime job wakes.
-- [ ] Assign one delivery owner at cutover for pending, running, failed and completed legacy jobs.
-- [ ] Drain or deliberately convert pending jobs; never run legacy Resend and Novu for the same delivery intent.
-- [ ] Map existing job keys to a persistent ledger; do not replay completed jobs under fresh Novu identities.
+- [ ] Before enabling Novu dispatch, pause new queued-email production and checkpoint the existing delivery owner.
+  Drain pending jobs through that owner and let leased jobs finish, then reconcile completed, failed and ambiguous
+  outcomes against provider evidence. If draining is not possible, transfer only confirmed unsent intents with their
+  original identities after stopping the old owner and fencing its leases. Enable Novu only after every outstanding
+  intent has one recorded owner; never run both delivery paths for one intent or replay completed jobs. Resume queued
+  production through Novu while retaining the shared sender for excluded direct flows.
+- [ ] Give each new delivery intent one persistent identity and one delivery owner.
 - [ ] Test crash-after-send, lease expiry, ambiguous responses and retries beyond provider deduplication windows.
 - [ ] Pin PO revision/PDF and release revision, and suppress superseded release jobs.
 - [ ] Invalidate stale invitations on resend/cancel, including work already dispatched to Novu where supported.
@@ -169,7 +173,8 @@ ingestion plumbing and do not migrate to outbound Novu workflows.
 - [ ] Keep excluded direct/WorkOS flows working; verify password-reset duplicate-sender configuration separately.
 - [ ] Add monitored failure/replay handling for all migrated job types, not just order-linked jobs.
 - [ ] Test submit, revise and explicit release end to end: action, publication, eligibility, workflow and delivery.
-- [ ] Prevent rollback from reactivating old delivery for events already accepted by Novu.
+- [ ] Keep retries on the same delivery identity. During cutover, reconcile ambiguous sends against provider evidence;
+  hold late retries outside the provider's deduplication window for review instead of automatically replaying them.
 
 ## Test delivery restriction
 

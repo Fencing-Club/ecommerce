@@ -99,11 +99,9 @@ The [Cloudflare release guide](cloudflare.md#release-procedure) describes exact-
 static Storybook, Cloudflare Workflows, serialized migrations and deployed health checks. Railway is no longer a release
 target. See the [cutover acceptance record](specs/platform-migration/acceptance.md) for deployment and retirement status.
 
-Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
-A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
-new migration or restore a verified recovery point from the authoritative database. Confirm Neon's actual restore
-window and matching private documents as described in [database recovery](neon.md#transfer-and-acceptance);
-the former Railway retention does not apply to Neon.
+During prelaunch, breaking schema changes ship with coordinated releases; stop incompatible executors before applying
+them. Do not retain obsolete fields for older releases. A rollback requires compatible code or a matching database
+recovery point and private documents. See [database recovery](neon.md#transfer-and-acceptance).
 
 ## Infrastructure
 
@@ -160,11 +158,34 @@ uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application
 Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
-Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
-under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied
-migration is edited (record each migration's hash there once it's deployed), or when migrations are numbered out of the
-order they were made. The release runner uses one direct connection and an advisory lock to apply pending migrations
-before deployment. The old Railway predeploy migration commands are disabled; keep one migration owner.
+**Production data survives releases.** Keep applied SQL migrations and their journal entries immutable; append new
+migrations rather than replacing deployed history with a fresh baseline. `db:migrate` applies only pending migrations
+to existing databases and builds the full schema on empty databases. Never clear migration bookkeeping or reset a
+database during deployment. Preview branches inherit staging's history and follow the same incremental path.
+
+The compatibility cleanup adds customer-coverage tracking without deleting orders, connections, supplier terms or
+stored sync metadata. Numeric sync versions no longer drive runtime behavior. Removing unused stored fields is a
+separate data-retention decision, not a prerequisite for simplifying the application. Resets of disposable local,
+preview or staging data require explicit authorization; production must be upgraded in place with a verified backup.
+
+Migration `0059_customer_coverage` refuses to proceed if stored Shopify orders or stock snapshots lack fields now
+required by the runtime. Refresh those records using the previous release and retry; do not fabricate prices or delete
+orders to get past the check. The failure rolls back the migration and the release stops before deploying new code.
+If a provider can no longer supply the missing history, retain the existing release until a preservation plan is reviewed.
+Customer coverage starts unconfirmed so the next permitted sync verifies the complete history without deleting orders.
+
+Migration `0060_validate_shopify_payments` also checks each stored Shopify payment and its fee amounts against the
+current contract. Invalid payment data stops deployment without changing records; use the same refresh-and-retry
+process. This is a separate migration because `0059_customer_coverage` has already run in preview environments.
+
+Migration `0061_validate_shopify_line_money` extends that read-only check to line prices and every nested discount
+allocation. Amounts must be decimal strings and currency codes must be three-character strings. It leaves both
+previously deployed migrations unchanged and blocks deployment on invalid data without rewriting or deleting records.
+
+Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
+`drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
+`tests/migrations.test.ts` checks schema coverage, journal ordering, fresh initialization and repeat migration runs.
+The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.
@@ -178,7 +199,7 @@ See [Neon connections and releases](neon.md).
 
 ## Preview scope
 
-Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Configured Cloudflare
+Trusted PRs receive isolated Neon staging copies with their migrations applied after the Storybook build. Configured Cloudflare
 previews deploy the app and static Storybook, use a private R2 prefix per PR, and remove their hosting, database
 connection, queue, files and Neon branch on merge/close. A six-hour sweep retries incomplete cleanup, including
 Cloudflare resources whose Neon branch already expired. No new Railway resources are provisioned.

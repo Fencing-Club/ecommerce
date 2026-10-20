@@ -14,7 +14,11 @@ const instructions = `Keep the products in **separate cartons**.
 
 Contact [the buyer](mailto:buyer@example.com) if quantities differ.`
 
-const meta = preview.meta({ component: Markdown, args: { children: instructions } })
+const meta = preview.meta({
+  title: "Components/Display/Markdown",
+  component: Markdown,
+  args: { children: instructions }
+})
 
 export const Instructions = meta.story({
   play: async ({ canvas }) => {

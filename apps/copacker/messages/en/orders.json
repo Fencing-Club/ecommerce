@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} shipment",
     "shipmentCounts": "{count, plural, one {# variant} other {# variants}}, {pieces, number} pieces",
     "selectProduct": "Select {name}",
-    "packCount": "{count, number} packs of {size}",
+    "packCount": "{count, number} packs, {size} each",
     "supplierCharges": "Supplier costs",
     "addSupplierCharge": "Add expense",
     "removeSupplierCharge": "Remove expense",
@@ -280,7 +280,16 @@
       "label": "Comment",
       "placeholder": "Leave a comment…",
       "post": "Post",
-      "required": "Write a comment"
+      "required": "Write a comment",
+      "visibility": "Comment visibility",
+      "internal": "Internal comment",
+      "messageSupplier": "Message supplier",
+      "messageCustomer": "Message customer",
+      "internalHint": "Only your team can see this comment.",
+      "supplierHint": "Your team and the supplier can see this message.",
+      "customerHint": "Your team and the customer can see this message.",
+      "sharedSupplier": "Shared with supplier",
+      "sharedCustomer": "Shared with customer"
     },
     "events": {
       "created": "Purchase order created",
@@ -310,6 +319,7 @@
       "packingSplit": "Packing submitted; split into {networks} shipments and queued for Amazon",
       "forwarderShipped": "{forwarder} shipped the goods: {tracking}",
       "packingReady": "Packing submitted; ready to ship",
+      "packingReopened": "Packing reopened for changes",
       "invoiceEntered": "Invoice entered with changes to the purchase order",
       "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval",
       "existingAwdLinked": "Linked existing AWD shipment {shipmentId}",
@@ -430,9 +440,16 @@
     "pickupAddress": "Pickup address",
     "otherAddress": "Other address",
     "readyForPickup": "Ready for pickup",
+    "shipFrom": "Ship from",
+    "readyDate": "Ready date",
     "addCartonProduct": "Add product to carton",
     "removeCartonProduct": "Remove product {number} from carton",
-    "finishPacking": "Finish packing"
+    "finishPacking": "Finish packing",
+    "addNewAddress": "Add new address",
+    "chooseAddress": "Choose an address",
+    "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
+    "leftCount": "{count} left",
+    "overCount": "{count} too many"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -459,6 +476,7 @@
     "other": "Other"
   },
   "cartonEditor": {
+    "addProducts": "Add products to carton",
     "addProductsTo": "Add products to carton {carton}",
     "shipmentProducts": "Products in this shipment",
     "searchProducts": "Search products in this shipment",
@@ -484,18 +502,24 @@
     "actions": "Carton {carton} actions",
     "duplicate": "Duplicate carton",
     "delete": "Delete carton",
-    "quantityPerCarton": "Quantity / carton",
-    "packsPerCarton": "Packs / carton",
-    "unitsPerCarton": "Units / carton",
+    "quantityPerCarton": "Quantity",
     "productQuantity": "{sku}: quantity per carton {carton}",
     "unitCount": "{count, plural, one {# unit} other {# units}}",
     "removeProduct": "Remove {sku} from carton {carton}",
     "product": "Product",
     "leftToPack": "Left to pack",
     "packCount": "{count, plural, one {# pack} other {# packs}}",
-    "addToCarton": "Add to carton {carton}",
+    "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
-    "cartonGroup": "Cartons {cartons}"
+    "cartonGroup": "Cartons {cartons}",
+    "addProductsToCartons": "Add products to cartons {cartons}",
+    "rules": {
+      "unitsPerCarton": "Quantity: {units, number} sellable units per carton exceeds {receiver}’s limit of {max, number}. Split them into smaller cartons.",
+      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) for this carton}}.",
+      "cartonWeight": "Weight: {weight, number} kg exceeds the {maxLb, number} lb limit ({maxKg, number} kg). Reduce the weight of each carton.",
+      "oneSku": "Products: {receiver} requires one SKU per carton. Move these SKUs into separate cartons.",
+      "samePacking": "Packing template: This SKU uses {difference, select, units {{units, number} units per carton} other {{length, number} × {width, number} × {height, number} cm cartons at {weight, number} kg}} elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+    }
   },
   "cartonImport": {
     "title": "Import cartons",
@@ -530,11 +554,19 @@
       "worksheet": "The file needs a worksheet named Cartons.",
       "unreadable": "Couldn’t read this file. Use an XLSX or CSV file from the template.",
       "number": "Enter a valid positive number in {value}.",
-      "sku": "SKU is not in this shipment: {value}.",
+      "sku": "Supplier SKU {value} and product details must match exactly one product in this shipment.",
       "cartonId": "Enter a carton ID of 1–60 characters.",
       "measurements": "Rows for this carton must have the same carton count, dimensions, and weight.",
       "duplicateProduct": "This carton lists {value} more than once.",
       "limit": "A shipment can contain up to 1,000 cartons."
+    },
+    "template": {
+      "identity": "Keep the prefilled supplier SKU, product, variant and units per pack unchanged. Ask the buyer to correct missing or incorrect product details.",
+      "rows": "Use one row per product in a carton. Copy a product row for additional cartons. Repeat the Carton ID for products packed together. Leave unused packing rows blank.",
+      "cartons": "Carton ID is your reference, not an Amazon label number. Use A1, A2, etc. with Carton count 1 for separate cartons. For identical cartons, use a count greater than 1: A1 with count 3 becomes A1, A1-2 and A1-3. Existing IDs are skipped.",
+      "quantity": "Quantity per carton counts packs. For a 2-pack, quantity 10 means 20 pieces. Every carton in an identical group must have the same products and quantities.",
+      "measurements": "Enter dimensions in centimetres and weight in kilograms. Repeat the same count, dimensions and weight on every row sharing a Carton ID.",
+      "format": "Fill the white packing cells. Keep the English headers and Cartons sheet name unchanged. Upload the XLSX workbook or export the Cartons table as CSV."
     }
   }
 }

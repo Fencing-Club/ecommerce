@@ -3,7 +3,7 @@ import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-docum
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/Shipping arrangements"
+  title: "Components/Shipping documents/Arrangements"
 })
 
 export const FbaParcelDropoff = meta.story({ args: { data: scenario("parcel-dropoff") }, play: ready })

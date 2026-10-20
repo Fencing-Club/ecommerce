@@ -1,6 +1,6 @@
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight, ShoppingBag, ExternalLink, Repeat, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
@@ -22,7 +22,14 @@ import { IntegrationSyncCard } from "./integration-sync-card"
 import { SalesStatus } from "./sales-status"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
+type ReportCoverage = { windows: { complete: boolean; status: string; checkedAt: string | null }[] }
+
 type SyncState = {
+  fees?: { coveredFrom: string | null; coveredTo: string | null; errorCode: string | null }
+  returns?: ReportCoverage | null
+  reimbursements?: ReportCoverage | null
+  storageFees?: { monthly: ReportCoverage; aged: ReportCoverage } | null
+  removals?: { orders: ReportCoverage; shipments: ReportCoverage } | null
   source: SalesSource
   externalAccountId: string
   status: "idle" | "queued" | "running" | "failed"
@@ -138,6 +145,14 @@ export function useOrderSync(source: SalesSource) {
 
 // A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
 export function OrdersSyncRow({ source }: { source: SalesSource }) {
+  return <SalesSyncCard source={source} />
+}
+
+export function FinancialDataSyncCard() {
+  return <SalesSyncCard source="amazon" financial />
+}
+
+function SalesSyncCard({ source, financial = false }: { source: SalesSource; financial?: boolean }) {
   const t = useTranslations("sales.sync")
   const panel = useTranslations("settings.integrations.panel")
   const errorMessage = useErrorMessage()
@@ -169,7 +184,10 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
   } else if (mutation.isError) {
     syncState = "failed"
     text = <span className="text-destructive">{errorMessage(mutation.error, t("couldNotStart"))}</span>
-  } else if (state?.status === "failed") {
+  } else if (
+    state?.status === "failed" &&
+    (!financial || state.errorCode === "reconnect" || state.errorCode === "shopify_permissions")
+  ) {
     syncState = "failed"
     text = (
       <span className="text-destructive">
@@ -179,6 +197,31 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
   } else if (isError) {
     syncState = "unavailable"
     text = undefined
+  } else if (financial) {
+    const reports = [
+      state?.returns,
+      state?.reimbursements,
+      state?.storageFees?.monthly,
+      state?.storageFees?.aged,
+      state?.removals?.orders,
+      state?.removals?.shipments
+    ]
+    const windows = reports.flatMap((report) => report?.windows ?? [])
+    if (state?.fees?.errorCode || windows.some((window) => window.status === "failed")) {
+      syncState = "failed"
+      text = t("financialFailed")
+    } else if (
+      state?.fees?.coveredFrom &&
+      state.fees.coveredTo &&
+      reports.every(
+        (report) => report && report.windows.length > 0 && report.windows.every((window) => window.complete)
+      )
+    ) {
+      syncState = "synced"
+      text = t("financialImported")
+    } else if (state?.fees?.coveredTo || windows.some((window) => window.checkedAt)) {
+      text = t("financialIncomplete")
+    }
   } else if (syncedAt) {
     syncState = "synced"
     text = <SyncedAt at={syncedAt} />
@@ -192,12 +235,12 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
   }
   return (
     <IntegrationSyncCard
-      title={t("orders")}
-      label={t("sourceOrders", { source: title })}
-      icon={<ShoppingBag />}
+      title={t(financial ? "financialData" : "orders")}
+      label={financial ? t("amazonFinancialData") : t("sourceOrders", { source: title })}
+      icon={financial ? <ReceiptText /> : <ShoppingBag />}
       status={syncState}
       detail={text}
-      progress={state?.progress}
+      progress={financial ? undefined : state?.progress}
       onSync={() => void startSync()}
       disabled={syncing || isLoading || isError || !state}
       reconnect={reconnect}

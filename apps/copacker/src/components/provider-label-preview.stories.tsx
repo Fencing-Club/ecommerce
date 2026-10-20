@@ -31,7 +31,7 @@ function Example() {
 }
 const meta = preview.meta({
   component: Example,
-  title: "Documents/Supplier packet/Original label files",
+  title: "Unused/Shipments/Provider label preview",
   render: () => <Example />,
   parameters: { layout: "fullscreen" }
 })

@@ -5,6 +5,7 @@ import { salesOrders, syncState } from "@/stories/fixtures/catalog"
 import { SalesPageView } from "./sales-page"
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Sales page",
   beforeEach: ({ msw }) =>
     msw.use(
       http.get("/api/sales", () => HttpResponse.json({ sources: [syncState("shopify")] })),

@@ -73,7 +73,7 @@ function catchSubmit() {
 const signedOut: Args = { kind: "team", invitation: invitation("team"), user: null }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Auth/Invitation",
+  title: "Pages/Auth/Invitation",
   ...serverStory(InvitationPage),
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/invite" } } },
   args: signedOut,

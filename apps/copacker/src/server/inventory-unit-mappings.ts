@@ -5,6 +5,7 @@ import { inventoryUnitMappings, organizations, connections } from "@/db/schema"
 import { unitMappingInput } from "@/lib/inventory-unit-mapping"
 import { AnalyticsProblem, analyticsPagination } from "./analytics-contract"
 import { analyticsSnapshot } from "./analytics-snapshot"
+import { hasInventoryProduct } from "./inventory-product"
 export async function saveUnitMapping(orgId: string, userId: string, key: string, raw: unknown) {
   const input = unitMappingInput.parse(raw)
   return db().transaction(async (tx) => {
@@ -42,6 +43,9 @@ export async function saveUnitMapping(orgId: string, userId: string, key: string
         "product_mismatch",
         "Shopify conversion must retain the fulfilled component variant identity."
       )
+    }
+    if (!(await hasInventoryProduct(tx, orgId, input.shopifyDomain, input.variantId))) {
+      throw new AnalyticsProblem(422, "product_not_in_workspace", "Choose a product recorded in this workspace.")
     }
     let prior: typeof inventoryUnitMappings.$inferSelect | undefined
     if (input.supersedes) {

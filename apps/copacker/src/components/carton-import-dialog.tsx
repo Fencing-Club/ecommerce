@@ -1,7 +1,7 @@
 import { type OrderInput, validatePacking } from "@repo/aisle"
 import { CircleAlert, Download, LoaderCircle } from "lucide-react"
 import { useId, useRef, useState } from "react"
-import { useFormatter, useTranslations } from "use-intl"
+import { useFormatter, useTranslations, useLocale } from "use-intl"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
 import { cartonTemplate, readCartonFile, type CartonImportResult } from "@/lib/carton-import"
 import { FileDropzone } from "./file-dropzone"
@@ -38,6 +38,7 @@ export function CartonImportDialog({
   const rules = useTranslations("server.readiness.packing")
   const editor = useTranslations("orders.cartonEditor")
   const format = useFormatter()
+  const locale = useLocale()
   const id = useId()
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<CartonImportResult | null>(null)
@@ -119,7 +120,18 @@ export function CartonImportDialog({
     setDownloading(true)
     setDownloadError(false)
     try {
-      const bytes = await cartonTemplate(order.items)
+      const bytes = await cartonTemplate(
+        order.items,
+        [
+          t("template.identity"),
+          t("template.rows"),
+          t("template.cartons"),
+          t("template.quantity"),
+          t("template.measurements"),
+          t("template.format")
+        ],
+        locale === "ur"
+      )
       const url = URL.createObjectURL(
         new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
       )

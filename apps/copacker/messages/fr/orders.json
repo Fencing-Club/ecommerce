@@ -200,7 +200,7 @@
     "shipmentTo": "Expédition vers {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} pièces",
     "selectProduct": "Sélectionner {name}",
-    "packCount": "{count, number} lots de {size}",
+    "packCount": "{count, number} lots, {size} chacun",
     "supplierCharges": "Frais du fournisseur",
     "addSupplierCharge": "Ajouter des frais",
     "removeSupplierCharge": "Supprimer les frais",
@@ -280,7 +280,16 @@
       "label": "Commentaire",
       "placeholder": "Laisser un commentaire…",
       "post": "Publier",
-      "required": "Rédigez un commentaire"
+      "required": "Rédigez un commentaire",
+      "visibility": "Visibilité du commentaire",
+      "internal": "Commentaire interne",
+      "messageSupplier": "Message au fournisseur",
+      "messageCustomer": "Message au client",
+      "internalHint": "Seule votre équipe peut voir ce commentaire.",
+      "supplierHint": "Votre équipe et le fournisseur peuvent voir ce message.",
+      "customerHint": "Votre équipe et le client peuvent voir ce message.",
+      "sharedSupplier": "Partagé avec le fournisseur",
+      "sharedCustomer": "Partagé avec le client"
     },
     "events": {
       "created": "Bon de commande créé",
@@ -310,6 +319,7 @@
       "packingSplit": "Emballage envoyé ; divisé en expéditions {networks} et mis en file d’attente pour Amazon",
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
+      "packingReopened": "Emballage rouvert pour modification",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
       "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
       "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",
@@ -430,9 +440,16 @@
     "pickupAddress": "Adresse d’enlèvement",
     "otherAddress": "Autre adresse",
     "readyForPickup": "Prêt pour l’enlèvement",
+    "shipFrom": "Adresse d’enlèvement",
+    "readyDate": "Prêt pour l’enlèvement",
     "addCartonProduct": "Ajouter un produit au carton",
     "removeCartonProduct": "Retirer le produit {number} du carton",
-    "finishPacking": "Terminer l’emballage"
+    "finishPacking": "Terminer l’emballage",
+    "addNewAddress": "Ajouter une adresse",
+    "chooseAddress": "Adresse d’enlèvement",
+    "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
+    "leftCount": "{count} restant(s)",
+    "overCount": "{count} en trop"
   },
   "paymentTerms": {
     "net7": "7 jours net",
@@ -459,6 +476,7 @@
     "other": "Autre"
   },
   "cartonEditor": {
+    "addProducts": "Ajouter des produits au carton",
     "addProductsTo": "Ajouter des produits au carton {carton}",
     "shipmentProducts": "Produits de cet envoi",
     "searchProducts": "Rechercher dans cet envoi",
@@ -484,18 +502,24 @@
     "actions": "Actions du carton {carton}",
     "duplicate": "Dupliquer le carton",
     "delete": "Supprimer le carton",
-    "quantityPerCarton": "Quantité / carton",
-    "packsPerCarton": "Lots / carton",
-    "unitsPerCarton": "Unités / carton",
+    "quantityPerCarton": "Quantité",
     "productQuantity": "{sku} : quantité par carton {carton}",
     "unitCount": "{count, plural, one {# unité} other {# unités}}",
     "removeProduct": "Retirer {sku} du carton {carton}",
     "product": "Produit",
     "leftToPack": "Reste à emballer",
     "packCount": "{count, plural, one {# lot} other {# lots}}",
-    "addToCarton": "Ajouter au carton {carton}",
+    "addToCarton": "Ajouter au carton",
     "selectedCount": "{count} sélectionnés",
-    "cartonGroup": "Cartons {cartons}"
+    "cartonGroup": "Cartons {cartons}",
+    "addProductsToCartons": "Ajouter des produits aux cartons {cartons}",
+    "rules": {
+      "unitsPerCarton": "Quantité : {units, number} unités vendables par carton dépassent la limite {receiver} de {max, number}. Répartissez-les dans des cartons plus petits.",
+      "cartonSize": "Dimensions : la {side, select, width {largeur} height {hauteur} other {longueur}} est de {size, number} cm. {receiver} autorise {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} po) maximum sur chaque côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} po) maximum pour ce carton}}.",
+      "cartonWeight": "Poids : {weight, number} kg dépassent la limite de {maxLb, number} lb ({maxKg, number} kg). Réduisez le poids de chaque carton.",
+      "oneSku": "Produits : {receiver} exige un seul SKU par carton. Placez ces SKU dans des cartons séparés.",
+      "samePacking": "Modèle d’emballage : ce SKU utilise {difference, select, units {{units, number} unités par carton} other {des cartons de {length, number} × {width, number} × {height, number} cm et {weight, number} kg}} ailleurs dans cet envoi. Utilisez le même modèle d’emballage pour chaque carton de ce SKU."
+    }
   },
   "cartonImport": {
     "title": "Importer des cartons",
@@ -530,11 +554,19 @@
       "worksheet": "Le fichier doit contenir une feuille nommée Cartons.",
       "unreadable": "Impossible de lire ce fichier. Utilisez un fichier XLSX ou CSV issu du modèle.",
       "number": "Saisissez un nombre positif valide dans {value}.",
-      "sku": "Le SKU ne figure pas dans cet envoi : {value}.",
+      "sku": "Le SKU fournisseur {value} et les détails doivent correspondre à un seul produit de cet envoi.",
       "cartonId": "Saisissez un identifiant de carton de 1 à 60 caractères.",
       "measurements": "Les lignes de ce carton doivent avoir le même nombre de cartons, les mêmes dimensions et le même poids.",
       "duplicateProduct": "Ce carton contient plusieurs fois {value}.",
       "limit": "Un envoi peut contenir jusqu’à 1 000 cartons."
+    },
+    "template": {
+      "identity": "Ne modifiez pas le SKU fournisseur, le produit, la variante ni le nombre de pièces par lot préremplis. Demandez à l’acheteur de corriger les données manquantes ou incorrectes.",
+      "rows": "Utilisez une ligne par produit et par carton. Copiez une ligne produit pour les cartons supplémentaires. Répétez le Carton ID pour les produits emballés ensemble. Laissez vides les cellules d’emballage inutilisées.",
+      "cartons": "Carton ID est votre référence, pas un numéro d’étiquette Amazon. Utilisez A1, A2, etc. avec Carton count 1 pour des cartons distincts. Pour des cartons identiques, indiquez un nombre supérieur à 1 : A1 avec 3 donne A1, A1-2 et A1-3. Les identifiants existants sont ignorés.",
+      "quantity": "Quantity per carton compte les lots. Pour un lot de 2, une quantité de 10 représente 20 pièces. Les cartons d’un groupe identique doivent contenir les mêmes produits et quantités.",
+      "measurements": "Indiquez les dimensions en centimètres et le poids en kilogrammes. Répétez le nombre, les dimensions et le poids sur chaque ligne ayant le même Carton ID.",
+      "format": "Remplissez les cellules d’emballage blanches. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le classeur XLSX ou exportez la table Cartons au format CSV."
     }
   }
 }

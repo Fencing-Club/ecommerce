@@ -48,6 +48,7 @@ const labelApi = [
 ]
 
 const meta = preview.meta({
+  title: "Components/Products/Product barcodes",
   component: ProductBarcodes,
   args: {
     productTitle: "Canvas tote bag",

@@ -5,6 +5,7 @@ import { skipAnimations } from "@/stories/fixtures/auth"
 import { AuthPage, AuthShell, AuthSwitch } from "./auth-shell"
 
 const meta = preview.meta({
+  title: "Components/Auth/Auth shell",
   component: AuthShell,
   parameters: { layout: "fullscreen" },
   beforeEach: skipAnimations,

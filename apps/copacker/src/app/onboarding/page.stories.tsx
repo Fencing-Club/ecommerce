@@ -110,7 +110,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
 }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Onboarding",
+  title: "Pages/Onboarding",
   ...serverStory(Onboarding),
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/onboarding" } } },
   args: {

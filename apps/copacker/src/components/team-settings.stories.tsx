@@ -9,6 +9,7 @@ import { TeamSettings } from "./team-settings"
 const sent: ActionRequest[] = []
 
 const meta = preview.meta({
+  title: "Components/Settings/Team settings",
   component: TeamSettings,
   args: {
     ...team,

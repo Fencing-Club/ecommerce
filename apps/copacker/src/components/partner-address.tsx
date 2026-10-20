@@ -77,7 +77,7 @@ export function PartnerAddressDialog({
   onOpenChange,
   onSaved
 }: {
-  partner: AddressPartner
+  partner?: AddressPartner
   // The address being edited; without one, the dialog adds an address.
   contact?: PartnerAddress
   // Where a new address starts, such as a pickup address typed on a shipment.
@@ -87,8 +87,12 @@ export function PartnerAddressDialog({
   onSaved?: (saved: Saved) => void
 }) {
   const t = useTranslations("partners.address")
-  const pickup = partner.kind === "supplier"
-  let title = pickup ? t("addPickup", { name: partner.name }) : t("add", { name: partner.name })
+  const pickup = !partner || partner.kind === "supplier"
+  const packingText = useTranslations("orders.packing")
+  let title = packingText("addNewAddress")
+  if (partner) {
+    title = pickup ? t("addPickup", { name: partner.name }) : t("add", { name: partner.name })
+  }
   if (contact) {
     title = pickup ? t("editPickup") : t("edit")
   }
@@ -119,7 +123,7 @@ function AddressForm({
   draft,
   onSaved
 }: {
-  partner: AddressPartner
+  partner?: AddressPartner
   contact?: PartnerAddress
   draft?: Partial<Address>
   onSaved: (saved: Saved) => void
@@ -129,7 +133,7 @@ function AddressForm({
   const formErrorMap = useFormErrorMap()
   const router = useRouter()
   const [run] = useActionMutation()
-  const pickup = partner.kind === "supplier"
+  const pickup = !partner || partner.kind === "supplier"
   const form = useForm<z.input<typeof addressForm>, unknown, z.output<typeof addressForm>>({
     resolver: zodResolver(pickup ? pickupForm : addressForm, { error: formErrorMap }),
     defaultValues: contact
@@ -138,6 +142,10 @@ function AddressForm({
   })
   const submit = form.handleSubmit(async (values) => {
     try {
+      if (!partner) {
+        onSaved({ id: crypto.randomUUID(), ...values })
+        return
+      }
       const result = await run({
         action: pickup ? "supplier.address" : "forwarder.address",
         data: {

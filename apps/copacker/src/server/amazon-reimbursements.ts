@@ -28,6 +28,8 @@ export async function syncAmazonReimbursements(
     )
   await syncMonthlyAmazonReport(input, assertOwned, now, {
     reportType: fbaReimbursementsReportType,
+    // Amazon regenerates daily FBA report content no more than once every four hours.
+    refreshReuseMs: 4 * 60 * 60 * 1000,
     reports,
     parse: parseFbaReimbursements,
     timestamp: (row) => row.approvedAt,

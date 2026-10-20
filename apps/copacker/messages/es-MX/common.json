@@ -67,7 +67,9 @@
     "checklist": "Lista de verificación de empaque",
     "cartonLabel": "Etiqueta de caja",
     "shippingLabel": "Etiqueta de envío",
-    "productLabel": "Etiqueta de producto"
+    "productLabel": "Etiqueta de producto",
+    "cartonLabels": "Etiquetas de cajas",
+    "shippingLabels": "Etiquetas de envío"
   },
   "format": {
     "plusAmounts": "Más {amounts}",

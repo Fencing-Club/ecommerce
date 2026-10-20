@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { Input } from "./input"
 
 const meta = preview.meta({
+  title: "Foundations/Input",
   component: Input,
   args: { "aria-label": "SKU", placeholder: "HT-01", onChange: fn() }
 })

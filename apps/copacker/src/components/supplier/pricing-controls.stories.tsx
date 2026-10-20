@@ -5,6 +5,7 @@ import { defaultQuantityRules } from "@/lib/catalog-pricing"
 import { MoneyInput, PricingRulesDialog, parseMoney } from "./pricing-controls"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Pricing controls",
   component: PricingRulesDialog,
   args: {
     open: true,

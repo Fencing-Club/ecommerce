@@ -21,6 +21,7 @@ const importPreview = {
 }
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Product transfer",
   component: ProductActions,
   args: { onImported: fn() },
   beforeEach: ({ msw }) => {

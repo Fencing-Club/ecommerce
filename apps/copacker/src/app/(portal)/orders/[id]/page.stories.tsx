@@ -202,6 +202,7 @@ async function OrderPage(args: Args) {
           ),
           timeline: timeline.map((entry) => ({
             ...entry,
+            visibility: "shared" as const,
             revision: entry.revision && !prices ? unpricedOrder(entry.revision) : entry.revision
           })),
           documentGroups: documentGroups.map((group) => ({
@@ -354,7 +355,7 @@ const actions = fn()
 const answered = fn()
 
 const meta = preview.meta({
-  title: "Pages/Shared/Purchase orders/Detail",
+  title: "Pages/Purchase orders/Detail",
   // Each story shows it in its workspace's portal; the render is the same for all.
   render: pageStory(`/orders/${orderId}`, OrderPage).render,
   args: {
@@ -375,9 +376,10 @@ const meta = preview.meta({
     landed,
     freight: [{ reference: "FBA17XK2", freightMinor: 31_000 }],
     labels: [
-      { itemId: tote!.id, state: "uploaded", name: "tote.pdf", objectKey: "labels/tote.pdf" },
+      { itemId: tote!.id, type: "fnsku", state: "uploaded", name: "tote.pdf", objectKey: "labels/tote.pdf" },
       {
         itemId: apron!.id,
+        type: "fnsku",
         state: "missing",
         problem: "Its FNSKU is looked up when the purchase order is sent",
         problemKey: "fnskuLookedUpOnSend"
@@ -470,12 +472,17 @@ export const AmazonShipmentGroups = meta.story({
         ...orderData,
         destination: "amazon",
         deliveryId: undefined,
-        items: orderData.items.map((item, index) => ({ ...item, amazonNetwork: index === 0 ? "awd_us" : "fba" }))
+        items: orderData.items.map((item, index) => ({
+          ...item,
+          amazonNetwork: index === 0 ? "awd_us" : "fba",
+          piecesPerSet: index === 0 ? 2 : item.piecesPerSet
+        }))
       }
     }),
     shipments: [],
     workflow: { items: remainingAll, shipments: [], documents: [] }
   },
+  // A multipack shows its pack size beneath the product and its pack count beneath the quantity.
   play: async ({ canvas }) => {
     const awdToggle = canvas.getByRole("button", { name: /AWD US shipment/ })
     const awd = within(awdToggle.closest("[data-slot=collapsible]")!)
@@ -486,6 +493,9 @@ export const AmazonShipmentGroups = meta.story({
     await expect(fba.getByText("Linen apron")).toBeVisible()
     await expect(fba.getByText("Market basket")).toBeVisible()
     await expect(canvas.queryByText(/^Pack for (FBA|AWD US)/)).toBeNull()
+    await expect(awd.getByText("2 per pack")).toBeVisible()
+    await expect(awd.getByText(`${orderData.items[0]!.pieces / 2} packs, 2 each`)).toBeVisible()
+    await expect(fba.queryByText(/per pack|packs of/)).toBeNull()
     await userEvent.click(awdToggle)
     await expect(awd.getByText("Canvas tote bag")).not.toBeVisible()
     await userEvent.click(awdToggle)
@@ -597,8 +607,8 @@ export const MemberWithoutPrices = meta.story({
     await expect(canvas.queryByText(/\$/)).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Continue packing" })).toBeNull()
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
-    await expect(documents.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Download Packing listPacking list.pdf"
+    await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
+      "Download Packing list Packing list.pdf"
     ])
   }
 })

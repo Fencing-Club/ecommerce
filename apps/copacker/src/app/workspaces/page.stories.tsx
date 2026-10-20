@@ -4,7 +4,7 @@ import { WorkspacePicker } from "@/components/workspace-picker"
 import { workspaces } from "@/stories/workspace"
 
 const meta = preview.meta({
-  title: "Pages/Shared/Workspaces/Choose",
+  title: "Pages/Workspaces/Choose",
   component: WorkspacePicker,
   args: { workspaces: Object.values(workspaces), unavailable: false },
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/workspaces" } } }

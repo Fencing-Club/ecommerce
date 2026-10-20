@@ -5,6 +5,7 @@ import { Field, FieldContent, FieldDescription, FieldLabel } from "./field"
 import { Label } from "./label"
 
 const meta = preview.meta({
+  title: "Foundations/Checkbox",
   component: Checkbox,
   args: { onCheckedChange: fn() },
   render: (args) => (

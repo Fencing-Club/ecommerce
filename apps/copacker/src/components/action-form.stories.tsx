@@ -14,6 +14,7 @@ function Form() {
   )
 }
 const meta = preview.meta({
+  title: "Components/Forms/Action form",
   component: Form,
   beforeEach: () => {
     submitted.mockClear()

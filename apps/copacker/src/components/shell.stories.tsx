@@ -55,6 +55,7 @@ async function ShellStory({
 }
 
 const meta = preview.meta({
+  title: "Components/App shell/Shell",
   ...serverStory(ShellStory),
   args: { kind: "buyer", collapsed: false } satisfies Parameters<typeof ShellStory>[0],
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/shipments" } } }

@@ -36,6 +36,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Select",
   args: { onValueChange: fn() },
   // A supplier picker as the products page builds one: the trigger shows the chosen label, or a prompt.
   render: ({ onValueChange, size, disabled, invalid, defaultValue }) => (
@@ -61,6 +62,7 @@ export const Default = meta.story({
     const trigger = canvas.getByRole("combobox", { name: "Supplier" })
     await expect(trigger).toHaveTextContent("Choose a supplier")
     await expect(trigger).toHaveAttribute("data-size", "default")
+    await expect(trigger).toHaveStyle({ height: "36px" })
 
     await userEvent.click(trigger)
     const listbox = await screen.findByRole("listbox")

@@ -91,7 +91,7 @@ export const suppliers = pgTable(
     // Days from ordering to stock arriving at the buyer's own locations, and at Amazon. Restock orders enough to last
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
-    // Unused: payment terms are set on each PO, which starts due immediately. To drop in a later migration.
+    // Retained stored terms; purchase orders own the terms used by the application.
     paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
@@ -292,6 +292,20 @@ export const connections = pgTable(
   },
   (t) => [uniqueIndex("connection_org_provider").on(t.orgId, t.provider)]
 )
+// Shared across workspaces that connect the same selling partner/application in the NA region.
+export const amazonReportQuotas = pgTable(
+  "amazon_report_quotas",
+  {
+    scope: text().notNull(),
+    reportType: text().notNull(),
+    nextRequestAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    intervalMs: integer().notNull().default(120000),
+    throttleCount: integer().notNull().default(0),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.scope, t.reportType] })]
+)
+
 export const oauthStates = pgTable("oauth_states", {
   hash: text().primaryKey(),
   orgId: uuid()
@@ -538,6 +552,8 @@ export const events = pgTable(
     // Who left a comment and their workspace, as named when they wrote it.
     author: text(),
     authorOrg: text(),
+    // Null means shared with the order's participants. Internal comments belong to a workspace, not a user.
+    internalOrgId: uuid().references(() => organizations.id),
     createdAt: createdAt()
   },
   (t) => [check("events_message", sql`${t.messageKey} IS NOT NULL OR ${t.message} IS NOT NULL`)]
@@ -767,9 +783,10 @@ export const salesSyncs = pgTable(
     stockCoveredFrom: timestamp({ withTimezone: true }),
     stockCoveredTo: timestamp({ withTimezone: true }),
     stockErrorCode: text(),
-    // The shape of the stored orders. Orders stored by an older version are read again, newest first, so they gain
-    // the fields added since (such as prices).
+    // Retained sync metadata; runtime decisions use coverage and customersIncluded.
     dataVersion: integer().notNull().default(0),
+    // Whether the complete allowed Shopify history was read with customer access.
+    customersIncluded: boolean().notNull().default(false),
     // The unbroken period of the platform's money movements copied after its orders, and why that copy last failed:
     // Amazon's posted transactions (Finances API), or Shopify Payments balance transactions (labels, bills, disputes).
     feesCoveredFrom: timestamp({ withTimezone: true }),
@@ -1207,7 +1224,8 @@ export const amazonTransactions = pgTable(
   (t) => [
     primaryKey({ columns: [t.orgId, t.externalAccountId, t.transactionId] }),
     index("amazon_transaction_order").on(t.orgId, t.orderId),
-    index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt)
+    index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt),
+    index("amazon_transaction_identifiers").using("gin", sql`(${t.data}->'relatedIdentifiers') jsonb_path_ops`)
   ]
 )
 // What getting a PO's goods to the buyer cost beyond the supplier's price: freight, duty and other charges, in the

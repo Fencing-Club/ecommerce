@@ -21,6 +21,7 @@ type Args = {
 }
 
 const meta = preview.type<{ args: Args }>().meta({
+  title: "Foundations/Dialog",
   args: { onOpenChange: fn(), onSave: fn() },
   // A dialog with a form, as the add-partner and rename dialogs build one.
   render: ({ onOpenChange, onSave, defaultOpen }) => (

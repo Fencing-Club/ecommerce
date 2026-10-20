@@ -16,6 +16,7 @@ import { CatalogPicker, CustomerIndex } from "./customers"
 const assigned = fn()
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Customers",
   component: CustomerIndex,
   args: { customers: customerRows, catalogs: catalogOptions },
   beforeEach: ({ msw }) => {

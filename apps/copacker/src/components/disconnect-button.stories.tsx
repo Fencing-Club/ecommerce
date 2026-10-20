@@ -6,6 +6,7 @@ import { recordActions } from "@/stories/fixtures/shared"
 import { DisconnectButton } from "./disconnect-button"
 
 const meta = preview.meta({
+  title: "Components/Forms/Disconnect button",
   component: DisconnectButton,
   args: { provider: "shopify", account: "harbor-goods.myshopify.com" } satisfies React.ComponentProps<
     typeof DisconnectButton

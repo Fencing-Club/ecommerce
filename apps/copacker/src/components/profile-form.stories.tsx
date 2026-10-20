@@ -7,6 +7,7 @@ import { ProfileForm } from "./profile-form"
 const sent: ActionRequest[] = []
 
 const meta = preview.meta({
+  title: "Components/Settings/Profile form",
   component: ProfileForm,
   args: {
     profile: { firstName: "Alex", lastName: "Rivera", position: "Owner", company: "Harbor Goods", website: "" }

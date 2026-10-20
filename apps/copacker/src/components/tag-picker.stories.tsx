@@ -28,6 +28,7 @@ function Controlled({ value: initial, onChange, ...props }: Props) {
 const storeTags = ["Bestseller", "Canvas", "Gift", "Holiday", "Linen", "Market", "Natural", "Outdoor", "Summer", "Tote"]
 
 const meta = preview.meta({
+  title: "Components/Forms/Tag picker",
   component: Controlled,
   args: { id: "tags", value: [], onChange: fn(), suggestions: storeTags, placeholder: "Add tags" }
 })

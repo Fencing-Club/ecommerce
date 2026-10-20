@@ -6,6 +6,7 @@ import { owner } from "@/stories/workspace"
 import { SupplierOverview } from "./overview"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Overview",
   component: SupplierOverview,
   args: { data: overviewData(), permissions: owner }
 })

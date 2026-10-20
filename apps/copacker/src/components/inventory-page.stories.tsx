@@ -3,7 +3,7 @@ import preview from "#.storybook/preview"
 import { supplierInventory } from "@/stories/fixtures/catalog"
 import { InventoryPageView } from "./inventory-page"
 
-const meta = preview.meta({})
+const meta = preview.meta({ title: "Components/Inventory/Inventory page" })
 
 export const Inventory = meta.story({
   render: () => <InventoryPageView rows={supplierInventory} tab="short" />,

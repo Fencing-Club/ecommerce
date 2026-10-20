@@ -12,6 +12,7 @@ const uploaded = fn()
 const newId = "2f8c6b14-4b3e-4f5a-8c6d-000000000099"
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Product editor",
   component: ProductEditor,
   args: { initial: toteProduct, catalogs: productCatalogs },
   beforeEach: ({ msw }) => {

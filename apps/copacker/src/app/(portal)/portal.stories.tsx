@@ -4,6 +4,7 @@ import { person, workspaces } from "@/stories/workspace"
 import { Portal } from "./portal"
 
 const meta = preview.meta({
+  title: "Pages/App shell",
   component: Portal,
   args: {
     name: workspaces.buyer.name,
