@@ -224,6 +224,8 @@
   "packetIncomplete": "Die Sendungsunterlagen sind unvollständig. Bitten Sie den Käufer, die Dokumente zu prüfen.",
   "packetNotReleased": "Die Sendungsunterlagen wurden nicht freigegeben",
   "packingDraftChanged": "Die Bestellung oder der Packlistenentwurf hat sich geändert. Aktualisieren Sie vor dem Speichern.",
+  "packingListIncomplete": "Aus den Kartons dieser Sendung konnte keine Packliste erstellt werden",
+  "packingListUnavailable": "Die Packliste ist verfügbar, sobald das Packen abgeschlossen ist",
   "passwordTooShort": "Verwenden Sie mindestens {count, plural, one {# Zeichen} other {# Zeichen}}.",
   "passwordWeak": "Wählen Sie ein sichereres Passwort.",
   "passwordWeakBecause": "{warning} Wählen Sie ein sichereres Passwort.",

@@ -224,6 +224,8 @@
   "packetIncomplete": "货件资料包不完整。请让买家检查其中的文件。",
   "packetNotReleased": "货件资料包尚未发放",
   "packingDraftChanged": "采购订单或装箱草稿已更改。请刷新后再保存。",
+  "packingListIncomplete": "无法根据此货件的箱子生成装箱单",
+  "packingListUnavailable": "装箱完成后即可下载装箱单",
   "passwordTooShort": "请至少使用 {count, plural, other {# 个字符}}。",
   "passwordWeak": "请设置更安全的密码。",
   "passwordWeakBecause": "{warning} 请设置更安全的密码。",

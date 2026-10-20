@@ -9,6 +9,8 @@ export const documentSettingsSchema = z.object({
   paper: z.enum(["A4", "LETTER"]).default("A4")
 })
 export type DocumentSettings = z.infer<typeof documentSettingsSchema>
+// Where the browser keeps the language and paper someone chose for these PDFs.
+export const shippingSettingsKey = "copacker.shipping-document-settings"
 export const defaultDocumentSettings = documentSettingsSchema.parse({})
 
 export function documentSettingsForLocale(locale: string): DocumentSettings {
@@ -209,6 +211,14 @@ export function documentIssues(data: ShippingDocumentData, kind: DocumentKind = 
     }
   }
   return issues
+}
+
+// A packing list printed from finished packing, before the packet: label assignments and the destination's address
+// come later, so only the cartons and products have to be complete.
+export function packingRecordIssues(data: ShippingDocumentData) {
+  return documentIssues(data, "packing").filter(
+    (issue) => !["missingAmazon", "missingCarrier", "missingAddress"].includes(issue.code)
+  )
 }
 
 export function shippingTotals(data: ShippingDocumentData) {

@@ -17,7 +17,7 @@ const meta = preview.meta({
 })
 export const Units = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("30 packs of 2")).toBeVisible()
+    await expect(canvas.getByText("30 packs, 2 each")).toBeVisible()
   }
 })
 export const Packs = meta.story({
@@ -33,13 +33,13 @@ export const Packs = meta.story({
 export const SingleUnit = meta.story({
   args: { packSize: 1 },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByText(/packs of|per pack|units/)).toBeNull()
+    await expect(canvas.queryByText(/packs, \d+ each|per pack|units/)).toBeNull()
   }
 })
 export const InvalidQuantity = meta.story({
   args: { pieces: 3 },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByText(/packs of/)).toBeNull()
+    await expect(canvas.queryByText(/packs, \d+ each/)).toBeNull()
   }
 })
 export const ReadOnly = meta.story({

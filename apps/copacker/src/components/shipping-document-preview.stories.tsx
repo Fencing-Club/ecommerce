@@ -10,6 +10,8 @@ export const PacketOverview = meta.story({ args: { initialKind: "overview" }, pl
 
 export const PackingList = meta.story({ play: ready })
 
+export const MixedCartons = meta.story({ args: { data: scenario("mixed-cartons") }, play: ready })
+
 export const GroupedMultipacks = meta.story({ args: { data: scenario("grouped-multipacks") }, play: ready })
 
 export const PackingChecklist = meta.story({

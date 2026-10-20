@@ -76,7 +76,7 @@ export const WholePackValidation = meta.story({
     await userEvent.type(quantity, "122")
     await expect(quantity).toHaveAttribute("aria-invalid", "false")
     await expect(shipment.queryByRole("status")).toBeNull()
-    await expect(shipment.getByText("61 packs of 2")).toBeVisible()
+    await expect(shipment.getByText("61 packs, 2 each")).toBeVisible()
     await userEvent.click(shipment.getByRole("button", { name: "Done" }))
     await expect(shipment.queryByRole("spinbutton")).toBeNull()
   }
