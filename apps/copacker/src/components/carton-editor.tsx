@@ -279,6 +279,16 @@ export function CartonEditor({
     if (issue.code === "awdOneSku") {
       return { message: t("rules.awdOneSku") }
     }
+    // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
+    if (issue.code === "awdConfiguration" && content && item) {
+      const units = content.pieces / item.piecesPerSet
+      return {
+        message: t("rules.awdConfiguration", {
+          ...issue.values,
+          difference: units === issue.values.units ? "size" : "units"
+        })
+      }
+    }
     return {
       field: index >= 0 ? `items.${index}` : undefined,
       message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)

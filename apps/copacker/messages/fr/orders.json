@@ -517,7 +517,8 @@
       "awdUnits": "Quantité : {units, number} unités vendables par carton dépassent la limite AWD de 150. Répartissez-les dans des cartons plus petits.",
       "cartonSize": "Dimensions : la {side, select, width {largeur} height {hauteur} other {longueur}} est de {size, number} cm. {network} autorise 63,5 cm (25 po) maximum sur chaque côté.",
       "cartonWeight": "Poids : {weight, number} kg dépassent la limite de 50 lb (22,68 kg). Réduisez le poids de chaque carton.",
-      "awdOneSku": "Produits : AWD exige un seul SKU par carton. Placez ces SKU dans des cartons séparés."
+      "awdOneSku": "Produits : AWD exige un seul SKU par carton. Placez ces SKU dans des cartons séparés.",
+      "awdConfiguration": "Modèle d’emballage : ce SKU utilise {difference, select, units {{units, number} unités par carton} other {des cartons de {length, number} × {width, number} × {height, number} cm et {weight, number} kg}} ailleurs dans cet envoi. Utilisez le même modèle d’emballage pour chaque carton de ce SKU."
     }
   },
   "cartonImport": {

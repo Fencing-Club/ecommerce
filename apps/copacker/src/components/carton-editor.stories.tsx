@@ -3,7 +3,7 @@ import { useState } from "react"
 import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type CartonGroup, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
-import { awdBagCartons, awdBagOrder } from "@/stories/fixtures/packing"
+import { awdBagCartons, awdBagOrder, bagOrder } from "@/stories/fixtures/packing"
 import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { CartonEditor } from "./carton-editor"
 
@@ -121,7 +121,7 @@ export const Validation = meta.story({
 })
 
 // Board 06.17 (Carton editor errors), AWD US: the rules a carton breaks, as validatePacking reports them.
-const [awdLimits, awdMixed] = awdBagCartons()
+const [awdLimits, awdMixed, awdIvory] = awdBagCartons()
 const awd = (carton: CartonGroup) => ({
   value: carton,
   products: awdBagOrder.items,
@@ -203,6 +203,45 @@ export const AwdLimitsInGerman = meta.story({
     ])
     const region = canvas.getByRole("region", { name: "Karton 1" })
     await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
+  }
+})
+// Board 06.15 (Additional validation states and design rules): carton 4 packs 100 Ivory tea towels where the SKU's
+// first carton holds 120, so AWD's packing template doesn't match. The error outlines no field.
+const ivory = { ...awdIvory!, items: [{ ...awdIvory!.items[0]!, pieces: 100 }] }
+export const AwdPackingTemplate = meta.story({
+  name: "AWD packing template",
+  args: {
+    ...awd(ivory),
+    issues: validatePacking(awdBagOrder, {
+      cartons: expandCartonGroups([{ ...awdIvory!, cartonId: "3", cartonIds: ["3"] }, ivory]),
+      changes: []
+    }).issues.filter((issue) => issue.cartonId === "4")
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Packing template: This SKU uses 120 units per carton elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+    ])
+    await expect(canvas.getByRole("spinbutton", { name: "CT-3101: quantity per carton 4" })).not.toHaveAttribute(
+      "aria-invalid"
+    )
+  }
+})
+
+// FBA individual units may mix products, so the carton AWD rejects passes here.
+export const FbaCompatibleProducts = meta.story({
+  name: "FBA compatible products",
+  args: {
+    value: {
+      ...awdMixed!,
+      items: [bagOrder.items[0]!, bagOrder.items[2]!].map((item) => ({ itemId: item.id, pieces: 40 }))
+    },
+    products: bagOrder.items,
+    context: "PO39 / Shipment 1",
+    issues: []
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("spinbutton", { name: /quantity per carton 3/ })).toHaveLength(2)
+    await expect(canvas.queryByRole("listitem")).toBeNull()
   }
 })
 export const Mobile = meta.story({

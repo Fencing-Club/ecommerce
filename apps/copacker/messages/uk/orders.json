@@ -517,7 +517,8 @@
       "awdUnits": "Кількість: {units, number} одиниць для продажу в коробці перевищує ліміт AWD у 150. Розподіліть їх на менші коробки.",
       "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {network} дозволяє не більше 63,5 см (25 in) з кожного боку.",
       "cartonWeight": "Вага: {weight, number} кг перевищує ліміт 50 lb (22,68 кг). Зменште вагу кожної коробки.",
-      "awdOneSku": "Товари: AWD вимагає один SKU на коробку. Перемістіть ці SKU в окремі коробки."
+      "awdOneSku": "Товари: AWD вимагає один SKU на коробку. Перемістіть ці SKU в окремі коробки.",
+      "awdConfiguration": "Шаблон пакування: цей SKU в іншій частині відправлення використовує {difference, select, units {{units, number} од. на коробку} other {коробки {length, number} × {width, number} × {height, number} см вагою {weight, number} кг}}. Використовуйте однаковий шаблон пакування для кожної коробки цього SKU."
     }
   },
   "cartonImport": {
