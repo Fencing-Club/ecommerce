@@ -200,7 +200,7 @@
     "shipmentTo": "Spedizione a {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# varianti}}, {pieces, number} pezzi",
     "selectProduct": "Seleziona {name}",
-    "packCount": "{count, number} confezioni da {size}",
+    "packCount": "{count, number} confezioni, {size} ciascuna",
     "supplierCharges": "Costi del fornitore",
     "addSupplierCharge": "Aggiungi spesa",
     "removeSupplierCharge": "Rimuovi spesa",
@@ -319,6 +319,7 @@
       "packingSplit": "Imballaggio inviato; suddiviso in {networks} spedizioni e messo in coda per Amazon",
       "forwarderShipped": "{forwarder} ha spedito la merce: {tracking}",
       "packingReady": "Imballaggio inviato; pronto per la spedizione",
+      "packingReopened": "Imballaggio riaperto per modifiche",
       "invoiceEntered": "Fattura inserita con modifiche all’ordine di acquisto",
       "invoiceChangesSubmitted": "Il fornitore ha inviato modifiche alla fattura per l’approvazione",
       "existingAwdLinked": "Collegata spedizione AWD esistente {shipmentId}",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone",
     "finishPacking": "Completa imballaggio",
     "addNewAddress": "Aggiungi indirizzo",
-    "chooseAddress": "Indirizzo di ritiro"
+    "chooseAddress": "Indirizzo di ritiro",
+    "packedUnits": "{count} di {available} unità",
+    "leftCount": "{count} rimanenti",
+    "overCount": "{count} in eccesso"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -507,7 +511,15 @@
     "packCount": "{count, plural, one {# confezione} other {# confezioni}}",
     "addToCarton": "Aggiungi al cartone",
     "selectedCount": "{count} selezionati",
-    "cartonGroup": "Cartoni {cartons}"
+    "cartonGroup": "Cartoni {cartons}",
+    "addProductsToCartons": "Aggiungi prodotti ai cartoni {cartons}",
+    "rules": {
+      "unitsPerCarton": "Quantità: {units, number} unità vendibili per cartone superano il limite {receiver} di {max, number}. Suddividile in cartoni più piccoli.",
+      "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {receiver} consente al massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) per questo cartone}}.",
+      "cartonWeight": "Peso: {weight, number} kg superano il limite di {maxLb, number} lb ({maxKg, number} kg). Riduci il peso di ogni cartone.",
+      "oneSku": "Prodotti: {receiver} richiede un solo SKU per cartone. Sposta questi SKU in cartoni separati.",
+      "samePacking": "Modello di imballaggio: questo SKU usa {difference, select, units {{units, number} unità per cartone} other {cartoni da {length, number} × {width, number} × {height, number} cm e {weight, number} kg}} altrove in questa spedizione. Usa lo stesso modello di imballaggio per ogni cartone di questo SKU."
+    }
   },
   "cartonImport": {
     "title": "Importa cartoni",

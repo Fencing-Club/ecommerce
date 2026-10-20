@@ -38,23 +38,32 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByText("Commercial invoice", { exact: true })).toHaveCount(0)
     await expect(page.getByRole("textbox", { name: "Supplier SKU" })).toHaveCount(0)
     await expect(page.getByText("No cartons yet")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    // Until every unit is packed, the packing form only saves a draft.
+    await expect(page.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled()
   })
 
   await test.step("enter the pickup address the supplier emailed", async () => {
-    // The supplier has no saved pickup address yet, so the address is typed in.
-    await expect(page.getByRole("combobox", { name: "Pickup address" })).toHaveCount(0)
-    await expect(page.getByRole("button", { name: "Add address" })).toBeVisible()
-    await page.getByLabel("Ready for pickup").fill(daysFromNow(14))
-    await page.getByLabel("Contact name").fill("Sam Offline")
-    await page.getByLabel("Phone number").fill("+1 503 555 0199")
-    await page.getByLabel("Street address").fill("200 Factory Road")
-    await page.getByLabel("City").fill("Portland")
-    await page.getByLabel("Postal code").fill("97201")
-    await page.getByRole("combobox", { name: "Country" }).click()
+    // The supplier has no saved pickup address yet, so the buyer adds the one they emailed.
+    const shipFrom = page.getByRole("combobox", { name: "Ship from" })
+    await expect(shipFrom).toContainText("Choose an address")
+    await page.getByLabel("Ready date").fill(daysFromNow(14))
+    await shipFrom.click()
+    await page.getByRole("option", { name: "Add new address" }).click()
+    const dialog = page.getByRole("dialog", { name: /^Add (a pickup address|new address)/ })
+    await dialog.getByLabel("Address name").fill("Factory")
+    await dialog.getByLabel("Contact name").fill("Sam Offline")
+    await dialog.getByLabel("Phone number").fill("+1 503 555 0199")
+    await dialog.getByLabel("Street address").fill("200 Factory Road")
+    await dialog.getByLabel("City").fill("Portland")
+    await dialog.getByLabel("Postal code").fill("97201")
+    await dialog.getByRole("combobox", { name: "Country" }).click()
     await page.getByRole("option", { name: "United States", exact: true }).click()
-    await page.getByRole("combobox", { name: "State or province" }).click()
+    await dialog.getByRole("combobox", { name: "State or province" }).click()
     await page.getByRole("option", { name: "Oregon", exact: true }).click()
+    await dialog.getByRole("button", { name: "Save address" }).click()
+    await expect(dialog).toBeHidden()
+    await expect(shipFrom).toContainText("200 Factory Road")
   })
 
   await test.step("enter cartons with quantities for each product", async () => {
@@ -64,7 +73,7 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("button", { name: "Add carton" }).click()
     await fillCarton(page, "2", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "7" })
     await addCartonProduct(page, "2", "Right", "grip-right", "50")
-    await expect(page.getByText("2 cartons, 150 units")).toBeVisible()
+    await expect(page.getByRole("region", { name: "Cartons" }).getByText("150 of 150 units")).toBeVisible()
     await expect(page.getByRole("button", { name: "Check packing" })).toHaveCount(0)
     await expect(page.getByRole("button", { name: "Finish packing" })).toBeEnabled()
   })
@@ -73,8 +82,9 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("button", { name: "Finish packing" }).click()
     // Submitting makes the shipment's documents, which takes a while on a busy machine.
     await expect(titleStatus(page)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("grip-left")
-    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("grip-right")
+    // Packed cartons list each product by the supplier's SKU.
+    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("GRIP-L")
+    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("GRIP-R")
     await expect(page.getByText("200 Factory Road")).toBeVisible()
     await expect(page.getByRole("note").filter({ hasText: "Supplier packet ready" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute(

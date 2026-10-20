@@ -51,7 +51,6 @@
     },
     "metaTitle": "Expédition",
     "title": "Expédition {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Bons de commande",
       "orders": "Commandes"
@@ -63,7 +62,8 @@
       "retry": "Relancer l’expédition",
       "cancelInAmazon": "Annuler dans Amazon",
       "getAmazonLabels": "Obtenir les étiquettes Amazon",
-      "createAmazonShipment": "Créer l’expédition Amazon"
+      "createAmazonShipment": "Créer l’expédition Amazon",
+      "editPacking": "Modifier l’emballage"
     },
     "needsAttention": "À traiter",
     "changesWaiting": {
@@ -115,7 +115,24 @@
     },
     "documents": {
       "title": "Documents",
-      "empty": "Aucun document pour l’instant"
+      "empty": "Aucun document pour l’instant",
+      "packingList": "Liste de colisage",
+      "downloadPackingList": "Télécharger la liste de colisage",
+      "packingListFailed": "Impossible de télécharger la liste de colisage"
+    },
+    "summary": {
+      "title": "Détails de l’expédition",
+      "readyDate": "Date de disponibilité",
+      "cartons": "Cartons",
+      "units": "Unités",
+      "grossWeight": "Poids brut",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Le fournisseur expédie à {place}.",
+      "amazonPickup": "Enlèvement Amazon chez {place}.",
+      "carrierPickup": "Enlèvement par le transporteur chez {place}.",
+      "dropoff": "{place} remet les cartons au transporteur."
     }
   },
   "actions": {
@@ -183,8 +200,8 @@
       "hanger": "Placez chaque vêtement sur un cintre.",
       "label": "Étiquetez chaque unité."
     },
-    "fbaCartons": "Cartons FBA : plusieurs SKU autorisés ; 63,5 cm (25 in) maximum par côté et 22,68 kg (50 lb), sauf si une seule unité est plus grande.",
-    "awdUsCartons": "Cartons AWD US : un SKU par carton, 150 unités maximum, tous les cartons d’un SKU emballés de la même façon ; 63,5 cm (25 in) maximum par côté et 22,68 kg (50 lb).",
+    "fbaCartons": "Cartons FBA : plusieurs SKU autorisés ; {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) maximum par côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) maximum}} et {maxKg, number} kg ({maxLb, number} lb), sauf si une seule unité est plus grande.",
+    "awdUsCartons": "Cartons AWD US : un SKU par carton, {units, number} unités maximum, tous les cartons d’un SKU emballés de la même façon ; {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) maximum par côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) maximum}} et {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Emballez les produits {networks} dans des cartons séparés.",
     "unitLabels": "Étiquetez chaque unité avec son code-barres FNSKU, en couvrant tout autre code-barres.",
     "suffocationWarnings": "Les sachets plastique doivent porter un avertissement de risque d’étouffement lorsque l’ouverture mesure 5 in (12,7 cm) ou plus.",
@@ -234,5 +251,16 @@
     "document": "Document",
     "issues": "Corrigez ces problèmes avant de télécharger les documents.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Étiquettes produit",
+    "labelsFor": "Étiquettes pour {name}",
+    "download": "Télécharger : {label}",
+    "downloadAll": "Télécharger toutes les étiquettes produit",
+    "sku": "Étiquettes SKU",
+    "fnsku": "Étiquettes FNSKU",
+    "suffocation": "Étiquettes d’avertissement d’étouffement",
+    "choking": "Étiquettes de risque d’étouffement",
+    "notProvided": "Étiquette non fournie"
   }
 }

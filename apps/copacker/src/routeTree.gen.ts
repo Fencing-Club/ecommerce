@@ -139,7 +139,9 @@ import { Route as ApiOrdersIdLabelsRouteImport } from './routes/api.orders.$id.l
 import { Route as ApiOrdersIdPoRouteImport } from './routes/api.orders.$id.po'
 import { Route as ApiOrdersIdProposalRouteImport } from './routes/api.orders.$id.proposal'
 import { Route as ApiOrdersIdWorkflowRouteImport } from './routes/api.orders.$id.workflow'
+import { Route as ApiShipmentsIdLabelsRouteImport } from './routes/api.shipments.$id.labels'
 import { Route as ApiShipmentsIdPacketRouteImport } from './routes/api.shipments.$id.packet'
+import { Route as ApiShipmentsIdPackingListRouteImport } from './routes/api.shipments.$id.packing-list'
 import { Route as ApiAnalyticsAmazonProductMappingsIdRouteImport } from './routes/api.analytics.amazon.product-mappings.$id'
 import { Route as ApiOrdersIdLabelsItemIdRouteImport } from './routes/api.orders.$id.labels.$itemId'
 import { Route as ApiOrdersIdLabelsWarningRouteImport } from './routes/api.orders.$id.labels.warning'
@@ -822,11 +824,22 @@ const ApiOrdersIdWorkflowRoute = ApiOrdersIdWorkflowRouteImport.update({
   path: '/api/orders/$id/workflow',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShipmentsIdLabelsRoute = ApiShipmentsIdLabelsRouteImport.update({
+  id: '/api/shipments/$id/labels',
+  path: '/api/shipments/$id/labels',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShipmentsIdPacketRoute = ApiShipmentsIdPacketRouteImport.update({
   id: '/api/shipments/$id/packet',
   path: '/api/shipments/$id/packet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShipmentsIdPackingListRoute =
+  ApiShipmentsIdPackingListRouteImport.update({
+    id: '/api/shipments/$id/packing-list',
+    path: '/api/shipments/$id/packing-list',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAnalyticsAmazonProductMappingsIdRoute =
   ApiAnalyticsAmazonProductMappingsIdRouteImport.update({
     id: '/$id',
@@ -974,7 +987,9 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
   '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
@@ -1108,7 +1123,9 @@ export interface FileRoutesByTo {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
   '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
@@ -1245,7 +1262,9 @@ export interface FileRoutesById {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
+  '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
   '/api/analytics/amazon/product-mappings/$id': typeof ApiAnalyticsAmazonProductMappingsIdRoute
   '/api/orders/$id/labels/$itemId': typeof ApiOrdersIdLabelsItemIdRoute
   '/api/orders/$id/labels/warning': typeof ApiOrdersIdLabelsWarningRoute
@@ -1381,7 +1400,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
+    | '/api/shipments/$id/packing-list'
     | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
@@ -1515,7 +1536,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
+    | '/api/shipments/$id/packing-list'
     | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
@@ -1651,7 +1674,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
+    | '/api/shipments/$id/packing-list'
     | '/api/analytics/amazon/product-mappings/$id'
     | '/api/orders/$id/labels/$itemId'
     | '/api/orders/$id/labels/warning'
@@ -1731,7 +1756,9 @@ export interface RootRouteChildren {
   ApiOrdersIdPoRoute: typeof ApiOrdersIdPoRoute
   ApiOrdersIdProposalRoute: typeof ApiOrdersIdProposalRoute
   ApiOrdersIdWorkflowRoute: typeof ApiOrdersIdWorkflowRoute
+  ApiShipmentsIdLabelsRoute: typeof ApiShipmentsIdLabelsRoute
   ApiShipmentsIdPacketRoute: typeof ApiShipmentsIdPacketRoute
+  ApiShipmentsIdPackingListRoute: typeof ApiShipmentsIdPackingListRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2646,11 +2673,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOrdersIdWorkflowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/shipments/$id/labels': {
+      id: '/api/shipments/$id/labels'
+      path: '/api/shipments/$id/labels'
+      fullPath: '/api/shipments/$id/labels'
+      preLoaderRoute: typeof ApiShipmentsIdLabelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/shipments/$id/packet': {
       id: '/api/shipments/$id/packet'
       path: '/api/shipments/$id/packet'
       fullPath: '/api/shipments/$id/packet'
       preLoaderRoute: typeof ApiShipmentsIdPacketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/shipments/$id/packing-list': {
+      id: '/api/shipments/$id/packing-list'
+      path: '/api/shipments/$id/packing-list'
+      fullPath: '/api/shipments/$id/packing-list'
+      preLoaderRoute: typeof ApiShipmentsIdPackingListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/analytics/amazon/product-mappings/$id': {
@@ -3074,7 +3115,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOrdersIdPoRoute: ApiOrdersIdPoRoute,
   ApiOrdersIdProposalRoute: ApiOrdersIdProposalRoute,
   ApiOrdersIdWorkflowRoute: ApiOrdersIdWorkflowRoute,
+  ApiShipmentsIdLabelsRoute: ApiShipmentsIdLabelsRoute,
   ApiShipmentsIdPacketRoute: ApiShipmentsIdPacketRoute,
+  ApiShipmentsIdPackingListRoute: ApiShipmentsIdPackingListRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

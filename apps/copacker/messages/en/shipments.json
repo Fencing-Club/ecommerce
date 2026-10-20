@@ -51,7 +51,6 @@
     },
     "metaTitle": "Shipment",
     "title": "Shipment {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Purchase orders",
       "orders": "Orders"
@@ -63,7 +62,8 @@
       "retry": "Retry shipment",
       "cancelInAmazon": "Cancel in Amazon",
       "getAmazonLabels": "Get Amazon labels",
-      "createAmazonShipment": "Create Amazon shipment"
+      "createAmazonShipment": "Create Amazon shipment",
+      "editPacking": "Edit packing"
     },
     "needsAttention": "Needs attention",
     "changesWaiting": {
@@ -115,7 +115,24 @@
     },
     "documents": {
       "title": "Documents",
-      "empty": "No documents yet"
+      "empty": "No documents yet",
+      "packingList": "Packing list",
+      "downloadPackingList": "Download packing list",
+      "packingListFailed": "Couldn’t download the packing list"
+    },
+    "summary": {
+      "title": "Shipment details",
+      "readyDate": "Ready date",
+      "cartons": "Cartons",
+      "units": "Units",
+      "grossWeight": "Gross weight",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Supplier ships to {place}.",
+      "amazonPickup": "Amazon pickup from {place}.",
+      "carrierPickup": "Carrier pickup from {place}.",
+      "dropoff": "{place} hands the cartons to the carrier."
     }
   },
   "actions": {
@@ -183,8 +200,8 @@
       "hanger": "Put each garment on a hanger.",
       "label": "Label each unit."
     },
-    "fbaCartons": "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
-    "awdUsCartons": "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb).",
+    "fbaCartons": "FBA cartons: mixed SKUs are allowed; at most {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} and {maxKg, number} kg ({maxLb, number} lb), unless one unit is larger.",
+    "awdUsCartons": "AWD US cartons: one SKU per carton, at most {units, number} units, every carton of a SKU packed the same way; at most {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} and {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Pack {networks} products in separate cartons.",
     "unitLabels": "Label every unit with its FNSKU barcode, covering any other barcode.",
     "suffocationWarnings": "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider.",
@@ -234,5 +251,16 @@
     "document": "Document",
     "issues": "Resolve these document issues before downloading.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Product labels",
+    "labelsFor": "Labels for {name}",
+    "download": "Download {label}",
+    "downloadAll": "Download all product labels",
+    "sku": "SKU labels",
+    "fnsku": "FNSKU labels",
+    "suffocation": "Suffocation warning labels",
+    "choking": "Choking hazard labels",
+    "notProvided": "Label not provided"
   }
 }

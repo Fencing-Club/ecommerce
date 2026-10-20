@@ -753,6 +753,42 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
   })
 }
 
+// Packing finished for Amazon reopens until the buyer starts the Amazon shipment: its cartons become the draft again, and
+// the new revision stops a buyer's page from preparing the old packing.
+export async function reopenPacking(s: Session, shipmentId: string, expectedRevision: number) {
+  return db().transaction(async (tx) => {
+    const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
+    if (!initial) {
+      throw new LocalizedError("shipmentNotFound")
+    }
+    await accessibleOrder(s, initial.orderId, tx, true)
+    const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
+    if (
+      !shipment ||
+      shipment.status !== "packed" ||
+      shipment.revision !== expectedRevision ||
+      shipment.amazonOrderId ||
+      shipment.operation !== "none"
+    ) {
+      throw new LocalizedError("shipmentNotEditable")
+    }
+    await tx
+      .update(shipments)
+      .set({
+        status: "packing",
+        packingDraft: shipment.packing,
+        revision: shipment.revision + 1,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+    await tx.insert(events).values({
+      orderId: shipment.orderId,
+      actor: s.user.id,
+      ...eventMessage({ key: "packingReopened", values: null })
+    })
+  })
+}
+
 export async function savePacking(
   s: Session,
   shipmentId: string,

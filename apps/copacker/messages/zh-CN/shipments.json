@@ -51,7 +51,6 @@
     },
     "metaTitle": "货件",
     "title": "货件 {number}",
-    "cartonCount": "{count, plural, other {# 箱}}",
     "parents": {
       "purchaseOrders": "采购订单",
       "orders": "订单"
@@ -63,7 +62,8 @@
       "retry": "重试货件",
       "cancelInAmazon": "在 Amazon 中取消",
       "getAmazonLabels": "获取 Amazon 标签",
-      "createAmazonShipment": "创建 Amazon 货件"
+      "createAmazonShipment": "创建 Amazon 货件",
+      "editPacking": "编辑装箱"
     },
     "needsAttention": "需要处理",
     "changesWaiting": {
@@ -115,7 +115,24 @@
     },
     "documents": {
       "title": "文件",
-      "empty": "还没有文件"
+      "empty": "还没有文件",
+      "packingList": "装箱单",
+      "downloadPackingList": "下载装箱单",
+      "packingListFailed": "无法下载装箱单"
+    },
+    "summary": {
+      "title": "货件详情",
+      "readyDate": "备货日期",
+      "cartons": "箱数",
+      "units": "件数",
+      "grossWeight": "毛重",
+      "volume": "体积"
+    },
+    "legs": {
+      "shipsTo": "供应商发货至{place}。",
+      "amazonPickup": "Amazon 从{place}提货。",
+      "carrierPickup": "承运商从{place}提货。",
+      "dropoff": "{place}将箱子交给承运商。"
     }
   },
   "actions": {
@@ -183,8 +200,8 @@
       "hanger": "将每件服装挂在衣架上。",
       "label": "为每件商品贴标签。"
     },
-    "fbaCartons": "FBA 箱：允许混装 SKU；每边不超过 63.5 厘米（25 英寸），重量不超过 22.68 千克（50 磅），单件商品更大时除外。",
-    "awdUsCartons": "AWD US 箱：每箱一个 SKU，最多 150 件，同一 SKU 的每箱装法相同；每边不超过 63.5 厘米（25 英寸），重量不超过 22.68 千克（50 磅）。",
+    "fbaCartons": "FBA 箱：允许混装 SKU；{shape, select, cube {每边不超过 {lengthCm, number} 厘米（{lengthIn, number} 英寸）} other {尺寸不超过 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）}}，重量不超过 {maxKg, number} 千克（{maxLb, number} 磅），单件商品更大时除外。",
+    "awdUsCartons": "AWD US 箱：每箱一个 SKU，最多 {units, number} 件，同一 SKU 的每箱装法相同；{shape, select, cube {每边不超过 {lengthCm, number} 厘米（{lengthIn, number} 英寸）} other {尺寸不超过 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）}}，重量不超过 {maxKg, number} 千克（{maxLb, number} 磅）。",
     "separateCartons": "将 {networks} 的产品分箱包装。",
     "unitLabels": "为每件商品贴上其 FNSKU 条形码，并覆盖其他条形码。",
     "suffocationWarnings": "开口为 5 英寸（12.7 厘米）或更宽的塑料袋需要窒息警告。",
@@ -234,5 +251,16 @@
     "document": "文档",
     "issues": "请先解决以下文档问题再下载。",
     "pages": "{count} 页 / {paper}"
+  },
+  "labels": {
+    "productLabels": "商品标签",
+    "labelsFor": "{name} 的标签",
+    "download": "下载{label}",
+    "downloadAll": "下载全部商品标签",
+    "sku": "SKU 标签",
+    "fnsku": "FNSKU 标签",
+    "suffocation": "窒息警告标签",
+    "choking": "小零件窒息危险标签",
+    "notProvided": "未提供标签"
   }
 }

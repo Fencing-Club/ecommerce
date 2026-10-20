@@ -51,7 +51,6 @@
     },
     "metaTitle": "Spedizione",
     "title": "Spedizione {number}",
-    "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
     "parents": {
       "purchaseOrders": "Ordini di acquisto",
       "orders": "Ordini"
@@ -63,7 +62,8 @@
       "retry": "Riprova spedizione",
       "cancelInAmazon": "Annulla su Amazon",
       "getAmazonLabels": "Ottieni etichette Amazon",
-      "createAmazonShipment": "Crea spedizione Amazon"
+      "createAmazonShipment": "Crea spedizione Amazon",
+      "editPacking": "Modifica imballaggio"
     },
     "needsAttention": "Richiede attenzione",
     "changesWaiting": {
@@ -115,7 +115,24 @@
     },
     "documents": {
       "title": "Documenti",
-      "empty": "Ancora nessun documento"
+      "empty": "Ancora nessun documento",
+      "packingList": "Packing list",
+      "downloadPackingList": "Scarica la packing list",
+      "packingListFailed": "Impossibile scaricare la packing list"
+    },
+    "summary": {
+      "title": "Dettagli della spedizione",
+      "readyDate": "Data di disponibilità",
+      "cartons": "Cartoni",
+      "units": "Unità",
+      "grossWeight": "Peso lordo",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Il fornitore spedisce a {place}.",
+      "amazonPickup": "Ritiro Amazon presso {place}.",
+      "carrierPickup": "Ritiro del corriere presso {place}.",
+      "dropoff": "{place} consegna i cartoni al corriere."
     }
   },
   "actions": {
@@ -183,8 +200,8 @@
       "hanger": "Metti ogni capo su una gruccia.",
       "label": "Etichetta ogni unità."
     },
-    "fbaCartons": "Cartoni FBA: SKU misti consentiti; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb), a meno che una singola unità sia più grande.",
-    "awdUsCartons": "Cartoni AWD US: un SKU per cartone, massimo 150 unità, tutti i cartoni di uno SKU imballati allo stesso modo; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb).",
+    "fbaCartons": "Cartoni FBA: SKU misti consentiti; massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} e {maxKg, number} kg ({maxLb, number} lb), a meno che una singola unità sia più grande.",
+    "awdUsCartons": "Cartoni AWD US: un SKU per cartone, massimo {units, number} unità, tutti i cartoni di uno SKU imballati allo stesso modo; massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} e {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Imballa i prodotti {networks} in cartoni separati.",
     "unitLabels": "Etichetta ogni unità con il suo codice a barre FNSKU, coprendo qualsiasi altro codice a barre.",
     "suffocationWarnings": "Le buste di plastica richiedono un avviso di soffocamento quando l’apertura è di 5 in (12,7 cm) o più.",
@@ -234,5 +251,16 @@
     "document": "Documento",
     "issues": "Risolvi questi problemi prima di scaricare i documenti.",
     "pages": "{count, plural, one {# pagina} other {# pagine}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etichette prodotto",
+    "labelsFor": "Etichette per {name}",
+    "download": "Scarica {label}",
+    "downloadAll": "Scarica tutte le etichette prodotto",
+    "sku": "Etichette SKU",
+    "fnsku": "Etichette FNSKU",
+    "suffocation": "Etichette di avvertenza soffocamento",
+    "choking": "Etichette di pericolo di soffocamento",
+    "notProvided": "Etichetta non fornita"
   }
 }

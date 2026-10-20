@@ -1,4 +1,4 @@
-import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
+import { Document, Font, G, Page, Path, StyleSheet, Svg, Text, View, pdf } from "@react-pdf/renderer"
 import { markdownBlocks } from "@repo/aisle/markdown"
 import { createContext, useContext, type ReactNode } from "react"
 import invariant from "tiny-invariant"
@@ -9,6 +9,7 @@ import {
   groupProductRequirements,
   groupShippingCartons,
   documentIssues,
+  packingRecordIssues,
   shippingTotals,
   type DocumentKind,
   type DocumentSettings,
@@ -89,18 +90,14 @@ const styles = StyleSheet.create({
   },
   group: { borderBottom: "0.75 solid #d4d4d8", paddingHorizontal: 9, paddingVertical: 10.5, fontSize: 10.5, gap: 7.5 },
   row: { gap: 10, paddingVertical: 5 },
-  packingRow: { gap: 9 },
+  packingRow: { gap: 9, fontSize: 9.5 },
   carton: { width: "11.65%" },
-  packingCarton: { flex: 87, gap: 3 },
-  packingProduct: { flex: 246, gap: 3 },
-  packingQuantity: { flex: 164, gap: 3 },
-  packingTotal: { flex: 157, gap: 3 },
+  packingCarton: { flex: 72, gap: 3 },
+  packingProduct: { flex: 250, gap: 3 },
+  packingSku: { flex: 104, gap: 3 },
+  packingQuantity: { flex: 116, gap: 3 },
+  packingTotal: { flex: 116, gap: 3 },
   packingDetail: { fontSize: 9, color: "#52525b", lineHeight: 1.35 },
-  labelNumbers: { gap: 7.5, fontSize: 9 },
-  labelPair: { width: "33.333%", paddingRight: 10, gap: 5 },
-  packingAssignments: { gap: 9, fontSize: 9.75 },
-  assignmentCarton: { flex: 70 },
-  assignmentLabel: { flex: 298 },
   assignment: { flex: 1 },
   checkbox: {
     width: 10.5,
@@ -206,6 +203,75 @@ function Metrics({ values }: { values: [string, string][] }) {
   )
 }
 
+// Lucide’s outlines (ISC) for the route’s icons, as the shipment page’s route bar draws them.
+const routeIcons = {
+  origin: [
+    "M10 12h4",
+    "M10 8h4",
+    "M14 21v-3a2 2 0 0 0-4 0v3",
+    "M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2",
+    "M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"
+  ],
+  stop: [
+    "M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11",
+    "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z",
+    "M6 13h12",
+    "M6 17h12"
+  ],
+  destination: [
+    "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
+    "M15 10a3 3 0 1 1-6 0a3 3 0 1 1 6 0"
+  ],
+  arrow: ["M5 12h14", "m12 5 7 7-7 7"]
+}
+
+function RouteIcon({ name, size, flip = false }: { name: keyof typeof routeIcons; size: number; flip?: boolean }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <G transform={flip ? "translate(24 0) scale(-1 1)" : undefined}>
+        {routeIcons[name].map((d) => (
+          <Path
+            key={d}
+            d={d}
+            fill="none"
+            stroke="#71717a"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </G>
+    </Svg>
+  )
+}
+
+// The stops from pickup to destination, each with the shipment page’s icon: a building for the pickup, a warehouse for
+// each stop on the way and a pin for the destination.
+function RouteStops({ stops }: { stops: string[] }) {
+  const { row, dir } = useDocumentLayout()
+  return (
+    <View style={[row, { flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 15 }]}>
+      {stops.map((stop, index) => {
+        let icon: keyof typeof routeIcons = "stop"
+        if (index === 0) {
+          icon = "origin"
+        } else if (index === stops.length - 1) {
+          icon = "destination"
+        }
+        return (
+          <View key={`${index}-${stop}`} style={[row, { alignItems: "center", gap: 6 }]}>
+            {index > 0 && <RouteIcon name="arrow" size={8} flip={dir === "rtl"} />}
+            <View style={[row, { alignItems: "center", gap: 4 }]}>
+              <RouteIcon name={icon} size={10} />
+              <Text style={styles.small}>{stop}</Text>
+            </View>
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
 function PackingRoute() {
   const { data, t, row, network } = useDocumentLayout()
   const pickup = data.transport.collection === "pickup"
@@ -221,7 +287,7 @@ function PackingRoute() {
   ]
   return (
     <>
-      <Text style={[styles.small, { marginBottom: 15 }]}>{route.join(" → ")}</Text>
+      <RouteStops stops={route} />
       <View style={[styles.addresses, row]}>
         <Address label={pickup ? t.pickupFrom : t.transferTo} party={pickup ? data.origin : receiving} />
         {stops.map((stop) => (
@@ -434,66 +500,6 @@ function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: numbe
   )
 }
 
-function LabelNumbers({ cartons, label }: { cartons: ShippingCarton[]; label: "amazonLabel" | "carrierLabel" }) {
-  const { t, row, data } = useDocumentLayout()
-  return (
-    <View style={styles.labelNumbers}>
-      <Text style={[styles.packingDetail, styles.bold]}>
-        {label === "carrierLabel" && t.carrierLabels}
-        {label === "amazonLabel" && (data.network === "fba" ? t.amazonBoxLabels : t.amazonCartonLabels)}
-      </Text>
-      <View style={[row, { flexWrap: "wrap", rowGap: 7 }]}>
-        {cartons.map((carton) => (
-          <View key={carton.id} style={[styles.labelPair, row, { width: cartons.length === 2 ? "50%" : "33.333%" }]}>
-            <View style={{ minWidth: 21 }}>
-              <Code bold>{carton.id}</Code>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Code>{carton[label]}</Code>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  )
-}
-
-function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
-  const { data, t, row, hasAmazon } = useDocumentLayout()
-  if (!hasAmazon || !data.transport.carrierLabels) {
-    return (
-      <>
-        {hasAmazon && <LabelNumbers cartons={cartons} label="amazonLabel" />}
-        {data.transport.carrierLabels && <LabelNumbers cartons={cartons} label="carrierLabel" />}
-      </>
-    )
-  }
-
-  return (
-    <View style={styles.packingAssignments}>
-      <Text style={[styles.packingDetail, styles.bold]}>{t.assignments}</Text>
-      <View style={[row, styles.packingDetail, styles.bold, { gap: 9 }]}>
-        <Text style={styles.assignmentCarton}>{t.carton}</Text>
-        <Text style={styles.assignmentLabel}>{data.network === "fba" ? t.amazonBoxLabel : t.amazonLabel}</Text>
-        <Text style={styles.assignmentLabel}>{t.carrierLabel}</Text>
-      </View>
-      {cartons.map((carton) => (
-        <View key={carton.id} style={[row, { gap: 9 }]} wrap={false}>
-          <View style={styles.assignmentCarton}>
-            <Code bold>{carton.id}</Code>
-          </View>
-          <View style={styles.assignmentLabel}>
-            <Code>{carton.amazonLabel}</Code>
-          </View>
-          <View style={styles.assignmentLabel}>
-            <Code>{carton.carrierLabel}</Code>
-          </View>
-        </View>
-      ))}
-    </View>
-  )
-}
-
 function Check({ title, detail, values }: ShippingCheck) {
   const { t, row, settings } = useDocumentLayout()
   return (
@@ -538,14 +544,7 @@ export function ShippingPdf({
   invariant(
     (kind === "overview" ? shipments : [data]).every(
       (shipment) =>
-        !documentIssues(shipment, kind).filter(
-          (issue) =>
-            !(
-              packingRecord &&
-              kind === "packing" &&
-              ["missingAmazon", "missingCarrier", "missingAddress"].includes(issue.code)
-            )
-        ).length
+        !(packingRecord && kind === "packing" ? packingRecordIssues(shipment) : documentIssues(shipment, kind)).length
     ),
     "Complete document details and resolve oversized carton groups before generating."
   )
@@ -603,6 +602,7 @@ export function ShippingPdf({
               <View fixed style={[styles.tableHeader, row, { fontSize: 9, fontWeight: 600 }]}>
                 <Text style={styles.packingCarton}>{t.cartons}</Text>
                 <Text style={styles.packingProduct}>{t.product}</Text>
+                <Text style={styles.packingSku}>{t.supplierSku}</Text>
                 <Text style={styles.packingQuantity}>{t.perCarton}</Text>
                 <Text style={styles.packingTotal}>{t.total}</Text>
               </View>
@@ -627,7 +627,7 @@ export function ShippingPdf({
                               <>
                                 <Code bold>{cartonGroupLabel(group)}</Code>
                                 <Text style={styles.packingDetail}>
-                                  {number(group.length)} {t.cartonCountNoun}
+                                  {number(group.length)} {group.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
                                 </Text>
                               </>
                             )}
@@ -635,9 +635,9 @@ export function ShippingPdf({
                           <View style={styles.packingProduct}>
                             <Text style={styles.bold}>{product.description}</Text>
                             {product.variant && <Text style={styles.packingDetail}>{product.variant}</Text>}
-                            <View style={styles.packingDetail}>
-                              <Code>{product.supplierSku}</Code>
-                            </View>
+                          </View>
+                          <View style={styles.packingSku}>
+                            <Code>{product.supplierSku}</Code>
                           </View>
                           <View style={styles.packingQuantity}>
                             <Text style={styles.bold}>
@@ -645,7 +645,10 @@ export function ShippingPdf({
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs)} {t.packs}
+                                {shippingMessage(settings.language, "packsOf", {
+                                  count: item.packs,
+                                  size: product.piecesPerPack
+                                })}
                               </Text>
                             )}
                           </View>
@@ -655,7 +658,10 @@ export function ShippingPdf({
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs * group.length)} {t.packs}
+                                {shippingMessage(settings.language, "packsOf", {
+                                  count: item.packs * group.length,
+                                  size: product.piecesPerPack
+                                })}
                               </Text>
                             )}
                           </View>
@@ -664,15 +670,15 @@ export function ShippingPdf({
                     })}
                     <View style={[styles.packingRow, row, { marginTop: 4 }]}>
                       <View style={styles.packingCarton} />
-                      <View style={styles.packingProduct}>
+                      <View style={[styles.packingProduct, { fontSize: 10.5 }]}>
                         <Code bold>
                           {carton.dimensions.map(number).join(" × ")} cm / {number(carton.weight)} kg
                         </Code>
                       </View>
+                      <View style={styles.packingSku} />
                       <View style={styles.packingQuantity} />
                       <View style={styles.packingTotal} />
                     </View>
-                    {!packingRecord && <PackingAssignments cartons={group} />}
                   </View>
                 )
               })}

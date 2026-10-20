@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} शिपमेंट",
     "shipmentCounts": "{count} वेरिएंट, {pieces, number} इकाइयाँ",
     "selectProduct": "{name} चुनें",
-    "packCount": "{size} के {count, number} पैक",
+    "packCount": "{count, number} पैक, हर एक में {size}",
     "supplierCharges": "आपूर्तिकर्ता लागत",
     "addSupplierCharge": "खर्च जोड़ें",
     "removeSupplierCharge": "खर्च हटाएँ",
@@ -319,6 +319,7 @@
       "packingSplit": "पैकिंग सबमिट की गई; {networks} शिपमेंट में बांटी गई और Amazon के लिए कतार में है",
       "forwarderShipped": "{forwarder} ने सामान शिप कर दिया: {tracking}",
       "packingReady": "पैकिंग सबमिट की गई; शिप करने के लिए तैयार",
+      "packingReopened": "बदलाव के लिए पैकिंग फिर से खोली गई",
       "invoiceEntered": "खरीद ऑर्डर में बदलावों के साथ इनवॉइस दर्ज किया गया",
       "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए",
       "existingAwdLinked": "मौजूदा AWD शिपमेंट {shipmentId} लिंक किया गया",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
     "finishPacking": "पैकिंग पूरी करें",
     "addNewAddress": "पता जोड़ें",
-    "chooseAddress": "पिकअप का पता"
+    "chooseAddress": "पिकअप का पता",
+    "packedUnits": "{available} इकाइयों में से {count}",
+    "leftCount": "{count} बाकी",
+    "overCount": "{count} ज़्यादा"
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -507,7 +511,15 @@
     "packCount": "{count} पैक",
     "addToCarton": "कार्टन में जोड़ें",
     "selectedCount": "{count} चुने गए",
-    "cartonGroup": "कार्टन {cartons}"
+    "cartonGroup": "कार्टन {cartons}",
+    "addProductsToCartons": "कार्टन {cartons} में उत्पाद जोड़ें",
+    "rules": {
+      "unitsPerCarton": "मात्रा: हर कार्टन में {units, number} बिकने योग्य यूनिट {receiver} की {max, number} की सीमा से ज़्यादा हैं। इन्हें छोटे कार्टन में बाँटें।",
+      "cartonSize": "आयाम: {side, select, width {चौड़ाई} height {ऊँचाई} other {लंबाई}} {size, number} cm है। {receiver} {shape, select, cube {हर साइड {lengthCm, number} cm ({lengthIn, number} in) तक की अनुमति देता है} other {इस कार्टन के लिए {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) तक की अनुमति देता है}}।",
+      "cartonWeight": "वज़न: {weight, number} kg, {maxLb, number} lb ({maxKg, number} kg) की सीमा से ज़्यादा है। हर कार्टन का वज़न कम करें।",
+      "oneSku": "उत्पाद: {receiver} में हर कार्टन में एक ही SKU होना चाहिए। इन SKU को अलग-अलग कार्टन में रखें।",
+      "samePacking": "पैकिंग टेम्पलेट: यह SKU इस शिपमेंट में कहीं और {difference, select, units {हर कार्टन में {units, number} यूनिट} other {{length, number} × {width, number} × {height, number} cm और {weight, number} kg के कार्टन}} इस्तेमाल करता है। इस SKU के हर कार्टन के लिए एक ही पैकिंग टेम्पलेट इस्तेमाल करें।"
+    }
   },
   "cartonImport": {
     "title": "कार्टन आयात करें",
