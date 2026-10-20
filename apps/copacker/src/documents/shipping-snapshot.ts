@@ -1,4 +1,4 @@
-import { palletLabels, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
+import { palletLabels, validatePacking, type OrderInput, type Packing, type Pallet } from "@repo/aisle"
 import type { CartonLabel } from "@repo/aisle/labels"
 import { packingTasks, type ProductTask } from "@repo/aisle/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/aisle/transport"
@@ -83,10 +83,7 @@ export function shippingDocumentSnapshot(input: {
       pallets: (packing.pallets ?? []).map((pallet) => {
         const label = placed.find((row) => row.palletId === pallet.palletId)
         return {
-          id: pallet.palletId,
-          cartons: pallet.cartonIds,
-          dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
-          weight: pallet.weight,
+          ...documentPallet(pallet),
           ...(label && { label: `${label.amazonShipmentId} ${label.number}/${label.count}` })
         }
       })
@@ -119,9 +116,9 @@ export function shippingDocumentSnapshot(input: {
   return data
 }
 
-// The packing list alone, from finished packing before the packet exists: the cartons as packed, without the label
-// assignments, destination address and handoff only the packet needs. A line without a supplier SKU of its own is listed
-// by the buyer's, as the packing page shows it.
+// The packing list alone, from finished packing before the packet exists: the cartons as packed, and their pallets,
+// without the label assignments, destination address and handoff only the packet needs. A line without a supplier SKU
+// of its own is listed by the buyer's, as the packing page shows it.
 export function packingListSnapshot(input: {
   order: OrderInput
   packing: Packing
@@ -149,8 +146,9 @@ export function packingListSnapshot(input: {
       service: transport?.service ?? "supplier",
       collection: transport?.collection ?? "delivery",
       carrierLabels: shipmentLabelRequirements(order.destination, transport).carrierLabels,
-      palletized: false
+      palletized: Boolean(packing.palletized)
     },
+    ...(packing.palletized && { pallets: (packing.pallets ?? []).map(documentPallet) }),
     products: items.map((item) =>
       documentProduct(
         item,
@@ -179,6 +177,16 @@ export class IncompletePackingList extends Error {
 function packedItems(order: OrderInput, packing: Packing) {
   const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   return order.items.filter((item) => included.has(item.id))
+}
+
+// A pallet as the documents list it: its cartons, size and gross weight.
+function documentPallet(pallet: Pallet) {
+  return {
+    id: pallet.palletId,
+    cartons: pallet.cartonIds,
+    dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
+    weight: pallet.weight
+  }
 }
 
 function packedNetwork(order: OrderInput, items: Item[]): ShippingDocumentData["network"] {

@@ -9,6 +9,7 @@
     "missingChecklist": "Erstellen Sie die aktuelle Checkliste, bevor Sie Etiketten freigeben",
     "missingCartonLabel": "Das Amazon-Etikett für Karton {carton} fehlt",
     "missingShippingLabel": "Ordnen Sie Karton {carton} ein Versandetikett zu",
+    "missingPalletLabels": "Die Palettenetiketten von Amazon fehlen",
     "missingProductLabel": "Fügen Sie auf der Seite Produkte ein Produktetikett für {sku} hinzu",
     "packing": {
       "duplicateCarton": "Geben Sie jedem Karton eine eindeutige Nummer",

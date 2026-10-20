@@ -129,17 +129,24 @@ describe("rendered shipping PDFs", () => {
     const bytes = await renderSupplierPacket(
       data,
       defaultDocumentSettings,
-      { product: [await label([144, 72])], carton: [await label([288, 432])], carrier: [await label([288, 430])] },
+      {
+        product: [await label([144, 72])],
+        carton: [await label([288, 432])],
+        carrier: [await label([288, 430])],
+        pallet: [await label([612, 792])]
+      },
       fontBase
     )
     const sizes = (await PDFDocument.load(bytes)).getPages().map((page) => page.getSize())
-    // Packing list, checklist, carton label reference, Amazon carton labels, carrier labels, product labels.
+    // Packing list, checklist, carton label reference, Amazon carton labels, carrier labels, Amazon pallet labels,
+    // product labels.
     expect(sizes.map(({ width, height }) => [Math.round(width), Math.round(height)])).toEqual([
       [595, 842],
       [595, 842],
       [595, 842],
       [288, 432],
       [288, 430],
+      [612, 792],
       [144, 72]
     ])
     const task = getDocument({ data: Uint8Array.from(bytes) })
@@ -306,6 +313,53 @@ describe("rendered shipping PDFs", () => {
     },
     60000
   )
+})
+
+describe("pallet labels", () => {
+  const fba = shippingScenarios.find((scenario) => scenario.id === "fba-freight")!.data
+  const awd = shippingScenarios.find((scenario) => scenario.id === "awd-freight")!.data
+  async function pageText(document: Parameters<typeof renderShippingDocument>[0]) {
+    const task = getDocument({ data: await renderToBuffer(document) })
+    try {
+      const pdf = await task.promise
+      const content = await (await pdf.getPage(1)).getTextContent()
+      return content.items.flatMap((item) => ("str" in item ? [item.str] : [])).join(" ")
+    } finally {
+      await task.destroy()
+    }
+  }
+
+  it("puts one of Amazon's four labels on each side of an FBA pallet, and none on AWD's", async () => {
+    const checklist = await pageText(ShippingPdf({ data: fba, kind: "checklist", settings: defaultDocumentSettings }))
+    expect(checklist).toContain("Pallet labels")
+    expect(checklist).toMatch(/four\s+Amazon\s+labels\s+on\s+each\s+side/)
+    expect(checklist).toMatch(/outside\s+the\s+stretch\s+wrap/)
+    const awdChecklist = await pageText(
+      ShippingPdf({ data: awd, kind: "checklist", settings: defaultDocumentSettings })
+    )
+    expect(awdChecklist).toContain("Secure the load")
+    expect(awdChecklist).not.toContain("Pallet labels")
+    const packing = await pageText(ShippingPdf({ data: fba, kind: "packing", settings: defaultDocumentSettings }))
+    expect(packing).toContain("DEMO-FBA-03 1/1")
+    expect(packing).toMatch(/one\s+on\s+each\s+side/)
+  })
+
+  it("lists the pallets in the packing record, with Amazon's labels to come for FBA", async () => {
+    const record = (data: typeof fba) => ({
+      ...data,
+      destination: { name: data.destination.name, address: [] },
+      cartons: data.cartons.map((carton) => ({ ...carton, amazonLabel: undefined })),
+      pallets: data.pallets?.map(({ label: _label, ...pallet }) => pallet)
+    })
+    const settings = defaultDocumentSettings
+    const text = await pageText(ShippingPdf({ data: record(fba), kind: "packing", settings, packingRecord: true }))
+    expect(text).toContain("Pallet 1")
+    expect(text).toContain("From Amazon")
+    expect(text).not.toContain("DEMO-BOL-01")
+    const awdText = await pageText(ShippingPdf({ data: record(awd), kind: "packing", settings, packingRecord: true }))
+    expect(awdText).toContain("Pallet 1")
+    expect(awdText).not.toContain("From Amazon")
+  })
 })
 
 it("prints a completed packing record before labels or destination addresses are assigned", async () => {

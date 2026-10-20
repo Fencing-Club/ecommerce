@@ -95,7 +95,8 @@ function palletFreight(network: "fba" | "awd"): ShippingDocumentData {
         cartons: cartonIds,
         dimensions: [121.9, 101.6, 85],
         weight: 114,
-        label: `DEMO-${network.toUpperCase()}-PALLET-01`
+        // Amazon labels FBA pallets only, with the Amazon shipment and the pallet's number in it.
+        ...(network === "fba" && { label: `${shipment} 1/1` })
       }
     ]
   }

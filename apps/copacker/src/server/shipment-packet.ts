@@ -122,13 +122,14 @@ export async function shipmentPacketResult(s: Session, id: string) {
     }
     // Even an unsupported reference-document layout must keep its released original labels accessible.
     // In the packet’s order: the carton labels, then the product labels.
-    let labelSections: Array<"carton_labels" | "carrier_labels" | "product_labels"> = []
+    let labelSections: Array<"carton_labels" | "carrier_labels" | "pallet_labels" | "product_labels"> = []
     try {
       const { shipment, labels, labelOrder } = await releasedPacket(s, id)
       const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
       labelSections = [
         ...(shipment.amazonNetwork ? ["carton_labels" as const] : []),
         ...(shipment.transport?.carrierLabels === "per_carton" ? ["carrier_labels" as const] : []),
+        ...(shipment.amazonNetwork === "fba" && shipment.packing?.palletized ? ["pallet_labels" as const] : []),
         ...(hasProductLabels(labelOrder.data.items, labels, included) ? ["product_labels" as const] : [])
       ]
     } catch (labelError) {

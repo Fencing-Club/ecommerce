@@ -9,6 +9,7 @@
     "missingChecklist": "Створіть актуальний контрольний список перед переданням етикеток",
     "missingCartonLabel": "Немає етикетки Amazon для коробки {carton}",
     "missingShippingLabel": "Призначте транспортну етикетку коробці {carton}",
+    "missingPalletLabels": "Немає етикеток палет від Amazon",
     "missingProductLabel": "Додайте етикетку для {sku} на сторінці «Товари»",
     "packing": {
       "duplicateCarton": "Призначте кожній коробці унікальний номер",

@@ -213,5 +213,9 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
       })
     }
   }
+  // Amazon labels an FBA shipment's pallets with its cartons, four labels for each pallet.
+  if (shipment.amazonNetwork === "fba" && packing.palletized && !current.some((doc) => doc.kind === "pallet_label")) {
+    issues.push({ code: "missing_pallet_label", message: t("readiness.missingPalletLabels") })
+  }
   return issues
 }

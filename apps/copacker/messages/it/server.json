@@ -9,6 +9,7 @@
     "missingChecklist": "Genera la checklist aggiornata prima di rilasciare le etichette",
     "missingCartonLabel": "Manca l’etichetta Amazon per il cartone {carton}",
     "missingShippingLabel": "Assegna un’etichetta di spedizione al cartone {carton}",
+    "missingPalletLabels": "Mancano le etichette dei pallet di Amazon",
     "missingProductLabel": "Aggiungi un’etichetta prodotto per {sku} nella pagina Prodotti",
     "packing": {
       "duplicateCarton": "Assegna un numero univoco a ogni cartone",

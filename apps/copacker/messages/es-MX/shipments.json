@@ -98,6 +98,7 @@
       "cartonLabels": "Etiquetas de cajas",
       "unitLabels": "Etiquetas de productos",
       "carrierLabels": "Etiquetas del transportista",
+      "palletLabels": "Etiquetas de tarima",
       "backToShipment": "Volver al envío"
     },
     "cartons": {

@@ -9,6 +9,7 @@
     "missingChecklist": "Générez la liste de contrôle à jour avant de transmettre les étiquettes",
     "missingCartonLabel": "L’étiquette Amazon du carton {carton} est manquante",
     "missingShippingLabel": "Attribuez une étiquette d’expédition au carton {carton}",
+    "missingPalletLabels": "Les étiquettes de palette d’Amazon sont manquantes",
     "missingProductLabel": "Ajoutez une étiquette produit pour {sku} sur la page Produits",
     "packing": {
       "duplicateCarton": "Attribuez un numéro unique à chaque carton",

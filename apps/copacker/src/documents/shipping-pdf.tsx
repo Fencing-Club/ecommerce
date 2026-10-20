@@ -312,40 +312,49 @@ function PackingRoute() {
   )
 }
 
-function PackingReferences() {
+// Each pallet with its cartons, size and gross weight, and its label: the one Amazon assigned it, or for FBA packing
+// that isn't booked yet, Amazon's labels to come. The packing record leaves out the carrier and the bill of lading.
+function PalletReferences({ handoff }: { handoff: boolean }) {
   const { data, t, row, number } = useDocumentLayout()
+  return data.pallets?.map((pallet) => (
+    <View key={pallet.id} wrap={false}>
+      <Heading>
+        {t.palletSingle} {pallet.id}
+      </Heading>
+      <View style={[styles.addresses, row]}>
+        <Detail label={t.cartons} value={<Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>}>
+          {pallet.dimensions.map(number).join(" × ")} cm / {number(pallet.weight)} kg {t.gross}
+        </Detail>
+        {(pallet.label || data.network === "fba") && (
+          <Detail
+            label={t.palletLabelSingle}
+            value={pallet.label ? <Code bold>{pallet.label}</Code> : t.palletLabelFromAmazon}
+          >
+            {t.palletSheet}
+          </Detail>
+        )}
+      </View>
+      {handoff && (
+        <View style={[styles.addresses, row]}>
+          <Detail label={t.carrier} value={data.transport.providerName ?? t[data.transport.service]}>
+            {t.pickupOriginText}
+          </Detail>
+          {data.transport.billOfLading && (
+            <Detail label={t.bol} value={<Code bold>{data.transport.billOfLading}</Code>}>
+              {t.carrierDocument}
+            </Detail>
+          )}
+        </View>
+      )}
+    </View>
+  ))
+}
+
+function PackingReferences() {
+  const { data, t, row } = useDocumentLayout()
   return (
     <>
-      {data.pallets?.map((pallet) => (
-        <View key={pallet.id} wrap={false}>
-          <Heading>
-            {t.palletSingle} {pallet.id}
-          </Heading>
-          <View style={[styles.addresses, row]}>
-            <Detail
-              label={t.cartons}
-              value={<Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>}
-            >
-              {pallet.dimensions.map(number).join(" × ")} cm / {number(pallet.weight)} kg {t.gross}
-            </Detail>
-            {pallet.label && (
-              <Detail label={t.palletLabelSingle} value={<Code bold>{pallet.label}</Code>}>
-                {t.palletSheet}
-              </Detail>
-            )}
-          </View>
-          <View style={[styles.addresses, row]}>
-            <Detail label={t.carrier} value={data.transport.providerName ?? t[data.transport.service]}>
-              {t.pickupOriginText}
-            </Detail>
-            {data.transport.billOfLading && (
-              <Detail label={t.bol} value={<Code bold>{data.transport.billOfLading}</Code>}>
-                {t.carrierDocument}
-              </Detail>
-            )}
-          </View>
-        </View>
-      ))}
+      <PalletReferences handoff />
       {data.network === "forwarder" && (
         <View wrap={false}>
           <Heading>{t.receivingReference}</Heading>
@@ -746,7 +755,7 @@ export function ShippingPdf({
                   </View>
                 )
               })}
-              {!packingRecord && <PackingReferences />}
+              {packingRecord ? <PalletReferences handoff={false} /> : <PackingReferences />}
             </>
           )}
           {kind === "reference" && (
@@ -922,11 +931,13 @@ export function ShippingPdf({
                           .join(", ")}
                       </Text>
                     )}
-                    {shipment.pallets?.map((pallet) => (
-                      <Text key={pallet.id} style={[styles.calloutDetail, styles.muted]}>
-                        {t.palletLabel} / {pallet.label}
-                      </Text>
-                    ))}
+                    {shipment.pallets
+                      ?.filter((pallet) => pallet.label)
+                      .map((pallet) => (
+                        <Text key={pallet.id} style={[styles.calloutDetail, styles.muted]}>
+                          {t.palletLabelSingle} / {pallet.label}
+                        </Text>
+                      ))}
                     {shipment.transport.billOfLading && (
                       <Text style={[styles.calloutDetail, styles.muted]}>
                         {t.bol} / {shipment.transport.billOfLading}

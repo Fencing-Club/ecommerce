@@ -81,7 +81,8 @@ export function shipmentDocumentChecks(data: ShippingDocumentData) {
     handoff.push(
       { title: "pallet", detail: "palletText" },
       { title: "secure", detail: "secureText" },
-      { title: "palletLabel", detail: "palletLabelText" },
+      // Amazon labels FBA pallets only: four for each, one for each side. AWD takes the cartons as cases.
+      ...(data.network === "fba" ? [{ title: "palletLabel", detail: "palletLabelText" } as const] : []),
       { title: "bol", detail: "bolText" }
     )
   }

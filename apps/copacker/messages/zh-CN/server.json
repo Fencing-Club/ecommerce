@@ -9,6 +9,7 @@
     "missingChecklist": "发放标签前，请先生成最新的装箱核对清单",
     "missingCartonLabel": "箱 {carton} 缺少 Amazon 标签",
     "missingShippingLabel": "请为箱 {carton} 分配运输标签",
+    "missingPalletLabels": "缺少 Amazon 托盘标签",
     "missingProductLabel": "请在“产品”页面为 {sku} 添加产品标签",
     "packing": {
       "duplicateCarton": "请为每个箱子设置唯一的箱号",

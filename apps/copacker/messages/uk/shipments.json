@@ -98,6 +98,7 @@
       "cartonLabels": "Етикетки коробок",
       "unitLabels": "Етикетки товарів",
       "carrierLabels": "Етикетки перевізника",
+      "palletLabels": "Етикетки палет",
       "backToShipment": "Назад до відправлення"
     },
     "cartons": {

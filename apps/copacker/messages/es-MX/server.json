@@ -9,6 +9,7 @@
     "missingChecklist": "Genera la lista de verificación actual antes de liberar las etiquetas",
     "missingCartonLabel": "Falta la etiqueta de Amazon de la caja {carton}",
     "missingShippingLabel": "Asigna una etiqueta de envío a la caja {carton}",
+    "missingPalletLabels": "Faltan las etiquetas de tarima de Amazon",
     "missingProductLabel": "Agrega una etiqueta de producto para {sku} en la página Productos",
     "packing": {
       "duplicateCarton": "Asigna un número único a cada caja",

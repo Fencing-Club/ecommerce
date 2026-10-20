@@ -98,6 +98,7 @@
       "cartonLabels": "外箱标签",
       "unitLabels": "商品标签",
       "carrierLabels": "承运商标签",
+      "palletLabels": "托盘标签",
       "backToShipment": "返回货件"
     },
     "cartons": {

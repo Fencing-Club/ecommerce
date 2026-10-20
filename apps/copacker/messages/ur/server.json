@@ -9,6 +9,7 @@
     "missingChecklist": "لیبلز جاری کرنے سے پہلے موجودہ چیک لسٹ بنائیں",
     "missingCartonLabel": "کارٹن {carton} کا Amazon لیبل موجود نہیں",
     "missingShippingLabel": "کارٹن {carton} کو شپنگ لیبل دیں",
+    "missingPalletLabels": "Amazon کے پیلٹ لیبل موجود نہیں",
     "missingProductLabel": "پروڈکٹس کے صفحے پر {sku} کا پروڈکٹ لیبل شامل کریں",
     "packing": {
       "duplicateCarton": "ہر کارٹن کو منفرد نمبر دیں",

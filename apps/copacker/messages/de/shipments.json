@@ -98,6 +98,7 @@
       "cartonLabels": "Kartonetiketten",
       "unitLabels": "Produktetiketten",
       "carrierLabels": "Versandetiketten",
+      "palletLabels": "Palettenetiketten",
       "backToShipment": "Zurück zur Sendung"
     },
     "cartons": {

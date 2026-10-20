@@ -98,6 +98,7 @@
       "cartonLabels": "कार्टन लेबल",
       "unitLabels": "उत्पाद लेबल",
       "carrierLabels": "वाहक लेबल",
+      "palletLabels": "पैलेट लेबल",
       "backToShipment": "शिपमेंट पर वापस जाएँ"
     },
     "cartons": {

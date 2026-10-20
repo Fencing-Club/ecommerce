@@ -9,6 +9,7 @@
     "missingChecklist": "लेबल रिलीज़ करने से पहले मौजूदा चेकलिस्ट बनाएं",
     "missingCartonLabel": "कार्टन {carton} का Amazon लेबल नहीं है",
     "missingShippingLabel": "कार्टन {carton} को शिपिंग लेबल असाइन करें",
+    "missingPalletLabels": "Amazon के पैलेट लेबल नहीं हैं",
     "missingProductLabel": "{sku} का प्रोडक्ट लेबल प्रोडक्ट पेज पर जोड़ें",
     "packing": {
       "duplicateCarton": "हर कार्टन को एक अलग नंबर दें",

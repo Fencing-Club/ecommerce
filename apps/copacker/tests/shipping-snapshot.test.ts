@@ -2,7 +2,7 @@ import { packingSchema } from "@repo/aisle"
 import { packingRequirementsSchema } from "@repo/aisle/packing-requirements"
 import { transportSchema } from "@repo/aisle/transport"
 import { describe, expect, it } from "vitest"
-import { shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
+import { packingListSnapshot, shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
 import { pickupAddress } from "../src/stories/fixtures/logistics"
 import { orderData, orderItem } from "../src/stories/fixtures/orders"
 
@@ -102,6 +102,17 @@ describe("accepted shipment document snapshot", () => {
     })
     expect(data.network).toBe("fba")
     expect(data.pallets?.map((row) => row.label)).toEqual(["FBA18ABCD123 1/2", "FBA18ABCD123 2/2"])
+  })
+
+  it("lists the pallets in the packing list download, before Amazon labels them", () => {
+    const pallet = { palletId: "1", length: 120, width: 100, height: 90, weight: 62, stackable: true }
+    const data = packingListSnapshot({
+      ...input,
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1", "A2"] }] },
+      destination: "Example AWD"
+    })
+    expect(data.transport.palletized).toBe(true)
+    expect(data.pallets).toEqual([{ id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62 }])
   })
 
   it("requires packing tasks to be confirmed instead of inferring tasks for already labelled products", () => {
