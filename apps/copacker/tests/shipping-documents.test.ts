@@ -191,7 +191,8 @@ describe("rendered shipping PDFs", () => {
       const doc = await task.promise
       const content = await (await doc.getPage(1)).getTextContent()
       const items = content.items.filter((item) => "str" in item)
-      expect(items.map((item) => item.str)).toContain("Carton label assignments")
+      // The column headings name the pairs; there's no separate heading above them.
+      expect(items.map((item) => item.str)).not.toContain("Carton label assignments")
       expect(items.map((item) => item.str)).toContain("Amazon box label")
       for (const carton of dropoff.cartons) {
         const id = items.find((item) => item.str === carton.id)!
