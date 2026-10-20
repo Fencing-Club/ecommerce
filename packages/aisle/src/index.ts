@@ -327,7 +327,10 @@ export type PackingRule =
     }
   | { code: "cartonSize" | "cartonWeight"; values: { network: "FBA" | "AWD" } }
   | { code: "incompletePacks"; values: { sku: string; pack: number } }
-  | { code: "awdUnits" | "missingAmazonIds" | "awdConfiguration" | "overQuantity"; values: { sku: string } }
+  | { code: "awdUnits" | "missingAmazonIds" | "overQuantity"; values: { sku: string } }
+  // The SKU's first carton, which every other carton of it must match.
+  | { code: "awdConfiguration"; values: { sku: string } & AwdTemplate }
+type AwdTemplate = { units: number; length: number; width: number; height: number; weight: number }
 export type ValidationIssue = { cartonId?: string; fields?: ("length" | "width" | "height" | "weight")[] } & PackingRule
 
 export function validatePacking(
@@ -337,7 +340,7 @@ export function validatePacking(
 ) {
   const issues: ValidationIssue[] = []
   const totals: Record<string, number> = {}
-  const configurations = new Map<string, string>()
+  const templates = new Map<string, AwdTemplate>()
   const cartonIds = new Set<string>()
   // Amazon's carton and labeling rules apply only to Amazon shipments, by each carton's network; the buyer's own
   // locations accept any cartons.
@@ -393,11 +396,16 @@ export function validatePacking(
       if (amazon && (!item.fnsku || !item.asin)) {
         add({ code: "missingAmazonIds", values: { sku: item.buyerSku } })
       }
-      const config = JSON.stringify([content.pieces, carton.length, carton.width, carton.height, carton.weight])
-      if (amazon && policy.identicalCartons && configurations.has(item.id) && configurations.get(item.id) !== config) {
-        add({ code: "awdConfiguration", values: { sku: item.buyerSku } })
+      const { length, width, height, weight } = carton
+      const template = templates.get(item.id) ?? { units, length, width, height, weight }
+      if (
+        amazon &&
+        policy.identicalCartons &&
+        JSON.stringify(template) !== JSON.stringify({ units, length, width, height, weight })
+      ) {
+        add({ code: "awdConfiguration", values: { sku: item.buyerSku, ...template } })
       }
-      configurations.set(item.id, config)
+      templates.set(item.id, template)
     }
   }
   for (const item of order.items) {

@@ -28,6 +28,8 @@ import {
   supplierRecordId
 } from "@/stories/fixtures/logistics"
 import {
+  bagOrder,
+  bagPacking,
   baylineWarehouse,
   northwindFactory,
   towelOrder,
@@ -535,6 +537,39 @@ export const Packed = meta.story({
     await waitFor(() =>
       expect(sent).toEqual([{ action: "shipment.reopenPacking", data: { id: shipmentId, revision: 3 } }])
     )
+  }
+})
+
+// Board 06.09: an FBA shipment of individual units, where each carton mixes products and every unit is packed.
+export const FbaMixedCartons = meta.story({
+  ...supplier,
+  args: {
+    ...DraftPacking.input.args,
+    order: { id: orderRecords.amazon.id, data: bagOrder, revision: 1 },
+    shipment: shipmentRow({
+      status: "packing",
+      amazonNetwork: "fba",
+      packingDraft: bagPacking(),
+      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+    })
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Amazon FBA")).toBeVisible()
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await expect(within(cartons).getByText("180 of 180 units")).toBeVisible()
+    // One carton holds a bag in each color and a tea towel; a bag without a supplier SKU shows a dash.
+    const second = canvas.getByRole("region", { name: "Carton 2" })
+    await expect(within(second).getAllByText("Cotton drawstring bag")).toHaveLength(2)
+    await expect(within(second).getByText("NT-CT-3100")).toBeVisible()
+    await expect(within(second).getAllByText("—")).toHaveLength(2)
+    await expect(canvas.queryByText(/one SKU/i)).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
+    // The one label type FBA asks for downloads straight from Documents, and every carton is weighed.
+    await expect(canvas.getByRole("link", { name: "Download FNSKU labels" })).toBeVisible()
+    const summary = canvas.getByRole("region", { name: "Shipment details" })
+    await expect(within(summary).getByText("3")).toBeVisible()
+    await expect(within(summary).getByText("37.2 kg")).toBeVisible()
+    await expect(within(summary).getByText("0.29 m³")).toBeVisible()
   }
 })
 
