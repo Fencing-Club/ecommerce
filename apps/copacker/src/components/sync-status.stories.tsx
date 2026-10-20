@@ -2,7 +2,7 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
-const meta = preview.meta({ component: SyncProgress })
+const meta = preview.meta({ title: "Components/Integrations/Sync status", component: SyncProgress })
 
 const at = new Date(Date.UTC(2026, 8, 27, 7, 0)).toISOString()
 

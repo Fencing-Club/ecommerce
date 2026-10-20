@@ -61,33 +61,8 @@ export type SalesSource = (typeof salesSources)[number]
 // earlier, and its order search and order reports return nothing older. One day short, so a long sync's later reads
 // still start within the two years.
 export const salesHistoryDays = 2 * 365 - 1
-// The shape of stored orders. Raise it when the readers copy new fields; the next sync reads stored orders again.
-// 1: prices (Shopify line prices and discounts, Amazon item proceeds).
-// 2: Shopify payments, with Shopify Payments' processing fees.
-// 3: Amazon orders from Canada, Mexico and Brazil as well as the US.
-// 5: Shopify order tags, so orders with excluded tags can be left out.
-export const salesDataVersion = 3
-const shopifyTagsVersion = 7
-// 7/8 also retain fulfillment creation and in-transit timestamps; older orders are backfilled.
-// Shopify orders with tags and each order's customer ID, once the store grants read_customers.
-export const customerDataVersion = 8
-// Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
-export const amazonDataVersion = 4
-// 2: eBay orders' refunds made on the order rather than a line.
-export const ebayDataVersion = 2
-
 export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
 
-// The shape a source's orders are copied in: Shopify's include customer IDs when the store allows it.
-export function dataVersionFor(source: SalesSource, scopes: string) {
-  if (source === "amazon") {
-    return amazonDataVersion
-  }
-  if (source === "ebay") {
-    return ebayDataVersion
-  }
-  return hasCustomerScope(scopes) ? customerDataVersion : shopifyTagsVersion
-}
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
@@ -111,18 +86,6 @@ export async function amazonSalesMarketplaces(
   const ids = await amazon.salesMarketplaces()
   marketplaceCache.set(sellerId, { ids, at: now })
   return ids
-}
-
-// The seller's store name and marketplaces, for Settings, kept for a few hours for the same reason.
-const accountCache = new Map<string, { account: Awaited<ReturnType<Amazon["sellerAccount"]>>; at: number }>()
-export async function amazonSellerAccount(sellerId: string, amazon: Pick<Amazon, "sellerAccount">, now = Date.now()) {
-  const cached = accountCache.get(sellerId)
-  if (cached && now - cached.at < 6 * 3600000) {
-    return cached.account
-  }
-  const account = await amazon.sellerAccount()
-  accountCache.set(sellerId, { account, at: now })
-  return account
 }
 
 // How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
@@ -195,7 +158,7 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
         revision,
         requestedAt: new Date(),
         errorCode: null,
-        ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null })
+        ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null, customersIncluded: false })
       }
       await tx
         .insert(salesSyncs)
@@ -219,9 +182,8 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
 // history start. With nothing usable stored, it reads from newest to oldest, so recent orders are usable soonest.
 export function syncChunks(
   now: number,
-  coverage: { coveredFrom: Date | null; coveredTo: Date | null; dataVersion?: number },
-  historyDays = salesHistoryDays,
-  version = salesDataVersion
+  coverage: { coveredFrom: Date | null; coveredTo: Date | null },
+  historyDays = salesHistoryDays
 ) {
   // Orders need a couple of minutes to settle.
   const end = Math.floor((now - 180000) / 60000) * 60000
@@ -230,12 +192,7 @@ export function syncChunks(
   const chunks: { from: Date; to: Date }[] = []
   // A stored range that stopped more than the refresh period ago would leave restock waiting while the sync crawls
   // forward from it, so it starts over from the newest orders; the copied orders stay until re-read.
-  // Orders stored in an older shape are read again the same way, so they gain the newer fields.
-  const usable =
-    coverage.coveredFrom &&
-    coverage.coveredTo &&
-    coverage.coveredTo.getTime() >= end - refreshDays * day &&
-    (coverage.dataVersion ?? version) >= version
+  const usable = coverage.coveredFrom && coverage.coveredTo && coverage.coveredTo.getTime() >= end - refreshDays * day
   if (!usable) {
     for (let to = end; to > historyStart; to -= size) {
       chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
@@ -282,6 +239,7 @@ const payloadSchema = z.object({
     .object({
       remaining: z.array(period),
       covered: period.nullable(),
+      customersIncluded: z.boolean().optional(),
       after: z.number().int().min(0).max(32).optional()
     })
     .optional()
@@ -295,7 +253,7 @@ const amazonSearchInterval = 180000
 // Worker job: copies one source's orders into sales_orders, a chunk at a time. Each chunk replaces the stored orders
 // in its period, so cancelled or test orders that disappear from the source disappear here too.
 export async function salesJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId, source, revision, resume } = payloadSchema.parse(payload)
+  const { orgId, source, revision, resume: savedResume } = payloadSchema.parse(payload)
   const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, source), eq(salesSyncs.revision, revision))
   const [sync] = await db().select().from(salesSyncs).where(scope)
   if (!sync || !["queued", "running"].includes(sync.status)) {
@@ -307,8 +265,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
   try {
     const { scopes } = await connection(orgId, source)
     const historyDays = historyDaysFor(source, scopes)
-    const version = dataVersionFor(source, scopes)
-    const planned = resume ? null : syncChunks(Date.now(), sync, historyDays, version)
+    const customersIncluded = source === "shopify" && hasCustomerScope(scopes)
+    // A checkpoint can finish only under the permission used to plan it. Existing checkpoints without this
+    // metadata must also replan, so a scope change cannot mark an incomplete customer history as complete.
+    const resume =
+      source === "shopify" && savedResume?.customersIncluded !== customersIncluded ? undefined : savedResume
+    // Newly granted customer access needs a complete read, not just the recent refresh window.
+    const coverage = customersIncluded && !sync.customersIncluded ? { coveredFrom: null, coveredTo: null } : sync
+    const planned = resume ? null : syncChunks(Date.now(), coverage, historyDays)
     const chunks =
       resume?.remaining.map((chunk) => ({ from: new Date(chunk.from), to: new Date(chunk.to) })) ?? planned!.chunks
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale | EbaySale }
@@ -421,6 +385,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           resume: {
             remaining: remaining.map((chunk) => ({ from: chunk.from.toISOString(), to: chunk.to.toISOString() })),
             covered: covered && { from: covered.from.toISOString(), to: covered.to.toISOString() },
+            customersIncluded,
             after
           }
         }
@@ -502,12 +467,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
               set: { orderedAt: sql`excluded."orderedAt"`, data: sql`excluded.data`, syncedAt: new Date() }
             })
         }
-        // The stored range now holds only orders read by this sync, so it's in the current shape: a sync that stops
-        // partway continues from here next time instead of reading everything again.
-        await tx
-          .update(salesSyncs)
-          .set({ coveredFrom: range.from, coveredTo: range.to, dataVersion: version })
-          .where(scope)
+        // Extend coverage only after the complete period has been stored.
+        await tx.update(salesSyncs).set({ coveredFrom: range.from, coveredTo: range.to }).where(scope)
       })
       throw checkpoint(chunks.slice(index + 1))
     }
@@ -522,7 +483,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     }
     await db()
       .update(salesSyncs)
-      .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: version })
+      .set({ status: "idle", finishedAt: new Date(), errorCode: null, customersIncluded })
       .where(scope)
   } catch (error) {
     // A paused sync stays running; the queue runs it again.
@@ -609,7 +570,20 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
       {
         source,
         externalAccountId: account.externalId,
-        ...(source === "amazon" ? { returns, reimbursements, inventoryMovements, storageFees, removals } : {}),
+        ...(source === "amazon"
+          ? {
+              returns,
+              reimbursements,
+              inventoryMovements,
+              storageFees,
+              removals,
+              fees: {
+                coveredFrom: sync?.feesCoveredFrom?.toISOString() ?? null,
+                coveredTo: sync?.feesCoveredTo?.toISOString() ?? null,
+                errorCode: sync?.feesErrorCode ?? null
+              }
+            }
+          : {}),
         status: sync?.status ?? "idle",
         errorCode: sync?.errorCode ?? null,
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
@@ -722,7 +696,7 @@ export type SalesOrderSummary = {
   replacementOf?: string | null
   // The order in Shopify admin, Seller Central or eBay's Seller Hub.
   url: string
-  // Net product sales (after discounts, before tax and shipping), or null when the order was copied without prices.
+  // Net product sales (after discounts, before tax and shipping); null while a provider has not priced the order.
   sales: { minor: number; currency: string } | null
   // Fees the platform charged on the order: Amazon's posted fees, or Shopify Payments' processing fees. Null when none
   // are known yet.
@@ -776,12 +750,9 @@ export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: 
     total = Math.max(0, total - ebayOrderRefund(data))
   } else if ("lines" in data) {
     for (const line of data.lines) {
-      const price = line.originalUnitPriceSet?.shopMoney
-      if (!price) {
-        return null
-      }
+      const price = line.originalUnitPriceSet.shopMoney
       currency ??= price.currencyCode
-      const discount = (line.discountAllocations ?? []).reduce(
+      const discount = line.discountAllocations.reduce(
         (sum, allocation) => sum + Number(allocation.allocatedAmountSet.shopMoney.amount),
         0
       )

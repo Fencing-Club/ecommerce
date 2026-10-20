@@ -6,7 +6,6 @@ import { can } from "@/lib/access"
 import { forwarderOrders, orderVisibleTo } from "./access"
 import { isCollective } from "./inventory-products"
 import { stockScopes } from "./stock"
-import { serverText } from "./text"
 import type { Session } from "./workspace-session"
 
 export type SearchOrder = {
@@ -163,16 +162,15 @@ async function searchProducts(orgId: string): Promise<SearchProduct[]> {
     )
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, provider)))
   const rows = current?.data?.source === "shopify" ? current.data.rows : []
-  const t = await serverText()
   const products = new Map<string, SearchProduct>()
   for (const row of rows) {
     if (isCollective(row)) {
       continue
     }
-    const id = row.productId ?? row.variantId
+    const id = row.productId
     const product = products.get(id) ?? {
       id,
-      title: row.productTitle ?? row.buyerSku ?? t("untitledProduct"),
+      title: row.productTitle,
       imageUrl: null,
       keywords: []
     }

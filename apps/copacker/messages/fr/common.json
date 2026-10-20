@@ -53,7 +53,8 @@
     "accepted": "Accepté",
     "declined": "Refusé",
     "atForwarder": "Chez le transitaire",
-    "packed": "Emballé"
+    "packed": "Emballé",
+    "changesProposed": "Modifications proposées"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -67,7 +68,9 @@
     "checklist": "Liste de contrôle d’emballage",
     "cartonLabel": "Étiquette de carton",
     "shippingLabel": "Étiquette d’expédition",
-    "productLabel": "Étiquette produit"
+    "productLabel": "Étiquette produit",
+    "cartonLabels": "Étiquettes de carton",
+    "shippingLabels": "Étiquettes d’expédition"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",
@@ -199,5 +202,132 @@
     "waitingOn": "En attente de {name}",
     "working": "En cours de traitement"
   },
-  "viewOnly": "Lecture seule"
+  "viewOnly": "Lecture seule",
+  "logistics": {
+    "views": {
+      "needsYou": "À traiter",
+      "draft": "Brouillons",
+      "active": "Actifs",
+      "closed": "Clôturés",
+      "received": "Reçus",
+      "all": "Tous"
+    },
+    "columns": {
+      "route": "Itinéraire",
+      "shipped": "Expédié",
+      "total": "Total",
+      "cartons": "Cartons",
+      "ready": "Prêt",
+      "status": "Statut",
+      "waiting": "En attente de"
+    },
+    "filters": {
+      "supplier": "Fournisseur",
+      "customer": "Client",
+      "allSuppliers": "Tous les fournisseurs",
+      "allCustomers": "Tous les clients",
+      "button": "Filtres",
+      "label": "Filtres de la liste",
+      "status": "Statut",
+      "destination": "Destination",
+      "forwarder": "Transitaire",
+      "source": "Source",
+      "ready": "Date de disponibilité",
+      "from": "Du",
+      "to": "Au",
+      "any": "Tous",
+      "clear": "Effacer les filtres",
+      "done": "Terminé",
+      "applied": "Filtres appliqués",
+      "remove": "Retirer le filtre {name}",
+      "chip": "{name} : {value}",
+      "readyRange": "Date de disponibilité : du {from} au {to}"
+    },
+    "sort": {
+      "label": "Trier par {name}",
+      "newest": "Plus récents",
+      "ready": "Date de disponibilité"
+    },
+    "sources": {
+      "order": "Bon de commande",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "Vous",
+      "buyer": "Acheteur",
+      "customer": "Client",
+      "supplier": "Fournisseur",
+      "forwarder": "Transitaire",
+      "amazon": "Amazon",
+      "carrier": "Transporteur",
+      "done": "Terminé"
+    },
+    "selection": {
+      "count": "{count} sélectionné(s)",
+      "export": "Exporter la sélection",
+      "clear": "Effacer la sélection",
+      "select": "Sélectionner {reference}"
+    },
+    "columnsLabel": "Colonnes",
+    "export": "Exporter",
+    "direct": "Direct",
+    "route": "{forwarder} vers {destination}",
+    "products": "{count, plural, one {# produit} other {# produits}}",
+    "shipped": "{shipped} sur {quantity} expédiés",
+    "shippedLabel": "{reference} expédié",
+    "cartons": "{count, plural, one {# carton} other {# cartons}}",
+    "readyOn": "Prêt le {date}",
+    "shipmentReference": "{reference}, expédition {number}",
+    "opensInSellerCentral": "(s’ouvre dans Seller Central)",
+    "actionsColumn": "Actions",
+    "rowActions": "Actions pour {reference}",
+    "viewShipment": "Voir l’expédition",
+    "viewPurchaseOrder": "Voir le bon de commande",
+    "viewOrder": "Voir le bon de commande",
+    "noMatchesDescription": "Essayez une autre recherche ou modifiez vos filtres.",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "orders": {
+      "title": "Bons de commande",
+      "reference": "Bon de commande",
+      "views": "Vues des bons de commande",
+      "search": "Rechercher des bons de commande",
+      "searchPlaceholder": "Rechercher par référence, fournisseur ou ID Amazon",
+      "table": "Bons de commande",
+      "selectAll": "Sélectionner tous les bons de commande visibles",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# bon de commande} other {# bons de commande}}",
+      "showing": "Affichage de {from}–{to} sur {count} bons de commande",
+      "noMatches": "Aucun bon de commande correspondant",
+      "empty": {
+        "needsYou": "Rien à traiter pour le moment",
+        "draft": "Aucun brouillon",
+        "active": "Aucun bon de commande actif",
+        "closed": "Aucun bon de commande clôturé",
+        "received": "Aucun bon de commande reçu",
+        "all": "Aucun bon de commande"
+      }
+    },
+    "shipments": {
+      "title": "Expéditions",
+      "reference": "Expédition",
+      "views": "Vues des expéditions",
+      "search": "Rechercher des expéditions",
+      "searchPlaceholder": "Rechercher par bon de commande, expédition ou ID Amazon",
+      "table": "Expéditions",
+      "selectAll": "Sélectionner toutes les expéditions visibles",
+      "file": "shipments",
+      "count": "{count, plural, one {# expédition} other {# expéditions}}",
+      "showing": "Affichage de {from}–{to} sur {count} expéditions",
+      "noMatches": "Aucune expédition correspondante",
+      "empty": {
+        "needsYou": "Rien à traiter pour le moment",
+        "draft": "Aucun brouillon",
+        "active": "Aucune expédition en cours",
+        "closed": "Aucune expédition clôturée",
+        "received": "Aucune expédition reçue",
+        "all": "Aucune expédition"
+      }
+    }
+  }
 }

@@ -5,6 +5,7 @@ import { restockChannels, restockReport, suppliers } from "@/stories/fixtures/ca
 import { RestockPageView } from "./restock-page"
 
 const meta = preview.meta({
+  title: "Components/Inventory/Restock page",
   beforeEach: ({ msw }) =>
     msw.use(
       http.get("/api/restock/channels", () => HttpResponse.json(restockChannels)),

@@ -4,6 +4,7 @@ import { Button } from "./button"
 import { Kbd, KbdGroup } from "./kbd"
 
 const meta = preview.meta({
+  title: "Foundations/Kbd",
   component: Kbd,
   args: { children: "Esc" }
 })

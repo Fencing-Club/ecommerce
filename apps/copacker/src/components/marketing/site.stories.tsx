@@ -5,6 +5,7 @@ import { stage } from "./site-styles"
 
 // The frame with a dark stage at the top of the page, as the home and contact pages open.
 const meta = preview.meta({
+  title: "Components/Marketing/Site",
   component: Site,
   args: {
     children: (

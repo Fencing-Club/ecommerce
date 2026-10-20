@@ -3,7 +3,6 @@ import { PGlite } from "@electric-sql/pglite"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import journal from "../drizzle/meta/_journal.json"
 import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ current: null as unknown }))
@@ -18,7 +17,7 @@ import {
   teamOf,
   transferOwnership
 } from "../src/server/team"
-import { applyMigrations, migrationSql } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -29,7 +28,7 @@ const s = { org, user: owner }
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -69,16 +68,8 @@ describe("the team", () => {
     ])
   })
 
-  it("shows one invitation per email, the newest, with its access and the day its link expires", async () => {
-    const day = 86400000
+  it("shows each invitation with its access and expiry even when emails match", async () => {
     await database.insert(tables.teamInvitations).values([
-      {
-        orgId,
-        email: "lee@club.example",
-        hash: "old",
-        expiresAt: new Date(Date.now() - day),
-        createdAt: new Date(Date.now() - 8 * day)
-      },
       {
         orgId,
         email: "lee@club.example",
@@ -88,17 +79,17 @@ describe("the team", () => {
       },
       {
         orgId,
-        email: "kim@club.example",
+        email: "lee@club.example",
         access: { sales: "view" },
         hash: "lapsed",
-        expiresAt: new Date(Date.now() - day)
+        expiresAt: new Date(Date.now() - 86400000)
       }
     ])
     const { invitations } = await teamOf(org)
     expect(invitations).toStrictEqual([
       { email: "lee@club.example", role: "admin", access: {}, expires: "Oct 4", expired: false },
       {
-        email: "kim@club.example",
+        email: "lee@club.example",
         role: "member",
         access: { sales: "view" },
         expires: expect.any(String),
@@ -276,54 +267,5 @@ describe("removing a colleague", () => {
     await expect(removeColleague({ ...s, user: { ...owner, id: "user_ada" } }, { userId: owner.id })).rejects.toThrow(
       "The owner can’t be removed"
     )
-  })
-})
-
-describe("the migration that added page access", () => {
-  it("keeps what members could do: edit every page but Partners, which they only view", async () => {
-    const old = new PGlite()
-    const sql = await migrationSql()
-    const at = journal.entries.findIndex((entry) => entry.tag === "0038_team_access")
-    for (const migration of sql.slice(0, at)) {
-      await old.exec(migration)
-    }
-    const supplierId = randomUUID()
-    const forwarderId = randomUUID()
-    await old.exec(`
-      INSERT INTO organizations (id, name, kind) VALUES
-        ('${orgId}', 'Fencing Club', 'buyer'), ('${supplierId}', 'Unic', 'supplier'), ('${forwarderId}', 'Forward', 'forwarder');
-      INSERT INTO memberships ("orgId", "userId", email, role) VALUES
-        ('${orgId}', 'owner', 'owner@club.example', 'owner'), ('${orgId}', 'sam', 'sam@club.example', 'member'),
-        ('${supplierId}', 'wei', 'wei@unic.example', 'member'), ('${forwarderId}', 'kim', 'kim@forward.example', 'member');
-      INSERT INTO team_invitations ("orgId", email, hash, "expiresAt") VALUES ('${orgId}', 'lee@club.example', 'h', now());
-    `)
-    await old.exec(sql[at]!)
-    const rows = (await old.query<{ userId: string; access: unknown }>(`SELECT "userId", access FROM memberships`)).rows
-    expect(Object.fromEntries(rows.map((row) => [row.userId, row.access]))).toStrictEqual({
-      owner: {},
-      sam: {
-        overview: "view",
-        sales: "view",
-        products: "edit",
-        restock: "view",
-        orders: "edit",
-        shipments: "edit",
-        partners: "view"
-      },
-      wei: {
-        overview: "view",
-        orders: "edit",
-        shipments: "edit",
-        customers: "edit",
-        products: "edit",
-        inventory: "edit",
-        catalogs: "edit"
-      },
-      kim: { orders: "edit" }
-    })
-    const invited = (await old.query<{ role: string; access: unknown }>(`SELECT role, access FROM team_invitations`))
-      .rows
-    expect(invited).toStrictEqual([{ role: "member", access: expect.objectContaining({ partners: "view" }) }])
-    await old.close()
   })
 })

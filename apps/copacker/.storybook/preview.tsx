@@ -105,11 +105,12 @@ export default definePreview({
     addonA11y(),
     addonMsw(async () => {
       const worker = setupWorker(...handlers)
-      await worker.start({
+      const starting = worker.start({
         onUnhandledRequest: "bypass",
         quiet: true,
         serviceWorker: { url: new URL("mockServiceWorker.js", window.location.href).href }
       })
+      await starting.catch((error: unknown) => console.warn(error))
       return worker
     })
   ],
@@ -139,6 +140,10 @@ export default definePreview({
   initialGlobals: { theme: "light", locale: "en" },
   parameters: {
     layout: "padded",
+    // The sidebar's sections, described in docs/storybook.md. Stories keep their file order within each component.
+    options: {
+      storySort: { method: "alphabetical", order: ["Foundations", "Components", "Pages", "Prototypes", "Unused"] }
+    },
     router: {},
     viewport: { options: INITIAL_VIEWPORTS },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },

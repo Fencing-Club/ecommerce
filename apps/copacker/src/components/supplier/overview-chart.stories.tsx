@@ -15,6 +15,7 @@ function series(from: string, days: number, previous = true) {
 }
 
 const meta = preview.meta({
+  title: "Components/Supplier workspace/Overview chart",
   component: OrdersChart,
   args: {
     series: series("2026-09-01", 30),

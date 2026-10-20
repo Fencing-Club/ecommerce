@@ -18,7 +18,7 @@ import {
   salesPageData
 } from "../src/server/workspace-pages"
 import { orderData } from "../src/stories/fixtures/orders"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const context: { current: unknown; actor: unknown } = vi.hoisted(() => ({ current: null, actor: null }))
 vi.mock("@/db", () => ({ db: () => context.current }))
@@ -42,7 +42,7 @@ const owner = { ...session({}), role: "owner" as const }
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

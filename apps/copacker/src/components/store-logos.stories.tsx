@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { StoreLogo } from "./store-logos"
 
 const meta = preview.meta({
+  title: "Components/Integrations/Store logos",
   component: StoreLogo,
   args: { store: "shopify" } satisfies React.ComponentProps<typeof StoreLogo>
 })

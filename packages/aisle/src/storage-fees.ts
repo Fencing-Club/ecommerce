@@ -94,14 +94,22 @@ export function parseAgedStorageFees(text: string) {
   return reportRows(text, agedColumns).map((row) => {
     const optional = (key: string) => row[key] || null
     const date = row["snapshot-date"]!
-    const us = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date)
+    const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(date)
+    // Snapshot timestamps identify the source calendar day, not a UTC accounting date.
+    const timestamp = z.iso.datetime({ offset: true }).safeParse(date)
+    let periodDay = date
+    if (us) {
+      periodDay = `${us[3]}-${us[1]!.padStart(2, "0")}-${us[2]!.padStart(2, "0")}`
+    } else if (timestamp.success) {
+      periodDay = date.slice(0, 10)
+    }
     const quantity = z
       .string()
       .regex(/^-?\d+$/)
       .nullable()
       .parse(optional("qty-charged"))
     return fee.parse({
-      periodDay: us ? `${us[3]}-${us[1]}-${us[2]}` : date,
+      periodDay,
       sku: optional("sku"),
       asin: optional("asin"),
       fnsku: optional("fnsku"),

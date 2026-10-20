@@ -14,8 +14,8 @@ type Stock = Awaited<ReturnType<Shopify["stock"]>>
 
 // How a location is treated until the buyer saves a choice: the store's own locations hold its stock, Shopify
 // Collective holds a partner's, and Amazon's location mirrors FBA. Other apps' locations need a decision. The kind comes
-// from the location's fulfillment service (see shopifyLocationKind), never its name; it is missing from snapshots saved
-// before kinds were collected.
+// from the location's fulfillment service (see shopifyLocationKind), never its name. Synthetic stock pools without
+// a Shopify fulfillment service remain unresolved unless explicitly classified.
 const automatic: Record<ShopifyLocationKind, LocationClassification> = {
   merchant: "merchant",
   shopify_collective: "excluded",

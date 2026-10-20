@@ -5,10 +5,11 @@
 Restock reads orders copied into `sales_orders`, not the providers. Settings > Integrations > Manage queues a `sales` worker job per source. The Orders page (`/sales`) shows imported orders and sync status. The first sync copies the last 729 days (60 for Shopify without read_all_orders) in 14-day periods; later syncs copy from 30 days before the stored end, so late fulfillments and cancellations are picked up. Each period replaces the stored orders created in it, in one transaction, so orders the source drops (cancelled or test) disappear. `sales_syncs` records the unbroken stored period; restock's sales period ends at that period's end and is refused if it would reach further back than the stored orders. Changing the connected account starts over. Besides the Sync button, the worker syncs every connected source daily at 07:00 UTC (`reconcile.ts`), and Shopify order webhooks start a sync as orders change.
 
 Orders carry prices: Shopify lines their unit price and discount allocations (`originalUnitPriceSet`,
-`discountAllocations`), Amazon items their proceeds (`includedData=FULFILLMENT,PROCEEDS`). `sales_syncs.dataVersion`
-records the shape the stored orders were copied in; when `salesDataVersion` rises, the next sync reads the whole history
-again, newest first, so older orders gain the new fields. Version 2 includes Shopify payments (`transactions`, with
-Shopify Payments' processing `fees` and the tax on them); other gateways report no fees.
+`discountAllocations`), Amazon items their proceeds (`includedData=FULFILLMENT,PROCEEDS`). Shopify payments include
+`transactions`, with Shopify Payments' processing fees and their tax; other gateways report no fees.
+Stored orders use the current contract, without historical shape versions or tag backfills. When a Shopify store
+newly grants `read_customers`, its next sync rereads the full allowed history. `sales_syncs.customersIncluded` becomes
+true only after that sync completes, so customer metrics stay pending until the customer IDs are available.
 
 The Amazon sync also copies posted transactions from the Finances API (`/finances/2024-06-19/transactions`, 14-day
 periods, the same refresh rule as orders) into `amazon_transactions`, each linked to its order ID. `feesMinor` counts
@@ -121,3 +122,14 @@ Their overlapping quantities never change summary stock, demand or profit during
 ## Marketplace copies in Shopify
 
 The default excluded Shopify tags are `Amazon` and `eBay` (case-insensitive). Tagged copies remain stored as source evidence but are excluded from Shopify order lists, reporting, demand and automatic inventory depletion. Native Amazon and eBay orders remain included. Settings can customize exclusions, including wildcard tags such as `eBay*` for integrations that use suffixed tags. The migration adds eBay only to workspaces whose exclusion list still exactly matches the original Amazon-only default; custom lists are preserved.
+
+## Amazon Financial data card
+
+The Amazon connection shows Orders, Inventory, and Financial data as matching compact cards, without expandable rows.
+Financial data summarizes transaction-fee ingestion, returns, reimbursements, monthly and aged storage fees, and removal orders and shipments.
+A failed report remains visible even when order ingestion succeeds; unavailable or missing reports do not count as
+complete. Previously saved data is retained after failed refreshes.
+
+The Financial data action uses the existing Amazon sales sync endpoint and worker, so it also refreshes orders.
+Queued/running state and reconnect requirements are shared. Order-history progress is not displayed as financial
+progress. The card summarizes report ingestion, not accounting reconciliation or profitability readiness.

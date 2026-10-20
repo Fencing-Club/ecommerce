@@ -6,6 +6,8 @@ export type AmazonCredentials =
   | { clientId: string; clientSecret: string; refreshToken: string }
   // Grantless operations, such as managing notification destinations, act for the app rather than a seller.
   | { clientId: string; clientSecret: string; grantlessScope: string }
+const requestTimeoutMs = 30000
+const reportDownloadTimeoutMs = 120000
 const stockQuantity = z.number().int().nonnegative().safe()
 const awdStockPage = z.object({
   inventory: z
@@ -319,15 +321,58 @@ export class ProviderError extends Error {
     public readonly status: number,
     public readonly requestId: string | null,
     message: string,
-    public readonly retryAfterMs: number | null = null
+    public readonly retryAfterMs: number | null = null,
+    public readonly operation?: string
   ) {
     super(message)
   }
 }
+
+export type AmazonConnectionHealth = "connected" | "reconnect" | "configuration" | "unavailable"
+
+// Token failures retain a safe recovery category, never credentials or Amazon's raw response.
+export class AmazonAuthorizationError extends ProviderError {
+  constructor(
+    status: number,
+    readonly recovery: "reconnect" | "configuration"
+  ) {
+    super(
+      status,
+      null,
+      recovery === "reconnect" ? "Amazon authorization must be renewed" : "Amazon app configuration needs attention"
+    )
+  }
+}
+
+export class ReportDeferredError extends Error {
+  constructor(public readonly retryAt: Date) {
+    super("Amazon report creation is waiting for its request allowance")
+  }
+}
+export type ReportRequestPolicy = {
+  acquire: (input: { reportType: string; deadline: number; assertActive?: () => Promise<void> }) => Promise<void>
+  observe: (input: {
+    reportType: string
+    status: number
+    rateLimit: number | null
+    retryAfterMs: number | null
+    requestId: string | null
+  }) => Promise<void>
+}
+export class ReportProcessingError extends Error {
+  constructor(public readonly hasDiagnosticDocument: boolean) {
+    super("Amazon report processing failed")
+  }
+}
 // Each collection owns its pacing and deadline; mutations never use these retries.
-function stockReader(deadline: number, assertActive?: () => Promise<void>) {
+function stockReader(deadline: number, assertActive?: () => Promise<void>, throttleMs = 1000) {
   let nextRequestAt = 0
-  return async <T>(read: () => Promise<T>, pageDeadline = deadline, retry = true): Promise<T> => {
+  return async <T>(
+    read: () => Promise<T>,
+    pageDeadline = deadline,
+    retry = true,
+    throttleFloor = throttleMs
+  ): Promise<T> => {
     const check = async () => {
       await assertActive?.()
       if (Date.now() >= Math.min(deadline, pageDeadline)) {
@@ -358,7 +403,11 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>) {
         ) {
           throw error
         }
-        nextRequestAt = Math.max(nextRequestAt, Date.now() + (error.retryAfterMs ?? 1000 * 2 ** attempt))
+        const delay = Math.max(error.retryAfterMs ?? 0, (error.status === 429 ? throttleFloor : 1000) * 2 ** attempt)
+        if (Date.now() + delay >= Math.min(deadline, pageDeadline)) {
+          throw error
+        }
+        nextRequestAt = Math.max(nextRequestAt, Date.now() + delay)
       }
     }
   }
@@ -368,7 +417,8 @@ export class Amazon {
   private reportLookups = new Map<string, Promise<unknown[]>>()
   constructor(
     private credentials: AmazonCredentials,
-    private transport: typeof fetch = fetch.bind(globalThis)
+    private transport: typeof fetch = fetch.bind(globalThis),
+    private reportPolicy?: ReportRequestPolicy
   ) {}
   private async token() {
     if (this.access && this.access.expires > Date.now()) {
@@ -383,22 +433,35 @@ export class Amazon {
         client_id: this.credentials.clientId,
         client_secret: this.credentials.clientSecret
       }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
     if (!response.ok) {
-      throw new ProviderError(response.status, null, "Amazon authorization must be renewed")
+      const result = z.object({ error: z.string() }).safeParse(await response.json().catch(() => null))
+      const code = result.success ? result.data.error : undefined
+      if (response.status < 500 && response.status !== 429) {
+        if ("refreshToken" in this.credentials && (code === "invalid_grant" || code === "unauthorized_client")) {
+          throw new AmazonAuthorizationError(response.status, "reconnect")
+        }
+        if (
+          ["invalid_client", "unauthorized_client", "unsupported_grant_type", "invalid_request"].includes(code ?? "")
+        ) {
+          throw new AmazonAuthorizationError(response.status, "configuration")
+        }
+      }
+      throw new ProviderError(response.status, null, "Amazon authorization is temporarily unavailable")
     }
     const token = z.object({ access_token: z.string(), expires_in: z.number() }).parse(await response.json())
     this.access = { token: token.access_token, expires: Date.now() + (token.expires_in - 60) * 1000 }
     return token.access_token
   }
-  async request(method: string, path: string, body?: unknown) {
+  async request(method: string, path: string, body?: unknown, observe?: (response: Response) => Promise<void>) {
     const response = await this.transport(`https://sellingpartnerapi-na.amazon.com${path}`, {
       method,
       headers: { "x-amz-access-token": await this.token(), "content-type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     })
+    await observe?.(response)
     if (!response.ok) {
       // Amazon explains a rejection in its errors list; the codes and messages describe the request, not seller data.
       const reasons = z
@@ -916,7 +979,8 @@ export class Amazon {
     }
     throw new Error("FBA receipt page limit")
   }
-  async awdReceiptItems(shipmentId: string) {
+  async awdReceiptItems(shipmentId: string, assertActive?: () => Promise<void>) {
+    const read = stockReader(Date.now() + 5 * 60 * 1000, assertActive)
     const quantity = z.object({ quantity: z.number().int().nonnegative().safe(), unitOfMeasurement: z.string() })
     return z
       .object({
@@ -930,9 +994,8 @@ export class Amazon {
           .optional()
       })
       .parse(
-        await this.request(
-          "GET",
-          `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}?skuQuantities=SHOW`
+        await read(() =>
+          this.request("GET", `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}?skuQuantities=SHOW`)
         )
       )
   }
@@ -963,7 +1026,8 @@ export class Amazon {
     throw new Error("FBA shipments exceed the supported page limit")
   }
   /** Every AWD inbound shipment, whoever created it, newest first. */
-  async awdShipments() {
+  async awdShipments(assertActive?: () => Promise<void>) {
+    const read = stockReader(Date.now() + 5 * 60 * 1000, assertActive)
     const shipments: Array<{ shipmentId: string; orderId: string; status: string; createdAt: string | null }> = []
     const tokens = new Set<string>()
     let nextToken: string | undefined
@@ -974,7 +1038,9 @@ export class Amazon {
         maxResults: "200",
         ...(nextToken ? { nextToken } : {})
       })
-      const page = awdShipmentsPage.parse(await this.request("GET", `/awd/2024-05-09/inboundShipments?${query}`))
+      const page = awdShipmentsPage.parse(
+        await read(() => this.request("GET", `/awd/2024-05-09/inboundShipments?${query}`))
+      )
       for (const row of page.shipments ?? []) {
         shipments.push({
           shipmentId: row.shipmentId,
@@ -1047,11 +1113,31 @@ export class Amazon {
       assertActive?: () => Promise<void>
       retryCreate?: boolean
       reuseCreatedSince?: string
+      // Preserve cancellation as unavailable; callers must not interpret it as an empty document.
+      reuseCancelled?: boolean
     }
   ) {
-    const read = stockReader(options.deadline, options.assertActive)
+    // Report reads need minute-scale backoff; creation can remain throttled for a five-minute quota window.
+    // Keep the same report ID while retrying a throttled poll/document; never recreate it to retry a read.
+    const retry = stockReader(options.deadline, options.assertActive, 60000)
+    const read = async <T>(operation: string, request: () => Promise<T>, retryRequest = true) => {
+      try {
+        return await retry(request, options.deadline, retryRequest, operation === "createReport" ? 300000 : 60000)
+      } catch (error) {
+        if (error instanceof ProviderError) {
+          throw new ProviderError(
+            error.status,
+            error.requestId,
+            "Amazon report request failed",
+            error.retryAfterMs,
+            operation
+          )
+        }
+        throw error
+      }
+    }
     let reportId: string | undefined
-    // Only callers recovering incomplete imports opt in. Normal refreshes always request fresh evidence.
+    // Callers opt in for recovery or a documented content-refresh interval; reuse requires the exact scope.
     // getReports does not expose reportOptions, so their equivalence cannot be established here.
     if (options.reuseCreatedSince && !input.reportOptions) {
       await options.assertActive?.()
@@ -1059,7 +1145,7 @@ export class Amazon {
       const query = new URLSearchParams({
         reportTypes: input.reportType,
         marketplaceIds: [...input.marketplaceIds].sort().join(","),
-        processingStatuses: "DONE",
+        processingStatuses: options.reuseCancelled ? "DONE,CANCELLED" : "DONE",
         createdSince: since,
         pageSize: "100"
       })
@@ -1074,7 +1160,7 @@ export class Amazon {
             const params = next ? new URLSearchParams({ nextToken: next }) : query
             const result = z
               .object({ reports: z.array(z.unknown()), nextToken: z.string().optional() })
-              .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports?${params}`)))
+              .parse(await read("getReports", () => this.request("GET", `/reports/2021-06-30/reports?${params}`)))
             reports.push(...result.reports)
             next = result.nextToken
             if (!next) {
@@ -1105,8 +1191,8 @@ export class Amazon {
               reportId: z.string().min(1),
               reportType: z.string(),
               marketplaceIds: z.array(z.string()),
-              processingStatus: z.literal("DONE"),
-              reportDocumentId: z.string().min(1),
+              processingStatus: z.enum(["DONE", "CANCELLED"]),
+              reportDocumentId: z.string().min(1).optional(),
               createdTime: z.iso.datetime({ offset: true }),
               dataStartTime: z.iso.datetime({ offset: true }),
               dataEndTime: z.iso.datetime({ offset: true })
@@ -1116,7 +1202,10 @@ export class Amazon {
             return []
           }
           const report = parsed.data
-          return report.reportType === input.reportType &&
+          return (report.processingStatus === "DONE"
+            ? Boolean(report.reportDocumentId)
+            : options.reuseCancelled === true) &&
+            report.reportType === input.reportType &&
             JSON.stringify([...new Set(report.marketplaceIds)].sort()) ===
               JSON.stringify([...new Set(input.marketplaceIds)].sort()) &&
             Date.parse(report.createdTime) >= Date.parse(since) &&
@@ -1125,19 +1214,52 @@ export class Amazon {
             ? [report]
             : []
         })
-        .sort((a, b) => Date.parse(b.createdTime) - Date.parse(a.createdTime))
+        .sort(
+          (a, b) =>
+            Number(b.processingStatus === "DONE") - Number(a.processingStatus === "DONE") ||
+            Date.parse(b.createdTime) - Date.parse(a.createdTime)
+        )
       reportId = matching[0]?.reportId
     }
     if (!reportId) {
-      reportId = z
-        .object({ reportId: z.string().min(1) })
-        .parse(
-          await read(
-            () => this.request("POST", "/reports/2021-06-30/reports", input),
-            options.deadline,
-            options.retryCreate !== false
-          )
-        ).reportId
+      // Managed creation must leave room for creation, two status reads separated by one poll interval,
+      // document metadata and download, using their actual transport timeouts. This is a minimum attempt
+      // budget, not a guarantee that Amazon will finish generating the report within one polling cycle.
+      const processingBudget = 4 * requestTimeoutMs + reportDownloadTimeoutMs + (options.pollMs ?? 15000)
+      const creationDeadline = this.reportPolicy ? options.deadline - processingBudget : options.deadline
+      reportId = z.object({ reportId: z.string().min(1) }).parse(
+        await read(
+          "createReport",
+          async () => {
+            if (this.reportPolicy) {
+              await this.token()
+            }
+            await this.reportPolicy?.acquire({
+              reportType: input.reportType,
+              deadline: creationDeadline,
+              assertActive: options.assertActive
+            })
+            await options.assertActive?.()
+            if (Date.now() >= creationDeadline) {
+              throw new ReportDeferredError(new Date(Date.now()))
+            }
+            return this.request("POST", "/reports/2021-06-30/reports", input, async (response) => {
+              const rate = Number(response.headers.get("x-amzn-RateLimit-Limit"))
+              const retry = response.headers.get("retry-after")
+              const seconds = retry === null ? NaN : Number(retry)
+              const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retry ?? "") - Date.now()
+              await this.reportPolicy?.observe({
+                reportType: input.reportType,
+                status: response.status,
+                rateLimit: Number.isFinite(rate) && rate > 0 ? rate : null,
+                retryAfterMs: Number.isFinite(delay) ? Math.max(0, delay) : null,
+                requestId: response.headers.get("x-amzn-RequestId")
+              })
+            })
+          },
+          options.retryCreate !== false && !this.reportPolicy
+        )
+      ).reportId
     }
     for (;;) {
       const report = z
@@ -1145,24 +1267,33 @@ export class Amazon {
           processingStatus: z.enum(["IN_QUEUE", "IN_PROGRESS", "DONE", "CANCELLED", "FATAL"]),
           reportDocumentId: z.string().min(1).optional()
         })
-        .parse(await read(() => this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(reportId)}`)))
+        .parse(
+          await read("getReport", () =>
+            this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(reportId)}`)
+          )
+        )
       if (report.processingStatus === "CANCELLED") {
         return null
       }
       if (report.processingStatus === "FATAL") {
-        throw new Error(`Amazon couldn't build the ${input.reportType} report`)
+        throw new ReportProcessingError(Boolean(report.reportDocumentId))
       }
       if (report.processingStatus === "DONE" && report.reportDocumentId) {
         const documentId = report.reportDocumentId
         const document = z
           .object({ url: z.url(), compressionAlgorithm: z.literal("GZIP").optional() })
           .parse(
-            await read(() => this.request("GET", `/reports/2021-06-30/documents/${encodeURIComponent(documentId)}`))
+            await read("getReportDocument", () =>
+              this.request("GET", `/reports/2021-06-30/documents/${encodeURIComponent(documentId)}`)
+            )
           )
-        const response = await read(() => this.transport(document.url, { signal: AbortSignal.timeout(120000) }))
-        if (!response.ok) {
-          throw new ProviderError(response.status, null, `Amazon report download failed (${response.status})`)
-        }
+        const response = await read("downloadReport", async () => {
+          const response = await this.transport(document.url, { signal: AbortSignal.timeout(reportDownloadTimeoutMs) })
+          if (!response.ok) {
+            throw new ProviderError(response.status, null, "Amazon report download failed")
+          }
+          return response
+        })
         const bytes = Buffer.from(await response.arrayBuffer())
         return (document.compressionAlgorithm ? gunzipSync(bytes) : bytes).toString("utf8")
       }
@@ -1318,7 +1449,8 @@ export async function downloadAmazonLabels(raw: string) {
   ) {
     throw new Error("Amazon returned an unsupported label download host")
   }
-  const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(30000) })
+  // Workers supports manual redirects; the status check below rejects them without following another host.
+  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(requestTimeoutMs) })
   if (!response.ok || !response.body) {
     throw new Error("Amazon label download failed")
   }

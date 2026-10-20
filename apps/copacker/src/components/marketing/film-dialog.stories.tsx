@@ -6,6 +6,7 @@ import { pressEscapeIn } from "@/stories/fixtures/marketing"
 import { FilmDialog } from "./film-dialog"
 
 const meta = preview.meta({
+  title: "Components/Marketing/Film dialog",
   component: FilmDialog,
   args: { open: true, onOpenChange: fn(), returnTo: createRef<HTMLElement>() },
   // The film itself isn't loaded: its request answers with nothing.

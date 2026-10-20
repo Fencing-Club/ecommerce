@@ -5,6 +5,7 @@ import { shipmentDestinations, shipmentDelivery } from "@/app/(portal)/shipments
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
+import { printableLabels } from "@/lib/printable-labels"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
@@ -61,6 +62,9 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     !shipment.amazonOrderId &&
     shipment.operation === "none" &&
     !awaitingChanges
+  // Finished packing for Amazon reopens until the buyer starts the Amazon shipment.
+  const canReopenPacking =
+    editsShipments && shipment.status === "packed" && !shipment.amazonOrderId && shipment.operation === "none"
   const isBuyer = s.org.kind === "buyer"
   // The Amazon shipments are in the buyer's Seller Central, which the supplier can't open, so it reads their IDs.
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
@@ -75,34 +79,35 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     const item = snapshot.items.find((i) => i.id === change.itemId)!
     return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
   })
-  const origin = shipment.packing?.origin
   const fba = shipment.amazonNetwork === "fba"
   // A supplier that isn't on Copacker sends its details by email, and the buyer enters them here.
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
   const amazon = order.data.destination === "amazon"
   // A purchase order's shipments are numbered oldest first, as on the shipments list.
   const title = t("title", { number: workflow.shipments.findIndex((row) => row.id === id) + 1 })
-  const cartonCount = shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
   const destination = await shipmentDestinations([order.data])
-  // Where it goes and in how many cartons, then Amazon's shipment IDs. The purchase order leads the title.
-  const summary = [
-    destination(order.data, shipment.amazonNetwork),
-    cartonCount && t("cartonCount", { count: cartonCount }),
-    ...amazonIds
-  ]
-    .filter(Boolean)
-    .join(", ")
   // What happens next, where nothing below shows it: the forwarder's leg, or cancelling in Amazon first.
   const nextStep =
     step.next.step === "forward" || (isBuyer && step.next.step === "cancellation") ? step.next.message : undefined
+  const labels = await lineLabels({ ...order, data: snapshot })
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
     hasProductLabels: hasProductLabels(
       snapshot.items,
-      await lineLabels({ ...order, data: snapshot }),
+      labels,
       new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
     ),
+    // The label types each line being packed prints, and why a barcode label can't be made yet.
+    lineLabels: packingOrder.items.map((item) => ({
+      itemId: item.id,
+      labels: printableLabels(
+        item,
+        labels
+          .filter((row) => row.itemId === item.id)
+          .map((row) => ({ ...row, problem: row.state === "missing" ? row.problem : undefined }))
+      )
+    })),
     delivery: await shipmentDelivery(order, shipment),
     destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,
@@ -140,6 +145,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
     awaitingChanges,
     editable,
+    canReopenPacking,
     isBuyer,
     amazonLinks,
     visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),
@@ -154,12 +160,11 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
         },
         change: { itemId: change.itemId, supplierSku: change.supplierSku, unitPrice: prices ? change.unitPrice : 0 }
       })),
-    origin,
     fba,
     enteringFor,
     amazon,
     title,
-    summary,
+    amazonIds,
     nextStep
   }
 }

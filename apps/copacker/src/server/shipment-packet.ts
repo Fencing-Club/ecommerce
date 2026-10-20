@@ -121,6 +121,7 @@ export async function shipmentPacketResult(s: Session, id: string) {
       throw error
     }
     // Even an unsupported reference-document layout must keep its released original labels accessible.
+    // In the packet’s order: the carton labels, then the product labels.
     let labelSections: Array<"carton_labels" | "carrier_labels" | "product_labels"> = []
     try {
       const { shipment, labels, labelOrder } = await releasedPacket(s, id)

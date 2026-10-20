@@ -16,7 +16,7 @@ vi.mock("../src/server/auth", async (original) => ({
 import { GET as inventory } from "../src/server/http/api/inventory"
 import { GET as status } from "../src/server/http/api/inventory/status"
 import { salesSyncStatus } from "../src/server/sales-orders"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -25,7 +25,7 @@ const domain = "status-test.myshopify.com"
 const observedAt = "2026-10-16T10:00:00.000Z"
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => pg.close())
 beforeEach(async () => {
@@ -71,7 +71,10 @@ it("keeps inventory status database results small as the catalog grows", async (
         variantId: `gid://shopify/ProductVariant/${index}`,
         inventoryItemId: `gid://shopify/InventoryItem/${index}`,
         buyerSku: `SKU-${index}`,
+        productId: `gid://shopify/Product/${index}`,
         productTitle: "A product with a title",
+        variantTitle: "Default Title",
+        imageUrl: null,
         tracked: true,
         unit: "shopify_inventory_unit",
         levels: []
@@ -132,6 +135,7 @@ it.each([
 
 it("aggregates recent sales without transferring orders, counting each bundle once", async () => {
   const data: ShopifySale = {
+    transactions: [],
     id: "gid://shopify/Order/1",
     name: "#1",
     createdAt: observedAt,
@@ -141,8 +145,18 @@ it("aggregates recent sales without transferring orders, counting each bundle on
     fulfillments: [],
     tags: [],
     lines: [
-      { id: "l1", sku: "A", quantity: 3, currentQuantity: 2, variant: { id: "v1" } },
+      {
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
+        id: "l1",
+        sku: "A",
+        quantity: 3,
+        currentQuantity: 2,
+        variant: { id: "v1" }
+      },
       ...["l2", "l3"].map((id) => ({
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
         id,
         sku: "B",
         quantity: 4,

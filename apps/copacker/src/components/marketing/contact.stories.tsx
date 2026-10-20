@@ -5,6 +5,7 @@ import { pressEscapeIn } from "@/stories/fixtures/marketing"
 import { Contact } from "./contact"
 
 const meta = preview.meta({
+  title: "Components/Marketing/Contact",
   component: Contact,
   parameters: { layout: "fullscreen" },
   beforeEach: ({ msw }) => {

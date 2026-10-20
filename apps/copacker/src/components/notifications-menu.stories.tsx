@@ -4,6 +4,7 @@ import { NotificationsMenu } from "./notifications-menu"
 
 // Nothing sends notifications yet, so the menu loads no data and is always empty.
 const meta = preview.meta({
+  title: "Components/App shell/Notifications menu",
   component: NotificationsMenu,
   decorators: [(Story) => <div className="flex justify-end">{Story()}</div>]
 })

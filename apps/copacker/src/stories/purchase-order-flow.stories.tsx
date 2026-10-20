@@ -57,6 +57,30 @@ export const BuyerDraft = meta.story({
     await expect(shipment.queryByRole("spinbutton")).toBeNull()
   }
 })
+export const WholePackValidation = meta.story({
+  ...flow({ initialState: "draft" }),
+  play: async ({ canvas }) => {
+    const shipment = within(canvas.getByRole("region", { name: "Shipment 2" }))
+    await userEvent.click(shipment.getByRole("button", { name: "Edit" }))
+    const quantity = shipment.getByRole("spinbutton", { name: /quantity/ })
+    for (const invalid of ["121", "0", "-2", "1.5"]) {
+      await userEvent.clear(quantity)
+      await userEvent.type(quantity, invalid)
+      await expect(quantity).toHaveAttribute("aria-invalid", "true")
+      await expect(shipment.getByRole("status")).toBeVisible()
+      await expect(shipment.getByRole("button", { name: "Done" })).toBeDisabled()
+      await expect(canvas.getAllByRole("button", { name: "Send order" })[0]).toBeDisabled()
+      await expect(shipment.queryByText(/60.5 packs/)).toBeNull()
+    }
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, "122")
+    await expect(quantity).toHaveAttribute("aria-invalid", "false")
+    await expect(shipment.queryByRole("status")).toBeNull()
+    await expect(shipment.getByText("61 packs, 2 each")).toBeVisible()
+    await userEvent.click(shipment.getByRole("button", { name: "Done" }))
+    await expect(shipment.queryByRole("spinbutton")).toBeNull()
+  }
+})
 export const NarrowShipmentRows = meta.story({
   ...flow({ initialState: "draft" }),
   render: () => (
@@ -76,6 +100,12 @@ export const NarrowShipmentRows = meta.story({
     const quantity = shipment.getByRole("spinbutton", { name: "HG-WBT-NAT quantity" })
     const cost = shipment.getByRole("textbox", { name: "HG-WBT-NAT cost" })
     const sku = shipment.getByRole("textbox", { name: "HG-WBT-NAT supplier SKU" })
+    const tax = shipment.getByRole("spinbutton", { name: "HG-WBT-NAT tax percent" })
+    await expect(Math.abs(tax.getBoundingClientRect().height - quantity.getBoundingClientRect().height)).toBeLessThan(2)
+    await expect(tax.closest('[data-slot="input-group"]')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(79)
+    await userEvent.clear(tax)
+    await userEvent.type(tax, "7.25")
+    await expect(tax).toHaveValue(7.25)
     await expect(Math.abs(quantity.getBoundingClientRect().top - cost.getBoundingClientRect().top)).toBeLessThan(2)
     await expect(Math.abs(quantity.getBoundingClientRect().top - sku.getBoundingClientRect().top)).toBeLessThan(2)
     await expect(Math.abs(count.getBoundingClientRect().right - quantity.getBoundingClientRect().right)).toBeLessThan(1)
@@ -126,12 +156,17 @@ export const InvoiceNeedsUpdating = meta.story({
 export const SupplierAcceptedOrder = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true }),
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Pack shipment" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "View shipment" })).toBeVisible()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: "Pack shipment" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
     await expect(canvas.getByRole("heading", { name: "Shipment 1" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Import cartons" })).toBeVisible()
     await expect(canvas.queryByRole("heading", { name: "Invoice" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Products (3)" }))
+    const productHeader = canvas.getByRole("columnheader", { name: "Product" })
+    await expect(getComputedStyle(productHeader).fontSize).toBe("12px")
+    await expect(getComputedStyle(productHeader).fontWeight).toBe("400")
+    await expect(canvas.queryByText("Quantity / carton")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
   }
 })
@@ -167,7 +202,7 @@ export const SupplierPaidOrder = meta.story({
     await expect(
       within(canvas.getByRole("region", { name: "Payment" })).getByText("Paid", { exact: true })
     ).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Pack shipment" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "View shipment" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark as paid" })).toBeNull()
   }
 })
@@ -336,15 +371,17 @@ export const TimelineComments = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Please confirm the final carton weights.")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
-    await expect(canvas.getByText("Please confirm the final carton weights.")).toBeVisible()
-    await expect(canvas.getByRole("textbox", { name: "Comment" })).toHaveValue("")
+    await expect(await canvas.findByText("Please confirm the final carton weights.", { selector: "p" })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole("textbox", { name: "Comment" })).toHaveValue(""))
     await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
     await userEvent.click(await screen.findByRole("option", { name: "Message supplier" }))
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "The packing instructions are confirmed.")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     const timeline = within(canvas.getByRole("region", { name: "Timeline" }))
     const internal = timeline.getByText("Please confirm the final carton weights.").closest("li")
-    const shared = timeline.getByText("The packing instructions are confirmed.").closest("li")
+    const shared = (await timeline.findByText("The packing instructions are confirmed.", { selector: "p" })).closest(
+      "li"
+    )
     await expect(internal).toHaveTextContent("Internal comment")
     await expect(shared).toHaveTextContent("Shared with supplier")
     await expect(canvas.getByRole("button", { name: "Post" })).toBeDisabled()
@@ -389,17 +426,14 @@ export const PackingRequirements = meta.story({
     await expect(details.getByRole("checkbox", { name: "FNSKU label" })).not.toBeChecked()
     await expect(details.getByRole("checkbox", { name: "SKU label" })).toBeChecked()
     await userEvent.click(details.getByRole("checkbox", { name: "Choking hazard label" }))
-    await userEvent.click(details.getByRole("checkbox", { name: "Country of origin label" }))
-    await expect(details.getByRole("button", { name: "Done" })).toBeDisabled()
-    await userEvent.click(details.getByRole("combobox", { name: "Country of origin" }))
-    await userEvent.click(await screen.findByRole("option", { name: "China" }))
+    await expect(details.queryByRole("checkbox", { name: "Country of origin label" })).toBeNull()
     await userEvent.click(details.getByRole("button", { name: "Done" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await userEvent.click(canvas.getAllByRole("button", { name: "Packing details" })[0]!)
     const reopened = await shownDialog("Packing details")
     await expect(reopened.getByRole("checkbox", { name: "FNSKU label" })).not.toBeChecked()
     await expect(reopened.getByRole("checkbox", { name: "Choking hazard label" })).toBeChecked()
-    await expect(reopened.getByRole("combobox", { name: "Country of origin" })).toHaveTextContent("China")
+    await expect(reopened.queryByRole("combobox", { name: "Country of origin" })).toBeNull()
   }
 })
 export const SupplierOrderMobile = meta.story({
@@ -506,7 +540,11 @@ export const SupplierPacking = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "editing" }),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Shipment 1" })).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(canvas.getByText("Packing", { exact: true })).toBeVisible()
+    await expect(canvas.queryByText("Packed", { exact: true })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
     await expect(canvas.queryByRole("heading", { name: "Invoice" })).toBeNull()
   }
 })
@@ -514,15 +552,16 @@ export const SupplierPackingMobile = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "editing" }),
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeVisible()
-    await expect(canvas.getByText("Ningbo warehouse", { exact: true })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Save draft" })).toBeVisible()
+    await expect(canvas.getByText("Supplier ships to Ningbo warehouse.", { exact: true })).toBeVisible()
   }
 })
 export const SupplierPackingReady = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "ready" }),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
-    await expect(canvas.getByText("540 of 540")).toBeVisible()
+    // The cartons header and the phone's action bar both count units; one shows at a time.
+    await expect(canvas.getAllByText("540 of 540 units").some((element) => element.checkVisibility())).toBe(true)
   }
 })
 export const SupplierPacked = meta.story({
@@ -575,9 +614,66 @@ export const ReceivingAddressStop = meta.story({
 export const SupplierFbaMixedCartons = meta.story({
   ...flow({ viewer: "supplier", initialState: "accepted", initialPacking: "ready", mixedFba: true }),
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("180 of 180")).toBeVisible()
+    // The cartons header and the phone's action bar both count units; one shows at a time.
+    await expect(canvas.getAllByText("180 of 180 units").some((element) => element.checkVisibility())).toBe(true)
     await expect(canvas.getAllByRole("region", { name: /^Carton [123]$/ })).toHaveLength(3)
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     await expect(canvas.queryByText(/Enter.*FNSKU/)).toBeNull()
+  }
+})
+
+export const SupplierPackOnOrder = meta.story({
+  ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "ready" }),
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Download packing list" })).toBeEnabled())
+    await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
+    await expect(canvas.getByRole("region", { name: "Purchase order documents" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
+    await expect(canvas.getByText("Packed", { exact: true })).toBeVisible()
+  }
+})
+
+export const SupplierPackedMobile = meta.story({
+  ...flow({ viewer: "supplier", initialState: "accepted", viaForwarder: true, initialPacking: "packed" }),
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Download packing list" })).toBeEnabled()
+    const heading = canvas.getByRole("heading", { name: "Shipment 1" })
+    await expect(heading.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
+  }
+})
+
+export const ShipmentDocumentsReady = meta.story({
+  ...flow({
+    viewer: "supplier",
+    initialState: "accepted",
+    viaForwarder: true,
+    initialPacking: "packed",
+    labelsReady: true
+  }),
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    const summary = within(canvas.getByRole("region", { name: "Shipment details" }))
+    await expect(summary.getByText("18", { exact: true })).toBeVisible()
+    await expect(summary.getByText("230.8 kg")).toBeVisible()
+    await expect(summary.getByText("1.79 m\u00b3")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download carton labels" })).toBeEnabled()
+    await expect(canvas.queryByRole("button", { name: "Download carrier labels" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Product labels" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(canvas.getByRole("button", { name: "Products (3)" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-WB-2210" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(canvas.getByRole("button", { name: "Back to order" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-WB-2210" }))
+    await waitFor(() => expect(page.getByRole("menuitem", { name: "FNSKU label" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await expect(canvas.getByRole("button", { name: "Download supplier pack" })).toBeEnabled()
+    await expect(canvas.getByRole("button", { name: "Product labels" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "View shipment" }))
   }
 })

@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { ChannelFilter } from "./overview-filter"
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Overview filter",
   component: ChannelFilter,
   args: {
     channels: [

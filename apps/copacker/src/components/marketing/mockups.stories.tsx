@@ -4,6 +4,7 @@ import { RestockShot } from "./mockups"
 
 // The hero's product shot at the app's own size, 1280 by 800, as the page scales it down.
 const meta = preview.meta({
+  title: "Components/Marketing/Mockups",
   component: RestockShot,
   parameters: { layout: "fullscreen" },
   decorators: [

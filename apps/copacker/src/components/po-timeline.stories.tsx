@@ -9,6 +9,7 @@ import { PoTimeline } from "./po-timeline"
 const actions = fn()
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/PO timeline",
   ...serverStory((props: ComponentProps<typeof PoTimeline>) => <PoTimeline {...props} />),
   args: {
     orderId,
@@ -55,7 +56,7 @@ export const PostComment = meta.story({
     await waitFor(() =>
       expect(actions).toHaveBeenCalledWith({
         action: "order.comment",
-        data: { orderId, message: "Labels are attached" }
+        data: { orderId, message: "Labels are attached", visibility: "internal" }
       })
     )
     // The box clears for the next comment.

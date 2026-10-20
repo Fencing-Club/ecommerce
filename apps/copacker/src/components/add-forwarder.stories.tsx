@@ -4,6 +4,7 @@ import { type ActionRequest, recordActions, serverError } from "@/stories/fixtur
 import { AddForwarder } from "./add-forwarder"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
+  title: "Components/Partners/Add forwarder",
   component: AddForwarder,
   args: { onCreated: fn() },
   beforeEach: ({ msw }) => {

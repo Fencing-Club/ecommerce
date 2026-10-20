@@ -7,6 +7,7 @@ import { Badge } from "./badge"
 const variants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const
 
 const meta = preview.meta({
+  title: "Foundations/Badge",
   component: Badge,
   args: { children: "Submitted" }
 })

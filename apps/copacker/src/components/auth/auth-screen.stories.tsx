@@ -3,7 +3,11 @@ import preview from "#.storybook/preview"
 import { skipAnimations } from "@/stories/fixtures/auth"
 import { AuthScreen } from "./auth-screen"
 
-const meta = preview.meta({ component: AuthScreen, beforeEach: () => skipAnimations() })
+const meta = preview.meta({
+  title: "Components/Auth/Auth screen",
+  component: AuthScreen,
+  beforeEach: () => skipAnimations()
+})
 export const SignIn = meta.story({
   args: { page: { kind: "login", next: "/orders", failed: true } },
   play: async ({ canvas }) => {

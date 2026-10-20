@@ -19,6 +19,7 @@ function inWorkspace(kind: WorkspaceKind) {
 }
 
 const meta = preview.meta({
+  title: "Components/App shell/App sidebar",
   component: AppSidebar,
   args: inWorkspace("buyer"),
   parameters: {

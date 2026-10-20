@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "采购订单状态",
-    "tabs": {
-      "all": {
-        "label": "全部",
-        "empty": "没有采购订单"
-      },
-      "draft": {
-        "label": "草稿",
-        "empty": "没有草稿"
-      },
-      "submitted": {
-        "label": "供应商处理中",
-        "empty": "没有供应商处理中的采购订单"
-      },
-      "closed": {
-        "label": "已关闭",
-        "empty": "没有已关闭的采购订单"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "采购订单",
-      "supplier": "供应商",
-      "destination": "目的地",
-      "created": "创建时间",
-      "status": "状态",
-      "value": "金额"
-    },
-    "products": "{count, plural, other {# 个产品}}"
-  },
   "index": {
     "title": "采购订单",
     "supplierTitle": "订单",
@@ -46,11 +16,6 @@
         "description": "邀请供应商，然后创建你的第一个采购订单。",
         "action": "邀请供应商"
       }
-    },
-    "stats": {
-      "open": "未结订单",
-      "withSuppliers": "供应商处理中",
-      "drafts": "草稿"
     },
     "empty": {
       "guidedTitle": "从这里开始你的下一批货件",
@@ -280,7 +245,16 @@
       "label": "评论",
       "placeholder": "发表评论…",
       "post": "发布",
-      "required": "请输入评论"
+      "required": "请输入评论",
+      "visibility": "评论可见范围",
+      "internal": "内部评论",
+      "messageSupplier": "给供应商留言",
+      "messageCustomer": "给客户留言",
+      "internalHint": "只有您的团队可以查看此评论。",
+      "supplierHint": "您的团队和供应商可以查看此消息。",
+      "customerHint": "您的团队和客户可以查看此消息。",
+      "sharedSupplier": "已与供应商共享",
+      "sharedCustomer": "已与客户共享"
     },
     "events": {
       "created": "已创建采购订单",
@@ -310,6 +284,7 @@
       "packingSplit": "已提交装箱信息；已拆分为 {networks} 货件并排队提交至 Amazon",
       "forwarderShipped": "{forwarder} 已发货：{tracking}",
       "packingReady": "已提交装箱信息；可以发货",
+      "packingReopened": "已重新打开装箱以进行修改",
       "invoiceEntered": "已录入发票，其中包含对采购订单的修改",
       "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批",
       "existingAwdLinked": "已关联现有 AWD 货件 {shipmentId}",
@@ -430,9 +405,16 @@
     "pickupAddress": "提货地址",
     "otherAddress": "其他地址",
     "readyForPickup": "可提货日期",
+    "shipFrom": "提货地址",
+    "readyDate": "可提货日期",
     "addCartonProduct": "向纸箱添加商品",
     "removeCartonProduct": "从纸箱移除商品 {number}",
-    "finishPacking": "完成装箱"
+    "finishPacking": "完成装箱",
+    "addNewAddress": "添加地址",
+    "chooseAddress": "提货地址",
+    "packedUnits": "{count} / {available} 件",
+    "leftCount": "还剩 {count}",
+    "overCount": "多出 {count}"
   },
   "paymentTerms": {
     "net7": "7 天账期",
@@ -459,6 +441,7 @@
     "other": "其他"
   },
   "cartonEditor": {
+    "addProducts": "添加商品到纸箱",
     "addProductsTo": "向纸箱 {carton} 添加商品",
     "shipmentProducts": "此货件中的商品",
     "searchProducts": "搜索此货件中的商品",
@@ -484,18 +467,24 @@
     "actions": "纸箱 {carton} 操作",
     "duplicate": "复制纸箱",
     "delete": "删除纸箱",
-    "quantityPerCarton": "数量 / 箱",
-    "packsPerCarton": "包装数 / 箱",
-    "unitsPerCarton": "件数 / 箱",
+    "quantityPerCarton": "数量",
     "productQuantity": "{sku}：纸箱 {carton} 每箱数量",
     "unitCount": "{count} 件",
     "removeProduct": "从纸箱 {carton} 中移除 {sku}",
     "product": "产品",
     "leftToPack": "待装箱",
     "packCount": "{count} 包",
-    "addToCarton": "添加到纸箱 {carton}",
+    "addToCarton": "添加到纸箱",
     "selectedCount": "已选择 {count} 项",
-    "cartonGroup": "箱 {cartons}"
+    "cartonGroup": "箱 {cartons}",
+    "addProductsToCartons": "向纸箱 {cartons} 添加商品",
+    "rules": {
+      "unitsPerCarton": "数量：每箱 {units, number} 件可售商品，超过 {receiver} 的 {max, number} 件上限。请拆分到更小的纸箱中。",
+      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）。} other {{receiver} 允许此纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）。}}",
+      "cartonWeight": "重量：{weight, number} 千克，超过 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请减轻每箱重量。",
+      "oneSku": "商品：{receiver} 要求每箱只装一个 SKU。请将这些 SKU 分装到不同纸箱。",
+      "samePacking": "装箱模板：此 SKU 在本次发货的其他纸箱中使用{difference, select, units {每箱 {units, number} 件} other {{length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克的纸箱}}。请为此 SKU 的每个纸箱使用相同的装箱模板。"
+    }
   },
   "cartonImport": {
     "title": "导入纸箱",
@@ -530,11 +519,19 @@
       "worksheet": "文件需要包含名为 Cartons 的工作表。",
       "unreadable": "无法读取此文件。请使用基于模板的 XLSX 或 CSV 文件。",
       "number": "请在 {value} 中输入有效的正数。",
-      "sku": "SKU 不属于此货件：{value}。",
+      "sku": "供应商 SKU {value} 和产品信息必须与此货件中的唯一产品匹配。",
       "cartonId": "请输入 1–60 个字符的纸箱编号。",
       "measurements": "同一纸箱的各行必须具有相同的箱数、尺寸和重量。",
       "duplicateProduct": "此纸箱重复列出了 {value}。",
       "limit": "每个货件最多包含 1,000 箱。"
+    },
+    "template": {
+      "identity": "请勿修改预填的供应商 SKU、产品、款式和每包件数。如有缺失或错误，请让买家更正。",
+      "rows": "每个纸箱中的每种产品填写一行。额外纸箱可复制产品行。同箱产品使用相同的 Carton ID。不使用的包装单元格留空。",
+      "cartons": "Carton ID 是您的纸箱编号，不是 Amazon 标签编号。单个纸箱使用 A1、A2 等编号，Carton count 填 1。相同纸箱可填写大于 1 的数量：A1 数量为 3 时生成 A1、A1-2 和 A1-3。已有编号会跳过。",
+      "quantity": "Quantity per carton 按包计数。例如每包 2 件时，数量 10 表示 20 件。同组相同纸箱必须装有相同产品和数量。",
+      "measurements": "尺寸单位为厘米，重量单位为千克。相同 Carton ID 的每一行都应填写相同的纸箱数量、尺寸和重量。",
+      "format": "填写白色包装单元格。保留英文列标题和 Cartons 工作表名称。上传 XLSX 工作簿，或将 Cartons 表导出为 CSV。"
     }
   }
 }

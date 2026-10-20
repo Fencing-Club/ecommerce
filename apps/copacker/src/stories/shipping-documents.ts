@@ -1,5 +1,6 @@
 import { expect, within } from "storybook/test"
-import { ShippingDocumentPreview, shippingSettingsKey } from "@/components/shipping-document-preview"
+import { ShippingDocumentPreview } from "@/components/shipping-document-preview"
+import { shippingSettingsKey } from "@/documents/shipping-model"
 import { shippingOverview, shippingScenarios } from "./fixtures/shipping-documents"
 
 export function scenario(id: string) {

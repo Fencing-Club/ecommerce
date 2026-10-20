@@ -87,6 +87,8 @@ describe("FBA inventory ledger", () => {
       dataEndTime: "2026-09-02T00:00:00Z"
     }
     expect(await make("CANCELLED").report(input, { deadline: Date.now() + 60000 })).toBeNull()
-    await expect(make("FATAL").report(input, { deadline: Date.now() + 60000 })).rejects.toThrow("couldn't build")
+    await expect(make("FATAL").report(input, { deadline: Date.now() + 60000 })).rejects.toThrow(
+      "Amazon report processing failed"
+    )
   })
 })

@@ -7,6 +7,7 @@ import { SignUpForm } from "./sign-up-form"
 const actions = actionRecorder()
 
 const meta = preview.meta({
+  title: "Components/Auth/Sign up form",
   component: SignUpForm,
   args: { next: "/" },
   beforeEach: ({ msw }) => {

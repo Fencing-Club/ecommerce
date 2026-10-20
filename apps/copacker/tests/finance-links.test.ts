@@ -24,7 +24,7 @@ import {
   shopifyCustomers
 } from "../src/server/overview-sales"
 import type { Session } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 describe("freight by shipment", () => {
   it("reads the inbound shipment a freight charge names", () => {
@@ -112,7 +112,7 @@ describe("finance links", () => {
 
   beforeAll(async () => {
     context.current = database
-    await applyMigrations(pg)
+    await applySchema(pg)
     await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
     await database.insert(tables.exchangeRates).values([
       { currency: "CAD", day: "2026-09-01", perUsd: "1.25" },
@@ -223,6 +223,8 @@ describe("finance links", () => {
       orderId: id,
       orderedAt: new Date(at),
       data: {
+        tags: [],
+        transactions: [],
         id,
         name: "#1",
         createdAt: at,
@@ -233,6 +235,7 @@ describe("finance links", () => {
         ...(customerId && { customerId }),
         lines: [
           {
+            discountAllocations: [],
             id: `${id}-l`,
             quantity: 1,
             currentQuantity: 1,

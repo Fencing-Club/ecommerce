@@ -114,7 +114,7 @@ kept with that partner and change through the partner's commands.
 | order.submit | id, revision | Buyer, Orders: Edit. Sends the PO, emails a supplier that has joined, stores the PO PDF and creates the first packing draft; returns ok and shipmentId |
 | order.delete | id | Buyer, Orders: Edit. Deletes a draft with its documents, history and landed costs; a PO import saved as that draft goes back to review; returns redirect |
 | order.close | id | Buyer, Orders: Edit. Closes a sent PO: unpacked shipments are cancelled; refused unless every shipment is received, cancelled, or still packing with no Amazon request in progress |
-| order.comment | orderId, message | Orders: View; a comment on the PO's timeline |
+| order.comment | orderId, message, visibility (`internal` or `shared`) | Orders: View; internal comments are visible only to the authenticated workspace, shared comments to the buyer and supplier. Existing comments remain shared. |
 | landedCost.create | orderId, kind: freight, duty or other, description, amount | Buyer, Orders: Edit; returns the cost |
 | landedCost.delete | id | Buyer, Orders: Edit |
 | monthlyCost.create, monthlyCost.delete | cost fields, or id | Buyer admin; costs paid monthly that no platform reports |
@@ -134,12 +134,13 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.check | id, optional packing | Shipments: Edit. Read-only preflight of the given packing or the saved draft |
 | shipment.submit | id, revision, optional packing | Shipments: Edit. Submits packing, reserves quantities, then queues approval, Amazon creation, or (not to Amazon) marks it ready; returns `{approval}` |
 | shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit, prices. Approves the invoice's changes as the PO's next revision, saves supplier SKUs, and with updateCost writes unit costs to Shopify |
+| shipment.reopenPacking | id, revision | Shipments: Edit. Returns a packed shipment to packing, with its cartons as the draft, until the buyer starts the Amazon shipment |
 | shipment.correct | id, reason | Shipments: Edit. Moves the shipment to correction and outdates its documents |
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
-| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
+| shipment.release | id, revision, optional bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
@@ -207,6 +208,15 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   has neither.
 - `GET /api/orders/:id/labels/:itemId`: one line's product label; 404 when it needs none or can't be made yet.
 - `GET /api/orders/:id/labels/warning`: the PO's suffocation warning sheet, when a line needs it.
+- `GET /api/shipments/:id/labels`: Shipments. The product labels of the lines a shipment carries, for whoever packs
+  it, including members who can't open purchase orders. `item` narrows them to one line; `kind` is one label type its
+  packing details ask for, `sku`, `fnsku` or `suffocation` (the warning sheet), or `all` (the default). Choking hazard
+  labels come from the buyer and aren't made here. 404 when there's nothing to print or the label can't be made yet.
+- `GET /api/shipments/:id/packing-list`: Shipments, with the same access as its labels. Once packing is finished
+  (`packed` and every later state, but not a correction or a cancellation), `{ data }`: the packing list's document
+  data, which the browser renders into the PDF. It lists the cartons and products, without prices, label assignments or
+  the destination's address, so it needs neither Amazon's labels nor the released packet. 409 with `{ error }` before
+  packing is finished or when the cartons can't make a packing list.
 - `POST /api/orders/:id/proposal` `{revision, proposal}`: supplier, Orders: Edit. Proposes changes to a sent PO:
   quantities, prices, added and removed products, payment terms and ready date. One can be pending at a time; packing
   waits while it is.
@@ -284,14 +294,21 @@ the user. `GET /api/documents/:id` authorizes access to the order and returns a 
 can't be downloaded. Suppliers can't download carton or shipping labels before release. The PO and commercial invoice
 need prices. A forwarder reads only the invoice, packing list, carton labels and shipping labels.
 
+Adding `?bundle=true` to a carton or shipping label download combines the current shipment revision's labels of that
+type into one PDF, in numeric carton order. Carton and carrier labels stay separate. Original page sizes are preserved;
+all source documents and workspace permissions are checked again after assembly. The PO and shipment document lists
+show one download per label type and shipment. Individual source files remain stored for carton-to-label mapping.
+
 Sending a PO stores its PDF with the PO; a storage failure is logged as `po_document_failed` and doesn't undo sending,
 since the PDF is made again when it's emailed or downloaded.
 
-`GET /api/shipments/:id/packet` returns the released supplier packet as one PDF: packing list, checklist, the product
-labels and suffocation warning sheet for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels
-and the buyer's shipping labels. Original page dimensions are preserved; print at actual size. The packing list shows
-supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg and the Amazon label number (an AWD SSCC
-or an FBA box ID), with the destination warehouse codes as its ship-to.
+`GET /api/shipments/:id/packet` serves the released supplier packet's label sections, and the browser assembles the
+packet in this order: the packing list, the checklist, then, for a shipment with carton labels, the carton label
+reference, Amazon's carton labels and the buyer's shipping labels, then the product labels and suffocation warning sheet
+for the lines it carries. Original page dimensions are preserved; print at actual size. The packing list shows
+supplier carton number, buyer SKU, supplier SKU, pieces/sellable units and cm/kg, with the destination warehouse codes as
+its ship-to. The carton label reference lists each carton's Amazon label number (an AWD SSCC or an FBA box ID) and
+carrier label.
 
 A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
 and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the
@@ -620,3 +637,9 @@ receipt resources under `/api/analytics`, including audited revisions, exact mon
 quantity limits. These records do not yet change Overview or calculate historical COGS.
 
 See [historical landed costs and FIFO](inventory-costing.md) for landed charges, depletion records and calculation resources.
+
+## Inventory snapshots
+
+Shopify stock snapshots always include product IDs, product titles, variation titles and nullable image URLs.
+Products are grouped and searched by product ID; variant IDs are not substitute product identities. The inventory API
+does not expose an upgrade or resync flag for old snapshots. Sync remains available for ordinary inventory refreshes.

@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, graphql: vi.fn<(query: string) => Promise<unknown>>() }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { syncAmazonExtraEvidence } from "../src/server/amazon-extra-evidence"
@@ -13,7 +14,7 @@ import { analyticsJob, queueShopifyEconomics } from "../src/server/analytics-job
 vi.mock("../src/server/connections", () => ({ shopifyFor: async () => ({ graphql: context.graphql }) }))
 import { economicsQueries } from "@repo/aisle/shopify-economics"
 import { importAnalyticsCosts, getCostImport, previewAnalyticsCosts } from "../src/server/analytics-cost-imports"
-import { listIngestionEvidence } from "../src/server/analytics-ingestion"
+import { ingestionStatus, listIngestionEvidence } from "../src/server/analytics-ingestion"
 import { syncShopifyEconomics } from "../src/server/shopify-economics"
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables }),
@@ -21,7 +22,7 @@ const pg = new PGlite(),
   otherId = randomUUID()
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -45,6 +46,75 @@ const expense = {
   evidence: "Carrier invoice",
   attribution: { kind: "shared", reason: "No order reference" }
 }
+it("reconciles receipt movements only within the seller, workspace and marketplace", async () => {
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "amazon",
+    externalAccountId: "seller",
+    dataset: "fba_inbound_receipts",
+    sourceId: "SHIP",
+    data: { status: "CLOSED", items: [{ sku: "SKU", sent: 8, received: 8, unit: "UNITS" }] }
+  })
+  const movement = {
+    orgId,
+    externalAccountId: "seller",
+    marketplaceId: "ATVPDKIKX0DER",
+    eventDay: "2026-09-01",
+    eventType: "Receipts",
+    referenceId: "SHIP",
+    sku: "SKU",
+    quantity: 8
+  }
+  await database
+    .insert(tables.amazonInventoryMovements)
+    .values([
+      movement,
+      { ...movement, orgId: otherId, quantity: 99 },
+      { ...movement, externalAccountId: "other", quantity: 99 },
+      { ...movement, marketplaceId: "other", quantity: 99 }
+    ])
+  const query = {
+    source: "amazon" as const,
+    externalAccountId: "seller",
+    dataset: "fba_inbound_receipts" as const,
+    page: 0
+  }
+  const result = await listIngestionEvidence(orgId, query)
+  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
+    status: "quantity_agrees",
+    movementQuantity: 8
+  })
+  await database.insert(tables.amazonInventoryMovements).values({ ...movement, quantity: 1 })
+  await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toThrow(
+    "Data changed"
+  )
+})
+it("reports missing cost basis as unknown while excluding retired and foreign inputs", async () => {
+  for (const [workspace, retiredAt, sourceKey] of [
+    [orgId, null, "active"],
+    [orgId, "2026-01-02", "retired"],
+    [otherId, null, "foreign"]
+  ] as const) {
+    await database.execute(sql`
+      insert into inventory_basis_records
+        ("orgId", kind, "shopifyDomain", "variantId", "occurredAt", "sourceKey", quantity, "piecesPerUnit", data, request, "createdBy", "retiredAt")
+      values (${workspace}, 'purchase', 'shop', 'variant', '2026-01-01', ${sourceKey}, 1, 1, '{}', '{}', 'test', ${retiredAt})
+    `)
+    await database.execute(sql`
+      insert into inventory_landed_charges
+        (id, "orgId", "sourceKey", "occurredAt", data, allocations, "createdBy", "retiredAt")
+      values (${randomUUID()}, ${workspace}, ${sourceKey}, '2026-01-01', '{}', '[]', 'test', ${retiredAt})
+    `)
+  }
+  const status = await ingestionStatus(orgId)
+  expect(status.accountingInputs.counts).toEqual(
+    expect.arrayContaining([
+      { input: "purchase", basis: "unknown", count: 1 },
+      { input: "landed_charges", basis: "unknown", count: 1 }
+    ])
+  )
+  expect(status.accountingInputs.coverage).toBe("not_assessed")
+})
 it("imports atomically, replays safely and rejects other workspaces", async () => {
   const key = randomUUID(),
     id = randomUUID(),
@@ -101,6 +171,58 @@ it("filters marketplace copies and scopes paginated financial evidence", async (
     page: 0
   })
   expect(result.rows.map((r) => r.sourceId)).toEqual(["2"])
+})
+it("reconciles saved Shopify evidence with only the same account's balances and invalidates changed balances", async () => {
+  const amount = { amount: "10", currencyCode: "USD" }
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "shopify",
+    externalAccountId: "shop",
+    dataset: "order_economics",
+    sourceId: "ORDER",
+    data: {
+      tags: [],
+      test: false,
+      currentTotalPriceSet: { shopMoney: amount },
+      refunds: [],
+      transactions: [
+        {
+          id: "T",
+          kind: "SALE",
+          status: "SUCCESS",
+          gateway: "shopify_payments",
+          fees: [],
+          amountSet: { shopMoney: amount }
+        }
+      ]
+    }
+  })
+  const row = {
+    orgId,
+    externalAccountId: "shop",
+    transactionId: "B",
+    orderId: "ORDER",
+    type: "CHARGE",
+    processedAt: new Date("2025-01-01"),
+    currency: "USD",
+    amountMinor: 1000,
+    feeMinor: 0,
+    netMinor: 1000,
+    data: { amount, fee: { ...amount, amount: "0" }, net: amount }
+  }
+  await database
+    .insert(tables.shopifyBalanceTransactions)
+    .values([row, { ...row, orgId: otherId }, { ...row, externalAccountId: "foreign" }])
+  const query = { source: "shopify" as const, externalAccountId: "shop", dataset: "order_economics" as const, page: 0 }
+  const result = await listIngestionEvidence(orgId, query)
+  expect(result.rows[0]?.paymentReconciliation).toMatchObject({
+    orderTotalCheck: "balanced",
+    balanceComparison: { totals: [{ rows: 1 }], arithmetic: [{ transactionId: "B", check: "balanced" }] }
+  })
+  await database.update(tables.shopifyBalanceTransactions).set({ feeMinor: 100 })
+  await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toMatchObject({
+    code: "snapshot_changed"
+  })
 })
 it("preserves missing receipt quantities and isolates network failures", async () => {
   await database
@@ -376,3 +498,114 @@ it.each([401, 403, 429, 503])(
     expect(feeds.find((row) => row.dataset === "awd_costs")?.state.error).toBeNull()
   }
 )
+
+it("keeps successful receipt snapshots when another shipment has an invalid document", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  await syncAmazonReceipts(
+    {
+      orgId,
+      externalAccountId: "seller",
+      revision: 1,
+      amazon: {
+        fbaShipments: async () => [],
+        fbaReceiptItems: async () => [],
+        awdShipments: async () =>
+          ["good", "bad", "later"].map((shipmentId) => ({
+            shipmentId,
+            orderId: "order",
+            status: "CLOSED",
+            createdAt: null
+          })),
+        awdReceiptItems: async (shipmentId) => {
+          if (shipmentId === "bad") {
+            throw new Error("Invalid document")
+          }
+          return {
+            shipmentId,
+            shipmentStatus: "CLOSED",
+            shipmentSkuQuantities: [{ sku: "SKU", expectedQuantity: { quantity: 2, unitOfMeasurement: "UNITS" } }]
+          }
+        }
+      }
+    },
+    async () => undefined
+  )
+  expect((await database.select().from(tables.analyticsEvidence)).map((row) => row.sourceId).sort()).toEqual([
+    "good",
+    "later"
+  ])
+  expect(
+    (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "awd_inbound_receipts")?.state
+      .error
+  ).toBe("collection_failed")
+})
+
+it("stops receipt requests when the sync revision changes before a checkpoint", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  const receipt = vi.fn<Amazon["fbaReceiptItems"]>(async () => {
+    await database.update(tables.salesSyncs).set({ revision: 2 })
+    return []
+  })
+  const awdShipments = vi.fn<Amazon["awdShipments"]>(async () => [])
+  await expect(
+    syncAmazonReceipts(
+      {
+        orgId,
+        externalAccountId: "seller",
+        revision: 1,
+        amazon: {
+          fbaShipments: async () =>
+            ["first", "second"].map((shipmentId) => ({ shipmentId, name: null, status: "CLOSED" })),
+          fbaReceiptItems: receipt,
+          awdShipments,
+          awdReceiptItems: async (shipmentId) => ({ shipmentId, shipmentStatus: "CLOSED" })
+        }
+      },
+      async () => undefined
+    )
+  ).rejects.toThrow("Analytics account changed")
+  expect(receipt).toHaveBeenCalledTimes(1)
+  expect(awdShipments).not.toHaveBeenCalled()
+  expect(await database.select().from(tables.analyticsEvidence)).toEqual([])
+})
+
+it("stops both receipt networks after recording a transient checkpoint failure", async () => {
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" })
+  await database.insert(tables.salesSyncs).values({ orgId, source: "amazon", externalAccountId: "seller", revision: 1 })
+  const receipt = vi.fn<Amazon["fbaReceiptItems"]>(async () => [])
+  const awdShipments = vi.fn<Amazon["awdShipments"]>(async () => [])
+  const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(new Error("Database unavailable"))
+  try {
+    await syncAmazonReceipts(
+      {
+        orgId,
+        externalAccountId: "seller",
+        revision: 1,
+        amazon: {
+          fbaShipments: async () =>
+            ["first", "second"].map((shipmentId) => ({ shipmentId, name: null, status: "CLOSED" })),
+          fbaReceiptItems: receipt,
+          awdShipments,
+          awdReceiptItems: async (shipmentId) => ({ shipmentId, shipmentStatus: "CLOSED" })
+        }
+      },
+      async () => undefined
+    )
+    expect(receipt).toHaveBeenCalledTimes(1)
+    expect(awdShipments).not.toHaveBeenCalled()
+    expect(
+      (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "fba_inbound_receipts")?.state
+        .error
+    ).toBe("collection_failed")
+  } finally {
+    transaction.mockRestore()
+  }
+})

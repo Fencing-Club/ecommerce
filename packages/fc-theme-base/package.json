@@ -17,7 +17,7 @@
   "devDependencies": {
     "@shopify/cli": "^4.6.1",
     "@vitest/coverage-v8": "^4.1.10",
-    "happy-dom": "^20.11.1",
+    "happy-dom": "^21.0.3",
     "liquidjs": "^10.27.2",
     "vitest": "^4.1.10"
   }

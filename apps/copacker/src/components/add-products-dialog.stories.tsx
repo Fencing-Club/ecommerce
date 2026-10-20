@@ -9,6 +9,7 @@ const sand = catalogProducts[0]!
 const napkins = catalogProducts[2]!
 
 const meta = preview.meta({
+  title: "Components/Purchase orders/Add products dialog",
   component: AddProductsDialog,
   args: {
     added: new Set<string>(),

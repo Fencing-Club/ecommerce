@@ -7,6 +7,7 @@ import { Button } from "./ui/button"
 
 const manage = fn()
 const meta = preview.meta({
+  title: "Components/Integrations/Integration card",
   component: IntegrationCard,
   args: {
     store: "shopify" as const,

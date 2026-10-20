@@ -23,6 +23,7 @@ function saves(respond?: (url: string) => Response | undefined) {
 const panel = () => screen.findByRole("dialog")
 
 const meta = preview.meta({
+  title: "Components/Products/Product details",
   component: ProductDetails,
   args: { product: editable(1), open: true, onOpenChange: fn(), onSaved: fn() },
   beforeEach: ({ msw }) => {

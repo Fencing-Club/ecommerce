@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from "./card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible"
 
 const meta = preview.meta({
+  title: "Foundations/Collapsible",
   component: Collapsible,
   args: { onOpenChange: fn() },
   // A card that opens to show a form, as the shipment actions use it.

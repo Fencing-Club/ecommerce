@@ -12,6 +12,7 @@ const agl = {
   instructions: ""
 } as const
 const meta = preview.meta({
+  title: "Components/Shipments/Shipment transport",
   component: ShipmentTransportSettings,
   args: { id: shipmentId, revision: 1, initial: null, hasForwarder: false },
   beforeEach: ({ msw }) => {

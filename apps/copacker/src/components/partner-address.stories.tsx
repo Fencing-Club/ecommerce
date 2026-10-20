@@ -21,6 +21,7 @@ const forwarder = { kind: "forwarder", id: forwarderRecordId, name: "Bayline Fre
 const onSaved = fn()
 
 const meta = preview.meta({
+  title: "Components/Partners/Partner address",
   component: PartnerAddressSheet,
   args: {
     partner: supplier,

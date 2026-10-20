@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { Amazon, ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
+import { applySchema } from "./database"
 import { reimbursementReport } from "./fixtures/amazon-reimbursements"
-import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { amazonReimbursementsStatus, syncAmazonReimbursements } from "../src/server/amazon-reimbursements"
@@ -21,7 +21,7 @@ const owned = vi.fn<() => Promise<void>>()
 const input = { orgId, externalAccountId: "SELLER1", revision: 1, amazon: { report } }
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -228,4 +228,65 @@ describe("Amazon reimbursement ingestion", () => {
     })
     expect(state.windows[1]?.status).toBe("not_imported")
   })
+})
+
+it("recovers a failed repeat refresh using exact recent daily reports without creating duplicates", async () => {
+  await syncAmazonReimbursements(input, owned, now)
+  await database
+    .update(tables.amazonReimbursementReports)
+    .set({ status: "failed", errorCode: "report_failed" })
+    .where(eq(tables.amazonReimbursementReports.from, new Date("2026-10-01")))
+  const calls: Array<{ method: string; url: URL }> = []
+  const transport = vi.fn<typeof fetch>(async (url, init) => {
+    const parsed = new URL(String(url))
+    if (parsed.hostname === "api.amazon.com") {
+      return Response.json({ access_token: "test", expires_in: 3600 })
+    }
+    calls.push({ method: init?.method ?? "GET", url: parsed })
+    if (parsed.hostname === "reports.example") {
+      return new Response(reimbursementReport(parsed.pathname === "/doc-oct" ? [{}] : []))
+    }
+    if (parsed.pathname === "/reports/2021-06-30/reports" && init?.method === "GET") {
+      return Response.json({
+        reports: [
+          {
+            reportId: "oct",
+            reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+            marketplaceIds: ["ATVPDKIKX0DER"],
+            processingStatus: "DONE",
+            reportDocumentId: "doc-oct",
+            createdTime: "2026-10-16T10:00:00Z",
+            dataStartTime: "2026-10-01T00:00:00Z",
+            dataEndTime: "2026-10-15T23:59:59Z"
+          },
+          {
+            reportId: "sep",
+            reportType: "GET_FBA_REIMBURSEMENTS_DATA",
+            marketplaceIds: ["ATVPDKIKX0DER"],
+            processingStatus: "DONE",
+            reportDocumentId: "doc-sep",
+            createdTime: "2026-10-16T10:00:00Z",
+            dataStartTime: "2026-09-01T00:00:00Z",
+            dataEndTime: "2026-09-30T23:59:59Z"
+          }
+        ]
+      })
+    }
+    if (/^\/reports\/2021-06-30\/reports\/(oct|sep)$/.test(parsed.pathname)) {
+      return Response.json({ processingStatus: "DONE", reportDocumentId: `doc-${parsed.pathname.split("/").at(-1)}` })
+    }
+    if (/^\/reports\/2021-06-30\/documents\/doc-(oct|sep)$/.test(parsed.pathname)) {
+      return Response.json({ url: `https://reports.example/${parsed.pathname.split("/").at(-1)}` })
+    }
+    throw new Error("Unexpected provider request")
+  })
+  const amazon = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport)
+  await syncAmazonReimbursements({ ...input, amazon }, owned, now)
+  expect(calls.every((call) => call.method === "GET")).toBe(true)
+  expect(calls[0]?.url.searchParams.get("createdSince")).toBe("2026-10-16T08:00:00.000Z")
+  expect((await amazonReimbursementsStatus(orgId, "SELLER1", now)).windows.every((window) => window.complete)).toBe(
+    true
+  )
+  expect(await database.select().from(tables.amazonReimbursements)).toHaveLength(1)
+  expect(await database.select().from(tables.amazonTransactions)).toEqual([])
 })

@@ -3,12 +3,14 @@ import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-docum
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/Documents"
+  title: "Components/Shipping documents/Preview"
 })
 
 export const PacketOverview = meta.story({ args: { initialKind: "overview" }, play: ready })
 
 export const PackingList = meta.story({ play: ready })
+
+export const MixedCartons = meta.story({ args: { data: scenario("mixed-cartons") }, play: ready })
 
 export const GroupedMultipacks = meta.story({ args: { data: scenario("grouped-multipacks") }, play: ready })
 

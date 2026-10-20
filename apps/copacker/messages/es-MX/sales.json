@@ -27,7 +27,12 @@
     "recentOrders": "<figure>{count, number}</figure> {count, plural, one {pedido} other {pedidos}}",
     "recentUnits": "<figure>{count, number}</figure> {count, plural, one {unidad} other {unidades}}",
     "orders": "Pedidos",
-    "sourceOrders": "Pedidos de {source}"
+    "sourceOrders": "Pedidos de {source}",
+    "financialData": "Datos financieros",
+    "amazonFinancialData": "Datos financieros de Amazon",
+    "financialFailed": "Fallaron algunos informes financieros. Los datos guardados se conservan.",
+    "financialImported": "Informes financieros importados",
+    "financialIncomplete": "Algunos informes financieros aún no están disponibles."
   },
   "list": {
     "label": "Pedidos",

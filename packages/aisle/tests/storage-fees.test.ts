@@ -66,6 +66,17 @@ describe("Amazon storage fee reports", () => {
     })
     expect(parseAgedStorageFees(report({ ...aged, "snapshot-date": "2024-02-29" }))[0]?.periodDay).toBe("2024-02-29")
   })
+  it.each([
+    ["2026-09-15T09:03:00+00:00", "2026-09-15"],
+    ["2026-09-15T00:00:00Z", "2026-09-15"],
+    ["2026-09-01T00:30:00+14:00", "2026-09-01"],
+    ["2026-09-30T23:30:00-07:00", "2026-09-30"],
+    ["9/5/2026", "2026-09-05"]
+  ])("retains the assessed calendar day and raw timestamp %s", (date, expected) => {
+    const [row] = parseAgedStorageFees(report({ ...aged, "snapshot-date": date }))
+    expect(row?.periodDay).toBe(expected)
+    expect(row?.data["snapshot-date"]).toBe(date)
+  })
   it("distinguishes missing values from zero and preserves duplicate source rows", () => {
     expect(
       parseMonthlyStorageFees(
@@ -88,7 +99,10 @@ describe("Amazon storage fee reports", () => {
   })
   it.each<Record<string, string>>([
     { "snapshot-date": "02/29/2026" },
-    { "snapshot-date": "2026-09-15T00:00:00Z" },
+    { "snapshot-date": "2026-09-15T00:00:00" },
+    { "snapshot-date": "2026-02-29T00:00:00Z" },
+    { "snapshot-date": "2026-09-15T25:00:00Z" },
+    { "snapshot-date": "2026-09-15T00:00:00Zjunk" },
     { "qty-charged": "1.5" },
     { "amount-charged": "Infinity" }
   ])("rejects malformed assessed values %j", (override) => {

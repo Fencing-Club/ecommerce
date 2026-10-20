@@ -13,6 +13,7 @@ A supplier can work for several buyers.
 - A PO has one destination: Amazon, or one of the buyer's own locations. A freight forwarder is only a stop on the way
   (`via`), never a destination.
 - Quantities and prices are per piece. A pack size converts pieces into Amazon's sellable units.
+  The order editor and detail page show the pack size beneath the product and the pack count beneath the quantity.
 - The draft editor and saved PO group Amazon products into separate AWD US and FBA shipment cards. The group names
   carry the destination and shipment total, so product rows do not repeat the destination. Totals include the product's
   supplier service costs and update with quantities, costs and product moves; PO-level charges remain in the overall

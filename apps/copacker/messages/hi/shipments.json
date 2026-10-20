@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "शिपमेंट",
-    "stats": {
-      "packing": "पैकिंग जारी",
-      "actionNeeded": "कार्रवाई ज़रूरी",
-      "waitingOnBuyer": "खरीदार का इंतज़ार",
-      "readyForPickup": "पिकअप के लिए तैयार"
-    },
     "amazonFailed": {
       "title": "Amazon शिपमेंट लोड नहीं हुए",
       "description": "फिर से कोशिश करने के लिए पेज रीफ़्रेश करें।"
     },
-    "tabsLabel": "शिपमेंट की स्थिति",
-    "tabs": {
-      "active": "सक्रिय",
-      "received": "प्राप्त",
-      "cancelled": "रद्द",
-      "all": "सभी"
-    },
-    "empty": {
-      "active": "कोई सक्रिय शिपमेंट नहीं",
-      "received": "कोई प्राप्त शिपमेंट नहीं",
-      "cancelled": "कोई रद्द शिपमेंट नहीं",
-      "all": "कोई शिपमेंट नहीं"
-    },
-    "columns": {
-      "shipment": "शिपमेंट",
-      "supplier": "सप्लायर",
-      "customer": "ग्राहक",
-      "destination": "गंतव्य",
-      "cartons": "कार्टन",
-      "readyDate": "तैयार होने की तारीख",
-      "status": "स्थिति"
-    },
-    "shipmentNumber": "शिपमेंट {number}",
-    "opensInSellerCentral": "(Seller Central में खुलता है)",
     "none": {
       "title": "अभी कोई शिपमेंट नहीं",
       "buyerDescription": "भेजे गए खरीद ऑर्डर से शुरू करें।",
@@ -51,7 +21,6 @@
     },
     "metaTitle": "शिपमेंट",
     "title": "शिपमेंट {number}",
-    "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
     "parents": {
       "purchaseOrders": "खरीद ऑर्डर",
       "orders": "ऑर्डर"
@@ -63,7 +32,8 @@
       "retry": "शिपमेंट फिर से आज़माएं",
       "cancelInAmazon": "Amazon में रद्द करें",
       "getAmazonLabels": "Amazon लेबल प्राप्त करें",
-      "createAmazonShipment": "Amazon शिपमेंट बनाएँ"
+      "createAmazonShipment": "Amazon शिपमेंट बनाएँ",
+      "editPacking": "पैकिंग संपादित करें"
     },
     "needsAttention": "ध्यान देना ज़रूरी",
     "changesWaiting": {
@@ -115,7 +85,24 @@
     },
     "documents": {
       "title": "दस्तावेज़",
-      "empty": "अभी कोई दस्तावेज़ नहीं"
+      "empty": "अभी कोई दस्तावेज़ नहीं",
+      "packingList": "पैकिंग लिस्ट",
+      "downloadPackingList": "पैकिंग लिस्ट डाउनलोड करें",
+      "packingListFailed": "पैकिंग लिस्ट डाउनलोड नहीं हो सकी"
+    },
+    "summary": {
+      "title": "शिपमेंट विवरण",
+      "readyDate": "तैयार होने की तारीख",
+      "cartons": "कार्टन",
+      "units": "यूनिट",
+      "grossWeight": "कुल वज़न",
+      "volume": "आयतन"
+    },
+    "legs": {
+      "shipsTo": "आपूर्तिकर्ता {place} को भेजता है।",
+      "amazonPickup": "Amazon {place} से पिकअप करता है।",
+      "carrierPickup": "कैरियर {place} से पिकअप करता है।",
+      "dropoff": "{place} कार्टन कैरियर को सौंपता है।"
     }
   },
   "actions": {
@@ -183,8 +170,8 @@
       "hanger": "हर कपड़े को हैंगर पर लगाएं।",
       "label": "हर यूनिट पर लेबल लगाएं।"
     },
-    "fbaCartons": "FBA कार्टन: मिक्स SKU की अनुमति है; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb), जब तक कोई एक यूनिट इससे बड़ी न हो।",
-    "awdUsCartons": "AWD US कार्टन: हर कार्टन में एक SKU, अधिकतम 150 यूनिट, एक SKU के सभी कार्टन एक ही तरह पैक; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb)।",
+    "fbaCartons": "FBA कार्टन: मिक्स SKU की अनुमति है; {shape, select, cube {हर साइड अधिकतम {lengthCm, number} cm ({lengthIn, number} in)} other {अधिकतम {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} और {maxKg, number} kg ({maxLb, number} lb), जब तक कोई एक यूनिट इससे बड़ी न हो।",
+    "awdUsCartons": "AWD US कार्टन: हर कार्टन में एक SKU, अधिकतम {units, number} यूनिट, एक SKU के सभी कार्टन एक ही तरह पैक; {shape, select, cube {हर साइड अधिकतम {lengthCm, number} cm ({lengthIn, number} in)} other {अधिकतम {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} और {maxKg, number} kg ({maxLb, number} lb)।",
     "separateCartons": "{networks} प्रोडक्ट अलग-अलग कार्टन में पैक करें।",
     "unitLabels": "हर यूनिट पर उसका FNSKU बारकोड लगाएं, जिससे कोई भी दूसरा बारकोड ढक जाए।",
     "suffocationWarnings": "जिन पॉलीबैग का मुंह 5 in (12.7 cm) या उससे चौड़ा हो, उन पर दम घुटने की चेतावनी ज़रूरी है।",
@@ -234,5 +221,16 @@
     "document": "दस्तावेज़",
     "issues": "डाउनलोड करने से पहले दस्तावेज़ों की ये समस्याएँ ठीक करें।",
     "pages": "{count} पृष्ठ / {paper}"
+  },
+  "labels": {
+    "productLabels": "उत्पाद लेबल",
+    "labelsFor": "{name} के लेबल",
+    "download": "{label} डाउनलोड करें",
+    "downloadAll": "सभी उत्पाद लेबल डाउनलोड करें",
+    "sku": "SKU लेबल",
+    "fnsku": "FNSKU लेबल",
+    "suffocation": "दम घुटने की चेतावनी वाले लेबल",
+    "choking": "छोटे हिस्सों से दम घुटने के खतरे के लेबल",
+    "notProvided": "लेबल नहीं दिया गया"
   }
 }

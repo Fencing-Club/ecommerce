@@ -11,6 +11,7 @@ const catalog: Parameters<typeof restockPlan>[0]["catalog"] = [
     productId: "gid://shopify/Product/1",
     productTitle: "Foil cord",
     variantTitle: "Standard",
+    imageUrl: null,
     tracked: true,
     unit: "shopify_inventory_unit",
     levels: [

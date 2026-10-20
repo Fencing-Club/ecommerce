@@ -4,6 +4,7 @@ import { Label } from "./label"
 import { Switch } from "./switch"
 
 const meta = preview.meta({
+  title: "Foundations/Switch",
   component: Switch,
   args: { onCheckedChange: fn() },
   render: (args) => (

@@ -53,7 +53,8 @@
     "accepted": "स्वीकृत",
     "declined": "अस्वीकृत",
     "atForwarder": "फ़ॉरवर्डर के पास",
-    "packed": "पैक हो गया"
+    "packed": "पैक हो गया",
+    "changesProposed": "बदलाव प्रस्तावित"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -67,7 +68,9 @@
     "checklist": "पैकिंग चेकलिस्ट",
     "cartonLabel": "कार्टन लेबल",
     "shippingLabel": "शिपिंग लेबल",
-    "productLabel": "प्रोडक्ट लेबल"
+    "productLabel": "प्रोडक्ट लेबल",
+    "cartonLabels": "कार्टन लेबल",
+    "shippingLabels": "शिपिंग लेबल"
   },
   "format": {
     "plusAmounts": "साथ में {amounts}",
@@ -199,5 +202,132 @@
     "waitingOn": "{name} का इंतज़ार",
     "working": "काम जारी है"
   },
-  "viewOnly": "केवल देखें"
+  "viewOnly": "केवल देखें",
+  "logistics": {
+    "views": {
+      "needsYou": "आपके लिए",
+      "draft": "ड्राफ़्ट",
+      "active": "सक्रिय",
+      "closed": "बंद",
+      "received": "प्राप्त",
+      "all": "सभी"
+    },
+    "columns": {
+      "route": "रूट",
+      "shipped": "भेजा गया",
+      "total": "कुल",
+      "cartons": "कार्टन",
+      "ready": "तैयार",
+      "status": "स्थिति",
+      "waiting": "प्रतीक्षा में"
+    },
+    "filters": {
+      "supplier": "सप्लायर",
+      "customer": "ग्राहक",
+      "allSuppliers": "सभी सप्लायर",
+      "allCustomers": "सभी ग्राहक",
+      "button": "फ़िल्टर",
+      "label": "सूची फ़िल्टर",
+      "status": "स्थिति",
+      "destination": "गंतव्य",
+      "forwarder": "फ़ॉरवर्डर",
+      "source": "स्रोत",
+      "ready": "तैयार होने की तारीख",
+      "from": "से",
+      "to": "तक",
+      "any": "कोई भी",
+      "clear": "फ़िल्टर हटाएं",
+      "done": "हो गया",
+      "applied": "लागू फ़िल्टर",
+      "remove": "{name} फ़िल्टर हटाएं",
+      "chip": "{name}: {value}",
+      "readyRange": "तैयार होने की तारीख: {from} से {to} तक"
+    },
+    "sort": {
+      "label": "{name} के अनुसार क्रमबद्ध करें",
+      "newest": "सबसे नए",
+      "ready": "तैयार होने की तारीख"
+    },
+    "sources": {
+      "order": "खरीद ऑर्डर",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "आप",
+      "buyer": "खरीदार",
+      "customer": "ग्राहक",
+      "supplier": "सप्लायर",
+      "forwarder": "फ़ॉरवर्डर",
+      "amazon": "Amazon",
+      "carrier": "कैरियर",
+      "done": "पूरा"
+    },
+    "selection": {
+      "count": "{count} चुने गए",
+      "export": "चुने हुए एक्सपोर्ट करें",
+      "clear": "चयन हटाएं",
+      "select": "{reference} चुनें"
+    },
+    "columnsLabel": "कॉलम",
+    "export": "एक्सपोर्ट",
+    "direct": "सीधा",
+    "route": "{forwarder} से {destination} तक",
+    "products": "{count, plural, one {# प्रोडक्ट} other {# प्रोडक्ट}}",
+    "shipped": "{quantity} में से {shipped} भेजे गए",
+    "shippedLabel": "{reference} भेजा गया",
+    "cartons": "{count, plural, one {# कार्टन} other {# कार्टन}}",
+    "readyOn": "{date} को तैयार",
+    "shipmentReference": "{reference}, शिपमेंट {number}",
+    "opensInSellerCentral": "(Seller Central में खुलता है)",
+    "actionsColumn": "कार्रवाइयां",
+    "rowActions": "{reference} के लिए कार्रवाइयां",
+    "viewShipment": "शिपमेंट देखें",
+    "viewPurchaseOrder": "खरीद ऑर्डर देखें",
+    "viewOrder": "खरीद ऑर्डर देखें",
+    "noMatchesDescription": "कोई दूसरी खोज आज़माएं या अपने फ़िल्टर बदलें।",
+    "previousPage": "पिछला पृष्ठ",
+    "nextPage": "अगला पृष्ठ",
+    "orders": {
+      "title": "खरीद ऑर्डर",
+      "reference": "खरीद ऑर्डर",
+      "views": "खरीद ऑर्डर के व्यू",
+      "search": "खरीद ऑर्डर खोजें",
+      "searchPlaceholder": "रेफ़रेंस, सप्लायर या Amazon ID से खोजें",
+      "table": "खरीद ऑर्डर",
+      "selectAll": "सभी दिख रहे खरीद ऑर्डर चुनें",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# खरीद ऑर्डर} other {# खरीद ऑर्डर}}",
+      "showing": "{count} खरीद ऑर्डर में से {from}–{to} दिख रहे हैं",
+      "noMatches": "कोई मेल खाता खरीद ऑर्डर नहीं",
+      "empty": {
+        "needsYou": "अभी आपके लिए कुछ नहीं है",
+        "draft": "कोई ड्राफ़्ट नहीं",
+        "active": "कोई सक्रिय खरीद ऑर्डर नहीं",
+        "closed": "कोई बंद खरीद ऑर्डर नहीं",
+        "received": "कोई प्राप्त खरीद ऑर्डर नहीं",
+        "all": "कोई खरीद ऑर्डर नहीं"
+      }
+    },
+    "shipments": {
+      "title": "शिपमेंट",
+      "reference": "शिपमेंट",
+      "views": "शिपमेंट के व्यू",
+      "search": "शिपमेंट खोजें",
+      "searchPlaceholder": "खरीद ऑर्डर, शिपमेंट या Amazon ID से खोजें",
+      "table": "शिपमेंट",
+      "selectAll": "सभी दिख रहे शिपमेंट चुनें",
+      "file": "shipments",
+      "count": "{count, plural, one {# शिपमेंट} other {# शिपमेंट}}",
+      "showing": "{count} शिपमेंट में से {from}–{to} दिख रहे हैं",
+      "noMatches": "कोई मेल खाता शिपमेंट नहीं",
+      "empty": {
+        "needsYou": "अभी आपके लिए कुछ नहीं है",
+        "draft": "कोई ड्राफ़्ट नहीं",
+        "active": "कोई सक्रिय शिपमेंट नहीं",
+        "closed": "कोई बंद शिपमेंट नहीं",
+        "received": "कोई प्राप्त शिपमेंट नहीं",
+        "all": "कोई शिपमेंट नहीं"
+      }
+    }
+  }
 }

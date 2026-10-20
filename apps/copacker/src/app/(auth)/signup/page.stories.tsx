@@ -28,7 +28,7 @@ function SignUp({
 }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Auth/Sign up",
+  title: "Pages/Auth/Sign up",
   component: SignUp,
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/signup" } } },
   args: { next: "/" },

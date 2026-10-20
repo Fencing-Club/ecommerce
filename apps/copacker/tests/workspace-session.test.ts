@@ -7,7 +7,7 @@ import { AccessError, LocalizedError } from "../src/i18n/errors"
 import { requireAccess, requireAdmin } from "../src/server/authorization"
 import { overviewDestination, portalSession, portalShell } from "../src/server/portal-session"
 import { profileFor, requireMembership, workspaceSession } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const context: { current: unknown } = vi.hoisted(() => ({ current: null }))
 vi.mock("@/db", () => ({ db: () => context.current }))
@@ -27,7 +27,7 @@ const user = {
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

@@ -1,7 +1,7 @@
 import { ProviderError } from "@repo/aisle/amazon"
 import type { ShopifySale } from "@repo/aisle/sales"
 import { describe, expect, it, vi } from "vitest"
-import { orderSales, salesDataVersion, summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
+import { orderSales, summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
 import { ledgerChunks } from "../src/server/stock-days"
 
 const day = 86400000
@@ -25,12 +25,6 @@ describe("order and stock history syncs", () => {
     await expect(throttled(always, owned, sleep)).rejects.toThrow("throttled")
     expect(always).toHaveBeenCalledTimes(5)
   })
-  it("reads orders stored in an older shape again, newest first", () => {
-    const now = Date.parse("2026-09-25T12:00:00Z")
-    const coverage = { coveredFrom: new Date(now - 365 * day), coveredTo: new Date(now - day) }
-    expect(syncChunks(now, { ...coverage, dataVersion: 0 }).fresh).toBe(true)
-    expect(syncChunks(now, { ...coverage, dataVersion: salesDataVersion }).fresh).toBe(false)
-  })
   it("starts over from the newest orders when the stored range stopped over a month ago", () => {
     const now = Date.parse("2026-09-25T12:00:00Z")
     const stale = syncChunks(now, { coveredFrom: new Date(now - 365 * day), coveredTo: new Date(now - 300 * day) })
@@ -51,8 +45,18 @@ describe("order and stock history syncs", () => {
 
   it("counts an order's sales as the Overview does", () => {
     const money = (amount: string) => ({ shopMoney: { amount, currencyCode: "USD" } })
-    const line = { id: "l1", quantity: 3, currentQuantity: 2, sku: "A", variant: { id: "va" } }
+    const line = {
+      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+      discountAllocations: [],
+      id: "l1",
+      quantity: 3,
+      currentQuantity: 2,
+      sku: "A",
+      variant: { id: "va" }
+    }
     const shopify = {
+      tags: [],
+      transactions: [],
       id: "o1",
       name: "#1",
       createdAt: "2026-09-24T10:00:00Z",
@@ -67,7 +71,7 @@ describe("order and stock history syncs", () => {
     }
     // $20 less 2/3 of $3, plus $10.
     expect(orderSales(shopify)).toEqual({ minor: 2800, currency: "USD" })
-    expect(orderSales({ ...shopify, lines: [line] })).toBeNull()
+    expect(orderSales({ ...shopify, lines: [line] })).toEqual({ minor: 0, currency: "USD" })
     const item = (breakdowns?: { type: string; subtotal: { amount: string; currencyCode: string } }[]) => ({
       orderItemId: "i1",
       quantityOrdered: 3,
@@ -93,13 +97,25 @@ describe("order and stock history syncs", () => {
 
   it("lists an order Shopify cancelled as Cancelled, whatever shipped", () => {
     const order: ShopifySale = {
+      tags: [],
+      transactions: [],
       id: "gid://shopify/Order/1",
       name: "#1001",
       createdAt: "2026-09-24T10:00:00Z",
       cancelledAt: null,
       test: false,
       sourceName: "web",
-      lines: [{ id: "l1", quantity: 1, currentQuantity: 1, sku: "A", variant: { id: "va" } }],
+      lines: [
+        {
+          originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+          discountAllocations: [],
+          id: "l1",
+          quantity: 1,
+          currentQuantity: 1,
+          sku: "A",
+          variant: { id: "va" }
+        }
+      ],
       fulfillments: []
     }
     const shipped = {

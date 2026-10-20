@@ -38,6 +38,31 @@ pnpm --filter copacker exec vitest run --project storybook
 `tests/stories.test.ts` fails when a page or component has no stories. Components with nothing to show (providers,
 contexts, effects that render nothing) are listed there instead.
 
+## The sidebar
+
+Every story file sets an explicit `title` in one of five sections. `tests/stories.test.ts` checks each rule.
+
+| Section | Holds | Title |
+| --- | --- | --- |
+| Foundations | The shadcn primitives in `src/components/ui` | `Foundations/<Name>` |
+| Components | App components, grouped by product area | `Components/<Area>/<Name>` |
+| Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
+| Prototypes | Designs built only in Storybook: in `src/stories`, or beside the route a design is for until it's built (listed in the test) | `Prototypes/<Name>` |
+| Unused | Components no app code renders yet | `Unused/<Area>/<Name>` |
+
+Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booking, Products, Inventory, Sales and
+costs, Integrations, Partners, Settings, Shipping documents, Supplier workspace, Auth, Onboarding and Marketing. Pages
+are grouped by route, not by workspace kind: buyer and supplier views of a route are stories of the same page.
+
+A `Pages/` story must live in `src/app` and render the route itself. Apart from fixtures and the `server`, `workspace`
+and `shipping-documents` helpers, it may not import from `src/stories`, so a page story can't quietly show a copy of
+the page. Every other story in `src/app` must be a `Pages/` story too, unless the test lists it as a route prototype.
+
+`Unused` is computed, not curated. The test follows imports from every route, server module and library, and a
+component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
+fails the test until its stories move to `Components`, and removing its last use fails it until they move to `Unused`.
+Review that section for components awaiting app work or ready to delete.
+
 ## The toolbar
 
 - **Theme**: light or dark. It sets the `dark` class and the choice the app's ThemeProvider reads.
@@ -46,6 +71,13 @@ contexts, effects that render nothing) are listed there instead.
 - **Viewport**: Storybook's device sizes.
 
 ## Writing stories
+
+### Purchase order and shipment lists
+
+`LogisticsList` renders both live lists; see [Purchase order and shipment lists](logistics-lists.md). Its component
+stories (`Components/Purchase orders/Logistics list`) use the fictional rows from the approved Pen frames in
+`src/stories/fixtures/logistics-lists.ts`. The page stories build their rows with the server's own
+`orderListRows` and `shipmentListRows`, so a change to how rows are worked out changes the stories too.
 
 Stories use CSF Next: import the preview and build the meta and stories from it.
 
@@ -65,7 +97,7 @@ export const Default = meta.story({
 
 - **Pages** receive explicit rendering data from server functions. Page stories provide typed fixtures to the same
   components. `pageStory(pathname, render, kind)` from `@/stories/server` shows them in the real portal shell. Cover each
-  workspace kind, empty state and permission branch; title them `Pages/<Sidebar name>/...`.
+  workspace kind, empty state and permission branch; title them `Pages/<Route>/<View>`.
 - **Server data** can be prepared through `serverStory(render)`, which resolves asynchronous fixtures in a loader.
   The localization context answers from the toolbar language. The `@/db` mock supplies each table from
   `parameters: { db: { contacts: [...] } }`.
@@ -78,3 +110,50 @@ export const Default = meta.story({
 - **Navigation**: `.storybook/router.tsx` creates a real TanStack memory router per story. Set
   `parameters: { router: { navigation: { pathname, query } } }` for components that read the URL.
   `getStoryRouter()` exposes recorded navigate/invalidate calls for assertions.
+
+A play function that types needs the document focused. Vitest's browser is; a fresh load in the desktop app's browser
+pane may not be, and its typing then never reaches React. Click the page before rerunning such a story there.
+
+## Purchase order timeline
+
+The live PO page and the interactive purchase-order flow use `PoTimeline` and `TimelineComment` from
+`src/components`. Keep timeline spacing, avatars, event markers, comment bubbles, and the audience selector in those
+shared components, not in page or prototype markup. The flow supplies fixture entries and updates them after the
+mocked comment action succeeds. Revision-specific content uses the timeline entry's details slot.
+
+Their sibling stories cover event revisions, price visibility, internal and shared comments for buyers and suppliers,
+keyboard submission, pending requests, and failures. The flow's `TimelineComments` story checks posted entries end to end.
+
+## Document downloads prototype
+
+`ProductDownloadsMenu` is shared by the PO and shipment views. Its caller supplies only applicable label types and
+scopes the download to that order or shipment. `ShipmentDocuments` owns the packing list, carton labels, carrier labels,
+and reference-sheet rows; pending files are disabled and carrier labels are omitted when not required.
+
+The PO keeps the combined supplier-pack action. Ready packets reuse `renderSupplierPacket`, also used by the existing
+shipment packet page. Carton/carrier files in this prototype are marked sample documents; product labels use fixture
+product codes with the existing printable generators. The prototype
+uses local packing state and does not persist documents or alter production release/access rules.
+
+Product SKU/FNSKU and suffocation downloads use the existing shared printable label generators. Country-of-origin and choking-hazard label files are unavailable until supplied; the menu never substitutes a placeholder for these files.
+`DetailFields` renders the shared label-above-value fields for PO details and shipment summaries. The packing form supplies live carton, unit, weight, and volume totals to its sidebar slot.
+
+Product rows in the purchase-order prototype and shipment Products table reuse `ProductDownloadsMenu` with an
+icon trigger. Row downloads contain only that variant; page-level menus retain bulk downloads.
+
+
+### Shipment workflow reference and toast feedback
+
+`Prototypes/Shipment states and actions/All Arrangements` documents the intended eight shipping arrangements in one
+page. Each action shows its approval gate, next badge, canonical email event/template, recipients, default delivery,
+and actor toast. Email mappings follow the Notifications session's shipment action contract; draft saves, downloads,
+and routine background processing send no email. Physical pickup is distinct from dispatch.
+
+`Components/toast-provider` covers saved drafts, shipment-action confirmations, and save failures using the shared
+`ToastProvider`. Its action examples and the workflow reference share `src/lib/shipment-action-feedback.ts`; these
+English review examples are not a production event publisher or a replacement for localized runtime copy.
+
+Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
+`PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
+and required ready date. The standalone shipment-packing-details stories cover editing, read-only, forwarder,
+and mobile layouts; the prototype sidebar reads the date from the live form.

@@ -89,4 +89,8 @@ See [expanded analytics ingestion](analytics-ingestion.md) for the cost batch an
 | GET | `/api/analytics/evidence` | 200 source evidence, snapshot pagination |
 | GET | `/api/analytics/ingestion-status` | 200 observed feed states and connected accounts |
 
+Shopify order evidence now includes derived payment/refund diagnostics and separate saved-balance comparisons.
+Amazon reconciliation and allocations expose reimbursement-family and released-posting accounting respectively.
+See [stored payment and recovery reconciliation](payment-reconciliation.md) for counting rules and incomplete evidence.
+
 Preview POST requires the same access and Origin as committing costs, but no Idempotency-Key because it persists nothing. A successful preview does not reserve inputs or bypass commit-time validation.

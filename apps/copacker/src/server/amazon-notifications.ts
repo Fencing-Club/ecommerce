@@ -7,7 +7,7 @@ import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/
 import { withJobWake } from "@/server/job-delivery"
 import { amazonApp, amazonFor } from "./connections"
 import { PollAgain } from "./job-handlers"
-import { amazonDataVersion, amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
+import { amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue, queueArn } from "./sqs"
 import { refreshStock } from "./stock"
@@ -144,7 +144,6 @@ async function updateStoredOrders(
     sync.externalAccountId !== sellerId ||
     !sync.coveredFrom ||
     !sync.coveredTo ||
-    sync.dataVersion < amazonDataVersion ||
     sync.coveredTo.getTime() < now - incrementalDays * 86400000
   ) {
     const started = await requestSalesSync(org, "amazon")

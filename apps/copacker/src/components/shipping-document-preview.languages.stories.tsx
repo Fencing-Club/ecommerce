@@ -1,12 +1,11 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { defaultDocumentSettings } from "@/documents/shipping-model"
+import { defaultDocumentSettings, shippingSettingsKey } from "@/documents/shipping-model"
 import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-documents"
-import { shippingSettingsKey } from "./shipping-document-preview"
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/Languages"
+  title: "Components/Shipping documents/Languages"
 })
 
 export const GermanLetter = meta.story({
@@ -39,7 +38,7 @@ export const ChineseA4 = meta.story({
     const page = context.canvas.getByRole("figure", { name: "PDF 第 1 页" })
     await expect(page).toHaveTextContent("装箱单")
     await expect(page).toHaveTextContent("NT-WBT-NAT")
-    await expect(page).toHaveTextContent("DEMO-TRACK-01")
+    await expect(page).toHaveTextContent("NT-CDB-SAG")
     await expect(page).not.toHaveTextContent("\uFFFD")
     await expect(context.canvas.queryByRole("figure", { name: "PDF 第 2 页" })).not.toBeInTheDocument()
   }

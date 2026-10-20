@@ -82,3 +82,10 @@ Do not add purchases, opening balances and receipts together as inventory acquis
 and opening balances may already include pre-cutover receipts. The [costing engine](inventory-costing.md) uses an explicit opening cutover and supports late landed bills.
 Provider coverage and locations, physical piece/sellable-unit conversions, receipt imports, missing purchases, actual
 shipment item reconciliation, returns, losses and UI entry/import flows remain open. Received base cost is not complete landed value.
+
+## Current evidence boundary
+
+No actual Copacker purchases exist for the connected greenfield business. Do not seed cost basis from draft/demo POs,
+current catalog prices, sales prices or provider receipt counts. Purchase cost, opening inventory value and landed costs
+remain unknown until independently supported. Product validation accepts current catalog evidence or active historical
+purchase evidence, but never creates purchase records from that validation.

@@ -5,6 +5,7 @@ import { Button } from "./button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./empty"
 
 const meta = preview.type<{ args: { onAction: () => void } }>().meta({
+  title: "Foundations/Empty",
   component: Empty,
   args: { onAction: fn() },
   render: ({ onAction }) => (

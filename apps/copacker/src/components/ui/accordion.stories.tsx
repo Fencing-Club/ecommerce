@@ -9,6 +9,7 @@ const questions = [
 ]
 
 const meta = preview.meta({
+  title: "Foundations/Accordion",
   component: Accordion,
   args: { onValueChange: fn() },
   render: (args) => (

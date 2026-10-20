@@ -26,7 +26,7 @@ import {
   shopifySubscribeJob,
   shopifyWebhookTopics
 } from "../src/server/shopify-webhooks"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -67,7 +67,7 @@ const queued = (kind: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -274,7 +274,15 @@ describe("daily reconciliation", () => {
 
 describe("Shopify privacy webhooks", () => {
   async function storeOrder(orgId: string, id: number, sku: string) {
-    const line = { id: `gid://shopify/LineItem/${id}`, quantity: 2, currentQuantity: 2, sku, variant: null }
+    const line = {
+      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+      discountAllocations: [],
+      id: `gid://shopify/LineItem/${id}`,
+      quantity: 2,
+      currentQuantity: 2,
+      sku,
+      variant: null
+    }
     await database.insert(tables.salesOrders).values({
       orgId,
       source: "shopify",
@@ -282,6 +290,8 @@ describe("Shopify privacy webhooks", () => {
       orderId: `gid://shopify/Order/${id}`,
       orderedAt: new Date("2026-09-01T10:00:00Z"),
       data: {
+        tags: [],
+        transactions: [],
         id: `gid://shopify/Order/${id}`,
         name: `#${id}`,
         createdAt: "2026-09-01T10:00:00Z",

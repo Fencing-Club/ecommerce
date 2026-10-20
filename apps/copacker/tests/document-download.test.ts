@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
+import { PDFDocument } from "pdf-lib"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { AccessError, NotFoundError } from "../src/i18n/errors"
@@ -9,7 +10,7 @@ import { resolveLocalization, withLocalization } from "../src/server/localizatio
 import type { StoredFile } from "../src/server/storage"
 import { workspaceSession, type Session } from "../src/server/workspace-session"
 import { orderData } from "../src/stories/fixtures/orders"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const context = vi.hoisted(() => ({
   database: null as unknown,
@@ -50,7 +51,7 @@ function storedFile(): StoredFile {
 
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -101,6 +102,79 @@ beforeEach(async () => {
 })
 
 describe("private document streaming", () => {
+  it("combines one label type in numeric carton order without changing page sizes", async () => {
+    await database.update(tables.documents).set({ cartonId: "A10" }).where(eq(tables.documents.id, document))
+    await database.insert(tables.documents).values([
+      {
+        id: id(8),
+        orderId: order,
+        shipmentId: shipment,
+        kind: "shipping_label",
+        cartonId: "A2",
+        objectKey: "a2",
+        name: "A2.pdf",
+        bytes: 1,
+        orderRevision: 1,
+        shipmentRevision: 1,
+        uploadedBy: "test"
+      },
+      {
+        id: id(9),
+        orderId: order,
+        shipmentId: shipment,
+        kind: "carton_label",
+        cartonId: "A2",
+        objectKey: "carton",
+        name: "carton.pdf",
+        bytes: 1,
+        orderRevision: 1,
+        shipmentRevision: 1,
+        uploadedBy: "test"
+      },
+      {
+        id: id(10),
+        orderId: order,
+        shipmentId: shipment,
+        kind: "shipping_label",
+        cartonId: "A1",
+        objectKey: "outdated",
+        name: "old.pdf",
+        bytes: 1,
+        orderRevision: 1,
+        shipmentRevision: 1,
+        uploadedBy: "test",
+        outdated: 1
+      }
+    ])
+    context.readFile.mockImplementation(async (key) => {
+      const pdf = await PDFDocument.create()
+      pdf.addPage(key === "a2" ? [288, 432] : [300, 500])
+      const content = await pdf.save()
+      return {
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(content)
+            controller.close()
+          }
+        }),
+        size: content.length,
+        contentType: "application/pdf"
+      }
+    })
+    const result = await downloadDocument(session, document, undefined, true)
+    expect(result.status).toBe(200)
+    const combined = await PDFDocument.load(await result.arrayBuffer())
+    expect(combined.getPages().map((page) => page.getSize())).toEqual([
+      { width: 288, height: 432 },
+      { width: 300, height: 500 }
+    ])
+    expect(context.readFile.mock.calls.map(([key]) => key)).toEqual(["a2", "orders/test/label.pdf"])
+    expect(result.headers.get("content-disposition")).toContain("Carrier%20labels")
+    await database.update(tables.shipments).set({ status: "waiting_labels" }).where(eq(tables.shipments.id, shipment))
+    context.readFile.mockClear()
+    expect((await downloadDocument(session, document, undefined, true)).status).toBe(409)
+    expect(context.readFile).not.toHaveBeenCalled()
+  })
   it("streams an authorized file with the existing filename and security headers", async () => {
     const response = await downloadDocument(session, document)
     expect(response.status).toBe(200)

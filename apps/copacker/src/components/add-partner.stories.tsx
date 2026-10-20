@@ -4,6 +4,7 @@ import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
 import { AddPartner } from "./add-partner"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
+  title: "Components/Partners/Add partner",
   component: AddPartner,
   args: { onCreated: fn() },
   beforeEach: ({ msw }) => {

@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Estado de la orden de compra",
-    "tabs": {
-      "all": {
-        "label": "Todas",
-        "empty": "No hay órdenes de compra"
-      },
-      "draft": {
-        "label": "Borrador",
-        "empty": "No hay borradores"
-      },
-      "submitted": {
-        "label": "Con el proveedor",
-        "empty": "No hay órdenes de compra con proveedores"
-      },
-      "closed": {
-        "label": "Cerradas",
-        "empty": "No hay órdenes de compra cerradas"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Orden de compra",
-      "supplier": "Proveedor",
-      "destination": "Destino",
-      "created": "Creada",
-      "status": "Estado",
-      "value": "Valor"
-    },
-    "products": "{count, plural, one {# producto} other {# productos}}"
-  },
   "index": {
     "title": "Órdenes de compra",
     "supplierTitle": "Pedidos",
@@ -46,11 +16,6 @@
         "description": "Invita a tu proveedor y luego crea tu primera orden de compra.",
         "action": "Invitar a un proveedor"
       }
-    },
-    "stats": {
-      "open": "Órdenes abiertas",
-      "withSuppliers": "Con proveedores",
-      "drafts": "Borradores"
     },
     "empty": {
       "guidedTitle": "Tu próximo envío empieza aquí",
@@ -200,7 +165,7 @@
     "shipmentTo": "Envío a {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} piezas",
     "selectProduct": "Seleccionar {name}",
-    "packCount": "{count, number} paquetes de {size}",
+    "packCount": "{count, number} paquetes, {size} cada uno",
     "supplierCharges": "Costos del proveedor",
     "addSupplierCharge": "Agregar gasto",
     "removeSupplierCharge": "Eliminar gasto",
@@ -280,7 +245,16 @@
       "label": "Comentario",
       "placeholder": "Escribe un comentario…",
       "post": "Publicar",
-      "required": "Escribe un comentario"
+      "required": "Escribe un comentario",
+      "visibility": "Visibilidad del comentario",
+      "internal": "Comentario interno",
+      "messageSupplier": "Mensaje al proveedor",
+      "messageCustomer": "Mensaje al cliente",
+      "internalHint": "Solo tu equipo puede ver este comentario.",
+      "supplierHint": "Tu equipo y el proveedor pueden ver este mensaje.",
+      "customerHint": "Tu equipo y el cliente pueden ver este mensaje.",
+      "sharedSupplier": "Compartido con el proveedor",
+      "sharedCustomer": "Compartido con el cliente"
     },
     "events": {
       "created": "Orden de compra creada",
@@ -310,6 +284,7 @@
       "packingSplit": "Empaque enviado; dividido en envíos a {networks} y en cola para Amazon",
       "forwarderShipped": "{forwarder} envió la mercancía: {tracking}",
       "packingReady": "Empaque enviado; listo para enviar",
+      "packingReopened": "Empaque reabierto para hacer cambios",
       "invoiceEntered": "Factura registrada con cambios en la orden de compra",
       "invoiceChangesSubmitted": "El proveedor envió cambios de la factura para aprobación",
       "existingAwdLinked": "Se vinculó el envío AWD existente {shipmentId}",
@@ -430,9 +405,16 @@
     "pickupAddress": "Dirección de recolección",
     "otherAddress": "Otra dirección",
     "readyForPickup": "Listo para recolección",
+    "shipFrom": "Dirección de recolección",
+    "readyDate": "Listo para recolección",
     "addCartonProduct": "Agregar producto a la caja",
     "removeCartonProduct": "Quitar producto {number} de la caja",
-    "finishPacking": "Terminar empaque"
+    "finishPacking": "Terminar empaque",
+    "addNewAddress": "Agregar dirección",
+    "chooseAddress": "Dirección de recolección",
+    "packedUnits": "{count} de {available, plural, one {# unidad} other {# unidades}}",
+    "leftCount": "Faltan {count}",
+    "overCount": "{count} de más"
   },
   "paymentTerms": {
     "net7": "Neto 7 días",
@@ -459,6 +441,7 @@
     "other": "Otro"
   },
   "cartonEditor": {
+    "addProducts": "Agregar productos a la caja",
     "addProductsTo": "Agregar productos a la caja {carton}",
     "shipmentProducts": "Productos de este envío",
     "searchProducts": "Buscar productos de este envío",
@@ -484,18 +467,24 @@
     "actions": "Acciones de la caja {carton}",
     "duplicate": "Duplicar caja",
     "delete": "Eliminar caja",
-    "quantityPerCarton": "Cantidad / caja",
-    "packsPerCarton": "Paquetes / caja",
-    "unitsPerCarton": "Unidades / caja",
+    "quantityPerCarton": "Cantidad",
     "productQuantity": "{sku}: cantidad por caja {carton}",
     "unitCount": "{count, plural, one {# unidad} other {# unidades}}",
     "removeProduct": "Quitar {sku} de la caja {carton}",
     "product": "Producto",
     "leftToPack": "Por empacar",
     "packCount": "{count, plural, one {# paquete} other {# paquetes}}",
-    "addToCarton": "Agregar a la caja {carton}",
+    "addToCarton": "Agregar a la caja",
     "selectedCount": "{count} seleccionados",
-    "cartonGroup": "Cajas {cartons}"
+    "cartonGroup": "Cajas {cartons}",
+    "addProductsToCartons": "Agregar productos a las cajas {cartons}",
+    "rules": {
+      "unitsPerCarton": "Cantidad: {units, number} unidades vendibles por caja superan el límite de {max, number} de {receiver}. Divídelas en cajas más pequeñas.",
+      "cartonSize": "Dimensiones: el {side, select, width {ancho} height {alto} other {largo}} es de {size, number} cm. {receiver} permite hasta {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) para esta caja}}.",
+      "cartonWeight": "Peso: {weight, number} kg supera el límite de {maxLb, number} lb ({maxKg, number} kg). Reduce el peso de cada caja.",
+      "oneSku": "Productos: {receiver} requiere un solo SKU por caja. Mueve estos SKU a cajas separadas.",
+      "samePacking": "Plantilla de empaque: este SKU usa {difference, select, units {{units, number} unidades por caja} other {cajas de {length, number} × {width, number} × {height, number} cm y {weight, number} kg}} en otra parte de este envío. Usa la misma plantilla de empaque en todas las cajas de este SKU."
+    }
   },
   "cartonImport": {
     "title": "Importar cajas",
@@ -530,11 +519,19 @@
       "worksheet": "El archivo necesita una hoja llamada Cartons.",
       "unreadable": "No se pudo leer el archivo. Usa un archivo XLSX o CSV basado en la plantilla.",
       "number": "Ingresa un número positivo válido en {value}.",
-      "sku": "El SKU no pertenece a este envío: {value}.",
+      "sku": "El SKU del proveedor {value} y los datos deben coincidir con un solo producto de este envío.",
       "cartonId": "Ingresa un ID de caja de 1 a 60 caracteres.",
       "measurements": "Las filas de esta caja deben tener la misma cantidad de cajas, dimensiones y peso.",
       "duplicateProduct": "Esta caja incluye {value} más de una vez.",
       "limit": "Un envío puede contener hasta 1,000 cajas."
+    },
+    "template": {
+      "identity": "No cambies el SKU del proveedor, producto, variante ni unidades por paquete precargados. Pide al comprador que corrija los datos faltantes o incorrectos.",
+      "rows": "Usa una fila por producto en cada caja. Copia la fila del producto para cajas adicionales. Repite el Carton ID para productos empacados juntos. Deja vacías las celdas de empaque que no uses.",
+      "cartons": "Carton ID es tu referencia, no el número de etiqueta de Amazon. Usa A1, A2, etc. con Carton count 1 para cajas individuales. Para cajas idénticas, indica más de 1: A1 con cantidad 3 genera A1, A1-2 y A1-3. Se omiten los identificadores existentes.",
+      "quantity": "Quantity per carton cuenta paquetes. Para un paquete de 2, una cantidad de 10 equivale a 20 piezas. Todas las cajas de un grupo idéntico deben contener los mismos productos y cantidades.",
+      "measurements": "Ingresa las dimensiones en centímetros y el peso en kilogramos. Repite la cantidad de cajas, dimensiones y peso en cada fila con el mismo Carton ID.",
+      "format": "Llena las celdas blancas de empaque. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la tabla Cartons como CSV."
     }
   }
 }

@@ -4,6 +4,7 @@ import preview from "#.storybook/preview"
 import { RoutePill } from "./route-pill"
 
 const meta = preview.meta({
+  title: "Components/App shell/Route pill",
   component: RoutePill,
   args: { icon: <Factory aria-label="Supplier" />, children: "Lotus Manufacturing" }
 })

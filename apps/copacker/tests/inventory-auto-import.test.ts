@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -67,7 +67,7 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
 const save = (body: unknown, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -96,6 +96,7 @@ const range = {
 async function shopifyOrder() {
   const id = randomUUID()
   const data = {
+    transactions: [],
     id: "order1",
     name: "#1",
     createdAt: "2026-01-01T00:00:00Z",
@@ -103,7 +104,17 @@ async function shopifyOrder() {
     test: false,
     sourceName: "web",
     tags: [],
-    lines: [{ id: "line", quantity: 3, currentQuantity: 3, sku: "SKU", variant: { id: "v1" } }],
+    lines: [
+      {
+        originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+        discountAllocations: [],
+        id: "line",
+        quantity: 3,
+        currentQuantity: 3,
+        sku: "SKU",
+        variant: { id: "v1" }
+      }
+    ],
     fulfillments: [
       {
         id: "f1",

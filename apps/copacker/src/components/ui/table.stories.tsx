@@ -88,6 +88,7 @@ function SelectableLines() {
 }
 
 const meta = preview.meta({
+  title: "Foundations/Table",
   component: Table,
   render: ({ framed }) => <Lines framed={framed} />
 })

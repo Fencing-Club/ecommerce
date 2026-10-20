@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -105,7 +105,7 @@ const resource = (id: string) => ({ params: { id } })
 const save = (body: unknown = purchase, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -445,4 +445,42 @@ it("protects cost previews with edit access and origin checks without requiring 
     code: "session_required",
     instance: "/api/analytics/cost-import-previews"
   })
+})
+
+import { ingestionStatus } from "../src/server/analytics-ingestion"
+import { saveUnitMapping } from "../src/server/inventory-unit-mappings"
+
+it("uses historical purchase identity after catalog removal and rejects invented conversion targets", async () => {
+  await save()
+  await database.delete(tables.variantFields).where(eq(tables.variantFields.orgId, orgId))
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "shopify", externalId: "store", encryptedToken: "test" })
+  const mapping = {
+    source: "shopify",
+    externalAccountId: "store",
+    sourceProductId: "v1",
+    shopifyDomain: "store",
+    variantId: "v1",
+    piecesPerUnit: 2,
+    automatic: false,
+    validFrom: "2026-01-01T00:00:00Z",
+    validTo: "2027-01-01T00:00:00Z",
+    evidence: "Historical specification"
+  }
+  await expect(saveUnitMapping(orgId, "owner", randomUUID(), mapping)).resolves.toBeDefined()
+  await expect(save(opening)).resolves.toBeDefined()
+  await expect(
+    saveUnitMapping(orgId, "owner", randomUUID(), { ...mapping, sourceProductId: "missing", variantId: "missing" })
+  ).rejects.toMatchObject({ code: "product_not_in_workspace" })
+  const status = await ingestionStatus(orgId)
+  expect(status.accountingInputs.counts).toEqual(
+    expect.arrayContaining([
+      { input: "purchase", basis: "actual", count: 1 },
+      { input: "opening", basis: "missing", count: 1 }
+    ])
+  )
+  expect((await ingestionStatus(otherId)).accountingInputs.counts).not.toEqual(
+    expect.arrayContaining([expect.objectContaining({ input: "purchase" })])
+  )
 })

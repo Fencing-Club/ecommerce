@@ -54,7 +54,7 @@ const record: typeof poImports.$inferSelect = {
 }
 
 const meta = preview.meta({
-  title: "Pages/Buyer/Purchase orders/Import review",
+  title: "Pages/Purchase orders/Import review",
   ...pageStory(`/orders/import/${importId}`, ReviewImport),
   args: { record, suppliers: builderSuppliers, selectedProducts: importedProducts }
 })

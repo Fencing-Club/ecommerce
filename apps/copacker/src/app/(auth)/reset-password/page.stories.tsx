@@ -17,7 +17,7 @@ function ResetPassword({ token }: { token?: string }) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Shared/Auth/Reset password",
+  title: "Pages/Auth/Reset password",
   component: ResetPassword,
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/reset-password" } } },
   args: { token },

@@ -73,10 +73,11 @@ import { POST as downloadLabels } from "../src/server/http/api/inventory/labels"
 import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/server/http/api/inventory/product-labels"
 import { GET as orderLabels } from "../src/server/http/api/orders/$id/labels"
 import { GET as lineLabel } from "../src/server/http/api/orders/$id/labels/$itemId"
+import { GET as shipmentLabels } from "../src/server/http/api/shipments/$id/labels"
 import { deleteDraftOrder } from "../src/server/orders"
 import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -192,7 +193,7 @@ const downloadLine = (orderId: string, itemId: string) =>
   })
 
 beforeAll(async () => {
-  await applyMigrations(pg)
+  await applySchema(pg)
   context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
@@ -353,6 +354,7 @@ describe("standard product labels", () => {
     expect(await lineLabels(po)).toEqual([
       {
         itemId: line,
+        type: "fnsku",
         state: "missing",
         problem: "Upload its label on the Products page",
         problemKey: "uploadLabelOnProducts"
@@ -375,6 +377,7 @@ describe("standard product labels", () => {
     expect(await lineLabels(amazonBound)).toEqual([
       {
         itemId: line,
+        type: "fnsku",
         state: "missing",
         problem: "Its FNSKU is looked up when the purchase order is sent",
         problemKey: "fnskuLookedUpOnSend"
@@ -542,5 +545,67 @@ describe("label file names", () => {
     expect(labelFileName("Pro-Grip Fencing Glove (10, Left)")).toBe("Pro-Grip Fencing Glove (10, Left).pdf")
     expect(labelFileName('Mask: "Pro" 3/4')).toBe("Mask- -Pro- 3-4.pdf")
     expect(labelFileName("  ")).toBe("Product label.pdf")
+  })
+})
+
+describe("shipment labels", () => {
+  // Someone at the supplier who packs shipments but can't open purchase orders.
+  const packer = (): Session => ({ ...actor(supplierOrgId, "supplier"), role: "member", access: { shipments: "edit" } })
+  const download = (shipmentId: string, query = "") =>
+    shipmentLabels(new Request(`${appUrl()}/api/shipments/${shipmentId}/labels${query}`), {
+      params: { id: shipmentId }
+    })
+
+  it("prints the labels of the lines a shipment carries for whoever packs it", async () => {
+    const glove = randomUUID()
+    const cord = randomUUID()
+    const po = await order(
+      [
+        { ...item(glove, variantB), suffocationWarning: true },
+        { ...item(cord, variantA), amazonNetwork: "awd_us" }
+      ],
+      "amazon"
+    )
+    // Suppliers see a purchase order once it's sent.
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, po.id))
+    const [shipment] = await database
+      .insert(tables.shipments)
+      .values({ orderId: po.id, orderRevision: 1, status: "packing", amazonNetwork: "fba" })
+      .returning()
+    context.actor = packer()
+
+    const all = await download(shipment!.id)
+    expect(all.status).toBe(200)
+    expect(all.headers.get("content-disposition")).toContain(encodeURIComponent("PO-1 product labels.pdf"))
+    // The FBA line's label and the warning sheet; the AWD line ships separately.
+    expect((await PDFDocument.load(await all.arrayBuffer())).getPageCount()).toBe(2)
+
+    const line = await download(shipment!.id, `?item=${glove}&kind=fnsku`)
+    expect(line.status).toBe(200)
+    expect((await PDFDocument.load(await line.arrayBuffer())).getPageCount()).toBe(1)
+    const warning = await download(shipment!.id, "?kind=suffocation")
+    expect(warning.headers.get("content-disposition")).toContain(encodeURIComponent("Suffocation warning labels.pdf"))
+    // The glove has no SKU label of its own, and the cord ships separately.
+    expect((await download(shipment!.id, `?item=${glove}&kind=sku`)).status).toBe(404)
+    expect((await download(shipment!.id, `?item=${cord}`)).status).toBe(404)
+    expect((await download(shipment!.id, `?item=${cord}&kind=wrong`)).status).toBe(404)
+  })
+
+  it("says why a line's label can't be made yet when it has nothing else to print", async () => {
+    const cord = randomUUID()
+    const po = await order([item(cord, variantA)], "amazon")
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, po.id))
+    const [shipment] = await database
+      .insert(tables.shipments)
+      .values({ orderId: po.id, orderRevision: 1, status: "packing", amazonNetwork: "fba" })
+      .returning()
+    context.actor = packer()
+
+    // The cord needs no warning sheet, so its missing FNSKU label leaves nothing to print, with or without a kind.
+    for (const query of [`?item=${cord}`, `?item=${cord}&kind=fnsku`]) {
+      const response = await download(shipment!.id, query)
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ error: "Its FNSKU is looked up when the purchase order is sent" })
+    }
   })
 })

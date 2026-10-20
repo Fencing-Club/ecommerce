@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({
   database: null as unknown,
   read: vi.fn<() => Promise<never[]>>().mockResolvedValue([]),
@@ -33,7 +33,7 @@ const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -54,7 +54,7 @@ it("commits each sales period and resumes each follow-up exactly once", async ()
     orgId,
     source: "shopify",
     revision: 1,
-    resume: { remaining: [first, second], covered: null }
+    resume: { remaining: [first, second], covered: null, customersIncluded: false }
   }
   const owned = vi.fn<() => Promise<void>>().mockResolvedValue()
   for (let index = 0; index < 4; index++) {

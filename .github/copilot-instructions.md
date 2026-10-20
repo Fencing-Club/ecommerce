@@ -82,10 +82,15 @@ needs a human discussion**, not a silent add.
 
 - Every page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or update them
   with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
-- Its database holds production data. Change the schema only through a new migration: edit
-  `apps/copacker/src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and add the new file's hash to
-  `apps/copacker/tests/migrations.test.ts` once it has been deployed. Never edit an existing migration or apply SQL by
-  hand. The serialized release runner applies pending migrations before deploying the web service.
+- Production data must survive every release. Keep applied migrations immutable and append forward migrations; never
+  replace deployed migration history with a fresh baseline or reset a database as part of a release. Remove obsolete
+  runtime compatibility paths only when stored data meets the current contract. For schema changes, edit
+  `apps/copacker/src/db/schema.ts` and run `pnpm --filter copacker db:generate`. See
+  [database setup](../apps/copacker/docs/operations.md#databases-and-migrations). Database resets require explicit
+  authorization.
+- Never test migrations. The one exception is CI's `verify` job, which applies them to an empty Postgres once per run as
+  a release gate. How database tests get their schema is in
+  [database setup](../apps/copacker/docs/operations.md#databases-and-migrations).
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is
   disposable; never reset or delete production data unless the user explicitly asks, and keep integration credentials
   and unrelated external configuration when resetting application data unless a full reset is requested.

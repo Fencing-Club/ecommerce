@@ -14,6 +14,7 @@ const sent: ActionRequest[] = []
 const linked = fn(async (_shipmentId: string | null) => undefined)
 
 const meta = preview.meta({
+  title: "Components/Shipments/Shipment actions",
   component: ApproveInvoice,
   args: { id: shipmentId, revision: 3 },
   beforeEach: ({ msw }) => {
@@ -84,14 +85,9 @@ export const Release = meta.story({
   render: () => <ReleaseLabels id={shipmentId} revision={4} />,
   play: async ({ canvas }) => {
     const submit = canvas.getByRole("button", { name: "Release labels to supplier" })
-    // The button waits for a booking reference.
-    await expect(submit).toBeDisabled()
+    await expect(submit).toBeEnabled()
     const field = canvas.getByRole("textbox", { name: "Amazon transport booking reference" })
-    await userEvent.type(field, "   ")
-    await userEvent.click(submit)
-    await expect(await canvas.findByText("Fill in this field")).toBeVisible()
-    await expect(sent).toHaveLength(0)
-    await userEvent.clear(field)
+    await expect(field).not.toBeRequired()
     await userEvent.type(field, " AGL-778812 ")
     await userEvent.click(submit)
     await waitFor(() =>
@@ -184,5 +180,17 @@ export const ReconcileFails = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Existing Amazon AWD order ID" }), "STAR-8KQ2M7")
     await userEvent.click(canvas.getByRole("button", { name: "Verify and resume" }))
     await expect(await screen.findByText("Amazon has no order STAR-8KQ2M7.")).toBeInTheDocument()
+  }
+})
+
+export const ReleaseWithoutBookingReference = meta.story({
+  render: () => <ReleaseLabels id={shipmentId} revision={4} />,
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Release labels to supplier" }))
+    await waitFor(() =>
+      expect(sent).toEqual([
+        { action: "shipment.release", data: { id: shipmentId, revision: 4, bookingReference: "" } }
+      ])
+    )
   }
 })

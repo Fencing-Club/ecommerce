@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "خریداری آرڈر کا اسٹیٹس",
-    "tabs": {
-      "all": {
-        "label": "تمام",
-        "empty": "کوئی خریداری آرڈر نہیں"
-      },
-      "draft": {
-        "label": "ڈرافٹ",
-        "empty": "کوئی ڈرافٹ نہیں"
-      },
-      "submitted": {
-        "label": "سپلائر کے پاس",
-        "empty": "سپلائرز کے پاس کوئی خریداری آرڈر نہیں"
-      },
-      "closed": {
-        "label": "بند",
-        "empty": "کوئی بند خریداری آرڈر نہیں"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "خریداری آرڈر",
-      "supplier": "سپلائر",
-      "destination": "منزل",
-      "created": "بنایا گیا",
-      "status": "اسٹیٹس",
-      "value": "مالیت"
-    },
-    "products": "{count, plural, one {# پروڈکٹ} other {# پروڈکٹس}}"
-  },
   "index": {
     "title": "خریداری آرڈرز",
     "supplierTitle": "آرڈرز",
@@ -46,11 +16,6 @@
         "description": "اپنے سپلائر کو مدعو کریں، پھر اپنا پہلا خریداری آرڈر بنائیں۔",
         "action": "سپلائر کو مدعو کریں"
       }
-    },
-    "stats": {
-      "open": "کھلے آرڈرز",
-      "withSuppliers": "سپلائرز کے پاس",
-      "drafts": "ڈرافٹس"
     },
     "empty": {
       "guidedTitle": "آپ کی اگلی شپمنٹ یہیں سے شروع ہوتی ہے",
@@ -200,7 +165,7 @@
     "shipmentTo": "{destination} کی شپمنٹ",
     "shipmentCounts": "{count} اقسام، {pieces, number} عدد",
     "selectProduct": "{name} منتخب کریں",
-    "packCount": "{size} کے {count, number} پیک",
+    "packCount": "{count, number} پیک، ہر ایک میں {size}",
     "supplierCharges": "سپلائر کے اخراجات",
     "addSupplierCharge": "خرچ شامل کریں",
     "removeSupplierCharge": "خرچ ہٹائیں",
@@ -280,7 +245,16 @@
       "label": "تبصرہ",
       "placeholder": "تبصرہ لکھیں…",
       "post": "پوسٹ کریں",
-      "required": "تبصرہ لکھیں"
+      "required": "تبصرہ لکھیں",
+      "visibility": "تبصرے کی رسائی",
+      "internal": "اندرونی تبصرہ",
+      "messageSupplier": "سپلائر کو پیغام",
+      "messageCustomer": "کسٹمر کو پیغام",
+      "internalHint": "صرف آپ کی ٹیم یہ تبصرہ دیکھ سکتی ہے۔",
+      "supplierHint": "آپ کی ٹیم اور سپلائر یہ پیغام دیکھ سکتے ہیں۔",
+      "customerHint": "آپ کی ٹیم اور کسٹمر یہ پیغام دیکھ سکتے ہیں۔",
+      "sharedSupplier": "سپلائر کے ساتھ شیئر کیا گیا",
+      "sharedCustomer": "کسٹمر کے ساتھ شیئر کیا گیا"
     },
     "events": {
       "created": "خریداری آرڈر بنایا گیا",
@@ -310,6 +284,7 @@
       "packingSplit": "پیکنگ جمع کرائی گئی؛ {networks} شپمنٹس میں تقسیم کر کے Amazon کے لیے قطار میں",
       "forwarderShipped": "{forwarder} نے سامان بھیج دیا: {tracking}",
       "packingReady": "پیکنگ جمع کرائی گئی؛ بھیجنے کے لیے تیار",
+      "packingReopened": "تبدیلیوں کے لیے پیکنگ دوبارہ کھولی گئی",
       "invoiceEntered": "خریداری آرڈر میں تبدیلیوں کے ساتھ انوائس درج کی گئی",
       "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں",
       "existingAwdLinked": "موجودہ AWD شپمنٹ {shipmentId} منسلک کر دی گئی",
@@ -430,9 +405,16 @@
     "pickupAddress": "پک اپ کا پتہ",
     "otherAddress": "دوسرا پتہ",
     "readyForPickup": "پک اپ کے لیے تیار",
+    "shipFrom": "پک اپ کا پتہ",
+    "readyDate": "پک اپ کے لیے تیار",
     "addCartonProduct": "کارٹن میں پروڈکٹ شامل کریں",
     "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
-    "finishPacking": "پیکنگ مکمل کریں"
+    "finishPacking": "پیکنگ مکمل کریں",
+    "addNewAddress": "پتہ شامل کریں",
+    "chooseAddress": "پک اپ کا پتہ",
+    "packedUnits": "{available} اکائیوں میں سے {count}",
+    "leftCount": "{count} باقی",
+    "overCount": "{count} زیادہ"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -459,6 +441,7 @@
     "other": "دیگر"
   },
   "cartonEditor": {
+    "addProducts": "کارٹن میں مصنوعات شامل کریں",
     "addProductsTo": "کارٹن {carton} میں مصنوعات شامل کریں",
     "shipmentProducts": "اس شپمنٹ کی مصنوعات",
     "searchProducts": "اس شپمنٹ میں مصنوعات تلاش کریں",
@@ -484,18 +467,24 @@
     "actions": "کارٹن {carton} کی کارروائیاں",
     "duplicate": "کارٹن کی نقل بنائیں",
     "delete": "کارٹن حذف کریں",
-    "quantityPerCarton": "مقدار / کارٹن",
-    "packsPerCarton": "پیک / کارٹن",
-    "unitsPerCarton": "اکائیاں / کارٹن",
+    "quantityPerCarton": "مقدار",
     "productQuantity": "{sku}: کارٹن {carton} میں مقدار",
     "unitCount": "{count} اکائیاں",
     "removeProduct": "کارٹن {carton} سے {sku} ہٹائیں",
     "product": "پروڈکٹ",
     "leftToPack": "پیک کرنا باقی",
     "packCount": "{count} پیک",
-    "addToCarton": "کارٹن {carton} میں شامل کریں",
+    "addToCarton": "کارٹن میں شامل کریں",
     "selectedCount": "{count} منتخب",
-    "cartonGroup": "کارٹن {cartons}"
+    "cartonGroup": "کارٹن {cartons}",
+    "addProductsToCartons": "کارٹن {cartons} میں مصنوعات شامل کریں",
+    "rules": {
+      "unitsPerCarton": "مقدار: ہر کارٹن میں {units, number} قابل فروخت یونٹس {receiver} کی {max, number} کی حد سے زیادہ ہیں۔ انہیں چھوٹے کارٹنوں میں تقسیم کریں۔",
+      "cartonSize": "پیمائش: {side, select, width {چوڑائی} height {اونچائی} other {لمبائی}} {size, number} cm ہے۔ {receiver} {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {اس کارٹن کے لیے زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} کی اجازت دیتا ہے۔",
+      "cartonWeight": "وزن: {weight, number} kg، {maxLb, number} lb ({maxKg, number} kg) کی حد سے زیادہ ہے۔ ہر کارٹن کا وزن کم کریں۔",
+      "oneSku": "مصنوعات: {receiver} میں ہر کارٹن میں ایک ہی SKU ہونا چاہیے۔ ان SKUs کو الگ کارٹنوں میں رکھیں۔",
+      "samePacking": "پیکنگ ٹیمپلیٹ: یہ SKU اس شپمنٹ میں کسی اور جگہ {difference, select, units {ہر کارٹن میں {units, number} یونٹس} other {{length, number} × {width, number} × {height, number} cm اور {weight, number} kg کے کارٹن}} استعمال کرتا ہے۔ اس SKU کے ہر کارٹن کے لیے ایک ہی پیکنگ ٹیمپلیٹ استعمال کریں۔"
+    }
   },
   "cartonImport": {
     "title": "کارٹن درآمد کریں",
@@ -530,11 +519,19 @@
       "worksheet": "فائل میں Cartons نام کی ورک شیٹ ہونی چاہیے۔",
       "unreadable": "فائل پڑھی نہیں جا سکی۔ سانچے پر مبنی XLSX یا CSV فائل استعمال کریں۔",
       "number": "{value} میں درست مثبت عدد درج کریں۔",
-      "sku": "SKU اس شپمنٹ میں شامل نہیں ہے: {value}۔",
+      "sku": "سپلائر SKU {value} اور تفصیلات اس شپمنٹ کی صرف ایک پروڈکٹ سے مطابقت رکھنے چاہئیں۔",
       "cartonId": "1–60 حروف پر مشتمل کارٹن ID درج کریں۔",
       "measurements": "اس کارٹن کی قطاروں میں کارٹن کی تعداد، ابعاد اور وزن یکساں ہونے چاہییں۔",
       "duplicateProduct": "اس کارٹن میں {value} ایک سے زیادہ بار درج ہے۔",
       "limit": "ایک شپمنٹ میں زیادہ سے زیادہ 1,000 کارٹن ہو سکتے ہیں۔"
+    },
+    "template": {
+      "identity": "پہلے سے درج سپلائر SKU، پروڈکٹ، قسم اور فی پیک تعداد تبدیل نہ کریں۔ نامکمل یا غلط معلومات درست کرنے کے لیے خریدار سے کہیں۔",
+      "rows": "ہر کارٹن میں ہر پروڈکٹ کے لیے ایک قطار استعمال کریں۔ مزید کارٹنوں کے لیے پروڈکٹ کی قطار نقل کریں۔ ساتھ پیک ہونے والی مصنوعات کا Carton ID ایک رکھیں۔ غیر استعمال شدہ پیکنگ خانے خالی چھوڑیں۔",
+      "cartons": "Carton ID آپ کا حوالہ ہے، Amazon لیبل نمبر نہیں۔ الگ کارٹنوں کے لیے A1، A2 وغیرہ اور Carton count 1 استعمال کریں۔ یکساں کارٹنوں کے لیے تعداد 1 سے زیادہ رکھیں: A1 کی تعداد 3 ہو تو A1، A1-2 اور A1-3 بنتے ہیں۔ موجودہ شناختی نمبر چھوڑ دیے جاتے ہیں۔",
+      "quantity": "Quantity per carton پیک کی تعداد ہے۔ 2 کے پیک میں مقدار 10 کا مطلب 20 عدد ہے۔ یکساں گروپ کے تمام کارٹنوں میں مصنوعات اور ان کی تعداد یکساں ہونی چاہیے۔",
+      "measurements": "پیمائش سینٹی میٹر میں اور وزن کلوگرام میں درج کریں۔ ایک ہی Carton ID والی ہر قطار میں کارٹنوں کی تعداد، پیمائش اور وزن یکساں رکھیں۔",
+      "format": "سفید پیکنگ خانے بھریں۔ انگریزی سرخیاں اور Cartons شیٹ کا نام تبدیل نہ کریں۔ XLSX اپ لوڈ کریں یا Cartons جدول کو CSV میں برآمد کریں۔"
     }
   }
 }

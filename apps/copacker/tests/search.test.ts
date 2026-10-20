@@ -9,7 +9,7 @@ import type { Session } from "../src/server/workspace-session"
 const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 import { searchIndex } from "../src/server/search"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -43,7 +43,7 @@ async function order(
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Fencing Club", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" },
@@ -80,9 +80,7 @@ beforeAll(async () => {
     { productId: "p2", variantId: "v2", productTitle: "Glove", variantTitle: "6 / Left", buyerSku: "GLOVE-6L" },
     { productId: "p2", variantId: "v3", productTitle: "Glove", variantTitle: "7 / Left", buyerSku: "GLOVE-7L" },
     // Stocked and shipped by a Shopify Collective partner, which the Products page leaves out.
-    { productId: "p3", variantId: "v4", productTitle: "Partner mask", buyerSku: "MASK", kind: "shopify_collective" },
-    // Saved before product details were collected.
-    { variantId: "v5", buyerSku: "OLD-1" }
+    { productId: "p3", variantId: "v4", productTitle: "Partner mask", buyerSku: "MASK", kind: "shopify_collective" }
   ].map(({ kind = "merchant", ...row }) => ({ ...row, imageUrl: null, levels: [level(kind)] }))
   await database.insert(tables.stockSnapshots).values({
     orgId: buyerId,
@@ -141,8 +139,7 @@ describe("search index", () => {
   it("lists a buyer's products and partners as their pages do, and none for other workspaces", async () => {
     expect((await searchIndex(actor(buyerId, "buyer"))).products).toEqual([
       { id: "p1", title: "Epee body cord", imageUrl: null, keywords: ["CORD-E"] },
-      { id: "p2", title: "Glove", imageUrl: null, keywords: ["6 / Left", "GLOVE-6L", "7 / Left", "GLOVE-7L"] },
-      { id: "v5", title: "OLD-1", imageUrl: null, keywords: ["OLD-1"] }
+      { id: "p2", title: "Glove", imageUrl: null, keywords: ["6 / Left", "GLOVE-6L", "7 / Left", "GLOVE-7L"] }
     ])
     expect((await searchIndex(actor(supplierOrgId, "supplier"))).products).toEqual([])
     expect((await searchIndex(actor(otherBuyerId, "buyer"))).products).toEqual([])

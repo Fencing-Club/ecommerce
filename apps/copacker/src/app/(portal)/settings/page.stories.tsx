@@ -61,9 +61,7 @@ type Args = {
   amazonStore: { name: string; marketplaces: string[] } | null
   ebayName: string | null
   // Whether Copacker has its eBay keys.
-  ebayAvailable: boolean
   orderTags: string[]
-  copyingTags: boolean
   // The store's Shopify locations and what each counts as.
   locations: typeof inventoryLocations.locations
   // The workspaces the person owns: those others use, and those that close with the account.
@@ -87,7 +85,6 @@ async function SettingsPage(args: Args) {
   const amazon = amazonAccount ? args.amazonStore : null
   const ebayName = ebayAccount ? args.ebayName : null
   const orderTags = buyer && shopifyAccount && admin ? args.orderTags : []
-  const copyingTags = buyer && shopifyAccount && admin ? args.copyingTags : false
   const ownLocations = buyer
     ? args.locations
         .filter((location) => location.classification === "merchant")
@@ -125,7 +122,6 @@ async function SettingsPage(args: Args) {
         amazon,
         ebayName,
         orderTags,
-        copyingTags,
         ownLocations,
         person: saved,
         owned: {
@@ -134,8 +130,7 @@ async function SettingsPage(args: Args) {
         },
         computerLocale: args.computerLocale,
         amazonAdsAvailable: false,
-        amazonSelfAuth: true,
-        ebayAvailable: args.ebayAvailable
+        amazonSelfAuth: true
       }}
     />
   )
@@ -241,9 +236,7 @@ const buyerArgs: Args = {
   shopName: "Harbor Goods",
   amazonStore: { name: "Harbor Goods US", marketplaces: ["United States", "Canada"] },
   ebayName: ebayAccount,
-  ebayAvailable: true,
   orderTags: ["Amazon", "wholesale", "sample"],
-  copyingTags: false,
   locations: inventoryLocations.locations,
   owned: { handOver: [], closing: [workspaces.buyer.name] }
 }
@@ -254,7 +247,7 @@ const supplier = portalPage("/settings", "supplier")
 const forwarder = portalPage("/settings", "forwarder")
 
 const meta = preview.meta({
-  title: "Pages/Shared/Settings",
+  title: "Pages/Settings",
   ...serverStory(SettingsPage),
   args: buyerArgs,
   beforeEach: ({ msw }) => {
@@ -336,6 +329,10 @@ export const AmazonSettings = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Harbor Goods US")
+    for (const name of ["Orders", "Inventory", "Financial data"]) {
+      await waitFor(() => expect(within(sheet).getByRole("heading", { name })).toBeVisible())
+    }
+    await expect(within(sheet).getByRole("button", { name: "Sync Amazon financial data" })).toBeVisible()
     await expect(sheet).not.toHaveTextContent(amazonAccount)
     await expect(sheet).not.toHaveTextContent("Amazon Ads")
     await waitFor(() => expect(within(sheet).getByText("United States")).toBeVisible())
@@ -394,17 +391,6 @@ export const EbayUnnamed = meta.story({
   args: { ebayName: null },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("ebay-user-1234")).toBeVisible()
-  }
-})
-
-// Without Copacker's eBay keys, eBay is coming.
-export const EbayComingSoon = meta.story({
-  ...buyer,
-  args: { linked: [], ebayAvailable: false },
-  play: async ({ canvas }) => {
-    const integrations = canvas.getByRole("region", { name: "Integrations" })
-    await expect(within(integrations).getByText("Coming soon")).toBeVisible()
-    await expect(within(integrations).queryByRole("link", { name: "Connect eBay" })).toBeNull()
   }
 })
 

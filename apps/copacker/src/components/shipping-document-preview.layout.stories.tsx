@@ -4,7 +4,7 @@ import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-docum
 
 const meta = preview.meta({
   ...shippingDocumentStory,
-  title: "Documents/Supplier packet/Layout"
+  title: "Components/Shipping documents/Layout"
 })
 
 export const MultiplePages = meta.story({ args: { data: scenario("long-order") }, play: ready })

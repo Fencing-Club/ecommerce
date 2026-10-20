@@ -35,6 +35,7 @@ function ImportFlow(props: Props) {
   )
 }
 const meta = preview.meta({
+  title: "Components/Shipments/Carton import dialog",
   component: ImportFlow,
   args: {
     open: true,
@@ -49,7 +50,7 @@ const meta = preview.meta({
 function csv(rows: string[]) {
   return new File([[cartonColumns.join(","), ...rows].join("\n")], "packing.csv", { type: "text/csv" })
 }
-const valid = () => csv([`2,1,${order.items[0]!.buyerSku},20,60,40,40,12`])
+const valid = () => csv([`2,1,${order.items[0]!.supplierSku},20,60,40,40,12`])
 async function upload(file: File) {
   const dialog = await shownDialog("Import cartons")
   const input = screen.getByRole("dialog").querySelector("input[type=file]")
@@ -122,7 +123,7 @@ export const RemoveInvalidFile = meta.story({
 export const RowErrors = meta.story({
   play: async () => {
     const dialog = await upload(csv(["2,1,UNKNOWN,20,60,40,40,12"]))
-    await expect(dialog.getByText(/SKU is not in this shipment/)).toBeVisible()
+    await expect(dialog.getByText(/must match exactly one product/)).toBeVisible()
     await expect(dialog.getByText("Row 2 / Carton 2")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
     await expect(dialog.queryByRole("button", { name: "Download errors" })).toBeNull()
@@ -134,9 +135,9 @@ export const MultipleRowErrors = meta.story({
     const dialog = await upload(
       csv([
         "2,1,UNKNOWN,20,60,40,40,12",
-        `3,1,${order.items[0]!.buyerSku},-1,60,40,40,0`,
-        `4,1,${order.items[1]!.buyerSku},20,60,40,40,12`,
-        `4,1,${order.items[1]!.buyerSku},20,50,40,40,12`
+        `3,1,${order.items[0]!.supplierSku},-1,60,40,40,0`,
+        `4,1,${order.items[1]!.supplierSku},20,60,40,40,12`,
+        `4,1,${order.items[1]!.supplierSku},20,50,40,40,12`
       ])
     )
     await expect(dialog.getByText("4 issues")).toBeVisible()
@@ -149,9 +150,9 @@ export const MultipleCartons = meta.story({
   play: async () => {
     const dialog = await upload(
       csv([
-        `2,1,${order.items[0]!.buyerSku},20,60,40,40,12`,
-        `2,1,${order.items[1]!.buyerSku},10,60,40,40,12`,
-        `3,2,${order.items[2]!.buyerSku},10,50,35,30,7.8`
+        `2,1,${order.items[0]!.supplierSku},20,60,40,40,12`,
+        `2,1,${order.items[1]!.supplierSku},10,60,40,40,12`,
+        `3,2,${order.items[2]!.supplierSku},10,50,35,30,7.8`
       ])
     )
     await expect(dialog.getByText("3 cartons")).toBeVisible()

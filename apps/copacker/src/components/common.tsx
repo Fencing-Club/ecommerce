@@ -1,8 +1,9 @@
-import { AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
+import { AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
+import { Attachment } from "./attachment"
 
 // Every status reads in one of five tones, the same label always in the same tone: warning when the viewer has to act,
 // info while someone else is working on it, success when it's ready or done well, neutral when idle or filed, and
@@ -22,10 +23,11 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   submitted: { label: "submitted", tone: "info" },
   accepted: { label: "accepted", tone: "info" },
   declined: { label: "declined", tone: "warning" },
+  changes_proposed: { label: "changesProposed", tone: "warning" },
   closed: { label: "closed", tone: "neutral" },
   // Shipments
   packing: { label: "packing", tone: "info" },
-  packed: { label: "packed", tone: "info" },
+  packed: { label: "packed", tone: "success" },
   approval: { label: "approval", tone: "warning" },
   queued: { label: "creatingShipment", tone: "info" },
   creating: { label: "creatingShipment", tone: "info" },
@@ -119,9 +121,17 @@ function words(status: string) {
 }
 
 export function Status({ status }: { status: string }) {
+  const label = useStatusLabel()
+  return <StatusBadge tone={statuses[statusKey(status)]?.tone ?? "neutral"}>{label(status)}</StatusBadge>
+}
+
+// A status's words without its pill, for filters and exports.
+export function useStatusLabel() {
   const t = useTranslations("common.status")
-  const known = statuses[statusKey(status)]
-  return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
+  return (status: string) => {
+    const known = statuses[statusKey(status)]
+    return known ? t(known.label) : words(status)
+  }
 }
 
 // The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title (on a phone,
@@ -289,42 +299,54 @@ const documentKinds: Record<string, keyof typeof messages.documents> = {
   product_label: "productLabel"
 }
 
-// Documents as flat rows, for a card: each by its type, such as Packing list, with its file name beneath. The whole row
-// downloads the file.
+// Shared attachment cards; provider label files are grouped by shipment and document kind.
 export function DocumentList({
   documents
 }: {
-  documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null }>
+  documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null; shipmentId?: string | null }>
 }) {
   const t = useTranslations("common.documents")
+  const seen = new Set<string>()
+  const rows = documents.filter((doc) => {
+    if (!doc.shipmentId || (doc.kind !== "carton_label" && doc.kind !== "shipping_label")) {
+      return true
+    }
+    const key = `${doc.shipmentId}:${doc.kind}`
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
   return (
-    <ul className="divide-y">
-      {documents.map((d) => {
+    <ul className="space-y-2">
+      {rows.map((d) => {
+        const bundle = !!d.shipmentId && (d.kind === "carton_label" || d.kind === "shipping_label")
         const kindKey = d.kind ? documentKinds[d.kind] : undefined
         const kind = kindKey && t(kindKey)
         return (
           <li key={d.id}>
-            {/* The row bleeds into the card's padding on hover, so its content lines up with the card's. */}
-            <a
-              href={`/api/documents/${d.id}`}
-              className="group/document -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-medium">
-                  <span className="sr-only">{t("download")} </span>
-                  {kind ?? fileName(d.name)}
-                  {d.cartonId && ` ${d.cartonId}`}
-                </span>
-                {kind && <span className="truncate text-xs text-muted-foreground">{fileName(d.name)}</span>}
-              </span>
-              <span
-                aria-hidden
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover/document:bg-muted group-hover/document:text-foreground"
-              >
-                <Download className="size-4" />
-              </span>
-            </a>
+            <Attachment
+              label={
+                <>
+                  {bundle
+                    ? t(d.kind === "carton_label" ? "cartonLabels" : "shippingLabels")
+                    : (kind ?? fileName(d.name))}
+                  {!bundle && d.cartonId && ` ${d.cartonId}`}
+                </>
+              }
+              fileName={kind && !bundle ? d.name : undefined}
+              // The link's name replaces its text, so it names the file too: two documents of one kind stay apart.
+              downloadLabel={[
+                t("download"),
+                bundle ? t(d.kind === "carton_label" ? "cartonLabels" : "shippingLabels") : (kind ?? d.name),
+                !bundle && d.cartonId,
+                kind && !bundle && d.name
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              href={`/api/documents/${d.id}${bundle ? "?bundle=true" : ""}`}
+            />
           </li>
         )
       })}

@@ -4,6 +4,7 @@ import { type ActionRequest, recordActions, serverError } from "@/stories/fixtur
 import { InviteSupplier } from "./invite-supplier"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
+  title: "Components/Partners/Invite supplier",
   component: InviteSupplier,
   args: { onCreated: fn() },
   beforeEach: ({ msw }) => {

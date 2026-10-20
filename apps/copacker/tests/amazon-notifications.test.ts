@@ -28,9 +28,8 @@ import {
 } from "../src/server/amazon-notifications"
 import { PollAgain } from "../src/server/job-handlers"
 import { runNextJob } from "../src/server/queue"
-import { amazonDataVersion } from "../src/server/sales-orders"
 import { queueArn } from "../src/server/sqs"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -88,7 +87,7 @@ const queued = (kind: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -170,7 +169,6 @@ describe("Amazon order updates", () => {
       revision: 1,
       coveredFrom,
       coveredTo,
-      dataVersion: amazonDataVersion,
       ...values
     })
   }
@@ -221,8 +219,8 @@ describe("Amazon order updates", () => {
     )
   })
 
-  it("reads everything again when the stored orders are old or in an older shape", async () => {
-    await storedSync({ dataVersion: amazonDataVersion - 1 })
+  it("reads everything again when the stored coverage is stale", async () => {
+    await storedSync({ coveredTo: new Date(now - 31 * 86400000) })
     await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
     expect((await database.select().from(tables.salesSyncs))[0]).toMatchObject({ status: "queued", revision: 2 })
     expect(amazon.request).not.toHaveBeenCalled()

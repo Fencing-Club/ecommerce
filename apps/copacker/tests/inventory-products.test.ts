@@ -15,6 +15,9 @@ const row = (variant: number, product: number, fields: Record<string, unknown>) 
   inventoryItemId: `gid://shopify/InventoryItem/${variant}`,
   buyerSku: `sku-${variant}`,
   productId: `gid://shopify/Product/${product}`,
+  productTitle: `sku-${variant}`,
+  variantTitle: "Default Title",
+  imageUrl: null,
   tracked: true,
   unit: "shopify_inventory_unit" as const,
   levels: [],
@@ -67,11 +70,6 @@ describe("groupInventory", () => {
     ])
     expect(groupInventory(rows, { query: "right / 6" })[0]?.variants.map((v) => v.sku)).toEqual(["sku-2"])
     expect(groupInventory(rows, { query: "SKU-3" }).map((p) => p.title)).toEqual(["Body cord"])
-  })
-
-  it("falls back to the SKU for snapshots saved before product details were collected", () => {
-    const legacy = [{ ...row(4, 0, { levels: [level("1", "Fencing Club", 1)] }), productId: undefined }]
-    expect(groupInventory(legacy)).toMatchObject([{ productId: "gid://shopify/ProductVariant/4", title: "sku-4" }])
   })
 
   it("leaves excluded locations out unless asked for", () => {

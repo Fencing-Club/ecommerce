@@ -53,7 +53,8 @@
     "accepted": "Accepted",
     "declined": "Declined",
     "atForwarder": "At the forwarder",
-    "packed": "Packed"
+    "packed": "Packed",
+    "changesProposed": "Changes proposed"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -67,7 +68,9 @@
     "checklist": "Packing checklist",
     "cartonLabel": "Carton label",
     "shippingLabel": "Shipping label",
-    "productLabel": "Product label"
+    "productLabel": "Product label",
+    "cartonLabels": "Carton labels",
+    "shippingLabels": "Shipping labels"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",
@@ -199,5 +202,132 @@
     "waitingOn": "Waiting on {name}",
     "working": "Working on it"
   },
-  "viewOnly": "View only"
+  "viewOnly": "View only",
+  "logistics": {
+    "views": {
+      "needsYou": "Needs you",
+      "draft": "Drafts",
+      "active": "Active",
+      "closed": "Closed",
+      "received": "Received",
+      "all": "All"
+    },
+    "columns": {
+      "route": "Route",
+      "shipped": "Shipped",
+      "total": "Total",
+      "cartons": "Cartons",
+      "ready": "Ready",
+      "status": "Status",
+      "waiting": "Waiting on"
+    },
+    "filters": {
+      "supplier": "Supplier",
+      "customer": "Customer",
+      "allSuppliers": "All suppliers",
+      "allCustomers": "All customers",
+      "button": "Filters",
+      "label": "List filters",
+      "status": "Status",
+      "destination": "Destination",
+      "forwarder": "Forwarder",
+      "source": "Source",
+      "ready": "Ready date",
+      "from": "From",
+      "to": "To",
+      "any": "Any",
+      "clear": "Clear filters",
+      "done": "Done",
+      "applied": "Applied filters",
+      "remove": "Remove {name} filter",
+      "chip": "{name}: {value}",
+      "readyRange": "Ready date: {from} to {to}"
+    },
+    "sort": {
+      "label": "Sort by {name}",
+      "newest": "Newest",
+      "ready": "Ready date"
+    },
+    "sources": {
+      "order": "Purchase order",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "You",
+      "buyer": "Buyer",
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "forwarder": "Forwarder",
+      "amazon": "Amazon",
+      "carrier": "Carrier",
+      "done": "Done"
+    },
+    "selection": {
+      "count": "{count} selected",
+      "export": "Export selected",
+      "clear": "Clear selection",
+      "select": "Select {reference}"
+    },
+    "columnsLabel": "Columns",
+    "export": "Export",
+    "direct": "Direct",
+    "route": "{forwarder} to {destination}",
+    "products": "{count, plural, one {# product} other {# products}}",
+    "shipped": "{shipped} of {quantity} shipped",
+    "shippedLabel": "{reference} shipped",
+    "cartons": "{count, plural, one {# carton} other {# cartons}}",
+    "readyOn": "Ready {date}",
+    "shipmentReference": "{reference}, shipment {number}",
+    "opensInSellerCentral": "(opens in Seller Central)",
+    "actionsColumn": "Actions",
+    "rowActions": "Actions for {reference}",
+    "viewShipment": "View shipment",
+    "viewPurchaseOrder": "View purchase order",
+    "viewOrder": "View order",
+    "noMatchesDescription": "Try another search or change your filters.",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "orders": {
+      "title": "Purchase orders",
+      "reference": "Purchase order",
+      "views": "Purchase order views",
+      "search": "Search purchase orders",
+      "searchPlaceholder": "Search reference, supplier, or Amazon ID",
+      "table": "Purchase orders",
+      "selectAll": "Select all visible purchase orders",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# purchase order} other {# purchase orders}}",
+      "showing": "Showing {from}–{to} of {count} purchase orders",
+      "noMatches": "No matching purchase orders",
+      "empty": {
+        "needsYou": "Nothing needs you right now",
+        "draft": "No drafts",
+        "active": "No active purchase orders",
+        "closed": "No closed purchase orders",
+        "received": "No received purchase orders",
+        "all": "No purchase orders"
+      }
+    },
+    "shipments": {
+      "title": "Shipments",
+      "reference": "Shipment",
+      "views": "Shipment views",
+      "search": "Search shipments",
+      "searchPlaceholder": "Search purchase order, shipment, or Amazon ID",
+      "table": "Shipments",
+      "selectAll": "Select all visible shipments",
+      "file": "shipments",
+      "count": "{count, plural, one {# shipment} other {# shipments}}",
+      "showing": "Showing {from}–{to} of {count} shipments",
+      "noMatches": "No matching shipments",
+      "empty": {
+        "needsYou": "Nothing needs you right now",
+        "draft": "No drafts",
+        "active": "No active shipments",
+        "closed": "No closed shipments",
+        "received": "No received shipments",
+        "all": "No shipments"
+      }
+    }
+  }
 }

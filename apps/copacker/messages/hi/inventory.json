@@ -52,7 +52,6 @@
     "needLabelHint": "वे वैरिएंट जिनका लेबल अपलोड करना है",
     "withoutCountryFilter": "{count, plural, other {# बिना देश के}}",
     "withoutCountryHint": "Shopify में बिना मूल देश वाले वैरिएंट, इसलिए उनके लेबल पर “Made in” नहीं आता",
-    "needsResync": "प्रोडक्ट की नई जानकारी लोड करने के लिए Shopify सिंक करें",
     "noMatch": "कोई प्रोडक्ट मेल नहीं खाता",
     "noProducts": "कोई प्रोडक्ट नहीं",
     "loading": "प्रोडक्ट लोड हो रहे हैं",

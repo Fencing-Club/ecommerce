@@ -37,6 +37,7 @@ const forwarded = shipmentRecord({
 })
 
 const meta = preview.meta({
+  title: "Pages/Purchase orders/Forwarder view",
   ...serverStory(async (props: Props) => <ForwarderView page={await forwarderPage(props.row, props.editable)} />),
   args: {
     row: { order: orderRecord({ data: { ...order, via } }), supplier: supplierRecord(), forwarder },
@@ -89,10 +90,10 @@ export const ToWarehouse = meta.story({
     await expect(canvas.getByText("2 cartons")).toBeVisible()
     // Carton labels show once the buyer releases the shipment.
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
-    await expect(documents.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Download Commercial invoiceCommercial invoice PO-1042.pdf",
-      "Download Packing listPacking list.pdf",
-      "Download Carton label C1Carton labels.pdf"
+    await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
+      "Download Commercial invoice Commercial invoice PO-1042.pdf",
+      "Download Packing list Packing list.pdf",
+      "Download Carton label C1 Carton labels.pdf"
     ])
   }
 })

@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { SalesStatus } from "./sales-status"
 
 const meta = preview.meta({
+  title: "Components/Sales and costs/Sales status",
   component: SalesStatus,
   args: { status: "Fulfilled" }
 })

@@ -101,7 +101,6 @@
       "amazon": "订单、库存、费用、货件",
       "ebay": "订单、费用"
     },
-    "comingSoon": "即将推出",
     "connect": "连接",
     "notConnected": "未连接",
     "connected": "已连接",
@@ -153,11 +152,20 @@
         "unavailable": "状态不可用",
         "scheduled": "已启用每日同步"
       }
+    },
+    "health": {
+      "reconnect": "需要重新连接",
+      "configuration": "配置问题",
+      "unavailable": "暂时不可用",
+      "reconnectHelp": "Amazon 拒绝了已保存的授权。请重新连接账户以恢复访问。",
+      "configurationHelp": "Amazon 应用配置需要检查。请联系支持团队。",
+      "unavailableHelp": "目前无法检查 Amazon。已保留您保存的连接。",
+      "reconnectAction": "重新连接 Amazon",
+      "retry": "重试"
     }
   },
   "excludedTags": {
     "title": "排除的订单标签",
-    "syncing": "正在从 Shopify 同步标签",
     "none": "无",
     "edit": "编辑",
     "editLabel": "编辑排除的订单标签",

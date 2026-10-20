@@ -10,6 +10,7 @@ function stayOnPage() {
 }
 
 const meta = preview.meta({
+  title: "Components/Auth/Social sign in",
   component: SocialSignIn,
   args: { next: "/" },
   beforeEach: stayOnPage
