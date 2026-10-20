@@ -27,7 +27,7 @@ function Example() {
       active = false
     }
   }, [])
-  return file ? <ProviderLabelPreview file={file} title="Amazon carton labels" /> : <output>Loading file…</output>
+  return file ? <ProviderLabelPreview file={file} title="Carton labels" /> : <output>Loading file…</output>
 }
 const meta = preview.meta({
   component: Example,

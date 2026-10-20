@@ -170,7 +170,7 @@
       "description": "लेबल अभी डाउनलोड करें, या कभी भी {shipment} पर पाएं।",
       "summary": "{service}, {total}",
       "booked": "बुक किया गया",
-      "amazonLabels": "Amazon कार्टन लेबल",
+      "amazonLabels": "कार्टन लेबल",
       "carrierLabels": "कैरियर लेबल"
     },
     "problems": {

@@ -108,7 +108,7 @@
       "units": "Одиниці",
       "dimensions": "Розміри (см)",
       "weight": "Вага (кг)",
-      "amazonLabel": "Етикетка Amazon"
+      "amazonLabel": "Етикетка коробки"
     },
     "pickup": {
       "title": "Забір",

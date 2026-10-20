@@ -108,7 +108,7 @@
       "units": "件数",
       "dimensions": "尺寸（cm）",
       "weight": "重量（kg）",
-      "amazonLabel": "Amazon 标签"
+      "amazonLabel": "箱标"
     },
     "pickup": {
       "title": "提货",

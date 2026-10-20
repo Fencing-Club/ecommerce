@@ -116,16 +116,19 @@ shipment's pallets stops the job.
 - **Release**: like carton and carrier labels, the supplier and forwarder get pallet labels only once the buyer
   releases the shipment (`releasedLabelKinds`). An FBA shipment on pallets can't be released without them
   (`missing_pallet_label`).
-- **Supplier packet**: Amazon's pallet labels come after the carton labels (Amazon's, then the carrier's) and before
-  the product labels. The packet page offers them on their own as **Pallet labels**.
-- **Packing list**: the totals start with the pallet count, and a pallet table under the cartons gives each pallet's
-  ID and whether it's stackable, its cartons, dimensions and gross weight, in the carton table's columns. The packing
-  list download shows the same table.
-- **Label reference**: after the cartons, a Pallets table gives each pallet's cartons and its Amazon pallet label as
-  Amazon prints it, the Amazon shipment and the pallet's number there (`FBA18ABCD123 1/2`).
+- **Supplier packet**: the pallet labels come after the carton labels and carrier labels, and before the product
+  labels. The packet page offers them on their own as **Pallet labels**.
+- **Packing list**: the totals start with the pallet count. Under the cartons, a pallet table gives each pallet, its
+  cartons, dimensions, gross weight and whether it's stackable, in the carton table's columns. The packing list
+  download shows the same table.
+- **Label reference**: after the cartons, a Pallets table gives each pallet's cartons and its pallet label as Amazon
+  prints it, the Amazon shipment and the pallet's number there (`FBA18ABCD123 1/2`).
 - **Checklist**: under Pallet and handoff, an FBA shipment's **Pallet labels** step says to put one of each pallet's
   four labels on each side, at the top center, outside the stretch wrap; each carton keeps its own label. AWD and
   other shipments on pallets have no pallet label step.
+
+Documents name labels by what they go on, not who issues them: Carton labels, Carrier labels and Pallet labels, since
+other 3PLs can ask for them too.
 
 Pen: 10.04 B (documents after booking, packed on pallets), 08.01 P03 (FBA pallet freight pickup) and P04 (AWD pallet
 freight pickup), 08.03 C06 (FBA pallet freight checklist) and 09.01 L04 (FBA carton and pallet label reference).

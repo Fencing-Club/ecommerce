@@ -927,7 +927,7 @@ export const ReadyIncomplete = meta.story({
     await expect(canvas.getByText("Add a product label for Linen apron / Charcoal")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
     // A warehouse shipment has no Amazon labels.
-    await expect(canvas.queryByRole("columnheader", { name: "Amazon label" })).toBeNull()
+    await expect(canvas.queryByRole("columnheader", { name: "Carton label" })).toBeNull()
     await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
   }

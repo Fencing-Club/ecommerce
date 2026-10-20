@@ -108,7 +108,7 @@
       "units": "Einheiten",
       "dimensions": "Maße (cm)",
       "weight": "Gewicht (kg)",
-      "amazonLabel": "Amazon-Etikett"
+      "amazonLabel": "Kartonetikett"
     },
     "pickup": {
       "title": "Abholung",

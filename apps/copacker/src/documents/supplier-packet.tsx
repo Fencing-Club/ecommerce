@@ -12,7 +12,7 @@ export type PacketLabels = {
 
 /**
  * The supplier packet: the packing list, the packing checklist, the carton label reference, the carton labels (Amazon's,
- * then the carrier's), Amazon's pallet labels, then the product labels. The reference lists every carton with its labels
+ * then the carrier's), the pallet labels, then the product labels. The reference lists every carton with its labels
  * in one table, right before the labels it matches, and only when there are carton labels. Label pages keep their
  * original geometry.
  */

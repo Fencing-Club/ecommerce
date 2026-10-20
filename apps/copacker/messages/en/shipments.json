@@ -108,7 +108,7 @@
       "units": "Units",
       "dimensions": "Dimensions (cm)",
       "weight": "Weight (kg)",
-      "amazonLabel": "Amazon label"
+      "amazonLabel": "Carton label"
     },
     "pickup": {
       "title": "Pickup",

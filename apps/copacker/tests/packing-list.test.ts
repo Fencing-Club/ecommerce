@@ -172,7 +172,7 @@ describe("packing list", () => {
     expect(text).toContain("C1–C2")
     expect(text).toContain("30 packs, 2 each")
     expect(text).toContain("60 packs, 2 each")
-    expect(text).not.toContain("Amazon carton labels")
+    expect(text).not.toContain("Carton labels")
   })
 
   it("names the shipment by its Amazon ID once it has one, for the buyer too", async () => {

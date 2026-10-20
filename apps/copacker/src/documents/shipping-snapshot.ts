@@ -179,13 +179,14 @@ function packedItems(order: OrderInput, packing: Packing) {
   return order.items.filter((item) => included.has(item.id))
 }
 
-// A pallet as the documents list it: its cartons, size and gross weight.
+// A pallet as the documents list it: its cartons, dimensions, gross weight and whether it stacks.
 function documentPallet(pallet: Pallet) {
   return {
     id: pallet.palletId,
     cartons: pallet.cartonIds,
     dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
-    weight: pallet.weight
+    weight: pallet.weight,
+    stackable: pallet.stackable
   }
 }
 

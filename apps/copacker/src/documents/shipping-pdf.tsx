@@ -97,6 +97,8 @@ const styles = StyleSheet.create({
   packingQuantity: { flex: 164, gap: 3 },
   packingTotal: { flex: 157, gap: 3 },
   packingDetail: { fontSize: 9, color: "#52525b", lineHeight: 1.35 },
+  palletCartons: { flex: 92, gap: 3 },
+  palletDimensions: { flex: 145, gap: 3 },
   labelNumbers: { gap: 7.5, fontSize: 9 },
   labelPair: { width: "33.333%", paddingRight: 10, gap: 5 },
   packingAssignments: { gap: 9, fontSize: 9.75 },
@@ -312,49 +314,59 @@ function PackingRoute() {
   )
 }
 
-// Each pallet with its cartons, size and gross weight, and its label: the one Amazon assigned it, or for FBA packing
-// that isn't booked yet, Amazon's labels to come. The packing record leaves out the carrier and the bill of lading.
-function PalletReferences({ handoff }: { handoff: boolean }) {
+// The pallets in the carton table's columns: each pallet, its cartons and dimensions under Product, its gross weight,
+// and whether another pallet can stand on it.
+function PalletTable() {
   const { data, t, row, number } = useDocumentLayout()
-  return data.pallets?.map((pallet) => (
-    <View key={pallet.id} wrap={false}>
-      <Heading>
-        {t.palletSingle} {pallet.id}
-      </Heading>
-      <View style={[styles.addresses, row]}>
-        <Detail label={t.cartons} value={<Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>}>
-          {pallet.dimensions.map(number).join(" × ")} cm / {number(pallet.weight)} kg {t.gross}
-        </Detail>
-        {(pallet.label || data.network === "fba") && (
-          <Detail
-            label={t.palletLabelSingle}
-            value={pallet.label ? <Code bold>{pallet.label}</Code> : t.palletLabelFromAmazon}
-          >
-            {t.palletSheet}
-          </Detail>
-        )}
-      </View>
-      {handoff && (
-        <View style={[styles.addresses, row]}>
-          <Detail label={t.carrier} value={data.transport.providerName ?? t[data.transport.service]}>
-            {t.pickupOriginText}
-          </Detail>
-          {data.transport.billOfLading && (
-            <Detail label={t.bol} value={<Code bold>{data.transport.billOfLading}</Code>}>
-              {t.carrierDocument}
-            </Detail>
-          )}
+  if (!data.pallets?.length) {
+    return null
+  }
+  const split = [row, styles.packingProduct, { gap: 9 }]
+  return (
+    <View style={{ marginTop: 15 }}>
+      <View minPresenceAhead={36} style={[styles.tableHeader, row]}>
+        <Text style={styles.packingCarton}>{t.palletSingle}</Text>
+        <View style={split}>
+          <Text style={styles.palletCartons}>{t.cartons}</Text>
+          <Text style={styles.palletDimensions}>{t.dimensions}</Text>
         </View>
-      )}
+        <Text style={styles.packingQuantity}>{t.weight}</Text>
+        <Text style={styles.packingTotal}>{t.stackable}</Text>
+      </View>
+      {data.pallets.map((pallet) => (
+        <View key={pallet.id} style={styles.group} wrap={false}>
+          <View style={[styles.packingRow, row]}>
+            <View style={styles.packingCarton}>
+              <Code bold>{pallet.id}</Code>
+            </View>
+            <View style={split}>
+              <View style={styles.palletCartons}>
+                <Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
+                <Text style={styles.packingDetail}>
+                  {number(pallet.cartons.length)} {pallet.cartons.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
+                </Text>
+              </View>
+              <View style={styles.palletDimensions}>
+                <Text style={styles.bold}>{pallet.dimensions.map(number).join(" × ")} cm</Text>
+              </View>
+            </View>
+            <View style={styles.packingQuantity}>
+              <Text style={styles.bold}>{number(pallet.weight)} kg</Text>
+            </View>
+            <View style={styles.packingTotal}>
+              <Text style={styles.bold}>{pallet.stackable ? t.yes : t.no}</Text>
+            </View>
+          </View>
+        </View>
+      ))}
     </View>
-  ))
+  )
 }
 
 function PackingReferences() {
   const { data, t, row } = useDocumentLayout()
   return (
     <>
-      <PalletReferences handoff />
       {data.network === "forwarder" && (
         <View wrap={false}>
           <Heading>{t.receivingReference}</Heading>
@@ -481,23 +493,20 @@ function AssignmentHeader({ fixed = false }: { fixed?: boolean }) {
   )
 }
 
+// A label reference row, striped.
+const assignmentRow = (index: number) => ({
+  gap: 9,
+  padding: 7.5,
+  paddingHorizontal: 9,
+  borderBottom: "0.75 solid #d4d4d8",
+  alignItems: "center" as const,
+  backgroundColor: index % 2 ? "#fafafa" : "#ffffff"
+})
+
 function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: number }) {
   const { data, row, hasAmazon } = useDocumentLayout()
   return (
-    <View
-      wrap={false}
-      style={[
-        row,
-        {
-          gap: 9,
-          padding: 7.5,
-          paddingHorizontal: 9,
-          borderBottom: "0.75 solid #d4d4d8",
-          alignItems: "center",
-          backgroundColor: index % 2 ? "#fafafa" : "#ffffff"
-        }
-      ]}
-    >
+    <View wrap={false} style={[row, assignmentRow(index)]}>
       <View style={[styles.carton, { fontSize: 12 }]}>
         <Code bold>{carton.id}</Code>
       </View>
@@ -511,6 +520,37 @@ function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: numbe
           <Code>{carton.carrierLabel}</Code>
         </View>
       )}
+    </View>
+  )
+}
+
+// After the cartons' labels, each pallet's cartons and the label on its four sides.
+function PalletLabelTable() {
+  const { data, t, row } = useDocumentLayout()
+  const pallets = data.pallets?.filter((pallet) => pallet.label) ?? []
+  if (!pallets.length) {
+    return null
+  }
+  return (
+    <View style={{ marginTop: 15 }}>
+      <View minPresenceAhead={36} style={[styles.tableHeader, row, { fontSize: 9.75 }]}>
+        <Text style={styles.carton}>{t.palletSingle}</Text>
+        <Text style={styles.assignment}>{t.cartons}</Text>
+        <Text style={styles.assignment}>{t.palletLabelSingle}</Text>
+      </View>
+      {pallets.map((pallet, index) => (
+        <View key={pallet.id} wrap={false} style={[row, assignmentRow(index)]}>
+          <View style={[styles.carton, { fontSize: 12 }]}>
+            <Code bold>{pallet.id}</Code>
+          </View>
+          <View style={styles.assignment}>
+            <Code>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
+          </View>
+          <View style={styles.assignment}>
+            <Code>{pallet.label}</Code>
+          </View>
+        </View>
+      ))}
     </View>
   )
 }
@@ -661,13 +701,18 @@ export function ShippingPdf({
                 )}
                 <Metrics
                   values={[
+                    ...(data.pallets?.length
+                      ? [
+                          [
+                            data.pallets.length === 1 ? t.palletSingle : t.pallets,
+                            number(data.pallets.length)
+                          ] satisfies [string, string]
+                        ]
+                      : []),
                     [t.cartons, number(totals.cartons)],
                     [totals.pieces === totals.items ? t.items : t.packTotal, number(totals.items)],
                     ...(totals.pieces !== totals.items
                       ? [[t.pieceTotal, number(totals.pieces)] satisfies [string, string]]
-                      : []),
-                    ...(data.pallets?.length
-                      ? [[t.palletSingle, number(data.pallets.length)] satisfies [string, string]]
                       : []),
                     [t.weight, `${number(totals.weight)} kg`]
                   ]}
@@ -755,12 +800,19 @@ export function ShippingPdf({
                   </View>
                 )
               })}
-              {packingRecord ? <PalletReferences handoff={false} /> : <PackingReferences />}
+              <PalletTable />
+              {!packingRecord && <PackingReferences />}
             </>
           )}
           {kind === "reference" && (
             <>
               <View fixed style={[styles.addresses, row]}>
+                {data.pallets?.length ? (
+                  <Detail
+                    label={data.pallets.length === 1 ? t.palletSingle : t.pallets}
+                    value={number(data.pallets.length)}
+                  />
+                ) : null}
                 <Detail label={t.cartons} value={number(data.cartons.length)} />
                 <Detail label={t.for} value={t.supplierAndForwarder} />
                 {!data.transport.carrierLabels && <Detail label={t.carrierLabel} value={t.notRequired} />}
@@ -769,6 +821,7 @@ export function ShippingPdf({
               {data.cartons.map((carton, index) => (
                 <AssignmentRow carton={carton} index={index} key={carton.id} />
               ))}
+              <PalletLabelTable />
             </>
           )}
           {kind === "checklist" && (

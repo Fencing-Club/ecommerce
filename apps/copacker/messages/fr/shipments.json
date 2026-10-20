@@ -108,7 +108,7 @@
       "units": "Unités",
       "dimensions": "Dimensions (cm)",
       "weight": "Poids (kg)",
-      "amazonLabel": "Étiquette Amazon"
+      "amazonLabel": "Étiquette de carton"
     },
     "pickup": {
       "title": "Enlèvement",

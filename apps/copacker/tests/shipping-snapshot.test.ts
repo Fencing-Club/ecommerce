@@ -74,8 +74,10 @@ describe("accepted shipment document snapshot", () => {
       packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1", "A2"] }] }
     })
     expect(data.transport.palletized).toBe(true)
-    // AWD takes its cartons as cases, so its pallets have no Amazon label.
-    expect(data.pallets).toEqual([{ id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62 }])
+    // AWD takes its cartons as cases, so its pallets have no label.
+    expect(data.pallets).toEqual([
+      { id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62, stackable: true }
+    ])
     expect(() =>
       shippingDocumentSnapshot({
         ...input,
@@ -112,7 +114,9 @@ describe("accepted shipment document snapshot", () => {
       destination: "Example AWD"
     })
     expect(data.transport.palletized).toBe(true)
-    expect(data.pallets).toEqual([{ id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62 }])
+    expect(data.pallets).toEqual([
+      { id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62, stackable: true }
+    ])
   })
 
   it("requires packing tasks to be confirmed instead of inferring tasks for already labelled products", () => {

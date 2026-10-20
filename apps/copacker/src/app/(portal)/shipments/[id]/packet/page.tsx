@@ -68,7 +68,7 @@ function PackingListButton({ id }: { id: string }) {
 function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPacketPage>> }) {
   const t = useTranslations("shipments.detail.packet")
   const url = (section: string) => `/api/shipments/${page.id}/packet?section=${section}&version=${page.version}`
-  // In the packet’s order: the carton labels, Amazon’s pallet labels, then the product labels.
+  // In the packet’s order: the carton labels, the pallet labels, then the product labels.
   const sections = [
     ...(page.data.network === "awd" || page.data.network === "fba"
       ? [{ section: "carton_labels", kind: "carton", label: t("cartonLabels") } as const]
