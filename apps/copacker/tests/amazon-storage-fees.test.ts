@@ -5,8 +5,8 @@ import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
+import { applySchema } from "./database"
 import { monthlyStorageReport, agedStorageReport } from "./fixtures/amazon-storage-fees"
-import { applyMigrations } from "./migrations"
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { monthlyReportWindows } from "../src/server/amazon-report-sync"
@@ -22,7 +22,7 @@ const owned = vi.fn<() => Promise<void>>()
 const input = { orgId, externalAccountId: "SELLER1", revision: 1, amazon: { report } }
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

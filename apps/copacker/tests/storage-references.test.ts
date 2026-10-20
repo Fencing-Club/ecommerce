@@ -4,12 +4,12 @@ import { drizzle } from "drizzle-orm/pglite"
 import { expect, it } from "vitest"
 import { organizations, supplierProductGroups } from "../src/db/schema"
 import { storageReferenceQuery } from "../src/db/storage-references"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 it("inventories product photos from the migrated database without duplicating shared object keys", async () => {
   const client = new PGlite()
   try {
-    await applyMigrations(client)
+    await applySchema(client)
     const database = drizzle(client)
     const supplierOrgId = randomUUID()
     await database.insert(organizations).values({ id: supplierOrgId, name: "Storage test", kind: "supplier" })

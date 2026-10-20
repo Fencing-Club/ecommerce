@@ -9,6 +9,8 @@ Quick reference:
 - **Type-check:** TypeScript 7 RC native compiler via `pnpm check:types`
 - **Test:** Vitest via `pnpm test`; Playwright end-to-end via `pnpm --filter copacker test:e2e`
   ([apps/copacker/docs/e2e.md](apps/copacker/docs/e2e.md)) · **Build:** TanStack Start / package builds via `pnpm build`
+- **Never test migrations:** no test runs, replays or checks them. Database tests build the schema from
+  `src/db/schema.ts` with `applySchema` (`apps/copacker/tests/database.ts`).
 - **Package manager:** pnpm `>=12` on Node `>=24` · **Tasks:** Turborepo
 - **Git hooks:** lefthook (pre-commit: `oxlint --fix` + `oxfmt`; pre-push: `check:types`). Don't use `--no-verify`.
 - **Styling:** shadcn/ui components with Tailwind v4 (`pnpm dlx shadcn@latest add` from `apps/copacker`); existing

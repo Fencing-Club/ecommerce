@@ -38,7 +38,7 @@ import {
   salesByItem,
   sellingPrices
 } from "../src/server/overview-sales"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 function line(overrides: Partial<RestockLine>): RestockLine {
   return {
@@ -581,7 +581,7 @@ describe("sales queries", () => {
 
   beforeAll(async () => {
     context.current = database
-    await applyMigrations(pg)
+    await applySchema(pg)
     await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
     const shopifyOrder = (id: string, createdAt: string, lines: unknown[], extra: Record<string, unknown> = {}) => ({
       orgId,

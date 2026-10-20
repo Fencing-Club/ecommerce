@@ -20,7 +20,7 @@ vi.mock("@/db", () => ({ db: () => context.current }))
 
 import { POST as action } from "../src/server/http/api/action"
 import { appUrl, hash } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -61,7 +61,7 @@ const resend = async (id: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

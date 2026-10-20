@@ -35,7 +35,7 @@ vi.mock("../src/server/storage", () => ({ deleteFile: remote.deleteFile }))
 vi.mock("../src/server/connections", () => ({ disconnect: remote.disconnect }))
 
 import { deleteAccount, deleteWorkspace, ownedWorkspaces } from "../src/server/deletion"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -77,7 +77,7 @@ const data = orderInputSchema.parse({
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

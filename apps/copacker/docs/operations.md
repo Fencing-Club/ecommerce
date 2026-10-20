@@ -183,8 +183,9 @@ allocation. Amounts must be decimal strings and currency codes must be three-cha
 previously deployed migrations unchanged and blocks deployment on invalid data without rewriting or deleting records.
 
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
-`drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them.
-`tests/migrations.test.ts` checks schema coverage, journal ordering, fresh initialization and repeat migration runs.
+`drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them;
+copy a changed one into `tests/database-schema.ts` too. Tests never run or check migrations: the database tests build
+the schema from `src/db/schema.ts` once per run (`tests/database.ts`).
 The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
