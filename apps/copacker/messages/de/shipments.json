@@ -124,6 +124,7 @@
       "title": "Sendungsdetails",
       "readyDate": "Bereitstellungsdatum",
       "cartons": "Kartons",
+      "units": "Einheiten",
       "grossWeight": "Bruttogewicht",
       "volume": "Volumen"
     },

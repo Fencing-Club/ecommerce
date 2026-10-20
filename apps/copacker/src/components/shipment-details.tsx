@@ -1,15 +1,17 @@
 import { useLocale, useTranslations } from "use-intl"
 import { DetailFields } from "./detail-fields"
 
-// The packing page's summary beside the cartons; the cartons header already counts the units.
+// The packing page's summary beside the cartons.
 export function ShipmentDetails({
   readyDate,
   cartons,
+  units,
   weight,
   volume
 }: {
   readyDate: string
   cartons: number
+  units: number
   weight: number | null
   volume: number | null
 }) {
@@ -31,7 +33,13 @@ export function ShipmentDetails({
           }
         ]}
       />
-      <DetailFields items={[{ label: t("cartons"), value: number.format(cartons) }]} />
+      <DetailFields
+        className="grid-cols-2 gap-6"
+        items={[
+          { label: t("cartons"), value: number.format(cartons) },
+          { label: t("units"), value: number.format(units) }
+        ]}
+      />
       <DetailFields
         className="grid-cols-2 gap-6"
         items={[

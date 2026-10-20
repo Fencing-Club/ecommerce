@@ -124,6 +124,7 @@
       "title": "Shipment details",
       "readyDate": "Ready date",
       "cartons": "Cartons",
+      "units": "Units",
       "grossWeight": "Gross weight",
       "volume": "Volume"
     },
