@@ -30,7 +30,7 @@ export function NumberField({
   errorId?: string
 }) {
   return (
-    <InputGroup className={cn("h-11 bg-background sm:h-9", className)}>
+    <InputGroup className={cn("h-9 bg-background", className)}>
       <InputGroupInput
         aria-label={label}
         aria-invalid={invalid || undefined}
@@ -78,7 +78,7 @@ export function DimensionsField({
   const t = useTranslations("orders.cartonEditor")
   const sides = ["length", "width", "height"] as const
   return (
-    <InputGroup className={cn("h-11 bg-background sm:h-9", className)}>
+    <InputGroup className={cn("h-9 bg-background", className)}>
       <InputGroupAddon className="text-xs font-normal whitespace-nowrap wide:hidden wider:flex" aria-hidden>
         {sides.map((side) => t(`axis.${side}`)).join(" × ")}
       </InputGroupAddon>

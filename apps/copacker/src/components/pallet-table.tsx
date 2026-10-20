@@ -10,10 +10,10 @@ import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
-// Toggle, pallet, dimensions, weight, stacking, cartons and the menu. They reach the design's widths from 50rem and
-// give a little up to 44rem.
+// Toggle, pallet, dimensions, weight, stacking, cartons and the menu. From 50rem the fields have the design's widths,
+// the gaps grow to 2rem as there's room, and cartons takes the rest; from 44rem the columns give a little.
 const columns =
-  "wide:grid-cols-[1.75rem_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5rem,6rem)_8.25rem_minmax(5rem,1fr)_2rem] wide:gap-x-3 wider:gap-x-5"
+  "wide:grid-cols-[1.75rem_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5rem,6rem)_8.25rem_minmax(5rem,1fr)_2rem] wide:gap-x-3 wider:grid-cols-[1.75rem_4rem_14.75rem_6rem_8.25rem_minmax(4rem,1fr)_2rem] wider:gap-x-[clamp(1rem,calc(1.25rem+(100cqi-52.5rem)/8),2rem)]"
 
 // The pallets a shipment's cartons are packed on, a row per pallet opening onto its cartons. From 44rem the rows are a
 // table; narrower, each is a card.
@@ -275,7 +275,7 @@ function PalletRow({
             >
               <SelectTrigger
                 aria-label={`${name}: ${t("columns.stacking")}`}
-                className="h-11 w-full bg-background sm:h-9 wide:col-start-5 wide:row-start-1 wide:self-center"
+                className="h-9 w-full bg-background wide:col-start-5 wide:row-start-1 wide:self-center"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -291,60 +291,64 @@ function PalletRow({
           {errorLines("pallet", "col-span-2 wide:col-[2/-1] wide:row-start-2 wide:pb-2")}
         </div>
       )}
-      <div className="hidden wide:col-start-6 wide:row-start-1 wide:block wide:self-center wide:py-3.5">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
-          {summary.cartons}
-          {!open && count > 0 && <IssueBadge count={count} />}
-        </p>
-        <p className="text-[13px] text-muted-foreground tabular-nums">{summary.units}</p>
+      {/* What the pallet holds, and on a closed pallet its issues by the menu, under the summary when there's no room. */}
+      <div className="hidden wide:col-start-6 wide:row-start-1 wide:flex wide:flex-wrap wide:items-center wide:justify-between wide:gap-x-3 wide:gap-y-1 wide:self-center wide:py-3.5">
+        <div className="tabular-nums">
+          <p>{summary.cartons}</p>
+          <p className="text-[13px] text-muted-foreground">{summary.units}</p>
+        </div>
+        {!open && count > 0 && <IssueBadge count={count} />}
       </div>
       {open && (
         <div
           id={`${id}-cartons`}
           className={cn(
-            "border-t bg-muted/30 px-3.5 py-3 wide:col-span-full wide:row-start-5 wide:-mx-4 wide:py-3.5 wide:ps-14 wide:pe-4 wider:ps-16",
+            // In the table the band reaches the row's edges and shares its columns, its cartons from the pallet's.
+            "border-t bg-muted/30 px-3.5 py-3 wide:col-span-full wide:row-start-5 wide:-mx-4 wide:grid wide:grid-cols-subgrid wide:px-4 wide:py-3.5",
             count > 0 && "wide:mt-1.5"
           )}
         >
-          <div className="flex items-center justify-between gap-3">
-            <p className={caption}>{t("cartonsOnPallet")}</p>
-            {!readOnly && (
-              <PalletCartonsDialog
-                pallet={value}
-                pallets={pallets}
-                cartons={cartons}
-                context={context}
-                onSave={onChooseCartons}
-              />
+          <div className="wide:col-[2/-1]">
+            <div className="flex items-center justify-between gap-3">
+              <p className={caption}>{t("cartonsOnPallet")}</p>
+              {!readOnly && (
+                <PalletCartonsDialog
+                  pallet={value}
+                  pallets={pallets}
+                  cartons={cartons}
+                  context={context}
+                  onSave={onChooseCartons}
+                />
+              )}
+            </div>
+            {readOnly ? (
+              <p className="mt-1.5">{onPallet.length ? cartonList(onPallet.map((carton) => carton.id)) : "—"}</p>
+            ) : (
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label={t("cartonsOnPallet")}>
+                {cartonRuns(onPallet.map((carton) => carton.id)).map((run) => (
+                  <li
+                    key={run[0]}
+                    className="flex h-8 items-center gap-1 rounded-md border bg-background ps-2.5 pe-1 text-sm tabular-nums"
+                  >
+                    {cartonRunLabel(run)}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-muted-foreground"
+                      aria-label={t("removeCartons", { cartons: cartonRunLabel(run), pallet: name })}
+                      onClick={() =>
+                        onChange({ ...value, cartonIds: value.cartonIds.filter((carton) => !run.includes(carton)) })
+                      }
+                    >
+                      <X />
+                    </Button>
+                  </li>
+                ))}
+                {!onPallet.length && <li className="text-[13px] text-muted-foreground">{t("noCartons")}</li>}
+              </ul>
             )}
           </div>
-          {readOnly ? (
-            <p className="mt-1.5">{onPallet.length ? cartonList(onPallet.map((carton) => carton.id)) : "—"}</p>
-          ) : (
-            <ul className="mt-2 flex flex-wrap gap-2" aria-label={t("cartonsOnPallet")}>
-              {cartonRuns(onPallet.map((carton) => carton.id)).map((run) => (
-                <li
-                  key={run[0]}
-                  className="flex h-8 items-center gap-1 rounded-md border bg-background ps-2.5 pe-1 text-sm tabular-nums"
-                >
-                  {cartonRunLabel(run)}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="text-muted-foreground"
-                    aria-label={t("removeCartons", { cartons: cartonRunLabel(run), pallet: name })}
-                    onClick={() =>
-                      onChange({ ...value, cartonIds: value.cartonIds.filter((carton) => !run.includes(carton)) })
-                    }
-                  >
-                    <X />
-                  </Button>
-                </li>
-              ))}
-              {!onPallet.length && <li className="text-[13px] text-muted-foreground">{t("noCartons")}</li>}
-            </ul>
-          )}
         </div>
       )}
     </section>

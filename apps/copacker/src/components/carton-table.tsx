@@ -15,9 +15,10 @@ type Place = "carton" | "count" | "dimensions" | "weight" | number
 type CartonError = { message: string; place: Place; outlines: string[] }
 
 // One set of columns, so the product band lines up under the cartons: toggle, cartons, count, dimensions, weight,
-// contents and the menu. They reach the design's widths from 50rem and give a little up to 44rem.
+// contents and the menu. From 50rem the fields have the design's widths, the gaps grow from 1rem to 2rem as there's room,
+// and contents takes the rest; from 44rem the columns give a little.
 const columns =
-  "wide:grid-cols-[2rem_minmax(3.5rem,4.5rem)_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5.5rem,6.5rem)_minmax(7.5rem,1fr)_2rem] wide:gap-x-3 wider:gap-x-4"
+  "wide:grid-cols-[2rem_minmax(3.5rem,4.5rem)_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5.5rem,6.5rem)_minmax(7.5rem,1fr)_2rem] wide:gap-x-3 wider:grid-cols-[2rem_4.5rem_4rem_14.75rem_6.5rem_minmax(8rem,1fr)_2rem] wider:gap-x-[clamp(1rem,calc(1rem+(100cqi-52.5rem)/8),2rem)]"
 
 // The cartons of a shipment, a row per carton configuration (A1–A10), each opening onto its products. From 44rem the
 // rows are a table; narrower, each is a card.
@@ -378,12 +379,13 @@ function CartonRow({
           {errorLines("carton", "col-span-2 wide:col-[2/-1] wide:row-start-2 wide:pb-2")}
         </div>
       )}
-      <div className="hidden wide:col-start-6 wide:row-start-1 wide:block wide:self-center wide:py-3.5">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
-          {units}
-          {!open && errors.length > 0 && <IssueBadge count={errors.length} />}
-        </p>
-        <p className="text-[13px] text-muted-foreground">{detail}</p>
+      {/* What the row holds, and on a closed row its issues by the menu, under the summary when there's no room. */}
+      <div className="hidden wide:col-start-6 wide:row-start-1 wide:flex wide:flex-wrap wide:items-center wide:justify-between wide:gap-x-3 wide:gap-y-1 wide:self-center wide:py-3.5">
+        <div>
+          <p className="tabular-nums">{units}</p>
+          <p className="text-[13px] text-muted-foreground">{detail}</p>
+        </div>
+        {!open && errors.length > 0 && <IssueBadge count={errors.length} />}
       </div>
       {note && <div className="px-3.5 pb-3.5 wide:col-[2/-1] wide:row-start-6 wide:px-0">{note}</div>}
       {open && (
@@ -421,7 +423,7 @@ function CartonRow({
                 </div>
                 <div className="min-w-0">
                   <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{packing("supplierSku")}</p>
-                  <p className={cn("break-all", !readOnly && "py-3 sm:py-2")}>{item.supplierSku || "—"}</p>
+                  <p className={cn("break-all", !readOnly && "py-2")}>{item.supplierSku || "—"}</p>
                 </div>
                 <div className="min-w-0 wide:max-w-32">
                   <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{t("quantityPerCarton")}</p>
@@ -453,7 +455,7 @@ function CartonRow({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "mt-[1.375rem] size-11 text-muted-foreground sm:size-9 wide:col-start-6 wide:justify-self-end",
+                      "mt-[1.375rem] size-9 text-muted-foreground wide:col-start-6 wide:justify-self-end",
                       !first && "wide:mt-0"
                     )}
                     aria-label={t("removeProduct", { sku: item.buyerSku, carton: value.cartonId })}

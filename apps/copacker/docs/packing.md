@@ -17,10 +17,11 @@ never change; an ID that isn't a letter and a number, such as an imported `01`, 
 `CartonTable` has one row per configuration, with the same columns at every width so its products line up beneath:
 toggle, cartons, count, dimensions (L × W × H in one field), weight per carton, contents and the row menu. From 44rem
 wide (the `wide:` variant, an `@container/packing` query) it's a table; narrower, each row is a card with its fields
-under labels, and read-only cards put count, dimensions and weight on one line. From 50rem (`wider:`) the columns have
-the design's widths and gaps; between 44rem and 50rem they give a little and the dimensions drop their L × W × H hint,
-so the table still fits beside Shipment details on a laptop and on a tablet. The product band is a CSS subgrid of the
-row, so products line up under the carton's columns at any width.
+under labels, and read-only cards put count, dimensions and weight on one line. From 50rem (`wider:`) the fields have
+the design's widths; with more room the gaps grow from 1rem to 2rem and contents takes the rest, as the fields never
+need more. Between 44rem and 50rem the columns give a little and the dimensions drop their L × W × H hint, so the table
+still fits beside Shipment details on a laptop and on a tablet. The product band is a CSS subgrid of the row, so
+products line up under the carton's columns at any width.
 
 - A closed row shows its units and what it holds ("1 product, 24 per carton"). Opening it shows its products in a
   lighter band, with Add product at the end. Captions head the first product only.
@@ -29,7 +30,7 @@ row, so products line up under the carton's columns at any width.
 - A carton's errors sit under its row, and a product's under the product, each outlining the field it names. On a card,
   a field's error sits under the field.
 - Rows with errors open, and so do new rows, to add their products; a row also opens when it gets an error, unless it
-  was closed by hand. A closed row with errors shows how many beside its units.
+  was closed by hand. A closed row with errors shows how many by its menu.
 
 ## Pallets
 
