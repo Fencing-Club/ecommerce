@@ -64,7 +64,7 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("button", { name: "Add carton" }).click()
     await fillCarton(page, "2", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "7" })
     await addCartonProduct(page, "2", "Right", "grip-right", "50")
-    await expect(page.getByText("2 cartons, 150 units")).toBeVisible()
+    await expect(page.getByText("150 of 150 units")).toBeVisible()
     await expect(page.getByRole("button", { name: "Check packing" })).toHaveCount(0)
     await expect(page.getByRole("button", { name: "Finish packing" })).toBeEnabled()
   })

@@ -77,8 +77,10 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
       "Weight (kg)": "7"
     })
     await addCartonProduct(supplier, "2", "Right", "grip-right", "50")
-    await expect(supplier.getByText("2 cartons, 150 units")).toBeVisible()
-    await supplier.getByRole("button", { name: "Save draft" }).click()
+    await expect(supplier.getByText("150 of 150 units")).toBeVisible()
+    // With every unit packed, the title row offers Finish packing and keeps Save draft in its menu.
+    await supplier.getByRole("button", { name: "Actions", exact: true }).click()
+    await supplier.getByRole("menuitem", { name: "Save draft" }).click()
     await expect(supplier.getByText("Draft saved")).toBeVisible()
     await supplier.reload()
     await expect(
