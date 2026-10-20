@@ -1,6 +1,13 @@
 import ExcelJS from "exceljs"
 import { describe, expect, it } from "vitest"
-import { palletColumns, palletTemplate, parsePalletTable, readCartonIds, readPalletFile } from "@/lib/pallet-import"
+import {
+  palletColumns,
+  palletExample,
+  palletTemplate,
+  parsePalletTable,
+  readCartonIds,
+  readPalletFile
+} from "@/lib/pallet-import"
 
 // The 07.14 shipment: twelve A cartons, B1 and C1.
 const cartonIds = [...Array.from({ length: 12 }, (_, index) => `A${index + 1}`), "B1", "C1"]
@@ -117,14 +124,64 @@ describe("pallet import", () => {
     ])
   })
 
-  it("builds a template with a Stacking list and imports it filled in", async () => {
+  it("splits the shipment's cartons across the example's two pallets", () => {
+    expect(palletExample(cartonIds)).toEqual([
+      ["1", 120, 100, 150, 420, "Stackable", "A1–A7"],
+      ["2", 120, 100, 120, 310, "Not stackable", "A8–A12, B1, C1"]
+    ])
+    expect(palletExample(["A1"])).toEqual([["1", 120, 100, 150, 420, "Stackable", "A1"]])
+    expect(palletExample([]).map((example) => example[6])).toEqual(["A1–A6", "A7–A10, B1"])
+  })
+
+  it("builds a template with an example that imports as it is and a guide to each column", async () => {
+    const example = palletExample(cartonIds)
     const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await palletTemplate(["Eine Zeile pro Palette", "Kartons dieser Sendung: A1–A12, B1, C1."]))
-    expect(book.worksheets.map((sheet) => sheet.name)).toEqual(["Pallets", "Instructions"])
+    await book.xlsx.load(
+      await palletTemplate(
+        {
+          headings: ["Spalte", "Was eintragen", "Beispiel"],
+          columns: palletColumns.map((column, index) => ({
+            column,
+            entry: `Eintrag ${index + 1}`,
+            example: example[0]![index]!
+          })),
+          notes: ["Eine Zeile pro Palette.", "Kartons dieser Sendung: A1–A12, B1, C1."]
+        },
+        example,
+        true
+      )
+    )
+    expect(book.worksheets.map((sheet) => sheet.name)).toEqual(["Pallets", "Example", "Instructions"])
     const sheet = book.getWorksheet("Pallets")!
-    expect(sheet.getRow(1).values).toEqual([undefined, ...palletColumns])
-    expect(sheet.getCell("F2").dataValidation).toMatchObject({ type: "list", formulae: ['"Stackable,Not stackable"'] })
-    expect(book.getWorksheet("Instructions")?.getCell("A2").value).toBe("Kartons dieser Sendung: A1–A12, B1, C1.")
+    expect(sheet.actualRowCount).toBe(1)
+    for (const name of ["Pallets", "Example"]) {
+      const template = book.getWorksheet(name)!
+      expect(template.getRow(1).values).toEqual([undefined, ...palletColumns])
+      expect(template.getCell("F2").dataValidation).toMatchObject({
+        type: "list",
+        formulae: ['"Stackable,Not stackable"']
+      })
+    }
+    const exampleSheet = book.getWorksheet("Example")!
+    const exampleTable = exampleSheet
+      .getSheetValues()
+      .slice(1)
+      .map((values) => (Array.isArray(values) ? values.slice(1).map((value) => String(value ?? "")) : []))
+    expect(parsePalletTable(exampleTable, cartonIds)).toMatchObject({
+      issues: [],
+      pallets: [
+        { palletId: "1", cartonIds: cartonIds.slice(0, 7) },
+        { palletId: "2", stackable: false }
+      ]
+    })
+    const guide = book.getWorksheet("Instructions")!
+    expect(guide.getRow(1).values).toEqual([undefined, "Spalte", "Was eintragen", "Beispiel"])
+    // Only the instructions turn right to left, and their examples keep numbers as numbers.
+    expect(book.worksheets.map((each) => each.views[0]?.rightToLeft)).toEqual([false, false, true])
+    expect(guide.getRow(2).values).toEqual([undefined, "Pallet ID", "Eintrag 1", "1"])
+    expect(guide.getRow(3).values).toEqual([undefined, "Length (cm)", "Eintrag 2", 120])
+    expect(guide.getRow(8).values).toEqual([undefined, "Carton IDs", "Eintrag 7", "A1–A7"])
+    expect(guide.getCell("B11").value).toBe("Kartons dieser Sendung: A1–A12, B1, C1.")
     sheet.addRow(["1", 120, 100, 75, 68.5, "Stackable", "A1–A12, B1, C1"])
     const result = await readPalletFile(new File([await book.xlsx.writeBuffer()], "pallets.xlsx"), cartonIds)
     expect(result.issues).toEqual([])

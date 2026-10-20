@@ -660,12 +660,25 @@
       "cartonsOnPallet": "{count, plural, one {Il cartone {cartons} è già sul pallet {pallet}.} other {I cartoni {cartons} sono già sul pallet {pallet}.}}"
     },
     "template": {
-      "rows": "Usa una riga per pallet. Pallet ID è il tuo riferimento per il pallet, ad esempio 1, 2, 3.",
-      "measurements": "Inserisci lunghezza, larghezza e altezza del pallet carico in centimetri, e il suo peso lordo in chilogrammi, pallet compreso.",
-      "stacking": "In Stacking, scegli Stackable se un altro pallet può stare sopra, altrimenti Not stackable.",
-      "cartons": "In Carton IDs, elenca i cartoni del pallet con i loro ID della packing list, ad esempio A1–A6, B1. Metti ogni cartone su un solo pallet.",
-      "shipmentCartons": "Cartoni di questa spedizione: {cartons}.",
-      "format": "Mantieni le intestazioni inglesi, i valori di Stacking e il nome del foglio Pallets. Carica il file XLSX o esporta la tabella Pallets in CSV."
+      "columns": {
+        "palletId": "Il tuo riferimento per il pallet, ad esempio 1, 2, 3. Usa ogni ID una sola volta.",
+        "length": "La lunghezza del pallet carico in centimetri.",
+        "width": "La larghezza del pallet carico in centimetri.",
+        "height": "L’altezza del pallet carico in centimetri, dal pavimento alla sommità dei cartoni.",
+        "weight": "Il peso lordo in chilogrammi: il pallet con i suoi cartoni.",
+        "stacking": "Stackable se un altro pallet può stare sopra, altrimenti Not stackable. Scegli dall’elenco.",
+        "cartonIds": "I cartoni sul pallet, con i loro ID della packing list. Unisci una sequenza con un trattino e separa il resto con virgole. Metti ogni cartone su un solo pallet."
+      },
+      "notes": {
+        "rows": "Usa una riga per pallet. Il foglio Example mostra il modello compilato per questa spedizione.",
+        "shipmentCartons": "Cartoni di questa spedizione: {cartons}.",
+        "format": "Mantieni le intestazioni inglesi, i valori di Stacking e il nome del foglio Pallets. Carica il file XLSX o esporta il foglio Pallets in CSV."
+      }
     }
+  },
+  "importTemplate": {
+    "column": "Colonna",
+    "entry": "Cosa inserire",
+    "example": "Esempio"
   }
 }

@@ -660,12 +660,25 @@
       "cartonsOnPallet": "{count, plural, one {Karton {cartons} steht schon auf Palette {pallet}.} other {Kartons {cartons} stehen schon auf Palette {pallet}.}}"
     },
     "template": {
-      "rows": "Eine Zeile pro Palette verwenden. Pallet ID ist Ihre Referenz für die Palette, etwa 1, 2, 3.",
-      "measurements": "Länge, Breite und Höhe der beladenen Palette in Zentimetern angeben, das Bruttogewicht einschließlich der Palette in Kilogramm.",
-      "stacking": "Unter Stacking Stackable wählen, wenn eine weitere Palette darauf stehen kann, sonst Not stackable.",
-      "cartons": "Unter Carton IDs die Kartons der Palette mit ihren IDs aus der Packliste angeben, etwa A1–A6, B1. Jeden Karton auf nur eine Palette stellen.",
-      "shipmentCartons": "Kartons dieser Sendung: {cartons}.",
-      "format": "Englische Überschriften, die Werte unter Stacking und den Blattnamen Pallets unverändert lassen. XLSX-Datei hochladen oder die Tabelle Pallets als CSV exportieren."
+      "columns": {
+        "palletId": "Ihre Referenz für die Palette, etwa 1, 2, 3. Jede ID nur einmal verwenden.",
+        "length": "Länge der beladenen Palette in Zentimetern.",
+        "width": "Breite der beladenen Palette in Zentimetern.",
+        "height": "Höhe der beladenen Palette in Zentimetern, vom Boden bis zur Oberkante der Kartons.",
+        "weight": "Bruttogewicht in Kilogramm: die Palette mit ihren Kartons.",
+        "stacking": "Stackable, wenn eine weitere Palette darauf stehen kann, sonst Not stackable. Aus der Liste wählen.",
+        "cartonIds": "Die Kartons auf der Palette, mit ihren IDs aus der Packliste. Eine Folge mit Bindestrich verbinden, den Rest mit Kommas trennen. Jeden Karton auf nur eine Palette stellen."
+      },
+      "notes": {
+        "rows": "Eine Zeile pro Palette verwenden. Das Blatt Example zeigt die Vorlage ausgefüllt für diese Sendung.",
+        "shipmentCartons": "Kartons dieser Sendung: {cartons}.",
+        "format": "Englische Überschriften, die Werte unter Stacking und den Blattnamen Pallets unverändert lassen. XLSX-Datei hochladen oder das Blatt Pallets als CSV exportieren."
+      }
     }
+  },
+  "importTemplate": {
+    "column": "Spalte",
+    "entry": "Was eintragen",
+    "example": "Beispiel"
   }
 }

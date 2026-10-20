@@ -660,12 +660,25 @@
       "cartonsOnPallet": "{count, plural, one {Le carton {cartons} est déjà sur la palette {pallet}.} other {Les cartons {cartons} sont déjà sur la palette {pallet}.}}"
     },
     "template": {
-      "rows": "Utilisez une ligne par palette. Pallet ID est votre référence pour la palette, par exemple 1, 2, 3.",
-      "measurements": "Indiquez la longueur, la largeur et la hauteur de la palette chargée en centimètres, et son poids brut en kilogrammes, palette comprise.",
-      "stacking": "Dans Stacking, choisissez Stackable si une autre palette peut être posée dessus, sinon Not stackable.",
-      "cartons": "Dans Carton IDs, indiquez les cartons de la palette par leurs identifiants de la liste de colisage, par exemple A1–A6, B1. Mettez chaque carton sur une seule palette.",
-      "shipmentCartons": "Cartons de cet envoi : {cartons}.",
-      "format": "Conservez les en-têtes anglais, les valeurs de Stacking et le nom de feuille Pallets. Importez le classeur XLSX ou exportez la table Pallets au format CSV."
+      "columns": {
+        "palletId": "Votre référence pour la palette, par exemple 1, 2, 3. Utilisez chaque identifiant une seule fois.",
+        "length": "La longueur de la palette chargée, en centimètres.",
+        "width": "La largeur de la palette chargée, en centimètres.",
+        "height": "La hauteur de la palette chargée, en centimètres, du sol au haut des cartons.",
+        "weight": "Le poids brut en kilogrammes : la palette avec ses cartons.",
+        "stacking": "Stackable si une autre palette peut être posée dessus, sinon Not stackable. Choisissez dans la liste.",
+        "cartonIds": "Les cartons de la palette, par leurs identifiants de la liste de colisage. Reliez une suite par un tiret et séparez le reste par des virgules. Mettez chaque carton sur une seule palette."
+      },
+      "notes": {
+        "rows": "Utilisez une ligne par palette. La feuille Example montre le modèle rempli pour cet envoi.",
+        "shipmentCartons": "Cartons de cet envoi : {cartons}.",
+        "format": "Conservez les en-têtes anglais, les valeurs de Stacking et le nom de feuille Pallets. Importez le fichier XLSX ou exportez la feuille Pallets au format CSV."
+      }
     }
+  },
+  "importTemplate": {
+    "column": "Colonne",
+    "entry": "À saisir",
+    "example": "Exemple"
   }
 }

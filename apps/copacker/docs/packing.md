@@ -56,6 +56,13 @@ cartons scrolls inside its box, keeping the title, the choice and the buttons in
 the app's other files ("Pallet template - PO38 - Shipment 1.xlsx"), keep English headers and sheet names (`Cartons`,
 `Pallets`) and carry their instructions, in the reader's language, on an Instructions sheet.
 
+The pallet template has three sheets: `Pallets` to fill in, `Example` with the same columns filled in for this shipment
+(its cartons split across a stackable and a non-stackable pallet, by `palletExample`, so it imports as it is), and
+`Instructions` (`addGuide` in `lib/spreadsheet-import.ts`): a table of each column, what to enter and the example's
+value, then notes listing the shipment's cartons and the file rules. The table headings are `orders.importTemplate`,
+shared by both templates. Only the Instructions sheet turns right to left for Urdu; the sheets of English headers and
+values stay left to right. The carton template still has its instructions as paragraphs.
+
 A pallet file (`lib/pallet-import.ts`) has a row per pallet: Pallet ID, length, width and height in cm, gross weight in
 kg, Stacking (Stackable or Not stackable, a list in the XLSX template) and Carton IDs. Carton IDs take IDs and runs as
 packing lists write them: `A1–A6, B1`, `A1-A6`, `A10–12`, split by commas (including Chinese and Urdu ones),

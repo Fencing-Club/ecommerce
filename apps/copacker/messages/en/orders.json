@@ -660,12 +660,25 @@
       "cartonsOnPallet": "{count, plural, one {Carton {cartons} is already on Pallet {pallet}.} other {Cartons {cartons} are already on Pallet {pallet}.}}"
     },
     "template": {
-      "rows": "Use one row per pallet. Pallet ID is your reference for the pallet, such as 1, 2, 3.",
-      "measurements": "Enter the loaded pallet’s length, width and height in centimetres, and its gross weight in kilograms, with the pallet itself.",
-      "stacking": "Under Stacking, choose Stackable if another pallet can go on top of this one, or Not stackable.",
-      "cartons": "Under Carton IDs, list the pallet’s cartons by their IDs on the packing list, such as A1–A6, B1. Put each carton on one pallet.",
-      "shipmentCartons": "This shipment’s cartons: {cartons}.",
-      "format": "Keep the English headers, the Stacking values and the Pallets sheet name unchanged. Upload the XLSX workbook or export the Pallets table as CSV."
+      "columns": {
+        "palletId": "Your reference for the pallet, such as 1, 2, 3. Use each ID once.",
+        "length": "The loaded pallet’s length in centimetres.",
+        "width": "The loaded pallet’s width in centimetres.",
+        "height": "The loaded pallet’s height in centimetres, from the floor to the top of the cartons.",
+        "weight": "The gross weight in kilograms: the pallet with its cartons.",
+        "stacking": "Stackable if another pallet can go on top, otherwise Not stackable. Choose from the list.",
+        "cartonIds": "The cartons on the pallet, by their IDs on the packing list. Join a run with a dash and separate the rest with commas. Put each carton on one pallet."
+      },
+      "notes": {
+        "rows": "Use one row per pallet. The Example sheet shows the template filled in for this shipment.",
+        "shipmentCartons": "This shipment’s cartons: {cartons}.",
+        "format": "Keep the English headers, the Stacking values and the Pallets sheet name. Upload the XLSX file, or export the Pallets sheet as CSV."
+      }
     }
+  },
+  "importTemplate": {
+    "column": "Column",
+    "entry": "What to enter",
+    "example": "Example"
   }
 }

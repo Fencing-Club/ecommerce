@@ -70,14 +70,57 @@ export async function readSpreadsheet(file: File, sheetName: string, width: numb
   }
 }
 
-// A template sheet's header: frozen, bold and dark, and every row wrapping its text.
-export function styleTemplateSheet(sheet: Worksheet, rightToLeft: boolean) {
+// A template sheet's header: frozen, bold and dark, and every row wrapping its text. Sheets of English headers and
+// values stay left to right; only the instructions follow the reader's language.
+export function styleTemplateSheet(sheet: Worksheet, rightToLeft = false) {
   sheet.views = [{ state: "frozen", ySplit: 1, rightToLeft }]
   sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } }
   sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } }
   sheet.getRow(1).height = 30
   sheet.eachRow((row) => {
     row.alignment = { vertical: "middle", wrapText: true }
+  })
+}
+
+// A template's instructions in the reader's language: what to enter in each column, with an example from the Example
+// sheet, and notes on the whole file.
+export type TemplateGuide = {
+  headings: readonly [column: string, entry: string, example: string]
+  columns: readonly { column: string; entry: string; example: string | number }[]
+  notes: readonly string[]
+}
+
+// The lines text wraps to in a column `width` characters wide, with Chinese characters twice as wide, so rows are tall
+// enough without depending on the spreadsheet app to fit them. A column fits about a tenth more characters of running
+// text than its width.
+const wrappedLines = (text: string, width: number) =>
+  Math.max(
+    1,
+    Math.ceil([...text].reduce((sum, char) => sum + (/[⺀-鿿豈-﫿＀-￯]/u.test(char) ? 2 : 1), 0) / (width * 1.1))
+  )
+
+// The Instructions sheet as a table, a row to a column of the template, then the notes beneath.
+export function addGuide(book: Workbook, guide: TemplateGuide, rightToLeft: boolean) {
+  const sheet = book.addWorksheet("Instructions")
+  const widths = [18, 64, 26]
+  sheet.columns = guide.headings.map((header, index) => ({ header, width: widths[index] }))
+  const add = (cells: (string | number)[]) => {
+    const row = sheet.addRow(cells)
+    row.height = 15 * Math.max(...cells.map((text, index) => wrappedLines(String(text), widths[index]!))) + 6
+    return row
+  }
+  for (const { column, entry, example } of guide.columns) {
+    add([column, entry, example]).getCell(1).font = { bold: true }
+  }
+  sheet.addRow([])
+  for (const note of guide.notes) {
+    add(["", note])
+  }
+  styleTemplateSheet(sheet, rightToLeft)
+  sheet.eachRow((row, index) => {
+    if (index > 1) {
+      row.alignment = { vertical: "top", wrapText: true, readingOrder: rightToLeft ? "rtl" : "ltr" }
+    }
   })
 }
 

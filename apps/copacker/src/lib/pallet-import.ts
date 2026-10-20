@@ -1,10 +1,11 @@
 import { cartonList, type Pallet, palletInputSchema } from "@repo/aisle"
 import {
-  addInstructions,
+  addGuide,
   type FileIssue,
   matchColumns,
   readSpreadsheet,
-  styleTemplateSheet
+  styleTemplateSheet,
+  type TemplateGuide
 } from "./spreadsheet-import"
 
 export const palletColumns = [
@@ -185,24 +186,46 @@ export async function readPalletFile(file: File, cartonIds: readonly string[]): 
     : { pallets: [], rows: [], issues: [table], templateMatches: false }
 }
 
-// The pallet template: a Pallets sheet to fill, a row to a pallet, with Stacking chosen from a list, and the
-// instructions in the reader's language.
-export async function palletTemplate(instructionsCopy: readonly string[], rightToLeft = false) {
+// The Example sheet's pallets: the shipment's own cartons split across two pallets, one stackable and one not, so the
+// example reads like the file the supplier will make and imports as it is. Before there are cartons, it uses A1–A6 and
+// A7–A10, B1.
+export function palletExample(cartonIds: readonly string[]) {
+  const ids = cartonIds.length ? cartonIds : [...Array.from({ length: 10 }, (_, index) => `A${index + 1}`), "B1"]
+  const half = Math.ceil(ids.length / 2)
+  return [
+    ["1", 120, 100, 150, 420, "Stackable", cartonList(ids.slice(0, half))],
+    ["2", 120, 100, 120, 310, "Not stackable", cartonList(ids.slice(half))]
+  ].filter((row) => row[6])
+}
+
+// The pallet template: a Pallets sheet to fill, a row to a pallet, the same filled in on an Example sheet, and the
+// instructions in the reader's language, right to left for Urdu. Stacking is chosen from a list on both.
+export async function palletTemplate(
+  guide: TemplateGuide,
+  example: ReturnType<typeof palletExample>,
+  rightToLeft = false
+) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
-  const sheet = book.addWorksheet("Pallets")
-  sheet.columns = palletColumns.map((header) => ({ header, width: header === "Carton IDs" ? 44 : 18 }))
-  sheet.getColumn(1).numFmt = "@"
-  sheet.getColumn(palletColumns.length).numFmt = "@"
-  for (let row = 2; row <= 201; row++) {
-    sheet.getCell(row, palletColumns.indexOf("Stacking") + 1).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [`"${stackingValues.join(",")}"`],
-      showErrorMessage: true
+  for (const [name, rows] of [
+    ["Pallets", []],
+    ["Example", example]
+  ] as const) {
+    const sheet = book.addWorksheet(name)
+    sheet.columns = palletColumns.map((header) => ({ header, width: header === "Carton IDs" ? 44 : 18 }))
+    sheet.getColumn(1).numFmt = "@"
+    sheet.getColumn(palletColumns.length).numFmt = "@"
+    sheet.addRows([...rows])
+    for (let row = 2; row <= 201; row++) {
+      sheet.getCell(row, palletColumns.indexOf("Stacking") + 1).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: [`"${stackingValues.join(",")}"`],
+        showErrorMessage: true
+      }
     }
+    styleTemplateSheet(sheet)
   }
-  styleTemplateSheet(sheet, rightToLeft)
-  addInstructions(book, instructionsCopy, rightToLeft)
+  addGuide(book, guide, rightToLeft)
   return book.xlsx.writeBuffer()
 }
