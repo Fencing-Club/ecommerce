@@ -440,7 +440,7 @@ export function PackingForm({
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-              <section className="flex flex-col gap-5" aria-label={t("cartons")}>
+              <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
                   <div className="flex flex-wrap items-center gap-3">
@@ -484,53 +484,59 @@ export function PackingForm({
                     </div>
                   )}
                 </div>
-                {cartons.fields.map((carton, index) => {
-                  const value = cartonValues[index] ?? carton
-                  const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-                  const issues = packingIssues
-                    .filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                    .map((issue) => {
-                      const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
-                      let field: string | undefined
-                      if (issue.code === "cartonWeight") {
-                        field = "weight"
-                      } else if (["awdOneSku", "mixedNetworks", "repeatedProduct"].includes(issue.code)) {
-                        field = "items"
-                      } else if (sku && ["incompletePacks", "awdUnits", "overQuantity"].includes(issue.code)) {
-                        field = `items.${value.items.findIndex((content) => order.items.find((item) => item.id === content.itemId)?.buyerSku === sku)}`
-                      }
-                      return { message: issueText(issue), field, fields: issue.fields }
-                    })
-                    .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
-                  return (
-                    <CartonEditor
-                      key={carton.id}
-                      value={value}
-                      products={order.items}
-                      context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                      remainingPieces={Object.fromEntries(
-                        order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
-                      )}
-                      showErrors={
-                        form.formState.submitCount > 0 ||
-                        Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
-                      }
-                      issues={issues}
-                      readOnly={readOnly}
-                      onChange={(next) =>
-                        form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                      }
-                      onDuplicate={() =>
-                        cartons.append({
-                          ...structuredClone(value),
-                          cartonId: nextCartonId(cartonValues),
-                          cartonIds: []
+                {cartons.fields.length > 0 && (
+                  <div className="flex flex-col gap-6 max-sm:gap-5">
+                    {cartons.fields.map((carton, index) => {
+                      const value = cartonValues[index] ?? carton
+                      const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
+                      const issues = packingIssues
+                        .filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
+                        .map((issue) => {
+                          const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
+                          let field: string | undefined
+                          if (issue.code === "cartonWeight") {
+                            field = "weight"
+                          } else if (["awdOneSku", "mixedNetworks", "repeatedProduct"].includes(issue.code)) {
+                            field = "items"
+                          } else if (sku && ["incompletePacks", "awdUnits", "overQuantity"].includes(issue.code)) {
+                            field = `items.${value.items.findIndex((content) => order.items.find((item) => item.id === content.itemId)?.buyerSku === sku)}`
+                          }
+                          return { message: issueText(issue), field, fields: issue.fields }
                         })
-                      }
-                      onDelete={() => cartons.remove(index)}
-                    />
-                  )
-                })}
+                        .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+                      return (
+                        <CartonEditor
+                          key={carton.id}
+                          value={value}
+                          products={order.items}
+                          context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                          remainingPieces={Object.fromEntries(
+                            order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                          )}
+                          showErrors={
+                            form.formState.submitCount > 0 ||
+                            Boolean(
+                              initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId))
+                            )
+                          }
+                          issues={issues}
+                          readOnly={readOnly}
+                          onChange={(next) =>
+                            form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                          }
+                          onDuplicate={() =>
+                            cartons.append({
+                              ...structuredClone(value),
+                              cartonId: nextCartonId(cartonValues),
+                              cartonIds: []
+                            })
+                          }
+                          onDelete={() => cartons.remove(index)}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
                 {!cartons.fields.length && (
                   <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
                 )}

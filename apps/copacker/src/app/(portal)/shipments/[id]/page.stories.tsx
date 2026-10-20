@@ -419,6 +419,28 @@ export const DraftPackingOnAPhone = meta.story({
   }
 })
 
+// Board 06.07: every unit is packed and every carton weighed, so the supplier can finish packing.
+export const ReadyToFinishPacking = meta.story({
+  ...supplier,
+  args: {
+    ...DraftPacking.input.args,
+    shipment: shipmentRow({
+      status: "packing",
+      amazonNetwork: "awd_us",
+      packingDraft: towelPackingDraft({ complete: true }),
+      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+    })
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await expect(within(cartons).getByText("540 of 540 units")).toBeVisible()
+    const summary = canvas.getByRole("region", { name: "Shipment details" })
+    await expect(within(summary).getByText("230.8 kg")).toBeVisible()
+    await expect(within(summary).getByText("1.79 m³")).toBeVisible()
+  }
+})
+
 // A line whose barcode label can't be made yet says why. Its warning labels still print, and with one label left there's
 // nothing to download all at once.
 export const DraftPackingMissingLabel = meta.story({

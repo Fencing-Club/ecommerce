@@ -71,8 +71,9 @@ export const towelOrder: OrderInput = orderData({
   ]
 })
 
-// Cartons 1–10 and 17–18 are complete; cartons 11–16 have no weight yet and leave 36 Sage towels unpacked.
-export function towelPackingDraft(): PackingDraft {
+// Cartons 1–10 and 17–18 are complete; cartons 11–16 have no weight yet and leave 36 Sage towels unpacked. Complete, they
+// weigh 15.2 kg and hold 30 each, so every unit is packed.
+export function towelPackingDraft({ complete = false }: { complete?: boolean } = {}): PackingDraft {
   const [natural, sage, teaTowel] = towelOrder.items
   const cartons = (
     from: number,
@@ -95,7 +96,9 @@ export function towelPackingDraft(): PackingDraft {
     origin: northwindFactory,
     cartons: [
       ...cartons(1, 10, [60, 40, 40], 12.4, natural!.id, 24),
-      ...cartons(11, 16, [60, 40, 50], undefined, sage!.id, 24),
+      ...(complete
+        ? cartons(11, 16, [60, 40, 50], 15.2, sage!.id, 30)
+        : cartons(11, 16, [60, 40, 50], undefined, sage!.id, 24)),
       ...cartons(17, 18, [50, 35, 30], 7.8, teaTowel!.id, 60)
     ],
     changes: []

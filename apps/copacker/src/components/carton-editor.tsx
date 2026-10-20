@@ -398,10 +398,10 @@ export function CartonEditor({
               key={content.itemId}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 p-4 @sm/carton:grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto]"
             >
-              <div className="col-span-2 min-w-0 [overflow-wrap:anywhere] @sm/carton:col-span-1">
+              <div className="col-span-2 min-w-0 text-base [overflow-wrap:anywhere] @sm/carton:col-span-1">
                 <ProductIdentity item={item} showPackSize={false} showSku={false} />
               </div>
-              <div className="min-w-0 break-all">
+              <div className="min-w-0 text-base break-all">
                 <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
                   {packing("supplierSku")}
                 </span>
