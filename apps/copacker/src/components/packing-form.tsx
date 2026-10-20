@@ -162,6 +162,7 @@ export function PackingForm({
   const physicalCartons = totals.cartons > 1000 ? [] : expandCartonGroups(cartonValues)
   const contents = physicalCartons.flatMap((carton) => carton.items)
   const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
+  const availableUnits = Object.values(availablePieces).reduce((total, value) => total + value, 0)
   const packed = (itemId: string) =>
     contents.reduce((total, item) => total + (item.itemId === itemId ? item.pieces || 0 : 0), 0)
   const allUnitsPacked =
@@ -441,19 +442,16 @@ export function PackingForm({
               </Accordion>
               <section className="flex flex-col gap-5" aria-label={t("cartons")}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-sm font-semibold">{t("cartons")}</h2>
+                    <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
                     <span
                       className={cn(
-                        "text-xs tabular-nums text-muted-foreground",
-                        pieces === Object.values(availablePieces).reduce((total, value) => total + value, 0) &&
-                          "text-green-700"
+                        "text-xs tabular-nums text-muted-foreground max-sm:hidden",
+                        pieces === availableUnits && "text-green-700"
                       )}
                     >
-                      {t("packedUnits", {
-                        count: pieces,
-                        available: Object.values(availablePieces).reduce((total, value) => total + value, 0)
-                      })}
+                      {t("packedUnits", { count: pieces, available: availableUnits })}
                     </span>
                   </div>
                   {!readOnly && (
@@ -474,9 +472,14 @@ export function PackingForm({
                         </TooltipTrigger>
                         <TooltipContent>{importText("title")}</TooltipContent>
                       </Tooltip>
-                      <Button type="button" variant="outline" onClick={addCarton}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="max-sm:w-[34px] max-sm:px-0"
+                        onClick={addCarton}
+                      >
                         <Plus />
-                        {t("addCarton")}
+                        <span className="max-sm:sr-only">{t("addCarton")}</span>
                       </Button>
                     </div>
                   )}
@@ -560,6 +563,15 @@ export function PackingForm({
                 </div>
               )}
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
+                {renderSidebar && (
+                  <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+                    <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
+                    <span className="text-muted-foreground">
+                      {t("packedUnits", { count: pieces, available: availableUnits })}
+                    </span>
+                  </p>
+                )}
                 <div className={cn("flex flex-col px-1", renderSidebar && "hidden")}>
                   <p className="font-medium tabular-nums">
                     {headed

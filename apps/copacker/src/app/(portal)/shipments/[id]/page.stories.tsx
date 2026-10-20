@@ -314,7 +314,9 @@ export const DraftPacking = meta.story({
     await expect(within(summary).getByText("Oct 20, 2026")).toBeVisible()
     await expect(within(summary).getByText("18")).toBeVisible()
     await expect(within(summary).getAllByText("—")).toHaveLength(2)
-    await expect(canvas.getByText("504 of 540 units")).toBeVisible()
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await expect(within(cartons).getByText("504 of 540 units")).toBeVisible()
+    await expect(within(cartons).getByRole("button", { name: "Add carton" })).toHaveTextContent("Add carton")
     await expect(canvas.getByRole("button", { name: "Add products to cartons 1–10" })).toBeVisible()
     await expect(canvas.getByText("Cartons 11–16")).toBeVisible()
 
@@ -383,6 +385,37 @@ export const DraftPacking = meta.story({
     )
     await expect(teaTowelMenu.getByText("Label not provided")).toBeVisible()
     await userEvent.keyboard("{Escape}")
+  }
+})
+
+// Board 06.06: the same draft on a phone. The route lists its stops one under another, the carton actions keep only their
+// icons, and the cartons and units sit above the Save draft button, with the documents and details below.
+export const DraftPackingOnAPhone = meta.story({
+  ...supplier,
+  args: DraftPacking.input.args,
+  globals: { viewport: { value: "iphone12", isRotated: false } },
+  play: async ({ canvas }) => {
+    const stops = ["Northwind Textiles", "Bayline Freight", "Amazon AWD US"].map((stop) =>
+      canvas.getAllByText(stop)[0]!.getBoundingClientRect()
+    )
+    await expect(stops.map((stop) => stop.left)).toEqual(Array(3).fill(stops[0]!.left))
+    await expect(stops[1]!.top).toBeGreaterThan(stops[0]!.bottom)
+    await expect(stops[2]!.top).toBeGreaterThan(stops[1]!.bottom)
+
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await expect(within(cartons).queryByText("504 of 540 units")).not.toBeVisible()
+    const add = within(cartons).getByRole("button", { name: "Add carton" })
+    await expect(add.getBoundingClientRect().width).toBe(add.getBoundingClientRect().height)
+    await expect(within(cartons).getByRole("button", { name: "Import cartons" })).toBeVisible()
+
+    // One Save draft, below the cartons, with the counts above it.
+    const save = canvas.getByRole("button", { name: "Save draft" })
+    const count = canvas.getByText("18 cartons")
+    await expect(count).toBeVisible()
+    await expect(count.getBoundingClientRect().bottom).toBeLessThanOrEqual(save.getBoundingClientRect().top)
+    await expect(cartons.getBoundingClientRect().bottom).toBeLessThan(count.getBoundingClientRect().top)
+    const documents = canvas.getByRole("region", { name: "Documents" })
+    await expect(documents.getBoundingClientRect().top).toBeGreaterThan(save.getBoundingClientRect().bottom)
   }
 })
 
