@@ -96,7 +96,7 @@ export const Booked = meta.story({
     await expect(dialog.getByText("Download the labels now, or find them on Shipment 2 anytime.")).toBeVisible()
     await expect(dialog.getByText("Amass standard truck, $144.12")).toBeVisible()
     await expect(dialog.getByText("Booked")).toBeVisible()
-    await expect(dialog.getByRole("link", { name: "Download Amazon carton labels" })).toBeVisible()
+    await expect(dialog.getByRole("link", { name: "Download Carton labels" })).toBeVisible()
     await expect(dialog.getByRole("link", { name: "Download Carrier labels" })).toBeVisible()
     await expect(dialog.getByText("From Amass, shared with the supplier")).toBeVisible()
     await userEvent.click(dialog.getByRole("button", { name: "Done" }))

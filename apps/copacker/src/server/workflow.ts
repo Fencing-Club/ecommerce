@@ -10,6 +10,7 @@ import {
   finishedStates,
   orderCoverage,
   packingReadiness,
+  releasedLabelKinds,
   releasedStates,
   releaseIssues,
   reservedPieces
@@ -184,7 +185,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           const shipment = rows.find((row) => row.id === doc.shipmentId)
           const downloadable =
             s.org.kind === "buyer" ||
-            !["carton_label", "shipping_label"].includes(doc.kind) ||
+            !releasedLabelKinds.includes(doc.kind) ||
             (!!shipment && releasedStates.includes(shipment.status))
           return {
             id: doc.id,

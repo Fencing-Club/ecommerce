@@ -170,7 +170,7 @@
       "description": "Scarica subito le etichette, oppure trovale in {shipment} in qualsiasi momento.",
       "summary": "{service}, {total}",
       "booked": "Prenotata",
-      "amazonLabels": "Etichette dei cartoni Amazon",
+      "amazonLabels": "Etichette cartoni",
       "carrierLabels": "Etichette del corriere"
     },
     "problems": {

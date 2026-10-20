@@ -14,7 +14,8 @@ import {
   cartonList,
   cartonsValue,
   fbaPallets,
-  money
+  money,
+  palletLabels
 } from "../src/index"
 import {
   destinationName,
@@ -226,6 +227,21 @@ describe("Cartons on pallets", () => {
       split: []
     })
     expect(fbaPallets(pallets, new Set(["A1", "B1"])).split).toEqual(["1"])
+  })
+
+  it("numbers each pallet within the Amazon shipment its cartons travel in", () => {
+    const labels = [
+      { cartonId: "A1", amazonShipmentId: "FBA18AAAA" },
+      { cartonId: "A3", amazonShipmentId: "FBA18AAAA" },
+      { cartonId: "B1", amazonShipmentId: "FBA18BBBB" }
+    ]
+    expect(
+      palletLabels([pallet("1", ["A1", "A2"]), pallet("2", ["B1"]), pallet("3", ["A3"]), pallet("4", ["C1"])], labels)
+    ).toEqual([
+      { palletId: "1", amazonShipmentId: "FBA18AAAA", number: 1, count: 2 },
+      { palletId: "2", amazonShipmentId: "FBA18BBBB", number: 1, count: 1 },
+      { palletId: "3", amazonShipmentId: "FBA18AAAA", number: 2, count: 2 }
+    ])
   })
 
   it("declares the cartons' goods at the PO's prices", () => {

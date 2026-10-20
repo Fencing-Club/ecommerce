@@ -101,5 +101,40 @@ stop an import; the Pallets section lists them as usual.
   cartons travel on, identical pallets as one entry with their count, and `freightInformation`: the goods' value at the
   PO's prices, freight class `NONE`. A pallet whose cartons Amazon sends to two warehouses stops the booking with an
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
-- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only.
-- **Documents**: the supplier packet's packing list lists each pallet with its cartons, size and gross weight.
+- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only. Amazon issues no pallet
+  labels for them; with the seller's own carrier, AWD needs only the carton labels.
+
+## Pallet labels
+
+Once Amazon labels an FBA shipment's cartons, the job also asks for its pallet labels (`fbaPalletLabels`, v0
+`getLabels` with `LabelType=PALLET`), one request per Amazon shipment with that shipment's pallet count. Amazon prints
+four identical labels for each pallet, one for each side, the pallets in order. `palletLabels` numbers each pallet
+within the Amazon shipment its cartons travel in, in packing order, and the job keeps every pallet's four labels
+together in one file, `Pallet labels.pdf` (document kind `pallet_label`). A page count that doesn't divide among the
+shipment's pallets stops the job.
+
+- **Release**: like carton and carrier labels, the supplier and forwarder get pallet labels only once the buyer
+  releases the shipment (`releasedLabelKinds`). An FBA shipment on pallets can't be released without them
+  (`missing_pallet_label`).
+- **Supplier packet**: the pallet labels come after the carton labels and carrier labels, and before the product
+  labels. The packet page offers them on their own as **Pallet labels**.
+- **Packing list**: the totals start with the pallet count. Under the cartons, a pallet table gives each pallet, its
+  cartons, dimensions, gross weight and whether it's stackable, in the carton table's columns. The packing list
+  download shows the same table.
+- **Label reference**: after the cartons, a Pallets table gives each pallet's cartons and its pallet label as Amazon
+  prints it, the Amazon shipment and the pallet's number there (`FBA18ABCD123 1/2`).
+- **Checklist**: a Pallets section comes after the cartons and before Handoff, which holds the bill of lading and
+  the pickup. For FBA it gives Amazon's pallet rules for LTL and FTL deliveries
+  ([Seller requirements for LTL, FTL and FCL deliveries](https://sellercentral.amazon.com/help/hub/reference/G200978400)):
+  40 × 48 in wooden pallets with four-way entry, GMA grade B or better; cartons flush, labels out, nothing over the
+  edge; at most 72 in tall including the pallet and 1,500 lb, and 50 in for a stackable pallet; clear stretch wrap
+  marked “Do not break stretch wrap”; and the **Pallet labels** step, one of each pallet's four labels on each side,
+  at the top center, outside the stretch wrap, each carton keeping its own label. AWD and other shipments on pallets
+  get the general loading and securing steps, with no pallet label step. Nothing checks the pallet limits when they're
+  entered yet.
+
+Documents name labels by what they go on, not who issues them: Carton labels, Carrier labels and Pallet labels, since
+other 3PLs can ask for them too.
+
+Pen: 10.04 B (documents after booking, packed on pallets), 08.01 P03 (FBA pallet freight pickup) and P04 (AWD pallet
+freight pickup), 08.03 C06 (FBA pallet freight checklist) and 09.01 L04 (FBA carton and pallet label reference).

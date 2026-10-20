@@ -1,4 +1,4 @@
-import { validatePacking, type OrderInput, type Packing } from "@repo/aisle"
+import { palletLabels, validatePacking, type OrderInput, type Packing, type Pallet } from "@repo/aisle"
 import type { CartonLabel } from "@repo/aisle/labels"
 import { packingTasks, type ProductTask } from "@repo/aisle/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/aisle/transport"
@@ -58,6 +58,9 @@ export function shippingDocumentSnapshot(input: {
       throw new Error(`${name} labels must match every carton exactly once`)
     }
   }
+  const network = packedNetwork(order, items)
+  // Amazon labels pallets for FBA only; AWD takes its cartons as cases.
+  const placed = network === "fba" ? palletLabels(packing.pallets ?? [], labels) : []
   const data: ShippingDocumentData = {
     company: input.company,
     order: order.reference,
@@ -67,20 +70,23 @@ export function shippingDocumentSnapshot(input: {
     recipient: { name: input.supplier, address: [] },
     origin: originParty(input.supplier, packing.origin),
     destination: input.destination,
-    network: packedNetwork(order, items),
+    network,
     transport: {
       service: transport.service,
       collection: transport.collection,
       carrierLabels: requirements.carrierLabels,
       palletized: Boolean(packing.palletized)
     },
+    // Each FBA pallet's label, once Amazon has labelled its cartons: its Amazon shipment and its number there, as Amazon
+    // prints it, such as FBA18ABCD123 1/2.
     ...(packing.palletized && {
-      pallets: (packing.pallets ?? []).map((pallet) => ({
-        id: pallet.palletId,
-        cartons: pallet.cartonIds,
-        dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
-        weight: pallet.weight
-      }))
+      pallets: (packing.pallets ?? []).map((pallet) => {
+        const label = placed.find((row) => row.palletId === pallet.palletId)
+        return {
+          ...documentPallet(pallet),
+          ...(label && { label: `${label.amazonShipmentId} ${label.number}/${label.count}` })
+        }
+      })
     }),
     products: items.map((item) => {
       if (!item.packingRequirements) {
@@ -110,9 +116,9 @@ export function shippingDocumentSnapshot(input: {
   return data
 }
 
-// The packing list alone, from finished packing before the packet exists: the cartons as packed, without the label
-// assignments, destination address and handoff only the packet needs. A line without a supplier SKU of its own is listed
-// by the buyer's, as the packing page shows it.
+// The packing list alone, from finished packing before the packet exists: the cartons as packed, and their pallets,
+// without the label assignments, destination address and handoff only the packet needs. A line without a supplier SKU
+// of its own is listed by the buyer's, as the packing page shows it.
 export function packingListSnapshot(input: {
   order: OrderInput
   packing: Packing
@@ -140,8 +146,9 @@ export function packingListSnapshot(input: {
       service: transport?.service ?? "supplier",
       collection: transport?.collection ?? "delivery",
       carrierLabels: shipmentLabelRequirements(order.destination, transport).carrierLabels,
-      palletized: false
+      palletized: Boolean(packing.palletized)
     },
+    ...(packing.palletized && { pallets: (packing.pallets ?? []).map(documentPallet) }),
     products: items.map((item) =>
       documentProduct(
         item,
@@ -170,6 +177,17 @@ export class IncompletePackingList extends Error {
 function packedItems(order: OrderInput, packing: Packing) {
   const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   return order.items.filter((item) => included.has(item.id))
+}
+
+// A pallet as the documents list it: its cartons, dimensions, gross weight and whether it stacks.
+function documentPallet(pallet: Pallet) {
+  return {
+    id: pallet.palletId,
+    cartons: pallet.cartonIds,
+    dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
+    weight: pallet.weight,
+    stackable: pallet.stackable
+  }
 }
 
 function packedNetwork(order: OrderInput, items: Item[]): ShippingDocumentData["network"] {

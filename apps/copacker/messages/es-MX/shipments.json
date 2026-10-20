@@ -98,6 +98,7 @@
       "cartonLabels": "Etiquetas de cajas",
       "unitLabels": "Etiquetas de productos",
       "carrierLabels": "Etiquetas del transportista",
+      "palletLabels": "Etiquetas de tarima",
       "backToShipment": "Volver al envío"
     },
     "cartons": {
@@ -107,7 +108,7 @@
       "units": "Unidades",
       "dimensions": "Dimensiones (cm)",
       "weight": "Peso (kg)",
-      "amazonLabel": "Etiqueta de Amazon"
+      "amazonLabel": "Etiqueta de caja"
     },
     "pickup": {
       "title": "Recolección",

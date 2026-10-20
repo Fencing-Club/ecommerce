@@ -69,6 +69,7 @@
     "shippingLabel": "Транспортна етикетка",
     "productLabel": "Етикетка товару",
     "cartonLabels": "Етикетки коробок",
+    "palletLabels": "Етикетки палет",
     "shippingLabels": "Транспортні етикетки"
   },
   "format": {

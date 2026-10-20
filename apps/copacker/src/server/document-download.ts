@@ -8,7 +8,7 @@ import { accessibleOrder, forwarderOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { shipmentDocumentFilename } from "./document-filenames"
 import { errorTextResponse } from "./errors"
-import { releasedStates } from "./readiness"
+import { releasedLabelKinds, releasedStates } from "./readiness"
 import { readFile } from "./storage"
 import type { Session } from "./workspace-session"
 import { requireMembership } from "./workspace-session"
@@ -16,7 +16,7 @@ import { requireMembership } from "./workspace-session"
 type Executor = Database | Transaction
 
 async function labelsReleased(doc: typeof documents.$inferSelect, executor: Executor) {
-  if (!["shipping_label", "carton_label"].includes(doc.kind)) {
+  if (!releasedLabelKinds.includes(doc.kind)) {
     return true
   }
   if (!doc.shipmentId) {
@@ -26,7 +26,7 @@ async function labelsReleased(doc: typeof documents.$inferSelect, executor: Exec
   return !!shipment && releasedStates.includes(shipment.status) && shipment.revision === doc.shipmentRevision
 }
 
-const forwarderKinds = ["invoice", "packing_list", "carton_label", "shipping_label"]
+const forwarderKinds = ["invoice", "packing_list", "carton_label", "pallet_label", "shipping_label"]
 async function canRead(s: Session, doc: typeof documents.$inferSelect, executor: Executor) {
   if (s.org.kind !== "forwarder") {
     requireAccess(s, ["purchase_order", "product_label"].includes(doc.kind) ? "orders" : "shipments")

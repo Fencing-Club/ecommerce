@@ -4,7 +4,8 @@ const shipmentDocumentTitles = {
   packet: "Supplier packet",
   packing_list: "Packing list",
   checklist: "Packing checklist",
-  carton_label: "Amazon carton labels",
+  carton_label: "Carton labels",
+  pallet_label: "Pallet labels",
   shipping_label: "Carrier labels",
   product_label: "Product labels"
 }

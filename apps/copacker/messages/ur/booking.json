@@ -170,7 +170,7 @@
       "description": "لیبلز ابھی ڈاؤن لوڈ کریں، یا کسی بھی وقت {shipment} پر حاصل کریں۔",
       "summary": "{service}، {total}",
       "booked": "بک ہو گئی",
-      "amazonLabels": "Amazon کارٹن لیبلز",
+      "amazonLabels": "کارٹن لیبلز",
       "carrierLabels": "کیریئر لیبلز"
     },
     "problems": {

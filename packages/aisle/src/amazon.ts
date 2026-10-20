@@ -877,6 +877,23 @@ export class Amazon {
         )
       ).payload.DownloadURL
   }
+  // The address of a confirmed LTL or FTL shipment's pallet labels PDF, on plain paper: four identical labels for each
+  // of its pallets, one for each side, the pallets in order.
+  async fbaPalletLabels(shipmentConfirmationId: string, pallets: number) {
+    const query = new URLSearchParams({
+      PageType: "PackageLabel_Plain_Paper",
+      LabelType: "PALLET",
+      NumberOfPallets: String(pallets)
+    })
+    return z
+      .object({ payload: z.object({ DownloadURL: z.url() }) })
+      .parse(
+        await this.request(
+          "GET",
+          `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentConfirmationId)}/labels?${query}`
+        )
+      ).payload.DownloadURL
+  }
   /**
    * The seller's store name and the North American marketplaces it sells in that orders are read from, the US first.
    */

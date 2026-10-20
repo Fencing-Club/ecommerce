@@ -26,6 +26,8 @@ export const packedStates: readonly ShipmentState[] = [
 ]
 // Once the supplier ships, a shipment's cartons and documents can't change any more.
 export const finishedStates: readonly ShipmentState[] = ["shipped", "forwarded", "received", "cancelled"]
+// Amazon's and the carrier's labels reach the supplier and forwarder only once the buyer releases the shipment.
+export const releasedLabelKinds: ReadonlyArray<Document["kind"]> = ["carton_label", "pallet_label", "shipping_label"]
 
 // Pieces per PO item in shipments that arrived.
 export function receivedPieces(rows: Shipment[]) {
@@ -210,6 +212,10 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
         message: t("readiness.missingShippingLabel", { carton: carton.cartonId })
       })
     }
+  }
+  // Amazon labels an FBA shipment's pallets with its cartons, four labels for each pallet.
+  if (shipment.amazonNetwork === "fba" && packing.palletized && !current.some((doc) => doc.kind === "pallet_label")) {
+    issues.push({ code: "missing_pallet_label", message: t("readiness.missingPalletLabels") })
   }
   return issues
 }

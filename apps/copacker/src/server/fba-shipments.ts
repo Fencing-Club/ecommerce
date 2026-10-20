@@ -1,7 +1,8 @@
 import type { AmazonPrep } from "@repo/aisle"
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
-import { buildFbaPlan, cartonsValue, fbaBoxes, fbaPallets, originSchema } from "@repo/aisle"
+import type { Pallet } from "@repo/aisle"
+import { buildFbaPlan, cartonsValue, fbaBoxes, fbaPallets, originSchema, palletLabels } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { FbaBox } from "@repo/aisle/amazon"
 import type { FbaDeliveryWindow } from "@repo/aisle/amazon"
@@ -9,8 +10,9 @@ import type { FbaPackingOption } from "@repo/aisle/amazon"
 import type { FbaPlacementOption } from "@repo/aisle/amazon"
 import type { FbaTransportationOption } from "@repo/aisle/amazon"
 import { downloadAmazonLabels, ProviderError } from "@repo/aisle/amazon"
+import { combinePdfs } from "@repo/aisle/documents"
 import type { CartonLabel } from "@repo/aisle/labels"
-import { unpackLabels } from "@repo/aisle/labels"
+import { splitPdfPages, unpackLabels } from "@repo/aisle/labels"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { shipments } from "@/db/schema"
@@ -218,6 +220,37 @@ export function matchBoxes(
 // Moves a shipment's FBA inbound plan on as far as it can go: creating the plan, choosing packing, sending carton
 // contents, choosing warehouses and the buyer's own carrier with a delivery window, then fetching each carton's box
 // label. Amazon does most steps in the background, so the job waits on each one's operation and runs again.
+// A palletized shipment's pallet labels as one file. Amazon prints four for each pallet, one for each side, for each
+// Amazon shipment's pallets in order; the file keeps each pallet's labels together, the pallets in packing order.
+export async function fbaPalletLabelFile(
+  api: Pick<Amazon, "fbaPalletLabels">,
+  pallets: ReadonlyArray<Pick<Pallet, "palletId" | "cartonIds">>,
+  labels: ReadonlyArray<CartonLabel>
+) {
+  const placed = palletLabels(pallets, labels)
+  if (!placed.length) {
+    return undefined
+  }
+  const sheets = new Map<string, Uint8Array[]>()
+  for (const amazonShipmentId of new Set(placed.map((pallet) => pallet.amazonShipmentId))) {
+    const shipmentPallets = placed.filter((pallet) => pallet.amazonShipmentId === amazonShipmentId)
+    const url = await api.fbaPalletLabels(amazonShipmentId, shipmentPallets.length)
+    const [file] = await unpackLabels(await downloadAmazonLabels(url))
+    const pages = await splitPdfPages(file!.data)
+    if (!pages.length || pages.length % shipmentPallets.length) {
+      throw new Error("Amazon's pallet labels don't match the shipment's pallets")
+    }
+    const each = pages.length / shipmentPallets.length
+    for (const [index, pallet] of shipmentPallets.entries()) {
+      sheets.set(
+        pallet.palletId,
+        pages.slice(index * each, (index + 1) * each).map((page) => page.data)
+      )
+    }
+  }
+  return combinePdfs(placed.flatMap((pallet) => sheets.get(pallet.palletId)!))
+}
+
 export async function fbaShipmentJob(
   api: Amazon,
   shipment: Shipment,
@@ -460,6 +493,24 @@ export async function fbaShipmentJob(
       destinationCode: destination.destination.warehouseId ?? "",
       amazonShipmentId: destination.shipmentConfirmationId!
     })
+  }
+  if (packing.palletized) {
+    const bytes = await fbaPalletLabelFile(api, packing.pallets ?? [], labels)
+    if (bytes) {
+      await assertOwned()
+      await storeDocument(
+        {
+          orderId: shipment.orderId,
+          shipmentId: shipment.id,
+          kind: "pallet_label",
+          name: "Pallet labels.pdf",
+          orderRevision: shipment.orderRevision,
+          shipmentRevision: revision,
+          uploadedBy: "amazon"
+        },
+        bytes
+      )
+    }
   }
   await db()
     .update(shipments)

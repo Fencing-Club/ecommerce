@@ -3108,7 +3108,7 @@ describe("document upload and packet release", () => {
     const cartonLabels = await packet("carton_labels")
     expect(cartonLabels.status).toBe(200)
     expect(decodeURIComponent(cartonLabels.headers.get("Content-Disposition")!)).toContain(
-      `Amazon carton labels - ${orderData.reference} - ${prepared.id} - rev 1.pdf`
+      `Carton labels - ${orderData.reference} - ${prepared.id} - rev 1.pdf`
     )
     const cartonPdf = await PDFDocument.load(await cartonLabels.arrayBuffer())
     expect(cartonPdf.getPageCount()).toBe(1)

@@ -291,8 +291,8 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 
 PDFs are limited to 32 MB and 1,000 pages and may not carry active content. Paths and bucket keys are never supplied by
 the user. `GET /api/documents/:id` authorizes access to the order and returns a private attachment. Outdated documents
-can't be downloaded. Suppliers can't download carton or shipping labels before release. The PO and commercial invoice
-need prices. A forwarder reads only the invoice, packing list, carton labels and shipping labels.
+can't be downloaded. Suppliers can't download carton, pallet or shipping labels before release. The PO and commercial
+invoice need prices. A forwarder reads only the invoice, packing list, carton labels, pallet labels and shipping labels.
 
 Adding `?bundle=true` to a carton or shipping label download combines the current shipment revision's labels of that
 type into one PDF, in numeric carton order. Carton and carrier labels stay separate. Original page sizes are preserved;
@@ -304,11 +304,11 @@ since the PDF is made again when it's emailed or downloaded.
 
 `GET /api/shipments/:id/packet` serves the released supplier packet's label sections, and the browser assembles the
 packet in this order: the packing list, the checklist, then, for a shipment with carton labels, the carton label
-reference, Amazon's carton labels and the buyer's shipping labels, then the product labels and suffocation warning sheet
-for the lines it carries. Original page dimensions are preserved; print at actual size. The packing list shows
+reference, the carton labels and the buyer's shipping labels, the pallet labels for an FBA shipment on pallets
+(`section=pallet_labels`), then the product labels and suffocation warning sheet for the lines it carries. Original page dimensions are preserved; print at actual size. The packing list shows
 supplier carton number, buyer SKU, supplier SKU, pieces/sellable units and cm/kg, with the destination warehouse codes as
-its ship-to. The carton label reference lists each carton's Amazon label number (an AWD SSCC or an FBA box ID) and
-carrier label.
+its ship-to. The carton label reference lists each carton's label number (an AWD SSCC or an FBA box ID) and carrier
+label, then each pallet's label.
 
 A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
 and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the

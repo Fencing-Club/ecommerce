@@ -98,6 +98,8 @@ const styles = StyleSheet.create({
   packingQuantity: { flex: 116, gap: 3 },
   packingTotal: { flex: 116, gap: 3 },
   packingDetail: { fontSize: 9, color: "#52525b", lineHeight: 1.35 },
+  palletCartons: { flex: 150, gap: 3 },
+  palletDimensions: { flex: 204, gap: 3 },
   assignment: { flex: 1 },
   checkbox: {
     width: 10.5,
@@ -308,40 +310,54 @@ function PackingRoute() {
   )
 }
 
-function PackingReferences() {
+// The pallets on the carton table's grid: each pallet, its cartons and dimensions across Product and Supplier SKU, its
+// gross weight, and whether another pallet can stand on it.
+function PalletTable() {
   const { data, t, row, number } = useDocumentLayout()
+  if (!data.pallets?.length) {
+    return null
+  }
   return (
-    <>
-      {data.pallets?.map((pallet) => (
-        <View key={pallet.id} wrap={false}>
-          <Heading>
-            {t.palletSingle} {pallet.id}
-          </Heading>
-          <View style={[styles.addresses, row]}>
-            <Detail
-              label={t.cartons}
-              value={<Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>}
-            >
-              {pallet.dimensions.map(number).join(" × ")} cm / {number(pallet.weight)} kg {t.gross}
-            </Detail>
-            {pallet.label && (
-              <Detail label={t.palletLabelSingle} value={<Code bold>{pallet.label}</Code>}>
-                {t.palletSheet}
-              </Detail>
-            )}
-          </View>
-          <View style={[styles.addresses, row]}>
-            <Detail label={t.carrier} value={data.transport.providerName ?? t[data.transport.service]}>
-              {t.pickupOriginText}
-            </Detail>
-            {data.transport.billOfLading && (
-              <Detail label={t.bol} value={<Code bold>{data.transport.billOfLading}</Code>}>
-                {t.carrierDocument}
-              </Detail>
-            )}
+    <View style={{ marginTop: 15 }}>
+      <View minPresenceAhead={36} style={[styles.tableHeader, row]}>
+        <Text style={styles.packingCarton}>{t.palletSingle}</Text>
+        <Text style={styles.palletCartons}>{t.cartons}</Text>
+        <Text style={styles.palletDimensions}>{t.dimensions}</Text>
+        <Text style={styles.packingQuantity}>{t.weight}</Text>
+        <Text style={styles.packingTotal}>{t.stackable}</Text>
+      </View>
+      {data.pallets.map((pallet) => (
+        <View key={pallet.id} style={styles.group} wrap={false}>
+          <View style={[styles.packingRow, row]}>
+            <View style={styles.packingCarton}>
+              <Code bold>{pallet.id}</Code>
+            </View>
+            <View style={styles.palletCartons}>
+              <Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
+              <Text style={styles.packingDetail}>
+                {number(pallet.cartons.length)} {pallet.cartons.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
+              </Text>
+            </View>
+            <View style={styles.palletDimensions}>
+              <Text style={styles.bold}>{pallet.dimensions.map(number).join(" × ")} cm</Text>
+            </View>
+            <View style={styles.packingQuantity}>
+              <Text style={styles.bold}>{number(pallet.weight)} kg</Text>
+            </View>
+            <View style={styles.packingTotal}>
+              <Text style={styles.bold}>{pallet.stackable ? t.yes : t.no}</Text>
+            </View>
           </View>
         </View>
       ))}
+    </View>
+  )
+}
+
+function PackingReferences() {
+  const { data, t, row } = useDocumentLayout()
+  return (
+    <>
       {data.network === "forwarder" && (
         <View wrap={false}>
           <Heading>{t.receivingReference}</Heading>
@@ -468,23 +484,20 @@ function AssignmentHeader({ fixed = false }: { fixed?: boolean }) {
   )
 }
 
+// A label reference row, striped.
+const assignmentRow = (index: number) => ({
+  gap: 9,
+  padding: 7.5,
+  paddingHorizontal: 9,
+  borderBottom: "0.75 solid #d4d4d8",
+  alignItems: "center" as const,
+  backgroundColor: index % 2 ? "#fafafa" : "#ffffff"
+})
+
 function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: number }) {
   const { data, row, hasAmazon } = useDocumentLayout()
   return (
-    <View
-      wrap={false}
-      style={[
-        row,
-        {
-          gap: 9,
-          padding: 7.5,
-          paddingHorizontal: 9,
-          borderBottom: "0.75 solid #d4d4d8",
-          alignItems: "center",
-          backgroundColor: index % 2 ? "#fafafa" : "#ffffff"
-        }
-      ]}
-    >
+    <View wrap={false} style={[row, assignmentRow(index)]}>
       <View style={[styles.carton, { fontSize: 12 }]}>
         <Code bold>{carton.id}</Code>
       </View>
@@ -498,6 +511,37 @@ function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: numbe
           <Code>{carton.carrierLabel}</Code>
         </View>
       )}
+    </View>
+  )
+}
+
+// After the cartons' labels, each pallet's cartons and the label on its four sides.
+function PalletLabelTable() {
+  const { data, t, row } = useDocumentLayout()
+  const pallets = data.pallets?.filter((pallet) => pallet.label) ?? []
+  if (!pallets.length) {
+    return null
+  }
+  return (
+    <View style={{ marginTop: 15 }}>
+      <View minPresenceAhead={36} style={[styles.tableHeader, row, { fontSize: 9.75 }]}>
+        <Text style={styles.carton}>{t.palletSingle}</Text>
+        <Text style={styles.assignment}>{t.cartons}</Text>
+        <Text style={styles.assignment}>{t.palletLabelSingle}</Text>
+      </View>
+      {pallets.map((pallet, index) => (
+        <View key={pallet.id} wrap={false} style={[row, assignmentRow(index)]}>
+          <View style={[styles.carton, { fontSize: 12 }]}>
+            <Code bold>{pallet.id}</Code>
+          </View>
+          <View style={styles.assignment}>
+            <Code>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
+          </View>
+          <View style={styles.assignment}>
+            <Code>{pallet.label}</Code>
+          </View>
+        </View>
+      ))}
     </View>
   )
 }
@@ -558,7 +602,7 @@ export function ShippingPdf({
     cartonHeading = t.repack
   }
 
-  let handoffHeading = data.transport.palletized ? t.palletHandoff : t.handoff
+  let handoffHeading = t.handoff
   if (data.receiving) {
     handoffHeading = data.receiving.repack ? t.labelHandoff : t.preparePickup
   }
@@ -589,13 +633,18 @@ export function ShippingPdf({
                 )}
                 <Metrics
                   values={[
+                    ...(data.pallets?.length
+                      ? [
+                          [
+                            data.pallets.length === 1 ? t.palletSingle : t.pallets,
+                            number(data.pallets.length)
+                          ] satisfies [string, string]
+                        ]
+                      : []),
                     [t.cartons, number(totals.cartons)],
                     [totals.pieces === totals.items ? t.items : t.packTotal, number(totals.items)],
                     ...(totals.pieces !== totals.items
                       ? [[t.pieceTotal, number(totals.pieces)] satisfies [string, string]]
-                      : []),
-                    ...(data.pallets?.length
-                      ? [[t.palletSingle, number(data.pallets.length)] satisfies [string, string]]
                       : []),
                     [t.weight, `${number(totals.weight)} kg`]
                   ]}
@@ -684,12 +733,19 @@ export function ShippingPdf({
                   </View>
                 )
               })}
+              <PalletTable />
               {!packingRecord && <PackingReferences />}
             </>
           )}
           {kind === "reference" && (
             <>
               <View fixed style={[styles.addresses, row]}>
+                {data.pallets?.length ? (
+                  <Detail
+                    label={data.pallets.length === 1 ? t.palletSingle : t.pallets}
+                    value={number(data.pallets.length)}
+                  />
+                ) : null}
                 <Detail label={t.cartons} value={number(data.cartons.length)} />
                 <Detail label={t.for} value={t.supplierAndForwarder} />
                 {!data.transport.carrierLabels && <Detail label={t.carrierLabel} value={t.notRequired} />}
@@ -698,6 +754,7 @@ export function ShippingPdf({
               {data.cartons.map((carton, index) => (
                 <AssignmentRow carton={carton} index={index} key={carton.id} />
               ))}
+              <PalletLabelTable />
             </>
           )}
           {kind === "checklist" && (
@@ -782,6 +839,13 @@ export function ShippingPdf({
                   ))}
                 </ChecklistSection>
               )}
+              {checks.pallets.length > 0 && (
+                <ChecklistSection title={t.pallets}>
+                  {checks.pallets.map((check) => (
+                    <Check key={check.title} {...check} />
+                  ))}
+                </ChecklistSection>
+              )}
               <ChecklistSection title={handoffHeading}>
                 {checks.handoff.map((check) => (
                   <Check key={check.title} {...check} />
@@ -860,11 +924,13 @@ export function ShippingPdf({
                           .join(", ")}
                       </Text>
                     )}
-                    {shipment.pallets?.map((pallet) => (
-                      <Text key={pallet.id} style={[styles.calloutDetail, styles.muted]}>
-                        {t.palletLabel} / {pallet.label}
-                      </Text>
-                    ))}
+                    {shipment.pallets
+                      ?.filter((pallet) => pallet.label)
+                      .map((pallet) => (
+                        <Text key={pallet.id} style={[styles.calloutDetail, styles.muted]}>
+                          {t.palletLabelSingle} / {pallet.label}
+                        </Text>
+                      ))}
                     {shipment.transport.billOfLading && (
                       <Text style={[styles.calloutDetail, styles.muted]}>
                         {t.bol} / {shipment.transport.billOfLading}

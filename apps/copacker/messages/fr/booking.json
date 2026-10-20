@@ -170,7 +170,7 @@
       "description": "Téléchargez les étiquettes maintenant, ou retrouvez-les à tout moment dans {shipment}.",
       "summary": "{service}, {total}",
       "booked": "Réservée",
-      "amazonLabels": "Étiquettes de carton Amazon",
+      "amazonLabels": "Étiquettes de carton",
       "carrierLabels": "Étiquettes du transporteur"
     },
     "problems": {

@@ -170,7 +170,7 @@
       "description": "立即下载标签，或随时在 {shipment} 中找到它们。",
       "summary": "{service}，{total}",
       "booked": "已预订",
-      "amazonLabels": "Amazon 箱唛",
+      "amazonLabels": "箱唛",
       "carrierLabels": "承运商标签"
     },
     "problems": {

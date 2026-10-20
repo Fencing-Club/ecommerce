@@ -387,6 +387,26 @@ export const cartonRunLabel = (run: readonly string[]) => (run.length > 1 ? `${r
 // Carton IDs as a packing list writes them, with runs of a sequence as ranges: "B4, B6, D1, D8–D9, D11".
 export const cartonList = (ids: readonly string[]) => cartonRuns(ids).map(cartonRunLabel).join(", ")
 
+// A pallet's place in the Amazon shipment its cartons travel in, as Amazon numbers its pallet labels: the shipment's
+// pallets in packing order, from 1.
+export type PalletLabel = { palletId: string; amazonShipmentId: string; number: number; count: number }
+
+// Each pallet's Amazon shipment and its number there, from its cartons' Amazon labels. A pallet with no labelled
+// cartons has none; validatePallets and the booking keep a pallet's cartons in one shipment.
+export function palletLabels(
+  pallets: ReadonlyArray<Pick<Pallet, "palletId" | "cartonIds">>,
+  labels: ReadonlyArray<{ cartonId: string; amazonShipmentId: string }>
+): PalletLabel[] {
+  const placed = pallets.flatMap((pallet) => {
+    const label = labels.find((label) => pallet.cartonIds.includes(label.cartonId))
+    return label ? [{ palletId: pallet.palletId, amazonShipmentId: label.amazonShipmentId }] : []
+  })
+  return placed.map((pallet) => {
+    const shipment = placed.filter((other) => other.amazonShipmentId === pallet.amazonShipmentId)
+    return { ...pallet, number: shipment.indexOf(pallet) + 1, count: shipment.length }
+  })
+}
+
 // Each carton on exactly one pallet, and every pallet holding cartons of this shipment.
 export function validatePallets(packing: {
   cartons: { cartonId: string }[]

@@ -12,7 +12,7 @@ import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedStates } from "@/server/readiness"
+import { releasedLabelKinds, releasedStates } from "@/server/readiness"
 import {
   type ActionRequest,
   buyerContacts,
@@ -120,7 +120,7 @@ async function ShipmentPage({
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
     (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
       !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
@@ -226,6 +226,7 @@ const invoice = documentRow("invoice", "Lotus invoice 2291.pdf")
 const packingList = documentRow("packing_list", "Packing list.pdf")
 const shippingLabel = documentRow("shipping_label", "AGL labels.pdf")
 const cartonLabel = documentRow("carton_label", "Carton label.pdf", { cartonId: "C1" })
+const palletLabel = documentRow("pallet_label", "Pallet labels.pdf")
 const labels = [
   { cartonId: "C1", labelNumber: "FBA18ABCD123U000001", destinationCode: "ONT8", amazonShipmentId: "FBA18ABCD123" },
   { cartonId: "C2", labelNumber: "FBA18ABCD123U000002", destinationCode: "ONT8", amazonShipmentId: "FBA18ABCD123" }
@@ -843,7 +844,7 @@ export const WaitingForLabelsSupplier = meta.story({
     order: amazonOrder,
     shipment: waitingLabels,
     step: step("labels", "Book shipping and add the missing documents below"),
-    docs: [invoice, shippingLabel]
+    docs: [invoice, shippingLabel, palletLabel]
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Waiting for labels")).toBeVisible()
@@ -852,7 +853,39 @@ export const WaitingForLabelsSupplier = meta.story({
     await expect(canvas.queryByRole("link", { name: /STAR-8KQ2M7-1/ })).toBeNull()
     // Labels reach the supplier once they're released.
     await expect(canvas.queryByRole("link", { name: "Download Shipping labels" })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: /Download Pallet labels/ })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
+  }
+})
+
+// Packed on pallets for FBA: Amazon's pallet labels come with the carton labels, as one file.
+export const ReadyOnPalletsSupplier = meta.story({
+  ...supplier,
+  args: {
+    kind: "supplier",
+    order: amazonOrder,
+    shipment: shipmentRow({
+      status: "ready",
+      packing: packingFor(amazonOrder.data, {
+        palletized: true,
+        pallets: [
+          { palletId: "1", length: 120, width: 100, height: 120, weight: 62, stackable: true, cartonIds: ["C1", "C2"] }
+        ]
+      }),
+      amazonNetwork: "fba",
+      amazonShipmentId: "FBA18ABCD123",
+      labels
+    }),
+    docs: [invoice, cartonLabel, palletLabel]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
+    const download = canvas.getByRole("link", { name: "Download Pallet labels Pallet labels.pdf" })
+    await expect(download).toHaveAttribute("href", `/api/documents/${palletLabel.id}`)
+    await expect(canvas.getByRole("link", { name: "Download Carton labels" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("?bundle=true")
+    )
   }
 })
 
@@ -901,7 +934,7 @@ export const ReadyIncomplete = meta.story({
     await expect(canvas.getByText("Add a product label for Linen apron / Charcoal")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
     // A warehouse shipment has no Amazon labels.
-    await expect(canvas.queryByRole("columnheader", { name: "Amazon label" })).toBeNull()
+    await expect(canvas.queryByRole("columnheader", { name: "Carton label" })).toBeNull()
     await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
   }

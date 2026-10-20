@@ -3,12 +3,18 @@ import type { DocumentSettings, ShippingDocumentData } from "./shipping-model"
 import { renderShippingDocument, ShippingPdf } from "./shipping-pdf"
 
 // The label files a packet carries, each in its provider's original page geometry.
-export type PacketLabels = { product?: Uint8Array[]; carton?: Uint8Array[]; carrier?: Uint8Array[] }
+export type PacketLabels = {
+  product?: Uint8Array[]
+  carton?: Uint8Array[]
+  carrier?: Uint8Array[]
+  pallet?: Uint8Array[]
+}
 
 /**
  * The supplier packet: the packing list, the packing checklist, the carton label reference, the carton labels (Amazon's,
- * then the carrier's), then the product labels. The reference lists every carton with its labels in one table, right
- * before the labels it matches, and only when there are carton labels. Label pages keep their original geometry.
+ * then the carrier's), the pallet labels, then the product labels. The reference lists every carton with its labels
+ * in one table, right before the labels it matches, and only when there are carton labels. Label pages keep their
+ * original geometry.
  */
 export async function renderSupplierPacket(
   data: ShippingDocumentData,
@@ -28,6 +34,7 @@ export async function renderSupplierPacket(
     checklist,
     ...(cartonLabels.length ? [await page("reference")] : []),
     ...cartonLabels,
+    ...(labels.pallet ?? []),
     ...(labels.product ?? [])
   ])
 }

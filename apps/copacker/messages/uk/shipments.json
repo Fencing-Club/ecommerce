@@ -98,6 +98,7 @@
       "cartonLabels": "Етикетки коробок",
       "unitLabels": "Етикетки товарів",
       "carrierLabels": "Етикетки перевізника",
+      "palletLabels": "Етикетки палет",
       "backToShipment": "Назад до відправлення"
     },
     "cartons": {
@@ -107,7 +108,7 @@
       "units": "Одиниці",
       "dimensions": "Розміри (см)",
       "weight": "Вага (кг)",
-      "amazonLabel": "Етикетка Amazon"
+      "amazonLabel": "Етикетка коробки"
     },
     "pickup": {
       "title": "Забір",
