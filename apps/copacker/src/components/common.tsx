@@ -327,7 +327,15 @@ export function DocumentList({
                 </>
               }
               fileName={kind && !bundle ? d.name : undefined}
-              downloadLabel={`${t("download")} ${bundle ? t(d.kind === "carton_label" ? "cartonLabels" : "shippingLabels") : (kind ?? d.name)}${!bundle && d.cartonId ? ` ${d.cartonId}` : ""}`}
+              // The link's name replaces its text, so it names the file too: two documents of one kind stay apart.
+              downloadLabel={[
+                t("download"),
+                bundle ? t(d.kind === "carton_label" ? "cartonLabels" : "shippingLabels") : (kind ?? d.name),
+                !bundle && d.cartonId,
+                kind && !bundle && d.name
+              ]
+                .filter(Boolean)
+                .join(" ")}
               href={`/api/documents/${d.id}${bundle ? "?bundle=true" : ""}`}
             />
           </li>

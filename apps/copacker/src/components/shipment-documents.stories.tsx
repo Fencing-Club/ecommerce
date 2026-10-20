@@ -46,14 +46,14 @@ export const Ready = meta.story({
 export const Mobile = meta.story({
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Download fnsku labels" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download FNSKU labels" })).toBeVisible()
   }
 })
 
 export const Packing = meta.story({
   args: { documents: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Download fnsku labels" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download FNSKU labels" })).toBeVisible()
     await expect(canvas.queryByText("Packing list")).not.toBeInTheDocument()
   }
 })
@@ -72,7 +72,7 @@ export const MultipleProductLabels = meta.story({
 export const SingleProductLabel = meta.story({
   args: { documents: [] },
   play: async ({ canvas, args }) => {
-    const download = canvas.getByRole("button", { name: "Download fnsku labels" })
+    const download = canvas.getByRole("button", { name: "Download FNSKU labels" })
     await expect(download).not.toHaveAttribute("aria-haspopup")
     await userEvent.click(download)
     await expect(args.onProductDownload).toHaveBeenCalledWith(["fnsku"])
