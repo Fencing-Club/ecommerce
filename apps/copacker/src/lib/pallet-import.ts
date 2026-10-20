@@ -37,7 +37,13 @@ export type PalletImportIssue = {
   value?: string
   values?: Record<string, string | number>
 }
-export type PalletImportResult = { pallets: Pallet[]; issues: PalletImportIssue[]; templateMatches: boolean }
+// The pallets a file holds, each with its row in the file, and the issues that stop the import.
+export type PalletImportResult = {
+  pallets: Pallet[]
+  rows: number[]
+  issues: PalletImportIssue[]
+  templateMatches: boolean
+}
 
 // A pallet's cartons as a packing list writes them: IDs and runs (A1–A6, B1), split by commas (Chinese and Urdu ones
 // too), semicolons, new lines or spaces. A run is two IDs of one sequence joined by a dash, and the second can leave
@@ -80,7 +86,7 @@ function expandRun(token: string) {
 export function parsePalletTable(table: string[][], cartonIds: readonly string[]): PalletImportResult {
   const { issues: columnIssues, positions } = matchColumns(table[0] ?? [], palletColumns)
   if (columnIssues.length) {
-    return { pallets: [], issues: columnIssues, templateMatches: false }
+    return { pallets: [], rows: [], issues: columnIssues, templateMatches: false }
   }
   const issues: PalletImportIssue[] = []
   const pallets: Pallet[] = []
@@ -164,14 +170,19 @@ export function parsePalletTable(table: string[][], cartonIds: readonly string[]
   if (!pallets.length && !issues.length) {
     issues.push({ code: "empty" })
   }
-  return { pallets, issues, templateMatches: true }
+  return {
+    pallets,
+    rows: pallets.map((pallet) => rows.get(pallet.palletId.toLowerCase())!),
+    issues,
+    templateMatches: true
+  }
 }
 
 export async function readPalletFile(file: File, cartonIds: readonly string[]): Promise<PalletImportResult> {
   const table = await readSpreadsheet(file, "Pallets", palletColumns.length)
   return Array.isArray(table)
     ? parsePalletTable(table, cartonIds)
-    : { pallets: [], issues: [table], templateMatches: false }
+    : { pallets: [], rows: [], issues: [table], templateMatches: false }
 }
 
 // The pallet template: a Pallets sheet to fill, a row to a pallet, with Stacking chosen from a list, and the

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { expandCartonGroups, groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { palletColumns } from "@/lib/pallet-import"
@@ -45,7 +45,8 @@ const meta = preview.meta({
   args: {
     open: true,
     onOpenChange: fn(),
-    context: "PO38 / Shipment 1",
+    reference: "PO38",
+    shipmentName: "Shipment 1",
     cartonIds,
     existing: [],
     onImport: fn(() => Promise.resolve())
@@ -85,6 +86,23 @@ export const Upload = meta.story({
     await expect(dialog.getByRole("button", { name: "Download template" })).toBeVisible()
     await expect(dialog.getByText("XLSX or CSV, up to 10 MB")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Review import" })).toBeDisabled()
+  }
+})
+
+// The template is named for the order and shipment, like the app's other downloads, so it's easy to find later.
+export const DownloadTemplate = meta.story({
+  play: async () => {
+    const downloads: string[] = []
+    const click = spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.push(this.download)
+    })
+    try {
+      const dialog = await shownDialog("Import pallets")
+      await userEvent.click(dialog.getByRole("button", { name: "Download template" }))
+      await waitFor(() => expect(downloads).toEqual(["Pallet template - PO38 - Shipment 1.xlsx"]))
+    } finally {
+      click.mockRestore()
+    }
   }
 })
 
@@ -138,13 +156,29 @@ export const ReplacePallets = meta.story({
   }
 })
 
-// Adding the file to the pallets there repeats pallet 1 and its cartons. The choice stays, so Replace fixes it.
+// Adding the 07.14 file to a shipment whose Pallet 1 already holds every carton. Each of the file's pallets says what
+// it clashes with, by its row, rather than carton by carton, and the line above points to Replace, which clears them.
 export const AddConflicts = meta.story({
   args: { existing },
   play: async () => {
-    const dialog = await upload(csv(["1,120,100,75,68,Stackable,A1–A2"]))
-    await expect(dialog.getByText("Pallet 1 is listed more than once")).toBeVisible()
-    await expect(dialog.getByText("3 issues")).toBeVisible()
+    const dialog = await upload(valid())
+    const issues = within(dialog.getByRole("alert"))
+    await expect(issues.getByText("4 issues")).toBeVisible()
+    await expect(
+      issues.getByText(
+        "These pallets clash with the pallet already on this shipment. Choose Replace pallets to use only the file’s pallets."
+      )
+    ).toBeVisible()
+    const items = issues.getAllByRole("listitem")
+    for (const [index, [location, message]] of [
+      ["Row 2 / Pallet 1", "There’s already a Pallet 1. Give this one another ID."],
+      ["Row 2 / Pallet 1", "Cartons A1–A6 are already on Pallet 1."],
+      ["Row 3 / Pallet 2", "Cartons A7–A10, B1 are already on Pallet 1."],
+      ["Row 4 / Pallet 3", "Cartons B2–B6, C1–C2 are already on Pallet 1."]
+    ].entries()) {
+      await expect(items[index]).toHaveTextContent(location!)
+      await expect(items[index]).toHaveTextContent(message!)
+    }
     await expect(dialog.getByRole("button", { name: "Import pallets" })).toBeDisabled()
     await userEvent.click(dialog.getByRole("radio", { name: "Replace pallets" }))
     await expect(dialog.queryByRole("alert")).toBeNull()

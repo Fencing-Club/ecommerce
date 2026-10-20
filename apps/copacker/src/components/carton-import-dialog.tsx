@@ -2,8 +2,9 @@ import { type OrderInput, validatePacking } from "@repo/aisle"
 import { useFormatter, useTranslations, useLocale } from "use-intl"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
 import { cartonTemplate, readCartonFile, type CartonImportResult } from "@/lib/carton-import"
+import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
-import { type ImportMode, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
+import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion"
 
 export type CartonImportMode = ImportMode
@@ -68,7 +69,8 @@ export function CartonImportDialog({
     <SpreadsheetImportDialog
       open={open}
       onOpenChange={onOpenChange}
-      context={`${order.reference} / ${shipmentName}`}
+      reference={order.reference}
+      shipmentName={shipmentName}
       text={{
         title: t("title"),
         review: t("review"),
@@ -83,7 +85,7 @@ export function CartonImportDialog({
       read={(file) => readCartonFile(file, order.items)}
       check={check}
       template={{
-        fileName: "carton-template.xlsx",
+        title: "Carton template",
         build: () =>
           cartonTemplate(
             order.items,
@@ -121,7 +123,10 @@ function CartonReview({ groups, order }: { groups: CartonGroup[]; order: OrderIn
         </span>
         <span>{editor("unitCount", { count: totals.pieces })}</span>
       </div>
-      <Accordion defaultValue={groups[0] ? [groups[0].cartonId] : []} className="overflow-hidden rounded-lg border">
+      <Accordion
+        defaultValue={groups[0] ? [groups[0].cartonId] : []}
+        className={cn("min-h-0 rounded-lg border", scrollList, groups.length > 3 && "min-h-48")}
+      >
         {groups.map((carton) => (
           <AccordionItem key={carton.cartonId} value={carton.cartonId}>
             <AccordionTrigger className="items-center gap-3 rounded-none bg-muted/50 px-3 hover:no-underline">

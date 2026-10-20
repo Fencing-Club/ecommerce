@@ -27,7 +27,8 @@ const meta = preview.meta({
   args: {
     open: true,
     onOpenChange: fn(),
-    context: "PO38 / Shipment 1",
+    reference: "PO38",
+    shipmentName: "Shipment 1",
     text: {
       title: "Import names",
       review: "Review import",
@@ -41,7 +42,7 @@ const meta = preview.meta({
     hasExisting: true,
     read,
     check,
-    template: { fileName: "names.xlsx", build: async () => new Blob(["Name"]) },
+    template: { title: "Name template", build: async () => new Blob(["Name"]) },
     renderReview: ({ names }) => <p>{names.join(", ")}</p>,
     onImport: fn(() => Promise.resolve())
   }
@@ -90,6 +91,21 @@ export const FileIssuesHideTheChoice = meta.story({
     await expect(dialog.getByText("Enter a name.")).toBeVisible()
     await expect(dialog.queryByRole("radiogroup")).toBeNull()
     await expect(dialog.getByRole("button", { name: "Import names" })).toBeDisabled()
+  }
+})
+
+// A long list of issues scrolls inside its box, so the title, file and buttons stay in view.
+export const LongIssueList = meta.story({
+  play: async () => {
+    const dialog = await upload(["Name", ...Array.from({ length: 30 }, () => "")])
+    const box = screen.getByRole("dialog")
+    const issues = dialog.getByRole("list", { name: "30 issues" })
+    await expect(box.scrollHeight).toBeLessThanOrEqual(box.clientHeight + 1)
+    await expect(issues.scrollHeight).toBeGreaterThan(issues.clientHeight)
+    await expect(dialog.getByRole("button", { name: "Back" })).toBeVisible()
+    const last = dialog.getByText("Row 31")
+    last.scrollIntoView()
+    await expect(last.getBoundingClientRect().bottom).toBeLessThanOrEqual(issues.getBoundingClientRect().bottom + 1)
   }
 })
 

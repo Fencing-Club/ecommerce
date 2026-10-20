@@ -654,6 +654,11 @@
       "unknownCarton": "{count, plural, one {Karton {cartons} gehört nicht zu dieser Sendung.} other {Kartons {cartons} gehören nicht zu dieser Sendung.}}",
       "cartonTwice": "{count, plural, one {Karton {cartons} steht auch auf Palette {pallet}.} other {Kartons {cartons} stehen auch auf Palette {pallet}.}} Jeden Karton auf nur eine Palette stellen."
     },
+    "clashes": {
+      "replace": "{count, plural, one {Diese Paletten überschneiden sich mit der Palette, die schon in dieser Sendung ist.} other {Diese Paletten überschneiden sich mit den # Paletten, die schon in dieser Sendung sind.}} Wählen Sie Paletten ersetzen, um nur die Paletten aus der Datei zu verwenden.",
+      "palletExists": "Es gibt schon eine Palette {pallet}. Geben Sie dieser eine andere ID.",
+      "cartonsOnPallet": "{count, plural, one {Karton {cartons} steht schon auf Palette {pallet}.} other {Kartons {cartons} stehen schon auf Palette {pallet}.}}"
+    },
     "template": {
       "rows": "Eine Zeile pro Palette verwenden. Pallet ID ist Ihre Referenz für die Palette, etwa 1, 2, 3.",
       "measurements": "Länge, Breite und Höhe der beladenen Palette in Zentimetern angeben, das Bruttogewicht einschließlich der Palette in Kilogramm.",

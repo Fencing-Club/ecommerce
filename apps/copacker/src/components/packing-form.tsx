@@ -793,7 +793,8 @@ export function PackingForm({
         <PalletImportDialog
           open={importingPallets}
           onOpenChange={setImportingPallets}
-          context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+          reference={order.reference}
+          shipmentName={shipmentName ?? t("cartons")}
           cartonIds={physicalCartons.map((carton) => carton.cartonId)}
           existing={pallets}
           onImport={async (next, mode) => {

@@ -3,7 +3,8 @@ import { arrayIncludes } from "ts-extras"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import type { PalletValue } from "@/lib/carton-groups"
 import { palletTemplate, readPalletFile, type PalletImportResult } from "@/lib/pallet-import"
-import { type ImportMode, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
+import { cn } from "@/lib/utils"
+import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
 
 // Issues with the file's columns, the file itself or a number say the same as the carton import's.
 const sharedIssues = ["missingColumns", "duplicateColumns", "unknownColumns", "unreadable", "number"] as const
@@ -14,15 +15,17 @@ const sharedIssues = ["missingColumns", "duplicateColumns", "unknownColumns", "u
 export function PalletImportDialog({
   open,
   onOpenChange,
-  context,
+  reference,
+  shipmentName,
   cartonIds,
   existing,
   onImport
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  // The order and shipment, under the title.
-  context: string
+  // The order and shipment, shown under the title and in the template's file name.
+  reference: string
+  shipmentName: string
   // The shipment's cartons, one ID to a physical carton.
   cartonIds: string[]
   existing: PalletValue[]
@@ -31,39 +34,59 @@ export function PalletImportDialog({
   const t = useTranslations("orders.palletImport")
   const cartonText = useTranslations("orders.cartonImport")
   const palletText = useTranslations("orders.pallets")
-  const rules = useTranslations("server.readiness.packing")
   const locale = useLocale()
 
+  const location = (row: number, pallet: string) =>
+    [cartonText("row", { row }), pallet ? palletText("name", { pallet }) : ""].filter(Boolean).join(" / ")
+
+  // Adding the file's pallets to the ones there can repeat a pallet ID or put a carton on two pallets. Each clash is
+  // said by the file's pallet and row, naming the pallet already there, rather than carton by carton. The file's own
+  // rows can't clash with each other, and the cartons left off pallets show in the form.
+  function clashes(result: PalletImportResult) {
+    const issues = validatePallets({
+      cartons: cartonIds.map((cartonId) => ({ cartonId })),
+      pallets: [...existing, ...result.pallets]
+    })
+    const holders = new Map(
+      existing.flatMap((pallet) => pallet.cartonIds.map((id) => [id.toLowerCase(), pallet.palletId] as const))
+    )
+    return result.pallets.flatMap((pallet, index) => {
+      const where = location(result.rows[index] ?? 0, pallet.palletId)
+      const own = issues.filter((issue) => issue.palletId?.toLowerCase() === pallet.palletId.toLowerCase())
+      const held = new Map<string, string[]>()
+      for (const issue of own) {
+        if (issue.code === "palletCartonTwice") {
+          const holder = holders.get(issue.values.carton.toLowerCase())
+          if (holder) {
+            held.set(holder, [...(held.get(holder) ?? []), issue.values.carton])
+          }
+        }
+      }
+      return [
+        ...(own.some((issue) => issue.code === "duplicatePallet")
+          ? [{ location: where, message: t("clashes.palletExists", { pallet: pallet.palletId }) }]
+          : []),
+        ...[...held].map(([holder, cartons]) => ({
+          location: where,
+          message: t("clashes.cartonsOnPallet", { count: cartons.length, cartons: cartonList(cartons), pallet: holder })
+        }))
+      ]
+    })
+  }
+
   function check(result: PalletImportResult, mode: ImportMode) {
-    // Adding to the pallets there can repeat a pallet ID or a carton. The cartons left off pallets show in the form.
-    const imported = new Set(result.pallets.map((pallet) => pallet.palletId.toLowerCase()))
     const checked =
-      result.templateMatches && !result.issues.length
-        ? validatePallets({
-            cartons: cartonIds.map((cartonId) => ({ cartonId })),
-            pallets: mode === "add" ? [...existing, ...result.pallets] : result.pallets
-          }).filter(
-            (issue) =>
-              (issue.code === "duplicatePallet" || issue.code === "palletCartonTwice") &&
-              imported.has(issue.palletId?.toLowerCase() ?? "")
-          )
-        : []
+      mode === "add" && existing.length && result.templateMatches && !result.issues.length ? clashes(result) : []
     return {
       templateMatches: result.templateMatches,
       fileIssues: result.issues.map((issue) => ({
-        location: issue.row
-          ? [cartonText("row", { row: issue.row }), issue.pallet ? palletText("name", { pallet: issue.pallet }) : ""]
-              .filter(Boolean)
-              .join(" / ")
-          : "",
+        location: issue.row ? location(issue.row, issue.pallet ?? "") : "",
         message: arrayIncludes(sharedIssues, issue.code)
           ? cartonText(`errors.${issue.code}`, { value: issue.value ?? "" })
           : t(`errors.${issue.code}`, { value: issue.value ?? "", ...issue.values })
       })),
-      issues: checked.map((issue) => ({
-        location: issue.palletId ? palletText("name", { pallet: issue.palletId }) : "",
-        message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-      })),
+      issues: checked,
+      hint: checked.length ? t("clashes.replace", { count: existing.length }) : undefined,
       rows: result.pallets.length
     }
   }
@@ -72,7 +95,8 @@ export function PalletImportDialog({
     <SpreadsheetImportDialog
       open={open}
       onOpenChange={onOpenChange}
-      context={context}
+      reference={reference}
+      shipmentName={shipmentName}
       text={{
         title: t("title"),
         review: t("review"),
@@ -87,7 +111,7 @@ export function PalletImportDialog({
       read={(file) => readPalletFile(file, cartonIds)}
       check={check}
       template={{
-        fileName: "pallet-template.xlsx",
+        title: "Pallet template",
         build: () =>
           palletTemplate(
             [
@@ -122,7 +146,13 @@ function PalletReview({ pallets }: { pallets: Pallet[] }) {
         </span>
         <span>{t("weight", { weight: format.number(pallets.reduce((sum, pallet) => sum + pallet.weight, 0)) })}</span>
       </div>
-      <ul aria-label={palletText("title")} className="divide-y overflow-hidden rounded-lg border">
+      <ul
+        aria-label={palletText("title")}
+        // The list scrolls and holds nothing focusable, so it takes focus for the keyboard to scroll it.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className={cn("min-h-0 divide-y rounded-lg border", scrollList, pallets.length > 3 && "min-h-48")}
+      >
         {pallets.map((pallet) => (
           <li key={pallet.palletId} className="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3">
             <div className="flex min-w-0 flex-col gap-0.5">

@@ -51,8 +51,10 @@ The upload buttons beside **Add carton** and **Add pallet** open a spreadsheet i
 to 07.12 for cartons, 07.13 to 07.15 for pallets). Both use `SpreadsheetImportDialog`: download the template, upload an
 XLSX or CSV file, review what it holds ("Review carton import", "Review pallet import"), then add it to what's there or
 replace it. The file's own issues (by row) hide that choice, since the other mode won't fix them; issues from adding to
-what's there, such as a repeated pallet ID, keep it so **Replace** can clear them. Templates keep English headers and
-sheet names (`Cartons`, `Pallets`) and carry their instructions, in the reader's language, on an Instructions sheet.
+what's there, such as a repeated pallet ID, keep it so **Replace** can clear them. A long list of issues, pallets or
+cartons scrolls inside its box, keeping the title, the choice and the buttons in view. Templates download named like
+the app's other files ("Pallet template - PO38 - Shipment 1.xlsx"), keep English headers and sheet names (`Cartons`,
+`Pallets`) and carry their instructions, in the reader's language, on an Instructions sheet.
 
 A pallet file (`lib/pallet-import.ts`) has a row per pallet: Pallet ID, length, width and height in cm, gross weight in
 kg, Stacking (Stackable or Not stackable, a list in the XLSX template) and Carton IDs. Carton IDs take IDs and runs as
@@ -60,7 +62,9 @@ packing lists write them: `A1–A6, B1`, `A1-A6`, `A10–12`, split by commas (i
 semicolons, new lines or spaces. An ID the shipment has, such as `01-2`, is never read as a run. Each row is checked on
 its own (a valid size and weight, a stacking value, at least one carton, cartons the shipment has) and against the rows
 above it (a pallet ID once, each carton on one pallet), then `validatePallets` checks the imported pallets against the
-ones they're added to. Cartons left off every pallet don't stop an import; the Pallets section lists them as usual.
+ones they're added to. Those clashes are listed by the file's pallet and row, naming the pallet already there ("Cartons
+A1–A6 are already on Pallet 1"), under a line that points to **Replace pallets**. Cartons left off every pallet don't
+stop an import; the Pallets section lists them as usual.
 
 ## What Amazon gets
 

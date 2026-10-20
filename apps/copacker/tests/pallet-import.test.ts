@@ -29,6 +29,7 @@ describe("pallet import", () => {
     )
     expect(result.issues).toEqual([])
     expect(result.templateMatches).toBe(true)
+    expect(result.rows).toEqual([2, 4, 5])
     expect(result.pallets).toEqual([
       {
         palletId: "1",
@@ -141,6 +142,6 @@ describe("pallet import", () => {
     const other = new ExcelJS.Workbook()
     other.addWorksheet("Cartons").addRow([...palletColumns])
     const missing = await readPalletFile(new File([await other.xlsx.writeBuffer()], "pallets.xlsx"), cartonIds)
-    expect(missing).toEqual({ pallets: [], issues: [{ code: "worksheet" }], templateMatches: false })
+    expect(missing).toEqual({ pallets: [], rows: [], issues: [{ code: "worksheet" }], templateMatches: false })
   })
 })

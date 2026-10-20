@@ -654,6 +654,11 @@
       "unknownCarton": "{count, plural, one {Il cartone {cartons} non fa parte di questa spedizione.} other {I cartoni {cartons} non fanno parte di questa spedizione.}}",
       "cartonTwice": "{count, plural, one {Il cartone {cartons} è anche sul pallet {pallet}.} other {I cartoni {cartons} sono anche sul pallet {pallet}.}} Metti ogni cartone su un solo pallet."
     },
+    "clashes": {
+      "replace": "{count, plural, one {Questi pallet sono in conflitto con il pallet già presente in questa spedizione.} other {Questi pallet sono in conflitto con i # pallet già presenti in questa spedizione.}} Scegli Sostituisci pallet per usare solo i pallet del file.",
+      "palletExists": "Esiste già un pallet {pallet}. Assegna a questo un altro ID.",
+      "cartonsOnPallet": "{count, plural, one {Il cartone {cartons} è già sul pallet {pallet}.} other {I cartoni {cartons} sono già sul pallet {pallet}.}}"
+    },
     "template": {
       "rows": "Usa una riga per pallet. Pallet ID è il tuo riferimento per il pallet, ad esempio 1, 2, 3.",
       "measurements": "Inserisci lunghezza, larghezza e altezza del pallet carico in centimetri, e il suo peso lordo in chilogrammi, pallet compreso.",

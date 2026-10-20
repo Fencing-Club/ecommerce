@@ -654,6 +654,11 @@
       "unknownCarton": "{count, plural, one {La caja {cartons} no está en este envío.} other {Las cajas {cartons} no están en este envío.}}",
       "cartonTwice": "{count, plural, one {La caja {cartons} también está en la tarima {pallet}.} other {Las cajas {cartons} también están en la tarima {pallet}.}} Pon cada caja en una sola tarima."
     },
+    "clashes": {
+      "replace": "{count, plural, one {Estas tarimas chocan con la tarima que ya está en este envío.} other {Estas tarimas chocan con las # tarimas que ya están en este envío.}} Elige Reemplazar tarimas para usar solo las tarimas del archivo.",
+      "palletExists": "Ya hay una tarima {pallet}. Dale otro ID a esta.",
+      "cartonsOnPallet": "{count, plural, one {La caja {cartons} ya está en la tarima {pallet}.} other {Las cajas {cartons} ya están en la tarima {pallet}.}}"
+    },
     "template": {
       "rows": "Usa una fila por tarima. Pallet ID es tu referencia para la tarima, por ejemplo 1, 2, 3.",
       "measurements": "Ingresa el largo, ancho y alto de la tarima cargada en centímetros, y su peso bruto en kilogramos, incluida la tarima.",
