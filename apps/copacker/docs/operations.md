@@ -184,8 +184,11 @@ previously deployed migrations unchanged and blocks deployment on invalid data w
 
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
 `drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them;
-copy a changed one into `tests/database-schema.ts` too. Tests never run or check migrations: the database tests build
-the schema from `src/db/schema.ts` once per run (`tests/database.ts`).
+copy a changed one into `tests/database-schema.ts` too. Tests never run, replay, hash or inspect migrations: suites
+that do grow without bound and slow every run. The unit project's global setup builds the schema's SQL from
+`src/db/schema.ts` once per run, and each database test creates it with `applySchema` (`tests/database.ts`). The one
+exception is CI's `verify` job, which applies every migration to an empty Postgres once per run as a release gate;
+don't add to it.
 The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
