@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, Box } from "lucide-react"
+import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
@@ -61,6 +62,8 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
 
 function Footer() {
   const t = useTranslations("marketing.site")
+  // Read once, in a lazy initializer, so the year is not recomputed on each render.
+  const [year] = useState(() => new Date().getFullYear())
   const columns = [
     { title: t("footer.product"), links: sections.map((section) => [`/#${section}`, t(`sections.${section}`)]) },
     {
@@ -105,7 +108,7 @@ function Footer() {
           quiet
         )}
       >
-        <span>© {new Date().getFullYear()} Copacker</span>
+        <span>© {year} Copacker</span>
         <span>copacker.ai</span>
       </div>
     </footer>
