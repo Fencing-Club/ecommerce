@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "文件",
-      "empty": "还没有文件"
+      "empty": "还没有文件",
+      "packingList": "装箱单",
+      "downloadPackingList": "下载装箱单",
+      "packingListFailed": "无法下载装箱单"
     },
     "summary": {
       "title": "货件详情",
@@ -127,7 +130,7 @@
     },
     "legs": {
       "shipsTo": "供应商发货至{place}。",
-      "amazonPickup": "亚马逊从{place}提货。",
+      "amazonPickup": "Amazon 从{place}提货。",
       "carrierPickup": "承运商从{place}提货。",
       "dropoff": "{place}将箱子交给承运商。"
     }

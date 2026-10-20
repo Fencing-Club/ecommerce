@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "Dokumente",
-      "empty": "Noch keine Dokumente"
+      "empty": "Noch keine Dokumente",
+      "packingList": "Packliste",
+      "downloadPackingList": "Packliste herunterladen",
+      "packingListFailed": "Die Packliste konnte nicht heruntergeladen werden"
     },
     "summary": {
       "title": "Sendungsdetails",

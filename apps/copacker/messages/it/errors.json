@@ -224,6 +224,8 @@
   "packetIncomplete": "Il pacchetto di spedizione è incompleto. Chiedi all’acquirente di controllarne i documenti.",
   "packetNotReleased": "Il pacchetto di spedizione non è stato rilasciato",
   "packingDraftChanged": "L’ordine di acquisto o la bozza di imballaggio sono cambiati. Aggiorna prima di salvare.",
+  "packingListIncomplete": "Impossibile creare la packing list dai cartoni di questa spedizione",
+  "packingListUnavailable": "La packing list è disponibile al termine dell’imballaggio",
   "passwordTooShort": "Usa almeno {count, plural, one {# carattere} other {# caratteri}}.",
   "passwordWeak": "Scegli una password più sicura.",
   "passwordWeakBecause": "{warning} Scegli una password più sicura.",

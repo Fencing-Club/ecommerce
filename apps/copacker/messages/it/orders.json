@@ -200,7 +200,7 @@
     "shipmentTo": "Spedizione a {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# varianti}}, {pieces, number} pezzi",
     "selectProduct": "Seleziona {name}",
-    "packCount": "{count, number} confezioni da {size}",
+    "packCount": "{count, number} confezioni, {size} ciascuna",
     "supplierCharges": "Costi del fornitore",
     "addSupplierCharge": "Aggiungi spesa",
     "removeSupplierCharge": "Rimuovi spesa",
