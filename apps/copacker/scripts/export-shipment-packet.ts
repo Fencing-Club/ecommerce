@@ -65,7 +65,7 @@ for (const kind of ["packing", "checklist", "reference"] as const) {
 const originalName = `Amazon-carton-labels-${input.shipmentId}-original.pdf`
 await writeFile(resolve(outputPath, originalName), original)
 const packetName = `Supplier-packet-${data.order}-${data.shipment}-r${data.revision}-${input.settings.language}-${input.settings.paper}.pdf`
-// The same page order as the app’s supplier packet: checklist, packing list, then the original carton labels.
+// The same page order as the app’s supplier packet: packing list, checklist, then the original carton labels.
 const packet = await renderSupplierPacket(data, input.settings, { carton: [original] }, fontBase)
 await writeFile(resolve(outputPath, packetName), packet)
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex")

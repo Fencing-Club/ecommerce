@@ -120,7 +120,7 @@ describe("shipping document contract", () => {
 })
 
 describe("rendered shipping PDFs", () => {
-  it("orders the supplier packet as the supplier works, keeping each label file's page size", async () => {
+  it("orders the supplier packet, keeping each label file's page size", async () => {
     const label = async (size: [number, number]) => {
       const pdf = await PDFDocument.create()
       pdf.addPage(size)
@@ -133,21 +133,21 @@ describe("rendered shipping PDFs", () => {
       fontBase
     )
     const sizes = (await PDFDocument.load(bytes)).getPages().map((page) => page.getSize())
-    // Checklist, product labels, packing list, Amazon carton labels, carrier labels; no carton label reference.
+    // Packing list, checklist, Amazon carton labels, carrier labels, product labels; no carton label reference.
     expect(sizes.map(({ width, height }) => [Math.round(width), Math.round(height)])).toEqual([
       [595, 842],
-      [144, 72],
       [595, 842],
       [288, 432],
-      [288, 430]
+      [288, 430],
+      [144, 72]
     ])
     const task = getDocument({ data: Uint8Array.from(bytes) })
     try {
       const doc = await task.promise
       const title = async (page: number) =>
         (await (await doc.getPage(page)).getTextContent()).items.flatMap((item) => ("str" in item ? [item.str] : []))
-      expect(await title(1)).toContain("Packing checklist")
-      expect(await title(3)).toContain("Packing list")
+      expect(await title(1)).toContain("Packing list")
+      expect(await title(2)).toContain("Packing checklist")
     } finally {
       await task.destroy()
     }

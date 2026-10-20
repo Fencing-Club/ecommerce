@@ -67,15 +67,15 @@ function PackingListButton({ id }: { id: string }) {
 function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPacketPage>> }) {
   const t = useTranslations("shipments.detail.packet")
   const url = (section: string) => `/api/shipments/${page.id}/packet?section=${section}&version=${page.version}`
-  // In the packet’s order: the units’ labels, then the cartons’.
+  // In the packet’s order: the carton labels, then the product labels.
   const sections = [
-    ...(page.hasProductLabels ? [{ section: "product_labels", kind: "product", label: t("unitLabels") } as const] : []),
     ...(page.data.network === "awd" || page.data.network === "fba"
       ? [{ section: "carton_labels", kind: "carton", label: t("cartonLabels") } as const]
       : []),
     ...(page.data.transport.carrierLabels
       ? [{ section: "carrier_labels", kind: "carrier", label: t("carrierLabels") } as const]
-      : [])
+      : []),
+    ...(page.hasProductLabels ? [{ section: "product_labels", kind: "product", label: t("unitLabels") } as const] : [])
   ]
   async function verify() {
     const response = await fetch(url("verify"), { cache: "no-store", redirect: "error" })

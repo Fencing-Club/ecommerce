@@ -6,10 +6,9 @@ import { renderShippingDocument, ShippingPdf } from "./shipping-pdf"
 export type PacketLabels = { product?: Uint8Array[]; carton?: Uint8Array[]; carrier?: Uint8Array[] }
 
 /**
- * The supplier packet, in the order the supplier works: the checklist of tasks, the product labels that go on each unit
- * before packing, the packing list for filling and weighing the cartons, then the Amazon and carrier labels for the
- * sealed cartons. The packing list already pairs each carton with its labels, so the separate carton label reference
- * stays out. Label pages keep their original geometry.
+ * The supplier packet: the packing list, the packing checklist, the carton labels (Amazon's, then the carrier's), then
+ * the product labels. The packing list already pairs each carton with its labels, so the separate carton label
+ * reference stays out. Label pages keep their original geometry.
  */
 export async function renderSupplierPacket(
   data: ShippingDocumentData,
@@ -21,13 +20,13 @@ export async function renderSupplierPacket(
     const blob = await renderShippingDocument(<ShippingPdf data={data} kind={kind} settings={settings} />, fontBase)
     return new Uint8Array(await blob.arrayBuffer())
   }
-  const checklist = await page("checklist")
   const packing = await page("packing")
+  const checklist = await page("checklist")
   return combinePdfs([
-    checklist,
-    ...(labels.product ?? []),
     packing,
+    checklist,
     ...(labels.carton ?? []),
-    ...(labels.carrier ?? [])
+    ...(labels.carrier ?? []),
+    ...(labels.product ?? [])
   ])
 }

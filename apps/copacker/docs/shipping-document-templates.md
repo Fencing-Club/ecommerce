@@ -88,8 +88,8 @@ workspace membership and a snapshot hash before and after reading files. The bro
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
-The packet runs in the order the supplier works: the checklist, the product labels for each unit, the packing list,
-then the Amazon and carrier labels for the sealed cartons. The packing list already pairs each carton with its labels,
+The packet runs: the packing list, the checklist, the carton labels (Amazon's, then the carrier's), then the product
+labels. The packing list already pairs each carton with its labels,
 so the carton label reference stays a separate document in the preview. `renderSupplierPacket` owns this order.
 
 Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.

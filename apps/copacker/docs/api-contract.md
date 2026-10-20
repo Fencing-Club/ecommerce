@@ -303,8 +303,8 @@ Sending a PO stores its PDF with the PO; a storage failure is logged as `po_docu
 since the PDF is made again when it's emailed or downloaded.
 
 `GET /api/shipments/:id/packet` serves the released supplier packet's label sections, and the browser assembles the
-packet in the order the supplier works: the checklist, the product labels and suffocation warning sheet for the lines it
-carries, the packing list, then, for a shipment to Amazon, Amazon's carton labels and the buyer's shipping labels. The
+packet in this order: the packing list, the checklist, then, for a shipment to Amazon, Amazon's carton labels and the
+buyer's shipping labels, then the product labels and suffocation warning sheet for the lines it carries. The
 packing list pairs each carton with its labels, so the carton label reference isn't repeated in the packet. Original
 page dimensions are preserved; print at actual size. The packing list shows
 supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg and the Amazon label number (an AWD SSCC

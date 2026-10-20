@@ -52,8 +52,8 @@ export const AglPickup = meta.story({
   }
 })
 
-// The packet runs in the order the supplier works: the checklist, the product labels, the packing list, then the carton
-// labels. The packing list pairs each carton with its labels, so the carton label reference stays out.
+// The packet runs: the packing list, the checklist, the carton labels, then the product labels. The packing list pairs
+// each carton with its labels, so the carton label reference stays out.
 export const PacketOrder = meta.story({
   args: { page: { ...released, hasProductLabels: true } },
   beforeEach: () => {
@@ -65,7 +65,7 @@ export const PacketOrder = meta.story({
     const { canvas } = context
     await expect(
       canvas.getAllByRole("button", { name: /labels$/ }).map((button) => button.getAttribute("aria-label"))
-    ).toEqual(["Product labels", "Carton labels"])
+    ).toEqual(["Carton labels", "Product labels"])
     await userEvent.click(canvas.getByRole("button", { name: "Download packet" }))
     await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce(), { timeout: 30000 })
     const [link] = mocked(HTMLAnchorElement.prototype.click).mock.contexts
@@ -78,9 +78,9 @@ export const PacketOrder = meta.story({
         .map(({ width, height }) => [Math.round(width), Math.round(height)])
     ).toEqual([
       [595, 842],
-      [144, 72],
       [595, 842],
-      [288, 432]
+      [288, 432],
+      [144, 72]
     ])
   }
 })
@@ -120,7 +120,7 @@ export const LabelsWithoutReferenceDocuments = meta.story({
       unavailable: true,
       id,
       message: "Complete the shipment details before downloading the supplier packet.",
-      labelSections: ["product_labels", "carton_labels", "carrier_labels"]
+      labelSections: ["carton_labels", "carrier_labels", "product_labels"]
     }
   },
   play: async ({ canvas }) => {
@@ -132,6 +132,6 @@ export const LabelsWithoutReferenceDocuments = meta.story({
     // The packing list, then the labels in the packet’s order.
     await expect(
       canvas.getAllByRole("button", { name: /^Download packing list$|labels$/ }).map((button) => button.textContent)
-    ).toEqual(["Packing list", "Product labels", "Carton labels", "Carrier labels"])
+    ).toEqual(["Packing list", "Carton labels", "Carrier labels", "Product labels"])
   }
 })
