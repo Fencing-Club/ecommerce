@@ -201,8 +201,8 @@
       "hanger": "Hängen Sie jedes Kleidungsstück auf einen Bügel.",
       "label": "Etikettieren Sie jede Einheit."
     },
-    "fbaCartons": "FBA-Kartons: gemischte SKUs sind erlaubt; höchstens 63,5 cm (25 in) pro Seite und 22,68 kg (50 lb), außer eine einzelne Einheit ist größer.",
-    "awdUsCartons": "AWD-US-Kartons: eine SKU pro Karton, höchstens 150 Einheiten, alle Kartons einer SKU gleich gepackt; höchstens 63,5 cm (25 in) pro Seite und 22,68 kg (50 lb).",
+    "fbaCartons": "FBA-Kartons: gemischte SKUs sind erlaubt; höchstens {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) pro Seite} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} und {maxKg, number} kg ({maxLb, number} lb), außer eine einzelne Einheit ist größer.",
+    "awdUsCartons": "AWD-US-Kartons: eine SKU pro Karton, höchstens {units, number} Einheiten, alle Kartons einer SKU gleich gepackt; höchstens {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) pro Seite} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} und {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Packen Sie {networks}-Produkte in getrennte Kartons.",
     "unitLabels": "Etikettieren Sie jede Einheit mit ihrem FNSKU-Barcode und überdecken Sie dabei jeden anderen Barcode.",
     "suffocationWarnings": "Polybeutel brauchen einen Erstickungswarnhinweis, wenn die Öffnung 5 in (12,7 cm) oder breiter ist.",

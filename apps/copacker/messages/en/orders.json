@@ -523,11 +523,11 @@
     "enterUnits": "Enter how many units of this product each carton holds.",
     "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "rules": {
-      "awdUnits": "Quantity: {units, number} sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons.",
-      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {network} allows up to 63.5 cm (25 in) on each side.",
-      "cartonWeight": "Weight: {weight, number} kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton.",
-      "awdOneSku": "Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.",
-      "awdConfiguration": "Packing template: This SKU uses {difference, select, units {{units, number} units per carton} other {{length, number} × {width, number} × {height, number} cm cartons at {weight, number} kg}} elsewhere in this shipment. Use the same packing template for every carton of this SKU.",
+      "unitsPerCarton": "Quantity: {units, number} sellable units per carton exceeds {receiver}’s limit of {max, number}. Split them into smaller cartons.",
+      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) for this carton}}.",
+      "cartonWeight": "Weight: {weight, number} kg exceeds the {maxLb, number} lb limit ({maxKg, number} kg). Reduce the weight of each carton.",
+      "oneSku": "Products: {receiver} requires one SKU per carton. Move these SKUs into separate cartons.",
+      "samePacking": "Packing template: This SKU uses {difference, select, units {{units, number} units per carton} other {{length, number} × {width, number} × {height, number} cm cartons at {weight, number} kg}} elsewhere in this shipment. Use the same packing template for every carton of this SKU.",
       "incompletePacks": "Quantity: this product comes in packs of {pack, number}. Enter a multiple of {pack, number} units."
     }
   },

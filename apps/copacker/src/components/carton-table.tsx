@@ -162,36 +162,32 @@ function CartonRow({
       const index = indexOf(sku)
       const content = value.items[index]
       const item = products.find((product) => product.id === content?.itemId)
-      if (issue.code === "awdUnits" && content && item) {
-        found.push({
-          place: index,
-          outlines: [`items.${index}`],
-          message: t("rules.awdUnits", { units: content.pieces / item.piecesPerSet })
-        })
+      if (issue.code === "unitsPerCarton" && index >= 0) {
+        found.push({ place: index, outlines: [`items.${index}`], message: t("rules.unitsPerCarton", issue.values) })
       } else if (issue.code === "cartonSize") {
         const side = issue.fields?.find((field) => field !== "weight") ?? "length"
         found.push({
           place: "dimensions",
           outlines: issue.fields ?? [],
-          message: t("rules.cartonSize", { side, size: value[side], network: issue.values.network })
+          message: t("rules.cartonSize", { ...issue.values, side, size: value[side] })
         })
       } else if (issue.code === "cartonWeight") {
         found.push({
           place: "weight",
           outlines: ["weight"],
-          message: t("rules.cartonWeight", { weight: value.weight })
+          message: t("rules.cartonWeight", { ...issue.values, weight: value.weight })
         })
-      } else if (issue.code === "awdOneSku") {
-        found.push({ place: "carton", outlines: [], message: t("rules.awdOneSku") })
+      } else if (issue.code === "oneSku") {
+        found.push({ place: "carton", outlines: [], message: t("rules.oneSku", issue.values) })
       } else if (issue.code === "incompletePacks" && index >= 0) {
         found.push({ place: index, outlines: [`items.${index}`], message: t("rules.incompletePacks", issue.values) })
-      } else if (issue.code === "awdConfiguration" && content && item) {
+      } else if (issue.code === "samePacking" && content && item) {
         // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
         const sellable = content.pieces / item.piecesPerSet
         found.push({
           place: index,
           outlines: [],
-          message: t("rules.awdConfiguration", {
+          message: t("rules.samePacking", {
             ...issue.values,
             difference: sellable === issue.values.units ? "size" : "units"
           })

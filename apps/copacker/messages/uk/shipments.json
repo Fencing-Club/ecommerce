@@ -201,8 +201,8 @@
       "hanger": "Повісьте кожен предмет одягу на вішак.",
       "label": "Позначте етикеткою кожну одиницю."
     },
-    "fbaCartons": "Коробки FBA: можна змішувати SKU; не більше 63,5 см (25 in) з кожного боку та 22,68 кг (50 lb), якщо одна одиниця не більша.",
-    "awdUsCartons": "Коробки AWD US: один SKU на коробку, не більше 150 одиниць, усі коробки одного SKU спаковані однаково; не більше 63,5 см (25 in) з кожного боку та 22,68 кг (50 lb).",
+    "fbaCartons": "Коробки FBA: можна змішувати SKU; не більше {shape, select, cube {{lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} та {maxKg, number} кг ({maxLb, number} lb), якщо одна одиниця не більша.",
+    "awdUsCartons": "Коробки AWD US: один SKU на коробку, не більше {units, number} одиниць, усі коробки одного SKU спаковані однаково; не більше {shape, select, cube {{lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} та {maxKg, number} кг ({maxLb, number} lb).",
     "separateCartons": "Пакуйте товари {networks} в окремі коробки.",
     "unitLabels": "Позначте кожну одиницю її штрихкодом FNSKU, закривши будь-який інший штрихкод.",
     "suffocationWarnings": "Поліетиленові пакети потребують попередження про ризик задушення, якщо отвір має 5 in (12,7 см) або більше.",

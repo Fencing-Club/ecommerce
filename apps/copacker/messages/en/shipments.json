@@ -201,8 +201,8 @@
       "hanger": "Put each garment on a hanger.",
       "label": "Label each unit."
     },
-    "fbaCartons": "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
-    "awdUsCartons": "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb).",
+    "fbaCartons": "FBA cartons: mixed SKUs are allowed; at most {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} and {maxKg, number} kg ({maxLb, number} lb), unless one unit is larger.",
+    "awdUsCartons": "AWD US cartons: one SKU per carton, at most {units, number} units, every carton of a SKU packed the same way; at most {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} and {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Pack {networks} products in separate cartons.",
     "unitLabels": "Label every unit with its FNSKU barcode, covering any other barcode.",
     "suffocationWarnings": "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider.",

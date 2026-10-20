@@ -201,8 +201,8 @@
       "hanger": "Metti ogni capo su una gruccia.",
       "label": "Etichetta ogni unità."
     },
-    "fbaCartons": "Cartoni FBA: SKU misti consentiti; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb), a meno che una singola unità sia più grande.",
-    "awdUsCartons": "Cartoni AWD US: un SKU per cartone, massimo 150 unità, tutti i cartoni di uno SKU imballati allo stesso modo; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb).",
+    "fbaCartons": "Cartoni FBA: SKU misti consentiti; massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} e {maxKg, number} kg ({maxLb, number} lb), a meno che una singola unità sia più grande.",
+    "awdUsCartons": "Cartoni AWD US: un SKU per cartone, massimo {units, number} unità, tutti i cartoni di uno SKU imballati allo stesso modo; massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} e {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Imballa i prodotti {networks} in cartoni separati.",
     "unitLabels": "Etichetta ogni unità con il suo codice a barre FNSKU, coprendo qualsiasi altro codice a barre.",
     "suffocationWarnings": "Le buste di plastica richiedono un avviso di soffocamento quando l’apertura è di 5 in (12,7 cm) o più.",

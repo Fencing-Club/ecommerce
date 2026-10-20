@@ -1,4 +1,4 @@
-import { amazonCartonPolicies, type AmazonNetwork } from "@repo/aisle"
+import { type CartonPolicy, cartonPolicies, sizeLimit, weightLimit } from "@repo/aisle/carton-policies"
 import type { ShippingCopyKey } from "./shipping-copy"
 import type { ShippingDocumentData } from "./shipping-model"
 
@@ -7,29 +7,46 @@ export type ShippingCheck = {
   detail: ShippingCopyKey
   values?: Record<string, number | string>
 }
-function cartonLimits(network: AmazonNetwork) {
-  const policy = amazonCartonPolicies[network]
-  return {
-    sideCm: policy.maxSideCm,
-    sideIn: policy.maxSideIn,
-    kg: Math.round(policy.maxWeightKg * 100) / 100,
-    lb: policy.maxWeightLb
-  }
+
+// What the supplier checks for each of a policy's carton rules, in the policy's order. Amazon's product identifiers
+// are the buyer's to add, so they have no check.
+function policyChecks(policy: CartonPolicy) {
+  return policy.rules.flatMap((rule): ShippingCheck[] => {
+    switch (rule.type) {
+      case "oneSku":
+        return [{ title: "singleSku", detail: "singleSkuText" }]
+      case "maxUnits":
+        return [{ title: "unitLimit", detail: "unitLimitText", values: { units: rule.units } }]
+      case "samePacking":
+        return [{ title: "sameQuantity", detail: "sameQuantityText" }]
+      case "maxSize":
+        return [
+          {
+            title: "dimensions",
+            detail: rule.exceptOneUnit ? "oneUnitDimensionsText" : "dimensionsText",
+            values: sizeLimit(rule)
+          }
+        ]
+      case "maxWeight": {
+        const { maxKg, maxLb } = weightLimit(rule)
+        return [
+          {
+            title: "weightLimit",
+            detail: rule.exceptOneUnit ? "oneUnitWeightText" : "weightLimitText",
+            values: { kg: Math.round(maxKg * 100) / 100, lb: maxLb }
+          }
+        ]
+      }
+      case "amazonIds":
+        return []
+    }
+  })
 }
 
 // Composable policies, not a template per shipping permutation. Receiving rules are independent of transport.
 const receivingChecks: Record<ShippingDocumentData["network"], ShippingCheck[]> = {
-  fba: [
-    { title: "dimensions", detail: "fbaDimensionsText", values: cartonLimits("fba") },
-    { title: "weightLimit", detail: "fbaWeightText", values: cartonLimits("fba") }
-  ],
-  awd: [
-    { title: "singleSku", detail: "singleSkuText" },
-    { title: "unitLimit", detail: "unitLimitText", values: { units: amazonCartonPolicies.awd_us.maxUnits } },
-    { title: "sameQuantity", detail: "sameQuantityText" },
-    { title: "dimensions", detail: "dimensionsText", values: cartonLimits("awd_us") },
-    { title: "weightLimit", detail: "weightLimitText", values: cartonLimits("awd_us") }
-  ],
+  fba: policyChecks(cartonPolicies.fba),
+  awd: policyChecks(cartonPolicies.awd_us),
   warehouse: [],
   forwarder: []
 }

@@ -120,23 +120,27 @@ export const bagOrder: OrderInput = orderData({
   ]
 })
 
-// PO39 sent to Amazon AWD US instead, for the carton editor errors board (06.17).
-export const awdBagOrder: OrderInput = orderData({
-  reference: "PO39",
-  destination: "amazon",
-  deliveryId: undefined,
-  via: towelOrder.via,
-  items: [
-    bag("Natural / Medium / 20 × 30 cm", "2031", 320, "awd_us"),
-    bag("Sage / Medium / 20 × 30 cm", "2030", 40, "awd_us"),
-    cottonTeaTowel("Stripe / 50 × 70 cm", "3100", "NT-CT-3100", 40, "awd_us"),
-    cottonTeaTowel("Ivory / 50 × 70 cm", "3101", "", 120, "awd_us")
-  ]
-})
+// PO39 sent to Amazon AWD US or FBA, for the carton editor errors board (06.17).
+const errorsOrder = (network: AmazonNetwork): OrderInput =>
+  orderData({
+    reference: "PO39",
+    destination: "amazon",
+    deliveryId: undefined,
+    via: towelOrder.via,
+    items: [
+      bag("Natural / Medium / 20 × 30 cm", "2031", 320, network),
+      bag("Sage / Medium / 20 × 30 cm", "2030", 40, network),
+      cottonTeaTowel("Stripe / 50 × 70 cm", "3100", "NT-CT-3100", 40, network),
+      cottonTeaTowel("Ivory / 50 × 70 cm", "3101", "", 120, network)
+    ]
+  })
+export const awdBagOrder = errorsOrder("awd_us")
+export const fbaBagOrder = errorsOrder("fba")
 
-// Cartons A1–A2 break AWD's unit, size and weight limits, and carton B1 mixes two SKUs; carton C1 is fine.
-export function awdBagCartons(): CartonGroup[] {
-  const [natural, sage, stripe, ivory] = awdBagOrder.items
+// Cartons A1–A2 are `length` cm long, weigh 25 kg and hold 160 units of one SKU, carton B1 mixes two SKUs, and carton
+// C1 holds one. AWD's board makes cartons A1–A2 70 cm long, FBA's 100 cm.
+export function errorCartons(order: OrderInput, length: number): CartonGroup[] {
+  const [natural, sage, stripe, ivory] = order.items
   const carton = (
     cartonIds: string[],
     size: [number, number, number],
@@ -153,7 +157,7 @@ export function awdBagCartons(): CartonGroup[] {
     items
   })
   return [
-    carton(["A1", "A2"], [70, 40, 40], 25, [{ itemId: natural!.id, pieces: 160 }]),
+    carton(["A1", "A2"], [length, 40, 40], 25, [{ itemId: natural!.id, pieces: 160 }]),
     carton(["B1"], [60, 40, 40], 12.4, [
       { itemId: sage!.id, pieces: 40 },
       { itemId: stripe!.id, pieces: 40 }

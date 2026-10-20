@@ -286,12 +286,12 @@ describe("FBA shipments", () => {
           [gloveId, 11]
         ]
       },
-      { length: 80, weight: 30, items: [[gloveId, 1]] }
+      { length: 100, weight: 30, items: [[gloveId, 1]] }
     ])
     expect(validatePacking(fbaOrder, mixed).issues).toEqual([])
     const oversize = cartons([
       {
-        length: 80,
+        length: 100,
         items: [
           [itemId, 320],
           [gloveId, 12]
@@ -299,11 +299,29 @@ describe("FBA shipments", () => {
       }
     ])
     expect(validatePacking(fbaOrder, oversize).issues).toEqual([
-      { cartonId: expect.any(String), code: "cartonSize", values: { network: "FBA" }, fields: ["length"] }
+      {
+        cartonId: "C1",
+        code: "cartonSize",
+        values: {
+          receiver: "FBA",
+          shape: "box",
+          lengthCm: 91.44,
+          widthCm: 63.5,
+          heightCm: 63.5,
+          lengthIn: 36,
+          widthIn: 25,
+          heightIn: 25
+        },
+        fields: ["length"]
+      }
     ])
+    // FBA cartons may be 36 in long, where AWD's stop at 25 in.
+    const long = cartons([{ length: 70, items: [[itemId, 320]] }])
+    expect(validatePacking(fbaOrder, long).valid).toBe(true)
     // AWD keeps its one-SKU cartons, and a carton goes to one network.
     const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const })) }
-    expect(validatePacking(awd, mixed).issues.map((issue) => issue.code)).toContain("awdOneSku")
+    expect(validatePacking(awd, long).issues.map((issue) => issue.code)).toEqual(["unitsPerCarton", "cartonSize"])
+    expect(validatePacking(awd, mixed).issues.map((issue) => issue.code)).toContain("oneSku")
     const both = { ...fbaOrder, items: [awd.items[0]!, fbaOrder.items[1]!] }
     expect(validatePacking(both, mixed).issues.map((issue) => issue.code)).toContain("mixedNetworks")
     // Every AWD carton of a SKU matches the SKU's first, which the issue reports for the carton editor to compare.
@@ -311,7 +329,7 @@ describe("FBA shipments", () => {
     expect(validatePacking(awd, uneven).issues).toEqual([
       {
         cartonId: "C2",
-        code: "awdConfiguration",
+        code: "samePacking",
         values: { sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 }
       }
     ])
@@ -419,8 +437,8 @@ describe("POs to Amazon with lines for several networks", () => {
       { code: "separateCartons", networks: ["fba", "awd_us"] }
     ])
     expect(rules.filter(isCartonRule).map(requirementText)).toEqual([
-      expect.stringContaining("FBA cartons: mixed SKUs are allowed"),
-      expect.stringContaining("AWD US cartons: one SKU per carton"),
+      "FBA cartons: mixed SKUs are allowed; at most 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) and 22.68 kg (50 lb), unless one unit is larger.",
+      "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb).",
       "Pack FBA and AWD US products in separate cartons."
     ])
     expect(destinationName(both)).toBe("Amazon FBA and AWD US")
