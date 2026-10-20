@@ -217,7 +217,14 @@ describe("rendered shipping PDFs", () => {
         .flatMap((item) => ("str" in item ? [item.str] : []))
         .join(" ")
         .replace(/\s+/g, " ")
-      for (const value of ["A1–A4", "60 packs", "120 units", "240 packs", "480 units", "Amazon carton labels"]) {
+      for (const value of [
+        "A1–A4",
+        "60 packs of 2",
+        "120 units",
+        "240 packs of 2",
+        "480 units",
+        "Amazon carton labels"
+      ]) {
         expect(text).toContain(value)
       }
       for (const carton of awd.cartons) {

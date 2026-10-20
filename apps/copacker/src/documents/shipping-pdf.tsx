@@ -639,7 +639,10 @@ export function ShippingPdf({
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs)} {t.packs}
+                                {shippingMessage(settings.language, "packsOf", {
+                                  count: item.packs,
+                                  size: product.piecesPerPack
+                                })}
                               </Text>
                             )}
                           </View>
@@ -649,7 +652,10 @@ export function ShippingPdf({
                             </Text>
                             {product.piecesPerPack > 1 && (
                               <Text style={styles.packingDetail}>
-                                {number(item.packs * group.length)} {t.packs}
+                                {shippingMessage(settings.language, "packsOf", {
+                                  count: item.packs * group.length,
+                                  size: product.piecesPerPack
+                                })}
                               </Text>
                             )}
                           </View>
