@@ -170,7 +170,6 @@ export function PackingForm({
   const totals = cartonTotals(cartonValues)
   const physicalCartons = totals.cartons > 1000 ? [] : expandCartonGroups(cartonValues)
   const contents = physicalCartons.flatMap((carton) => carton.items)
-  const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
   const availableUnits = Object.values(availablePieces).reduce((total, value) => total + value, 0)
   const packed = (itemId: string) =>
     contents.reduce((total, item) => total + (item.itemId === itemId ? item.pieces || 0 : 0), 0)
@@ -467,10 +466,10 @@ export function PackingForm({
                       <span
                         className={cn(
                           "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-                          pieces === availableUnits && "text-green-700"
+                          totals.pieces === availableUnits && "text-green-700"
                         )}
                       >
-                        {t("packedUnits", { count: pieces, available: availableUnits })}
+                        {t("packedUnits", { count: totals.pieces, available: availableUnits })}
                       </span>
                     </div>
                     {!readOnly && (
@@ -590,7 +589,7 @@ export function PackingForm({
                       <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
                         <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
                         <span className="text-muted-foreground">
-                          {t("packedUnits", { count: pieces, available: availableUnits })}
+                          {t("packedUnits", { count: totals.pieces, available: availableUnits })}
                         </span>
                       </p>
                     )}
@@ -599,7 +598,7 @@ export function PackingForm({
                         <p className="font-medium tabular-nums">
                           {headed
                             ? importText("cartonCount", { count: totals.cartons })
-                            : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
+                            : t("cartonsAndUnits", { cartons: totals.cartons, units: totals.pieces })}
                         </p>
                         {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
                           <p className="mt-1 flex gap-5 text-xs tabular-nums">
@@ -660,7 +659,7 @@ export function PackingForm({
               <aside className="min-w-0">
                 {renderSidebar({
                   cartons: totals.cartons,
-                  units: pieces,
+                  units: totals.pieces,
                   readyDate,
                   weight:
                     completeCartons.length === physicalCartons.length && physicalCartons.length > 0
