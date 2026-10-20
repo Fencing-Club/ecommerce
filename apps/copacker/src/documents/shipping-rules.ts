@@ -33,6 +33,33 @@ const receivingChecks: Record<ShippingDocumentData["network"], ShippingCheck[]> 
   warehouse: [],
   forwarder: []
 }
+// Amazon's rules for FBA pallets on LTL and FTL deliveries: 40 × 48 in pallets, 72 in and 1,500 lb at most, and
+// 50 in for a pallet another stands on. Amazon labels FBA pallets only, four to a pallet; AWD takes the cartons as cases.
+const fbaPalletLimits = {
+  lengthCm: 121.9,
+  widthCm: 101.6,
+  lengthIn: 48,
+  widthIn: 40,
+  heightCm: 182.9,
+  heightIn: 72,
+  stackCm: 127,
+  stackIn: 50,
+  kg: 680,
+  lb: 1500
+}
+const palletChecks: Record<"fba" | "other", ShippingCheck[]> = {
+  fba: [
+    { title: "palletType", detail: "fbaPalletTypeText", values: fbaPalletLimits },
+    { title: "pallet", detail: "fbaPalletText" },
+    { title: "palletSize", detail: "fbaPalletSizeText", values: fbaPalletLimits },
+    { title: "secure", detail: "fbaSecureText" },
+    { title: "palletLabel", detail: "palletLabelText" }
+  ],
+  other: [
+    { title: "pallet", detail: "palletText" },
+    { title: "secure", detail: "secureText" }
+  ]
+}
 const handoffChecks: Record<ShippingDocumentData["transport"]["collection"], ShippingCheck> = {
   pickup: { title: "ready", detail: "readyText" },
   dropoff: { title: "dropoffTask", detail: "dropoffTaskText" },
@@ -77,18 +104,15 @@ export function shipmentDocumentChecks(data: ShippingDocumentData) {
     cartons.push({ title: "cartonSealing", detail: "cartonSealingText" }, { title: "identify", detail: "identifyText" })
     handoff.push({ title: "record", detail: "includePackingText" })
   }
+  // Loading the pallets comes before the handoff, where the bill of lading goes with them.
+  const pallets: ShippingCheck[] = []
   if (data.transport.palletized) {
-    handoff.push(
-      { title: "pallet", detail: "palletText" },
-      { title: "secure", detail: "secureText" },
-      // Amazon labels FBA pallets only: four for each, one for each side. AWD takes the cartons as cases.
-      ...(data.network === "fba" ? [{ title: "palletLabel", detail: "palletLabelText" } as const] : []),
-      { title: "bol", detail: "bolText" }
-    )
+    pallets.push(...palletChecks[data.network === "fba" ? "fba" : "other"])
+    handoff.push({ title: "bol", detail: "bolText" })
   }
   handoff.push(handoffChecks[data.transport.collection])
   if (data.network === "forwarder") {
     handoff.push({ title: "handoff", detail: "confirmReceiptText" })
   }
-  return { cartons, handoff }
+  return { cartons, pallets, handoff }
 }

@@ -123,9 +123,15 @@ shipment's pallets stops the job.
   download shows the same table.
 - **Label reference**: after the cartons, a Pallets table gives each pallet's cartons and its pallet label as Amazon
   prints it, the Amazon shipment and the pallet's number there (`FBA18ABCD123 1/2`).
-- **Checklist**: under Pallet and handoff, an FBA shipment's **Pallet labels** step says to put one of each pallet's
-  four labels on each side, at the top center, outside the stretch wrap; each carton keeps its own label. AWD and
-  other shipments on pallets have no pallet label step.
+- **Checklist**: a Pallets section comes after the cartons and before Handoff, which holds the bill of lading and
+  the pickup. For FBA it gives Amazon's pallet rules for LTL and FTL deliveries
+  ([Seller requirements for LTL, FTL and FCL deliveries](https://sellercentral.amazon.com/help/hub/reference/G200978400)):
+  40 × 48 in wooden pallets with four-way entry, GMA grade B or better; cartons flush, labels out, nothing over the
+  edge; at most 72 in tall including the pallet and 1,500 lb, and 50 in for a stackable pallet; clear stretch wrap
+  marked “Do not break stretch wrap”; and the **Pallet labels** step, one of each pallet's four labels on each side,
+  at the top center, outside the stretch wrap, each carton keeping its own label. AWD and other shipments on pallets
+  get the general loading and securing steps, with no pallet label step. Nothing checks the pallet limits when they're
+  entered yet.
 
 Documents name labels by what they go on, not who issues them: Carton labels, Carrier labels and Pallet labels, since
 other 3PLs can ask for them too.

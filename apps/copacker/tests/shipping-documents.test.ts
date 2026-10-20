@@ -352,6 +352,20 @@ describe("pallet labels", () => {
     expect(awdChecklist).not.toContain("Pallet labels")
   })
 
+  it("gives Amazon's pallet type, height, weight and wrap for FBA pallets, before the handoff", async () => {
+    const checklist = await pageText(ShippingPdf({ data: fba, kind: "checklist", settings: defaultDocumentSettings }))
+    for (const value of ["Pallet type", "121.9 × 101.6 cm (48 × 40 in)", "182.9 cm (72 in)", "680 kg (1,500 lb)"]) {
+      expect(checklist).toContain(value)
+    }
+    expect(checklist).toMatch(/Do\s+not\s+break\s+stretch\s+wrap/)
+    expect(checklist.indexOf("Pallet type")).toBeLessThan(checklist.indexOf("Handoff"))
+    expect(checklist.indexOf("Handoff")).toBeLessThan(checklist.indexOf("Bill of lading"))
+    const awdChecklist = await pageText(
+      ShippingPdf({ data: awd, kind: "checklist", settings: defaultDocumentSettings })
+    )
+    expect(awdChecklist).not.toContain("Pallet type")
+  })
+
   it("lists each pallet's dimensions, weight and stacking in the packing list, and its label in the label reference", async () => {
     const settings = defaultDocumentSettings
     const packing = await pageText(ShippingPdf({ data: fba, kind: "packing", settings }))

@@ -602,7 +602,7 @@ export function ShippingPdf({
     cartonHeading = t.repack
   }
 
-  let handoffHeading = data.transport.palletized ? t.palletHandoff : t.handoff
+  let handoffHeading = t.handoff
   if (data.receiving) {
     handoffHeading = data.receiving.repack ? t.labelHandoff : t.preparePickup
   }
@@ -835,6 +835,13 @@ export function ShippingPdf({
                   title={data.receiving ? cartonHeading : `${cartonHeading} / ${cartonGroupLabel(data.cartons)}`}
                 >
                   {checks.cartons.map((check) => (
+                    <Check key={check.title} {...check} />
+                  ))}
+                </ChecklistSection>
+              )}
+              {checks.pallets.length > 0 && (
+                <ChecklistSection title={t.pallets}>
+                  {checks.pallets.map((check) => (
                     <Check key={check.title} {...check} />
                   ))}
                 </ChecklistSection>
