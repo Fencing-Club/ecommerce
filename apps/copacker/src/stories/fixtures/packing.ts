@@ -71,6 +71,79 @@ export const towelOrder: OrderInput = orderData({
   ]
 })
 
+// PO39 from the same boards: drawstring bags without a supplier SKU and a tea towel, sent to Amazon FBA US as individual
+// units, so each carton can mix products.
+const fbaLabels = { preparation: "none", labels: ["fnsku"], countryCode: "", instructions: "" } as const
+const bag = (variant: string, sku: string, pieces: number) =>
+  orderItem({
+    name: "Cotton drawstring bag",
+    variant,
+    buyerSku: `DB-${sku}`,
+    supplierSku: "",
+    pieces,
+    unitPrice: 180,
+    asin: `B0DB${sku}00`,
+    fnsku: `X0DB${sku}00`,
+    amazonNetwork: "fba",
+    packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
+  })
+
+export const bagOrder: OrderInput = orderData({
+  reference: "PO39",
+  destination: "amazon",
+  deliveryId: undefined,
+  via: towelOrder.via,
+  items: [
+    bag("Sage / Medium / 20 × 30 cm", "2030", 60),
+    bag("Natural / Medium / 20 × 30 cm", "2031", 45),
+    orderItem({
+      name: "Cotton tea towel",
+      variant: "Stripe / 50 × 70 cm",
+      buyerSku: "CT-3100",
+      supplierSku: "NT-CT-3100",
+      pieces: 75,
+      unitPrice: 155,
+      asin: "B0CT310001",
+      fnsku: "X0CT310001",
+      amazonNetwork: "fba",
+      packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
+    })
+  ]
+})
+
+// Three cartons of 60 × 40 × 40 cm at 12.4 kg, each mixing products, which pack all 180 units.
+export function bagPacking(): Packing {
+  const [sage, natural, teaTowel] = bagOrder.items
+  const carton = (cartonId: string, items: Array<[{ id: string } | undefined, number]>) => ({
+    cartonId,
+    length: 60,
+    width: 40,
+    height: 40,
+    weight: 12.4,
+    items: items.map(([item, pieces]) => ({ itemId: item!.id, pieces }))
+  })
+  return {
+    readyDate: "2026-10-20",
+    origin: northwindFactory,
+    cartons: [
+      carton("1", [
+        [sage, 40],
+        [teaTowel, 40]
+      ]),
+      carton("2", [
+        [natural, 30],
+        [sage, 20],
+        [teaTowel, 10]
+      ]),
+      carton("3", [
+        [natural, 15],
+        [teaTowel, 25]
+      ])
+    ],
+    changes: []
+  }
+}
+
 const [natural, sage, teaTowel] = towelOrder.items
 // Identical cartons numbered from `from` to `to`, each holding the same product.
 const cartonRange = (from: number, to: number, size: [number, number, number], itemId: string, pieces: number) =>
