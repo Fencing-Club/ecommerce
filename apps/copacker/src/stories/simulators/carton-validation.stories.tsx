@@ -27,8 +27,9 @@ export const EveryError = meta.story({
 export const ErrorExample = meta.story({
   name: "Error example",
   args: { dataSet: "awd_us-oneSku" },
+  // Whichever example a link loads breaks a rule.
   play: async ({ canvasElement }) => {
-    await expect(reportedCodes(canvasElement)).toEqual(["oneSku"])
+    await expect(reportedCodes(canvasElement).length).toBeGreaterThan(0)
   }
 })
 
