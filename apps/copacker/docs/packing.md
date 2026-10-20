@@ -43,8 +43,57 @@ pallets, and choosing a carton on another pallet moves it.
 `validatePacking` checks pallets only when `palletized` is set: there's at least one pallet, each carton is on exactly
 one pallet of the shipment, and no pallet is empty or listed twice. The cartons off pallets show under the table
 ("2 cartons aren't on a pallet: B1, C1"). Unchecking Packed on pallets leaves the pallets out of the saved draft.
+**Finish packing** stays off until every carton, and every pallet when packed on them, is complete and nothing breaks
+these rules; the header's "7 of 7 cartons on pallets" turns green, as "420 of 420 units" does for the cartons.
+
+The form's actions sit at the top, in the page header: **Finish packing** (or **Save draft** while units are left to
+pack) and the Actions menu with **Save draft**. On a phone the button moves below the cartons. The totals are the side
+panel's, so there's no summary bar.
 
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.
+
+## Importing cartons and pallets
+
+The upload buttons beside **Add carton** and **Add pallet** open a spreadsheet import (copacker.pen section 07: 07.01
+to 07.12 for cartons, 07.13 to 07.15 for pallets). Both use `SpreadsheetImportDialog`: download the template, upload an
+XLSX or CSV file, review what it holds ("Review carton import", "Review pallet import"), then add it to what's there or
+replace it. The file's own issues (by row) hide that choice, since the other mode won't fix them; issues from adding to
+what's there, such as a repeated pallet ID, keep it so **Replace** can clear them. A long list of issues, pallets or
+cartons scrolls inside its box, keeping the title, the choice and the buttons in view. Templates download named like
+the app's other files ("Pallet template - PO38 - Shipment 1.xlsx"), keep English headers and sheet names (`Cartons`,
+`Pallets`) and carry their instructions, in the reader's language, on an Instructions sheet.
+
+Both templates have three sheets: the one to fill in (`Cartons` or `Pallets`), `Example` with the same columns filled in
+for this shipment, and `Instructions` (`addGuide` in `lib/spreadsheet-import.ts`): a table of each column, what to
+enter and the example's value, then notes on the file. The table headings are `orders.importTemplate`; each template's
+column guidance and notes are its `template.columns` and `template.notes`. Only the Instructions sheet turns right to
+left for Urdu; the sheets of English headers and values stay left to right.
+
+- **Cartons**: a row per product of the order, its supplier SKU, product, variant and units per pack prefilled in grey.
+  The example (`cartonExample`) packs each of the first three products in its own kind of carton (A1 as three identical
+  cartons, then B1 and C1), with quantities the order has, so it passes `validatePacking`. It keeps to one product a
+  carton, as AWD requires; the notes say how rows sharing a Carton ID make a mixed carton.
+- **Pallets**: empty, with Stacking chosen from a list. The example (`palletExample`) splits the shipment's cartons
+  across a stackable and a non-stackable pallet, and the notes list the shipment's cartons.
+
+The download buttons beside the upload ones export what the form holds in the same templates ("Cartons - PO38 -
+Shipment 1.xlsx", "Pallets - PO38 - Shipment 1.xlsx"), to edit in a spreadsheet and import again with **Replace**. The
+templates and their copy come from `useCartonTemplate` and `usePalletTemplate` (`hooks/use-import-templates.ts`), which
+the import dialogs share. `cartonRows` writes a row for each product of each kind of carton, above the order's product
+rows; a kind's cartons share a row only when the import would number them back the same (A1 with a count of 3 for
+A1–A3), and otherwise go in runs or one by one, so a gap (A1, A2, A5) or zero-padded IDs (B01, B02) come back unchanged
+and the pallets still find their cartons. `palletRows` writes a pallet to a row, its cartons as runs. Values not entered
+yet stay blank, for the import to point out by row.
+
+A pallet file (`lib/pallet-import.ts`) has a row per pallet: Pallet ID, length, width and height in cm, gross weight in
+kg, Stacking (Stackable or Not stackable, a list in the XLSX template) and Carton IDs. Carton IDs take IDs and runs as
+packing lists write them: `A1–A6, B1`, `A1-A6`, `A10–12`, split by commas (including Chinese and Urdu ones),
+semicolons, new lines or spaces. An ID the shipment has, such as `01-2`, is never read as a run. Each row is checked on
+its own (a valid size and weight, a stacking value, at least one carton, cartons the shipment has) and against the rows
+above it (a pallet ID once, each carton on one pallet), then `validatePallets` checks the imported pallets against the
+ones they're added to. Those clashes are listed by the file's pallet and row, naming the pallet already there ("Cartons
+A1–A6 are already on Pallet 1"), under a line that points to **Replace pallets**. Cartons left off every pallet don't
+stop an import; the Pallets section lists them as usual.
 
 ## What Amazon gets
 
@@ -54,5 +103,3 @@ When packed on pallets, Shipment details' gross weight and volume are the pallet
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
 - **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only.
 - **Documents**: the supplier packet's packing list lists each pallet with its cartons, size and gross weight.
-
-Pallet import (07.13 to 07.15) isn't built yet.

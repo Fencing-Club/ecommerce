@@ -427,7 +427,6 @@
     "addCarton": "Karton hinzufügen",
     "noCartons": "Noch keine Kartons",
     "noCartonsDescription": "Fügen Sie einen Karton hinzu und duplizieren Sie dann identische.",
-    "cartonsAndUnits": "{cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
     "saveDraft": "Entwurf speichern",
     "check": "Packliste prüfen",
     "submit": "Packliste senden",
@@ -584,7 +583,9 @@
   },
   "cartonImport": {
     "title": "Kartons importieren",
-    "reviewTitle": "Import prüfen",
+    "export": "Kartons exportieren",
+    "exportFailed": "Die Kartons konnten nicht exportiert werden.",
+    "reviewTitle": "Kartonimport prüfen",
     "downloadTemplate": "Vorlage herunterladen",
     "templateHint": "In der Vorlage Inhalt, Mengen, Abmessungen und Gewicht der Kartons eintragen.",
     "downloadFailed": "Die Vorlage konnte nicht heruntergeladen werden.",
@@ -622,12 +623,77 @@
       "limit": "Eine Sendung darf höchstens 1.000 Kartons enthalten."
     },
     "template": {
-      "identity": "Die vorausgefüllte Lieferanten-SKU, das Produkt, die Variante und die Stückzahl pro Packung nicht ändern. Fehlende oder falsche Produktangaben vom Käufer korrigieren lassen.",
-      "rows": "Eine Zeile pro Produkt und Karton verwenden. Produktzeilen für weitere Kartons kopieren. Für gemeinsam verpackte Produkte dieselbe Carton ID verwenden. Nicht verwendete Verpackungszeilen leer lassen.",
-      "cartons": "Carton ID ist Ihre Referenz, keine Amazon-Etikettennummer. Geben Sie jeder Kartonart einen Buchstaben: A1, B1, C1. Für identische Kartons eine höhere Anzahl eintragen: A1 mit Anzahl 3 ergibt A1, A2 und A3. Vorhandene IDs werden übersprungen.",
-      "quantity": "Quantity per carton zählt Packungen. Bei einem Zweierpack bedeutet Menge 10 insgesamt 20 Stück. Alle Kartons einer identischen Gruppe müssen dieselben Produkte und Mengen enthalten.",
-      "measurements": "Maße in Zentimetern und Gewicht in Kilogramm angeben. Anzahl, Maße und Gewicht in jeder Zeile mit derselben Carton ID wiederholen.",
-      "format": "Die weißen Verpackungszellen ausfüllen. Englische Überschriften und Blattname Cartons unverändert lassen. XLSX-Datei hochladen oder die Tabelle Cartons als CSV exportieren."
+      "columns": {
+        "cartonId": "Ihre Referenz für eine Kartonart, keine Amazon-Etikettennummer: ein Buchstabe pro Art, ab 1 nummeriert, etwa A1, B1, C1. In jeder Zeile eines Kartons mit mehreren Produkten wiederholen.",
+        "cartonCount": "Wie viele identische Kartons dieser Art. A1 mit Anzahl 3 ergibt A1, A2 und A3. IDs, die die Sendung schon hat, werden übersprungen.",
+        "supplierSku": "Aus der Bestellung vorausgefüllt. Unverändert lassen und fehlende oder falsche Produkte vom Käufer korrigieren lassen.",
+        "quantity": "Packungen dieses Produkts in jedem Karton. Bei einem Zweierpack bedeutet 10 insgesamt 20 Einheiten.",
+        "length": "Länge des Kartons in Zentimetern.",
+        "width": "Breite des Kartons in Zentimetern.",
+        "height": "Höhe des Kartons in Zentimetern.",
+        "weight": "Gewicht des gepackten Kartons in Kilogramm.",
+        "product": "Aus der Bestellung vorausgefüllt. Unverändert lassen.",
+        "variant": "Aus der Bestellung vorausgefüllt. Unverändert lassen.",
+        "unitsPerPack": "Aus der Bestellung vorausgefüllt: die Einheiten einer Packung. Unverändert lassen."
+      },
+      "notes": {
+        "rows": "Eine Zeile pro Produkt und Karton verwenden. Um ein Produkt in weitere Kartonarten zu packen, seine Zeile kopieren. Nicht verwendete Zeilen leer lassen. Das Blatt Example zeigt die Vorlage ausgefüllt für diese Sendung.",
+        "sameCarton": "Zeilen mit derselben Carton ID sind ein Karton: Anzahl, Maße und Gewicht gleich eintragen. Identische Kartons enthalten dieselben Produkte und Mengen.",
+        "format": "Die weißen Zellen ausfüllen, die grauen unverändert lassen. Englische Überschriften und den Blattnamen Cartons unverändert lassen. XLSX-Datei hochladen oder das Blatt Cartons als CSV exportieren."
+      }
     }
+  },
+  "palletImport": {
+    "title": "Paletten importieren",
+    "export": "Paletten exportieren",
+    "exportFailed": "Die Paletten konnten nicht exportiert werden.",
+    "reviewTitle": "Palettenimport prüfen",
+    "review": "Paletten prüfen",
+    "failed": "Paletten konnten nicht importiert werden. Es wurden keine Änderungen vorgenommen.",
+    "add": "Paletten hinzufügen",
+    "replace": "Paletten ersetzen",
+    "import": "Paletten importieren",
+    "importing": "Paletten werden importiert…",
+    "palletCount": "{count, plural, one {# Palette} other {# Paletten}}",
+    "cartons": "{count, plural, one {Karton {cartons}} other {Kartons {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "Die Datei enthält keine Palettenzeilen.",
+      "worksheet": "Die Datei benötigt ein Arbeitsblatt namens Pallets.",
+      "palletId": "Eine Paletten-ID mit 1–60 Zeichen eingeben.",
+      "duplicatePallet": "Palette {pallet} steht auch in Zeile {other}. Eine Zeile pro Palette verwenden.",
+      "stacking": "Stackable oder Not stackable eingeben.",
+      "cartons": "Die Kartons auf dieser Palette eingeben, etwa A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Karton {cartons} gehört nicht zu dieser Sendung.} other {Kartons {cartons} gehören nicht zu dieser Sendung.}}",
+      "cartonTwice": "{count, plural, one {Karton {cartons} steht auch auf Palette {pallet}.} other {Kartons {cartons} stehen auch auf Palette {pallet}.}} Jeden Karton auf nur eine Palette stellen."
+    },
+    "clashes": {
+      "replace": "{count, plural, one {Diese Paletten überschneiden sich mit der Palette, die schon in dieser Sendung ist.} other {Diese Paletten überschneiden sich mit den # Paletten, die schon in dieser Sendung sind.}} Wählen Sie Paletten ersetzen, um nur die Paletten aus der Datei zu verwenden.",
+      "palletExists": "Es gibt schon eine Palette {pallet}. Geben Sie dieser eine andere ID.",
+      "cartonsOnPallet": "{count, plural, one {Karton {cartons} steht schon auf Palette {pallet}.} other {Kartons {cartons} stehen schon auf Palette {pallet}.}}"
+    },
+    "template": {
+      "columns": {
+        "palletId": "Ihre Referenz für die Palette, etwa 1, 2, 3. Jede ID nur einmal verwenden.",
+        "length": "Länge der beladenen Palette in Zentimetern.",
+        "width": "Breite der beladenen Palette in Zentimetern.",
+        "height": "Höhe der beladenen Palette in Zentimetern, vom Boden bis zur Oberkante der Kartons.",
+        "weight": "Bruttogewicht in Kilogramm: die Palette mit ihren Kartons.",
+        "stacking": "Stackable, wenn eine weitere Palette darauf stehen kann, sonst Not stackable. Aus der Liste wählen.",
+        "cartonIds": "Die Kartons auf der Palette, mit ihren IDs aus der Packliste. Eine Folge mit Bindestrich verbinden, den Rest mit Kommas trennen. Jeden Karton auf nur eine Palette stellen."
+      },
+      "notes": {
+        "rows": "Eine Zeile pro Palette verwenden. Das Blatt Example zeigt die Vorlage ausgefüllt für diese Sendung.",
+        "shipmentCartons": "Kartons dieser Sendung: {cartons}.",
+        "format": "Englische Überschriften, die Werte unter Stacking und den Blattnamen Pallets unverändert lassen. XLSX-Datei hochladen oder das Blatt Pallets als CSV exportieren."
+      }
+    }
+  },
+  "importTemplate": {
+    "column": "Spalte",
+    "entry": "Was eintragen",
+    "example": "Beispiel"
   }
 }
