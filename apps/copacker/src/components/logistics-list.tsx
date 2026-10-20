@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { csvCell } from "@/lib/csv"
 import { cn } from "@/lib/utils"
 
 // Who a row waits on next. "done" once nobody does.
@@ -120,7 +121,7 @@ function shownViews(kind: Kind, viewer: ListViewer): View[] {
 }
 
 function download(name: string, lines: string[][]) {
-  const csv = lines.map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(",")).join("\r\n")
+  const csv = lines.map((line) => line.map(csvCell).join(",")).join("\r\n")
   const href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
   const link = document.createElement("a")
   link.href = href

@@ -116,9 +116,11 @@ export function orderProgress(
   if (!first) {
     return { status: "submitted", stage: "active", waiting: "supplier", ...counts }
   }
-  // Once every piece is on its way, the order waits on whoever delivers the last shipment.
-  const waiting = shipmentParty(first.status, first.snapshot ?? order.data)
-  return { status: first.status, stage: "active", waiting: waiting === "done" ? "supplier" : waiting, ...counts }
+  // Pieces not shipped yet wait on the supplier, whoever the shipments on their way wait on. Once every piece is on its
+  // way, the order waits on whoever delivers the last shipment, and on nobody once it's received.
+  const remaining = shippedStates.includes(first.status) && counts.shipped < quantity
+  const waiting = remaining ? "supplier" : shipmentParty(first.status, first.snapshot ?? order.data)
+  return { status: first.status, stage: "active", waiting, ...counts }
 }
 
 export async function forwarderNames(ids: Array<string | null | undefined>) {

@@ -81,6 +81,24 @@ describe("a purchase order's progress", () => {
     })
   })
 
+  it("waits on the supplier for the pieces not shipped yet", () => {
+    expect(orderProgress(order("submitted"), [shipment("shipped", 100)], false)).toMatchObject({
+      status: "shipped",
+      waiting: "supplier"
+    })
+    expect(orderProgress(order("submitted"), [shipment("received", 100)], false)).toMatchObject({
+      status: "received",
+      waiting: "supplier"
+    })
+  })
+
+  it("waits on nobody once every piece is received", () => {
+    expect(orderProgress(order("submitted"), [shipment("received", 420)], false)).toMatchObject({
+      status: "received",
+      waiting: "done"
+    })
+  })
+
   it("waits on the supplier with no shipments yet, and on nobody once closed", () => {
     expect(orderProgress(order("submitted"), [], false)).toMatchObject({ status: "submitted", waiting: "supplier" })
     expect(orderProgress(order("closed"), [], false)).toMatchObject({ stage: "closed", waiting: "done" })
