@@ -51,7 +51,6 @@
     },
     "metaTitle": "Expédition",
     "title": "Expédition {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Bons de commande",
       "orders": "Commandes"
@@ -63,7 +62,8 @@
       "retry": "Relancer l’expédition",
       "cancelInAmazon": "Annuler dans Amazon",
       "getAmazonLabels": "Obtenir les étiquettes Amazon",
-      "createAmazonShipment": "Créer l’expédition Amazon"
+      "createAmazonShipment": "Créer l’expédition Amazon",
+      "editPacking": "Modifier l’emballage"
     },
     "needsAttention": "À traiter",
     "changesWaiting": {
@@ -115,7 +115,23 @@
     },
     "documents": {
       "title": "Documents",
-      "empty": "Aucun document pour l’instant"
+      "empty": "Aucun document pour l’instant",
+      "packingList": "Liste de colisage",
+      "downloadPackingList": "Télécharger la liste de colisage",
+      "packingListFailed": "Impossible de télécharger la liste de colisage"
+    },
+    "summary": {
+      "title": "Détails de l’expédition",
+      "readyDate": "Date de disponibilité",
+      "cartons": "Cartons",
+      "grossWeight": "Poids brut",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Le fournisseur expédie à {place}.",
+      "amazonPickup": "Enlèvement Amazon chez {place}.",
+      "carrierPickup": "Enlèvement par le transporteur chez {place}.",
+      "dropoff": "{place} remet les cartons au transporteur."
     }
   },
   "actions": {
@@ -234,5 +250,16 @@
     "document": "Document",
     "issues": "Corrigez ces problèmes avant de télécharger les documents.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Étiquettes produit",
+    "labelsFor": "Étiquettes pour {name}",
+    "download": "Télécharger : {label}",
+    "downloadAll": "Télécharger toutes les étiquettes produit",
+    "sku": "Étiquettes SKU",
+    "fnsku": "Étiquettes FNSKU",
+    "suffocation": "Étiquettes d’avertissement d’étouffement",
+    "choking": "Étiquettes de risque d’étouffement",
+    "notProvided": "Étiquette non fournie"
   }
 }

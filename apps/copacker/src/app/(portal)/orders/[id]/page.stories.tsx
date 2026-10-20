@@ -376,9 +376,10 @@ const meta = preview.meta({
     landed,
     freight: [{ reference: "FBA17XK2", freightMinor: 31_000 }],
     labels: [
-      { itemId: tote!.id, state: "uploaded", name: "tote.pdf", objectKey: "labels/tote.pdf" },
+      { itemId: tote!.id, type: "fnsku", state: "uploaded", name: "tote.pdf", objectKey: "labels/tote.pdf" },
       {
         itemId: apron!.id,
+        type: "fnsku",
         state: "missing",
         problem: "Its FNSKU is looked up when the purchase order is sent",
         problemKey: "fnskuLookedUpOnSend"
@@ -599,7 +600,7 @@ export const MemberWithoutPrices = meta.story({
     await expect(canvas.queryByRole("button", { name: "Continue packing" })).toBeNull()
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
     await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
-      "Download Packing list"
+      "Download Packing list Packing list.pdf"
     ])
   }
 })

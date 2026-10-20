@@ -19,7 +19,7 @@ export function ShipmentDocuments({
   busy?: boolean
 }) {
   return (
-    <section aria-label="Shipment documents" className="space-y-3">
+    <section aria-label="Shipment documents" className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold">Documents</h2>
       {onDownloadPacket && (
         <Attachment
@@ -31,7 +31,8 @@ export function ShipmentDocuments({
           onDownload={onDownloadPacket}
         />
       )}
-      <div className="space-y-2">
+      {/* A gap keeps the open product labels menu's hidden focus guards from adding margin. */}
+      <div className="flex flex-col gap-2">
         <ProductDownloadsMenu attachment items={productLabels} onDownload={onProductDownload} busy={busy} />
         {documents.map((doc) => (
           <Attachment

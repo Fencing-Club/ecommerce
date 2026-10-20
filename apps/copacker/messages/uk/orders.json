@@ -200,7 +200,7 @@
     "shipmentTo": "Відправлення до {destination}",
     "shipmentCounts": "{count, plural, one {# варіант} few {# варіанти} other {# варіантів}}, {pieces, number} шт.",
     "selectProduct": "Вибрати {name}",
-    "packCount": "{count, number} упаковок по {size}",
+    "packCount": "{count, number} упаковок, по {size} у кожній",
     "supplierCharges": "Витрати постачальника",
     "addSupplierCharge": "Додати витрати",
     "removeSupplierCharge": "Видалити витрати",
@@ -319,6 +319,7 @@
       "packingSplit": "Пакування надіслано; розділено на відправлення {networks} і поставлено в чергу для Amazon",
       "forwarderShipped": "{forwarder} відвантажив товар: {tracking}",
       "packingReady": "Пакування надіслано; готово до відправлення",
+      "packingReopened": "Пакування знову відкрито для змін",
       "invoiceEntered": "Рахунок внесено зі змінами до замовлення на закупівлю",
       "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення",
       "existingAwdLinked": "Пов’язано наявне відправлення AWD {shipmentId}",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "Видалити товар {number} з коробки",
     "finishPacking": "Завершити пакування",
     "addNewAddress": "Додати адресу",
-    "chooseAddress": "Адреса забору"
+    "chooseAddress": "Адреса забору",
+    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "leftCount": "Залишилось {count}",
+    "overCount": "На {count} більше"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -507,7 +511,8 @@
     "packCount": "{count} пак.",
     "addToCarton": "Додати до коробки",
     "selectedCount": "Вибрано: {count}",
-    "cartonGroup": "Коробки {cartons}"
+    "cartonGroup": "Коробки {cartons}",
+    "addProductsToCartons": "Додати товари до коробок {cartons}"
   },
   "cartonImport": {
     "title": "Імпортувати коробки",

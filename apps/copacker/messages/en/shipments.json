@@ -51,7 +51,6 @@
     },
     "metaTitle": "Shipment",
     "title": "Shipment {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Purchase orders",
       "orders": "Orders"
@@ -63,7 +62,8 @@
       "retry": "Retry shipment",
       "cancelInAmazon": "Cancel in Amazon",
       "getAmazonLabels": "Get Amazon labels",
-      "createAmazonShipment": "Create Amazon shipment"
+      "createAmazonShipment": "Create Amazon shipment",
+      "editPacking": "Edit packing"
     },
     "needsAttention": "Needs attention",
     "changesWaiting": {
@@ -115,7 +115,23 @@
     },
     "documents": {
       "title": "Documents",
-      "empty": "No documents yet"
+      "empty": "No documents yet",
+      "packingList": "Packing list",
+      "downloadPackingList": "Download packing list",
+      "packingListFailed": "Couldn’t download the packing list"
+    },
+    "summary": {
+      "title": "Shipment details",
+      "readyDate": "Ready date",
+      "cartons": "Cartons",
+      "grossWeight": "Gross weight",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Supplier ships to {place}.",
+      "amazonPickup": "Amazon pickup from {place}.",
+      "carrierPickup": "Carrier pickup from {place}.",
+      "dropoff": "{place} hands the cartons to the carrier."
     }
   },
   "actions": {
@@ -234,5 +250,16 @@
     "document": "Document",
     "issues": "Resolve these document issues before downloading.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Product labels",
+    "labelsFor": "Labels for {name}",
+    "download": "Download {label}",
+    "downloadAll": "Download all product labels",
+    "sku": "SKU labels",
+    "fnsku": "FNSKU labels",
+    "suffocation": "Suffocation warning labels",
+    "choking": "Choking hazard labels",
+    "notProvided": "Label not provided"
   }
 }

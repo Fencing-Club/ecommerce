@@ -51,7 +51,6 @@
     },
     "metaTitle": "Spedizione",
     "title": "Spedizione {number}",
-    "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
     "parents": {
       "purchaseOrders": "Ordini di acquisto",
       "orders": "Ordini"
@@ -63,7 +62,8 @@
       "retry": "Riprova spedizione",
       "cancelInAmazon": "Annulla su Amazon",
       "getAmazonLabels": "Ottieni etichette Amazon",
-      "createAmazonShipment": "Crea spedizione Amazon"
+      "createAmazonShipment": "Crea spedizione Amazon",
+      "editPacking": "Modifica imballaggio"
     },
     "needsAttention": "Richiede attenzione",
     "changesWaiting": {
@@ -115,7 +115,23 @@
     },
     "documents": {
       "title": "Documenti",
-      "empty": "Ancora nessun documento"
+      "empty": "Ancora nessun documento",
+      "packingList": "Packing list",
+      "downloadPackingList": "Scarica la packing list",
+      "packingListFailed": "Impossibile scaricare la packing list"
+    },
+    "summary": {
+      "title": "Dettagli della spedizione",
+      "readyDate": "Data di disponibilità",
+      "cartons": "Cartoni",
+      "grossWeight": "Peso lordo",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Il fornitore spedisce a {place}.",
+      "amazonPickup": "Ritiro Amazon presso {place}.",
+      "carrierPickup": "Ritiro del corriere presso {place}.",
+      "dropoff": "{place} consegna i cartoni al corriere."
     }
   },
   "actions": {
@@ -234,5 +250,16 @@
     "document": "Documento",
     "issues": "Risolvi questi problemi prima di scaricare i documenti.",
     "pages": "{count, plural, one {# pagina} other {# pagine}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etichette prodotto",
+    "labelsFor": "Etichette per {name}",
+    "download": "Scarica {label}",
+    "downloadAll": "Scarica tutte le etichette prodotto",
+    "sku": "Etichette SKU",
+    "fnsku": "Etichette FNSKU",
+    "suffocation": "Etichette di avvertenza soffocamento",
+    "choking": "Etichette di pericolo di soffocamento",
+    "notProvided": "Etichetta non fornita"
   }
 }

@@ -163,6 +163,7 @@ import {
   submitPacking,
   prepareAmazonShipment,
   correctShipment,
+  reopenPacking,
   createOrder,
   submitOrder,
   newShipment,
@@ -4409,6 +4410,23 @@ describe("fluid packing handoff", () => {
     await savePacking(supplier, prepared.id, prepared.packing, 2, 2)
     await submitPacking(supplier, prepared.id, undefined, 3)
     expect((await database.select().from(tables.shipments))[0]).toMatchObject({ status: "packed", orderRevision: 2 })
+  })
+  it("reopens finished packing until the buyer starts the Amazon shipment", async () => {
+    const prepared = await preparation()
+    await submitPacking(supplier, prepared.id, prepared.packing, 1)
+    const [packed] = await database.select().from(tables.shipments)
+    expect(packed).toMatchObject({ status: "packed", packingDraft: null })
+    await expect(reopenPacking(supplier, prepared.id, packed!.revision + 1)).rejects.toThrow("can’t be edited")
+    await expect(reopenPacking(actor("supplier", otherId), prepared.id, packed!.revision)).rejects.toThrow("not found")
+    await reopenPacking(supplier, prepared.id, packed!.revision)
+    const [reopened] = await database.select().from(tables.shipments)
+    expect(reopened).toMatchObject({ status: "packing", revision: packed!.revision + 1 })
+    expect(reopened?.packingDraft).toEqual(packed?.packing)
+    expect((await database.select().from(tables.events)).some((event) => event.messageKey === "packingReopened")).toBe(
+      true
+    )
+    // Once it's back in packing, there's nothing finished to reopen.
+    await expect(reopenPacking(supplier, prepared.id, reopened!.revision)).rejects.toThrow("can’t be edited")
   })
   it("preserves unfinished packing when a correction is requested", async () => {
     const prepared = await preparation()

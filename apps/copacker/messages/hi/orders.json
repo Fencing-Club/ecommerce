@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} शिपमेंट",
     "shipmentCounts": "{count} वेरिएंट, {pieces, number} इकाइयाँ",
     "selectProduct": "{name} चुनें",
-    "packCount": "{size} के {count, number} पैक",
+    "packCount": "{count, number} पैक, हर एक में {size}",
     "supplierCharges": "आपूर्तिकर्ता लागत",
     "addSupplierCharge": "खर्च जोड़ें",
     "removeSupplierCharge": "खर्च हटाएँ",
@@ -319,6 +319,7 @@
       "packingSplit": "पैकिंग सबमिट की गई; {networks} शिपमेंट में बांटी गई और Amazon के लिए कतार में है",
       "forwarderShipped": "{forwarder} ने सामान शिप कर दिया: {tracking}",
       "packingReady": "पैकिंग सबमिट की गई; शिप करने के लिए तैयार",
+      "packingReopened": "बदलाव के लिए पैकिंग फिर से खोली गई",
       "invoiceEntered": "खरीद ऑर्डर में बदलावों के साथ इनवॉइस दर्ज किया गया",
       "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए",
       "existingAwdLinked": "मौजूदा AWD शिपमेंट {shipmentId} लिंक किया गया",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
     "finishPacking": "पैकिंग पूरी करें",
     "addNewAddress": "पता जोड़ें",
-    "chooseAddress": "पिकअप का पता"
+    "chooseAddress": "पिकअप का पता",
+    "packedUnits": "{available} इकाइयों में से {count}",
+    "leftCount": "{count} बाकी",
+    "overCount": "{count} ज़्यादा"
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -507,7 +511,8 @@
     "packCount": "{count} पैक",
     "addToCarton": "कार्टन में जोड़ें",
     "selectedCount": "{count} चुने गए",
-    "cartonGroup": "कार्टन {cartons}"
+    "cartonGroup": "कार्टन {cartons}",
+    "addProductsToCartons": "कार्टन {cartons} में उत्पाद जोड़ें"
   },
   "cartonImport": {
     "title": "कार्टन आयात करें",

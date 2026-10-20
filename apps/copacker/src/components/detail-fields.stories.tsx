@@ -2,7 +2,7 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { DetailFields } from "./detail-fields"
 const meta = preview.meta({
-  title: "Unused/Display/Detail fields",
+  title: "Components/Display/Detail fields",
   component: DetailFields,
   args: {
     items: [

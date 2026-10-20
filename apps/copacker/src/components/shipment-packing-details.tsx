@@ -1,4 +1,4 @@
-import { ArrowRight, Factory, MapPin, Truck, Warehouse } from "lucide-react"
+import { ArrowRight, Building2, CornerDownRight, MapPin, Truck, Warehouse } from "lucide-react"
 import { Fragment, type ReactNode } from "react"
 import { FieldTitle } from "./ui/field"
 
@@ -18,20 +18,32 @@ export function ShipmentPackingDetails({
 }) {
   return (
     <section className="@container/packing-details overflow-hidden rounded-lg border bg-card text-sm">
+      {/* A narrow card lists the stops one per line, each after the first led in by a corner arrow from the one above. */}
       {route && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-muted/40 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b bg-muted/40 px-4 py-3 text-[13px] leading-[17px] font-medium @max-md/packing-details:flex-col @max-md/packing-details:items-start @max-md/packing-details:gap-2.5">
           {route.map((stop, index) => {
             let Icon = Warehouse
             if (index === 0) {
-              Icon = Factory
+              Icon = Building2
             } else if (index === route.length - 1) {
               Icon = MapPin
             }
             return (
               <Fragment key={`${index}-${stop}`}>
-                {index > 0 && <ArrowRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />}
-                <span className="inline-flex items-center gap-2">
-                  <Icon aria-hidden className="size-4 shrink-0" />
+                {index > 0 && (
+                  <ArrowRight
+                    aria-hidden
+                    className="size-3.5 shrink-0 text-muted-foreground rtl:rotate-180 @max-md/packing-details:hidden"
+                  />
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  {index > 0 && (
+                    <CornerDownRight
+                      aria-hidden
+                      className="hidden size-3.5 shrink-0 text-muted-foreground rtl:-scale-x-100 @max-md/packing-details:block"
+                    />
+                  )}
+                  <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                   {stop}
                 </span>
               </Fragment>
@@ -84,10 +96,10 @@ export function ShipmentAddress({
 
 export function ShipmentTransportLegs({ legs }: { legs: string[] }) {
   return (
-    <div className="space-y-2 text-xs">
+    <div className="space-y-1.5 text-xs">
       {legs.map((leg, index) => (
         <p key={`${index}-${leg}`} className="flex items-start gap-2">
-          <Truck aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          <Truck aria-hidden className="mt-px size-3.5 shrink-0 text-muted-foreground" />
           {leg}
         </p>
       ))}

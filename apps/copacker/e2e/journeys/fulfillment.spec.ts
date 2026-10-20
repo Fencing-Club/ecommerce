@@ -44,8 +44,9 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await expect(supplier.getByText("Commercial invoice", { exact: true })).toHaveCount(0)
     await expect(supplier.getByRole("textbox", { name: "Price per unit" })).toHaveCount(0)
     // The supplier's only pickup address is chosen for it.
-    await expect(supplier.getByRole("combobox", { name: "Pickup address" })).toContainText("E2E Supplier address")
-    await expect(supplier.getByText("100 Test Street")).toHaveCount(2)
+    const shipFrom = supplier.getByRole("combobox", { name: "Ship from" })
+    await expect(shipFrom).toContainText("E2E Supplier address")
+    await expect(shipFrom).toContainText("100 Test Street")
   })
 
   await test.step("packing errors appear without a check button", async () => {
@@ -54,9 +55,10 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await length.focus()
     await length.press("Tab")
     await expect(length).toHaveAttribute("aria-invalid", "true")
-    await expect(supplier.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    // Until every unit is packed, the packing form only saves a draft.
+    await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
     await expect(supplier.getByRole("button", { name: "Check packing" })).toHaveCount(0)
-    await supplier.getByLabel("Ready for pickup").fill(daysFromNow(10))
+    await supplier.getByLabel("Ready date").fill(daysFromNow(10))
     await fillCarton(supplier, "1", {
       "Length (cm)": "50",
       "Width (cm)": "40",
@@ -64,7 +66,7 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
       "Weight (kg)": "12"
     })
     await addCartonProduct(supplier, "1", "Left", "grip-left", "150")
-    await expect(supplier.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
     await supplier.getByRole("spinbutton", { name: "grip-left: quantity per carton 1", exact: true }).fill("100")
   })
 
@@ -77,8 +79,10 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
       "Weight (kg)": "7"
     })
     await addCartonProduct(supplier, "2", "Right", "grip-right", "50")
-    await expect(supplier.getByText("2 cartons, 150 units")).toBeVisible()
-    await supplier.getByRole("button", { name: "Save draft" }).click()
+    await expect(supplier.getByRole("region", { name: "Cartons" }).getByText("150 of 150 units")).toBeVisible()
+    // With every unit packed, the title row offers Finish packing and keeps Save draft in its menu.
+    await supplier.getByRole("button", { name: "Actions", exact: true }).click()
+    await supplier.getByRole("menuitem", { name: "Save draft" }).click()
     await expect(supplier.getByText("Draft saved")).toBeVisible()
     await supplier.reload()
     await expect(

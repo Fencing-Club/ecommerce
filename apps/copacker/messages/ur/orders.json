@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} کی شپمنٹ",
     "shipmentCounts": "{count} اقسام، {pieces, number} عدد",
     "selectProduct": "{name} منتخب کریں",
-    "packCount": "{size} کے {count, number} پیک",
+    "packCount": "{count, number} پیک، ہر ایک میں {size}",
     "supplierCharges": "سپلائر کے اخراجات",
     "addSupplierCharge": "خرچ شامل کریں",
     "removeSupplierCharge": "خرچ ہٹائیں",
@@ -319,6 +319,7 @@
       "packingSplit": "پیکنگ جمع کرائی گئی؛ {networks} شپمنٹس میں تقسیم کر کے Amazon کے لیے قطار میں",
       "forwarderShipped": "{forwarder} نے سامان بھیج دیا: {tracking}",
       "packingReady": "پیکنگ جمع کرائی گئی؛ بھیجنے کے لیے تیار",
+      "packingReopened": "تبدیلیوں کے لیے پیکنگ دوبارہ کھولی گئی",
       "invoiceEntered": "خریداری آرڈر میں تبدیلیوں کے ساتھ انوائس درج کی گئی",
       "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں",
       "existingAwdLinked": "موجودہ AWD شپمنٹ {shipmentId} منسلک کر دی گئی",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
     "finishPacking": "پیکنگ مکمل کریں",
     "addNewAddress": "پتہ شامل کریں",
-    "chooseAddress": "پک اپ کا پتہ"
+    "chooseAddress": "پک اپ کا پتہ",
+    "packedUnits": "{available} اکائیوں میں سے {count}",
+    "leftCount": "{count} باقی",
+    "overCount": "{count} زیادہ"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -507,7 +511,8 @@
     "packCount": "{count} پیک",
     "addToCarton": "کارٹن میں شامل کریں",
     "selectedCount": "{count} منتخب",
-    "cartonGroup": "کارٹن {cartons}"
+    "cartonGroup": "کارٹن {cartons}",
+    "addProductsToCartons": "کارٹن {cartons} میں مصنوعات شامل کریں"
   },
   "cartonImport": {
     "title": "کارٹن درآمد کریں",

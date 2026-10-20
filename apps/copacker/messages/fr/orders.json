@@ -200,7 +200,7 @@
     "shipmentTo": "Expédition vers {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} pièces",
     "selectProduct": "Sélectionner {name}",
-    "packCount": "{count, number} lots de {size}",
+    "packCount": "{count, number} lots, {size} chacun",
     "supplierCharges": "Frais du fournisseur",
     "addSupplierCharge": "Ajouter des frais",
     "removeSupplierCharge": "Supprimer les frais",
@@ -319,6 +319,7 @@
       "packingSplit": "Emballage envoyé ; divisé en expéditions {networks} et mis en file d’attente pour Amazon",
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
+      "packingReopened": "Emballage rouvert pour modification",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
       "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
       "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "Retirer le produit {number} du carton",
     "finishPacking": "Terminer l’emballage",
     "addNewAddress": "Ajouter une adresse",
-    "chooseAddress": "Adresse d’enlèvement"
+    "chooseAddress": "Adresse d’enlèvement",
+    "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
+    "leftCount": "{count} restant(s)",
+    "overCount": "{count} en trop"
   },
   "paymentTerms": {
     "net7": "7 jours net",
@@ -507,7 +511,8 @@
     "packCount": "{count, plural, one {# lot} other {# lots}}",
     "addToCarton": "Ajouter au carton",
     "selectedCount": "{count} sélectionnés",
-    "cartonGroup": "Cartons {cartons}"
+    "cartonGroup": "Cartons {cartons}",
+    "addProductsToCartons": "Ajouter des produits aux cartons {cartons}"
   },
   "cartonImport": {
     "title": "Importer des cartons",

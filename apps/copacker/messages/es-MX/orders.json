@@ -200,7 +200,7 @@
     "shipmentTo": "Envío a {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} piezas",
     "selectProduct": "Seleccionar {name}",
-    "packCount": "{count, number} paquetes de {size}",
+    "packCount": "{count, number} paquetes, {size} cada uno",
     "supplierCharges": "Costos del proveedor",
     "addSupplierCharge": "Agregar gasto",
     "removeSupplierCharge": "Eliminar gasto",
@@ -319,6 +319,7 @@
       "packingSplit": "Empaque enviado; dividido en envíos a {networks} y en cola para Amazon",
       "forwarderShipped": "{forwarder} envió la mercancía: {tracking}",
       "packingReady": "Empaque enviado; listo para enviar",
+      "packingReopened": "Empaque reabierto para hacer cambios",
       "invoiceEntered": "Factura registrada con cambios en la orden de compra",
       "invoiceChangesSubmitted": "El proveedor envió cambios de la factura para aprobación",
       "existingAwdLinked": "Se vinculó el envío AWD existente {shipmentId}",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "Quitar producto {number} de la caja",
     "finishPacking": "Terminar empaque",
     "addNewAddress": "Agregar dirección",
-    "chooseAddress": "Dirección de recolección"
+    "chooseAddress": "Dirección de recolección",
+    "packedUnits": "{count} de {available, plural, one {# unidad} other {# unidades}}",
+    "leftCount": "Faltan {count}",
+    "overCount": "{count} de más"
   },
   "paymentTerms": {
     "net7": "Neto 7 días",
@@ -507,7 +511,8 @@
     "packCount": "{count, plural, one {# paquete} other {# paquetes}}",
     "addToCarton": "Agregar a la caja",
     "selectedCount": "{count} seleccionados",
-    "cartonGroup": "Cajas {cartons}"
+    "cartonGroup": "Cajas {cartons}",
+    "addProductsToCartons": "Agregar productos a las cajas {cartons}"
   },
   "cartonImport": {
     "title": "Importar cajas",

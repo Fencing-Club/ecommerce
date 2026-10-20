@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} shipment",
     "shipmentCounts": "{count, plural, one {# variant} other {# variants}}, {pieces, number} pieces",
     "selectProduct": "Select {name}",
-    "packCount": "{count, number} packs of {size}",
+    "packCount": "{count, number} packs, {size} each",
     "supplierCharges": "Supplier costs",
     "addSupplierCharge": "Add expense",
     "removeSupplierCharge": "Remove expense",
@@ -319,6 +319,7 @@
       "packingSplit": "Packing submitted; split into {networks} shipments and queued for Amazon",
       "forwarderShipped": "{forwarder} shipped the goods: {tracking}",
       "packingReady": "Packing submitted; ready to ship",
+      "packingReopened": "Packing reopened for changes",
       "invoiceEntered": "Invoice entered with changes to the purchase order",
       "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval",
       "existingAwdLinked": "Linked existing AWD shipment {shipmentId}",
@@ -445,7 +446,10 @@
     "removeCartonProduct": "Remove product {number} from carton",
     "finishPacking": "Finish packing",
     "addNewAddress": "Add new address",
-    "chooseAddress": "Choose an address"
+    "chooseAddress": "Choose an address",
+    "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
+    "leftCount": "{count} left",
+    "overCount": "{count} too many"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -507,7 +511,8 @@
     "packCount": "{count, plural, one {# pack} other {# packs}}",
     "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
-    "cartonGroup": "Cartons {cartons}"
+    "cartonGroup": "Cartons {cartons}",
+    "addProductsToCartons": "Add products to cartons {cartons}"
   },
   "cartonImport": {
     "title": "Import cartons",

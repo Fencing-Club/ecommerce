@@ -51,7 +51,6 @@
     },
     "metaTitle": "شپمنٹ",
     "title": "شپمنٹ {number}",
-    "cartonCount": "{count, plural, one {# کارٹن} other {# کارٹن}}",
     "parents": {
       "purchaseOrders": "خریداری آرڈرز",
       "orders": "آرڈرز"
@@ -63,7 +62,8 @@
       "retry": "شپمنٹ دوبارہ آزمائیں",
       "cancelInAmazon": "Amazon میں منسوخ کریں",
       "getAmazonLabels": "Amazon لیبل حاصل کریں",
-      "createAmazonShipment": "Amazon شپمنٹ بنائیں"
+      "createAmazonShipment": "Amazon شپمنٹ بنائیں",
+      "editPacking": "پیکنگ میں ترمیم کریں"
     },
     "needsAttention": "توجہ درکار",
     "changesWaiting": {
@@ -115,7 +115,23 @@
     },
     "documents": {
       "title": "دستاویزات",
-      "empty": "ابھی کوئی دستاویز نہیں"
+      "empty": "ابھی کوئی دستاویز نہیں",
+      "packingList": "پیکنگ لسٹ",
+      "downloadPackingList": "پیکنگ لسٹ ڈاؤن لوڈ کریں",
+      "packingListFailed": "پیکنگ لسٹ ڈاؤن لوڈ نہیں ہو سکی"
+    },
+    "summary": {
+      "title": "شپمنٹ کی تفصیلات",
+      "readyDate": "تیاری کی تاریخ",
+      "cartons": "کارٹن",
+      "grossWeight": "مجموعی وزن",
+      "volume": "حجم"
+    },
+    "legs": {
+      "shipsTo": "سپلائر {place} کو بھیجتا ہے۔",
+      "amazonPickup": "Amazon {place} سے وصول کرتا ہے۔",
+      "carrierPickup": "کیریئر {place} سے وصول کرتا ہے۔",
+      "dropoff": "{place} کارٹن کیریئر کے حوالے کرتا ہے۔"
     }
   },
   "actions": {
@@ -234,5 +250,16 @@
     "document": "دستاویز",
     "issues": "ڈاؤن لوڈ سے پہلے دستاویزات کے یہ مسائل درست کریں۔",
     "pages": "{count} صفحات / {paper}"
+  },
+  "labels": {
+    "productLabels": "پروڈکٹ لیبل",
+    "labelsFor": "{name} کے لیبل",
+    "download": "{label} ڈاؤن لوڈ کریں",
+    "downloadAll": "تمام پروڈکٹ لیبل ڈاؤن لوڈ کریں",
+    "sku": "SKU لیبل",
+    "fnsku": "FNSKU لیبل",
+    "suffocation": "دم گھٹنے کی وارننگ والے لیبل",
+    "choking": "چھوٹے حصوں سے دم گھٹنے کے خطرے کے لیبل",
+    "notProvided": "لیبل فراہم نہیں کیا گیا"
   }
 }

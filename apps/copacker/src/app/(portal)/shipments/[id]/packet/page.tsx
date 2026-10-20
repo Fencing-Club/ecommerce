@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/common"
 import { ShippingDocumentPreview } from "@/components/shipping-document-preview"
 import { Button } from "@/components/ui/button"
 import { type DocumentSettings } from "@/documents/shipping-model"
-import { renderSupplierPacket } from "@/documents/supplier-packet"
+import { type PacketLabels, renderSupplierPacket } from "@/documents/supplier-packet"
+import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import type { shipmentPacketPage, shipmentPacketResult } from "@/server/shipment-packet"
 
 const labelNames = {
@@ -21,6 +22,8 @@ export default function ShipmentPacketPage({ page }: { page: Awaited<ReturnType<
         <PageHeader title={t("incompleteTitle")} />
         <p role="alert">{page.message}</p>
         <div className="flex flex-wrap gap-2">
+          {/* The packing list needs no destination address or label assignments, so it prints anyway. */}
+          <PackingListButton id={page.id} />
           {page.labelSections.map((section) => (
             <Button
               key={section}
@@ -51,15 +54,28 @@ export default function ShipmentPacketPage({ page }: { page: Awaited<ReturnType<
   }
   return <ReadyPacketPage page={page} />
 }
+function PackingListButton({ id }: { id: string }) {
+  const t = useTranslations("shipments.detail.documents")
+  const { download, busy } = usePackingListDownload(id)
+  return (
+    <Button variant="outline" aria-label={t("downloadPackingList")} disabled={busy} onClick={download}>
+      <Download />
+      {t("packingList")}
+    </Button>
+  )
+}
 function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPacketPage>> }) {
   const t = useTranslations("shipments.detail.packet")
   const url = (section: string) => `/api/shipments/${page.id}/packet?section=${section}&version=${page.version}`
+  // In the packet’s order: the carton labels, then the product labels.
   const sections = [
     ...(page.data.network === "awd" || page.data.network === "fba"
-      ? [{ section: "carton_labels", label: t("cartonLabels") }]
+      ? [{ section: "carton_labels", kind: "carton", label: t("cartonLabels") } as const]
       : []),
-    ...(page.hasProductLabels ? [{ section: "product_labels", label: t("unitLabels") }] : []),
-    ...(page.data.transport.carrierLabels ? [{ section: "carrier_labels", label: t("carrierLabels") }] : [])
+    ...(page.data.transport.carrierLabels
+      ? [{ section: "carrier_labels", kind: "carrier", label: t("carrierLabels") } as const]
+      : []),
+    ...(page.hasProductLabels ? [{ section: "product_labels", kind: "product", label: t("unitLabels") } as const] : [])
   ]
   async function verify() {
     const response = await fetch(url("verify"), { cache: "no-store", redirect: "error" })
@@ -69,15 +85,15 @@ function ReadyPacketPage({ page }: { page: Awaited<ReturnType<typeof shipmentPac
   }
   async function downloadPacket(settings: DocumentSettings) {
     await verify()
-    const files: Uint8Array[] = []
-    for (const { section } of sections) {
+    const labels: PacketLabels = {}
+    for (const { section, kind } of sections) {
       const response = await fetch(url(section), { cache: "no-store", redirect: "error" })
       if (!response.ok || !response.headers.get("Content-Type")?.includes("application/pdf")) {
         throw new Error("Labels unavailable")
       }
-      files.push(new Uint8Array(await response.arrayBuffer()))
+      labels[kind] = [new Uint8Array(await response.arrayBuffer())]
     }
-    const bytes = await renderSupplierPacket(page.data, settings, files)
+    const bytes = await renderSupplierPacket(page.data, settings, labels)
     await verify()
     const objectUrl = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/pdf" }))
     const anchor = document.createElement("a")

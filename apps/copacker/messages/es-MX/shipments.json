@@ -51,7 +51,6 @@
     },
     "metaTitle": "Envío",
     "title": "Envío {number}",
-    "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
     "parents": {
       "purchaseOrders": "Órdenes de compra",
       "orders": "Pedidos"
@@ -63,7 +62,8 @@
       "retry": "Reintentar envío",
       "cancelInAmazon": "Cancelar en Amazon",
       "getAmazonLabels": "Obtener etiquetas de Amazon",
-      "createAmazonShipment": "Crear envío de Amazon"
+      "createAmazonShipment": "Crear envío de Amazon",
+      "editPacking": "Editar empaque"
     },
     "needsAttention": "Requiere atención",
     "changesWaiting": {
@@ -115,7 +115,23 @@
     },
     "documents": {
       "title": "Documentos",
-      "empty": "Aún no hay documentos"
+      "empty": "Aún no hay documentos",
+      "packingList": "Lista de empaque",
+      "downloadPackingList": "Descargar lista de empaque",
+      "packingListFailed": "No se pudo descargar la lista de empaque"
+    },
+    "summary": {
+      "title": "Detalles del envío",
+      "readyDate": "Fecha de disponibilidad",
+      "cartons": "Cajas",
+      "grossWeight": "Peso bruto",
+      "volume": "Volumen"
+    },
+    "legs": {
+      "shipsTo": "El proveedor envía a {place}.",
+      "amazonPickup": "Amazon recoge en {place}.",
+      "carrierPickup": "El transportista recoge en {place}.",
+      "dropoff": "{place} entrega las cajas al transportista."
     }
   },
   "actions": {
@@ -234,5 +250,16 @@
     "document": "Documento",
     "issues": "Resuelve estos problemas antes de descargar los documentos.",
     "pages": "{count, plural, one {# página} other {# páginas}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etiquetas de producto",
+    "labelsFor": "Etiquetas de {name}",
+    "download": "Descargar {label}",
+    "downloadAll": "Descargar todas las etiquetas de producto",
+    "sku": "Etiquetas SKU",
+    "fnsku": "Etiquetas FNSKU",
+    "suffocation": "Etiquetas de advertencia de asfixia",
+    "choking": "Etiquetas de peligro de asfixia por piezas pequeñas",
+    "notProvided": "Etiqueta no proporcionada"
   }
 }

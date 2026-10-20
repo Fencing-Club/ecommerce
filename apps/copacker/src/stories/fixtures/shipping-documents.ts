@@ -208,6 +208,68 @@ export const shippingScenarios: { id: string; name: string; data: ShippingDocume
   },
   { id: "parcel-pickup", name: "FBA / Parcel pickup", data: base },
   {
+    id: "mixed-cartons",
+    name: "FBA / Mixed cartons",
+    data: {
+      ...base,
+      shipment: "DEMO-FBA-05",
+      products: [
+        ...base.products,
+        {
+          id: "tea-towel",
+          supplierSku: "NT-TT-NAT-2",
+          description: "Cotton tea towel / Natural (2 pack)",
+          piecesPerPack: 2,
+          tasks: ["sealedPolybag", "fnsku"]
+        },
+        {
+          id: "napkin",
+          supplierSku: "NT-NPK-SAG-4",
+          description: "Linen napkin / Sage (4 pack)",
+          piecesPerPack: 4,
+          tasks: ["sealedPolybag", "fnsku"]
+        }
+      ],
+      // Three carton configurations, each holding several products.
+      cartons: [
+        ...[1, 2, 3].map((index) => ({
+          id: `A${index}`,
+          dimensions: [50, 40, 35] as [number, number, number],
+          weight: 14.2,
+          contents: [
+            { productId: "towel", packs: 18 },
+            { productId: "bag", packs: 12 },
+            { productId: "tea-towel", packs: 10 }
+          ]
+        })),
+        ...[1, 2].map((index) => ({
+          id: `B${index}`,
+          dimensions: [40, 40, 30] as [number, number, number],
+          weight: 9.6,
+          contents: [
+            { productId: "tea-towel", packs: 20 },
+            { productId: "napkin", packs: 15 }
+          ]
+        })),
+        {
+          id: "C1",
+          dimensions: [40, 30, 25] as [number, number, number],
+          weight: 6.8,
+          contents: [
+            { productId: "bag", packs: 16 },
+            { productId: "napkin", packs: 10 },
+            { productId: "towel", packs: 6 },
+            { productId: "tea-towel", packs: 4 }
+          ]
+        }
+      ].map((carton, index) => ({
+        ...carton,
+        amazonLabel: `DEMO-FBA-05-BOX-0${index + 1}`,
+        carrierLabel: `DEMO-TRACK-1${index + 1}`
+      }))
+    }
+  },
+  {
     id: "parcel-dropoff",
     name: "FBA / Parcel drop-off",
     data: {

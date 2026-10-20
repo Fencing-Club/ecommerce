@@ -14,6 +14,11 @@ export function packingInstructions(item: OrderItem): string {
   return item.packingRequirements ? item.packingRequirements.instructions : item.instructions
 }
 
+// Whether a line's units are bagged with a suffocation warning label.
+export function needsWarningLabel(item: Pick<OrderItem, "suffocationWarning" | "packingRequirements">) {
+  return item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning
+}
+
 export type Requirement =
   | { code: "productTask"; task: ProductTask; countryCode: string }
   | { code: "prep"; prep: PrepCategory }
