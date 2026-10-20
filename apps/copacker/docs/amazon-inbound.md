@@ -46,6 +46,7 @@ runs again, reading the plan to find where it is:
    can move the window in Seller Central until the shipment closes. Cartons on pallets send each Amazon shipment's
    pallets and the goods' declared value; see [packing](packing.md#what-amazon-gets).
 6. Download each box's label on plain paper and match boxes to cartons by contents, then size and weight.
+7. For cartons on pallets, download each Amazon shipment's pallet labels; see [packing](packing.md#pallet-labels).
 
 Mixed-SKU cartons are allowed. The [carton table](packing.md#the-carton-table) shows every product and quantity in each
 carton, with Add product and individual removal. Saving, reopening, duplicating and counting cartons preserve all their

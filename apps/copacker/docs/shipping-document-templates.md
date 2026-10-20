@@ -88,7 +88,7 @@ and after assembling a packet. A stale page cannot download a mixture of revisio
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
 The packet runs: the packing list, the checklist, the carton label reference, the carton labels (Amazon's, then the
-carrier's), then the product labels. The reference lists every carton with its labels in one table, right before the
+carrier's), Amazon's pallet labels for an FBA shipment on pallets, then the product labels. The reference lists every carton with its labels in one table, right before the
 label pages; a packet without carton labels leaves it out. `renderSupplierPacket` owns this order.
 
 Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.

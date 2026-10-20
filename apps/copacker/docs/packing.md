@@ -52,7 +52,31 @@ When packed on pallets, Shipment details' gross weight and volume are the pallet
   cartons travel on, identical pallets as one entry with their count, and `freightInformation`: the goods' value at the
   PO's prices, freight class `NONE`. A pallet whose cartons Amazon sends to two warehouses stops the booking with an
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
-- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only.
-- **Documents**: the supplier packet's packing list lists each pallet with its cartons, size and gross weight.
+- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only. Amazon issues no pallet
+  labels for them; with the seller's own carrier, AWD needs only the carton labels.
+
+## Pallet labels
+
+Once Amazon labels an FBA shipment's cartons, the job also asks for its pallet labels (`fbaPalletLabels`, v0
+`getLabels` with `LabelType=PALLET`), one request per Amazon shipment with that shipment's pallet count. Amazon prints
+four identical labels for each pallet, one for each side, the pallets in order. `palletLabels` numbers each pallet
+within the Amazon shipment its cartons travel in, in packing order, and the job keeps every pallet's four labels
+together in one file, `Pallet labels.pdf` (document kind `pallet_label`). A page count that doesn't divide among the
+shipment's pallets stops the job.
+
+- **Release**: like carton and carrier labels, the supplier and forwarder get pallet labels only once the buyer
+  releases the shipment (`releasedLabelKinds`). An FBA shipment on pallets can't be released without them
+  (`missing_pallet_label`).
+- **Supplier packet**: Amazon's pallet labels come after the carton labels (Amazon's, then the carrier's) and before
+  the product labels. The packet page offers them on their own as **Pallet labels**.
+- **Packing list**: each pallet shows its label as Amazon prints it, the Amazon shipment and the pallet's number there
+  (`FBA18ABCD123 1/2`), with "Four labels: one on each side, outside the stretch wrap." The packing list download,
+  before booking, lists the pallets too, their label shown as "From Amazon".
+- **Checklist**: under Pallet and handoff, an FBA shipment's **Pallet labels** step says to put one of each pallet's
+  four labels on each side, at the top center, outside the stretch wrap; each carton keeps its own label. AWD and
+  other shipments on pallets have no pallet label step.
+
+Pen: 10.04 B (documents after booking, packed on pallets), 08.01 P03 (FBA pallet freight pickup) and 08.03 C06 (FBA
+pallet freight checklist).
 
 Pallet import (07.13 to 07.15) isn't built yet.
