@@ -19,7 +19,8 @@ import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
-import { ShipmentAddress, ShipmentPackingDetails } from "@/components/shipment-packing-details"
+import { ShipmentDetails } from "@/components/shipment-details"
+import { ShipmentAddress, ShipmentPackingDetails, ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -67,6 +68,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     format = useFormatter(),
     locale = useLocale()
   const packingText = useTranslations("orders.packing")
+  const forwarder = snapshot.via ? delivery.addresses[0]?.name : undefined
+  // How the cartons travel: to the forwarder first, then from the handoff location by the booked transport.
+  const handoff = shipment.transport?.handoff === "forwarder" && forwarder ? forwarder : supplier.name
+  const legs = [
+    forwarder && t("legs.shipsTo", { place: forwarder }),
+    !forwarder && !shipment.transport && t("legs.shipsTo", { place: destinationName }),
+    shipment.transport?.collection === "dropoff" && t("legs.dropoff", { place: handoff }),
+    shipment.transport?.collection === "pickup" &&
+      t(shipment.transport.service === "agl" ? "legs.amazonPickup" : "legs.carrierPickup", { place: handoff })
+  ].filter((leg) => typeof leg === "string")
   const nextAction: Record<string, React.ReactNode> = {
     prepareAmazon: isBuyer && (
       <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
@@ -95,17 +106,104 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     )
   }
 
+  const route = [supplier.name, ...(forwarder ? [forwarder] : []), destinationName]
+  const parents = [
+    {
+      label: isBuyer ? t("parents.purchaseOrders") : t("parents.orders"),
+      href: seesOrder ? "/orders" : undefined
+    },
+    { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined }
+  ]
+  const notices = (
+    <>
+      <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
+      {shipment.status === "packed" && <p className="text-sm text-muted-foreground">{step.next.message}</p>}
+      {shipment.issue && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertTitle>{t("needsAttention")}</AlertTitle>
+          <AlertDescription>{shipment.issue}</AlertDescription>
+        </Alert>
+      )}
+
+      {awaitingChanges && (
+        <Alert>
+          <Clock />
+          <AlertTitle>{t("changesWaiting.title")}</AlertTitle>
+          <AlertDescription>{isBuyer ? t("changesWaiting.buyer") : t("changesWaiting.supplier")}</AlertDescription>
+        </Alert>
+      )}
+    </>
+  )
+
+  if (editable) {
+    // Packing: the route and its legs head the form, and the documents and running totals sit beside the cartons.
+    return (
+      <>
+        {isBuyer &&
+          editsShipments &&
+          canConfigureTransport(shipment.status, shipment.operation, shipment.transport) && (
+            <ShipmentTransportSettings
+              key={JSON.stringify(shipment.transport)}
+              id={id}
+              revision={shipment.revision}
+              initial={shipment.transport}
+              hasForwarder={!!snapshot.via}
+            />
+          )}
+        <PackingForm
+          shipmentName={title}
+          renderHeader={(actions) => (
+            <>
+              <PageHeader
+                parents={[...parents, { label: title }]}
+                title={title}
+                badge={<Status status={shipment.status} />}
+              >
+                {actions}
+              </PageHeader>
+              {notices}
+            </>
+          )}
+          renderSidebar={(totals) => (
+            <div className="space-y-6">
+              {visibleDocs.length > 0 && (
+                <section aria-label={t("documents.title")} className="space-y-3">
+                  <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
+                  <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+                </section>
+              )}
+              <ShipmentDetails {...totals} />
+            </div>
+          )}
+          shippingDetails={{
+            route,
+            shipTo: <ShipmentDestination {...delivery} compact />,
+            transport: legs.length > 0 && <ShipmentTransportLegs legs={legs} />
+          }}
+          shipmentId={id}
+          linkedAmazonShipmentId={
+            isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
+          }
+          key={`${id}:${order.revision}`}
+          revision={shipment.revision}
+          orderRevision={order.revision}
+          availablePieces={Object.fromEntries(
+            order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
+          )}
+          order={packingOrder}
+          initial={shipment.packingDraft ?? shipment.packing}
+          addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
+          addAddressTo={enteringFor && editsPartners ? { id: supplier.id, name: enteringFor } : undefined}
+        />
+      </>
+    )
+  }
+
   return (
     <>
       <PageHeader
-        parents={[
-          {
-            label: isBuyer ? t("parents.purchaseOrders") : t("parents.orders"),
-            href: seesOrder ? "/orders" : undefined
-          },
-          { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined },
-          { label: `${title} (${destinationName})` }
-        ]}
+        parents={[...parents, { label: `${title} (${destinationName})` }]}
         title={title}
         badge={<Status status={shipment.status} />}
         description={
@@ -138,81 +236,75 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         {editsShipments ? nextAction[step.next.step] || null : null}
       </PageHeader>
 
-      {!editable && (
-        <ShipmentPackingDetails
-          route={[
-            supplier.name,
-            ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
-            destinationName
-          ]}
-          shipFrom={
-            <div className="space-y-3">
-              <ShipmentAddress
-                readOnly
-                label={packingText("shipFrom")}
-                name={origin?.name ?? supplier.name}
-                address={
-                  origin
-                    ? [
-                        origin.addressLine1,
-                        origin.addressLine2,
-                        origin.city,
-                        origin.stateOrRegion,
-                        origin.postalCode,
-                        origin.countryCode
-                      ]
-                        .filter(Boolean)
-                        .join(", ")
-                    : ""
-                }
-                contact={
-                  origin && (
-                    <>
-                      {origin.phoneNumber && (
-                        <a className="block tabular-nums" href={phoneHref(origin.phoneNumber)}>
-                          {formatPhone(origin.phoneNumber)}
-                        </a>
-                      )}
-                      {origin.email && <span>{origin.email}</span>}
-                    </>
-                  )
-                }
-              />
-              {shipment.packing && (
-                <CardDescription>
-                  {t("pickup.ready", {
-                    date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      timeZone: "UTC"
-                    })
-                  })}
-                </CardDescription>
-              )}
-            </div>
-          }
-          shipTo={<ShipmentDestination {...delivery} compact readOnly />}
-          transport={
-            shipment.transport && (
-              <ShipmentTransportSettings
-                compact
-                key={JSON.stringify(shipment.transport)}
-                id={id}
-                revision={shipment.revision}
-                initial={shipment.transport}
-                hasForwarder={!!snapshot.via}
-                editable={
-                  isBuyer &&
-                  editsShipments &&
-                  canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
-                }
-              />
-            )
-          }
-        />
-      )}
-      {(editable || !shipment.transport) && (
+      <ShipmentPackingDetails
+        route={route}
+        shipFrom={
+          <div className="space-y-3">
+            <ShipmentAddress
+              readOnly
+              label={packingText("shipFrom")}
+              name={origin?.name ?? supplier.name}
+              address={
+                origin
+                  ? [
+                      origin.addressLine1,
+                      origin.addressLine2,
+                      origin.city,
+                      origin.stateOrRegion,
+                      origin.postalCode,
+                      origin.countryCode
+                    ]
+                      .filter(Boolean)
+                      .join(", ")
+                  : ""
+              }
+              contact={
+                origin && (
+                  <>
+                    {origin.phoneNumber && (
+                      <a className="block tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                        {formatPhone(origin.phoneNumber)}
+                      </a>
+                    )}
+                    {origin.email && <span>{origin.email}</span>}
+                  </>
+                )
+              }
+            />
+            {shipment.packing && (
+              <CardDescription>
+                {t("pickup.ready", {
+                  date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC"
+                  })
+                })}
+              </CardDescription>
+            )}
+          </div>
+        }
+        shipTo={<ShipmentDestination {...delivery} compact readOnly />}
+        transport={
+          shipment.transport && (
+            <ShipmentTransportSettings
+              compact
+              key={JSON.stringify(shipment.transport)}
+              id={id}
+              revision={shipment.revision}
+              initial={shipment.transport}
+              hasForwarder={!!snapshot.via}
+              editable={
+                isBuyer &&
+                editsShipments &&
+                canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
+              }
+            />
+          )
+        }
+      />
+      {!shipment.transport && (
         <ShipmentTransportSettings
           key={JSON.stringify(shipment.transport)}
           id={id}
@@ -224,242 +316,195 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           }
         />
       )}
-      <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
-      {shipment.status === "packed" && <p className="text-sm text-muted-foreground">{step.next.message}</p>}
-      {shipment.issue && (
-        <Alert variant="destructive">
-          <AlertTriangle />
-          <AlertTitle>{t("needsAttention")}</AlertTitle>
-          <AlertDescription>{shipment.issue}</AlertDescription>
-        </Alert>
-      )}
+      {notices}
+      <>
+        {shipment.status === "approval" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("invoiceChanges.title")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <ItemGroup className="gap-2">
+                {changes.map(({ item, change }) => (
+                  <Item key={change.itemId} variant="muted">
+                    <ItemContent>
+                      <ItemTitle>
+                        {[item.name, item.variant === "Default Title" ? "" : item.variant].filter(Boolean).join(" / ")}
+                      </ItemTitle>
+                      {prices && change.unitPrice !== item.unitPrice && (
+                        <ItemDescription className="flex flex-wrap items-center gap-1">
+                          {t("invoiceChanges.pricePerUnit")} {money(item.unitPrice, snapshot.currency, locale)}
+                          <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
+                          {money(change.unitPrice, snapshot.currency, locale)}
+                        </ItemDescription>
+                      )}
+                      {change.supplierSku !== item.supplierSku && (
+                        <ItemDescription className="flex flex-wrap items-center gap-1">
+                          {t("invoiceChanges.supplierSku")} {item.supplierSku || "—"}
+                          <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
+                          {change.supplierSku || "—"}
+                        </ItemDescription>
+                      )}
+                    </ItemContent>
+                  </Item>
+                ))}
+              </ItemGroup>
+              {/* Approving accepts the invoice's prices. */}
+              {isBuyer && editsShipments && prices && <ApproveInvoice id={id} revision={shipment.revision} />}
+              {!isBuyer && <p className="text-sm text-muted-foreground">{t("invoiceChanges.waitingForBuyer")}</p>}
+            </CardContent>
+          </Card>
+        )}
 
-      {awaitingChanges && (
-        <Alert>
-          <Clock />
-          <AlertTitle>{t("changesWaiting.title")}</AlertTitle>
-          <AlertDescription>{isBuyer ? t("changesWaiting.buyer") : t("changesWaiting.supplier")}</AlertDescription>
-        </Alert>
-      )}
-
-      {editable ? (
-        <PackingForm
-          shipmentName={title}
-          shippingDetails={{
-            route: [
-              supplier.name,
-              ...(snapshot.via && delivery.addresses[0] ? [delivery.addresses[0].name] : []),
-              destinationName
-            ],
-            shipTo: <ShipmentDestination {...delivery} compact />
-          }}
-          shipmentId={id}
-          linkedAmazonShipmentId={
-            isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
-          }
-          key={`${id}:${order.revision}`}
-          revision={shipment.revision}
-          orderRevision={order.revision}
-          availablePieces={Object.fromEntries(
-            order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
-          )}
-          order={packingOrder}
-          initial={shipment.packingDraft ?? shipment.packing}
-          addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
-          addAddressTo={enteringFor && editsPartners ? { id: supplier.id, name: enteringFor } : undefined}
-        />
-      ) : (
-        <>
-          {shipment.status === "approval" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("invoiceChanges.title")}</CardTitle>
-              </CardHeader>
+        {shipment.status === "waiting_labels" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{isBuyer && editsShipments ? t("labels.title") : t("labels.waiting")}</CardTitle>
+            </CardHeader>
+            {isBuyer && editsShipments && (
               <CardContent className="flex flex-col gap-6">
-                <ItemGroup className="gap-2">
-                  {changes.map(({ item, change }) => (
-                    <Item key={change.itemId} variant="muted">
-                      <ItemContent>
-                        <ItemTitle>
-                          {[item.name, item.variant === "Default Title" ? "" : item.variant]
-                            .filter(Boolean)
-                            .join(" / ")}
-                        </ItemTitle>
-                        {prices && change.unitPrice !== item.unitPrice && (
-                          <ItemDescription className="flex flex-wrap items-center gap-1">
-                            {t("invoiceChanges.pricePerUnit")} {money(item.unitPrice, snapshot.currency, locale)}
-                            <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
-                            {money(change.unitPrice, snapshot.currency, locale)}
-                          </ItemDescription>
-                        )}
-                        {change.supplierSku !== item.supplierSku && (
-                          <ItemDescription className="flex flex-wrap items-center gap-1">
-                            {t("invoiceChanges.supplierSku")} {item.supplierSku || "—"}
-                            <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
-                            {change.supplierSku || "—"}
-                          </ItemDescription>
-                        )}
-                      </ItemContent>
-                    </Item>
-                  ))}
-                </ItemGroup>
-                {/* Approving accepts the invoice's prices. */}
-                {isBuyer && editsShipments && prices && <ApproveInvoice id={id} revision={shipment.revision} />}
-                {!isBuyer && <p className="text-sm text-muted-foreground">{t("invoiceChanges.waitingForBuyer")}</p>}
-              </CardContent>
-            </Card>
-          )}
-
-          {shipment.status === "waiting_labels" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{isBuyer && editsShipments ? t("labels.title") : t("labels.waiting")}</CardTitle>
-              </CardHeader>
-              {isBuyer && editsShipments && (
-                <CardContent className="flex flex-col gap-6">
-                  {shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels && (
-                    <Upload
-                      orderId={order.id}
-                      shipmentId={id}
-                      kind="shipping_label"
-                      label={null}
-                      cartons={shipment.packing?.cartons}
-                    />
-                  )}
-                  {step.issues.length > 0 && (
-                    <ul className="list-disc ps-5 text-sm">
-                      {step.issues.map((issue, index) => (
-                        <li key={index}>{issue.message}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {step.canRelease && <ReleaseLabels id={id} revision={shipment.revision} />}
-                </CardContent>
-              )}
-            </Card>
-          )}
-
-          {["queued", "creating"].includes(shipment.status) && (
-            <Alert role="note">
-              <Loader2 className="animate-spin" />
-              <AlertTitle>{t("creating.title")}</AlertTitle>
-              <AlertDescription>{t("creating.description")}</AlertDescription>
-            </Alert>
-          )}
-
-          {step.packetUrl && (
-            <Alert role="note" className="border-primary/40">
-              {/* The alert colors its icon like its text; this one stays primary. */}
-              <PackageCheck className="text-primary!" />
-              <AlertTitle>{t("packet.title")}</AlertTitle>
-              <AlertDescription>{t("packet.description")}</AlertDescription>
-              {/* Under the text on a phone, top right from sm up. */}
-              <AlertAction className="static col-span-full mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={<a href={step.packetUrl} aria-label={t("packet.downloadLabel")} />}
-                >
-                  <Download data-icon="inline-start" />
-                  {t("packet.download")}
-                </Button>
-                {amazon && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    nativeButton={false}
-                    render={
-                      <a
-                        download
-                        href={`/api/shipments/${id}/packet?section=carton_labels`}
-                        aria-label={t("packet.cartonLabels")}
-                      />
-                    }
-                  >
-                    {t("packet.cartonLabels")}
-                  </Button>
+                {shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels && (
+                  <Upload
+                    orderId={order.id}
+                    shipmentId={id}
+                    kind="shipping_label"
+                    label={null}
+                    cartons={shipment.packing?.cartons}
+                  />
                 )}
-                {page.hasProductLabels && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    nativeButton={false}
-                    render={
-                      <a
-                        download
-                        href={`/api/shipments/${id}/packet?section=product_labels`}
-                        aria-label={t("packet.unitLabels")}
-                      />
-                    }
-                  >
-                    {t("packet.unitLabels")}
-                  </Button>
-                )}
-              </AlertAction>
-            </Alert>
-          )}
-
-          {/* A shipment ready for pickup whose packet lacks something, such as a product label the buyer hasn't added. */}
-          {shipment.status === "ready" && !step.packetUrl && (
-            <Alert role="note">
-              <Clock />
-              <AlertTitle>{t("packet.incompleteTitle")}</AlertTitle>
-              <AlertDescription>
-                {isBuyer ? (
-                  <ul className="list-disc ps-5">
+                {step.issues.length > 0 && (
+                  <ul className="list-disc ps-5 text-sm">
                     {step.issues.map((issue, index) => (
                       <li key={index}>{issue.message}</li>
                     ))}
                   </ul>
-                ) : (
-                  t("packet.waitingForLabels")
                 )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <section className="flex flex-col gap-5" aria-label={t("cartons.title")}>
-            <h2 className="font-semibold">{t("cartons.title")}</h2>
-            {groupCartons(shipment.packing?.cartons).map((carton) => (
-              <div key={carton.cartonId} className="flex flex-col gap-2">
-                <CartonEditor value={carton} products={snapshot.items} readOnly />
-                {amazon && shipment.labels.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {t("cartons.amazonLabel")}:{" "}
-                    <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
-                      {(carton.cartonIds ?? [carton.cartonId]).map((id) => (
-                        <span key={id} className="whitespace-nowrap">
-                          {id}: {shipment.labels.find((label) => label.cartonId === id)?.labelNumber ?? "—"}
-                        </span>
-                      ))}
-                    </span>
-                  </p>
-                )}
-              </div>
-            ))}
-          </section>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("documents.title")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {visibleDocs.length ? (
-                <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
-              ) : (
-                <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
-              )}
-            </CardContent>
+                {step.canRelease && <ReleaseLabels id={id} revision={shipment.revision} />}
+              </CardContent>
+            )}
           </Card>
+        )}
 
-          {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
-          {editsShipments &&
-            !finishedStates.includes(shipment.status) &&
-            shipment.status !== "creating" &&
-            step.next.step !== "reconcile" && <CorrectionForm id={id} />}
-        </>
-      )}
+        {["queued", "creating"].includes(shipment.status) && (
+          <Alert role="note">
+            <Loader2 className="animate-spin" />
+            <AlertTitle>{t("creating.title")}</AlertTitle>
+            <AlertDescription>{t("creating.description")}</AlertDescription>
+          </Alert>
+        )}
+
+        {step.packetUrl && (
+          <Alert role="note" className="border-primary/40">
+            {/* The alert colors its icon like its text; this one stays primary. */}
+            <PackageCheck className="text-primary!" />
+            <AlertTitle>{t("packet.title")}</AlertTitle>
+            <AlertDescription>{t("packet.description")}</AlertDescription>
+            {/* Under the text on a phone, top right from sm up. */}
+            <AlertAction className="static col-span-full mt-2 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                nativeButton={false}
+                render={<a href={step.packetUrl} aria-label={t("packet.downloadLabel")} />}
+              >
+                <Download data-icon="inline-start" />
+                {t("packet.download")}
+              </Button>
+              {amazon && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <a
+                      download
+                      href={`/api/shipments/${id}/packet?section=carton_labels`}
+                      aria-label={t("packet.cartonLabels")}
+                    />
+                  }
+                >
+                  {t("packet.cartonLabels")}
+                </Button>
+              )}
+              {page.hasProductLabels && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <a
+                      download
+                      href={`/api/shipments/${id}/packet?section=product_labels`}
+                      aria-label={t("packet.unitLabels")}
+                    />
+                  }
+                >
+                  {t("packet.unitLabels")}
+                </Button>
+              )}
+            </AlertAction>
+          </Alert>
+        )}
+
+        {/* A shipment ready for pickup whose packet lacks something, such as a product label the buyer hasn't added. */}
+        {shipment.status === "ready" && !step.packetUrl && (
+          <Alert role="note">
+            <Clock />
+            <AlertTitle>{t("packet.incompleteTitle")}</AlertTitle>
+            <AlertDescription>
+              {isBuyer ? (
+                <ul className="list-disc ps-5">
+                  {step.issues.map((issue, index) => (
+                    <li key={index}>{issue.message}</li>
+                  ))}
+                </ul>
+              ) : (
+                t("packet.waitingForLabels")
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <section className="flex flex-col gap-5" aria-label={t("cartons.title")}>
+          <h2 className="font-semibold">{t("cartons.title")}</h2>
+          {groupCartons(shipment.packing?.cartons).map((carton) => (
+            <div key={carton.cartonId} className="flex flex-col gap-2">
+              <CartonEditor value={carton} products={snapshot.items} readOnly />
+              {amazon && shipment.labels.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {t("cartons.amazonLabel")}:{" "}
+                  <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
+                    {(carton.cartonIds ?? [carton.cartonId]).map((id) => (
+                      <span key={id} className="whitespace-nowrap">
+                        {id}: {shipment.labels.find((label) => label.cartonId === id)?.labelNumber ?? "—"}
+                      </span>
+                    ))}
+                  </span>
+                </p>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("documents.title")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {visibleDocs.length ? (
+              <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
+        {editsShipments &&
+          !finishedStates.includes(shipment.status) &&
+          shipment.status !== "creating" &&
+          step.next.step !== "reconcile" && <CorrectionForm id={id} />}
+      </>
     </>
   )
 }

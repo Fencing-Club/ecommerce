@@ -445,7 +445,8 @@
     "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
     "finishPacking": "پیکنگ مکمل کریں",
     "addNewAddress": "پتہ شامل کریں",
-    "chooseAddress": "پک اپ کا پتہ"
+    "chooseAddress": "پک اپ کا پتہ",
+    "packedUnits": "{available} اکائیوں میں سے {count}"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -507,7 +508,8 @@
     "packCount": "{count} پیک",
     "addToCarton": "کارٹن میں شامل کریں",
     "selectedCount": "{count} منتخب",
-    "cartonGroup": "کارٹن {cartons}"
+    "cartonGroup": "کارٹن {cartons}",
+    "addProductsToCartons": "کارٹن {cartons} میں مصنوعات شامل کریں"
   },
   "cartonImport": {
     "title": "کارٹن درآمد کریں",

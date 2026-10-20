@@ -116,6 +116,19 @@
     "documents": {
       "title": "دستاویزات",
       "empty": "ابھی کوئی دستاویز نہیں"
+    },
+    "summary": {
+      "title": "شپمنٹ کی تفصیلات",
+      "readyDate": "تیاری کی تاریخ",
+      "cartons": "کارٹن",
+      "grossWeight": "مجموعی وزن",
+      "volume": "حجم"
+    },
+    "legs": {
+      "shipsTo": "سپلائر {place} کو بھیجتا ہے۔",
+      "amazonPickup": "Amazon {place} سے وصول کرتا ہے۔",
+      "carrierPickup": "کیریئر {place} سے وصول کرتا ہے۔",
+      "dropoff": "{place} کارٹن کیریئر کے حوالے کرتا ہے۔"
     }
   },
   "actions": {

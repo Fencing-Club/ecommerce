@@ -85,6 +85,7 @@ export function PackingForm({
   shippingDetails,
   shipmentName,
   heading,
+  renderHeader,
   renderSidebar,
   renderProductActions,
   readOnly = false,
@@ -99,6 +100,8 @@ export function PackingForm({
   }) => React.ReactNode
   renderProductActions?: (item: OrderInput["items"][number]) => React.ReactNode
   heading?: React.ReactNode
+  // The page's own header, given the form's actions to show beside the title.
+  renderHeader?: (actions: React.ReactNode) => React.ReactNode
   readOnly?: boolean
   onSubmitted?: (packing: Packing) => void
   shipmentName?: string
@@ -262,47 +265,46 @@ export function PackingForm({
       items: []
     })
   }
+  // A header beside the title takes the actions, which the bar below the cartons keeps only on a phone.
+  const headed = Boolean(heading || renderHeader)
+  const actions = !readOnly && (
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button type="button" variant="outline" size="icon" aria-label={actionsText("actions")} />}
+        >
+          <Ellipsis />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem disabled={totals.cartons > 1000} onClick={() => void perform("save", form.getValues())}>
+            {t("saveDraft")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <SubmitButton
+        className="max-sm:hidden"
+        type="submit"
+        form={formId}
+        pending={working === (allUnitsPacked ? "submit" : "save")}
+        disabled={
+          totals.cartons > 1000 ||
+          (allUnitsPacked &&
+            (!cartons.fields.length || packingIssues.length > 0 || completeCartons.length !== physicalCartons.length))
+        }
+      >
+        {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
+      </SubmitButton>
+    </div>
+  )
   return (
     <FormProvider {...form}>
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
-      <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6 text-sm">
+      <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+        {renderHeader?.(actions)}
         {heading && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             {heading}
-            {!readOnly && (
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={<Button type="button" variant="outline" size="icon" aria-label={actionsText("actions")} />}
-                  >
-                    <Ellipsis />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      disabled={totals.cartons > 1000}
-                      onClick={() => void perform("save", form.getValues())}
-                    >
-                      {t("saveDraft")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <SubmitButton
-                  className="max-sm:hidden"
-                  type="submit"
-                  form={formId}
-                  pending={working === (allUnitsPacked ? "submit" : "save")}
-                  disabled={
-                    totals.cartons > 1000 ||
-                    (allUnitsPacked &&
-                      (!cartons.fields.length ||
-                        packingIssues.length > 0 ||
-                        completeCartons.length !== physicalCartons.length))
-                  }
-                >
-                  {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
-                </SubmitButton>
-              </div>
-            )}
+            {actions}
           </div>
         )}
         <div
@@ -420,7 +422,7 @@ export function PackingForm({
                           "text-green-700"
                       )}
                     >
-                      {t("packedOf", {
+                      {t("packedUnits", {
                         count: pieces,
                         available: Object.values(availablePieces).reduce((total, value) => total + value, 0)
                       })}
@@ -508,7 +510,7 @@ export function PackingForm({
             <div
               className={cn(
                 "flex flex-col gap-3 text-sm",
-                !heading && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
+                !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
               )}
             >
               {packingIssues.some((issue) => !issue.cartonId) && (
@@ -532,11 +534,11 @@ export function PackingForm({
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <div className={cn("flex flex-col px-1", renderSidebar && "hidden")}>
                   <p className="font-medium tabular-nums">
-                    {heading
+                    {headed
                       ? importText("cartonCount", { count: totals.cartons })
                       : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
                   </p>
-                  {heading && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
+                  {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
                     <p className="mt-1 flex gap-5 text-xs tabular-nums">
                       <span>
                         {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
@@ -557,11 +559,11 @@ export function PackingForm({
                   )}
                 </div>
                 {!readOnly && (
-                  <div className={cn("flex flex-wrap gap-2", heading && "max-sm:w-full sm:hidden")}>
+                  <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
                     <SubmitButton
                       type="button"
                       variant="ghost"
-                      className={heading || !allUnitsPacked ? "hidden" : undefined}
+                      className={headed || !allUnitsPacked ? "hidden" : undefined}
                       pending={working === "save"}
                       disabled={totals.cartons > 1000}
                       onClick={() => void perform("save", form.getValues())}
@@ -572,7 +574,7 @@ export function PackingForm({
                       type="submit"
                       form={formId}
                       pending={working === (allUnitsPacked ? "submit" : "save")}
-                      className={heading ? "max-sm:flex-1" : undefined}
+                      className={headed ? "max-sm:flex-1" : undefined}
                       disabled={
                         totals.cartons > 1000 ||
                         (allUnitsPacked &&

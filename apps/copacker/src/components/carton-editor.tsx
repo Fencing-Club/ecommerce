@@ -98,7 +98,10 @@ function CartonProducts({
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<string[]>([])
   const selectionId = useId()
-  const title = t("addProductsTo", { carton: carton.cartonId })
+  const title =
+    carton.count > 1 && carton.cartonIds?.length === carton.count
+      ? t("addProductsToCartons", { cartons: cartonGroupLabel(carton.cartonIds.map((id) => ({ id }))) })
+      : t("addProductsTo", { carton: carton.cartonId })
   const visible = products.filter(
     (item) =>
       (remainingPieces[item.id] ?? 0) > 0 &&

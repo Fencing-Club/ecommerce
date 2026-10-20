@@ -116,6 +116,19 @@
     "documents": {
       "title": "Documenti",
       "empty": "Ancora nessun documento"
+    },
+    "summary": {
+      "title": "Dettagli della spedizione",
+      "readyDate": "Data di disponibilità",
+      "cartons": "Cartoni",
+      "grossWeight": "Peso lordo",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Il fornitore spedisce a {place}.",
+      "amazonPickup": "Ritiro Amazon presso {place}.",
+      "carrierPickup": "Ritiro del corriere presso {place}.",
+      "dropoff": "{place} consegna i cartoni al corriere."
     }
   },
   "actions": {

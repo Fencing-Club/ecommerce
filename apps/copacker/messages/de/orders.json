@@ -445,7 +445,8 @@
     "removeCartonProduct": "Produkt {number} aus dem Karton entfernen",
     "finishPacking": "Verpacken abschließen",
     "addNewAddress": "Adresse hinzufügen",
-    "chooseAddress": "Abholadresse"
+    "chooseAddress": "Abholadresse",
+    "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",
@@ -507,7 +508,8 @@
     "packCount": "{count, plural, one {# Packung} other {# Packungen}}",
     "addToCarton": "Zum Karton hinzufügen",
     "selectedCount": "{count} ausgewählt",
-    "cartonGroup": "Kartons {cartons}"
+    "cartonGroup": "Kartons {cartons}",
+    "addProductsToCartons": "Produkte zu Kartons {cartons} hinzufügen"
   },
   "cartonImport": {
     "title": "Kartons importieren",

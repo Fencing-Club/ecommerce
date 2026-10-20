@@ -116,6 +116,19 @@
     "documents": {
       "title": "Documentos",
       "empty": "Aún no hay documentos"
+    },
+    "summary": {
+      "title": "Detalles del envío",
+      "readyDate": "Fecha de disponibilidad",
+      "cartons": "Cajas",
+      "grossWeight": "Peso bruto",
+      "volume": "Volumen"
+    },
+    "legs": {
+      "shipsTo": "El proveedor envía a {place}.",
+      "amazonPickup": "Amazon recoge en {place}.",
+      "carrierPickup": "El transportista recoge en {place}.",
+      "dropoff": "{place} entrega las cajas al transportista."
     }
   },
   "actions": {

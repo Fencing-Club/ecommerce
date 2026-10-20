@@ -445,7 +445,8 @@
     "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone",
     "finishPacking": "Completa imballaggio",
     "addNewAddress": "Aggiungi indirizzo",
-    "chooseAddress": "Indirizzo di ritiro"
+    "chooseAddress": "Indirizzo di ritiro",
+    "packedUnits": "{count} di {available} unità"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -507,7 +508,8 @@
     "packCount": "{count, plural, one {# confezione} other {# confezioni}}",
     "addToCarton": "Aggiungi al cartone",
     "selectedCount": "{count} selezionati",
-    "cartonGroup": "Cartoni {cartons}"
+    "cartonGroup": "Cartoni {cartons}",
+    "addProductsToCartons": "Aggiungi prodotti ai cartoni {cartons}"
   },
   "cartonImport": {
     "title": "Importa cartoni",

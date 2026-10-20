@@ -1,4 +1,4 @@
-import { type OrderInput } from "@repo/aisle"
+import { type Address, type OrderInput } from "@repo/aisle"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
@@ -21,6 +21,7 @@ import {
   type ShipmentRow,
   supplierRecordId
 } from "@/stories/fixtures/logistics"
+import { baylineWarehouse, northwindFactory, towelOrder, towelPackingDraft } from "@/stories/fixtures/packing"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
 import { shipmentDestinations } from "../destination"
@@ -53,6 +54,8 @@ type Args = {
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
   productLabels?: boolean
+  // The next stop's address, as shipmentDelivery reads it.
+  delivery?: { addresses: Address[]; pending: boolean }
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -68,7 +71,8 @@ async function ShipmentPage({
   docs,
   addresses,
   awaitingChanges,
-  productLabels = true
+  productLabels = true,
+  delivery
 }: Args) {
   const t = await translateStory("shipments.detail")
   const editsShipments = can(s, "shipments", "edit")
@@ -118,7 +122,7 @@ async function ShipmentPage({
       page={{
         id,
         hasProductLabels: productLabels,
-        delivery: { addresses: [], pending: amazon },
+        delivery: delivery ?? { addresses: [], pending: amazon },
         destinationName: destination(order.data, shipment.amazonNetwork),
         editsShipments,
         seesOrder,
@@ -244,6 +248,51 @@ export const PackingSupplier = meta.story({
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
+  }
+})
+
+// Board 06.05: the supplier's draft of an AWD shipment by way of a forwarder, with one carton group still missing its
+// weight and 36 units left to pack.
+export const DraftPacking = meta.story({
+  ...supplier,
+  args: {
+    kind: "supplier",
+    order: { id: orderRecords.amazon.id, data: towelOrder, revision: 1 },
+    supplier: { id: supplierRecordId, name: "Northwind Textiles", supplierOrgId: "org_supplier" },
+    shipment: shipmentRow({
+      status: "packing",
+      amazonNetwork: "awd_us",
+      packingDraft: towelPackingDraft(),
+      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+    }),
+    step: step("packing", "Complete the packing list"),
+    number: 1,
+    docs: [],
+    addresses: [{ id: partnerAddresses.factory.id, name: northwindFactory.name, address: northwindFactory }],
+    delivery: { addresses: [baylineWarehouse], pending: false }
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { level: 1, name: "Shipment 1" })).toBeVisible()
+    const breadcrumb = canvas.getByRole("navigation", { name: "Breadcrumb" })
+    await expect(within(breadcrumb).getByText("Shipment 1")).toBeVisible()
+    // The actions sit beside the title; nothing sticks to the bottom of the page.
+    await expect(canvas.getByRole("button", { name: "Save draft" })).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: /View order/ })).toBeNull()
+    await expect(canvas.queryByText("18 cartons, 504 units")).toBeNull()
+    // The route, then how the cartons travel, inside the shipment card.
+    await expect(canvas.getAllByText("Bayline Freight").length).toBeGreaterThan(0)
+    await expect(canvas.getByText("Amazon AWD US")).toBeVisible()
+    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(canvas.getByText("Amazon pickup from Bayline Freight.")).toBeVisible()
+    await expect(canvas.queryByRole("heading", { name: "Transport" })).toBeNull()
+    // The sidebar sums up the cartons.
+    const summary = canvas.getByRole("region", { name: "Shipment details" })
+    await expect(within(summary).getByText("Oct 20, 2026")).toBeVisible()
+    await expect(within(summary).getByText("18")).toBeVisible()
+    await expect(within(summary).getAllByText("—")).toHaveLength(2)
+    await expect(canvas.getByText("504 of 540 units")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Add products to cartons 1–10" })).toBeVisible()
+    await expect(canvas.getByText("Cartons 11–16")).toBeVisible()
   }
 })
 

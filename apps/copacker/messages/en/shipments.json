@@ -116,6 +116,19 @@
     "documents": {
       "title": "Documents",
       "empty": "No documents yet"
+    },
+    "summary": {
+      "title": "Shipment details",
+      "readyDate": "Ready date",
+      "cartons": "Cartons",
+      "grossWeight": "Gross weight",
+      "volume": "Volume"
+    },
+    "legs": {
+      "shipsTo": "Supplier ships to {place}.",
+      "amazonPickup": "Amazon pickup from {place}.",
+      "carrierPickup": "Carrier pickup from {place}.",
+      "dropoff": "{place} hands the cartons to the carrier."
     }
   },
   "actions": {

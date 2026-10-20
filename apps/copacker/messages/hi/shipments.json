@@ -116,6 +116,19 @@
     "documents": {
       "title": "दस्तावेज़",
       "empty": "अभी कोई दस्तावेज़ नहीं"
+    },
+    "summary": {
+      "title": "शिपमेंट विवरण",
+      "readyDate": "तैयार होने की तारीख",
+      "cartons": "कार्टन",
+      "grossWeight": "कुल वज़न",
+      "volume": "आयतन"
+    },
+    "legs": {
+      "shipsTo": "आपूर्तिकर्ता {place} को भेजता है।",
+      "amazonPickup": "Amazon {place} से पिकअप करता है।",
+      "carrierPickup": "कैरियर {place} से पिकअप करता है।",
+      "dropoff": "{place} कार्टन कैरियर को सौंपता है।"
     }
   },
   "actions": {

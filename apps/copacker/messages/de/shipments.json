@@ -116,6 +116,19 @@
     "documents": {
       "title": "Dokumente",
       "empty": "Noch keine Dokumente"
+    },
+    "summary": {
+      "title": "Sendungsdetails",
+      "readyDate": "Bereitstellungsdatum",
+      "cartons": "Kartons",
+      "grossWeight": "Bruttogewicht",
+      "volume": "Volumen"
+    },
+    "legs": {
+      "shipsTo": "Der Lieferant versendet an {place}.",
+      "amazonPickup": "Amazon-Abholung bei {place}.",
+      "carrierPickup": "Abholung durch den Spediteur bei {place}.",
+      "dropoff": "{place} übergibt die Kartons an den Spediteur."
     }
   },
   "actions": {

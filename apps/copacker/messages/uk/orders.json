@@ -445,7 +445,8 @@
     "removeCartonProduct": "Видалити товар {number} з коробки",
     "finishPacking": "Завершити пакування",
     "addNewAddress": "Додати адресу",
-    "chooseAddress": "Адреса забору"
+    "chooseAddress": "Адреса забору",
+    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -507,7 +508,8 @@
     "packCount": "{count} пак.",
     "addToCarton": "Додати до коробки",
     "selectedCount": "Вибрано: {count}",
-    "cartonGroup": "Коробки {cartons}"
+    "cartonGroup": "Коробки {cartons}",
+    "addProductsToCartons": "Додати товари до коробок {cartons}"
   },
   "cartonImport": {
     "title": "Імпортувати коробки",

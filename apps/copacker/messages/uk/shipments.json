@@ -116,6 +116,19 @@
     "documents": {
       "title": "Документи",
       "empty": "Документів ще немає"
+    },
+    "summary": {
+      "title": "Деталі відправлення",
+      "readyDate": "Дата готовності",
+      "cartons": "Коробки",
+      "grossWeight": "Вага брутто",
+      "volume": "Об’єм"
+    },
+    "legs": {
+      "shipsTo": "Постачальник відправляє до {place}.",
+      "amazonPickup": "Amazon забирає з {place}.",
+      "carrierPickup": "Перевізник забирає з {place}.",
+      "dropoff": "{place} передає коробки перевізнику."
     }
   },
   "actions": {

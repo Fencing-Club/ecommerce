@@ -116,6 +116,19 @@
     "documents": {
       "title": "文件",
       "empty": "还没有文件"
+    },
+    "summary": {
+      "title": "货件详情",
+      "readyDate": "备货日期",
+      "cartons": "箱数",
+      "grossWeight": "毛重",
+      "volume": "体积"
+    },
+    "legs": {
+      "shipsTo": "供应商发货至{place}。",
+      "amazonPickup": "亚马逊从{place}提货。",
+      "carrierPickup": "承运商从{place}提货。",
+      "dropoff": "{place}将箱子交给承运商。"
     }
   },
   "actions": {

@@ -445,7 +445,8 @@
     "removeCartonProduct": "从纸箱移除商品 {number}",
     "finishPacking": "完成装箱",
     "addNewAddress": "添加地址",
-    "chooseAddress": "提货地址"
+    "chooseAddress": "提货地址",
+    "packedUnits": "{count} / {available} 件"
   },
   "paymentTerms": {
     "net7": "7 天账期",
@@ -507,7 +508,8 @@
     "packCount": "{count} 包",
     "addToCarton": "添加到纸箱",
     "selectedCount": "已选择 {count} 项",
-    "cartonGroup": "箱 {cartons}"
+    "cartonGroup": "箱 {cartons}",
+    "addProductsToCartons": "向纸箱 {cartons} 添加商品"
   },
   "cartonImport": {
     "title": "导入纸箱",

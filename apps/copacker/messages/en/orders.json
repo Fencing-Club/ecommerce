@@ -445,7 +445,8 @@
     "removeCartonProduct": "Remove product {number} from carton",
     "finishPacking": "Finish packing",
     "addNewAddress": "Add new address",
-    "chooseAddress": "Choose an address"
+    "chooseAddress": "Choose an address",
+    "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}"
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -507,7 +508,8 @@
     "packCount": "{count, plural, one {# pack} other {# packs}}",
     "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
-    "cartonGroup": "Cartons {cartons}"
+    "cartonGroup": "Cartons {cartons}",
+    "addProductsToCartons": "Add products to cartons {cartons}"
   },
   "cartonImport": {
     "title": "Import cartons",
