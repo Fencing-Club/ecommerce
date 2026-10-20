@@ -197,7 +197,7 @@ export const PackedUnitsFirst = meta.story({
   args: { readOnly: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("20 units", { exact: true })).toBeVisible()
-    await expect(canvas.getByText("10 packs of 2", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("10 packs, 2 each", { exact: true })).toBeVisible()
     await expect(canvas.queryByText("2 per pack", { exact: true })).toBeNull()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
   }

@@ -200,7 +200,7 @@
     "shipmentTo": "Expédition vers {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} pièces",
     "selectProduct": "Sélectionner {name}",
-    "packCount": "{count, number} lots de {size}",
+    "packCount": "{count, number} lots, {size} chacun",
     "supplierCharges": "Frais du fournisseur",
     "addSupplierCharge": "Ajouter des frais",
     "removeSupplierCharge": "Supprimer les frais",

@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} کی شپمنٹ",
     "shipmentCounts": "{count} اقسام، {pieces, number} عدد",
     "selectProduct": "{name} منتخب کریں",
-    "packCount": "{size} کے {count, number} پیک",
+    "packCount": "{count, number} پیک، ہر ایک میں {size}",
     "supplierCharges": "سپلائر کے اخراجات",
     "addSupplierCharge": "خرچ شامل کریں",
     "removeSupplierCharge": "خرچ ہٹائیں",
