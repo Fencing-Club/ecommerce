@@ -77,7 +77,7 @@ import { GET as shipmentLabels } from "../src/server/http/api/shipments/$id/labe
 import { deleteDraftOrder } from "../src/server/orders"
 import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -193,7 +193,7 @@ const downloadLine = (orderId: string, itemId: string) =>
   })
 
 beforeAll(async () => {
-  await applyMigrations(pg)
+  await applySchema(pg)
   context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },

@@ -26,7 +26,7 @@ import {
   shopifySubscribeJob,
   shopifyWebhookTopics
 } from "../src/server/shopify-webhooks"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -67,7 +67,7 @@ const queued = (kind: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
