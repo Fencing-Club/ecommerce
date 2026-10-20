@@ -31,8 +31,8 @@ explicit tasks must be confirmed before generating these documents; destination 
 task. Custom packaging with reference photos remains a planned follow-up.
 
 Carton grouping includes contents, quantities, dimensions, and weight. Each physical carton retains its own Amazon
-and carrier label identifier. When both labels are required, the packing list pairs them on one row per carton under
-Carton, Amazon carton label, and Carrier label columns. Single-label shipments use the compact label-number grid.
+and carrier label identifier. The packing list leaves label numbers out; the carton label reference lists them, one row
+per carton under Carton, Amazon carton label, and Carrier label columns.
 Carton groups stay intact with repeated headings on each page; a group too large for one page blocks generation for
 layout review. Missing required assignments and duplicate IDs block download. Provider label PDFs
 must be downloaded separately in their original form and page size; these templates are reference documents,
