@@ -41,12 +41,15 @@ runs again, reading the plan to find where it is:
 3. Send each carton as a box with its size, weight and contents.
 4. Confirm the placement with the lowest fees (then fewest shipments). A plan can split into several Amazon shipments;
    `amazonShipmentId` lists the ones its cartons travel in, comma-separated, and each carton label records its own.
-5. Book the buyer's own carrier (small parcel when offered), confirming the first delivery window that starts on or after
-   the ready date, or the latest Amazon offers. The buyer can move the window in Seller Central until the shipment closes.
+5. Book the buyer's own carrier (small parcel when offered, or less than a truckload for cartons on pallets),
+   confirming the first delivery window that starts on or after the ready date, or the latest Amazon offers. The buyer
+   can move the window in Seller Central until the shipment closes. Cartons on pallets send each Amazon shipment's
+   pallets and the goods' declared value; see [packing](packing.md#what-amazon-gets).
 6. Download each box's label on plain paper and match boxes to cartons by contents, then size and weight.
 
-Mixed-SKU cartons are allowed. The packing editor shows every product and quantity in each carton, with Add product
-to carton and individual removal. Saving, reopening, duplicating and counting cartons preserve all their contents.
+Mixed-SKU cartons are allowed. The [carton table](packing.md#the-carton-table) shows every product and quantity in each
+carton, with Add product and individual removal. Saving, reopening, duplicating and counting cartons preserve all their
+contents.
 AWD cartons keep one product. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
 
 ## Origin

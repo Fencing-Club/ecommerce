@@ -579,7 +579,7 @@ export const FinishSupplierPacking = meta.story({
     await expect(await canvas.findByText("Packed", { exact: true })).toBeVisible()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Edit packing" }))
-    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Cartons" })).toHaveValue(10)
+    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Count" })).toHaveValue(10)
   }
 })
 export const ForwarderCollects = meta.story({

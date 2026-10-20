@@ -6,6 +6,9 @@
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 /* Urdu pages, set in Nastaliq, whose letters rise and hang well past the lines Latin text sits on. */
 @custom-variant urdu (&:lang(ur));
+/* The carton and pallet tables' columns, inside an `@container/packing` at least 50rem wide; narrower, each row is a
+   card. */
+@custom-variant wide (@container packing (width >= 50rem));
 @layer base {
   /* So Urdu's body sizes get lines tall enough that one line's letters don't run into the next. */
   :root:lang(ur) {

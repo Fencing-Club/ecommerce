@@ -66,6 +66,23 @@ describe("accepted shipment document snapshot", () => {
     expect(data.origin.address).toContain(pickupAddress.email)
   })
 
+  it("lists each pallet with its cartons, size and gross weight when the cartons are on pallets", () => {
+    const pallet = { palletId: "1", length: 120, width: 100, height: 90, weight: 62, stackable: true }
+    expect(shippingDocumentSnapshot(input).pallets).toBeUndefined()
+    const data = shippingDocumentSnapshot({
+      ...input,
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1", "A2"] }] }
+    })
+    expect(data.transport.palletized).toBe(true)
+    expect(data.pallets).toEqual([{ id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62 }])
+    expect(() =>
+      shippingDocumentSnapshot({
+        ...input,
+        packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1"] }] }
+      })
+    ).toThrow(/cartonsOffPallets/)
+  })
+
   it("requires packing tasks to be confirmed instead of inferring tasks for already labelled products", () => {
     const order = { ...input.order, items: [{ ...product, packingRequirements: undefined }] }
     expect(() => shippingDocumentSnapshot({ ...input, order })).toThrow(/Confirm packing requirements/)

@@ -23,7 +23,13 @@
       "missingAmazonIds": "{sku}: agrega el ASIN y el FNSKU de Amazon",
       "awdConfiguration": "{sku}: dale a todas las cajas el mismo contenido, medidas y peso, o divídelas en envíos separados",
       "overQuantity": "{sku}: las cajas superan la cantidad pendiente de la orden de compra",
-      "unknownChange": "Los cambios de la factura deben referirse a artículos únicos de la orden de compra"
+      "unknownChange": "Los cambios de la factura deben referirse a artículos únicos de la orden de compra",
+      "noPallets": "Agrega las tarimas en las que se envían estas cajas o desmarca Empacado en tarimas",
+      "emptyPallet": "La tarima {pallet} no tiene cajas. Elige sus cajas o elimínala.",
+      "duplicatePallet": "La tarima {pallet} aparece más de una vez",
+      "unknownPalletCarton": "La tarima {pallet} incluye la caja {carton}, que no está en este envío",
+      "palletCartonTwice": "La caja {carton} está en más de una tarima. Déjala en una sola.",
+      "cartonsOffPallets": "{count, plural, one {# caja no está en ninguna tarima: {cartons}. Elige una tarima para ella o agrega una.} other {# cajas no están en ninguna tarima: {cartons}. Elige una tarima para cada una o agrega una.}}"
     },
     "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío.",
     "missingTransport": "Transporte sin confirmar"

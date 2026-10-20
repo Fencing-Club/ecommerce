@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon के पास कार्टन {carton} से मेल खाता कोई बॉक्स नहीं है",
   "amazonNoListing": "{skus} के लिए Amazon पर मेल खाती कोई FBA लिस्टिंग नहीं है। Amazon पर SKU जांचें, फिर खरीद ऑर्डर भेजें।",
   "amazonNoOwnCarrier": "इस शिपमेंट के लिए Amazon अपना कैरियर इस्तेमाल करने का विकल्प नहीं देता। इसे Seller Central में बुक करें।",
+  "amazonPalletSplit": "Amazon पैलेट {pallets} के कार्टन अलग-अलग वेयरहाउस भेज रहा है। हर वेयरहाउस के कार्टन अलग पैलेट पर रखें, फिर दोबारा कोशिश करें।",
   "amazonNotUs": "यह Amazon अकाउंट US मार्केटप्लेस में नहीं बेचता",
   "amazonOrderNotForShipment": "Amazon ऑर्डर इस शिपमेंट संशोधन का नहीं है",
   "amazonOutcomeUnknown": "Amazon पर बनाने का नतीजा पता नहीं है। दोबारा कोशिश करने से पहले मौजूदा इनबाउंड प्लान का मिलान करें।",

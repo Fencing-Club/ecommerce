@@ -11,6 +11,9 @@ import {
   splitByNetwork,
   commercialChanges,
   approveChanges,
+  cartonList,
+  cartonsValue,
+  fbaPallets,
   money
 } from "../src/index"
 import {
@@ -165,6 +168,63 @@ describe("Supplier piece and carton contract", () => {
     expect(changed.items[0]?.supplierCatalog).toBeUndefined()
     expect(changed.items[0]?.supplierCatalogStatus).toBeUndefined()
     expect(quoted.items[0]?.supplierCatalog?.supplierSku).toBe("B02")
+  })
+})
+
+describe("Cartons on pallets", () => {
+  const pallet = (palletId: string, cartonIds: string[], weight = 62) => ({
+    palletId,
+    length: 120,
+    width: 100,
+    height: 55,
+    weight,
+    stackable: true,
+    cartonIds
+  })
+  const codes = (pallets: ReturnType<typeof pallet>[], palletized = true) =>
+    validatePacking(order, { ...packing, palletized, pallets }).issues.map((issue) => [issue.code, issue.palletId])
+
+  it("puts every carton on exactly one pallet of the shipment", () => {
+    expect(codes([pallet("1", ["A6", "A7"])])).toEqual([])
+    expect(codes([], false)).toEqual([])
+    expect(codes([])).toEqual([["noPallets", undefined]])
+    expect(codes([pallet("1", ["A6"]), pallet("2", [])])).toEqual([
+      ["emptyPallet", "2"],
+      ["cartonsOffPallets", undefined]
+    ])
+    expect(codes([pallet("1", ["A6", "A7", "Z9"]), pallet("1", ["a7"])])).toEqual([
+      ["unknownPalletCarton", "1"],
+      ["duplicatePallet", "1"],
+      ["palletCartonTwice", "1"]
+    ])
+  })
+
+  it("lists the cartons off pallets with runs as ranges", () => {
+    const issue = validatePacking(order, { ...packing, palletized: true, pallets: [pallet("1", ["A6"])] }).issues[0]
+    expect(issue).toEqual({ code: "cartonsOffPallets", values: { count: 1, cartons: "A7" } })
+    expect(cartonList(["B4", "B6", "D1", "D8", "D9", "D11", "CTN-009", "CTN-010", "X"])).toBe(
+      "B4, B6, D1, D8–D9, D11, CTN-009–CTN-010, X"
+    )
+  })
+
+  it("gives Amazon each shipment's whole pallets, identical ones counted together", () => {
+    const pallets = { pallets: [pallet("1", ["A1", "A2"]), pallet("2", ["A3"]), pallet("3", ["B1"], 80)] }
+    expect(fbaPallets(pallets, new Set(["A1", "A2", "A3"]))).toEqual({
+      pallets: [
+        {
+          quantity: 2,
+          dimensions: { length: 120, width: 100, height: 55, unitOfMeasurement: "CM" },
+          weight: { value: 62, unit: "KG" },
+          stackability: "STACKABLE"
+        }
+      ],
+      split: []
+    })
+    expect(fbaPallets(pallets, new Set(["A1", "B1"])).split).toEqual(["1"])
+  })
+
+  it("declares the cartons' goods at the PO's prices", () => {
+    expect(cartonsValue(order, packing.cartons)).toBe(320 * 210)
   })
 })
 

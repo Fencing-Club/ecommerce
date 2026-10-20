@@ -23,7 +23,13 @@
       "missingAmazonIds": "{sku}：请添加 Amazon ASIN 和 FNSKU",
       "awdConfiguration": "{sku}：请让每箱的内容、尺寸和重量相同，或拆分为不同的货件",
       "overQuantity": "{sku}：箱内数量超过采购订单的剩余数量",
-      "unknownChange": "发票更改必须对应采购订单上不重复的商品"
+      "unknownChange": "发票更改必须对应采购订单上不重复的商品",
+      "noPallets": "请添加装运这些纸箱的托盘，或取消勾选“托盘包装”",
+      "emptyPallet": "托盘 {pallet} 上没有纸箱。请选择其纸箱或将其删除。",
+      "duplicatePallet": "托盘 {pallet} 重复列出",
+      "unknownPalletCarton": "托盘 {pallet} 列出了纸箱 {carton}，但它不在此货件中",
+      "palletCartonTwice": "纸箱 {carton} 位于多个托盘上。请只保留在一个托盘上。",
+      "cartonsOffPallets": "{count, plural, other {# 箱未放上托盘：{cartons}。请为每箱选择托盘，或添加托盘。}}"
     },
     "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。",
     "missingTransport": "运输尚未确认"

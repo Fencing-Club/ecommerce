@@ -51,7 +51,7 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
 
   await test.step("packing errors appear without a check button", async () => {
     await supplier.getByRole("button", { name: "Add carton" }).click()
-    const length = supplier.getByRole("spinbutton", { name: "Carton 1: Length (cm)", exact: true })
+    const length = supplier.getByRole("spinbutton", { name: "Carton A1: Length (cm)", exact: true })
     await length.focus()
     await length.press("Tab")
     await expect(length).toHaveAttribute("aria-invalid", "true")
@@ -59,34 +59,36 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
     await expect(supplier.getByRole("button", { name: "Check packing" })).toHaveCount(0)
     await supplier.getByLabel("Ready date").fill(daysFromNow(10))
-    await fillCarton(supplier, "1", {
+    await fillCarton(supplier, "A1", {
       "Length (cm)": "50",
       "Width (cm)": "40",
       "Height (cm)": "30",
       "Weight (kg)": "12"
     })
-    await addCartonProduct(supplier, "1", "Left", "grip-left", "150")
+    await addCartonProduct(supplier, "A1", "Left", "grip-left", "150")
     await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
-    await supplier.getByRole("spinbutton", { name: "grip-left: quantity per carton 1", exact: true }).fill("100")
+    await supplier.getByRole("spinbutton", { name: "grip-left: quantity per carton A1", exact: true }).fill("100")
   })
 
   await test.step("the supplier packs two cartons and saves a draft", async () => {
     await supplier.getByRole("button", { name: "Add carton" }).click()
-    await fillCarton(supplier, "2", {
+    await fillCarton(supplier, "B1", {
       "Length (cm)": "50",
       "Width (cm)": "40",
       "Height (cm)": "30",
       "Weight (kg)": "7"
     })
-    await addCartonProduct(supplier, "2", "Right", "grip-right", "50")
+    await addCartonProduct(supplier, "B1", "Right", "grip-right", "50")
     await expect(supplier.getByRole("region", { name: "Cartons" }).getByText("150 of 150 units")).toBeVisible()
     // With every unit packed, the title row offers Finish packing and keeps Save draft in its menu.
     await supplier.getByRole("button", { name: "Actions", exact: true }).click()
     await supplier.getByRole("menuitem", { name: "Save draft" }).click()
     await expect(supplier.getByText("Draft saved")).toBeVisible()
     await supplier.reload()
+    // Complete cartons reopen closed; opening one shows its products.
+    await supplier.getByRole("button", { name: "Products in B1", exact: true }).click()
     await expect(
-      supplier.getByRole("spinbutton", { name: "grip-right: quantity per carton 2", exact: true })
+      supplier.getByRole("spinbutton", { name: "grip-right: quantity per carton B1", exact: true })
     ).toHaveValue("50")
     await expect(supplier.getByRole("textbox", { name: "Price per unit" })).toHaveCount(0)
     await supplier.getByRole("button", { name: "Finish packing" }).click()
@@ -96,13 +98,13 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
   await test.step("the supplier corrects packing without changing PO prices", async () => {
     await supplier.getByRole("button", { name: "Request a correction" }).click()
     await expect(supplier.getByRole("button", { name: "Request correction" })).toBeDisabled()
-    await supplier.getByLabel("What needs to change?").fill("Carton 2 weighs 7.5 kg")
+    await supplier.getByLabel("What needs to change?").fill("Carton B1 weighs 7.5 kg")
     await supplier.getByRole("button", { name: "Request correction" }).click()
     await expect(titleStatus(supplier)).toHaveText("Correction requested")
-    await fillCarton(supplier, "2", { "Weight (kg)": "7.5" })
+    await fillCarton(supplier, "B1", { "Weight (kg)": "7.5" })
     await supplier.getByRole("button", { name: "Finish packing" }).click()
     await expect(titleStatus(supplier)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    await expect(supplier.getByRole("region", { name: "Carton 2", exact: true })).toContainText("7.5")
+    await expect(supplier.getByRole("region", { name: "Carton B1", exact: true })).toContainText("7.5")
     const row = await shipmentRow(page, "Active")
     await expect(row).toContainText("Ready for pickup")
     await expect(row).toContainText("Demo supplier")

@@ -243,10 +243,24 @@ export const cartonInputSchema = z.object({
     .min(1)
     .max(150)
 })
+// A pallet as the supplier loads it: its size and gross weight with the pallet itself, whether another pallet can stand
+// on it, and the cartons on it by their IDs.
+export const palletInputSchema = z.object({
+  palletId: z.string().trim().min(1).max(60),
+  length: z.number().positive().max(500),
+  width: z.number().positive().max(500),
+  height: z.number().positive().max(500),
+  weight: z.number().positive().max(5000),
+  stackable: z.boolean(),
+  cartonIds: z.array(z.string().trim().min(1).max(60)).max(1000)
+})
 export const packingSchema = z.object({
   readyDate: z.iso.date(),
   origin: originSchema,
   cartons: z.array(cartonInputSchema).min(1).max(1000),
+  // Whether the cartons ship on pallets, and the pallets when they do.
+  palletized: z.boolean().optional(),
+  pallets: z.array(palletInputSchema).max(1000).optional(),
   changes: z
     .array(
       z.object({
@@ -303,6 +317,23 @@ export const packingDraftSchema = z
       )
       .max(1000)
       .optional(),
+    palletized: z.boolean().optional(),
+    pallets: z
+      .array(
+        z
+          .object({
+            palletId: z.string().trim().max(80).optional(),
+            length: z.number().min(0).max(500).optional(),
+            width: z.number().min(0).max(500).optional(),
+            height: z.number().min(0).max(500).optional(),
+            weight: z.number().min(0).max(5000).optional(),
+            stackable: z.boolean().optional(),
+            cartonIds: z.array(z.string().trim().max(80)).max(1000).optional()
+          })
+          .strict()
+      )
+      .max(1000)
+      .optional(),
     changes: z
       .array(
         z
@@ -319,6 +350,7 @@ export const packingDraftSchema = z
   .strict()
 export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
+export type Pallet = z.infer<typeof palletInputSchema>
 // A packing rule a carton or the whole packing breaks, as a code and the values it names, so the app can say it in each
 // reader's language.
 export type PackingRule =
@@ -330,12 +362,99 @@ export type PackingRule =
   | { code: "awdUnits" | "missingAmazonIds" | "overQuantity"; values: { sku: string } }
   // The SKU's first carton, which every other carton of it must match.
   | { code: "awdConfiguration"; values: { sku: string } & AwdTemplate }
+  // Cartons packed on pallets: each on exactly one pallet of this shipment.
+  | { code: "noPallets" }
+  | { code: "emptyPallet" | "duplicatePallet"; values: { pallet: string } }
+  | { code: "unknownPalletCarton" | "palletCartonTwice"; values: { pallet: string; carton: string } }
+  | { code: "cartonsOffPallets"; values: { count: number; cartons: string } }
 type AwdTemplate = { units: number; length: number; width: number; height: number; weight: number }
-export type ValidationIssue = { cartonId?: string; fields?: ("length" | "width" | "height" | "weight")[] } & PackingRule
+export type ValidationIssue = {
+  cartonId?: string
+  palletId?: string
+  fields?: ("length" | "width" | "height" | "weight")[]
+} & PackingRule
+export const palletRules = new Set<PackingRule["code"]>([
+  "noPallets",
+  "emptyPallet",
+  "duplicatePallet",
+  "unknownPalletCarton",
+  "palletCartonTwice",
+  "cartonsOffPallets"
+])
+
+// Carton IDs split into runs of a sequence, such as B1, B2, B3 or D8, D9, each in the order given.
+export function cartonRuns(ids: readonly string[]) {
+  const runs: string[][] = []
+  let previous: { prefix: string; digits: number; number: number } | undefined
+  for (const id of ids) {
+    const sequence = id.match(/^(.*?)(\d+)$/)
+    const next = sequence && { prefix: sequence[1]!, digits: sequence[2]!.length, number: Number(sequence[2]) }
+    if (
+      next &&
+      previous &&
+      next.prefix === previous.prefix &&
+      `${previous.prefix}${String(previous.number + 1).padStart(previous.digits, "0")}` === id
+    ) {
+      runs.at(-1)!.push(id)
+    } else {
+      runs.push([id])
+    }
+    previous = next ?? undefined
+  }
+  return runs
+}
+
+// A run of cartons as a packing list writes it: "D8–D9", or "B4" alone.
+export const cartonRunLabel = (run: readonly string[]) => (run.length > 1 ? `${run[0]}–${run.at(-1)}` : run[0]!)
+
+// Carton IDs as a packing list writes them, with runs of a sequence as ranges: "B4, B6, D1, D8–D9, D11".
+export const cartonList = (ids: readonly string[]) => cartonRuns(ids).map(cartonRunLabel).join(", ")
+
+// Each carton on exactly one pallet, and every pallet holding cartons of this shipment.
+export function validatePallets(packing: {
+  cartons: { cartonId: string }[]
+  pallets?: Pick<Pallet, "palletId" | "cartonIds">[]
+}) {
+  const issues: ValidationIssue[] = []
+  const pallets = packing.pallets ?? []
+  if (!pallets.length) {
+    issues.push({ code: "noPallets" })
+    return issues
+  }
+  const cartons = new Set(packing.cartons.map((carton) => carton.cartonId.toLowerCase()))
+  const placed = new Set<string>()
+  const palletIds = new Set<string>()
+  for (const { palletId, cartonIds } of pallets) {
+    const values = { pallet: palletId }
+    if (palletIds.has(palletId.toLowerCase())) {
+      issues.push({ palletId, code: "duplicatePallet", values })
+    }
+    palletIds.add(palletId.toLowerCase())
+    if (!cartonIds.length) {
+      issues.push({ palletId, code: "emptyPallet", values })
+    }
+    for (const carton of cartonIds) {
+      if (!cartons.has(carton.toLowerCase())) {
+        issues.push({ palletId, code: "unknownPalletCarton", values: { ...values, carton } })
+      } else if (placed.has(carton.toLowerCase())) {
+        issues.push({ palletId, code: "palletCartonTwice", values: { ...values, carton } })
+      }
+      placed.add(carton.toLowerCase())
+    }
+  }
+  const off = packing.cartons.filter((carton) => !placed.has(carton.cartonId.toLowerCase()))
+  if (off.length) {
+    issues.push({
+      code: "cartonsOffPallets",
+      values: { count: off.length, cartons: cartonList(off.map((carton) => carton.cartonId)) }
+    })
+  }
+  return issues
+}
 
 export function validatePacking(
   order: OrderInput,
-  packing: Pick<Packing, "cartons" | "changes">,
+  packing: Pick<Packing, "cartons" | "changes" | "palletized" | "pallets">,
   reserved: Record<string, number> = {}
 ) {
   const issues: ValidationIssue[] = []
@@ -420,6 +539,9 @@ export function validatePacking(
     }
     changedIds.add(change.itemId)
   }
+  if (packing.palletized) {
+    issues.push(...validatePallets(packing))
+  }
   return { issues, totals, valid: issues.length === 0 }
 }
 
@@ -435,11 +557,17 @@ export function cartonNetworks(order: Pick<OrderInput, "items">, carton: Pick<Pa
 }
 
 // A packing's cartons for each Amazon network they go to, each a packing of its own, in network order. Every carton goes
-// to one network, as validatePacking requires; its invoice changes stay with the first.
+// to one network, as validatePacking requires; its invoice changes stay with the first, and each pallet with the
+// cartons on it.
 export function splitByNetwork(order: Pick<OrderInput, "items">, packing: Packing) {
   const split = amazonNetworks.flatMap((network) => {
     const cartons = packing.cartons.filter((carton) => cartonNetworks(order, carton)[0] === network)
-    return cartons.length ? [{ network, packing: { ...packing, cartons } }] : []
+    const ids = new Set(cartons.map((carton) => carton.cartonId))
+    const pallets = packing.pallets?.flatMap((pallet) => {
+      const cartonIds = pallet.cartonIds.filter((id) => ids.has(id))
+      return cartonIds.length ? [{ ...pallet, cartonIds }] : []
+    })
+    return cartons.length ? [{ network, packing: { ...packing, cartons, ...(pallets && { pallets }) } }] : []
   })
   return split.map((part, index) => (index ? { ...part, packing: { ...part.packing, changes: [] } } : part))
 }
@@ -619,6 +747,44 @@ export function fbaBoxes(order: OrderInput, packing: Packing, prep: ReadonlyMap<
       })
     }
   }))
+}
+
+const palletEntry = (pallet: Pallet) => ({
+  dimensions: { length: pallet.length, width: pallet.width, height: pallet.height, unitOfMeasurement: "CM" as const },
+  weight: { value: pallet.weight, unit: "KG" as const },
+  stackability: pallet.stackable ? ("STACKABLE" as const) : ("NON_STACKABLE" as const)
+})
+
+// The pallets carrying an FBA shipment's cartons, as Amazon takes them in its transportation request: identical pallets
+// as one entry with their count. A pallet travels whole, so one holding cartons Amazon sends elsewhere comes back in
+// split, by its ID.
+export function fbaPallets(packing: Pick<Packing, "pallets">, cartonIds: ReadonlySet<string>) {
+  const entries = new Map<string, ReturnType<typeof palletEntry> & { quantity: number }>()
+  const split: string[] = []
+  for (const pallet of packing.pallets ?? []) {
+    const inside = pallet.cartonIds.filter((id) => cartonIds.has(id))
+    if (!inside.length) {
+      continue
+    }
+    if (inside.length !== pallet.cartonIds.length) {
+      split.push(pallet.palletId)
+      continue
+    }
+    const entry = palletEntry(pallet)
+    const key = JSON.stringify(entry)
+    entries.set(key, { quantity: (entries.get(key)?.quantity ?? 0) + 1, ...entry })
+  }
+  return { pallets: [...entries.values()], split }
+}
+
+// What the products in some cartons are worth at the PO's prices, in minor units: the value declared for freight.
+export function cartonsValue(order: Pick<OrderInput, "items">, cartons: Packing["cartons"]) {
+  return cartons
+    .flatMap((carton) => carton.items)
+    .reduce(
+      (sum, content) => sum + content.pieces * (order.items.find((item) => item.id === content.itemId)?.unitPrice ?? 0),
+      0
+    )
 }
 
 // Money in minor units. Hide cents only for whole amounts; keep the currency's precision otherwise.

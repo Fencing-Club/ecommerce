@@ -23,7 +23,13 @@
       "missingAmazonIds": "{sku}: add the Amazon ASIN and FNSKU",
       "awdConfiguration": "{sku}: give every carton the same contents, dimensions, and weight, or split them into separate shipments",
       "overQuantity": "{sku}: cartons exceed the quantity remaining on the purchase order",
-      "unknownChange": "Invoice changes must reference unique items on the purchase order"
+      "unknownChange": "Invoice changes must reference unique items on the purchase order",
+      "noPallets": "Add the pallets these cartons ship on, or uncheck Packed on pallets",
+      "emptyPallet": "Pallet {pallet} has no cartons. Choose its cartons, or delete it.",
+      "duplicatePallet": "Pallet {pallet} is listed more than once",
+      "unknownPalletCarton": "Pallet {pallet} lists carton {carton}, which isn’t in this shipment",
+      "palletCartonTwice": "Carton {carton} is on more than one pallet. Keep it on one.",
+      "cartonsOffPallets": "{count, plural, one {# carton isn’t on a pallet: {cartons}. Choose a pallet for it, or add one.} other {# cartons aren’t on a pallet: {cartons}. Choose a pallet for each, or add one.}}"
     },
     "networkMismatch": "Pack only products assigned to this shipment’s Amazon network.",
     "missingTransport": "Transport not confirmed"

@@ -1,7 +1,7 @@
 import type { AmazonPrep } from "@repo/aisle"
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
-import { buildFbaPlan, fbaBoxes, originSchema } from "@repo/aisle"
+import { buildFbaPlan, cartonsValue, fbaBoxes, fbaPallets, originSchema } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { FbaBox } from "@repo/aisle/amazon"
 import type { FbaDeliveryWindow } from "@repo/aisle/amazon"
@@ -139,10 +139,39 @@ export function choosePlacementOption(options: FbaPlacementOption[]) {
   return best ?? null
 }
 
-// The buyer's own carrier or forwarder takes FBA shipments, as small parcels when Amazon allows it.
-export function chooseTransportationOption(options: FbaTransportationOption[]) {
+// The buyer's own carrier or forwarder takes FBA shipments: as small parcels when Amazon allows it, or as less than a
+// truckload when the cartons are on pallets.
+export function chooseTransportationOption(options: FbaTransportationOption[], palletized = false) {
   const own = options.filter((option) => option.shippingSolution === "USE_YOUR_OWN_CARRIER")
-  return own.find((option) => option.shippingMode === "GROUND_SMALL_PARCEL") ?? own.at(0) ?? null
+  const modes = palletized ? ["FREIGHT_LTL", "FREIGHT_FTL_PALLET"] : ["GROUND_SMALL_PARCEL"]
+  return modes.map((mode) => own.find((option) => option.shippingMode === mode)).find(Boolean) ?? own.at(0) ?? null
+}
+
+// What Amazon is told about each shipment's pallets, when the cartons are on pallets: its whole pallets, identical ones
+// counted together, and the declared value of its goods, which Amazon needs to quote freight. A pallet whose cartons
+// Amazon sends to two warehouses can't be booked.
+export function palletConfiguration(
+  order: OrderInput,
+  packing: Packing,
+  cartons: Array<{ cartonId: string; shipmentId: string }>,
+  shipmentId: string
+) {
+  if (!packing.palletized) {
+    return {}
+  }
+  const ids = new Set(cartons.filter((carton) => carton.shipmentId === shipmentId).map((carton) => carton.cartonId))
+  const { pallets, split } = fbaPallets(packing, ids)
+  if (split.length) {
+    throw new LocalizedError("amazonPalletSplit", { pallets: split.join(", ") })
+  }
+  const value = cartonsValue(
+    order,
+    packing.cartons.filter((carton) => ids.has(carton.cartonId))
+  )
+  return {
+    pallets,
+    freightInformation: { declaredValue: { amount: value / 100, code: order.currency }, freightClass: "NONE" }
+  }
 }
 
 // The week the cartons are expected at Amazon: the first delivery window starting once they're ready, or the latest
@@ -321,6 +350,24 @@ export async function fbaShipmentJob(
         phoneNumber: packing.origin.phoneNumber,
         ...(packing.origin.email ? { email: packing.origin.email } : {})
       }
+      // Pallets go to Amazon per shipment, so each carton's shipment comes first.
+      const cartons = packing.palletized
+        ? matchBoxes(
+            order,
+            packing,
+            prep,
+            (
+              await Promise.all(
+                destinations.map(async (row) =>
+                  (await api.fbaShipmentBoxes(planId!, row.shipmentId)).map((box) => ({
+                    box,
+                    shipmentId: row.shipmentId
+                  }))
+                )
+              )
+            ).flat()
+          )
+        : []
       await assertOwned()
       wait(
         "Amazon is finding carriers",
@@ -329,13 +376,14 @@ export async function fbaShipmentJob(
           shipmentTransportationConfigurations: unbooked.map((row) => ({
             shipmentId: row.shipmentId,
             readyToShipWindow: { start: start.toISOString() },
-            contactInformation: contact
+            contactInformation: contact,
+            ...palletConfiguration(order, packing, cartons, row.shipmentId)
           }))
         })
       )
     }
     const offered = listed.map(({ shipment: row, options }) => {
-      const option = chooseTransportationOption(options)
+      const option = chooseTransportationOption(options, packing.palletized)
       if (!option) {
         throw new LocalizedError("amazonNoOwnCarrier")
       }

@@ -23,7 +23,13 @@
       "missingAmazonIds": "{sku} : ajoutez l’ASIN et le FNSKU Amazon",
       "awdConfiguration": "{sku} : donnez à tous les cartons le même contenu, les mêmes dimensions et le même poids, ou répartissez-les en expéditions séparées",
       "overQuantity": "{sku} : les cartons dépassent la quantité restante du bon de commande",
-      "unknownChange": "Les modifications de facture doivent porter sur des articles distincts du bon de commande"
+      "unknownChange": "Les modifications de facture doivent porter sur des articles distincts du bon de commande",
+      "noPallets": "Ajoutez les palettes sur lesquelles ces cartons sont expédiés, ou décochez « Emballé sur palettes »",
+      "emptyPallet": "La palette {pallet} n’a aucun carton. Choisissez ses cartons ou supprimez-la.",
+      "duplicatePallet": "La palette {pallet} apparaît plusieurs fois",
+      "unknownPalletCarton": "La palette {pallet} indique le carton {carton}, qui ne fait pas partie de cet envoi",
+      "palletCartonTwice": "Le carton {carton} est sur plusieurs palettes. Laissez-le sur une seule.",
+      "cartonsOffPallets": "{count, plural, one {# carton n’est sur aucune palette : {cartons}. Choisissez-lui une palette ou ajoutez-en une.} other {# cartons ne sont sur aucune palette : {cartons}. Choisissez une palette pour chacun ou ajoutez-en une.}}"
     },
     "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi.",
     "missingTransport": "Transport non confirmé"

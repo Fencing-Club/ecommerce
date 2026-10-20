@@ -58,7 +58,8 @@ export type ShippingDocumentData = {
     dropoffAddress?: DocumentParty
     billOfLading?: string
   }
-  pallets?: { id: string; cartons: string[]; dimensions: [number, number, number]; weight: number; label: string }[]
+  // Each pallet's cartons, size and gross weight, with its label once a carrier issues one.
+  pallets?: { id: string; cartons: string[]; dimensions: [number, number, number]; weight: number; label?: string }[]
   receiving?: { shipment: string; cartons: string[]; repack: boolean; from?: DocumentParty }
   products: ShippingProduct[]
   cartons: ShippingCarton[]

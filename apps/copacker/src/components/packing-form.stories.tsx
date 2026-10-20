@@ -73,7 +73,7 @@ export const LinkExistingAwd = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
-    const carton = canvas.getByRole("region", { name: "Carton 1" })
+    const carton = canvas.getByRole("region", { name: "Carton A1" })
     await userEvent.type(canvas.getByRole("textbox", { name: "AWD shipment ID" }), "star-example")
     await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
     await expect(await canvas.findByText(/Linked to STAR-EXAMPLE/)).toBeVisible()
@@ -83,7 +83,7 @@ export const LinkExistingAwd = meta.story({
       data: expect.objectContaining({
         revision: 1,
         draft: expect.objectContaining({
-          cartons: [{ cartonId: "1", items: [] }]
+          cartons: [{ cartonId: "A1", items: [] }]
         })
       })
     })
@@ -131,7 +131,8 @@ export const Empty = meta.story({
         draft: expect.objectContaining({
           changes: [],
           readyDate: "",
-          cartons: [{ cartonId: "1", items: [] }]
+          palletized: false,
+          cartons: [{ cartonId: "A1", items: [] }]
         })
       }
     })
@@ -143,9 +144,10 @@ export const FixFields = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
-    await userEvent.click(canvas.getByRole("spinbutton", { name: "Carton 1: Length (cm)" }))
+    await userEvent.click(canvas.getByRole("spinbutton", { name: "Carton A1: Length (cm)" }))
     await userEvent.tab()
-    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Length (cm)" })).toHaveAttribute(
+    await expect(canvas.getByText("Enter the length, width and height of each carton.")).toBeVisible()
+    await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Length (cm)" })).toHaveAttribute(
       "aria-invalid",
       "true"
     )
@@ -212,13 +214,16 @@ export const Cartons = meta.story({
     await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate carton" }))
     await expect(canvas.getByText("3 cartons, 120 units")).toBeVisible()
     await expect(within(canvas.getByRole("table")).getByText("120 of 100")).toHaveClass("text-destructive")
-    await expect(canvas.getByRole("region", { name: "Carton 3" })).toBeVisible()
+    // The copy takes the next letter.
+    await expect(canvas.getByRole("region", { name: "Carton D1" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete carton" }))
     await expect(canvas.getByText("2 cartons, 80 units")).toBeVisible()
     await expect(within(canvas.getByRole("table")).getByText("80 of 100")).not.toHaveClass("text-destructive")
-    // With several products, each carton says which it holds.
-    await expect(canvas.getAllByRole("button", { name: /Add products to carton/ })).toHaveLength(2)
+    // Complete rows stay closed until opened; open, each says which carton its products go in.
+    await expect(canvas.queryByRole("button", { name: /Add products to carton/ })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Products in D1" }))
+    await expect(canvas.getByRole("button", { name: "Add products to carton D1" })).toBeVisible()
   }
 })
 
@@ -260,7 +265,7 @@ export const MixedCarton = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete carton" }))
     await expect(canvas.getByText("1 carton, 36 units")).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: `Remove ${basket!.buyerSku} from carton 2` }))
+    await userEvent.click(canvas.getByRole("button", { name: `Remove ${basket!.buyerSku} from carton B1` }))
     await expect(canvas.getByText("1 carton, 26 units")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
@@ -527,5 +532,106 @@ export const SaveIncompletePacking = meta.story({
     await expect(await screen.findByText("Draft saved")).toBeVisible()
     await expect(actions).not.toHaveBeenCalledWith(expect.objectContaining({ action: "shipment.submit" }))
     await expect(args.onSubmitted).not.toHaveBeenCalled()
+  }
+})
+
+// Board 06.10 B: packed on pallets. Checking it adds a Pallets section; each carton goes on one pallet, chosen in a
+// dialog, and the shipment's weight and volume become its pallets'.
+export const PackedOnPallets = meta.story({
+  args: {
+    initial: { ...completeDraft, palletized: true },
+    addresses: [savedAddress],
+    renderSidebar: ({ weight, volume }) => (
+      <output>
+        {weight ?? "—"} kg, {volume ?? "—"} m³
+      </output>
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("checkbox", { name: "Packed on pallets" })).toBeChecked()
+    const pallets = within(canvas.getByRole("region", { name: "Pallets" }))
+    await expect(pallets.getByText("No pallets yet")).toBeVisible()
+    await expect(pallets.getByText("Add the pallets these cartons ship on, or uncheck Packed on pallets")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+
+    await userEvent.click(pallets.getByRole("button", { name: "Add pallet" }))
+    const pallet = within(canvas.getByRole("region", { name: "Pallet 1" }))
+    for (const [side, value] of [
+      ["Length", "120"],
+      ["Width", "100"],
+      ["Height", "120"]
+    ]) {
+      await userEvent.type(pallet.getByRole("spinbutton", { name: `Pallet 1: ${side} (cm)` }), value!)
+    }
+    await userEvent.type(pallet.getByRole("spinbutton", { name: "Pallet 1: Weight (kg)" }), "110")
+    await userEvent.click(pallet.getByRole("button", { name: "Choose cartons for Pallet 1" }))
+    const dialog = await shownDialog("Choose cartons for Pallet 1")
+    await userEvent.click(dialog.getByRole("checkbox", { name: "1-1–1-4" }))
+    await expect(dialog.getByText("4 cartons, 48 kg")).toBeVisible()
+    await userEvent.click(dialog.getByRole("button", { name: "Save cartons" }))
+    await expect(pallet.getByRole("listitem")).toHaveTextContent("1-1–1-4")
+    await expect(pallets.getByText("4 of 7 cartons on pallets")).toBeVisible()
+    await expect(pallets.getByText(/^3 cartons aren’t on a pallet: 2-1–2-2, 3-1\./)).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+
+    // A second pallet takes the rest, and the totals are the pallets'.
+    await userEvent.click(pallets.getByRole("button", { name: "Pallet 1 actions" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate pallet" }))
+    const second = within(canvas.getByRole("region", { name: "Pallet 2" }))
+    await userEvent.click(second.getByRole("button", { name: "Choose cartons for Pallet 2" }))
+    const chooser = await shownDialog("Choose cartons for Pallet 2")
+    await userEvent.click(chooser.getByRole("checkbox", { name: "2-1–2-2" }))
+    await userEvent.click(chooser.getByRole("checkbox", { name: "3-1" }))
+    await userEvent.click(chooser.getByRole("button", { name: "Save cartons" }))
+    await expect(pallets.getByText("7 of 7 cartons on pallets")).toBeVisible()
+    await expect(canvas.getByText("220 kg, 2.88 m³")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
+
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({
+        draft: expect.objectContaining({
+          palletized: true,
+          pallets: [
+            expect.objectContaining({ palletId: "1", cartonIds: ["1-1", "1-2", "1-3", "1-4"], stackable: true }),
+            expect.objectContaining({ palletId: "2", cartonIds: ["2-1", "2-2", "3-1"], weight: 110 })
+          ]
+        })
+      })
+    })
+  }
+})
+
+// Unchecking Packed on pallets hides the pallets and leaves them out of the draft.
+export const NotPackedOnPallets = meta.story({
+  args: {
+    initial: {
+      ...completeDraft,
+      palletized: true,
+      pallets: [
+        { palletId: "1", length: 120, width: 100, height: 120, weight: 110, stackable: false, cartonIds: ["1-1"] }
+      ]
+    },
+    addresses: [savedAddress]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("region", { name: "Pallet 1" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Packed on pallets" }))
+    await expect(canvas.queryByRole("region", { name: "Pallets" })).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({
+        draft: expect.not.objectContaining({ pallets: expect.anything() })
+      })
+    })
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({ draft: expect.objectContaining({ palletized: false }) })
+    })
   }
 })

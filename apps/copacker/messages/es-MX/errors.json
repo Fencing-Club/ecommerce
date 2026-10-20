@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon no tiene una caja que coincida con la caja {carton}",
   "amazonNoListing": "Amazon no tiene una publicación de FBA que coincida con {skus}. Revisa los SKU en Amazon y luego envía la orden de compra.",
   "amazonNoOwnCarrier": "Amazon no permite usar tu propio transportista para este envío. Resérvalo en Seller Central.",
+  "amazonPalletSplit": "Amazon envía las cajas de la tarima {pallets} a almacenes distintos. Coloca las cajas de cada almacén en sus propias tarimas y vuelve a intentarlo.",
   "amazonNotUs": "Esta cuenta de Amazon no vende en el marketplace de EE. UU.",
   "amazonOrderNotForShipment": "El pedido de Amazon no pertenece a esta revisión del envío",
   "amazonOutcomeUnknown": "Se desconoce el resultado de la creación en Amazon. Concilia el plan de envío existente antes de reintentar.",

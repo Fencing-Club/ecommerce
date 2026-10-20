@@ -258,9 +258,11 @@ function PackingReferences() {
             >
               {pallet.dimensions.map(number).join(" × ")} cm / {number(pallet.weight)} kg {t.gross}
             </Detail>
-            <Detail label={t.palletLabelSingle} value={<Code bold>{pallet.label}</Code>}>
-              {t.palletSheet}
-            </Detail>
+            {pallet.label && (
+              <Detail label={t.palletLabelSingle} value={<Code bold>{pallet.label}</Code>}>
+                {t.palletSheet}
+              </Detail>
+            )}
           </View>
           <View style={[styles.addresses, row]}>
             <Detail label={t.carrier} value={data.transport.providerName ?? t[data.transport.service]}>

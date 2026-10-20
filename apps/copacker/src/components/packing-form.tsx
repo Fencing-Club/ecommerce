@@ -7,11 +7,14 @@ import {
   type Packing,
   packingSchema,
   cartonInputSchema,
+  palletInputSchema,
+  palletRules,
   validatePacking,
+  validatePallets,
   money
 } from "@repo/aisle"
 import { useRouter } from "@tanstack/react-router"
-import { CircleCheck, Ellipsis, Plus, Upload } from "lucide-react"
+import { CircleAlert, CircleCheck, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
@@ -24,20 +27,33 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { cartonTotals, expandCartonGroups, groupCartons, nextCartonId, packingEditorSchema } from "@/lib/carton-groups"
+import {
+  cartonTotals,
+  editorPallets,
+  expandCartonGroups,
+  groupCartons,
+  nextCartonId,
+  nextPalletId,
+  packingEditorSchema,
+  palletCartons,
+  type PalletValue
+} from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
-import { CartonEditor } from "./carton-editor"
 import { CartonImportDialog } from "./carton-import-dialog"
+import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { PalletTable } from "./pallet-table"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
 import { ProductIdentity } from "./product-identity"
 import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentAddress, ShipmentPackingDetails } from "./shipment-packing-details"
+import { Checkbox } from "./ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { Label } from "./ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
 type Values = z.input<typeof packingEditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
@@ -49,6 +65,19 @@ const withoutBlanks = (values: z.input<typeof packingSchema>): PackingDraft =>
       value === null || (typeof value === "number" && Number.isNaN(value)) ? undefined : value
     )
   )
+// The packing as it's saved: each physical carton, and the pallets only when the cartons are packed on them, each
+// holding only cartons the packing still has.
+function savedPacking(values: Values) {
+  const cartons = expandCartonGroups(values.cartons)
+  const ids = new Set(cartons.map((carton) => carton.cartonId))
+  return {
+    ...values,
+    cartons,
+    pallets: values.palletized
+      ? values.pallets.map((pallet) => ({ ...pallet, cartonIds: pallet.cartonIds.filter((id) => ids.has(id)) }))
+      : undefined
+  }
+}
 const checkResult = z.object({
   canSubmit: z.boolean(),
   requiresApproval: z.boolean(),
@@ -148,6 +177,7 @@ export function PackingForm({
   const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const [importing, setImporting] = useState(false)
   const importText = useTranslations("orders.cartonImport")
+  const palletText = useTranslations("orders.pallets")
   // A packing list without a pickup address yet starts from the supplier's only saved one.
   const noOrigin = objectKeys(emptyAddress).every((key) => !initial?.origin?.[key])
   const startAddress =
@@ -161,14 +191,24 @@ export function PackingForm({
       readyDate: initial?.readyDate ?? "",
       origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
       cartons: groupCartons(initial?.cartons),
+      palletized: initial?.palletized ?? false,
+      pallets: editorPallets(initial?.pallets),
       changes: []
     }
   })
   const cartons = useFieldArray({ control: form.control, name: "cartons" })
   const readyDate = useWatch({ control: form.control, name: "readyDate" })
   const cartonValues = useWatch({ control: form.control, name: "cartons" }) ?? []
+  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
+  const palletValues = useWatch({ control: form.control, name: "pallets" }) ?? []
   const totals = cartonTotals(cartonValues)
   const physicalCartons = totals.cartons > 1000 ? [] : expandCartonGroups(cartonValues)
+  const physicalIds = new Set(physicalCartons.map((carton) => carton.cartonId))
+  // Pallets hold only the cartons the packing still has, as they'll be saved.
+  const pallets = palletValues.map((pallet) => ({
+    ...pallet,
+    cartonIds: pallet.cartonIds.filter((id) => physicalIds.has(id))
+  }))
   const contents = physicalCartons.flatMap((carton) => carton.items)
   const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
   const availableUnits = Object.values(availablePieces).reduce((total, value) => total + value, 0)
@@ -182,16 +222,33 @@ export function PackingForm({
     const result = cartonInputSchema.safeParse(carton)
     return result.success ? [result.data] : []
   })
-  // Read-only cartons show as they are, without the packing checks.
+  // Read-only cartons show as they are, without the packing checks. Pallets are checked against every carton, complete
+  // or not.
   const packingIssues = readOnly
     ? []
-    : validatePacking(
-        order,
-        { cartons: completeCartons, changes: [] },
-        Object.fromEntries(
-          order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
-        )
-      ).issues
+    : [
+        ...validatePacking(
+          order,
+          { cartons: completeCartons, changes: [] },
+          Object.fromEntries(
+            order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
+          )
+        ).issues,
+        ...(palletized ? validatePallets({ cartons: physicalCartons, pallets }) : [])
+      ]
+  const palletIssues = packingIssues.filter((issue) => palletRules.has(issue.code))
+  const completePallets = pallets.flatMap((pallet) => {
+    const result = palletInputSchema.safeParse(pallet)
+    return result.success ? [result.data] : []
+  })
+  // The shipment's weight and volume: its pallets' when packed on them, otherwise its cartons'. Blank until complete.
+  const loads = palletized
+    ? completePallets.length === pallets.length && pallets.length > 0 && completePallets
+    : completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && physicalCartons
+  const weight = loads ? loads.reduce((sum, load) => sum + load.weight, 0) : null
+  const volume = loads ? loads.reduce((sum, load) => sum + (load.length * load.width * load.height) / 1000000, 0) : null
+  const chooserCartons = totals.cartons > 1000 ? [] : palletCartons(cartonValues, order.items)
+  const onPallets = pallets.reduce((sum, pallet) => sum + pallet.cartonIds.length, 0)
   const issueText = (issue: (typeof packingIssues)[number]) =>
     "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
   // Drafts save incomplete values; submission runs authoritative checks after field validation.
@@ -206,7 +263,7 @@ export function PackingForm({
           id: shipmentId,
           revision: savedRevision,
           orderRevision,
-          draft: withoutBlanks({ ...draft, cartons: expandCartonGroups(draft.cartons) })
+          draft: withoutBlanks(savedPacking(draft))
         }
       }).unwrap()
     )
@@ -234,7 +291,7 @@ export function PackingForm({
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
-      onSubmitted?.(packingSchema.parse(withoutBlanks({ ...values, cartons: expandCartonGroups(values.cartons) })))
+      onSubmitted?.(packingSchema.parse(withoutBlanks(savedPacking(values))))
       router.invalidate()
     } catch (error) {
       setServerError(errorMessage(error, t("saveFailed")))
@@ -268,6 +325,9 @@ export function PackingForm({
         setServerError(t("fixFields"))
       }
     )
+  function setPallets(next: PalletValue[]) {
+    form.setValue("pallets", next, { shouldDirty: true, shouldValidate: form.formState.submitCount > 0 })
+  }
   function addCarton() {
     cartons.append({
       cartonId: nextCartonId(cartonValues),
@@ -500,52 +560,33 @@ export function PackingForm({
                   )}
                 </div>
                 {cartons.fields.length > 0 && (
-                  <div className="flex flex-col gap-6 max-sm:gap-5">
-                    {cartons.fields.map((carton, index) => {
-                      const value = cartonValues[index] ?? carton
-                      const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-                      const issues = packingIssues.filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                      const note = renderCartonNote?.(ids)
-                      const editor = (
-                        <CartonEditor
-                          key={carton.id}
-                          value={value}
-                          products={order.items}
-                          context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                          remainingPieces={Object.fromEntries(
-                            order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
-                          )}
-                          showErrors={
-                            form.formState.submitCount > 0 ||
-                            Boolean(
-                              initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId))
-                            )
-                          }
-                          issues={issues}
-                          readOnly={readOnly}
-                          onChange={(next) =>
-                            form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                          }
-                          onDuplicate={() =>
-                            cartons.append({
-                              ...structuredClone(value),
-                              cartonId: nextCartonId(cartonValues),
-                              cartonIds: []
-                            })
-                          }
-                          onDelete={() => cartons.remove(index)}
-                        />
-                      )
-                      return note ? (
-                        <div key={carton.id} className="flex flex-col gap-2">
-                          {editor}
-                          {note}
-                        </div>
-                      ) : (
-                        editor
-                      )
-                    })}
-                  </div>
+                  <CartonTable
+                    cartons={cartons.fields.map((carton, index) => cartonValues[index] ?? carton)}
+                    rowKeys={cartons.fields.map((carton) => carton.id)}
+                    products={order.items}
+                    issues={packingIssues}
+                    context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                    remainingPieces={Object.fromEntries(
+                      order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                    )}
+                    showErrors={(ids) =>
+                      form.formState.submitCount > 0 ||
+                      Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
+                    }
+                    readOnly={readOnly}
+                    renderNote={renderCartonNote}
+                    onChange={(index, next) =>
+                      form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                    }
+                    onDuplicate={(index) =>
+                      cartons.append({
+                        ...structuredClone(cartonValues[index]!),
+                        cartonId: nextCartonId(cartonValues),
+                        cartonIds: []
+                      })
+                    }
+                    onDelete={(index) => cartons.remove(index)}
+                  />
                 )}
                 {!cartons.fields.length && (
                   <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
@@ -553,6 +594,72 @@ export function PackingForm({
                 {cartonsError && <FormError message={cartonsError} />}
                 {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
               </section>
+              {palletized && (
+                <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={palletText("title")}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
+                      <h2 className="text-sm font-semibold max-sm:text-base">{palletText("title")}</h2>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums text-muted-foreground",
+                          physicalCartons.length > 0 && onPallets === physicalCartons.length && "text-success"
+                        )}
+                      >
+                        {palletText("onPallets", { count: onPallets, total: physicalCartons.length })}
+                      </span>
+                    </div>
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="max-sm:w-[34px] max-sm:px-0"
+                        onClick={() =>
+                          setPallets([
+                            ...pallets,
+                            {
+                              palletId: nextPalletId(pallets),
+                              length: blank,
+                              width: blank,
+                              height: blank,
+                              weight: blank,
+                              stackable: true,
+                              cartonIds: []
+                            }
+                          ])
+                        }
+                      >
+                        <Plus />
+                        <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                      </Button>
+                    )}
+                  </div>
+                  {pallets.length > 0 ? (
+                    <PalletTable
+                      pallets={pallets}
+                      cartons={chooserCartons}
+                      issues={palletIssues}
+                      context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                      readOnly={readOnly}
+                      showErrors={form.formState.submitCount > 0}
+                      onChange={setPallets}
+                    />
+                  ) : (
+                    <EmptyState title={palletText("noPallets")} description={palletText("noPalletsDescription")} />
+                  )}
+                  {palletIssues.some((issue) => !issue.palletId) && (
+                    <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
+                      {palletIssues
+                        .filter((issue) => !issue.palletId)
+                        .map((issue) => (
+                          <li key={issue.code} className="flex items-start gap-2">
+                            <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                            {issueText(issue)}
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </section>
+              )}
             </form>
             {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
             {!(readOnly && renderSidebar) && (
@@ -562,10 +669,10 @@ export function PackingForm({
                   !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
                 )}
               >
-                {packingIssues.some((issue) => !issue.cartonId) && (
+                {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
                   <ul aria-live="polite" className="text-sm text-destructive">
                     {packingIssues
-                      .filter((issue) => !issue.cartonId)
+                      .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
                       .map((issue, index) => (
                         <li key={index}>
                           {issue.cartonId
@@ -597,23 +704,10 @@ export function PackingForm({
                           ? importText("cartonCount", { count: totals.cartons })
                           : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
                       </p>
-                      {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
+                      {headed && weight !== null && volume !== null && (
                         <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                          <span>
-                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                              physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                            )}{" "}
-                            kg
-                          </span>
-                          <span>
-                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                              physicalCartons.reduce(
-                                (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                                0
-                              )
-                            )}{" "}
-                            m³
-                          </span>
+                          <span>{new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(weight)} kg</span>
+                          <span>{new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(volume)} m³</span>
                         </p>
                       )}
                     </div>
@@ -658,17 +752,8 @@ export function PackingForm({
                 cartons: totals.cartons,
                 units: pieces,
                 readyDate,
-                weight:
-                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                    ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                    : null,
-                volume:
-                  completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                    ? physicalCartons.reduce(
-                        (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                        0
-                      )
-                    : null
+                weight,
+                volume
               })}
             </aside>
           )}
@@ -708,8 +793,11 @@ export function PackingDetailsFields({
   transport?: React.ReactNode
 }) {
   const t = useTranslations("orders.packing")
+  const palletText = useTranslations("orders.pallets")
   const form = useFormContext<Values>()
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
+  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
+  const palletizedId = useId()
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
   const { errors } = useFormState({ control: form.control })
@@ -814,8 +902,38 @@ export function PackingDetailsFields({
       }
       packing={
         !readOnly && (
-          <div className="max-w-72">
-            <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+            <div className="w-full max-w-72">
+              <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+            </div>
+            <div className="flex min-h-9 items-center gap-2.5">
+              <Checkbox
+                id={palletizedId}
+                checked={palletized}
+                onCheckedChange={(checked) =>
+                  form.setValue("palletized", checked, { shouldDirty: true, shouldValidate: true })
+                }
+              />
+              <Label htmlFor={palletizedId} className="font-normal">
+                {palletText("packedOnPallets")}
+              </Label>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-muted-foreground"
+                      aria-label={palletText("packedOnPalletsHelp")}
+                    />
+                  }
+                >
+                  <Info />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">{palletText("packedOnPalletsHint")}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         )
       }

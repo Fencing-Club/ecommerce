@@ -4,8 +4,8 @@ import preview from "#.storybook/preview"
 import { cartonTotals, groupCartons, type CartonGroup } from "@/lib/carton-groups"
 import { cartonColumns } from "@/lib/carton-import"
 import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
-import { CartonEditor } from "./carton-editor"
 import { CartonImportDialog } from "./carton-import-dialog"
+import { CartonTable } from "./carton-table"
 import { Button } from "./ui/button"
 
 type Props = React.ComponentProps<typeof CartonImportDialog>
@@ -17,9 +17,7 @@ function ImportFlow(props: Props) {
       <Button className="self-end" onClick={() => setOpen(true)}>
         Import cartons
       </Button>
-      {groups.map((group) => (
-        <CartonEditor key={group.cartonId} value={group} products={props.order.items} readOnly />
-      ))}
+      <CartonTable cartons={groups} products={props.order.items} readOnly />
       <output>{cartonTotals(groups).pieces} packed units</output>
       <CartonImportDialog
         {...props}

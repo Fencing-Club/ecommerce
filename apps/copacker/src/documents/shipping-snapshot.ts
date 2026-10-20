@@ -79,8 +79,16 @@ export function shippingDocumentSnapshot(input: {
       service: transport.service,
       collection: transport.collection,
       carrierLabels: requirements.carrierLabels,
-      palletized: false
+      palletized: Boolean(packing.palletized)
     },
+    ...(packing.palletized && {
+      pallets: (packing.pallets ?? []).map((pallet) => ({
+        id: pallet.palletId,
+        cartons: pallet.cartonIds,
+        dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
+        weight: pallet.weight
+      }))
+    }),
     products: items.map((item) => {
       if (!item.packingRequirements) {
         throw new Error(`Confirm packing requirements for ${item.supplierSku || item.name}`)

@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon hat keinen Karton, der zu Karton {carton} passt",
   "amazonNoListing": "Amazon hat kein passendes FBA-Angebot für {skus}. Prüfen Sie die SKUs bei Amazon und senden Sie dann die Bestellung.",
   "amazonNoOwnCarrier": "Amazon bietet für diese Sendung keine Möglichkeit, Ihren eigenen Transporteur zu nutzen. Buchen Sie sie in Seller Central.",
+  "amazonPalletSplit": "Amazon schickt die Kartons auf Palette {pallets} an verschiedene Lager. Packen Sie die Kartons jedes Lagers auf eigene Paletten und versuchen Sie es dann erneut.",
   "amazonNotUs": "Dieses Amazon-Konto verkauft nicht auf dem US-Marktplatz",
   "amazonOrderNotForShipment": "Der Amazon-Auftrag gehört nicht zu dieser Version der Sendung",
   "amazonOutcomeUnknown": "Das Ergebnis der Erstellung bei Amazon ist unbekannt. Gleichen Sie den bestehenden Einlieferungsplan ab, bevor Sie es erneut versuchen.",

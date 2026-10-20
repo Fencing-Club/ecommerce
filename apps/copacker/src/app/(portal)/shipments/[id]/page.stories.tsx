@@ -321,8 +321,15 @@ export const DraftPacking = meta.story({
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("504 of 540 units")).toBeVisible()
     await expect(within(cartons).getByRole("button", { name: "Add carton" })).toHaveTextContent("Add carton")
-    await expect(canvas.getByRole("button", { name: "Add products to cartons 1–10" })).toBeVisible()
-    await expect(canvas.getByText("Cartons 11–16")).toBeVisible()
+    // Complete rows stay closed; B1–B6, still to be weighed, opens with its error under the row.
+    await expect(canvas.getByRole("button", { name: "Products in A1–A10" })).toHaveAttribute("aria-expanded", "false")
+    await expect(canvas.getByRole("button", { name: "Products in B1–B6" })).toHaveAttribute("aria-expanded", "true")
+    await expect(canvas.getByRole("button", { name: "Add products to cartons B1–B6" })).toBeVisible()
+    await expect(canvas.getByText("Enter the weight of each carton.")).toBeVisible()
+    await expect(canvas.getByRole("spinbutton", { name: "Carton B1: Weight (kg)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
 
     // The documents beside the cartons start with the label types the packing details ask for.
     const documents = canvas.getByRole("region", { name: "Documents" })
@@ -508,7 +515,8 @@ export const FbaMixedCartons = meta.story({
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("180 of 180 units")).toBeVisible()
     // One carton holds a bag in each color and a tea towel; a bag without a supplier SKU shows a dash.
-    const second = canvas.getByRole("region", { name: "Carton 2" })
+    const second = canvas.getByRole("region", { name: "Carton B1" })
+    await userEvent.click(within(second).getByRole("button", { name: "Products in B1" }))
     await expect(within(second).getAllByText("Cotton drawstring bag")).toHaveLength(2)
     await expect(within(second).getByText("NT-CT-3100")).toBeVisible()
     await expect(within(second).getAllByText("—")).toHaveLength(2)
@@ -637,8 +645,10 @@ export const Approval = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Invoice changes")).toBeVisible()
     await expect(canvas.getByText("Canvas tote bag / Natural")).toBeVisible()
-    // Packed products are shown in the shared read-only carton editor.
-    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
+    // Packed products are shown in the shared read-only carton table, under each row.
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await userEvent.click(within(cartons).getByRole("button", { name: "Products in C1" }))
+    await expect(cartons).toHaveTextContent("TOTE-016")
     await expect(canvas.getByText(/Price per unit \$4\.25/)).toHaveTextContent("$4.50")
     await expect(canvas.getByText(/Supplier SKU LM-TOTE/)).toHaveTextContent("LM-APRON-CH")
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
@@ -966,7 +976,9 @@ export const ViewOnly = meta.story({
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
-    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await userEvent.click(within(cartons).getByRole("button", { name: "Products in C1" }))
+    await expect(cartons).toHaveTextContent("TOTE-016")
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await expect(screen.queryByRole("dialog")).toBeNull()
   }

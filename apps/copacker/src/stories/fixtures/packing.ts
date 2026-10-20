@@ -134,7 +134,7 @@ export const awdBagOrder: OrderInput = orderData({
   ]
 })
 
-// Cartons 1–2 break AWD's unit, size and weight limits, and carton 3 mixes two SKUs; carton 4 is fine.
+// Cartons A1–A2 break AWD's unit, size and weight limits, and carton B1 mixes two SKUs; carton C1 is fine.
 export function awdBagCartons(): CartonGroup[] {
   const [natural, sage, stripe, ivory] = awdBagOrder.items
   const carton = (
@@ -153,12 +153,12 @@ export function awdBagCartons(): CartonGroup[] {
     items
   })
   return [
-    carton(["1", "2"], [70, 40, 40], 25, [{ itemId: natural!.id, pieces: 160 }]),
-    carton(["3"], [60, 40, 40], 12.4, [
+    carton(["A1", "A2"], [70, 40, 40], 25, [{ itemId: natural!.id, pieces: 160 }]),
+    carton(["B1"], [60, 40, 40], 12.4, [
       { itemId: sage!.id, pieces: 40 },
       { itemId: stripe!.id, pieces: 40 }
     ]),
-    carton(["4"], [60, 40, 40], 12.4, [{ itemId: ivory!.id, pieces: 120 }])
+    carton(["C1"], [60, 40, 40], 12.4, [{ itemId: ivory!.id, pieces: 120 }])
   ]
 }
 
@@ -177,16 +177,16 @@ export function bagPacking(): Packing {
     readyDate: "2026-10-20",
     origin: northwindFactory,
     cartons: [
-      carton("1", [
+      carton("A1", [
         [sage, 40],
         [teaTowel, 40]
       ]),
-      carton("2", [
+      carton("B1", [
         [natural, 30],
         [sage, 20],
         [teaTowel, 10]
       ]),
-      carton("3", [
+      carton("C1", [
         [natural, 15],
         [teaTowel, 25]
       ])
@@ -196,10 +196,10 @@ export function bagPacking(): Packing {
 }
 
 const [natural, sage, teaTowel] = towelOrder.items
-// Identical cartons numbered from `from` to `to`, each holding the same product.
-const cartonRange = (from: number, to: number, size: [number, number, number], itemId: string, pieces: number) =>
-  Array.from({ length: to - from + 1 }, (_, index) => ({
-    cartonId: String(from + index),
+// Identical cartons of one configuration, lettered and numbered from 1, each holding the same product.
+const cartonRange = (letter: string, count: number, size: [number, number, number], itemId: string, pieces: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    cartonId: `${letter}${index + 1}`,
     length: size[0],
     width: size[1],
     height: size[2],
@@ -207,29 +207,29 @@ const cartonRange = (from: number, to: number, size: [number, number, number], i
   }))
 const weighing = (weight: number) => (carton: ReturnType<typeof cartonRange>[number]) => ({ ...carton, weight })
 
-// Cartons 1–10 and 17–18 are complete; cartons 11–16 have no weight yet and leave 36 Sage towels unpacked.
+// Cartons A1–A10 and C1–C2 are complete; cartons B1–B6 have no weight yet and leave 36 Sage towels unpacked.
 export function towelPackingDraft(): PackingDraft {
   return {
     readyDate: "2026-10-20",
     origin: northwindFactory,
     cartons: [
-      ...cartonRange(1, 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
-      ...cartonRange(11, 16, [60, 40, 50], sage!.id, 24),
-      ...cartonRange(17, 18, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
+      ...cartonRange("A", 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
+      ...cartonRange("B", 6, [60, 40, 50], sage!.id, 24),
+      ...cartonRange("C", 2, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
     ],
     changes: []
   }
 }
 
-// Packing finished: cartons 11–16 weigh 15.2 kg and hold 30 each, so every unit is packed.
+// Packing finished: cartons B1–B6 weigh 15.2 kg and hold 30 each, so every unit is packed.
 export function towelPacking(): Packing {
   return {
     readyDate: "2026-10-20",
     origin: northwindFactory,
     cartons: [
-      ...cartonRange(1, 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
-      ...cartonRange(11, 16, [60, 40, 50], sage!.id, 30).map(weighing(15.2)),
-      ...cartonRange(17, 18, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
+      ...cartonRange("A", 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
+      ...cartonRange("B", 6, [60, 40, 50], sage!.id, 30).map(weighing(15.2)),
+      ...cartonRange("C", 2, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
     ],
     changes: []
   }

@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon non ha una scatola corrispondente al cartone {carton}",
   "amazonNoListing": "Amazon non ha un’inserzione FBA corrispondente per {skus}. Controlla gli SKU su Amazon, poi invia l’ordine di acquisto.",
   "amazonNoOwnCarrier": "Amazon non permette di usare un tuo corriere per questa spedizione. Prenotala in Seller Central.",
+  "amazonPalletSplit": "Amazon invia i cartoni del pallet {pallets} a magazzini diversi. Metti i cartoni di ogni magazzino su pallet separati, poi riprova.",
   "amazonNotUs": "Questo account Amazon non vende nel marketplace USA",
   "amazonOrderNotForShipment": "L’ordine Amazon non appartiene a questa revisione della spedizione",
   "amazonOutcomeUnknown": "L’esito della creazione su Amazon è sconosciuto. Riconcilia il piano di invio esistente prima di riprovare.",

@@ -23,7 +23,13 @@
       "missingAmazonIds": "{sku}: Fügen Sie die Amazon-ASIN und FNSKU hinzu",
       "awdConfiguration": "{sku}: Geben Sie allen Kartons denselben Inhalt, dieselben Maße und dasselbe Gewicht, oder teilen Sie sie auf getrennte Sendungen auf",
       "overQuantity": "{sku}: Die Kartons überschreiten die verbleibende Menge der Bestellung",
-      "unknownChange": "Rechnungsänderungen müssen sich auf eindeutige Positionen der Bestellung beziehen"
+      "unknownChange": "Rechnungsänderungen müssen sich auf eindeutige Positionen der Bestellung beziehen",
+      "noPallets": "Fügen Sie die Paletten hinzu, auf denen diese Kartons versendet werden, oder deaktivieren Sie „Auf Paletten gepackt“",
+      "emptyPallet": "Palette {pallet} hat keine Kartons. Wählen Sie ihre Kartons aus oder löschen Sie sie.",
+      "duplicatePallet": "Palette {pallet} ist mehrfach aufgeführt",
+      "unknownPalletCarton": "Palette {pallet} enthält Karton {carton}, der nicht zu dieser Sendung gehört",
+      "palletCartonTwice": "Karton {carton} steht auf mehr als einer Palette. Lassen Sie ihn auf einer.",
+      "cartonsOffPallets": "{count, plural, one {# Karton steht auf keiner Palette: {cartons}. Wählen Sie eine Palette dafür aus oder fügen Sie eine hinzu.} other {# Kartons stehen auf keiner Palette: {cartons}. Wählen Sie für jeden eine Palette aus oder fügen Sie eine hinzu.}}"
     },
     "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken.",
     "missingTransport": "Transport nicht bestätigt"
