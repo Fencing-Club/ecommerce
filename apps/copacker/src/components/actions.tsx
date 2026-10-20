@@ -1,10 +1,11 @@
+import { Toast } from "@base-ui/react/toast"
 import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { SubmitButton } from "@/components/form-feedback"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { sx } from "@/styles/sprinkles.css"
 
+// A page's one-click action, beside its title. What happened shows as a toast, so the header keeps its layout.
 export function ActionButton({
   action,
   data,
@@ -25,34 +26,29 @@ export function ActionButton({
   const [run] = useActionMutation()
   const [isPending, setIsPending] = useState(false)
   const errorMessage = useErrorMessage()
-  const [error, setError] = useState("")
-  const [succeeded, setSucceeded] = useState(false)
+  const toast = Toast.useToastManager()
 
   async function click() {
     setIsPending(true)
-    setError("")
-    setSucceeded(false)
     try {
       const result = await run({ action, data }).unwrap()
       if (result.redirect) {
         await router.navigate({ href: result.redirect })
       }
       await router.invalidate({ sync: true })
-      setSucceeded(true)
+      if (successMessage) {
+        toast.add({ title: successMessage })
+      }
     } catch (e) {
-      setError(errorMessage(e))
+      toast.add({ title: errorMessage(e), type: "error" })
     } finally {
       setIsPending(false)
     }
   }
 
   return (
-    <div className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-      <SubmitButton variant={variant} size={size} pending={isPending} onClick={click}>
-        {children}
-      </SubmitButton>
-      {succeeded && successMessage && <output className={sx({ text: "xs", color: "muted" })}>{successMessage}</output>}
-      <FormError message={error} />
-    </div>
+    <SubmitButton variant={variant} size={size} pending={isPending} onClick={click}>
+      {children}
+    </SubmitButton>
   )
 }
