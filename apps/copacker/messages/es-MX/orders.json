@@ -622,12 +622,24 @@
       "limit": "Un envío puede contener hasta 1,000 cajas."
     },
     "template": {
-      "identity": "No cambies el SKU del proveedor, producto, variante ni unidades por paquete precargados. Pide al comprador que corrija los datos faltantes o incorrectos.",
-      "rows": "Usa una fila por producto en cada caja. Copia la fila del producto para cajas adicionales. Repite el Carton ID para productos empacados juntos. Deja vacías las celdas de empaque que no uses.",
-      "cartons": "Carton ID es tu referencia, no el número de etiqueta de Amazon. Asigna una letra a cada tipo de caja: A1, B1, C1. Para cajas idénticas, indica más de 1: A1 con cantidad 3 genera A1, A2 y A3. Se omiten los identificadores existentes.",
-      "quantity": "Quantity per carton cuenta paquetes. Para un paquete de 2, una cantidad de 10 equivale a 20 piezas. Todas las cajas de un grupo idéntico deben contener los mismos productos y cantidades.",
-      "measurements": "Ingresa las dimensiones en centímetros y el peso en kilogramos. Repite la cantidad de cajas, dimensiones y peso en cada fila con el mismo Carton ID.",
-      "format": "Llena las celdas blancas de empaque. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la tabla Cartons como CSV."
+      "columns": {
+        "cartonId": "Tu referencia para un tipo de caja, no el número de etiqueta de Amazon: una letra por tipo, numerada desde 1, por ejemplo A1, B1, C1. Repítela en cada fila de una caja con más de un producto.",
+        "cartonCount": "Cuántas cajas idénticas de este tipo. A1 con cantidad 3 genera A1, A2 y A3. Se omiten los identificadores que el envío ya tiene.",
+        "supplierSku": "Precargado del pedido. No lo cambies; pide al comprador que corrija un producto faltante o incorrecto.",
+        "quantity": "Paquetes de este producto en cada caja. Para un paquete de 2, 10 equivale a 20 unidades.",
+        "length": "El largo de la caja en centímetros.",
+        "width": "El ancho de la caja en centímetros.",
+        "height": "El alto de la caja en centímetros.",
+        "weight": "El peso de la caja empacada en kilogramos.",
+        "product": "Precargado del pedido. No lo cambies.",
+        "variant": "Precargada del pedido. No la cambies.",
+        "unitsPerPack": "Precargado del pedido: las unidades de un paquete. No lo cambies."
+      },
+      "notes": {
+        "rows": "Usa una fila por producto en cada caja. Para empacar un producto en más tipos de caja, copia su fila. Deja vacías las filas que no uses. La hoja Example muestra la plantilla llena para este envío.",
+        "sameCarton": "Las filas con el mismo Carton ID son una sola caja: usa la misma cantidad, dimensiones y peso. Las cajas idénticas contienen los mismos productos y cantidades.",
+        "format": "Llena las celdas blancas y no cambies las grises. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la hoja Cartons como CSV."
+      }
     }
   },
   "palletImport": {

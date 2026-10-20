@@ -102,7 +102,8 @@ const wrappedLines = (text: string, width: number) =>
 // The Instructions sheet as a table, a row to a column of the template, then the notes beneath.
 export function addGuide(book: Workbook, guide: TemplateGuide, rightToLeft: boolean) {
   const sheet = book.addWorksheet("Instructions")
-  const widths = [18, 64, 26]
+  // The first column fits the longest header, Quantity per carton, in bold.
+  const widths = [24, 64, 26]
   sheet.columns = guide.headings.map((header, index) => ({ header, width: widths[index] }))
   const add = (cells: (string | number)[]) => {
     const row = sheet.addRow(cells)
@@ -122,16 +123,4 @@ export function addGuide(book: Workbook, guide: TemplateGuide, rightToLeft: bool
       row.alignment = { vertical: "top", wrapText: true, readingOrder: rightToLeft ? "rtl" : "ltr" }
     }
   })
-}
-
-// The template's Instructions sheet, a paragraph to a row, in the reader's language.
-export function addInstructions(book: Workbook, instructionsCopy: readonly string[], rightToLeft: boolean) {
-  const instructions = book.addWorksheet("Instructions")
-  instructions.views = [{ rightToLeft }]
-  instructions.getColumn(1).width = 110
-  for (const instruction of instructionsCopy) {
-    const row = instructions.addRow([instruction])
-    row.alignment = { wrapText: true, vertical: "top", readingOrder: rightToLeft ? "rtl" : "ltr" }
-    row.height = 60
-  }
 }

@@ -1,7 +1,7 @@
 import type { OrderInput } from "@repo/aisle"
 import { z } from "zod"
 import type { CartonGroup } from "./carton-groups"
-import { addInstructions, matchColumns, readSpreadsheet, styleTemplateSheet } from "./spreadsheet-import"
+import { addGuide, matchColumns, readSpreadsheet, styleTemplateSheet, type TemplateGuide } from "./spreadsheet-import"
 
 export const cartonColumns = [
   "Carton ID",
@@ -144,33 +144,85 @@ export async function readCartonFile(file: File, products: OrderInput["items"]):
     : { groups: [], issues: [table], templateMatches: false }
 }
 
+// The Example sheet's cartons: a kind of carton for each of the order's first three products, A1 as three identical
+// cartons, with quantities the order has, so the example reads like the file the supplier will make and imports as it
+// is. Each holds one product, as AWD cartons must; the instructions say how to pack products together.
+export function cartonExample(products: OrderInput["items"]) {
+  const kinds = [
+    ["A1", 3, 60, 40, 40, 12.5],
+    ["B1", 2, 50, 40, 30, 9],
+    ["C1", 1, 40, 30, 30, 6]
+  ] as const
+  return products
+    .map((item) => ({ item, packs: Math.floor(item.pieces / item.piecesPerSet) }))
+    .filter(({ packs }) => packs > 0)
+    .slice(0, kinds.length)
+    .map(({ item, packs }, index) => {
+      const [cartonId, cartons, length, width, height, weight] = kinds[index]!
+      const count = Math.min(cartons, packs)
+      return [
+        cartonId,
+        count,
+        item.supplierSku,
+        Math.min(24, Math.floor(packs / count)),
+        length,
+        width,
+        height,
+        weight,
+        item.name,
+        item.variant,
+        item.piecesPerSet
+      ]
+    })
+}
+
+// The carton template: a Cartons sheet with a row for each of the order's products to fill in, the same filled in on an
+// Example sheet, and the instructions in the reader's language, right to left for Urdu. The product cells are grey,
+// to keep as they are.
 export async function cartonTemplate(
   products: OrderInput["items"],
-  instructionsCopy: readonly string[],
+  guide: TemplateGuide,
+  example: ReturnType<typeof cartonExample>,
   rightToLeft = false
 ) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
-  const cartons = book.addWorksheet("Cartons")
-  cartons.columns = cartonColumns.map((header) => ({
-    header,
-    width: header === "Product" || header === "Variant" ? 36 : 22
-  }))
-  cartons.getColumn(1).numFmt = "@"
-  cartons.getColumn(3).numFmt = "@"
-  cartons.addRows(
-    products.map((item) => ["", "", item.supplierSku, "", "", "", "", "", item.name, item.variant, item.piecesPerSet])
-  )
-  cartons.autoFilter = { from: { row: 1, column: 1 }, to: { row: products.length + 1, column: cartonColumns.length } }
-  styleTemplateSheet(cartons, rightToLeft)
-  cartons.eachRow((row, index) => {
-    if (index > 1) {
-      row.height = 42
-      for (const column of [3, 9, 10, 11]) {
-        row.getCell(column).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }
+  const references = products.map((item) => [
+    "",
+    "",
+    item.supplierSku,
+    "",
+    "",
+    "",
+    "",
+    "",
+    item.name,
+    item.variant,
+    item.piecesPerSet
+  ])
+  for (const [name, rows] of [
+    ["Cartons", references],
+    ["Example", example]
+  ] as const) {
+    const sheet = book.addWorksheet(name)
+    sheet.columns = cartonColumns.map((header) => ({
+      header,
+      width: header === "Product" || header === "Variant" ? 36 : 22
+    }))
+    sheet.getColumn(1).numFmt = "@"
+    sheet.getColumn(3).numFmt = "@"
+    sheet.addRows([...rows])
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: rows.length + 1, column: cartonColumns.length } }
+    styleTemplateSheet(sheet)
+    sheet.eachRow((row, index) => {
+      if (index > 1) {
+        row.height = 42
+        for (const column of [3, 9, 10, 11]) {
+          row.getCell(column).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }
+        }
       }
-    }
-  })
-  addInstructions(book, instructionsCopy, rightToLeft)
+    })
+  }
+  addGuide(book, guide, rightToLeft)
   return book.xlsx.writeBuffer()
 }

@@ -622,12 +622,24 @@
       "limit": "Eine Sendung darf höchstens 1.000 Kartons enthalten."
     },
     "template": {
-      "identity": "Die vorausgefüllte Lieferanten-SKU, das Produkt, die Variante und die Stückzahl pro Packung nicht ändern. Fehlende oder falsche Produktangaben vom Käufer korrigieren lassen.",
-      "rows": "Eine Zeile pro Produkt und Karton verwenden. Produktzeilen für weitere Kartons kopieren. Für gemeinsam verpackte Produkte dieselbe Carton ID verwenden. Nicht verwendete Verpackungszeilen leer lassen.",
-      "cartons": "Carton ID ist Ihre Referenz, keine Amazon-Etikettennummer. Geben Sie jeder Kartonart einen Buchstaben: A1, B1, C1. Für identische Kartons eine höhere Anzahl eintragen: A1 mit Anzahl 3 ergibt A1, A2 und A3. Vorhandene IDs werden übersprungen.",
-      "quantity": "Quantity per carton zählt Packungen. Bei einem Zweierpack bedeutet Menge 10 insgesamt 20 Stück. Alle Kartons einer identischen Gruppe müssen dieselben Produkte und Mengen enthalten.",
-      "measurements": "Maße in Zentimetern und Gewicht in Kilogramm angeben. Anzahl, Maße und Gewicht in jeder Zeile mit derselben Carton ID wiederholen.",
-      "format": "Die weißen Verpackungszellen ausfüllen. Englische Überschriften und Blattname Cartons unverändert lassen. XLSX-Datei hochladen oder die Tabelle Cartons als CSV exportieren."
+      "columns": {
+        "cartonId": "Ihre Referenz für eine Kartonart, keine Amazon-Etikettennummer: ein Buchstabe pro Art, ab 1 nummeriert, etwa A1, B1, C1. In jeder Zeile eines Kartons mit mehreren Produkten wiederholen.",
+        "cartonCount": "Wie viele identische Kartons dieser Art. A1 mit Anzahl 3 ergibt A1, A2 und A3. IDs, die die Sendung schon hat, werden übersprungen.",
+        "supplierSku": "Aus der Bestellung vorausgefüllt. Unverändert lassen und fehlende oder falsche Produkte vom Käufer korrigieren lassen.",
+        "quantity": "Packungen dieses Produkts in jedem Karton. Bei einem Zweierpack bedeutet 10 insgesamt 20 Einheiten.",
+        "length": "Länge des Kartons in Zentimetern.",
+        "width": "Breite des Kartons in Zentimetern.",
+        "height": "Höhe des Kartons in Zentimetern.",
+        "weight": "Gewicht des gepackten Kartons in Kilogramm.",
+        "product": "Aus der Bestellung vorausgefüllt. Unverändert lassen.",
+        "variant": "Aus der Bestellung vorausgefüllt. Unverändert lassen.",
+        "unitsPerPack": "Aus der Bestellung vorausgefüllt: die Einheiten einer Packung. Unverändert lassen."
+      },
+      "notes": {
+        "rows": "Eine Zeile pro Produkt und Karton verwenden. Um ein Produkt in weitere Kartonarten zu packen, seine Zeile kopieren. Nicht verwendete Zeilen leer lassen. Das Blatt Example zeigt die Vorlage ausgefüllt für diese Sendung.",
+        "sameCarton": "Zeilen mit derselben Carton ID sind ein Karton: Anzahl, Maße und Gewicht gleich eintragen. Identische Kartons enthalten dieselben Produkte und Mengen.",
+        "format": "Die weißen Zellen ausfüllen, die grauen unverändert lassen. Englische Überschriften und den Blattnamen Cartons unverändert lassen. XLSX-Datei hochladen oder das Blatt Cartons als CSV exportieren."
+      }
     }
   },
   "palletImport": {

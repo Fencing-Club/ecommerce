@@ -622,12 +622,24 @@
       "limit": "A shipment can contain up to 1,000 cartons."
     },
     "template": {
-      "identity": "Keep the prefilled supplier SKU, product, variant and units per pack unchanged. Ask the buyer to correct missing or incorrect product details.",
-      "rows": "Use one row per product in a carton. Copy a product row for additional cartons. Repeat the Carton ID for products packed together. Leave unused packing rows blank.",
-      "cartons": "Carton ID is your reference, not an Amazon label number. Give each kind of carton a letter: A1, B1, C1. For identical cartons, use a count greater than 1: A1 with count 3 becomes A1, A2 and A3. Existing IDs are skipped.",
-      "quantity": "Quantity per carton counts packs. For a 2-pack, quantity 10 means 20 pieces. Every carton in an identical group must have the same products and quantities.",
-      "measurements": "Enter dimensions in centimetres and weight in kilograms. Repeat the same count, dimensions and weight on every row sharing a Carton ID.",
-      "format": "Fill the white packing cells. Keep the English headers and Cartons sheet name unchanged. Upload the XLSX workbook or export the Cartons table as CSV."
+      "columns": {
+        "cartonId": "Your reference for a kind of carton, not an Amazon label number: a letter for each kind, numbered from 1, such as A1, B1, C1. Repeat it on each row of a carton that holds more than one product.",
+        "cartonCount": "How many identical cartons of this kind. A1 with a count of 3 becomes A1, A2 and A3. IDs the shipment already has are skipped.",
+        "supplierSku": "Prefilled from the order. Keep it as it is, and ask the buyer to correct a missing or wrong product.",
+        "quantity": "Packs of this product in each carton. For a 2-pack, 10 means 20 units.",
+        "length": "The carton’s length in centimetres.",
+        "width": "The carton’s width in centimetres.",
+        "height": "The carton’s height in centimetres.",
+        "weight": "The packed carton’s weight in kilograms.",
+        "product": "Prefilled from the order. Keep it as it is.",
+        "variant": "Prefilled from the order. Keep it as it is.",
+        "unitsPerPack": "Prefilled from the order: the units in one pack. Keep it as it is."
+      },
+      "notes": {
+        "rows": "Use one row per product in a carton. To pack a product in more kinds of carton, copy its row. Leave the rows you don’t use blank. The Example sheet shows the template filled in for this shipment.",
+        "sameCarton": "Rows with the same Carton ID are one carton: give them the same count, dimensions and weight. Identical cartons hold the same products and quantities.",
+        "format": "Fill in the white cells and keep the grey ones. Keep the English headers and the Cartons sheet name. Upload the XLSX file, or export the Cartons sheet as CSV."
+      }
     }
   },
   "palletImport": {

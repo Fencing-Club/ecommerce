@@ -622,12 +622,24 @@
       "limit": "Una spedizione può contenere fino a 1.000 cartoni."
     },
     "template": {
-      "identity": "Non modificare SKU fornitore, prodotto, variante e pezzi per confezione precompilati. Chiedi all’acquirente di correggere i dati mancanti o errati.",
-      "rows": "Usa una riga per prodotto in ogni cartone. Copia la riga del prodotto per altri cartoni. Ripeti il Carton ID per prodotti imballati insieme. Lascia vuote le celle di imballaggio inutilizzate.",
-      "cartons": "Carton ID è il tuo riferimento, non il numero di etichetta Amazon. Assegna una lettera a ogni tipo di cartone: A1, B1, C1. Per cartoni identici, indica un numero maggiore di 1: A1 con 3 genera A1, A2 e A3. Gli ID esistenti vengono saltati.",
-      "quantity": "Quantity per carton conta le confezioni. Per una confezione da 2, quantità 10 significa 20 pezzi. Tutti i cartoni di un gruppo identico devono contenere gli stessi prodotti e quantità.",
-      "measurements": "Inserisci le dimensioni in centimetri e il peso in chilogrammi. Ripeti numero di cartoni, dimensioni e peso su ogni riga con lo stesso Carton ID.",
-      "format": "Compila le celle bianche di imballaggio. Mantieni le intestazioni inglesi e il nome del foglio Cartons. Carica il file XLSX o esporta la tabella Cartons in CSV."
+      "columns": {
+        "cartonId": "Il tuo riferimento per un tipo di cartone, non il numero di etichetta Amazon: una lettera per tipo, numerata da 1, ad esempio A1, B1, C1. Ripetilo su ogni riga di un cartone con più prodotti.",
+        "cartonCount": "Quanti cartoni identici di questo tipo. A1 con 3 genera A1, A2 e A3. Gli ID che la spedizione ha già vengono saltati.",
+        "supplierSku": "Precompilato dall’ordine. Non modificarlo e chiedi all’acquirente di correggere un prodotto mancante o errato.",
+        "quantity": "Le confezioni di questo prodotto in ogni cartone. Per una confezione da 2, 10 significa 20 unità.",
+        "length": "La lunghezza del cartone in centimetri.",
+        "width": "La larghezza del cartone in centimetri.",
+        "height": "L’altezza del cartone in centimetri.",
+        "weight": "Il peso del cartone imballato in chilogrammi.",
+        "product": "Precompilato dall’ordine. Non modificarlo.",
+        "variant": "Precompilata dall’ordine. Non modificarla.",
+        "unitsPerPack": "Precompilato dall’ordine: le unità di una confezione. Non modificarlo."
+      },
+      "notes": {
+        "rows": "Usa una riga per prodotto in ogni cartone. Per imballare un prodotto in altri tipi di cartone, copia la sua riga. Lascia vuote le righe che non usi. Il foglio Example mostra il modello compilato per questa spedizione.",
+        "sameCarton": "Le righe con lo stesso Carton ID sono un solo cartone: indica lo stesso numero, le stesse dimensioni e lo stesso peso. I cartoni identici contengono gli stessi prodotti e quantità.",
+        "format": "Compila le celle bianche e lascia invariate quelle grigie. Mantieni le intestazioni inglesi e il nome del foglio Cartons. Carica il file XLSX o esporta il foglio Cartons in CSV."
+      }
     }
   },
   "palletImport": {

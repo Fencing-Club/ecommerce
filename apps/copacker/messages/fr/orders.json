@@ -622,12 +622,24 @@
       "limit": "Un envoi peut contenir jusqu’à 1 000 cartons."
     },
     "template": {
-      "identity": "Ne modifiez pas le SKU fournisseur, le produit, la variante ni le nombre de pièces par lot préremplis. Demandez à l’acheteur de corriger les données manquantes ou incorrectes.",
-      "rows": "Utilisez une ligne par produit et par carton. Copiez une ligne produit pour les cartons supplémentaires. Répétez le Carton ID pour les produits emballés ensemble. Laissez vides les cellules d’emballage inutilisées.",
-      "cartons": "Carton ID est votre référence, pas un numéro d’étiquette Amazon. Donnez une lettre à chaque type de carton : A1, B1, C1. Pour des cartons identiques, indiquez un nombre supérieur à 1 : A1 avec 3 donne A1, A2 et A3. Les identifiants existants sont ignorés.",
-      "quantity": "Quantity per carton compte les lots. Pour un lot de 2, une quantité de 10 représente 20 pièces. Les cartons d’un groupe identique doivent contenir les mêmes produits et quantités.",
-      "measurements": "Indiquez les dimensions en centimètres et le poids en kilogrammes. Répétez le nombre, les dimensions et le poids sur chaque ligne ayant le même Carton ID.",
-      "format": "Remplissez les cellules d’emballage blanches. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le classeur XLSX ou exportez la table Cartons au format CSV."
+      "columns": {
+        "cartonId": "Votre référence pour un type de carton, pas un numéro d’étiquette Amazon : une lettre par type, numérotée à partir de 1, par exemple A1, B1, C1. Répétez-la sur chaque ligne d’un carton contenant plusieurs produits.",
+        "cartonCount": "Le nombre de cartons identiques de ce type. A1 avec 3 donne A1, A2 et A3. Les identifiants que l’envoi a déjà sont ignorés.",
+        "supplierSku": "Prérempli depuis la commande. Ne le modifiez pas et demandez à l’acheteur de corriger un produit manquant ou erroné.",
+        "quantity": "Le nombre de lots de ce produit dans chaque carton. Pour un lot de 2, 10 représente 20 unités.",
+        "length": "La longueur du carton, en centimètres.",
+        "width": "La largeur du carton, en centimètres.",
+        "height": "La hauteur du carton, en centimètres.",
+        "weight": "Le poids du carton emballé, en kilogrammes.",
+        "product": "Prérempli depuis la commande. Ne le modifiez pas.",
+        "variant": "Préremplie depuis la commande. Ne la modifiez pas.",
+        "unitsPerPack": "Prérempli depuis la commande : les unités d’un lot. Ne le modifiez pas."
+      },
+      "notes": {
+        "rows": "Utilisez une ligne par produit et par carton. Pour emballer un produit dans d’autres types de carton, copiez sa ligne. Laissez vides les lignes inutilisées. La feuille Example montre le modèle rempli pour cet envoi.",
+        "sameCarton": "Les lignes ayant le même Carton ID forment un seul carton : indiquez le même nombre, les mêmes dimensions et le même poids. Les cartons identiques contiennent les mêmes produits et quantités.",
+        "format": "Remplissez les cellules blanches et ne modifiez pas les grises. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le fichier XLSX ou exportez la feuille Cartons au format CSV."
+      }
     }
   },
   "palletImport": {
