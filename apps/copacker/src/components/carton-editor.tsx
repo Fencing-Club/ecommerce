@@ -289,8 +289,9 @@ export function CartonEditor({
         })
       }
     }
+    // Of the rest, only incomplete multi-packs are about a quantity; a missing ASIN or FNSKU outlines nothing.
     return {
-      field: index >= 0 ? `items.${index}` : undefined,
+      field: issue.code === "incompletePacks" && index >= 0 ? `items.${index}` : undefined,
       message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
     }
   }
