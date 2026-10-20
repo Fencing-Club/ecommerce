@@ -25,7 +25,7 @@ import { POST as action } from "../src/server/http/api/action"
 import { GET as workspaceStatus } from "../src/server/http/api/workspace"
 import { readWorkspacesData, recoverWorkspace as recover } from "../src/server/workspace-recovery"
 import { workspaceCookie } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -45,7 +45,7 @@ const post = (name: string, data: Record<string, unknown>) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

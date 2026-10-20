@@ -53,7 +53,8 @@
     "accepted": "Angenommen",
     "declined": "Abgelehnt",
     "atForwarder": "Beim Spediteur",
-    "packed": "Verpackt"
+    "packed": "Verpackt",
+    "changesProposed": "Änderungen vorgeschlagen"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "Wartet auf {name}",
     "working": "Wird bearbeitet"
   },
-  "viewOnly": "Nur ansehen"
+  "viewOnly": "Nur ansehen",
+  "logistics": {
+    "views": {
+      "needsYou": "Ihr Handeln",
+      "draft": "Entwürfe",
+      "active": "Aktiv",
+      "closed": "Abgeschlossen",
+      "received": "Eingegangen",
+      "all": "Alle"
+    },
+    "columns": {
+      "route": "Route",
+      "shipped": "Versendet",
+      "total": "Gesamt",
+      "cartons": "Kartons",
+      "ready": "Bereit",
+      "status": "Status",
+      "waiting": "Wartet auf"
+    },
+    "filters": {
+      "supplier": "Lieferant",
+      "customer": "Kunde",
+      "allSuppliers": "Alle Lieferanten",
+      "allCustomers": "Alle Kunden",
+      "button": "Filter",
+      "label": "Listenfilter",
+      "status": "Status",
+      "destination": "Ziel",
+      "forwarder": "Spediteur",
+      "source": "Quelle",
+      "ready": "Bereitstellungsdatum",
+      "from": "Von",
+      "to": "Bis",
+      "any": "Beliebig",
+      "clear": "Filter zurücksetzen",
+      "done": "Fertig",
+      "applied": "Angewendete Filter",
+      "remove": "{name}-Filter entfernen",
+      "chip": "{name}: {value}",
+      "readyRange": "Bereitstellungsdatum: {from} bis {to}"
+    },
+    "sort": {
+      "label": "Sortieren nach {name}",
+      "newest": "Neueste",
+      "ready": "Bereitstellungsdatum"
+    },
+    "sources": {
+      "order": "Bestellung",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "Sie",
+      "buyer": "Käufer",
+      "customer": "Kunde",
+      "supplier": "Lieferant",
+      "forwarder": "Spediteur",
+      "amazon": "Amazon",
+      "carrier": "Transporteur",
+      "done": "Erledigt"
+    },
+    "selection": {
+      "count": "{count} ausgewählt",
+      "export": "Auswahl exportieren",
+      "clear": "Auswahl aufheben",
+      "select": "{reference} auswählen"
+    },
+    "columnsLabel": "Spalten",
+    "export": "Exportieren",
+    "direct": "Direkt",
+    "route": "{forwarder} nach {destination}",
+    "products": "{count, plural, one {# Produkt} other {# Produkte}}",
+    "shipped": "{shipped} von {quantity} versendet",
+    "shippedLabel": "{reference} versendet",
+    "cartons": "{count, plural, one {# Karton} other {# Kartons}}",
+    "readyOn": "Bereit am {date}",
+    "shipmentReference": "{reference}, Sendung {number}",
+    "opensInSellerCentral": "(öffnet Seller Central)",
+    "actionsColumn": "Aktionen",
+    "rowActions": "Aktionen für {reference}",
+    "viewShipment": "Sendung ansehen",
+    "viewPurchaseOrder": "Bestellung ansehen",
+    "viewOrder": "Bestellung ansehen",
+    "noMatchesDescription": "Versuchen Sie eine andere Suche oder ändern Sie Ihre Filter.",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "orders": {
+      "title": "Bestellungen",
+      "reference": "Bestellung",
+      "views": "Bestellansichten",
+      "search": "Bestellungen durchsuchen",
+      "searchPlaceholder": "Referenz, Lieferant oder Amazon-ID suchen",
+      "table": "Bestellungen",
+      "selectAll": "Alle sichtbaren Bestellungen auswählen",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# Bestellung} other {# Bestellungen}}",
+      "showing": "{from}–{to} von {count} Bestellungen",
+      "noMatches": "Keine passenden Bestellungen",
+      "empty": {
+        "needsYou": "Aktuell ist nichts von Ihnen zu tun",
+        "draft": "Keine Entwürfe",
+        "active": "Keine aktiven Bestellungen",
+        "closed": "Keine abgeschlossenen Bestellungen",
+        "received": "Keine eingegangenen Bestellungen",
+        "all": "Keine Bestellungen"
+      }
+    },
+    "shipments": {
+      "title": "Sendungen",
+      "reference": "Sendung",
+      "views": "Sendungsansichten",
+      "search": "Sendungen durchsuchen",
+      "searchPlaceholder": "Bestellung, Sendung oder Amazon-ID suchen",
+      "table": "Sendungen",
+      "selectAll": "Alle sichtbaren Sendungen auswählen",
+      "file": "shipments",
+      "count": "{count, plural, one {# Sendung} other {# Sendungen}}",
+      "showing": "{from}–{to} von {count} Sendungen",
+      "noMatches": "Keine passenden Sendungen",
+      "empty": {
+        "needsYou": "Aktuell ist nichts von Ihnen zu tun",
+        "draft": "Keine Entwürfe",
+        "active": "Keine aktiven Sendungen",
+        "closed": "Keine abgeschlossenen Sendungen",
+        "received": "Keine eingegangenen Sendungen",
+        "all": "Keine Sendungen"
+      }
+    }
+  }
 }

@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Estado de la orden de compra",
-    "tabs": {
-      "all": {
-        "label": "Todas",
-        "empty": "No hay órdenes de compra"
-      },
-      "draft": {
-        "label": "Borrador",
-        "empty": "No hay borradores"
-      },
-      "submitted": {
-        "label": "Con el proveedor",
-        "empty": "No hay órdenes de compra con proveedores"
-      },
-      "closed": {
-        "label": "Cerradas",
-        "empty": "No hay órdenes de compra cerradas"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Orden de compra",
-      "supplier": "Proveedor",
-      "destination": "Destino",
-      "created": "Creada",
-      "status": "Estado",
-      "value": "Valor"
-    },
-    "products": "{count, plural, one {# producto} other {# productos}}"
-  },
   "index": {
     "title": "Órdenes de compra",
     "supplierTitle": "Pedidos",
@@ -46,11 +16,6 @@
         "description": "Invita a tu proveedor y luego crea tu primera orden de compra.",
         "action": "Invitar a un proveedor"
       }
-    },
-    "stats": {
-      "open": "Órdenes abiertas",
-      "withSuppliers": "Con proveedores",
-      "drafts": "Borradores"
     },
     "empty": {
       "guidedTitle": "Tu próximo envío empieza aquí",

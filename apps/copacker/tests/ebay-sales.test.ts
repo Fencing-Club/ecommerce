@@ -30,8 +30,8 @@ import {
   summarizeSalesOrder
 } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
+import { applySchema } from "./database"
 import { drainSales } from "./drain-sales"
-import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -60,7 +60,7 @@ function sale(orderId: string, creationDate: string, lines: Partial<EbaySale["li
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

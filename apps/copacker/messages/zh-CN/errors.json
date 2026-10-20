@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon 没有与箱 {carton} 匹配的箱子",
   "amazonNoListing": "Amazon 上没有与 {skus} 匹配的 FBA 商品信息。请在 Amazon 上检查这些 SKU，然后发送采购订单。",
   "amazonNoOwnCarrier": "Amazon 不支持此货件使用你自己的承运商。请在 Seller Central 中预订。",
+  "amazonNoOwnFreight": "Amazon 没有为这些托盘提供使用你自己承运商的货运选项。请在 Seller Central 中预订此货件。",
   "amazonPalletSplit": "亚马逊会将托盘 {pallets} 上的纸箱发往不同仓库。请将每个仓库的纸箱放在各自的托盘上，然后重试。",
   "amazonNotUs": "此 Amazon 账号未在美国站销售",
   "amazonOrderNotForShipment": "该 Amazon 订单不属于此货件版本",

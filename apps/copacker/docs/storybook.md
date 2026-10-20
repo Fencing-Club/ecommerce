@@ -92,17 +92,12 @@ Each data set lives in `src/stories/simulators/data.ts`; the Every Error example
 
 ## Writing stories
 
-### List design review
+### Purchase order and shipment lists
 
-`Prototypes/List designs/Purchase orders` and `Prototypes/List designs/Shipments` present the approved Pen list layouts
-(`awIJu` and `OzQcA`) in the current app shell. They share `src/stories/logistics-lists.tsx` and fictional fixtures.
-Search, filters, saved views, column visibility, selection, pagination and CSV export operate on those fixtures only.
-They do not replace the live list routes yet. The older Required by column/filter is intentionally omitted;
-the current shell keeps its sidebar collapse control. Counts reflect the fixture records rather than static totals.
-Shipment tabs are Needs you, Active, Received and All; purchase orders also retain Drafts and use Closed.
-Supplier stays beside search; Status, Destination, Forwarder, Source (shipments only) and Ready date (shipments only)
-are inside Filters. Applied filters have removable chips, and dates start unset.
-Mobile stories preserve the table with horizontal scrolling; empty and no-results stories cover both lists.
+`LogisticsList` renders both live lists; see [Purchase order and shipment lists](logistics-lists.md). Its component
+stories (`Components/Purchase orders/Logistics list`) use the fictional rows from the approved Pen frames in
+`src/stories/fixtures/logistics-lists.ts`. The page stories build their rows with the server's own
+`orderListRows` and `shipmentListRows`, so a change to how rows are worked out changes the stories too.
 
 Stories use CSF Next: import the preview and build the meta and stories from it.
 
@@ -136,7 +131,8 @@ export const Default = meta.story({
   `parameters: { router: { navigation: { pathname, query } } }` for components that read the URL.
   `getStoryRouter()` exposes recorded navigate/invalidate calls for assertions.
 
-Below 640 px of content width, the list previews hide the column chooser and switch to compact rows: reference, supplier and route stay together, with status and shipment details or order totals alongside. Search occupies a full toolbar row below 760 px; sort becomes icon-only below 480 px. Tablet and desktop lists retain real columns and the column chooser; their table can scroll when the selected columns need more space.
+A play function that types needs the document focused. Vitest's browser is; a fresh load in the desktop app's browser
+pane may not be, and its typing then never reaches React. Click the page before rerunning such a story there.
 
 ## Purchase order timeline
 

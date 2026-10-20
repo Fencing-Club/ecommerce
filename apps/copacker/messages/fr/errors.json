@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon n’a aucun colis correspondant au carton {carton}",
   "amazonNoListing": "Amazon n’a aucune offre FBA correspondante pour {skus}. Vérifiez les SKU sur Amazon, puis envoyez le bon de commande.",
   "amazonNoOwnCarrier": "Amazon ne permet pas d’utiliser votre propre transporteur pour cette expédition. Réservez-la dans Seller Central.",
+  "amazonNoOwnFreight": "Amazon ne propose aucune option de fret avec votre propre transporteur pour ces palettes. Réservez l’expédition dans Seller Central.",
   "amazonPalletSplit": "Amazon envoie les cartons de la palette {pallets} vers des entrepôts différents. Placez les cartons de chaque entrepôt sur leurs propres palettes, puis réessayez.",
   "amazonNotUs": "Ce compte Amazon ne vend pas sur la place de marché US",
   "amazonOrderNotForShipment": "La commande Amazon n’appartient pas à cette révision de l’expédition",

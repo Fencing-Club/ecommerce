@@ -122,11 +122,9 @@ describe("story titles", () => {
     expect(title?.startsWith("Simulators/")).toBe(file.startsWith("src/stories/simulators/"))
   })
 
-  // Every story beside a route is that route's page story, except designs not yet built into it.
-  const routePrototypes = new Set([
-    "src/app/(portal)/orders/list.stories.tsx",
-    "src/app/(portal)/shipments/list.stories.tsx"
-  ])
+  // Every story beside a route is that route's page story, except designs not yet built into it. The order and shipment
+  // list designs are now the pages themselves, so none are waiting.
+  const routePrototypes = new Set<string>()
   it.each(stories.filter(({ file }) => file.startsWith("src/app/")))(
     "$file is a page or a listed prototype",
     ({ file, title }) => {

@@ -53,7 +53,8 @@
     "accepted": "قبول شدہ",
     "declined": "مسترد",
     "atForwarder": "فریٹ فارورڈر کے پاس",
-    "packed": "پیک ہو گیا"
+    "packed": "پیک ہو گیا",
+    "changesProposed": "تبدیلیاں تجویز کی گئیں"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "{name} کا انتظار",
     "working": "کام جاری ہے"
   },
-  "viewOnly": "صرف دیکھیں"
+  "viewOnly": "صرف دیکھیں",
+  "logistics": {
+    "views": {
+      "needsYou": "آپ کی توجہ درکار",
+      "draft": "ڈرافٹس",
+      "active": "فعال",
+      "closed": "بند",
+      "received": "موصول",
+      "all": "تمام"
+    },
+    "columns": {
+      "route": "روٹ",
+      "shipped": "بھیج دیا گیا",
+      "total": "کل",
+      "cartons": "کارٹن",
+      "ready": "تیار",
+      "status": "اسٹیٹس",
+      "waiting": "انتظار میں"
+    },
+    "filters": {
+      "supplier": "سپلائر",
+      "customer": "کسٹمر",
+      "allSuppliers": "تمام سپلائرز",
+      "allCustomers": "تمام کسٹمرز",
+      "button": "فلٹرز",
+      "label": "فہرست کے فلٹرز",
+      "status": "اسٹیٹس",
+      "destination": "منزل",
+      "forwarder": "فریٹ فارورڈر",
+      "source": "ماخذ",
+      "ready": "تیاری کی تاریخ",
+      "from": "از",
+      "to": "تا",
+      "any": "کوئی بھی",
+      "clear": "فلٹرز صاف کریں",
+      "done": "ہو گیا",
+      "applied": "لاگو فلٹرز",
+      "remove": "{name} فلٹر ہٹائیں",
+      "chip": "{name}: {value}",
+      "readyRange": "تیاری کی تاریخ: {from} سے {to} تک"
+    },
+    "sort": {
+      "label": "{name} کے مطابق ترتیب دیں",
+      "newest": "سب سے نئے",
+      "ready": "تیاری کی تاریخ"
+    },
+    "sources": {
+      "order": "خریداری آرڈر",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "آپ",
+      "buyer": "خریدار",
+      "customer": "کسٹمر",
+      "supplier": "سپلائر",
+      "forwarder": "فریٹ فارورڈر",
+      "amazon": "Amazon",
+      "carrier": "کیریئر",
+      "done": "مکمل"
+    },
+    "selection": {
+      "count": "{count} منتخب",
+      "export": "منتخب کردہ برآمد کریں",
+      "clear": "انتخاب صاف کریں",
+      "select": "{reference} منتخب کریں"
+    },
+    "columnsLabel": "کالمز",
+    "export": "برآمد کریں",
+    "direct": "براہ راست",
+    "route": "{forwarder} سے {destination} تک",
+    "products": "{count, plural, one {# پروڈکٹ} other {# پروڈکٹس}}",
+    "shipped": "{quantity} میں سے {shipped} بھیجے گئے",
+    "shippedLabel": "{reference} بھیج دیا گیا",
+    "cartons": "{count, plural, one {# کارٹن} other {# کارٹن}}",
+    "readyOn": "{date} کو تیار",
+    "shipmentReference": "{reference}، شپمنٹ {number}",
+    "opensInSellerCentral": "(Seller Central میں کھلتا ہے)",
+    "actionsColumn": "کارروائیاں",
+    "rowActions": "{reference} کے لیے کارروائیاں",
+    "viewShipment": "شپمنٹ دیکھیں",
+    "viewPurchaseOrder": "خریداری آرڈر دیکھیں",
+    "viewOrder": "خریداری آرڈر دیکھیں",
+    "noMatchesDescription": "کوئی اور تلاش آزمائیں یا اپنے فلٹرز تبدیل کریں۔",
+    "previousPage": "پچھلا صفحہ",
+    "nextPage": "اگلا صفحہ",
+    "orders": {
+      "title": "خریداری آرڈرز",
+      "reference": "خریداری آرڈر",
+      "views": "خریداری آرڈرز کے ویوز",
+      "search": "خریداری آرڈرز تلاش کریں",
+      "searchPlaceholder": "ریفرنس، سپلائر یا Amazon ID سے تلاش کریں",
+      "table": "خریداری آرڈرز",
+      "selectAll": "تمام نظر آنے والے خریداری آرڈرز منتخب کریں",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# خریداری آرڈر} other {# خریداری آرڈرز}}",
+      "showing": "{count} خریداری آرڈرز میں سے {from}–{to} دکھائے جا رہے ہیں",
+      "noMatches": "کوئی مطابقت رکھنے والا خریداری آرڈر نہیں",
+      "empty": {
+        "needsYou": "ابھی آپ کے لیے کچھ نہیں",
+        "draft": "کوئی ڈرافٹ نہیں",
+        "active": "کوئی فعال خریداری آرڈر نہیں",
+        "closed": "کوئی بند خریداری آرڈر نہیں",
+        "received": "کوئی موصول شدہ خریداری آرڈر نہیں",
+        "all": "کوئی خریداری آرڈر نہیں"
+      }
+    },
+    "shipments": {
+      "title": "شپمنٹس",
+      "reference": "شپمنٹ",
+      "views": "شپمنٹس کے ویوز",
+      "search": "شپمنٹس تلاش کریں",
+      "searchPlaceholder": "خریداری آرڈر، شپمنٹ یا Amazon ID سے تلاش کریں",
+      "table": "شپمنٹس",
+      "selectAll": "تمام نظر آنے والی شپمنٹس منتخب کریں",
+      "file": "shipments",
+      "count": "{count, plural, one {# شپمنٹ} other {# شپمنٹس}}",
+      "showing": "{count} شپمنٹس میں سے {from}–{to} دکھائی جا رہی ہیں",
+      "noMatches": "کوئی مطابقت رکھنے والی شپمنٹ نہیں",
+      "empty": {
+        "needsYou": "ابھی آپ کے لیے کچھ نہیں",
+        "draft": "کوئی ڈرافٹ نہیں",
+        "active": "کوئی فعال شپمنٹ نہیں",
+        "closed": "کوئی بند شپمنٹ نہیں",
+        "received": "کوئی موصول شدہ شپمنٹ نہیں",
+        "all": "کوئی شپمنٹ نہیں"
+      }
+    }
+  }
 }

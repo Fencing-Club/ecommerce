@@ -9,10 +9,10 @@ test.use({ role: "buyer" })
 async function shipmentRow(page: Page, tab: string) {
   await page.goto("/shipments")
   await page
-    .getByRole("navigation", { name: "Shipment status" })
+    .getByRole("navigation", { name: "Shipment views" })
     .getByRole("link", { name: new RegExp(`^${tab}`) })
     .click()
-  return page.getByRole("row", { name: /^E2E-FULFILL / })
+  return page.getByRole("row", { name: /^E2E-FULFILL, shipment / })
 }
 
 // E2E-FULFILL passes through E2E Forwarder: the buyer sends it, the supplier packs it (with a correction on the way),

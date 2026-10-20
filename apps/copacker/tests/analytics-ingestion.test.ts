@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, graphql: vi.fn<(query: string) => Promise<unknown>>() }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { syncAmazonExtraEvidence } from "../src/server/amazon-extra-evidence"
@@ -22,7 +22,7 @@ const pg = new PGlite(),
   otherId = randomUUID()
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

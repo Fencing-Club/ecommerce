@@ -53,7 +53,8 @@
     "accepted": "Прийнято",
     "declined": "Відхилено",
     "atForwarder": "В експедитора",
-    "packed": "Упаковано"
+    "packed": "Упаковано",
+    "changesProposed": "Запропоновано зміни"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "Очікуємо на {name}",
     "working": "Опрацьовується"
   },
-  "viewOnly": "Лише перегляд"
+  "viewOnly": "Лише перегляд",
+  "logistics": {
+    "views": {
+      "needsYou": "Потрібна ваша дія",
+      "draft": "Чернетки",
+      "active": "Активні",
+      "closed": "Закриті",
+      "received": "Отримані",
+      "all": "Усі"
+    },
+    "columns": {
+      "route": "Маршрут",
+      "shipped": "Відправлено",
+      "total": "Усього",
+      "cartons": "Коробки",
+      "ready": "Готовність",
+      "status": "Статус",
+      "waiting": "Очікує"
+    },
+    "filters": {
+      "supplier": "Постачальник",
+      "customer": "Клієнт",
+      "allSuppliers": "Усі постачальники",
+      "allCustomers": "Усі клієнти",
+      "button": "Фільтри",
+      "label": "Фільтри списку",
+      "status": "Статус",
+      "destination": "Пункт призначення",
+      "forwarder": "Експедитор",
+      "source": "Джерело",
+      "ready": "Дата готовності",
+      "from": "Від",
+      "to": "До",
+      "any": "Будь-який",
+      "clear": "Очистити фільтри",
+      "done": "Готово",
+      "applied": "Застосовані фільтри",
+      "remove": "Видалити фільтр «{name}»",
+      "chip": "{name}: {value}",
+      "readyRange": "Дата готовності: від {from} до {to}"
+    },
+    "sort": {
+      "label": "Сортувати за: {name}",
+      "newest": "Найновіші",
+      "ready": "Дата готовності"
+    },
+    "sources": {
+      "order": "Замовлення на закупівлю",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "Ви",
+      "buyer": "Покупець",
+      "customer": "Клієнт",
+      "supplier": "Постачальник",
+      "forwarder": "Експедитор",
+      "amazon": "Amazon",
+      "carrier": "Перевізник",
+      "done": "Завершено"
+    },
+    "selection": {
+      "count": "Вибрано: {count}",
+      "export": "Експортувати вибране",
+      "clear": "Скасувати вибір",
+      "select": "Вибрати {reference}"
+    },
+    "columnsLabel": "Стовпці",
+    "export": "Експортувати",
+    "direct": "Напряму",
+    "route": "{forwarder} до {destination}",
+    "products": "{count, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}",
+    "shipped": "Відправлено {shipped} із {quantity}",
+    "shippedLabel": "{reference}: відправлено",
+    "cartons": "{count, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}",
+    "readyOn": "Готово {date}",
+    "shipmentReference": "{reference}, відправлення {number}",
+    "opensInSellerCentral": "(відкриється в Seller Central)",
+    "actionsColumn": "Дії",
+    "rowActions": "Дії для {reference}",
+    "viewShipment": "Переглянути відправлення",
+    "viewPurchaseOrder": "Переглянути замовлення на закупівлю",
+    "viewOrder": "Переглянути замовлення на закупівлю",
+    "noMatchesDescription": "Спробуйте інший пошук або змініть фільтри.",
+    "previousPage": "Попередня сторінка",
+    "nextPage": "Наступна сторінка",
+    "orders": {
+      "title": "Замовлення на закупівлю",
+      "reference": "Замовлення на закупівлю",
+      "views": "Подання замовлень на закупівлю",
+      "search": "Пошук замовлень на закупівлю",
+      "searchPlaceholder": "Шукайте за номером, постачальником або ID Amazon",
+      "table": "Замовлення на закупівлю",
+      "selectAll": "Вибрати всі видимі замовлення на закупівлю",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# замовлення на закупівлю} few {# замовлення на закупівлю} many {# замовлень на закупівлю} other {# замовлення на закупівлю}}",
+      "showing": "Показано {from}–{to} із {count} замовлень на закупівлю",
+      "noMatches": "Немає відповідних замовлень на закупівлю",
+      "empty": {
+        "needsYou": "Наразі від вас нічого не потрібно",
+        "draft": "Немає чернеток",
+        "active": "Немає активних замовлень на закупівлю",
+        "closed": "Немає закритих замовлень на закупівлю",
+        "received": "Немає отриманих замовлень на закупівлю",
+        "all": "Немає замовлень на закупівлю"
+      }
+    },
+    "shipments": {
+      "title": "Відправлення",
+      "reference": "Відправлення",
+      "views": "Подання відправлень",
+      "search": "Пошук відправлень",
+      "searchPlaceholder": "Шукайте за замовленням на закупівлю, відправленням або ID Amazon",
+      "table": "Відправлення",
+      "selectAll": "Вибрати всі видимі відправлення",
+      "file": "shipments",
+      "count": "{count, plural, one {# відправлення} few {# відправлення} many {# відправлень} other {# відправлення}}",
+      "showing": "Показано {from}–{to} із {count} відправлень",
+      "noMatches": "Немає відповідних відправлень",
+      "empty": {
+        "needsYou": "Наразі від вас нічого не потрібно",
+        "draft": "Немає чернеток",
+        "active": "Немає активних відправлень",
+        "closed": "Немає закритих відправлень",
+        "received": "Немає отриманих відправлень",
+        "all": "Немає відправлень"
+      }
+    }
+  }
 }

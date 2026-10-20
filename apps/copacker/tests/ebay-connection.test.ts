@@ -21,7 +21,7 @@ import { AccessError } from "../src/i18n/errors"
 import { connection, disconnect } from "../src/server/connections"
 import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt, hash } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -32,7 +32,7 @@ const params = { params: { provider: "ebay" } }
 beforeAll(async () => {
   context.current = database
   context.orgId = orgId
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon has no box matching carton {carton}",
   "amazonNoListing": "Amazon has no matching FBA listing for {skus}. Check the SKUs on Amazon, then send the purchase order.",
   "amazonNoOwnCarrier": "Amazon offers no way to use your own carrier for this shipment. Book it in Seller Central.",
+  "amazonNoOwnFreight": "Amazon offers no freight option with your own carrier for these pallets. Book the shipment in Seller Central.",
   "amazonPalletSplit": "Amazon is sending the cartons on pallet {pallets} to different warehouses. Put each warehouse’s cartons on their own pallets, then try again.",
   "amazonNotUs": "This Amazon account doesn’t sell in the US marketplace",
   "amazonOrderNotForShipment": "Amazon order doesn’t belong to this shipment revision",

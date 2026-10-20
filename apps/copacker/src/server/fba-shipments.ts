@@ -146,7 +146,9 @@ export function choosePlacementOption(options: FbaPlacementOption[]) {
 export function chooseTransportationOption(options: FbaTransportationOption[], palletized = false) {
   const own = options.filter((option) => option.shippingSolution === "USE_YOUR_OWN_CARRIER")
   const modes = palletized ? ["FREIGHT_LTL", "FREIGHT_FTL_PALLET"] : ["GROUND_SMALL_PARCEL"]
-  return modes.map((mode) => own.find((option) => option.shippingMode === mode)).find(Boolean) ?? own.at(0) ?? null
+  const preferred = modes.map((mode) => own.find((option) => option.shippingMode === mode)).find(Boolean)
+  // Pallets go as freight or not at all: Amazon prints pallet labels only for a confirmed LTL or FTL shipment.
+  return preferred ?? (palletized ? null : (own.at(0) ?? null))
 }
 
 // What Amazon is told about each shipment's pallets, when the cartons are on pallets: its whole pallets, identical ones
@@ -222,6 +224,9 @@ export function matchBoxes(
 // label. Amazon does most steps in the background, so the job waits on each one's operation and runs again.
 // A palletized shipment's pallet labels as one file. Amazon prints four for each pallet, one for each side, for each
 // Amazon shipment's pallets in order; the file keeps each pallet's labels together, the pallets in packing order.
+// Amazon prints four labels for each pallet, one for each side, a page each on plain paper.
+const labelsPerPallet = 4
+
 export async function fbaPalletLabelFile(
   api: Pick<Amazon, "fbaPalletLabels">,
   pallets: ReadonlyArray<Pick<Pallet, "palletId" | "cartonIds">>,
@@ -237,14 +242,13 @@ export async function fbaPalletLabelFile(
     const url = await api.fbaPalletLabels(amazonShipmentId, shipmentPallets.length)
     const [file] = await unpackLabels(await downloadAmazonLabels(url))
     const pages = await splitPdfPages(file!.data)
-    if (!pages.length || pages.length % shipmentPallets.length) {
+    if (pages.length !== shipmentPallets.length * labelsPerPallet) {
       throw new Error("Amazon's pallet labels don't match the shipment's pallets")
     }
-    const each = pages.length / shipmentPallets.length
     for (const [index, pallet] of shipmentPallets.entries()) {
       sheets.set(
         pallet.palletId,
-        pages.slice(index * each, (index + 1) * each).map((page) => page.data)
+        pages.slice(index * labelsPerPallet, (index + 1) * labelsPerPallet).map((page) => page.data)
       )
     }
   }
@@ -418,7 +422,7 @@ export async function fbaShipmentJob(
     const offered = listed.map(({ shipment: row, options }) => {
       const option = chooseTransportationOption(options, packing.palletized)
       if (!option) {
-        throw new LocalizedError("amazonNoOwnCarrier")
+        throw new LocalizedError(packing.palletized ? "amazonNoOwnFreight" : "amazonNoOwnCarrier")
       }
       return { shipment: row, option }
     })

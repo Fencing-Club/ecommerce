@@ -240,8 +240,6 @@ In order, each as its own migration:
    - Then drop `supplier_products.onHand` and `shipments.stockTaken`.
 4. **Status values:** add them to `orders.status` and `shipments.status`, with the new columns.
 
-After each migration is deployed, add its hash to `apps/copacker/tests/migrations.test.ts`, as the repo requires.
-
 ## Code this replaces
 
 - `src/server/supplier-stock.ts` becomes the ledger module:

@@ -10,7 +10,7 @@ import { resolveLocalization, withLocalization } from "../src/server/localizatio
 import type { StoredFile } from "../src/server/storage"
 import { workspaceSession, type Session } from "../src/server/workspace-session"
 import { orderData } from "../src/stories/fixtures/orders"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const context = vi.hoisted(() => ({
   database: null as unknown,
@@ -51,7 +51,7 @@ function storedFile(): StoredFile {
 
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

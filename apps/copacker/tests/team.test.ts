@@ -17,7 +17,7 @@ import {
   teamOf,
   transferOwnership
 } from "../src/server/team"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -28,7 +28,7 @@ const s = { org, user: owner }
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
