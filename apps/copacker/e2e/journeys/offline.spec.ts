@@ -38,7 +38,9 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByText("Commercial invoice", { exact: true })).toHaveCount(0)
     await expect(page.getByRole("textbox", { name: "Supplier SKU" })).toHaveCount(0)
     await expect(page.getByText("No cartons yet")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    // Until every unit is packed, the packing form only saves a draft.
+    await expect(page.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled()
   })
 
   await test.step("enter the pickup address the supplier emailed", async () => {
@@ -80,8 +82,9 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("button", { name: "Finish packing" }).click()
     // Submitting makes the shipment's documents, which takes a while on a busy machine.
     await expect(titleStatus(page)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("grip-left")
-    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("grip-right")
+    // Packed cartons list each product by the supplier's SKU.
+    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("GRIP-L")
+    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("GRIP-R")
     await expect(page.getByText("200 Factory Road")).toBeVisible()
     await expect(page.getByRole("note").filter({ hasText: "Supplier packet ready" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute(

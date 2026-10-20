@@ -248,12 +248,13 @@ export const NoSearchResults = meta.story({
   play: async () => {
     const dialog = await bookingDialog("Link your Amazon shipment")
     const search = dialog.getByRole("searchbox", { name: "Search by name or ID" })
-    const picker = search.closest("[data-slot=shipment-picker]")
-    const height = picker?.getBoundingClientRect().height
+    const picker = search.closest<HTMLElement>("[data-slot=shipment-picker]")
+    // Layout height, which the dialog's opening zoom doesn't scale.
+    const height = picker?.offsetHeight
     await userEvent.type(search, "FBA19Q7M2KLX")
     await expect(dialog.getByText("No shipments found")).toBeVisible()
     await expect(dialog.getByText("Check the ID, or refresh in a few minutes.")).toBeVisible()
-    await expect(picker?.getBoundingClientRect().height).toBe(height)
+    await expect(picker?.offsetHeight).toBe(height)
     await expect(dialog.getByRole("button", { name: "Link shipment" })).toBeEnabled()
   }
 })
