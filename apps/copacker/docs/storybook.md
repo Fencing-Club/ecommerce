@@ -140,7 +140,7 @@ product codes with the existing printable generators. The prototype
 uses local packing state and does not persist documents or alter production release/access rules.
 
 Product SKU/FNSKU and suffocation downloads use the existing shared printable label generators. Country-of-origin and choking-hazard label files are unavailable until supplied; the menu never substitutes a placeholder for these files.
-`DetailFields` renders the shared label-above-value fields for PO details and shipment summaries. The packing form supplies live carton, weight, and volume totals to its sidebar slot.
+`DetailFields` renders the shared label-above-value fields for PO details and shipment summaries. The packing form supplies live carton, unit, weight, and volume totals to its sidebar slot.
 
 Product rows in the purchase-order prototype and shipment Products table reuse `ProductDownloadsMenu` with an
 icon trigger. Row downloads contain only that variant; page-level menus retain bulk downloads.

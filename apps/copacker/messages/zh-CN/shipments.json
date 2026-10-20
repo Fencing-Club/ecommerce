@@ -121,6 +121,7 @@
       "title": "货件详情",
       "readyDate": "备货日期",
       "cartons": "箱数",
+      "units": "件数",
       "grossWeight": "毛重",
       "volume": "体积"
     },

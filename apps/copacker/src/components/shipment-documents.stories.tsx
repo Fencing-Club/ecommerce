@@ -8,7 +8,7 @@ const meta = preview.meta({
   render: (args) => (
     <aside className="w-full max-w-80 space-y-6">
       <ShipmentDocuments {...args} />
-      <ShipmentDetails readyDate="2026-10-21" cartons={5} weight={34.5} volume={0.53} />
+      <ShipmentDetails readyDate="2026-10-21" cartons={5} units={120} weight={34.5} volume={0.53} />
     </aside>
   ),
   args: {
