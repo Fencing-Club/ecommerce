@@ -50,6 +50,9 @@ const centimetresPerInch = 2.54
 const kilogramsPerPound = 0.45359237
 // Drops floating-point noise from a conversion, so 36 in is 91.44 cm, not 91.44000000000001.
 const exact = (value: number) => Number(value.toPrecision(12))
+// Rounds a converted limit down to the hundredth, so the limit shown is one a carton can meet: 50 lb is 22.6796185 kg,
+// shown as 22.67 kg, since 22.68 kg is over 50 lb.
+const hundredthsDown = (value: number) => Math.floor(exact(value * 100)) / 100
 
 // A size limit in both units, longest side first, and whether every side is the same, as messages put it.
 export function sizeLimit(rule: Extract<CartonRule, { type: "maxSize" }>) {
@@ -66,11 +69,12 @@ export function sizeLimit(rule: Extract<CartonRule, { type: "maxSize" }>) {
   }
 }
 
-// A weight limit in both units.
+// A weight limit in both units, the converted one rounded down to the hundredth. Cartons are checked against the
+// kilograms shown.
 export function weightLimit(rule: Extract<CartonRule, { type: "maxWeight" }>) {
   return {
-    maxKg: exact(rule.unit === "kg" ? rule.weight : rule.weight * kilogramsPerPound),
-    maxLb: exact(rule.unit === "lb" ? rule.weight : rule.weight / kilogramsPerPound)
+    maxKg: rule.unit === "kg" ? rule.weight : hundredthsDown(rule.weight * kilogramsPerPound),
+    maxLb: rule.unit === "lb" ? rule.weight : hundredthsDown(rule.weight / kilogramsPerPound)
   }
 }
 
