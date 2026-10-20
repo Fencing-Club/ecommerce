@@ -1,11 +1,11 @@
-import type { Address, OrderInput, PackingDraft } from "@repo/aisle"
+import type { Address, OrderInput, Packing, PackingDraft } from "@repo/aisle"
 import { orderData, orderItem } from "./orders"
 
 // Shipment 1 of PO38 from the 06 packing boards: Northwind Textiles packs three towels for Amazon AWD US, by way of
-// Bayline Freight's Ningbo warehouse.
+// Bayline Freight's Ningbo warehouse. Mei Chen is the factory's contact.
 export const northwindFactory: Address = {
-  name: "Northwind Textiles / Main factory",
-  phoneNumber: "+865745550100",
+  name: "Mei Chen",
+  phoneNumber: "+8657455550100",
   email: "",
   addressLine1: "88 Harbour Road",
   addressLine2: "",
@@ -71,35 +71,41 @@ export const towelOrder: OrderInput = orderData({
   ]
 })
 
-// Cartons 1–10 and 17–18 are complete; cartons 11–16 have no weight yet and leave 36 Sage towels unpacked. Complete, they
-// weigh 15.2 kg and hold 30 each, so every unit is packed.
-export function towelPackingDraft({ complete = false }: { complete?: boolean } = {}): PackingDraft {
-  const [natural, sage, teaTowel] = towelOrder.items
-  const cartons = (
-    from: number,
-    to: number,
-    size: [number, number, number],
-    weight: number | undefined,
-    itemId: string,
-    pieces: number
-  ) =>
-    Array.from({ length: to - from + 1 }, (_, index) => ({
-      cartonId: String(from + index),
-      length: size[0],
-      width: size[1],
-      height: size[2],
-      ...(weight === undefined ? {} : { weight }),
-      items: [{ itemId, pieces }]
-    }))
+const [natural, sage, teaTowel] = towelOrder.items
+// Identical cartons numbered from `from` to `to`, each holding the same product.
+const cartonRange = (from: number, to: number, size: [number, number, number], itemId: string, pieces: number) =>
+  Array.from({ length: to - from + 1 }, (_, index) => ({
+    cartonId: String(from + index),
+    length: size[0],
+    width: size[1],
+    height: size[2],
+    items: [{ itemId, pieces }]
+  }))
+const weighing = (weight: number) => (carton: ReturnType<typeof cartonRange>[number]) => ({ ...carton, weight })
+
+// Cartons 1–10 and 17–18 are complete; cartons 11–16 have no weight yet and leave 36 Sage towels unpacked.
+export function towelPackingDraft(): PackingDraft {
   return {
     readyDate: "2026-10-20",
     origin: northwindFactory,
     cartons: [
-      ...cartons(1, 10, [60, 40, 40], 12.4, natural!.id, 24),
-      ...(complete
-        ? cartons(11, 16, [60, 40, 50], 15.2, sage!.id, 30)
-        : cartons(11, 16, [60, 40, 50], undefined, sage!.id, 24)),
-      ...cartons(17, 18, [50, 35, 30], 7.8, teaTowel!.id, 60)
+      ...cartonRange(1, 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
+      ...cartonRange(11, 16, [60, 40, 50], sage!.id, 24),
+      ...cartonRange(17, 18, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
+    ],
+    changes: []
+  }
+}
+
+// Packing finished: cartons 11–16 weigh 15.2 kg and hold 30 each, so every unit is packed.
+export function towelPacking(): Packing {
+  return {
+    readyDate: "2026-10-20",
+    origin: northwindFactory,
+    cartons: [
+      ...cartonRange(1, 10, [60, 40, 40], natural!.id, 24).map(weighing(12.4)),
+      ...cartonRange(11, 16, [60, 40, 50], sage!.id, 30).map(weighing(15.2)),
+      ...cartonRange(17, 18, [50, 35, 30], teaTowel!.id, 60).map(weighing(7.8))
     ],
     changes: []
   }

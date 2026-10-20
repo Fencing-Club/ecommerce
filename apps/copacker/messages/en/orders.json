@@ -319,6 +319,7 @@
       "packingSplit": "Packing submitted; split into {networks} shipments and queued for Amazon",
       "forwarderShipped": "{forwarder} shipped the goods: {tracking}",
       "packingReady": "Packing submitted; ready to ship",
+      "packingReopened": "Packing reopened for changes",
       "invoiceEntered": "Invoice entered with changes to the purchase order",
       "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval",
       "existingAwdLinked": "Linked existing AWD shipment {shipmentId}",

@@ -51,7 +51,6 @@
     },
     "metaTitle": "شپمنٹ",
     "title": "شپمنٹ {number}",
-    "cartonCount": "{count, plural, one {# کارٹن} other {# کارٹن}}",
     "parents": {
       "purchaseOrders": "خریداری آرڈرز",
       "orders": "آرڈرز"
@@ -63,7 +62,8 @@
       "retry": "شپمنٹ دوبارہ آزمائیں",
       "cancelInAmazon": "Amazon میں منسوخ کریں",
       "getAmazonLabels": "Amazon لیبل حاصل کریں",
-      "createAmazonShipment": "Amazon شپمنٹ بنائیں"
+      "createAmazonShipment": "Amazon شپمنٹ بنائیں",
+      "editPacking": "پیکنگ میں ترمیم کریں"
     },
     "needsAttention": "توجہ درکار",
     "changesWaiting": {

@@ -319,6 +319,7 @@
       "packingSplit": "Emballage envoyé ; divisé en expéditions {networks} et mis en file d’attente pour Amazon",
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
+      "packingReopened": "Emballage rouvert pour modification",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
       "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
       "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",

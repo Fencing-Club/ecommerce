@@ -51,7 +51,6 @@
     },
     "metaTitle": "货件",
     "title": "货件 {number}",
-    "cartonCount": "{count, plural, other {# 箱}}",
     "parents": {
       "purchaseOrders": "采购订单",
       "orders": "订单"
@@ -63,7 +62,8 @@
       "retry": "重试货件",
       "cancelInAmazon": "在 Amazon 中取消",
       "getAmazonLabels": "获取 Amazon 标签",
-      "createAmazonShipment": "创建 Amazon 货件"
+      "createAmazonShipment": "创建 Amazon 货件",
+      "editPacking": "编辑装箱"
     },
     "needsAttention": "需要处理",
     "changesWaiting": {

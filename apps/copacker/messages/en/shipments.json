@@ -51,7 +51,6 @@
     },
     "metaTitle": "Shipment",
     "title": "Shipment {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Purchase orders",
       "orders": "Orders"
@@ -63,7 +62,8 @@
       "retry": "Retry shipment",
       "cancelInAmazon": "Cancel in Amazon",
       "getAmazonLabels": "Get Amazon labels",
-      "createAmazonShipment": "Create Amazon shipment"
+      "createAmazonShipment": "Create Amazon shipment",
+      "editPacking": "Edit packing"
     },
     "needsAttention": "Needs attention",
     "changesWaiting": {

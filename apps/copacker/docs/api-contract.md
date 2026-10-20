@@ -134,6 +134,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.check | id, optional packing | Shipments: Edit. Read-only preflight of the given packing or the saved draft |
 | shipment.submit | id, revision, optional packing | Shipments: Edit. Submits packing, reserves quantities, then queues approval, Amazon creation, or (not to Amazon) marks it ready; returns `{approval}` |
 | shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit, prices. Approves the invoice's changes as the PO's next revision, saves supplier SKUs, and with updateCost writes unit costs to Shopify |
+| shipment.reopenPacking | id, revision | Shipments: Edit. Returns a packed shipment to packing, with its cartons as the draft, until the buyer starts the Amazon shipment |
 | shipment.correct | id, reason | Shipments: Edit. Moves the shipment to correction and outdates its documents |
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |

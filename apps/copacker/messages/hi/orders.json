@@ -319,6 +319,7 @@
       "packingSplit": "पैकिंग सबमिट की गई; {networks} शिपमेंट में बांटी गई और Amazon के लिए कतार में है",
       "forwarderShipped": "{forwarder} ने सामान शिप कर दिया: {tracking}",
       "packingReady": "पैकिंग सबमिट की गई; शिप करने के लिए तैयार",
+      "packingReopened": "बदलाव के लिए पैकिंग फिर से खोली गई",
       "invoiceEntered": "खरीद ऑर्डर में बदलावों के साथ इनवॉइस दर्ज किया गया",
       "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए",
       "existingAwdLinked": "मौजूदा AWD शिपमेंट {shipmentId} लिंक किया गया",

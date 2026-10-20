@@ -51,7 +51,6 @@
     },
     "metaTitle": "Expédition",
     "title": "Expédition {number}",
-    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "parents": {
       "purchaseOrders": "Bons de commande",
       "orders": "Commandes"
@@ -63,7 +62,8 @@
       "retry": "Relancer l’expédition",
       "cancelInAmazon": "Annuler dans Amazon",
       "getAmazonLabels": "Obtenir les étiquettes Amazon",
-      "createAmazonShipment": "Créer l’expédition Amazon"
+      "createAmazonShipment": "Créer l’expédition Amazon",
+      "editPacking": "Modifier l’emballage"
     },
     "needsAttention": "À traiter",
     "changesWaiting": {

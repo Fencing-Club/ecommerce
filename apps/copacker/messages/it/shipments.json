@@ -51,7 +51,6 @@
     },
     "metaTitle": "Spedizione",
     "title": "Spedizione {number}",
-    "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
     "parents": {
       "purchaseOrders": "Ordini di acquisto",
       "orders": "Ordini"
@@ -63,7 +62,8 @@
       "retry": "Riprova spedizione",
       "cancelInAmazon": "Annulla su Amazon",
       "getAmazonLabels": "Ottieni etichette Amazon",
-      "createAmazonShipment": "Crea spedizione Amazon"
+      "createAmazonShipment": "Crea spedizione Amazon",
+      "editPacking": "Modifica imballaggio"
     },
     "needsAttention": "Richiede attenzione",
     "changesWaiting": {

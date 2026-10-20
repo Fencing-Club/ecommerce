@@ -319,6 +319,7 @@
       "packingSplit": "Packliste gesendet; in {networks} Sendungen aufgeteilt und für Amazon in die Warteschlange gestellt",
       "forwarderShipped": "{forwarder} hat die Ware versendet: {tracking}",
       "packingReady": "Packliste gesendet; versandbereit",
+      "packingReopened": "Verpackung für Änderungen wieder geöffnet",
       "invoiceEntered": "Rechnung mit Änderungen an der Bestellung erfasst",
       "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet",
       "existingAwdLinked": "Vorhandene AWD-Sendung {shipmentId} verknüpft",

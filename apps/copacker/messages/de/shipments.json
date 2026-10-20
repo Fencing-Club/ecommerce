@@ -51,7 +51,6 @@
     },
     "metaTitle": "Sendung",
     "title": "Sendung {number}",
-    "cartonCount": "{count, plural, one {# Karton} other {# Kartons}}",
     "parents": {
       "purchaseOrders": "Bestellungen",
       "orders": "Aufträge"
@@ -63,7 +62,8 @@
       "retry": "Sendung erneut versuchen",
       "cancelInAmazon": "In Amazon stornieren",
       "getAmazonLabels": "Amazon-Etiketten abrufen",
-      "createAmazonShipment": "Amazon-Sendung erstellen"
+      "createAmazonShipment": "Amazon-Sendung erstellen",
+      "editPacking": "Verpackung bearbeiten"
     },
     "needsAttention": "Handlungsbedarf",
     "changesWaiting": {

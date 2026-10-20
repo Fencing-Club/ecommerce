@@ -51,7 +51,6 @@
     },
     "metaTitle": "Відправлення",
     "title": "Відправлення {number}",
-    "cartonCount": "{count, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}",
     "parents": {
       "purchaseOrders": "Замовлення на закупівлю",
       "orders": "Замовлення"
@@ -63,7 +62,8 @@
       "retry": "Повторити відправлення",
       "cancelInAmazon": "Скасувати в Amazon",
       "getAmazonLabels": "Отримати етикетки Amazon",
-      "createAmazonShipment": "Створити відправлення Amazon"
+      "createAmazonShipment": "Створити відправлення Amazon",
+      "editPacking": "Редагувати пакування"
     },
     "needsAttention": "Потребує уваги",
     "changesWaiting": {

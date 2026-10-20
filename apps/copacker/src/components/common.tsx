@@ -26,7 +26,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   closed: { label: "closed", tone: "neutral" },
   // Shipments
   packing: { label: "packing", tone: "info" },
-  packed: { label: "packed", tone: "info" },
+  packed: { label: "packed", tone: "success" },
   approval: { label: "approval", tone: "warning" },
   queued: { label: "creatingShipment", tone: "info" },
   creating: { label: "creatingShipment", tone: "info" },

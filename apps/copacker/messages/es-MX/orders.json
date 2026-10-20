@@ -319,6 +319,7 @@
       "packingSplit": "Empaque enviado; dividido en envíos a {networks} y en cola para Amazon",
       "forwarderShipped": "{forwarder} envió la mercancía: {tracking}",
       "packingReady": "Empaque enviado; listo para enviar",
+      "packingReopened": "Empaque reabierto para hacer cambios",
       "invoiceEntered": "Factura registrada con cambios en la orden de compra",
       "invoiceChangesSubmitted": "El proveedor envió cambios de la factura para aprobación",
       "existingAwdLinked": "Se vinculó el envío AWD existente {shipmentId}",

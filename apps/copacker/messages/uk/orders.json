@@ -319,6 +319,7 @@
       "packingSplit": "Пакування надіслано; розділено на відправлення {networks} і поставлено в чергу для Amazon",
       "forwarderShipped": "{forwarder} відвантажив товар: {tracking}",
       "packingReady": "Пакування надіслано; готово до відправлення",
+      "packingReopened": "Пакування знову відкрито для змін",
       "invoiceEntered": "Рахунок внесено зі змінами до замовлення на закупівлю",
       "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення",
       "existingAwdLinked": "Пов’язано наявне відправлення AWD {shipmentId}",

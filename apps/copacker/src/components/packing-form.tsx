@@ -25,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { cartonTotals, expandCartonGroups, groupCartons, nextCartonId, packingEditorSchema } from "@/lib/carton-groups"
+import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
 import { CartonEditor } from "./carton-editor"
@@ -88,6 +89,9 @@ export function PackingForm({
   renderHeader,
   renderSidebar,
   renderProductActions,
+  renderCartonNote,
+  notices,
+  footer,
   readOnly = false,
   onSubmitted
 }: {
@@ -99,6 +103,11 @@ export function PackingForm({
     volume: number | null
   }) => React.ReactNode
   renderProductActions?: (item: OrderInput["items"][number]) => React.ReactNode
+  // Beneath a carton group, given its carton IDs, such as the Amazon label each carton carries.
+  renderCartonNote?: (cartonIds: string[]) => React.ReactNode
+  // The shipment's state and its next step, first in the column beside the sidebar; and what follows the cartons.
+  notices?: React.ReactNode
+  footer?: React.ReactNode
   heading?: React.ReactNode
   // The page's own header, given the form's actions to show beside the title.
   renderHeader?: (actions: React.ReactNode) => React.ReactNode
@@ -173,11 +182,16 @@ export function PackingForm({
     const result = cartonInputSchema.safeParse(carton)
     return result.success ? [result.data] : []
   })
-  const packingIssues = validatePacking(
-    order,
-    { cartons: completeCartons, changes: [] },
-    Object.fromEntries(order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))]))
-  ).issues
+  // Read-only cartons show as they are, without the packing checks.
+  const packingIssues = readOnly
+    ? []
+    : validatePacking(
+        order,
+        { cartons: completeCartons, changes: [] },
+        Object.fromEntries(
+          order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
+        )
+      ).issues
   const issueText = (issue: (typeof packingIssues)[number]) =>
     "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
   // Drafts save incomplete values; submission runs authoritative checks after field validation.
@@ -312,6 +326,7 @@ export function PackingForm({
           className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
         >
           <div className="flex min-w-0 flex-col gap-6">
+            {notices}
             {linkedId !== undefined && (
               <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
             )}
@@ -504,7 +519,8 @@ export function PackingForm({
                           return { message: issueText(issue), field, fields: issue.fields }
                         })
                         .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
-                      return (
+                      const note = renderCartonNote?.(ids)
+                      const editor = (
                         <CartonEditor
                           key={carton.id}
                           value={value}
@@ -534,6 +550,14 @@ export function PackingForm({
                           onDelete={() => cartons.remove(index)}
                         />
                       )
+                      return note ? (
+                        <div key={carton.id} className="flex flex-col gap-2">
+                          {editor}
+                          {note}
+                        </div>
+                      ) : (
+                        editor
+                      )
                     })}
                   </div>
                 )}
@@ -544,97 +568,103 @@ export function PackingForm({
                 {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
               </section>
             </form>
-            <div
-              className={cn(
-                "flex flex-col gap-3 text-sm",
-                !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
-              )}
-            >
-              {packingIssues.some((issue) => !issue.cartonId) && (
-                <ul aria-live="polite" className="text-sm text-destructive">
-                  {packingIssues
-                    .filter((issue) => !issue.cartonId)
-                    .map((issue, index) => (
-                      <li key={index}>
-                        {issue.cartonId
-                          ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                          : issueText(issue)}
-                      </li>
-                    ))}
-                </ul>
-              )}
-              {serverError && (
-                <div className="max-h-48 overflow-y-auto">
-                  <FormError message={serverError} />
-                </div>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
-                {renderSidebar && (
-                  <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
-                    <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
-                    <span className="text-muted-foreground">
-                      {t("packedUnits", { count: pieces, available: availableUnits })}
-                    </span>
-                  </p>
+            {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
+            {!(readOnly && renderSidebar) && (
+              <div
+                className={cn(
+                  "flex flex-col gap-3 text-sm",
+                  !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
                 )}
-                <div className={cn("flex flex-col px-1", renderSidebar && "hidden")}>
-                  <p className="font-medium tabular-nums">
-                    {headed
-                      ? importText("cartonCount", { count: totals.cartons })
-                      : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
-                  </p>
-                  {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
-                    <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                      <span>
-                        {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                          physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                        )}{" "}
-                        kg
-                      </span>
-                      <span>
-                        {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                          physicalCartons.reduce(
-                            (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                            0
-                          )
-                        )}{" "}
-                        m³
+              >
+                {packingIssues.some((issue) => !issue.cartonId) && (
+                  <ul aria-live="polite" className="text-sm text-destructive">
+                    {packingIssues
+                      .filter((issue) => !issue.cartonId)
+                      .map((issue, index) => (
+                        <li key={index}>
+                          {issue.cartonId
+                            ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
+                            : issueText(issue)}
+                        </li>
+                      ))}
+                  </ul>
+                )}
+                {serverError && (
+                  <div className="max-h-48 overflow-y-auto">
+                    <FormError message={serverError} />
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
+                  {renderSidebar && (
+                    <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+                      <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
+                      <span className="text-muted-foreground">
+                        {t("packedUnits", { count: pieces, available: availableUnits })}
                       </span>
                     </p>
                   )}
+                  {!renderSidebar && (
+                    <div className="flex flex-col px-1">
+                      <p className="font-medium tabular-nums">
+                        {headed
+                          ? importText("cartonCount", { count: totals.cartons })
+                          : t("cartonsAndUnits", { cartons: totals.cartons, units: pieces })}
+                      </p>
+                      {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
+                        <p className="mt-1 flex gap-5 text-xs tabular-nums">
+                          <span>
+                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                              physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
+                            )}{" "}
+                            kg
+                          </span>
+                          <span>
+                            {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+                              physicalCartons.reduce(
+                                (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
+                                0
+                              )
+                            )}{" "}
+                            m³
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {!readOnly && (
+                    <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
+                      <SubmitButton
+                        type="button"
+                        variant="ghost"
+                        className={headed || !allUnitsPacked ? "hidden" : undefined}
+                        pending={working === "save"}
+                        disabled={totals.cartons > 1000}
+                        onClick={() => void perform("save", form.getValues())}
+                      >
+                        {t("saveDraft")}
+                      </SubmitButton>
+                      <SubmitButton
+                        type="submit"
+                        form={formId}
+                        pending={working === (allUnitsPacked ? "submit" : "save")}
+                        className={headed ? "max-sm:flex-1" : undefined}
+                        disabled={
+                          totals.cartons > 1000 ||
+                          (allUnitsPacked &&
+                            (!cartons.fields.length ||
+                              packingIssues.length > 0 ||
+                              completeCartons.length !== physicalCartons.length))
+                        }
+                      >
+                        {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
+                      </SubmitButton>
+                    </div>
+                  )}
                 </div>
-                {!readOnly && (
-                  <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
-                    <SubmitButton
-                      type="button"
-                      variant="ghost"
-                      className={headed || !allUnitsPacked ? "hidden" : undefined}
-                      pending={working === "save"}
-                      disabled={totals.cartons > 1000}
-                      onClick={() => void perform("save", form.getValues())}
-                    >
-                      {t("saveDraft")}
-                    </SubmitButton>
-                    <SubmitButton
-                      type="submit"
-                      form={formId}
-                      pending={working === (allUnitsPacked ? "submit" : "save")}
-                      className={headed ? "max-sm:flex-1" : undefined}
-                      disabled={
-                        totals.cartons > 1000 ||
-                        (allUnitsPacked &&
-                          (!cartons.fields.length ||
-                            packingIssues.length > 0 ||
-                            completeCartons.length !== physicalCartons.length))
-                      }
-                    >
-                      {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
-                    </SubmitButton>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
+            {footer}
           </div>
           {renderSidebar && (
             <aside className="min-w-0">
@@ -733,7 +763,19 @@ export function PackingDetailsFields({
               ]
                 .filter(Boolean)
                 .join(", ")}
-              contact={[origin.name, origin.phoneNumber].filter(Boolean).join(", ")}
+              contact={
+                (origin.name || origin.phoneNumber) && (
+                  <>
+                    {origin.name && <span>{origin.name}</span>}
+                    {origin.name && origin.phoneNumber && ", "}
+                    {origin.phoneNumber && (
+                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                        {formatPhone(origin.phoneNumber, origin.countryCode)}
+                      </a>
+                    )}
+                  </>
+                )
+              }
             />
           ) : (
             <>

@@ -51,7 +51,6 @@
     },
     "metaTitle": "शिपमेंट",
     "title": "शिपमेंट {number}",
-    "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
     "parents": {
       "purchaseOrders": "खरीद ऑर्डर",
       "orders": "ऑर्डर"
@@ -63,7 +62,8 @@
       "retry": "शिपमेंट फिर से आज़माएं",
       "cancelInAmazon": "Amazon में रद्द करें",
       "getAmazonLabels": "Amazon लेबल प्राप्त करें",
-      "createAmazonShipment": "Amazon शिपमेंट बनाएँ"
+      "createAmazonShipment": "Amazon शिपमेंट बनाएँ",
+      "editPacking": "पैकिंग संपादित करें"
     },
     "needsAttention": "ध्यान देना ज़रूरी",
     "changesWaiting": {
