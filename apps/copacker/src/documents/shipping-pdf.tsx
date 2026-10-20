@@ -505,12 +505,12 @@ function AssignmentRow({ carton, index }: { carton: ShippingCarton; index: numbe
 }
 
 function LabelNumbers({ cartons, label }: { cartons: ShippingCarton[]; label: "amazonLabel" | "carrierLabel" }) {
-  const { t, row, data } = useDocumentLayout()
+  const { t, row } = useDocumentLayout()
   return (
     <View style={styles.labelNumbers}>
       <Text style={[styles.packingDetail, styles.bold]}>
         {label === "carrierLabel" && t.carrierLabels}
-        {label === "amazonLabel" && (data.network === "fba" ? t.amazonBoxLabels : t.amazonCartonLabels)}
+        {label === "amazonLabel" && t.amazonCartonLabels}
       </Text>
       <View style={[row, { flexWrap: "wrap", rowGap: 7 }]}>
         {cartons.map((carton) => (
@@ -543,7 +543,7 @@ function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
     <View style={styles.packingAssignments}>
       <View style={[row, styles.packingDetail, styles.bold, { gap: 9 }]}>
         <Text style={styles.assignmentCarton}>{t.carton}</Text>
-        <Text style={styles.assignmentLabel}>{data.network === "fba" ? t.amazonBoxLabel : t.amazonLabel}</Text>
+        <Text style={styles.assignmentLabel}>{t.amazonLabel}</Text>
         <Text style={styles.assignmentLabel}>{t.carrierLabel}</Text>
       </View>
       {cartons.map((carton) => (
@@ -689,7 +689,7 @@ export function ShippingPdf({
                               <>
                                 <Code bold>{cartonGroupLabel(group)}</Code>
                                 <Text style={styles.packingDetail}>
-                                  {number(group.length)} {t.cartonCountNoun}
+                                  {number(group.length)} {group.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
                                 </Text>
                               </>
                             )}

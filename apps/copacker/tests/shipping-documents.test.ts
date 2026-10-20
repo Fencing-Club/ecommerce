@@ -133,8 +133,9 @@ describe("rendered shipping PDFs", () => {
       fontBase
     )
     const sizes = (await PDFDocument.load(bytes)).getPages().map((page) => page.getSize())
-    // Packing list, checklist, Amazon carton labels, carrier labels, product labels; no carton label reference.
+    // Packing list, checklist, carton label reference, Amazon carton labels, carrier labels, product labels.
     expect(sizes.map(({ width, height }) => [Math.round(width), Math.round(height)])).toEqual([
+      [595, 842],
       [595, 842],
       [595, 842],
       [288, 432],
@@ -148,6 +149,7 @@ describe("rendered shipping PDFs", () => {
         (await (await doc.getPage(page)).getTextContent()).items.flatMap((item) => ("str" in item ? [item.str] : []))
       expect(await title(1)).toContain("Packing list")
       expect(await title(2)).toContain("Packing checklist")
+      expect(await title(3)).toContain("Carton label reference")
     } finally {
       await task.destroy()
     }
@@ -193,7 +195,7 @@ describe("rendered shipping PDFs", () => {
       const items = content.items.filter((item) => "str" in item)
       // The column headings name the pairs; there's no separate heading above them.
       expect(items.map((item) => item.str)).not.toContain("Carton label assignments")
-      expect(items.map((item) => item.str)).toContain("Amazon box label")
+      expect(items.map((item) => item.str)).toContain("Amazon carton label")
       for (const carton of dropoff.cartons) {
         const id = items.find((item) => item.str === carton.id)!
         const amazon = items.find((item) => item.str === carton.amazonLabel)!

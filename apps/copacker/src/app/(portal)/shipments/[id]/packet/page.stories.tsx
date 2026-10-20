@@ -52,8 +52,8 @@ export const AglPickup = meta.story({
   }
 })
 
-// The packet runs: the packing list, the checklist, the carton labels, then the product labels. The packing list pairs
-// each carton with its labels, so the carton label reference stays out.
+// The packet runs: the packing list, the checklist, the carton label reference, the carton labels, then the product
+// labels.
 export const PacketOrder = meta.story({
   args: { page: { ...released, hasProductLabels: true } },
   beforeEach: () => {
@@ -77,6 +77,7 @@ export const PacketOrder = meta.story({
         .map((page) => page.getSize())
         .map(({ width, height }) => [Math.round(width), Math.round(height)])
     ).toEqual([
+      [595, 842],
       [595, 842],
       [595, 842],
       [288, 432],
