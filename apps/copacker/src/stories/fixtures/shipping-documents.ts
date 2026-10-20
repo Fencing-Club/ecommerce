@@ -33,14 +33,16 @@ const base: ShippingDocumentData = {
     {
       id: "towel",
       supplierSku: "NT-WBT-NAT",
-      description: "Waffle bath towel / Natural",
+      description: "Waffle bath towel",
+      variant: "Natural",
       piecesPerPack: 1,
       tasks: ["sealedPolybag", "fnsku"]
     },
     {
       id: "bag",
       supplierSku: "NT-CDB-SAG",
-      description: "Cotton drawstring bag / Sage",
+      description: "Cotton drawstring bag",
+      variant: "Sage",
       piecesPerPack: 1,
       tasks: ["sealedPolybag", "fnsku"]
     }
@@ -139,7 +141,16 @@ const awd: ShippingDocumentData = {
     address: ["200 Distribution Road", "Ontario, CA 91761, United States"]
   },
   transport: aglTransport,
-  products: [{ id: "towel", supplierSku: "NT-TT-2", description: "Cotton tea towel", piecesPerPack: 2, tasks: [] }],
+  products: [
+    {
+      id: "towel",
+      supplierSku: "NT-TT-2",
+      description: "Cotton tea towel",
+      variant: "Natural (2 pack)",
+      piecesPerPack: 2,
+      tasks: []
+    }
+  ],
   cartons: [1, 2, 3, 4].map((index) => ({
     id: `A${index}`,
     dimensions: [40, 40, 30],
@@ -159,21 +170,24 @@ export const shippingScenarios: { id: string; name: string; data: ShippingDocume
         {
           id: "natural",
           supplierSku: "NT-TT-NAT-2",
-          description: "Cotton tea towel / Natural (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Natural (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         },
         {
           id: "sage",
           supplierSku: "NT-TT-SAG-2",
-          description: "Cotton tea towel / Sage (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Sage (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         },
         {
           id: "stripe",
           supplierSku: "NT-TT-STR-2",
-          description: "Cotton tea towel / Stripe (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Stripe (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         }
@@ -220,14 +234,16 @@ export const shippingScenarios: { id: string; name: string; data: ShippingDocume
         {
           id: "tea-towel",
           supplierSku: "NT-TT-NAT-2",
-          description: "Cotton tea towel / Natural (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Natural (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag", "fnsku"]
         },
         {
           id: "napkin",
           supplierSku: "NT-NPK-SAG-4",
-          description: "Linen napkin / Sage (4 pack)",
+          description: "Linen napkin",
+          variant: "Sage (4 pack)",
           piecesPerPack: 4,
           tasks: ["sealedPolybag", "fnsku"]
         }

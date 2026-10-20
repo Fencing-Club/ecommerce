@@ -90,20 +90,16 @@ const styles = StyleSheet.create({
   },
   group: { borderBottom: "0.75 solid #d4d4d8", paddingHorizontal: 9, paddingVertical: 10.5, fontSize: 10.5, gap: 7.5 },
   row: { gap: 10, paddingVertical: 5 },
-  packingRow: { gap: 9 },
+  packingRow: { gap: 9, fontSize: 9.5 },
   carton: { width: "11.65%" },
-  packingCarton: { flex: 87, gap: 3 },
-  packingProduct: { flex: 246, gap: 3 },
-  packingQuantity: { flex: 164, gap: 3 },
-  packingTotal: { flex: 157, gap: 3 },
+  packingCarton: { flex: 72, gap: 3 },
+  packingProduct: { flex: 250, gap: 3 },
+  packingSku: { flex: 104, gap: 3 },
+  packingQuantity: { flex: 116, gap: 3 },
+  packingTotal: { flex: 116, gap: 3 },
   packingDetail: { fontSize: 9, color: "#52525b", lineHeight: 1.35 },
-  palletCartons: { flex: 76, gap: 3 },
-  palletDimensions: { flex: 161, gap: 3 },
-  labelNumbers: { gap: 7.5, fontSize: 9 },
-  labelPair: { width: "33.333%", paddingRight: 10, gap: 5 },
-  packingAssignments: { gap: 9, fontSize: 9.75 },
-  assignmentCarton: { flex: 70 },
-  assignmentLabel: { flex: 298 },
+  palletCartons: { flex: 150, gap: 3 },
+  palletDimensions: { flex: 204, gap: 3 },
   assignment: { flex: 1 },
   checkbox: {
     width: 10.5,
@@ -314,22 +310,19 @@ function PackingRoute() {
   )
 }
 
-// The pallets in the carton table's columns: each pallet, its cartons and dimensions under Product, its gross weight,
-// and whether another pallet can stand on it.
+// The pallets on the carton table's grid: each pallet, its cartons and dimensions across Product and Supplier SKU, its
+// gross weight, and whether another pallet can stand on it.
 function PalletTable() {
   const { data, t, row, number } = useDocumentLayout()
   if (!data.pallets?.length) {
     return null
   }
-  const split = [row, styles.packingProduct, { gap: 9 }]
   return (
     <View style={{ marginTop: 15 }}>
       <View minPresenceAhead={36} style={[styles.tableHeader, row]}>
         <Text style={styles.packingCarton}>{t.palletSingle}</Text>
-        <View style={split}>
-          <Text style={styles.palletCartons}>{t.cartons}</Text>
-          <Text style={styles.palletDimensions}>{t.dimensions}</Text>
-        </View>
+        <Text style={styles.palletCartons}>{t.cartons}</Text>
+        <Text style={styles.palletDimensions}>{t.dimensions}</Text>
         <Text style={styles.packingQuantity}>{t.weight}</Text>
         <Text style={styles.packingTotal}>{t.stackable}</Text>
       </View>
@@ -339,16 +332,14 @@ function PalletTable() {
             <View style={styles.packingCarton}>
               <Code bold>{pallet.id}</Code>
             </View>
-            <View style={split}>
-              <View style={styles.palletCartons}>
-                <Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
-                <Text style={styles.packingDetail}>
-                  {number(pallet.cartons.length)} {pallet.cartons.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
-                </Text>
-              </View>
-              <View style={styles.palletDimensions}>
-                <Text style={styles.bold}>{pallet.dimensions.map(number).join(" × ")} cm</Text>
-              </View>
+            <View style={styles.palletCartons}>
+              <Code bold>{cartonGroupLabel(pallet.cartons.map((id) => ({ id })))}</Code>
+              <Text style={styles.packingDetail}>
+                {number(pallet.cartons.length)} {pallet.cartons.length === 1 ? t.cartonCountOne : t.cartonCountNoun}
+              </Text>
+            </View>
+            <View style={styles.palletDimensions}>
+              <Text style={styles.bold}>{pallet.dimensions.map(number).join(" × ")} cm</Text>
             </View>
             <View style={styles.packingQuantity}>
               <Text style={styles.bold}>{number(pallet.weight)} kg</Text>
@@ -555,65 +546,6 @@ function PalletLabelTable() {
   )
 }
 
-function LabelNumbers({ cartons, label }: { cartons: ShippingCarton[]; label: "amazonLabel" | "carrierLabel" }) {
-  const { t, row } = useDocumentLayout()
-  return (
-    <View style={styles.labelNumbers}>
-      <Text style={[styles.packingDetail, styles.bold]}>
-        {label === "carrierLabel" && t.carrierLabels}
-        {label === "amazonLabel" && t.amazonCartonLabels}
-      </Text>
-      <View style={[row, { flexWrap: "wrap", rowGap: 7 }]}>
-        {cartons.map((carton) => (
-          <View key={carton.id} style={[styles.labelPair, row, { width: cartons.length === 2 ? "50%" : "33.333%" }]}>
-            <View style={{ minWidth: 21 }}>
-              <Code bold>{carton.id}</Code>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Code>{carton[label]}</Code>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  )
-}
-
-function PackingAssignments({ cartons }: { cartons: ShippingCarton[] }) {
-  const { data, t, row, hasAmazon } = useDocumentLayout()
-  if (!hasAmazon || !data.transport.carrierLabels) {
-    return (
-      <>
-        {hasAmazon && <LabelNumbers cartons={cartons} label="amazonLabel" />}
-        {data.transport.carrierLabels && <LabelNumbers cartons={cartons} label="carrierLabel" />}
-      </>
-    )
-  }
-
-  return (
-    <View style={styles.packingAssignments}>
-      <View style={[row, styles.packingDetail, styles.bold, { gap: 9 }]}>
-        <Text style={styles.assignmentCarton}>{t.carton}</Text>
-        <Text style={styles.assignmentLabel}>{t.amazonLabel}</Text>
-        <Text style={styles.assignmentLabel}>{t.carrierLabel}</Text>
-      </View>
-      {cartons.map((carton) => (
-        <View key={carton.id} style={[row, { gap: 9 }]} wrap={false}>
-          <View style={styles.assignmentCarton}>
-            <Code bold>{carton.id}</Code>
-          </View>
-          <View style={styles.assignmentLabel}>
-            <Code>{carton.amazonLabel}</Code>
-          </View>
-          <View style={styles.assignmentLabel}>
-            <Code>{carton.carrierLabel}</Code>
-          </View>
-        </View>
-      ))}
-    </View>
-  )
-}
-
 function Check({ title, detail, values }: ShippingCheck) {
   const { t, row, settings } = useDocumentLayout()
   return (
@@ -721,6 +653,7 @@ export function ShippingPdf({
               <View fixed style={[styles.tableHeader, row, { fontSize: 9, fontWeight: 600 }]}>
                 <Text style={styles.packingCarton}>{t.cartons}</Text>
                 <Text style={styles.packingProduct}>{t.product}</Text>
+                <Text style={styles.packingSku}>{t.supplierSku}</Text>
                 <Text style={styles.packingQuantity}>{t.perCarton}</Text>
                 <Text style={styles.packingTotal}>{t.total}</Text>
               </View>
@@ -753,9 +686,9 @@ export function ShippingPdf({
                           <View style={styles.packingProduct}>
                             <Text style={styles.bold}>{product.description}</Text>
                             {product.variant && <Text style={styles.packingDetail}>{product.variant}</Text>}
-                            <View style={styles.packingDetail}>
-                              <Code>{product.supplierSku}</Code>
-                            </View>
+                          </View>
+                          <View style={styles.packingSku}>
+                            <Code>{product.supplierSku}</Code>
                           </View>
                           <View style={styles.packingQuantity}>
                             <Text style={styles.bold}>
@@ -788,15 +721,15 @@ export function ShippingPdf({
                     })}
                     <View style={[styles.packingRow, row, { marginTop: 4 }]}>
                       <View style={styles.packingCarton} />
-                      <View style={styles.packingProduct}>
+                      <View style={[styles.packingProduct, { fontSize: 10.5 }]}>
                         <Code bold>
                           {carton.dimensions.map(number).join(" × ")} cm / {number(carton.weight)} kg
                         </Code>
                       </View>
+                      <View style={styles.packingSku} />
                       <View style={styles.packingQuantity} />
                       <View style={styles.packingTotal} />
                     </View>
-                    {!packingRecord && <PackingAssignments cartons={group} />}
                   </View>
                 )
               })}

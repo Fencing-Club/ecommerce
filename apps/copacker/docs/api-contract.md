@@ -303,13 +303,12 @@ Sending a PO stores its PDF with the PO; a storage failure is logged as `po_docu
 since the PDF is made again when it's emailed or downloaded.
 
 `GET /api/shipments/:id/packet` serves the released supplier packet's label sections, and the browser assembles the
-packet in this order: the packing list, the checklist, then, for a shipment to Amazon, Amazon's carton labels and the
-buyer's shipping labels, the pallet labels for an FBA shipment on pallets (`section=pallet_labels`), then the
-product labels and suffocation warning sheet for the lines it carries. The
-packing list pairs each carton with its labels, so the carton label reference isn't repeated in the packet. Original
-page dimensions are preserved; print at actual size. The packing list shows
-supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg and the Amazon label number (an AWD SSCC
-or an FBA box ID), with the destination warehouse codes as its ship-to.
+packet in this order: the packing list, the checklist, then, for a shipment with carton labels, the carton label
+reference, the carton labels and the buyer's shipping labels, the pallet labels for an FBA shipment on pallets
+(`section=pallet_labels`), then the product labels and suffocation warning sheet for the lines it carries. Original page dimensions are preserved; print at actual size. The packing list shows
+supplier carton number, buyer SKU, supplier SKU, pieces/sellable units and cm/kg, with the destination warehouse codes as
+its ship-to. The carton label reference lists each carton's label number (an AWD SSCC or an FBA box ID) and carrier
+label, then each pallet's label.
 
 A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
 and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the
