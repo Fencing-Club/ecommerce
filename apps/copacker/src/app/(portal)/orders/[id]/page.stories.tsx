@@ -494,7 +494,7 @@ export const AmazonShipmentGroups = meta.story({
     await expect(fba.getByText("Market basket")).toBeVisible()
     await expect(canvas.queryByText(/^Pack for (FBA|AWD US)/)).toBeNull()
     await expect(awd.getByText("2 per pack")).toBeVisible()
-    await expect(awd.getByText(`${orderData.items[0]!.pieces / 2} packs of 2`)).toBeVisible()
+    await expect(awd.getByText(`${orderData.items[0]!.pieces / 2} packs, 2 each`)).toBeVisible()
     await expect(fba.queryByText(/per pack|packs of/)).toBeNull()
     await userEvent.click(awdToggle)
     await expect(awd.getByText("Canvas tote bag")).not.toBeVisible()
