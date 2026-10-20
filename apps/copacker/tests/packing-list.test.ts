@@ -162,14 +162,14 @@ describe("packing list", () => {
     expect(data.products.map((product) => product.supplierSku)).toEqual(["NT-WB-2210", "NT-WB-2214", "CT-3100"])
     expect(data.cartons).toHaveLength(18)
     expect(data.cartons.every((carton) => !carton.amazonLabel && !carton.carrierLabel)).toBe(true)
-    expect(data.cartons.at(-1)).toMatchObject({ id: "18", contents: [{ packs: 30 }] })
+    expect(data.cartons.at(-1)).toMatchObject({ id: "C2", contents: [{ packs: 30 }] })
 
     // The browser prints it as it comes: the carton groups and their units, without label assignments.
     const text = await pdfText(data)
-    for (const value of ["Packing list", "Amazon AWD", "Shipment 1", "For Northwind Textiles", "1–10", "240 units"]) {
+    for (const value of ["Packing list", "Amazon AWD", "Shipment 1", "For Northwind Textiles", "A1–A10", "240 units"]) {
       expect(text).toContain(value)
     }
-    expect(text).toContain("17–18")
+    expect(text).toContain("C1–C2")
     expect(text).toContain("30 packs, 2 each")
     expect(text).toContain("60 packs, 2 each")
     expect(text).not.toContain("Amazon carton labels")
