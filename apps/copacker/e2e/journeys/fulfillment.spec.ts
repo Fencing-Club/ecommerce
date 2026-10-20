@@ -55,7 +55,8 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await length.focus()
     await length.press("Tab")
     await expect(length).toHaveAttribute("aria-invalid", "true")
-    await expect(supplier.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    // Until every unit is packed, the packing form only saves a draft.
+    await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
     await expect(supplier.getByRole("button", { name: "Check packing" })).toHaveCount(0)
     await supplier.getByLabel("Ready date").fill(daysFromNow(10))
     await fillCarton(supplier, "1", {
@@ -65,7 +66,7 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
       "Weight (kg)": "12"
     })
     await addCartonProduct(supplier, "1", "Left", "grip-left", "150")
-    await expect(supplier.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+    await expect(supplier.getByRole("button", { name: "Finish packing" })).toHaveCount(0)
     await supplier.getByRole("spinbutton", { name: "grip-left: quantity per carton 1", exact: true }).fill("100")
   })
 
