@@ -199,8 +199,8 @@
       "hanger": "Coloca cada prenda en un gancho.",
       "label": "Etiqueta cada unidad."
     },
-    "fbaCartons": "Cajas de FBA: se permiten SKU mixtos; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb), salvo que una sola unidad sea más grande.",
-    "awdUsCartons": "Cajas de AWD US: un SKU por caja, máximo 150 unidades, todas las cajas de un mismo SKU empacadas igual; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb).",
+    "fbaCartons": "Cajas de FBA: se permiten SKU mixtos; máximo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} y {maxKg, number} kg ({maxLb, number} lb), salvo que una sola unidad sea más grande.",
+    "awdUsCartons": "Cajas de AWD US: un SKU por caja, máximo {units, number} unidades, todas las cajas de un mismo SKU empacadas igual; máximo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} y {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Empaca los productos de {networks} en cajas separadas.",
     "unitLabels": "Etiqueta cada unidad con su código de barras FNSKU, cubriendo cualquier otro código de barras.",
     "suffocationWarnings": "Las bolsas de polietileno necesitan una advertencia de asfixia cuando la abertura mide 5 in (12.7 cm) o más.",
