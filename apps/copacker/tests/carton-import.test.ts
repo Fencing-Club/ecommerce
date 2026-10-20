@@ -1,4 +1,4 @@
-import { validatePacking } from "@repo/aisle"
+import { validatePacking } from "@repo/copacker-packing-rules"
 import ExcelJS from "exceljs"
 import { describe, expect, it } from "vitest"
 import { type CartonGroup, cartonTotals, expandCartonGroups, groupCartons } from "@/lib/carton-groups"

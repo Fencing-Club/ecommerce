@@ -3,17 +3,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import {
   type Address,
   cartonInputSchema,
-  checkPallets,
   money,
   type OrderInput,
   type Packing,
   type PackingDraft,
   packingSchema,
-  palletInputSchema,
-  palletRules,
-  validatePacking,
-  validatePallets
+  palletInputSchema
 } from "@repo/aisle"
+import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
 import { useRouter } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
@@ -48,6 +45,7 @@ import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { usePackingIssueText, usePalletIssueErrors } from "./packing-issues"
 import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
@@ -166,7 +164,8 @@ export function PackingForm({
   const t = useTranslations("orders.packing")
   const locale = useLocale()
   const detail = useTranslations("orders.detail")
-  const rules = useTranslations("server.readiness.packing")
+  const packingIssueText = usePackingIssueText()
+  const palletIssueErrors = usePalletIssueErrors()
   const errorMessage = useErrorMessage()
   const formErrorMap = useFormErrorMap()
   const router = useRouter()
@@ -280,8 +279,6 @@ export function PackingForm({
   const volume = loads ? loads.reduce((sum, load) => sum + (load.length * load.width * load.height) / 1000000, 0) : null
   const chooserCartons = totals.cartons > 1000 ? [] : palletCartons(cartonValues, order.items)
   const onPallets = pallets.reduce((sum, pallet) => sum + pallet.cartonIds.length, 0)
-  const issueText = (issue: (typeof packingIssues)[number]) =>
-    "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
   // Drafts save incomplete values; submission runs authoritative checks after field validation.
   async function saveDraft(draft: Values) {
     if (cartonTotals(draft.cartons).cartons > 1000) {
@@ -741,14 +738,12 @@ export function PackingForm({
                     )}
                     {palletIssues.some((issue) => !issue.palletId) && (
                       <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
-                        {palletIssues
-                          .filter((issue) => !issue.palletId)
-                          .map((issue) => (
-                            <li key={issue.code} className="flex items-start gap-2">
-                              <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                              {issueText(issue)}
-                            </li>
-                          ))}
+                        {palletIssueErrors(palletIssues.filter((issue) => !issue.palletId)).map((error) => (
+                          <li key={error.message} className="flex items-start gap-2">
+                            <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                            {error.message}
+                          </li>
+                        ))}
                       </ul>
                     )}
                   </section>
@@ -762,11 +757,7 @@ export function PackingForm({
                       {packingIssues
                         .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
                         .map((issue, index) => (
-                          <li key={index}>
-                            {issue.cartonId
-                              ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                              : issueText(issue)}
-                          </li>
+                          <li key={index}>{packingIssueText(issue)}</li>
                         ))}
                     </ul>
                   )}

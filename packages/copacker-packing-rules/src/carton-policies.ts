@@ -1,19 +1,22 @@
-import type { AmazonNetwork, OrderItem } from "./index"
+import type { AmazonNetwork, PackingItem } from "./index"
 
 // A rule a receiver sets for its cartons, as data. A policy is the list of rules one receiver's cartons follow, such as
 // FBA's or AWD's, and each rule type has one evaluator (checkCarton), so a new receiver, such as GWD or a 3PL, is a new
-// policy, and only a new kind of limit needs code. Limits are in the units the receiver states them in.
-export type CartonRule =
-  // The largest carton, as its three sides from longest to shortest. A carton may fit it in any orientation.
-  | { type: "maxSize"; sides: readonly [number, number, number]; unit: "cm" | "in"; exceptOneUnit?: boolean }
+// policy, and only a new kind of limit needs code. Limits are in the units the receiver states them in. Each rule
+// describes itself, as the receiver states it, and `source` is the page where it does, which its errors link to.
+export type CartonRule = (
+// The largest carton, as its three sides from longest to shortest. A carton may fit it in any orientation.
+| { type: "maxSize"; sides: readonly [number, number, number]; unit: "cm" | "in"; exceptOneUnit?: boolean }
   | { type: "maxWeight"; weight: number; unit: "kg" | "lb"; exceptOneUnit?: boolean }
   // Sellable units of one product in a carton.
   | { type: "maxUnits"; units: number }
   | { type: "oneSku" }
   // Every carton of a SKU holds the same units and has the same size and weight as its first.
   | { type: "samePacking" }
-  // Every product has its ASIN and FNSKU.
-  | { type: "amazonIds" }
+  // Every product has its ASIN, and every product has its FNSKU: two rules, so each error names its field.
+  | { type: "asin" }
+  | { type: "fnsku" }
+) & { description: string; source?: string }
 
 export type CartonPolicy = {
   // Who receives the cartons, as messages name it, such as "AWD allows up to 63.5 cm".
@@ -22,26 +25,89 @@ export type CartonPolicy = {
   rules: readonly CartonRule[]
 }
 
+// The Seller Central help pages that state Amazon's packing rules, in the form that opens without signing in.
+const amazonHelp = (page: string) => `https://sellercentral.amazon.com/help/hub/reference/external/${page}`
+export const amazonSources = {
+  // Shipping and routing requirements: FBA's box size and weight.
+  fbaShipping: amazonHelp("G200141510"),
+  // AWD shipping requirements: AWD's box size and weight.
+  awdShipping: amazonHelp("GVEPW8A7PZ3YGPJE"),
+  // Send shipments to AWD, Choose inventory to send: one SKU a box, 150 units, one packing template a SKU.
+  awdInventory: amazonHelp("GZLL7RYU2FJRN9BU"),
+  // Seller requirements for LTL, FTL and FCL deliveries: pallets, for FBA and AWD.
+  freight: amazonHelp("G200978400")
+}
+
+const asin = { type: "asin", description: "Every product has its ASIN, which Amazon receives it by." } as const
+const fnsku = {
+  type: "fnsku",
+  description: "Every product has its FNSKU, the barcode Amazon labels it with."
+} as const
+
 // Amazon's US carton rules for each network, checked October 19, 2026 (see the package's docs/carton-rules.md). Every FBA carton is
-// treated as individual units: copacker doesn't send case packs.
+// treated as individual units: copacker doesn't send case packs. No one page states that products need their ASIN and
+// FNSKU; Amazon can't receive a product without them.
 export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
   fba: {
     receiver: "FBA",
     rules: [
-      { type: "maxSize", sides: [36, 25, 25], unit: "in", exceptOneUnit: true },
-      { type: "maxWeight", weight: 50, unit: "lb", exceptOneUnit: true },
-      { type: "amazonIds" }
+      {
+        type: "maxSize",
+        sides: [36, 25, 25],
+        unit: "in",
+        exceptOneUnit: true,
+        description:
+          "A box may be up to 36 in long, 25 in wide and 25 in high. Only a box of one oversize unit may be larger.",
+        source: amazonSources.fbaShipping
+      },
+      {
+        type: "maxWeight",
+        weight: 50,
+        unit: "lb",
+        exceptOneUnit: true,
+        description: "A box may weigh up to 50 lb. Only a box of one unit over 50 lb may weigh more.",
+        source: amazonSources.fbaShipping
+      },
+      asin,
+      fnsku
     ]
   },
   awd_us: {
     receiver: "AWD",
     rules: [
-      { type: "oneSku" },
-      { type: "maxUnits", units: 150 },
-      { type: "samePacking" },
-      { type: "maxSize", sides: [25, 25, 25], unit: "in" },
-      { type: "maxWeight", weight: 50, unit: "lb" },
-      { type: "amazonIds" }
+      {
+        type: "oneSku",
+        description: "Each box holds one SKU. Boxes of mixed SKUs aren't accepted.",
+        source: amazonSources.awdInventory
+      },
+      {
+        type: "maxUnits",
+        units: 150,
+        description: "Each box holds at most 150 units of its SKU.",
+        source: amazonSources.awdInventory
+      },
+      {
+        type: "samePacking",
+        description:
+          "Each SKU uses one packing template in a shipment: every box of it holds the same units and has the same size and weight.",
+        source: amazonSources.awdInventory
+      },
+      {
+        type: "maxSize",
+        sides: [25, 25, 25],
+        unit: "in",
+        description: "A box may be at most 25 in on any side.",
+        source: amazonSources.awdShipping
+      },
+      {
+        type: "maxWeight",
+        weight: 50,
+        unit: "lb",
+        description: "A box may weigh at most 50 lb.",
+        source: amazonSources.awdShipping
+      },
+      asin,
+      fnsku
     ]
   }
 }
@@ -55,7 +121,7 @@ const exact = (value: number) => Number(value.toPrecision(12))
 const hundredthsDown = (value: number) => Math.floor(exact(value * 100)) / 100
 
 // A size limit in both units, longest side first, and whether every side is the same, as messages put it.
-export function sizeLimit(rule: Extract<CartonRule, { type: "maxSize" }>) {
+export function sizeLimit(rule: Pick<Extract<CartonRule, { type: "maxSize" }>, "sides" | "unit">) {
   const cm = rule.sides.map((side) => exact(rule.unit === "cm" ? side : side * centimetresPerInch))
   const inches = rule.sides.map((side) => exact(rule.unit === "in" ? side : side / centimetresPerInch))
   return {
@@ -71,7 +137,7 @@ export function sizeLimit(rule: Extract<CartonRule, { type: "maxSize" }>) {
 
 // A weight limit in both units, the converted one rounded down to the hundredth. Cartons are checked against the
 // kilograms shown.
-export function weightLimit(rule: Extract<CartonRule, { type: "maxWeight" }>) {
+export function weightLimit(rule: Pick<Extract<CartonRule, { type: "maxWeight" }>, "weight" | "unit">) {
   return {
     maxKg: rule.unit === "kg" ? rule.weight : hundredthsDown(rule.weight * kilogramsPerPound),
     maxLb: rule.unit === "lb" ? rule.weight : hundredthsDown(rule.weight / kilogramsPerPound)
@@ -96,18 +162,30 @@ export function cartonLimits(policy: CartonPolicy) {
   }
 }
 
+type Exception = "oneUnit" | "none"
+const exception = (rule: { exceptOneUnit?: boolean }): Exception => (rule.exceptOneUnit ? "oneUnit" : "none")
+
 // A rule a carton breaks, as a code and the values its message names.
 export type CartonRuleIssue =
-  | { code: "cartonSize"; values: { receiver: string } & ReturnType<typeof sizeLimit> }
-  | { code: "cartonWeight"; values: { receiver: string } & ReturnType<typeof weightLimit> }
+  // `exception` is "oneUnit" when a carton holding a single unit may break the limit, as messages select on it.
+  | { code: "cartonSize"; values: { receiver: string; exception: Exception } & ReturnType<typeof sizeLimit> }
+  | { code: "cartonWeight"; values: { receiver: string; exception: Exception } & ReturnType<typeof weightLimit> }
   | { code: "unitsPerCarton"; values: { receiver: string; sku: string; units: number; max: number } }
   | { code: "oneSku"; values: { receiver: string } }
   // The SKU's first carton, which every other carton of it must match.
   | {
       code: "samePacking"
-      values: { sku: string; units: number; length: number; width: number; height: number; weight: number }
+      values: {
+        receiver: string
+        sku: string
+        units: number
+        length: number
+        width: number
+        height: number
+        weight: number
+      }
     }
-  | { code: "missingAmazonIds"; values: { sku: string } }
+  | { code: "missingAsin" | "missingFnsku"; values: { receiver: string; sku: string } }
 
 export type CartonField = "length" | "width" | "height" | "weight"
 
@@ -117,18 +195,18 @@ export type PolicyCarton = {
   width: number
   height: number
   weight: number
-  contents: Array<{ item: OrderItem; pieces: number; units: number }>
+  contents: Array<{ item: PackingItem; pieces: number; units: number }>
 }
 
-type Finding = { issue: CartonRuleIssue; fields?: CartonField[] }
+type Finding = { issue: CartonRuleIssue; fields?: CartonField[]; source?: string }
 
-// The rules of a policy a carton breaks, with the fields each names. `earlier` are the cartons checked under the same
-// policy before this one, for rules across cartons.
-export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier: readonly PolicyCarton[]) {
+// The rules of a policy a carton breaks, with the fields each names and the page that states the rule. `earlier` are
+// the cartons checked under the same policy before this one, for rules across cartons.
+export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier: readonly PolicyCarton[]): Finding[] {
   // A carton holding one unit is excepted from limits that allow for a single oversize unit.
   const oneUnit = carton.contents.length === 1 && carton.contents[0]!.units === 1
   const { receiver } = policy
-  return policy.rules.flatMap((rule): Finding[] => {
+  const broken = (rule: CartonRule): Finding[] => {
     switch (rule.type) {
       case "maxSize": {
         if (rule.exceptOneUnit && oneUnit) {
@@ -141,7 +219,10 @@ export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier:
         return over.length
           ? [
               {
-                issue: { code: "cartonSize", values: { receiver, ...limit } },
+                issue: {
+                  code: "cartonSize",
+                  values: { receiver, exception: exception(rule), ...limit }
+                },
                 fields: (["length", "width", "height"] as const).filter((side) => over.includes(side))
               }
             ]
@@ -150,7 +231,15 @@ export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier:
       case "maxWeight": {
         const limit = weightLimit(rule)
         return carton.weight > limit.maxKg && !(rule.exceptOneUnit && oneUnit)
-          ? [{ issue: { code: "cartonWeight", values: { receiver, ...limit } }, fields: ["weight"] }]
+          ? [
+              {
+                issue: {
+                  code: "cartonWeight",
+                  values: { receiver, exception: exception(rule), ...limit }
+                },
+                fields: ["weight"]
+              }
+            ]
           : []
       }
       case "maxUnits":
@@ -187,12 +276,21 @@ export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier:
             width === carton.width &&
             height === carton.height &&
             weight === carton.weight
-          return same ? [] : [{ issue: { code: "samePacking", values: { sku: content.item.buyerSku, ...template } } }]
+          return same
+            ? []
+            : [{ issue: { code: "samePacking", values: { receiver, sku: content.item.buyerSku, ...template } } }]
         })
-      case "amazonIds":
+      case "asin":
         return carton.contents
-          .filter((content) => !content.item.asin || !content.item.fnsku)
-          .map((content) => ({ issue: { code: "missingAmazonIds", values: { sku: content.item.buyerSku } } }))
+          .filter((content) => !content.item.asin)
+          .map((content) => ({ issue: { code: "missingAsin", values: { receiver, sku: content.item.buyerSku } } }))
+      case "fnsku":
+        return carton.contents
+          .filter((content) => !content.item.fnsku)
+          .map((content) => ({ issue: { code: "missingFnsku", values: { receiver, sku: content.item.buyerSku } } }))
     }
-  })
+  }
+  return policy.rules.flatMap((rule) =>
+    broken(rule).map((finding) => (rule.source ? { ...finding, source: rule.source } : finding))
+  )
 }

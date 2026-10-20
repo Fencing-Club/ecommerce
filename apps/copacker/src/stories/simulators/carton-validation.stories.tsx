@@ -7,6 +7,8 @@ import { reportedCodes } from "./report"
 const meta = preview.meta({
   title: "Simulators/Carton validation",
   component: CartonSimulator,
+  // A data set from the URL loads afresh.
+  render: (args) => <CartonSimulator key={args.dataSet} {...args} />,
   parameters: { layout: "fullscreen" }
 })
 
@@ -18,6 +20,15 @@ export const EveryError = meta.story({
     const table = canvas.getByRole("table", { name: "Every carton error" })
     await expect(within(table).queryAllByText("No example produces this code yet")).toEqual([])
     await expect(within(table).getAllByRole("row").length).toBeGreaterThan(10)
+  }
+})
+
+// The simulator with an example from Every error loaded, as each row there links to it by the example's ID.
+export const ErrorExample = meta.story({
+  name: "Error example",
+  args: { dataSet: "awd_us-oneSku" },
+  play: async ({ canvasElement }) => {
+    await expect(reportedCodes(canvasElement)).toEqual(["oneSku"])
   }
 })
 
@@ -84,7 +95,7 @@ export const MissingIdentifiers = meta.story({
   name: "Missing ASIN and FNSKU",
   args: { dataSet: "identifiers" },
   play: async ({ canvasElement }) => {
-    await expect(reportedCodes(canvasElement)).toEqual(["missingAmazonIds"])
+    await expect(reportedCodes(canvasElement)).toEqual(["missingAsin", "missingFnsku"])
   }
 })
 

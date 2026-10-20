@@ -40,7 +40,7 @@ contexts, effects that render nothing) are listed there instead.
 
 ## The sidebar
 
-Every story file sets an explicit `title` in one of five sections. `tests/stories.test.ts` checks each rule.
+Every story file sets an explicit `title` in one of six sections. `tests/stories.test.ts` checks each rule.
 
 | Section | Holds | Title |
 | --- | --- | --- |
@@ -48,6 +48,7 @@ Every story file sets an explicit `title` in one of five sections. `tests/storie
 | Components | App components, grouped by product area | `Components/<Area>/<Name>` |
 | Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
 | Prototypes | Designs built only in Storybook: in `src/stories`, or beside the route a design is for until it's built (listed in the test) | `Prototypes/<Name>` |
+| Simulators | The real packing rules run on sample data, in `src/stories/simulators` and only there (see [Simulators](#simulators)) | `Simulators/<Name>` |
 | Unused | Components no app code renders yet | `Unused/<Area>/<Name>` |
 
 Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booking, Products, Inventory, Sales and
@@ -62,6 +63,25 @@ the page. Every other story in `src/app` must be a `Pages/` story too, unless th
 component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
 fails the test until its stories move to `Components`, and removing its last use fails it until they move to `Unused`.
 Review that section for components awaiting app work or ready to delete.
+
+## Simulators
+
+The simulators run `@repo/copacker-packing-rules` itself on sample data, so a change to a rule or its copy shows up
+here before it reaches a shipment. Nothing in them restates a limit: the examples are built from each policy's own
+rules.
+
+- **Simulators/Carton validation** and **Simulators/Pallet validation**: the carton or pallet table as the packing page
+  runs it, with a data set and receiver to pick (FBA, AWD US, both networks, the buyer's warehouse). Every edit goes
+  through `validatePacking`, and each issue it reports is listed below the table with the codes it can report.
+- **Every Error**: one table per simulator with every error, grouped by receiver and sorted by rule. Each row gives
+  the code, the rule's own `description` with the supplier's checklist line under it, the error exactly as the editor
+  shows it (with its link to the receiver's rule), and the readiness line. **Open in simulator** loads that row's
+  example into the simulator (`?path=/story/simulators-carton-validation--error-example&args=dataSet:<id>`), to edit
+  it by hand. A new policy or rule adds its rows; a new rule type fails type checks until the examples break it; and a
+  message with no example gets a red row.
+
+Each data set lives in `src/stories/simulators/data.ts`; the Every Error examples are in `carton-examples.ts` and
+`pallet-examples.ts`.
 
 ## The toolbar
 

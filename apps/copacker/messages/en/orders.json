@@ -406,6 +406,7 @@
     },
     "draftSaved": "Draft saved",
     "cartonIssue": "Carton {carton}: {message}",
+    "ruleSource": "{receiver} requirements",
     "readyToSubmit": "Ready to submit",
     "readyToSubmitApproval": "Ready to submit; changes go to the buyer for approval",
     "readyToSubmitUpdates": "Ready to submit; changes update the purchase order",
@@ -523,12 +524,20 @@
     "enterUnits": "Enter how many units of this product each carton holds.",
     "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "rules": {
-      "unitsPerCarton": "Quantity: {units, number} sellable units per carton exceeds {receiver}’s limit of {max, number}. Split them into smaller cartons.",
-      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) for this carton}}.",
-      "cartonWeight": "Weight: {weight, number} kg exceeds the {maxLb, number} lb limit ({maxKg, number} kg). Reduce the weight of each carton.",
-      "oneSku": "Products: {receiver} requires one SKU per carton. Move these SKUs into separate cartons.",
-      "samePacking": "Packing template: This SKU uses {difference, select, units {{units, number} units per carton} other {{length, number} × {width, number} × {height, number} cm cartons at {weight, number} kg}} elsewhere in this shipment. Use the same packing template for every carton of this SKU.",
-      "incompletePacks": "Quantity: this product comes in packs of {pack, number}. Enter a multiple of {pack, number} units."
+      "unitsPerCarton": "Quantity: {units, number} units is over {receiver}’s limit of {max, number} per carton. Pack {max, number} or fewer in each carton.",
+      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, unless the carton holds a single unit} other {}}.",
+      "cartonWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, unless the carton holds a single unit} other {}}. Pack fewer units in each carton.",
+      "oneSku": "Products: this carton holds more than one SKU, and {receiver} takes one SKU per carton. Pack each SKU in its own cartons.",
+      "samePacking": "{difference, select, units {Quantity: {sku}’s other cartons hold {units, number} units each.} other {Dimensions: {sku}’s other cartons are {length, number} × {width, number} × {height, number} cm at {weight, number} kg.}} {receiver} needs every carton of a SKU to match in units, size and weight. Match them, or ship this carton in another shipment.",
+      "incompletePacks": "Quantity: {sku} is sold in packs of {pack, number}. Enter a multiple of {pack, number}.",
+      "missingAsin": "Products: {sku} has no ASIN, which {receiver} needs to receive it. The buyer adds it on the purchase order.",
+      "missingFnsku": "Products: {sku} has no FNSKU, which {receiver} needs to label it. The buyer adds it on the purchase order.",
+      "duplicateCarton": "Carton number: {carton} is already used by another carton. Give each carton its own number.",
+      "repeatedProduct": "Products: {sku} is listed more than once in this carton. List it once, with all its units.",
+      "mixedNetworks": "Products: this carton mixes FBA and AWD products. Pack each network’s products in separate cartons.",
+      "unknownProduct": "Products: this carton holds a product that isn’t on the purchase order. Remove it from the carton.",
+      "overQuantity": "Quantity: the cartons hold {packed, number} units of {sku}, but the purchase order has {remaining, number} left. Remove {extra, plural, one {# unit} other {# units}}.",
+      "unknownChange": "Invoice changes: one change is for a product that isn’t on the purchase order, or repeats another change. Remove it."
     }
   },
   "pallets": {
@@ -563,10 +572,16 @@
     "enterDimensions": "Enter the pallet’s length, width and height.",
     "enterWeight": "Enter the pallet’s gross weight, with the pallet itself.",
     "rules": {
-      "palletFootprint": "Dimensions: {length, number} × {width, number} cm is larger than {receiver}’s {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in) pallet. Keep the load within its edges.",
+      "palletFootprint": "Dimensions: the load is {length, number} × {width, number} cm, over the edges of {receiver}’s {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in) pallet. Keep the cartons within the pallet.",
       "palletHeight": "Height: {height, number} cm is over {receiver}’s limit of {maxCm, number} cm ({maxIn, number} in), including the pallet. Spread the cartons over more pallets.",
-      "stackableHeight": "Height: {height, number} cm is too tall for a stackable {receiver} pallet, which may be up to {maxCm, number} cm ({maxIn, number} in). Mark it not stackable, or lower the load.",
-      "palletWeight": "Weight: {weight, number} kg exceeds {receiver}’s limit of {maxLb, number} lb ({maxKg, number} kg), including the pallet. Spread the cartons over more pallets."
+      "stackableHeight": "Height: {height, number} cm is too tall for a stackable {receiver} pallet, which may be up to {maxCm, number} cm ({maxIn, number} in). Set Stacking to Not stackable, or lower the load.",
+      "palletWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb), including the pallet. Spread the cartons over more pallets.",
+      "emptyPallet": "Cartons: this pallet has no cartons yet. Choose its cartons, or delete the pallet.",
+      "duplicatePallet": "Pallets: two pallets are numbered {pallet}. Re-import them with unique numbers.",
+      "unknownPalletCarton": "Cartons: {carton} isn’t a carton in this shipment. Remove it from this pallet.",
+      "palletCartonTwice": "Cartons: {carton} is already on another pallet. Remove it from this pallet or the other.",
+      "noPallets": "Pallets: these cartons ship on pallets, and there are none yet. Add a pallet, or uncheck Packed on pallets.",
+      "cartonsOffPallets": "Cartons: {count, plural, one {# carton isn’t on a pallet: {cartons}. Choose a pallet for it, or add a pallet.} other {# cartons aren’t on a pallet: {cartons}. Choose a pallet for each, or add a pallet.}}"
     }
   },
   "palletCartons": {

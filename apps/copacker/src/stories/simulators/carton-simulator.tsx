@@ -1,23 +1,28 @@
-import { validatePacking } from "@repo/aisle"
-import { cartonPolicies } from "@repo/aisle/carton-policies"
+import { validatePacking } from "@repo/copacker-packing-rules"
+import { cartonPolicies } from "@repo/copacker-packing-rules/carton-policies"
 import { useState } from "react"
 import { CartonTable } from "@/components/carton-table"
 import { type CartonGroup, expandCartonGroups } from "@/lib/carton-groups"
-import { type CartonDataSet, cartonDataSets, type Receiver, receiverNames, receivers, simulatorOrder } from "./data"
+import { useCartonExamples } from "./carton-examples"
+import { type CartonDataSet, cartonDataSets, dataSetOrder, type Receiver, receiverNames, receivers } from "./data"
 import { cartonCodes, IssueReport, PolicyRules, Setting } from "./simulator-parts"
 
-type DataSetKey = keyof typeof cartonDataSets
-
 // The carton table as the packing page runs it: every edit goes through validatePacking from @repo/aisle, and its issues
-// show in the table and in full below it.
-export function CartonSimulator({ dataSet: initial }: { dataSet: DataSetKey }) {
-  const [dataSet, setDataSet] = useState(initial)
-  const [receiver, setReceiver] = useState<Receiver>(cartonDataSets[initial].receiver)
-  const [cartons, setCartons] = useState<CartonGroup[]>(cartonDataSets[initial].cartons)
-  const order = simulatorOrder(receiver)
-  const issues = validatePacking(order, { cartons: expandCartonGroups(cartons), changes: [] }).issues
+// show in the table and in full below it. Its data sets are the ones here and an example of every error, which Every
+// carton error links to by ID.
+export function CartonSimulator({ dataSet: initial }: { dataSet: string }) {
+  const examples = useCartonExamples()
+  const dataSets: Record<string, CartonDataSet> = {
+    ...cartonDataSets,
+    ...Object.fromEntries(examples.map((example) => [example.id, example]))
+  }
+  const [dataSet, setDataSet] = useState(dataSets[initial] ? initial : "withinLimits")
+  const chosen = dataSets[dataSet] ?? cartonDataSets.withinLimits
+  const [receiver, setReceiver] = useState<Receiver>(chosen.receiver)
+  const [cartons, setCartons] = useState<CartonGroup[]>(chosen.cartons)
+  const order = dataSetOrder(chosen.plenty, receiver)
+  const issues = validatePacking(order, { cartons: expandCartonGroups(cartons), changes: chosen.changes ?? [] }).issues
   const policy = receiver === "fba" || receiver === "awd_us" ? cartonPolicies[receiver] : undefined
-  const chosen: CartonDataSet = cartonDataSets[dataSet]
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 sm:p-6">
       <header className="flex flex-col gap-4">
@@ -32,14 +37,11 @@ export function CartonSimulator({ dataSet: initial }: { dataSet: DataSetKey }) {
           <Setting
             label="Data set"
             value={dataSet}
-            options={(Object.keys(cartonDataSets) as DataSetKey[]).map((key) => ({
-              value: key,
-              label: cartonDataSets[key].name
-            }))}
+            options={Object.entries(dataSets).map(([key, set]) => ({ value: key, label: set.name }))}
             onChange={(key) => {
               setDataSet(key)
-              setReceiver(cartonDataSets[key].receiver)
-              setCartons(cartonDataSets[key].cartons)
+              setReceiver(dataSets[key]!.receiver)
+              setCartons(dataSets[key]!.cartons)
             }}
           />
           <Setting

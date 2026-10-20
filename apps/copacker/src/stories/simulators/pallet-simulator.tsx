@@ -1,20 +1,34 @@
-import { palletRules, validatePacking } from "@repo/aisle"
-import { palletPolicies } from "@repo/aisle/pallet-policies"
+import { palletRules, validatePacking } from "@repo/copacker-packing-rules"
+import { palletPolicies } from "@repo/copacker-packing-rules/pallet-policies"
 import { useState } from "react"
 import { PalletTable } from "@/components/pallet-table"
 import { expandCartonGroups, palletCartons, type PalletValue } from "@/lib/carton-groups"
-import { palletCartonSet, palletDataSets, type Receiver, receiverNames, receivers, simulatorOrder } from "./data"
+import {
+  dataSetOrder,
+  palletCartonSet,
+  type PalletDataSet,
+  palletDataSets,
+  type Receiver,
+  receiverNames,
+  receivers
+} from "./data"
+import { usePalletExamples } from "./pallet-examples"
 import { IssueReport, palletCodes, PolicyRules, Setting } from "./simulator-parts"
 
-type DataSetKey = keyof typeof palletDataSets
-
 // The pallet table as the packing page runs it: twelve cartons packed on pallets, and every edit goes through
-// validatePacking from @repo/aisle, with its pallet issues in the table and in full below it.
-export function PalletSimulator({ dataSet: initial }: { dataSet: DataSetKey }) {
-  const [dataSet, setDataSet] = useState(initial)
-  const [receiver, setReceiver] = useState<Receiver>(palletDataSets[initial].receiver)
-  const [pallets, setPallets] = useState<PalletValue[]>(palletDataSets[initial].pallets)
-  const order = simulatorOrder(receiver)
+// validatePacking from @repo/aisle, with its pallet issues in the table and in full below it. Its data sets are the ones
+// here and an example of every error, which Every pallet error links to by ID.
+export function PalletSimulator({ dataSet: initial }: { dataSet: string }) {
+  const examples = usePalletExamples()
+  const dataSets: Record<string, PalletDataSet> = {
+    ...palletDataSets,
+    ...Object.fromEntries(examples.map((example) => [example.id, example]))
+  }
+  const [dataSet, setDataSet] = useState(dataSets[initial] ? initial : "withinLimits")
+  const chosen = dataSets[dataSet] ?? palletDataSets.withinLimits
+  const [receiver, setReceiver] = useState<Receiver>(chosen.receiver)
+  const [pallets, setPallets] = useState<PalletValue[]>(chosen.pallets)
+  const order = dataSetOrder(chosen.plenty, receiver)
   const issues = validatePacking(order, {
     cartons: expandCartonGroups(palletCartonSet),
     changes: [],
@@ -36,14 +50,11 @@ export function PalletSimulator({ dataSet: initial }: { dataSet: DataSetKey }) {
           <Setting
             label="Data set"
             value={dataSet}
-            options={(Object.keys(palletDataSets) as DataSetKey[]).map((key) => ({
-              value: key,
-              label: palletDataSets[key].name
-            }))}
+            options={Object.entries(dataSets).map(([key, set]) => ({ value: key, label: set.name }))}
             onChange={(key) => {
               setDataSet(key)
-              setReceiver(palletDataSets[key].receiver)
-              setPallets(palletDataSets[key].pallets)
+              setReceiver(dataSets[key]!.receiver)
+              setPallets(dataSets[key]!.pallets)
             }}
           />
           <Setting
@@ -55,7 +66,7 @@ export function PalletSimulator({ dataSet: initial }: { dataSet: DataSetKey }) {
             onChange={setReceiver}
           />
         </div>
-        <p className="text-sm">{palletDataSets[dataSet].note}</p>
+        <p className="text-sm">{chosen.note}</p>
       </header>
       <PolicyRules title="Pallet policy" receiver={policy?.receiver} rules={policy?.rules} />
       <PalletTable

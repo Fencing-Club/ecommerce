@@ -1,4 +1,4 @@
-import type { PackingRule, ValidationIssue } from "@repo/aisle"
+import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
 import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
@@ -11,7 +11,8 @@ export const cartonCodes = [
   "unitsPerCarton",
   "oneSku",
   "samePacking",
-  "missingAmazonIds",
+  "missingAsin",
+  "missingFnsku",
   "incompletePacks",
   "overQuantity",
   "duplicateCarton",
@@ -66,7 +67,7 @@ export function Setting<T extends string>({
   )
 }
 
-// A policy's rules as @repo/aisle keeps them, one line each.
+// A policy's rules as @repo/copacker-packing-rules keeps them: each one's description, the page that states it, and its data.
 export function PolicyRules({
   title,
   receiver,
@@ -74,7 +75,7 @@ export function PolicyRules({
 }: {
   title: string
   receiver?: string
-  rules?: readonly object[]
+  rules?: readonly { type: string; description: string; source?: string }[]
 }) {
   return (
     <section aria-label={title} className="rounded-lg border bg-card p-4 text-sm">
@@ -82,9 +83,22 @@ export function PolicyRules({
       {rules ? (
         <>
           <p className="mt-1 text-muted-foreground">Receiver: {receiver}</p>
-          <ul className="mt-3 flex flex-col gap-1.5 font-mono text-xs">
-            {rules.map((rule) => (
-              <li key={JSON.stringify(rule)}>{JSON.stringify(rule)}</li>
+          <ul className="mt-3 flex flex-col gap-3">
+            {rules.map(({ description, source, ...data }) => (
+              <li key={JSON.stringify(data) + description}>
+                <p>
+                  {description}
+                  {source && (
+                    <>
+                      {" "}
+                      <a href={source} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+                        Source
+                      </a>
+                    </>
+                  )}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">{JSON.stringify(data)}</p>
+              </li>
             ))}
           </ul>
         </>

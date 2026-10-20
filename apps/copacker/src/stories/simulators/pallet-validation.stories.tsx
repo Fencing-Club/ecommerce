@@ -1,12 +1,35 @@
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { PalletCatalog } from "./pallet-catalog"
 import { PalletSimulator } from "./pallet-simulator"
 import { reportedCodes } from "./report"
 
 const meta = preview.meta({
   title: "Simulators/Pallet validation",
   component: PalletSimulator,
+  // A data set from the URL loads afresh.
+  render: (args) => <PalletSimulator key={args.dataSet} {...args} />,
   parameters: { layout: "fullscreen" }
+})
+
+// Every pallet error by code, the rule it breaks and its message, built from the pallet policies; every code has an
+// example.
+export const EveryError = meta.story({
+  render: () => <PalletCatalog />,
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Every pallet error" })
+    await expect(within(table).queryAllByText("No example produces this code yet")).toEqual([])
+    await expect(within(table).getAllByRole("row").length).toBeGreaterThan(10)
+  }
+})
+
+// The simulator with an example from Every error loaded, as each row there links to it by the example's ID.
+export const ErrorExample = meta.story({
+  name: "Error example",
+  args: { dataSet: "fba-maxHeight-2" },
+  play: async ({ canvasElement }) => {
+    await expect(reportedCodes(canvasElement)).toEqual(["stackableHeight"])
+  }
 })
 
 export const WithinLimits = meta.story({

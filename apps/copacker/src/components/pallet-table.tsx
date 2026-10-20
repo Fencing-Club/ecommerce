@@ -1,20 +1,15 @@
-import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/aisle"
-import { palletRuleCodes } from "@repo/aisle/pallet-policies"
+import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/copacker-packing-rules"
 import { ChevronRight, Copy, Ellipsis, Trash2, X } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { nextPalletId, type PalletCarton, type PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
-import { DimensionsField, FieldError, IssueBadge, NumberField, useMeasure } from "./packing-fields"
+import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
+import { type PalletIssuePlace, usePalletIssueErrors } from "./packing-issues"
 import { PalletCartonsDialog } from "./pallet-cartons-dialog"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-
-// The issues of where the pallet goes, which sit under the fields they name; the rest sit under the row.
-const ruleCodes = new Set<string>(palletRuleCodes)
-
-type RuledError = { place: "dimensions" | "weight"; fields: NonNullable<ValidationIssue["fields"]>; message: string }
 
 // Toggle, pallet, dimensions, weight, stacking, cartons and the menu. From 50rem the fields have the design's widths,
 // the gaps grow to 2rem as there's room, and cartons takes the rest; from 44rem the columns give a little.
@@ -117,8 +112,7 @@ function PalletRow({
 }) {
   const t = useTranslations("orders.pallets")
   const units = useTranslations("orders.cartonEditor")
-  const rules = useTranslations("server.readiness.packing")
-  const policy = useTranslations("orders.pallets.rules")
+  const issueErrors = usePalletIssueErrors()
   const packing = useTranslations("orders.packing")
   const measure = useMeasure()
   const id = useId()
@@ -133,51 +127,21 @@ function PalletRow({
   const blankSides = (["length", "width", "height"] as const).filter(
     (side) => shown(side, value[side]) && !positive(value[side])
   )
-  // The rules of where the pallet goes that it breaks, each under the field it names with this pallet's numbers.
-  const ruled = issues.flatMap((issue): RuledError[] => {
-    switch (issue.code) {
-      case "palletFootprint":
-        return [
-          {
-            place: "dimensions",
-            fields: issue.fields ?? [],
-            message: policy(issue.code, { ...issue.values, length: value.length, width: value.width })
-          }
-        ]
-      case "palletHeight":
-      case "stackableHeight":
-        return [
-          {
-            place: "dimensions",
-            fields: issue.fields ?? [],
-            message: policy(issue.code, { ...issue.values, height: value.height })
-          }
-        ]
-      case "palletWeight":
-        return [
-          {
-            place: "weight",
-            fields: issue.fields ?? [],
-            message: policy(issue.code, { ...issue.values, weight: value.weight })
-          }
-        ]
-      default:
-        return []
-    }
-  })
-  const ruledAt = (place: "dimensions" | "weight") =>
-    ruled.filter((error) => error.place === place).map((error) => error.message)
+  // The rules the pallet breaks: where it goes under the field it names, with this pallet's numbers, and how it matches
+  // the cartons under the row. A new pallet has no cartons until they're chosen, so that waits for submitting.
+  const ruled = issueErrors(
+    issues.filter((issue) => issue.code !== "emptyPallet" || showErrors),
+    value
+  )
+  const ruledAt = (...places: PalletIssuePlace[]) => ruled.filter((error) => places.includes(error.place))
   const outlined = ruled.flatMap((error) => error.fields)
-  const errors = {
-    dimensions: [...(blankSides.length ? [t("enterDimensions")] : []), ...ruledAt("dimensions")],
+  const errors: Record<"dimensions" | "weight" | "pallet", { message: string; source?: RuleSource }[]> = {
+    dimensions: [...(blankSides.length ? [{ message: t("enterDimensions") }] : []), ...ruledAt("dimensions")],
     weight: [
-      ...(shown("weight", value.weight) && !positive(value.weight) ? [t("enterWeight")] : []),
+      ...(shown("weight", value.weight) && !positive(value.weight) ? [{ message: t("enterWeight") }] : []),
       ...ruledAt("weight")
     ],
-    // A new pallet has no cartons until they're chosen, so that waits for submitting.
-    pallet: issues
-      .filter((issue) => !ruleCodes.has(issue.code) && (issue.code !== "emptyPallet" || showErrors))
-      .map((issue) => ("values" in issue ? rules(issue.code, issue.values) : rules(issue.code)))
+    pallet: ruledAt("pallet", "pallets")
   }
   const count = errors.dimensions.length + errors.weight.length + errors.pallet.length
   // Like a carton row, a pallet opens when it has problems or no cartons, and when it gets a problem unless closed by hand.
@@ -194,8 +158,10 @@ function PalletRow({
     open &&
     errors[place].length > 0 && (
       <div id={`${id}-${place}`} aria-live="polite" className={cn("flex flex-col gap-2", className)}>
-        {errors[place].map((message) => (
-          <FieldError key={message}>{message}</FieldError>
+        {errors[place].map((error) => (
+          <FieldError key={error.message} source={error.source}>
+            {error.message}
+          </FieldError>
         ))}
       </div>
     )

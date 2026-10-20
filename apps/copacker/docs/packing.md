@@ -130,8 +130,10 @@ shipment's pallets stops the job.
   edge; at most 72 in tall including the pallet and 1,500 lb, and 50 in for a stackable pallet; clear stretch wrap
   marked “Do not break stretch wrap”; and the **Pallet labels** step, one of each pallet's four labels on each side,
   at the top center, outside the stretch wrap, each carton keeping its own label. AWD and other shipments on pallets
-  get the general loading and securing steps, with no pallet label step. Nothing checks the pallet limits when they're
-  entered yet.
+  get the same pallet rules, with no pallet label step. Each line comes from the pallet policy
+  ([pallet rules](../../../packages/copacker-packing-rules/docs/pallet-rules.md)).
+- **Pallet table**: the pallet editor checks the footprint, height and weight as they're entered, against the policy
+  of where the pallet's cartons go, under the field each names, with a link to the receiver's own rule.
 
 Documents name labels by what they go on, not who issues them: Carton labels, Carrier labels and Pallet labels, since
 other 3PLs can ask for them too.

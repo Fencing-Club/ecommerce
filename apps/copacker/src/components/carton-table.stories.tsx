@@ -1,4 +1,4 @@
-import { validatePacking } from "@repo/aisle"
+import { validatePacking } from "@repo/copacker-packing-rules"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
@@ -107,9 +107,7 @@ export const QuantityInUnits = meta.story({
       expect.objectContaining({ items: [{ itemId: teaTowel!.id, pieces: 24 }] })
     )
     await userEvent.type(quantity, "5")
-    await expect(
-      canvas.getByText("Quantity: this product comes in packs of 2. Enter a multiple of 2 units.")
-    ).toBeVisible()
+    await expect(canvas.getByText("Quantity: CT-3100 is sold in packs of 2. Enter a multiple of 2.")).toBeVisible()
     await expect(quantity).toHaveAttribute("aria-invalid", "true")
   }
 })
@@ -173,10 +171,9 @@ const awd = checked(awdBagOrder)
 const [awdLimits, awdMixed, awdIvory] = errorCartons(awdBagOrder, 70)
 const rowErrors = [
   "Dimensions: Length is 70 cm. AWD allows up to 63.5 cm (25 in) on each side.",
-  "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
+  "Weight: 25 kg is over AWD’s limit of 22.67 kg (50 lb). Pack fewer units in each carton."
 ]
-const productError =
-  "Quantity: 160 sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons."
+const productError = "Quantity: 160 units is over AWD’s limit of 150 per carton. Pack 150 or fewer in each carton."
 
 // Cartons A1–A2 hold too many units and are too long and too heavy: each error shows once for the group, a carton's
 // under its row and a product's under the product, and each outlines the field it names.
@@ -216,7 +213,9 @@ export const AwdMixedSkus = meta.story({
   args: awd(awdMixed!),
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+      canvas.getByText(
+        "Products: this carton holds more than one SKU, and AWD takes one SKU per carton. Pack each SKU in its own cartons."
+      )
     ).toBeVisible()
     for (const quantity of canvas.getAllByRole("spinbutton")) {
       await expect(quantity).not.toHaveAttribute("aria-invalid")
@@ -257,9 +256,9 @@ export const AwdLimitsInGerman = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "A1–A2" })).toBeVisible()
     for (const error of [
-      "Menge: 160 verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
+      "Menge: 160 Einheiten liegen über der AWD-Obergrenze von 150 pro Karton. Packen Sie höchstens 150 in jeden Karton.",
       "Abmessungen: Die Länge beträgt 70 cm. Bei AWD darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
-      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,67 kg). Verringern Sie das Gewicht jedes Kartons."
+      "Gewicht: 25 kg liegen über dem AWD-Höchstgewicht von 22,67 kg (50 lb). Packen Sie weniger Einheiten in jeden Karton."
     ]) {
       await expect(canvas.getByText(error)).toBeVisible()
     }
@@ -281,7 +280,7 @@ export const AwdPackingTemplate = meta.story({
   play: async ({ canvas }) => {
     await expect(
       canvas.getByText(
-        "Packing template: This SKU uses 120 units per carton elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+        "Quantity: CT-3101’s other cartons hold 120 units each. AWD needs every carton of a SKU to match in units, size and weight. Match them, or ship this carton in another shipment."
       )
     ).toBeVisible()
     await expect(canvas.getByRole("spinbutton", { name: "CT-3101: quantity per carton C2" })).not.toHaveAttribute(
@@ -300,12 +299,12 @@ export const FbaLimits = meta.story({
   args: fba(fbaLimits!),
   play: async ({ canvas }) => {
     for (const error of [
-      "Dimensions: Length is 100 cm. FBA allows up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) for this carton.",
-      "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
+      "Dimensions: Length is 100 cm. FBA allows up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in), unless the carton holds a single unit.",
+      "Weight: 25 kg is over FBA’s limit of 22.67 kg (50 lb), unless the carton holds a single unit. Pack fewer units in each carton."
     ]) {
       await expect(canvas.getByText(error)).toBeVisible()
     }
-    await expect(canvas.queryByText(/sellable units per carton/)).toBeNull()
+    await expect(canvas.queryByText(/units is over/)).toBeNull()
     await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Length (cm)" })).toHaveAttribute(
       "aria-invalid",
       "true"

@@ -1,4 +1,4 @@
-import type { AmazonNetwork, OrderInput, OrderItem } from "@repo/aisle"
+import type { AmazonNetwork, OrderInput, OrderItem, Packing } from "@repo/aisle"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
 import { northwindFactory, towelOrder } from "@/stories/fixtures/packing"
@@ -28,8 +28,8 @@ const product = (overrides: Partial<OrderItem>) =>
     ...overrides
   })
 
-// The PO's products, each with the units the PO orders. The napkins have no ASIN or FNSKU yet, the tea towel 3-packs
-// come in sets of three, and a floor cushion is one large, heavy unit.
+// The PO's products, each with the units the PO orders. The napkins have no ASIN yet and the table runners no FNSKU, the
+// tea towel 3-packs come in sets of three, and a floor cushion is one large, heavy unit.
 const products = {
   natural: product({
     name: "Cotton drawstring bag",
@@ -73,7 +73,22 @@ const products = {
     asin: "B0CT310201",
     fnsku: "X0CT310201"
   }),
-  napkin: product({ name: "Linen napkin", variant: "Oat", buyerSku: "LN-4000", pieces: 60, asin: "", fnsku: "" }),
+  napkin: product({
+    name: "Linen napkin",
+    variant: "Oat",
+    buyerSku: "LN-4000",
+    pieces: 60,
+    asin: "",
+    fnsku: "X0LN400000"
+  }),
+  runner: product({
+    name: "Linen table runner",
+    variant: "Oat",
+    buyerSku: "LN-4100",
+    pieces: 60,
+    asin: "B0LN410000",
+    fnsku: ""
+  }),
   cushion: product({
     name: "Floor cushion",
     variant: "Charcoal / 100 × 100 cm",
@@ -89,7 +104,7 @@ export type ProductKey = keyof typeof products
 export function simulatorOrder(receiver: Receiver): OrderInput {
   const network = (key: ProductKey): AmazonNetwork => {
     if (receiver === "mixed") {
-      return ["natural", "sage", "napkin", "cushion"].includes(key) ? "fba" : "awd_us"
+      return ["natural", "sage", "napkin", "runner", "cushion"].includes(key) ? "fba" : "awd_us"
     }
     return receiver === "awd_us" ? "awd_us" : "fba"
   }
@@ -101,17 +116,15 @@ export function simulatorOrder(receiver: Receiver): OrderInput {
   })
 }
 
-// The PO with plenty of every product, sent to one Amazon network, so breaking one rule breaks no other.
-export function catalogOrder(network: AmazonNetwork): OrderInput {
-  return {
-    ...simulatorOrder("fba"),
-    items: (Object.keys(products) as ProductKey[]).map((key) => ({
-      ...products[key],
-      pieces: 100000,
-      amazonNetwork: network
-    }))
-  }
+// The PO with plenty of every product, so breaking one rule breaks no other.
+export function catalogOrder(receiver: Receiver): OrderInput {
+  const order = simulatorOrder(receiver)
+  return { ...order, items: order.items.map((item) => ({ ...item, pieces: 100000 })) }
 }
+
+// The PO a data set packs, sent to the receiver: the units it orders, or plenty of every product.
+export const dataSetOrder = (plenty: boolean | undefined, receiver: Receiver) =>
+  (plenty ? catalogOrder : simulatorOrder)(receiver)
 
 // A product no PO lists, for the rules on what a carton holds.
 export const unknownItemId = "7d1f0c2a-4b3e-4f5a-8c6d-999999999999"
@@ -135,7 +148,16 @@ export function cartonGroup(
   }
 }
 
-export type CartonDataSet = { name: string; receiver: Receiver; cartons: CartonGroup[]; note: string }
+// A set of cartons for the receiver it names. `plenty` packs them against a PO with plenty of every product, and
+// `changes` are the invoice changes they come with.
+export type CartonDataSet = {
+  name: string
+  receiver: Receiver
+  cartons: CartonGroup[]
+  note: string
+  plenty?: boolean
+  changes?: Packing["changes"]
+}
 
 // Each set shows a rule at work, or holds within it, for the receiver it names.
 export const cartonDataSets = {
@@ -202,8 +224,11 @@ export const cartonDataSets = {
   identifiers: {
     name: "Missing ASIN and FNSKU",
     receiver: "fba",
-    note: "The napkins have no ASIN or FNSKU on the PO.",
-    cartons: [cartonGroup(["D1"], [50, 40, 30], 8, [["napkin", 60]])]
+    note: "The napkins in D1 have no ASIN on the PO, and the table runners in D2 no FNSKU.",
+    cartons: [
+      cartonGroup(["D1"], [50, 40, 30], 8, [["napkin", 60]]),
+      cartonGroup(["D2"], [50, 40, 30], 8, [["runner", 60]])
+    ]
   },
   multipacks: {
     name: "Incomplete multi-packs",
@@ -274,7 +299,8 @@ export const palletCartonSet = [
 ]
 const a = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, index) => `A${from + index}`)
 
-export type PalletDataSet = { name: string; receiver: Receiver; pallets: PalletValue[]; note: string }
+// Pallets for cartons A1–A12, for the receiver it names. `plenty` packs them against a PO with plenty of every product.
+export type PalletDataSet = { name: string; receiver: Receiver; pallets: PalletValue[]; note: string; plenty?: boolean }
 
 export const palletDataSets = {
   withinLimits: {

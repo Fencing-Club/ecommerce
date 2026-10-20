@@ -1,11 +1,11 @@
-import { type CartonPolicy, cartonPolicies, sizeLimit, weightLimit } from "@repo/aisle/carton-policies"
+import { type CartonPolicy, cartonPolicies, sizeLimit, weightLimit } from "@repo/copacker-packing-rules/carton-policies"
 import {
   footprintLimit,
   heightLimit,
   type PalletPolicy,
   palletPolicies,
   palletWeightLimit
-} from "@repo/aisle/pallet-policies"
+} from "@repo/copacker-packing-rules/pallet-policies"
 import type { ShippingCopyKey } from "./shipping-copy"
 import type { ShippingDocumentData } from "./shipping-model"
 
@@ -44,7 +44,8 @@ export function policyChecks(policy: CartonPolicy) {
           }
         ]
       }
-      case "amazonIds":
+      case "asin":
+      case "fnsku":
         return []
     }
   })

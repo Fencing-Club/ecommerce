@@ -235,6 +235,9 @@ importers:
       '@repo/copacker-emails':
         specifier: workspace:*
         version: link:../../packages/copacker-emails
+      '@repo/copacker-packing-rules':
+        specifier: workspace:*
+        version: link:../../packages/copacker-packing-rules
       '@tanstack/react-router':
         specifier: 1.170.44
         version: 1.170.44(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -525,6 +528,9 @@ importers:
 
   packages/aisle:
     dependencies:
+      '@repo/copacker-packing-rules':
+        specifier: workspace:*
+        version: link:../copacker-packing-rules
       pdf-lib:
         specifier: 1.17.1
         version: 1.17.1
@@ -596,6 +602,27 @@ importers:
       '@types/react':
         specifier: ^19.2.0
         version: 19.3.0
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.1-rc
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@24.13.2)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(happy-dom@20.14.5)(msw@2.15.0(@types/node@24.13.2)(typescript@7.0.1-rc))(vite@8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
+
+  packages/copacker-packing-rules:
+    devDependencies:
+      '@repo/oxlint-config':
+        specifier: workspace:*
+        version: link:../oxlint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
       '@vitest/coverage-v8':
         specifier: ^4.1.10
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)

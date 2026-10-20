@@ -1,4 +1,5 @@
-import { type OrderInput, validatePacking } from "@repo/aisle"
+import { type OrderInput } from "@repo/aisle"
+import { validatePacking } from "@repo/copacker-packing-rules"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCartonTemplate } from "@/hooks/use-import-templates"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"

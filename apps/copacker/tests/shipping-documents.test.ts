@@ -352,7 +352,7 @@ describe("pallet labels", () => {
     expect(awdChecklist).not.toContain("Pallet labels")
   })
 
-  it("gives Amazon's pallet type, height, weight and wrap for FBA pallets, before the handoff", async () => {
+  it("gives Amazon's pallet type, height, weight and wrap for FBA and AWD pallets, before the handoff", async () => {
     const checklist = await pageText(ShippingPdf({ data: fba, kind: "checklist", settings: defaultDocumentSettings }))
     for (const value of [
       "Pallet type",
@@ -369,7 +369,10 @@ describe("pallet labels", () => {
     const awdChecklist = await pageText(
       ShippingPdf({ data: awd, kind: "checklist", settings: defaultDocumentSettings })
     )
-    expect(awdChecklist).not.toContain("Pallet type")
+    // AWD's shipping requirements send sellers to the same LTL and FTL pallet rules.
+    for (const value of ["Pallet type", "182.9 cm (72 in)", "680 kg (1,500 lb)"]) {
+      expect(awdChecklist).toContain(value)
+    }
   })
 
   it("lists each pallet's dimensions, weight and stacking in the packing list, and its label in the label reference", async () => {

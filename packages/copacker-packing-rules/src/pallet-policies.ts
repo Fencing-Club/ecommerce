@@ -1,15 +1,16 @@
-import { type CartonField, weightLimit } from "./carton-policies"
+import { amazonSources, type CartonField, weightLimit } from "./carton-policies"
 import type { AmazonNetwork } from "./index"
 
 // A rule a receiver sets for its pallets, as data, as carton-policies.ts keeps carton rules. A policy is the list of
 // rules one receiver's pallets follow. Rules on what the pallet editor measures have one evaluator each (checkPallet);
 // the rest say how to build the pallet, which the supplier's checklist states and nothing measures. So a 3PL, or an
 // arrangement with its own limits such as AWD's West Coast palletizable region, is a new policy, and only a new kind of
-// rule needs code. Limits are in the units the receiver states them in.
-export type PalletRule =
-  // The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
-  // four-way entry the receiver asks for, if any.
-  | { type: "footprint"; sides: readonly [number, number]; unit: "cm" | "in"; gmaGrade?: string }
+// rule needs code. Limits are in the units the receiver states them in. Each rule describes itself, as the receiver
+// states it, and `source` is the page where it does, which its errors link to.
+export type PalletRule = (
+// The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
+// four-way entry the receiver asks for, if any.
+| { type: "footprint"; sides: readonly [number, number]; unit: "cm" | "in"; gmaGrade?: string }
   // Cartons stacked flush and stable, heaviest at the bottom, labels facing out.
   | { type: "stacking" }
   // The tallest pallet, including the pallet itself, and the tallest one another pallet may stand on.
@@ -20,6 +21,7 @@ export type PalletRule =
   | { type: "stretchWrap" }
   // The receiver's four pallet labels, one on each side.
   | { type: "palletLabels" }
+) & { description: string; source?: string }
 
 export type PalletPolicy = {
   // Who receives the pallets, as messages name it, such as "FBA pallets may be up to 182.9 cm tall".
@@ -31,15 +33,56 @@ export type PalletPolicy = {
 // Amazon's US rules for pallets on LTL and FTL deliveries, checked October 20, 2026 (see the package's
 // docs/pallet-rules.md). AWD's shipping requirements send sellers to the same rules; it asks for pallet labels only on
 // Amazon's partnered carriers, which copacker doesn't book.
+const source = amazonSources.freight
 const amazonPallet = [
-  { type: "footprint", sides: [48, 40], unit: "in", gmaGrade: "B" },
-  { type: "stacking" },
-  { type: "maxHeight", height: 72, stackable: 50, unit: "in" },
-  { type: "maxWeight", weight: 1500, unit: "lb" },
-  { type: "stretchWrap" }
+  {
+    type: "footprint",
+    sides: [48, 40],
+    unit: "in",
+    gmaGrade: "B",
+    description:
+      "Use 48 × 40 in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
+    source
+  },
+  {
+    type: "stacking",
+    description: "Stack the cartons flush and stable, heaviest at the bottom, with their labels facing out.",
+    source
+  },
+  {
+    type: "maxHeight",
+    height: 72,
+    stackable: 50,
+    unit: "in",
+    description: "A pallet may be up to 72 in tall, including the pallet. A pallet another may stand on, up to 50 in.",
+    source
+  },
+  {
+    type: "maxWeight",
+    weight: 1500,
+    unit: "lb",
+    description: "A pallet may weigh up to 1,500 lb, including the pallet.",
+    source
+  },
+  {
+    type: "stretchWrap",
+    description: "Wrap the load in clear stretch wrap, marked “Do not break stretch wrap”.",
+    source
+  }
 ] as const satisfies readonly PalletRule[]
 export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
-  fba: { receiver: "FBA", rules: [...amazonPallet, { type: "palletLabels" }] },
+  fba: {
+    receiver: "FBA",
+    rules: [
+      ...amazonPallet,
+      {
+        type: "palletLabels",
+        description:
+          "Put one of each pallet's four labels on each side, at the top center, outside the stretch wrap. Each carton keeps its own label.",
+        source
+      }
+    ]
+  },
   awd_us: { receiver: "AWD", rules: amazonPallet }
 }
 
@@ -51,7 +94,7 @@ const inches = (value: number, unit: "cm" | "in") =>
   Number((unit === "in" ? value : value / centimetresPerInch).toFixed(1))
 
 // A footprint in both units, longer side first.
-export function footprintLimit(rule: Extract<PalletRule, { type: "footprint" }>) {
+export function footprintLimit(rule: Pick<Extract<PalletRule, { type: "footprint" }>, "sides" | "unit">) {
   return {
     lengthCm: centimetres(rule.sides[0], rule.unit),
     widthCm: centimetres(rule.sides[1], rule.unit),
@@ -61,7 +104,7 @@ export function footprintLimit(rule: Extract<PalletRule, { type: "footprint" }>)
 }
 
 // A height limit in both units, and the stackable pallet's when the rule sets one.
-export function heightLimit(rule: Extract<PalletRule, { type: "maxHeight" }>) {
+export function heightLimit(rule: Pick<Extract<PalletRule, { type: "maxHeight" }>, "height" | "stackable" | "unit">) {
   return {
     maxCm: centimetres(rule.height, rule.unit),
     maxIn: inches(rule.height, rule.unit),
@@ -73,8 +116,8 @@ export function heightLimit(rule: Extract<PalletRule, { type: "maxHeight" }>) {
 }
 
 // A pallet's weight limit in both units, rounded to whole kilograms: 1,500 lb is 680 kg.
-export function palletWeightLimit(rule: Extract<PalletRule, { type: "maxWeight" }>) {
-  const { maxKg, maxLb } = weightLimit({ type: "maxWeight", weight: rule.weight, unit: rule.unit })
+export function palletWeightLimit(rule: Pick<Extract<PalletRule, { type: "maxWeight" }>, "weight" | "unit">) {
+  const { maxKg, maxLb } = weightLimit(rule)
   return { maxKg: Math.round(maxKg), maxLb: Math.round(maxLb) }
 }
 
@@ -100,12 +143,12 @@ export type PolicyPallet = {
   stackable: boolean
 }
 
-type Finding = { issue: PalletRuleIssue; fields: CartonField[] }
+type Finding = { issue: PalletRuleIssue; fields: CartonField[]; source?: string }
 
-// The rules of a policy a pallet breaks, with the fields each names.
-export function checkPallet(policy: PalletPolicy, pallet: PolicyPallet) {
+// The rules of a policy a pallet breaks, with the fields each names and the page that states the rule.
+export function checkPallet(policy: PalletPolicy, pallet: PolicyPallet): Finding[] {
   const values = { receiver: policy.receiver, pallet: pallet.palletId }
-  return policy.rules.flatMap((rule): Finding[] => {
+  const broken = (rule: PalletRule): Finding[] => {
     switch (rule.type) {
       case "footprint": {
         // The pallet fits the footprint either way round: its longer side against the longer limit.
@@ -139,7 +182,7 @@ export function checkPallet(policy: PalletPolicy, pallet: PolicyPallet) {
       }
       case "maxWeight": {
         const limit = palletWeightLimit(rule)
-        const exact = weightLimit({ type: "maxWeight", weight: rule.weight, unit: rule.unit }).maxKg
+        const exact = weightLimit(rule).maxKg
         return pallet.weight > exact
           ? [{ issue: { code: "palletWeight", values: { ...values, ...limit } }, fields: ["weight"] }]
           : []
@@ -149,5 +192,8 @@ export function checkPallet(policy: PalletPolicy, pallet: PolicyPallet) {
       case "palletLabels":
         return []
     }
-  })
+  }
+  return policy.rules.flatMap((rule) =>
+    broken(rule).map((finding) => (rule.source ? { ...finding, source: rule.source } : finding))
+  )
 }

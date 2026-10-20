@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import {
+  amazonSources,
   type CartonPolicy,
   cartonLimits,
   cartonPolicies,
@@ -9,21 +10,16 @@ import {
   sizeLimit,
   weightLimit
 } from "../src/carton-policies"
-import { itemSchema } from "../src/index"
+import type { PackingItem } from "../src/index"
 
-const item = (buyerSku: string, piecesPerSet = 1, ids = { asin: "B000000001", fnsku: "X000000001" }) =>
-  itemSchema.parse({
-    id: randomUUID(),
-    variantId: "gid://shopify/ProductVariant/1",
-    inventoryItemId: "gid://shopify/InventoryItem/1",
-    name: "Cotton drawstring bag",
-    variant: "Natural",
-    buyerSku,
-    ...ids,
-    pieces: 1000,
-    piecesPerSet,
-    unitPrice: 180
-  })
+const item = (buyerSku: string, piecesPerSet = 1, ids = { asin: "B000000001", fnsku: "X000000001" }): PackingItem => ({
+  id: randomUUID(),
+  buyerSku,
+  ...ids,
+  pieces: 1000,
+  piecesPerSet,
+  amazonNetwork: "fba"
+})
 const bag = item("DB-2031")
 const towel = item("CT-3100", 2)
 const carton = (
@@ -65,8 +61,8 @@ describe("carton policies", () => {
       samePacking: true,
       exceptOneUnit: false
     })
-    expect(sizeLimit({ type: "maxSize", sides: [60, 40, 40], unit: "cm" })).toMatchObject({ lengthIn: 23.6220472441 })
-    expect(weightLimit({ type: "maxWeight", weight: 20, unit: "kg" })).toEqual({ maxKg: 20, maxLb: 44.09 })
+    expect(sizeLimit({ sides: [60, 40, 40], unit: "cm" })).toMatchObject({ lengthIn: 23.6220472441 })
+    expect(weightLimit({ weight: 20, unit: "kg" })).toEqual({ maxKg: 20, maxLb: 44.09 })
   })
 
   it("lets an FBA carton fit its limit in any orientation, and outlines the sides that don't", () => {
@@ -108,8 +104,10 @@ describe("carton policies", () => {
       {
         issue: {
           code: "samePacking",
-          values: { sku: "DB-2031", units: 100, length: 60, width: 40, height: 40, weight: 12 }
-        }
+          values: { receiver: "AWD", sku: "DB-2031", units: 100, length: 60, width: 40, height: 40, weight: 12 }
+        },
+        // Where AWD states the rule, for its error to link to.
+        source: amazonSources.awdInventory
       }
     ])
     expect(codes(cartonPolicies.fba, carton([60, 40, 41], 12, [[bag, 90]]), [first])).toEqual([])
@@ -118,7 +116,7 @@ describe("carton policies", () => {
   it("requires Amazon's product identifiers", () => {
     const unlisted = item("DB-2032", 1, { asin: "", fnsku: "X000000002" })
     expect(checkCarton(cartonPolicies.fba, carton([60, 40, 40], 12, [[unlisted, 10]]), [])).toEqual([
-      { issue: { code: "missingAmazonIds", values: { sku: "DB-2032" } } }
+      { issue: { code: "missingAsin", values: { receiver: "FBA", sku: "DB-2032" } } }
     ])
   })
 
@@ -127,9 +125,9 @@ describe("carton policies", () => {
     const warehouse: CartonPolicy = {
       receiver: "Bayline",
       rules: [
-        { type: "maxSize", sides: [60, 40, 40], unit: "cm" },
-        { type: "maxWeight", weight: 20, unit: "kg" },
-        { type: "maxUnits", units: 48 }
+        { type: "maxSize", sides: [60, 40, 40], unit: "cm", description: "Boxes up to 60 × 40 × 40 cm." },
+        { type: "maxWeight", weight: 20, unit: "kg", description: "Boxes up to 20 kg." },
+        { type: "maxUnits", units: 48, description: "Up to 48 units a box." }
       ]
     }
     const unlisted = item("DB-2032", 1, { asin: "", fnsku: "" })

@@ -406,6 +406,7 @@
     },
     "draftSaved": "草稿已保存",
     "cartonIssue": "第 {carton} 箱：{message}",
+    "ruleSource": "{receiver} 要求",
     "readyToSubmit": "可以提交",
     "readyToSubmitApproval": "可以提交，修改将交由买家审批",
     "readyToSubmitUpdates": "可以提交，修改将更新采购订单",
@@ -523,12 +524,20 @@
     "enterUnits": "请输入每箱装有此商品的件数。",
     "cartonCount": "{count, plural, other {# 箱}}",
     "rules": {
-      "unitsPerCarton": "数量：每箱 {units, number} 件可售商品，超过 {receiver} 的 {max, number} 件上限。请拆分到更小的纸箱中。",
-      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）。} other {{receiver} 允许此纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）。}}",
-      "cartonWeight": "重量：{weight, number} 千克，超过 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请减轻每箱重量。",
-      "oneSku": "商品：{receiver} 要求每箱只装一个 SKU。请将这些 SKU 分装到不同纸箱。",
-      "samePacking": "装箱模板：此 SKU 在本次发货的其他纸箱中使用{difference, select, units {每箱 {units, number} 件} other {{length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克的纸箱}}。请为此 SKU 的每个纸箱使用相同的装箱模板。",
-      "incompletePacks": "数量：此商品每包 {pack, number} 件。请输入 {pack, number} 的倍数。"
+      "unitsPerCarton": "数量：{units, number} 件超过 {receiver} 每箱 {max, number} 件的上限。请每箱最多装 {max, number} 件。",
+      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）} other {{receiver} 允许的纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）}}{exception, select, oneUnit {，仅装一件商品的纸箱除外} other {}}。",
+      "cartonWeight": "重量：{weight, number} 千克，超过 {receiver} {maxKg, number} 千克（{maxLb, number} 磅）的上限{exception, select, oneUnit {，仅装一件商品的纸箱除外} other {}}。请减少每箱的件数。",
+      "oneSku": "商品：此纸箱装有多个 SKU，而 {receiver} 每箱只接受一个 SKU。请将每个 SKU 单独装箱。",
+      "samePacking": "{difference, select, units {数量：{sku} 的其他纸箱每箱 {units, number} 件。} other {尺寸：{sku} 的其他纸箱为 {length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克。}}{receiver} 要求同一 SKU 的所有纸箱件数、尺寸和重量一致。请调整一致，或将此纸箱放入另一批发货。",
+      "incompletePacks": "数量：{sku} 按 {pack, number} 件一包出售。请输入 {pack, number} 的倍数。",
+      "missingAsin": "商品：{sku} 没有 ASIN，{receiver} 需要它才能收货。买家会在采购订单中添加。",
+      "missingFnsku": "商品：{sku} 没有 FNSKU，{receiver} 需要它来贴标。买家会在采购订单中添加。",
+      "duplicateCarton": "箱号：{carton} 已被另一个纸箱使用。请为每个纸箱设置不同的箱号。",
+      "repeatedProduct": "商品：{sku} 在此纸箱中出现了多次。请只列一次，并填写全部数量。",
+      "mixedNetworks": "商品：此纸箱混装了 FBA 和 AWD 的商品。请将各网络的商品分箱包装。",
+      "unknownProduct": "商品：此纸箱中有不在采购订单上的商品。请将其从纸箱中移除。",
+      "overQuantity": "数量：纸箱中有 {packed, number} 件 {sku}，但采购订单只剩 {remaining, number} 件。请移除 {extra, plural, other {# 件}}。",
+      "unknownChange": "发票更改：有一项更改针对不在采购订单上的商品，或与另一项更改重复。请将其删除。"
     }
   },
   "pallets": {
@@ -563,10 +572,16 @@
     "enterDimensions": "请输入托盘的长、宽、高。",
     "enterWeight": "请输入托盘毛重（含托盘本身）。",
     "rules": {
-      "palletFootprint": "尺寸：{length, number} × {width, number} 厘米大于 {receiver} 的 {lengthCm, number} × {widthCm, number} 厘米（{lengthIn, number} × {widthIn, number} 英寸）托盘。货物不得超出托盘边缘。",
+      "palletFootprint": "尺寸：货物为 {length, number} × {width, number} 厘米，超出了 {receiver} {lengthCm, number} × {widthCm, number} 厘米（{lengthIn, number} × {widthIn, number} 英寸）托盘的边缘。请让纸箱保持在托盘范围内。",
       "palletHeight": "高度：{height, number} 厘米超过 {receiver} 含托盘 {maxCm, number} 厘米（{maxIn, number} 英寸）的上限。请将纸箱分到更多托盘上。",
-      "stackableHeight": "高度：{height, number} 厘米对可堆叠的 {receiver} 托盘来说太高，上限为 {maxCm, number} 厘米（{maxIn, number} 英寸）。请标记为不可堆叠，或降低货物高度。",
-      "palletWeight": "重量：{weight, number} 千克超过 {receiver} 含托盘 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请将纸箱分到更多托盘上。"
+      "stackableHeight": "高度：{height, number} 厘米对可堆叠的 {receiver} 托盘来说太高，上限为 {maxCm, number} 厘米（{maxIn, number} 英寸）。请将“堆叠”设为“不可堆叠”，或降低货物高度。",
+      "palletWeight": "重量：{weight, number} 千克超过 {receiver} 含托盘 {maxKg, number} 千克（{maxLb, number} 磅）的上限。请将纸箱分到更多托盘上。",
+      "emptyPallet": "纸箱：此托盘还没有纸箱。请选择其纸箱，或删除托盘。",
+      "duplicatePallet": "托盘：有两个托盘的编号都是 {pallet}。请使用唯一编号重新导入。",
+      "unknownPalletCarton": "纸箱：{carton} 不是本次发货的纸箱。请将其从此托盘移除。",
+      "palletCartonTwice": "纸箱：{carton} 已在另一个托盘上。请将其从此托盘或另一个托盘移除。",
+      "noPallets": "托盘：这些纸箱以托盘方式发货，但还没有托盘。请添加托盘，或取消勾选“托盘包装”。",
+      "cartonsOffPallets": "纸箱：{count, plural, other {# 个纸箱不在任何托盘上：{cartons}。请为其选择托盘，或新增一个托盘。}}"
     }
   },
   "palletCartons": {

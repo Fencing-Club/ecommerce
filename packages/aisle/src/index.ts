@@ -1,21 +1,6 @@
+import { type AmazonNetwork, amazonNetworks, cartonNetworks, validatePacking } from "@repo/copacker-packing-rules"
 import { z } from "zod"
-import {
-  type CartonField,
-  type CartonPolicy,
-  type CartonRuleIssue,
-  cartonPolicies,
-  checkCarton,
-  type PolicyCarton
-} from "./carton-policies"
 import { packingRequirementsSchema } from "./packing-requirements"
-import {
-  checkPallet,
-  type PalletPolicy,
-  type PalletRuleIssue,
-  palletPolicies,
-  palletRuleCodes,
-  type PolicyPallet
-} from "./pallet-policies"
 
 // Amazon inbound preparation categories.
 export const prepCategories = [
@@ -34,8 +19,8 @@ export type PrepCategory = (typeof prepCategories)[number]
 export const destinationSchema = z.enum(["amazon", "warehouse"])
 // Amazon's inbound networks a PO line can go to: FBA, or AWD in the US. Each has its own carton rules, and each
 // network's cartons become their own shipment.
-export const amazonNetworks = ["fba", "awd_us"] as const
-export type AmazonNetwork = (typeof amazonNetworks)[number]
+// Amazon's networks are the receivers the packing rules know (@repo/copacker-packing-rules).
+export { amazonNetworks, type AmazonNetwork }
 export const amazonNetworkNames: Record<AmazonNetwork, string> = { fba: "FBA", awd_us: "AWD US" }
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
@@ -344,59 +329,6 @@ export const packingDraftSchema = z
 export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
 export type Pallet = z.infer<typeof palletInputSchema>
-// A packing rule a carton or the whole packing breaks, as a code and the values it names, so the app can say it in each
-// reader's language. The rules of where a carton goes come from its policy (see carton-policies.ts); the rest hold
-// everywhere.
-export type PackingRule =
-  | { code: "duplicateCarton" | "mixedNetworks" | "repeatedProduct" | "unknownProduct" | "unknownChange" }
-  | { code: "incompletePacks"; values: { sku: string; pack: number } }
-  | { code: "overQuantity"; values: { sku: string } }
-  | CartonRuleIssue
-  // Cartons packed on pallets: each on exactly one pallet of this shipment.
-  | { code: "noPallets" }
-  | { code: "emptyPallet" | "duplicatePallet"; values: { pallet: string } }
-  | { code: "unknownPalletCarton" | "palletCartonTwice"; values: { pallet: string; carton: string } }
-  | { code: "cartonsOffPallets"; values: { count: number; cartons: string } }
-  | PalletRuleIssue
-export type ValidationIssue = { cartonId?: string; palletId?: string; fields?: CartonField[] } & PackingRule
-export const palletRules = new Set<PackingRule["code"]>([
-  "noPallets",
-  "emptyPallet",
-  "duplicatePallet",
-  "unknownPalletCarton",
-  "palletCartonTwice",
-  "cartonsOffPallets",
-  ...palletRuleCodes
-])
-
-// Carton IDs split into runs of a sequence, such as B1, B2, B3 or D8, D9, each in the order given.
-export function cartonRuns(ids: readonly string[]) {
-  const runs: string[][] = []
-  let previous: { prefix: string; digits: number; number: number } | undefined
-  for (const id of ids) {
-    const sequence = id.match(/^(.*?)(\d+)$/)
-    const next = sequence && { prefix: sequence[1]!, digits: sequence[2]!.length, number: Number(sequence[2]) }
-    if (
-      next &&
-      previous &&
-      next.prefix === previous.prefix &&
-      `${previous.prefix}${String(previous.number + 1).padStart(previous.digits, "0")}` === id
-    ) {
-      runs.at(-1)!.push(id)
-    } else {
-      runs.push([id])
-    }
-    previous = next ?? undefined
-  }
-  return runs
-}
-
-// A run of cartons as a packing list writes it: "D8–D9", or "B4" alone.
-export const cartonRunLabel = (run: readonly string[]) => (run.length > 1 ? `${run[0]}–${run.at(-1)}` : run[0]!)
-
-// Carton IDs as a packing list writes them, with runs of a sequence as ranges: "B4, B6, D1, D8–D9, D11".
-export const cartonList = (ids: readonly string[]) => cartonRuns(ids).map(cartonRunLabel).join(", ")
-
 // A pallet's place in the Amazon shipment its cartons travel in, as Amazon numbers its pallet labels: the shipment's
 // pallets in packing order, from 1.
 export type PalletLabel = { palletId: string; amazonShipmentId: string; number: number; count: number }
@@ -415,165 +347,6 @@ export function palletLabels(
     const shipment = placed.filter((other) => other.amazonShipmentId === pallet.amazonShipmentId)
     return { ...pallet, number: shipment.indexOf(pallet) + 1, count: shipment.length }
   })
-}
-
-// Each carton on exactly one pallet, and every pallet holding cartons of this shipment.
-export function validatePallets(packing: {
-  cartons: { cartonId: string }[]
-  pallets?: Pick<Pallet, "palletId" | "cartonIds">[]
-}) {
-  const issues: ValidationIssue[] = []
-  const pallets = packing.pallets ?? []
-  if (!pallets.length) {
-    issues.push({ code: "noPallets" })
-    return issues
-  }
-  const cartons = new Set(packing.cartons.map((carton) => carton.cartonId.toLowerCase()))
-  const placed = new Set<string>()
-  const palletIds = new Set<string>()
-  for (const { palletId, cartonIds } of pallets) {
-    const values = { pallet: palletId }
-    if (palletIds.has(palletId.toLowerCase())) {
-      issues.push({ palletId, code: "duplicatePallet", values })
-    }
-    palletIds.add(palletId.toLowerCase())
-    if (!cartonIds.length) {
-      issues.push({ palletId, code: "emptyPallet", values })
-    }
-    for (const carton of cartonIds) {
-      if (!cartons.has(carton.toLowerCase())) {
-        issues.push({ palletId, code: "unknownPalletCarton", values: { ...values, carton } })
-      } else if (placed.has(carton.toLowerCase())) {
-        issues.push({ palletId, code: "palletCartonTwice", values: { ...values, carton } })
-      }
-      placed.add(carton.toLowerCase())
-    }
-  }
-  const off = packing.cartons.filter((carton) => !placed.has(carton.cartonId.toLowerCase()))
-  if (off.length) {
-    issues.push({
-      code: "cartonsOffPallets",
-      values: { count: off.length, cartons: cartonList(off.map((carton) => carton.cartonId)) }
-    })
-  }
-  return issues
-}
-
-export function validatePacking(
-  order: OrderInput,
-  packing: Pick<Packing, "cartons" | "changes" | "palletized" | "pallets">,
-  reserved: Record<string, number> = {}
-) {
-  const issues: ValidationIssue[] = []
-  const totals: Record<string, number> = {}
-  const cartonIds = new Set<string>()
-  // The cartons checked so far under each policy, for its rules across cartons.
-  const checked = new Map<CartonPolicy, PolicyCarton[]>()
-  for (const carton of packing.cartons) {
-    const add = (rule: PackingRule, fields?: ValidationIssue["fields"]) =>
-      issues.push({ cartonId: carton.cartonId, ...rule, ...(fields && { fields }) })
-    if (cartonIds.has(carton.cartonId.toLowerCase())) {
-      add({ code: "duplicateCarton" })
-    }
-    cartonIds.add(carton.cartonId.toLowerCase())
-    const networks = cartonNetworks(order, carton)
-    if (order.destination === "amazon" && networks.length > 1) {
-      add({ code: "mixedNetworks" })
-    }
-    if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
-      add({ code: "repeatedProduct" })
-    }
-    const contents: PolicyCarton["contents"] = []
-    for (const content of carton.items) {
-      const item = order.items.find((i) => i.id === content.itemId)
-      if (!item) {
-        add({ code: "unknownProduct" })
-        continue
-      }
-      totals[item.id] = (totals[item.id] ?? 0) + content.pieces
-      const units = content.pieces / item.piecesPerSet
-      if (!Number.isInteger(units)) {
-        add({ code: "incompletePacks", values: { sku: item.buyerSku, pack: item.piecesPerSet } })
-      }
-      contents.push({ item, pieces: content.pieces, units })
-    }
-    const policy = cartonPolicy(order, networks)
-    if (policy) {
-      const earlier = checked.get(policy) ?? []
-      const current = { ...carton, contents }
-      for (const { issue, fields } of checkCarton(policy, current, earlier)) {
-        add(issue, fields)
-      }
-      checked.set(policy, [...earlier, current])
-    }
-  }
-  for (const item of order.items) {
-    if ((totals[item.id] ?? 0) + (reserved[item.id] ?? 0) > item.pieces) {
-      issues.push({ code: "overQuantity", values: { sku: item.buyerSku } })
-    }
-  }
-  const changedIds = new Set<string>()
-  for (const change of packing.changes) {
-    if (!order.items.some((i) => i.id === change.itemId) || changedIds.has(change.itemId)) {
-      issues.push({ code: "unknownChange" })
-    }
-    changedIds.add(change.itemId)
-  }
-  if (packing.palletized) {
-    issues.push(...validatePallets(packing), ...checkPallets(order, packing))
-  }
-  return { issues, totals, valid: issues.length === 0 }
-}
-
-// The carton rules a carton follows, by where it goes. A carton to Amazon follows its network's, or AWD's, the stricter,
-// when it wrongly mixes networks; the buyer's own locations take any carton.
-function cartonPolicy(order: Pick<OrderInput, "destination">, networks: AmazonNetwork[]) {
-  if (order.destination !== "amazon") {
-    return null
-  }
-  return cartonPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
-}
-
-// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). The buyer's own locations
-// and forwarders take any pallet.
-export function checkPallets(
-  order: Pick<OrderInput, "destination" | "items">,
-  packing: {
-    cartons: Pick<Packing["cartons"][number], "cartonId" | "items">[]
-    pallets?: (PolicyPallet & { cartonIds: string[] })[]
-  }
-) {
-  return (packing.pallets ?? []).flatMap((pallet): ValidationIssue[] => {
-    const cartons = packing.cartons.filter((carton) =>
-      pallet.cartonIds.some((id) => id.toLowerCase() === carton.cartonId.toLowerCase())
-    )
-    const policy = palletPolicy(
-      order,
-      cartons.flatMap((carton) => cartonNetworks(order, carton))
-    )
-    return policy
-      ? checkPallet(policy, pallet).map(({ issue, fields }) => ({ palletId: pallet.palletId, ...issue, fields }))
-      : []
-  })
-}
-
-// The pallet rules a pallet follows, by where its cartons go: AWD's when any go there, as with cartons, otherwise FBA's.
-function palletPolicy(order: Pick<OrderInput, "destination">, networks: AmazonNetwork[]): PalletPolicy | null {
-  if (order.destination !== "amazon" || !networks.length) {
-    return null
-  }
-  return palletPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
-}
-
-// The Amazon networks a carton's products go to, in network order. A carton to Amazon should have exactly one.
-export function cartonNetworks(order: Pick<OrderInput, "items">, carton: Pick<Packing["cartons"][number], "items">) {
-  const networks = new Set(
-    carton.items.flatMap((content) => {
-      const item = order.items.find((row) => row.id === content.itemId)
-      return item ? [item.amazonNetwork] : []
-    })
-  )
-  return amazonNetworks.filter((network) => networks.has(network))
 }
 
 // A packing's cartons for each Amazon network they go to, each a packing of its own, in network order. Every carton goes

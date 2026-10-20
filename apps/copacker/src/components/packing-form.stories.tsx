@@ -413,11 +413,11 @@ export const AwdPackingErrors = meta.story({
   play: async ({ canvas }) => {
     const carton = within(canvas.getByRole("region", { name: "Carton C1" }))
     await expect(
-      carton.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+      carton.getByText(
+        "Products: this carton holds more than one SKU, and AWD takes one SKU per carton. Pack each SKU in its own cartons."
+      )
     ).toBeVisible()
-    await expect(
-      carton.getByText(/^Quantity: 160 sellable units per carton exceeds AWD’s limit of 150\./)
-    ).toBeVisible()
+    await expect(carton.getByText(/^Quantity: 160 units is over AWD’s limit of 150 per carton\./)).toBeVisible()
     await expect(carton.getByRole("spinbutton", { name: "Carton C1: Weight (kg)" })).toHaveAttribute(
       "aria-invalid",
       "true"
@@ -475,7 +475,7 @@ export const MissingAmazonIdentity = meta.story({
     order: { ...awdOrder, items: awdOrder.items.map((item) => ({ ...item, fnsku: "" })) }
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText(/add the Amazon ASIN and FNSKU/)).toHaveLength(1)
+    await expect(canvas.getAllByText(/has no FNSKU, which AWD needs to label it/)).toHaveLength(1)
     await expect(canvas.getAllByRole("spinbutton", { name: /quantity per carton/ })[0]!).not.toHaveAttribute(
       "aria-invalid",
       "true"
@@ -496,7 +496,7 @@ export const AwdConfigurationMismatch = meta.story({
   play: async ({ canvas }) => {
     await expect(
       canvas.getByText(
-        "Packing template: This SKU uses 40 units per carton elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+        /other cartons hold 40 units each\. AWD needs every carton of a SKU to match in units, size and weight\./
       )
     ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
@@ -525,7 +525,9 @@ export const AwdPackingErrorsMobile = meta.story({
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+      canvas.getByText(
+        "Products: this carton holds more than one SKU, and AWD takes one SKU per carton. Pack each SKU in its own cartons."
+      )
     ).toBeVisible()
   }
 })
@@ -557,7 +559,11 @@ export const PackedOnPallets = meta.story({
     await expect(canvas.getByRole("checkbox", { name: "Packed on pallets" })).toBeChecked()
     const pallets = within(canvas.getByRole("region", { name: "Pallets" }))
     await expect(pallets.getByText("No pallets yet")).toBeVisible()
-    await expect(pallets.getByText("Add the pallets these cartons ship on, or uncheck Packed on pallets")).toBeVisible()
+    await expect(
+      pallets.getByText(
+        "Pallets: these cartons ship on pallets, and there are none yet. Add a pallet, or uncheck Packed on pallets."
+      )
+    ).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
 
     await userEvent.click(pallets.getByRole("button", { name: "Add pallet" }))
@@ -577,7 +583,7 @@ export const PackedOnPallets = meta.story({
     await userEvent.click(dialog.getByRole("button", { name: "Save cartons" }))
     await expect(pallet.getByRole("listitem")).toHaveTextContent("A1–A4")
     await expect(pallets.getByText("4 of 7 cartons on pallets")).toBeVisible()
-    await expect(pallets.getByText(/^3 cartons aren’t on a pallet: B1–B2, C1\./)).toBeVisible()
+    await expect(pallets.getByText(/^Cartons: 3 cartons aren’t on a pallet: B1–B2, C1\./)).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
 
     // A second pallet takes the rest, and the totals are the pallets'.

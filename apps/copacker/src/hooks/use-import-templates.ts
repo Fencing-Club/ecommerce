@@ -1,4 +1,5 @@
-import { cartonList, type OrderInput } from "@repo/aisle"
+import { type OrderInput } from "@repo/aisle"
+import { cartonList } from "@repo/copacker-packing-rules"
 import { useLocale, useTranslations } from "use-intl"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { cartonColumns, cartonExample, cartonRows, cartonTemplate } from "@/lib/carton-import"

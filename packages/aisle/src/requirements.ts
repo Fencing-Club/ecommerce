@@ -1,4 +1,4 @@
-import { cartonLimits, cartonPolicies } from "./carton-policies"
+import { cartonLimits, cartonPolicies } from "@repo/copacker-packing-rules/carton-policies"
 import {
   type AmazonNetwork,
   amazonNetworkNames,

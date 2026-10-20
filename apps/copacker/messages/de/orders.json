@@ -406,6 +406,7 @@
     },
     "draftSaved": "Entwurf gespeichert",
     "cartonIssue": "Karton {carton}: {message}",
+    "ruleSource": "Anforderungen von {receiver}",
     "readyToSubmit": "Bereit zum Senden",
     "readyToSubmitApproval": "Bereit zum Senden, Änderungen gehen zur Genehmigung an den Käufer",
     "readyToSubmitUpdates": "Bereit zum Senden, Änderungen aktualisieren die Bestellung",
@@ -523,12 +524,20 @@
     "enterUnits": "Geben Sie an, wie viele Einheiten dieses Produkts jeder Karton enthält.",
     "cartonCount": "{count, plural, one {# Karton} other {# Kartons}}",
     "rules": {
-      "unitsPerCarton": "Menge: {units, number} verkaufsfähige Einheiten pro Karton überschreiten die {receiver}-Obergrenze von {max, number}. Verteilen Sie die Einheiten auf mehrere Kartons.",
-      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. {shape, select, cube {Bei {receiver} darf keine Kartonseite länger als {lengthCm, number} cm ({lengthIn, number} Zoll) sein.} other {{receiver} erlaubt für diesen Karton höchstens {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} Zoll).}}",
-      "cartonWeight": "Gewicht: {weight, number} kg überschreiten das zulässige Höchstgewicht von {maxLb, number} lb ({maxKg, number} kg). Verringern Sie das Gewicht jedes Kartons.",
-      "oneSku": "Produkte: {receiver} erlaubt nur eine SKU pro Karton. Verteilen Sie diese SKUs auf separate Kartons.",
-      "samePacking": "Verpackungsvorlage: Diese SKU verwendet an anderer Stelle in dieser Sendung {difference, select, units {{units, number} Einheiten pro Karton} other {Kartons mit {length, number} × {width, number} × {height, number} cm und {weight, number} kg}}. Verwenden Sie für jeden Karton dieser SKU dieselbe Verpackungsvorlage.",
-      "incompletePacks": "Menge: Dieses Produkt gibt es in Packungen zu {pack, number}. Geben Sie ein Vielfaches von {pack, number} Einheiten ein."
+      "unitsPerCarton": "Menge: {units, number} Einheiten liegen über der {receiver}-Obergrenze von {max, number} pro Karton. Packen Sie höchstens {max, number} in jeden Karton.",
+      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. {shape, select, cube {Bei {receiver} darf keine Kartonseite länger als {lengthCm, number} cm ({lengthIn, number} Zoll) sein} other {{receiver} erlaubt höchstens {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} Zoll)}}{exception, select, oneUnit {, außer der Karton enthält nur eine Einheit} other {}}.",
+      "cartonWeight": "Gewicht: {weight, number} kg liegen über dem {receiver}-Höchstgewicht von {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, außer der Karton enthält nur eine Einheit} other {}}. Packen Sie weniger Einheiten in jeden Karton.",
+      "oneSku": "Produkte: Dieser Karton enthält mehr als eine SKU, und {receiver} nimmt nur eine SKU pro Karton an. Packen Sie jede SKU in eigene Kartons.",
+      "samePacking": "{difference, select, units {Menge: Die anderen Kartons von {sku} enthalten je {units, number} Einheiten.} other {Abmessungen: Die anderen Kartons von {sku} messen {length, number} × {width, number} × {height, number} cm bei {weight, number} kg.}} {receiver} verlangt, dass alle Kartons einer SKU in Einheiten, Größe und Gewicht übereinstimmen. Gleichen Sie sie an oder versenden Sie diesen Karton in einer anderen Sendung.",
+      "incompletePacks": "Menge: {sku} wird in Packungen zu {pack, number} verkauft. Geben Sie ein Vielfaches von {pack, number} ein.",
+      "missingAsin": "Produkte: {sku} hat keine ASIN, die {receiver} für den Wareneingang braucht. Der Käufer ergänzt sie in der Bestellung.",
+      "missingFnsku": "Produkte: {sku} hat keine FNSKU, die {receiver} für die Etikettierung braucht. Der Käufer ergänzt sie in der Bestellung.",
+      "duplicateCarton": "Kartonnummer: {carton} wird schon von einem anderen Karton verwendet. Geben Sie jedem Karton eine eigene Nummer.",
+      "repeatedProduct": "Produkte: {sku} steht mehrmals in diesem Karton. Führen Sie es einmal mit allen Einheiten auf.",
+      "mixedNetworks": "Produkte: Dieser Karton mischt FBA- und AWD-Produkte. Packen Sie die Produkte jedes Netzwerks in separate Kartons.",
+      "unknownProduct": "Produkte: Dieser Karton enthält ein Produkt, das nicht in der Bestellung steht. Entfernen Sie es aus dem Karton.",
+      "overQuantity": "Menge: Die Kartons enthalten {packed, number} Einheiten von {sku}, in der Bestellung sind aber nur noch {remaining, number} offen. Entfernen Sie {extra, plural, one {# Einheit} other {# Einheiten}}.",
+      "unknownChange": "Rechnungsänderungen: Eine Änderung betrifft ein Produkt, das nicht in der Bestellung steht, oder wiederholt eine andere Änderung. Entfernen Sie sie."
     }
   },
   "pallets": {
@@ -563,10 +572,16 @@
     "enterDimensions": "Geben Sie Länge, Breite und Höhe der Palette ein.",
     "enterWeight": "Geben Sie das Bruttogewicht der Palette einschließlich der Palette selbst ein.",
     "rules": {
-      "palletFootprint": "Abmessungen: {length, number} × {width, number} cm ist größer als die {receiver}-Palette mit {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} Zoll). Die Ladung darf nicht überstehen.",
+      "palletFootprint": "Abmessungen: Die Ladung misst {length, number} × {width, number} cm und steht über die {receiver}-Palette mit {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} Zoll) hinaus. Halten Sie die Kartons innerhalb der Palette.",
       "palletHeight": "Höhe: {height, number} cm überschreitet die {receiver}-Obergrenze von {maxCm, number} cm ({maxIn, number} Zoll) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten.",
-      "stackableHeight": "Höhe: {height, number} cm ist zu hoch für eine stapelbare {receiver}-Palette, die höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch sein darf. Kennzeichnen Sie sie als nicht stapelbar oder verringern Sie die Ladung.",
-      "palletWeight": "Gewicht: {weight, number} kg überschreiten die {receiver}-Obergrenze von {maxLb, number} lb ({maxKg, number} kg) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten."
+      "stackableHeight": "Höhe: {height, number} cm ist zu hoch für eine stapelbare {receiver}-Palette, die höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch sein darf. Setzen Sie Stapelbarkeit auf „Nicht stapelbar“ oder verringern Sie die Ladung.",
+      "palletWeight": "Gewicht: {weight, number} kg liegen über der {receiver}-Obergrenze von {maxKg, number} kg ({maxLb, number} lb) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten.",
+      "emptyPallet": "Kartons: Diese Palette hat noch keine Kartons. Wählen Sie ihre Kartons aus oder löschen Sie die Palette.",
+      "duplicatePallet": "Paletten: Zwei Paletten haben die Nummer {pallet}. Importieren Sie sie erneut mit eindeutigen Nummern.",
+      "unknownPalletCarton": "Kartons: {carton} ist kein Karton dieser Sendung. Entfernen Sie ihn von dieser Palette.",
+      "palletCartonTwice": "Kartons: {carton} steht bereits auf einer anderen Palette. Entfernen Sie ihn von dieser oder der anderen Palette.",
+      "noPallets": "Paletten: Diese Kartons werden auf Paletten versandt, und es gibt noch keine. Fügen Sie eine Palette hinzu oder deaktivieren Sie „Auf Paletten gepackt“.",
+      "cartonsOffPallets": "Kartons: {count, plural, one {# Karton steht auf keiner Palette: {cartons}. Wählen Sie eine Palette dafür aus oder fügen Sie eine Palette hinzu.} other {# Kartons stehen auf keiner Palette: {cartons}. Wählen Sie für jeden eine Palette aus oder fügen Sie eine Palette hinzu.}}"
     }
   },
   "palletCartons": {

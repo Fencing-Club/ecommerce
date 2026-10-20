@@ -52,7 +52,7 @@ Mixed-SKU cartons are allowed. The [carton table](packing.md#the-carton-table) s
 carton, with Add product and individual removal. Saving, reopening, duplicating and counting cartons preserve all their
 contents.
 AWD cartons keep one product. Each network's carton limits, with Amazon's sources, are in
-[carton rules](../../../packages/aisle/docs/carton-rules.md); FBA cartons are always individual units
+[carton rules](../../../packages/copacker-packing-rules/docs/carton-rules.md); FBA cartons are always individual units
 ([case packs](amazon-case-packs.md)).
 
 ## Origin
