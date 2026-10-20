@@ -126,7 +126,15 @@ async function OrderPage(args: Args) {
       revisionNumber: r.revision
     }))
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
-  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
+  const documentOrder = [
+    "purchase_order",
+    "invoice",
+    "packing_list",
+    "checklist",
+    "carton_label",
+    "pallet_label",
+    "shipping_label"
+  ]
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
     ...(seesShipments ? shipmentRows : []).map((shipment, index) => ({

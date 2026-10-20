@@ -69,6 +69,7 @@
     "shippingLabel": "Versandetikett",
     "productLabel": "Produktetikett",
     "cartonLabels": "Kartonetiketten",
+    "palletLabels": "Palettenetiketten",
     "shippingLabels": "Versandetiketten"
   },
   "format": {

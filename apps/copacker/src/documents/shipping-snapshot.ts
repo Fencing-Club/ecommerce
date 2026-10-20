@@ -1,4 +1,4 @@
-import { validatePacking, type OrderInput, type Packing } from "@repo/aisle"
+import { palletLabels, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
 import type { CartonLabel } from "@repo/aisle/labels"
 import { packingTasks } from "@repo/aisle/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/aisle/transport"
@@ -51,6 +51,7 @@ export function shippingDocumentSnapshot(input: {
     }
   }
   const origin = packing.origin
+  const placed = palletLabels(packing.pallets ?? [], labels)
   let network: ShippingDocumentData["network"] = "warehouse"
   if (order.destination === "amazon") {
     network = items[0]?.amazonNetwork === "awd_us" ? "awd" : "fba"
@@ -81,13 +82,19 @@ export function shippingDocumentSnapshot(input: {
       carrierLabels: requirements.carrierLabels,
       palletized: Boolean(packing.palletized)
     },
+    // Each pallet's label, once Amazon has labelled its cartons: its Amazon shipment and its number there, as Amazon
+    // prints it, such as FBA18ABCD123 1/2.
     ...(packing.palletized && {
-      pallets: (packing.pallets ?? []).map((pallet) => ({
-        id: pallet.palletId,
-        cartons: pallet.cartonIds,
-        dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
-        weight: pallet.weight
-      }))
+      pallets: (packing.pallets ?? []).map((pallet) => {
+        const label = placed.find((row) => row.palletId === pallet.palletId)
+        return {
+          id: pallet.palletId,
+          cartons: pallet.cartonIds,
+          dimensions: [pallet.length, pallet.width, pallet.height] as [number, number, number],
+          weight: pallet.weight,
+          ...(label && { label: `${label.amazonShipmentId} ${label.number}/${label.count}` })
+        }
+      })
     }),
     products: items.map((item) => {
       if (!item.packingRequirements) {

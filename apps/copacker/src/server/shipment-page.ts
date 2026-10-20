@@ -11,7 +11,7 @@ import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedStates, reservedPieces } from "@/server/readiness"
+import { releasedLabelKinds, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
@@ -71,7 +71,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
     (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
       !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   // The shipment's commercial invoice. There's one at most: each upload replaces the last.

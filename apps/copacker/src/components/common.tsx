@@ -286,6 +286,7 @@ const documentKinds: Record<string, keyof typeof messages.documents> = {
   packing_list: "packingList",
   checklist: "checklist",
   carton_label: "cartonLabel",
+  pallet_label: "palletLabels",
   shipping_label: "shippingLabel",
   product_label: "productLabel"
 }

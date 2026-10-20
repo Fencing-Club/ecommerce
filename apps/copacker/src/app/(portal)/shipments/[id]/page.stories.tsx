@@ -7,7 +7,7 @@ import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedStates } from "@/server/readiness"
+import { releasedLabelKinds, releasedStates } from "@/server/readiness"
 import {
   type ActionRequest,
   buyerContacts,
@@ -115,7 +115,7 @@ async function ShipmentPage({
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
     (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
       !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
