@@ -82,7 +82,7 @@ requirements stay in `@repo/aisle/transport`.
 explicit product tasks, supplier SKUs and the destination returned for the exact linked Amazon shipment. The page
 does not expose prices or storage keys. Incomplete input shows an explanation and a link back to the shipment.
 
-The API serves `verify`, `carton_labels`, `carrier_labels` and `product_labels` sections. Each download checks current
+The API serves `verify`, `carton_labels`, `carrier_labels`, `pallet_labels` and `product_labels` sections. Each download checks current
 workspace membership and a snapshot hash before and after reading files. The browser verifies that same hash before
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.

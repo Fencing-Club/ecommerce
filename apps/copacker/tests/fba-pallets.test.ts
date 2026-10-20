@@ -33,6 +33,8 @@ describe("FBA shipments on pallets", () => {
     expect(chooseTransportationOption(options)?.transportationOptionId).toBe("GROUND_SMALL_PARCEL-USE_YOUR_OWN_CARRIER")
     expect(chooseTransportationOption(options, true)?.transportationOptionId).toBe("FREIGHT_LTL-USE_YOUR_OWN_CARRIER")
     expect(chooseTransportationOption(options.slice(0, 2), true)?.shippingMode).toBe("FREIGHT_FTL_PALLET")
+    // A parcel option can't take pallet labels, so pallets without freight get no option at all.
+    expect(chooseTransportationOption([option("GROUND_SMALL_PARCEL")], true)).toBeNull()
   })
 
   it("sends each Amazon shipment its whole pallets and the declared value of its goods", () => {
@@ -138,12 +140,15 @@ describe("FBA shipments on pallets", () => {
         { cartonId: "A1", labelNumber: "FBA18AAAAU000001", destinationCode: "SMF3", amazonShipmentId: "FBA18AAAA" },
         { cartonId: "C1", labelNumber: "FBA18AAAAU000002", destinationCode: "SMF3", amazonShipmentId: "FBA18AAAA" }
       ]
-      // Four pages for three pallets.
+      // Four pages for three pallets, and for two: two labels each aren't Amazon's four.
       await expect(
         fbaPalletLabelFile(api, [pallet("1", ["A1"]), pallet("2", ["C1"]), pallet("3", ["C1"])], labels)
       ).rejects.toThrow("Amazon's pallet labels don't match the shipment's pallets")
+      await expect(fbaPalletLabelFile(api, [pallet("1", ["A1"]), pallet("2", ["C1"])], labels)).rejects.toThrow(
+        "Amazon's pallet labels don't match the shipment's pallets"
+      )
       expect(await fbaPalletLabelFile(api, [pallet("1", ["Z1"])], labels)).toBeUndefined()
-      expect(api.fbaPalletLabels).toHaveBeenCalledOnce()
+      expect(api.fbaPalletLabels).toHaveBeenCalledTimes(2)
     })
   })
 })

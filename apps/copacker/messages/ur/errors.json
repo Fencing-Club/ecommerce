@@ -24,6 +24,7 @@
   "amazonNoBox": "Amazon کے پاس کارٹن {carton} سے ملتا کوئی باکس نہیں",
   "amazonNoListing": "Amazon پر {skus} کے لیے کوئی FBA لسٹنگ نہیں ملی۔ Amazon پر SKUs چیک کریں، پھر خریداری آرڈر بھیجیں۔",
   "amazonNoOwnCarrier": "Amazon اس شپمنٹ کے لیے اپنا کیریئر استعمال کرنے کی سہولت نہیں دیتا۔ اسے Seller Central میں بک کریں۔",
+  "amazonNoOwnFreight": "Amazon ان پیلٹوں کے لیے اپنے کیریئر کے ساتھ کوئی فریٹ آپشن نہیں دیتا۔ شپمنٹ Seller Central میں بک کریں۔",
   "amazonPalletSplit": "Amazon پیلٹ {pallets} کے کارٹن مختلف گوداموں کو بھیج رہا ہے۔ ہر گودام کے کارٹن الگ پیلٹ پر رکھیں، پھر دوبارہ کوشش کریں۔",
   "amazonNotUs": "یہ Amazon اکاؤنٹ US مارکیٹ پلیس میں فروخت نہیں کرتا",
   "amazonOrderNotForShipment": "Amazon آرڈر اس شپمنٹ کے اس ورژن کا نہیں ہے",

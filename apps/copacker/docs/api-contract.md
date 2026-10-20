@@ -316,8 +316,8 @@ PO's delivery address as the ship-to. A packet with a shipped line whose product
 the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
 
 Release requires current packing-list and checklist PDFs, a unique Amazon label and current carton PDF for every
-carton, a current shipping label assigned to every carton, and a product label for every shipped line. It rejects stale
-revisions and repeated release attempts.
+carton, a current shipping label assigned to every carton, Amazon's current pallet-label file for an FBA shipment on
+pallets, and a product label for every shipped line. It rejects stale revisions and repeated release attempts.
 
 ## Shipment states
 
