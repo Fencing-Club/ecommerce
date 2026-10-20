@@ -146,9 +146,16 @@ export function packingListSnapshot(input: {
   }
   const issues = packingRecordIssues(data)
   if (issues.length) {
-    throw new Error(`Incomplete packing list: ${issues.map((issue) => `${issue.code}: ${issue.carton}`).join(", ")}`)
+    throw new IncompletePackingList(issues.map((issue) => `${issue.code}: ${issue.carton}`))
   }
   return data
+}
+
+// Packing that can't make a packing list yet, as opposed to a failure in building one.
+export class IncompletePackingList extends Error {
+  constructor(readonly codes: string[]) {
+    super(`Incomplete packing list: ${codes.join(", ")}`)
+  }
 }
 
 // The PO's lines that some carton holds.

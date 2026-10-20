@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { organizations, shipments } from "@/db/schema"
-import { packingListSnapshot } from "@/documents/shipping-snapshot"
+import { IncompletePackingList, packingListSnapshot } from "@/documents/shipping-snapshot"
 import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
@@ -51,7 +51,11 @@ export async function packingList(s: Session, id: string) {
       shipmentId: shipment.amazonShipmentId ?? t("title", { number: numbered.findIndex((row) => row.id === id) + 1 }),
       generatedDate: new Date().toISOString().slice(0, 10)
     })
-  } catch {
+  } catch (error) {
+    if (!(error instanceof IncompletePackingList)) {
+      throw error
+    }
+    console.warn(JSON.stringify({ event: "packing_list_incomplete", shipmentId: id, issues: error.codes }))
     throw new StatusError("packingListIncomplete", 409)
   }
 }
