@@ -223,6 +223,8 @@
   "packetIncomplete": "शिपमेंट पैकेट अधूरा है। खरीदार से इसके दस्तावेज़ जांचने को कहें।",
   "packetNotReleased": "शिपमेंट पैकेट अभी रिलीज़ नहीं हुआ है",
   "packingDraftChanged": "खरीद ऑर्डर या पैकिंग ड्राफ़्ट बदल गया है। सेव करने से पहले रीफ़्रेश करें।",
+  "packingListIncomplete": "इस शिपमेंट के कार्टन से पैकिंग लिस्ट नहीं बन सकी",
+  "packingListUnavailable": "पैकिंग पूरी होने के बाद पैकिंग लिस्ट उपलब्ध होगी",
   "passwordTooShort": "कम से कम {count, plural, one {# अक्षर} other {# अक्षर}} इस्तेमाल करें।",
   "passwordWeak": "ज़्यादा मज़बूत पासवर्ड चुनें।",
   "passwordWeakBecause": "{warning} ज़्यादा मज़बूत पासवर्ड चुनें।",

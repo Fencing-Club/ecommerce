@@ -1,3 +1,5 @@
+import { Toast } from "@base-ui/react/toast"
+import { useLocalStorage } from "@mantine/hooks"
 import { money } from "@repo/aisle"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/aisle/transport"
 import { Link } from "@tanstack/react-router"
@@ -12,9 +14,10 @@ import {
   Loader2,
   PackageCheck
 } from "lucide-react"
-import { Fragment } from "react"
+import { Fragment, useState } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
+import { Attachment } from "@/components/attachment"
 import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
@@ -30,8 +33,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Upload } from "@/components/upload"
+import {
+  documentSettingsForLocale,
+  documentSettingsSchema,
+  shippingPdfFilename,
+  shippingSettingsKey
+} from "@/documents/shipping-model"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useLazyPackingListQuery } from "@/lib/api"
 import { printableLabelTypes } from "@/lib/printable-labels"
-import { finishedStates } from "@/server/readiness"
+import { finishedStates, packedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
 
 export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof shipmentPage>> }) {
@@ -260,6 +271,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     ))
   ]
   const viewOrder = isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")
+  // Finished packing prints its packing list, before Amazon's labels or the supplier packet exist.
+  const packed = !!shipment.packing && packedStates.includes(shipment.status)
 
   // After packing, the same layout without the form: the state's alerts and next step lead the column beside the
   // documents and totals, and the cartons follow as packed.
@@ -509,13 +522,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         <div className="flex flex-col gap-6">
           <section aria-label={t("documents.title")} className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
-            {productDownloads().length > 0 && (
-              <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
-            )}
-            {visibleDocs.length > 0 && (
-              <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
-            )}
-            {productDownloads().length === 0 && visibleDocs.length === 0 && (
+            <div className="flex flex-col gap-2 empty:hidden">
+              {productDownloads().length > 0 && (
+                <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
+              )}
+              {packed && <PackingListDownload id={id} />}
+              {visibleDocs.length > 0 && (
+                <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+              )}
+            </div>
+            {productDownloads().length === 0 && !packed && visibleDocs.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
             )}
           </section>
@@ -551,5 +567,47 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       initial={shipment.packing ?? shipment.packingDraft}
       addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
     />
+  )
+}
+
+// The packing list, rendered here from the packed cartons the server sends, in the language and paper last chosen for
+// shipping documents.
+function PackingListDownload({ id }: { id: string }) {
+  const t = useTranslations("shipments.detail.documents")
+  const locale = useLocale()
+  const toast = Toast.useToastManager()
+  const errorText = useErrorMessage()
+  const [loadPackingList] = useLazyPackingListQuery()
+  const [storedSettings] = useLocalStorage<unknown>({ key: shippingSettingsKey })
+  const [busy, setBusy] = useState(false)
+  async function download() {
+    setBusy(true)
+    try {
+      const saved = documentSettingsSchema.safeParse(storedSettings)
+      const settings = saved.success ? saved.data : documentSettingsForLocale(locale)
+      const { data } = await loadPackingList(id).unwrap()
+      const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
+      const blob = await renderShippingDocument(
+        <ShippingPdf data={data} kind="packing" settings={settings} packingRecord />
+      )
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = shippingPdfFilename(data, "packing", settings)
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (error) {
+      // A refused request says why, such as packing that was reopened; a PDF that couldn't render has nothing to add.
+      toast.add({
+        title: t("packingListFailed"),
+        description: error instanceof Error ? undefined : errorText(error),
+        type: "error"
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Attachment label={t("packingList")} downloadLabel={t("downloadPackingList")} busy={busy} onDownload={download} />
   )
 }

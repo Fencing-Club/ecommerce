@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "Documenti",
-      "empty": "Ancora nessun documento"
+      "empty": "Ancora nessun documento",
+      "packingList": "Packing list",
+      "downloadPackingList": "Scarica la packing list",
+      "packingListFailed": "Impossibile scaricare la packing list"
     },
     "summary": {
       "title": "Dettagli della spedizione",

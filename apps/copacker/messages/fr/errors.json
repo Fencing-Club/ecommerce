@@ -223,6 +223,8 @@
   "packetIncomplete": "Le dossier d’expédition est incomplet. Demandez à l’acheteur de vérifier ses documents.",
   "packetNotReleased": "Le dossier d’expédition n’a pas été transmis",
   "packingDraftChanged": "Le bon de commande ou le brouillon d’emballage a changé. Actualisez avant d’enregistrer.",
+  "packingListIncomplete": "Impossible de créer la liste de colisage à partir des cartons de cette expédition",
+  "packingListUnavailable": "La liste de colisage est disponible une fois l’emballage terminé",
   "passwordTooShort": "Utilisez au moins {count, plural, one {# caractère} other {# caractères}}.",
   "passwordWeak": "Choisissez un mot de passe plus sûr.",
   "passwordWeakBecause": "{warning} Choisissez un mot de passe plus sûr.",

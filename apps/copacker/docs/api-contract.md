@@ -212,6 +212,11 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   it, including members who can't open purchase orders. `item` narrows them to one line; `kind` is one label type its
   packing details ask for, `sku`, `fnsku` or `suffocation` (the warning sheet), or `all` (the default). Choking hazard
   labels come from the buyer and aren't made here. 404 when there's nothing to print or the label can't be made yet.
+- `GET /api/shipments/:id/packing-list`: Shipments, with the same access as its labels. Once packing is finished
+  (`packed` and every later state, but not a correction or a cancellation), `{ data }`: the packing list's document
+  data, which the browser renders into the PDF. It lists the cartons and products, without prices, label assignments or
+  the destination's address, so it needs neither Amazon's labels nor the released packet. 409 with `{ error }` before
+  packing is finished or when the cartons can't make a packing list.
 - `POST /api/orders/:id/proposal` `{revision, proposal}`: supplier, Orders: Edit. Proposes changes to a sent PO:
   quantities, prices, added and removed products, payment terms and ready date. One can be pending at a time; packing
   waits while it is.

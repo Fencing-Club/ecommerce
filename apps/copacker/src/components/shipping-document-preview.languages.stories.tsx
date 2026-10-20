@@ -1,8 +1,7 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { defaultDocumentSettings } from "@/documents/shipping-model"
+import { defaultDocumentSettings, shippingSettingsKey } from "@/documents/shipping-model"
 import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-documents"
-import { shippingSettingsKey } from "./shipping-document-preview"
 
 const meta = preview.meta({
   ...shippingDocumentStory,

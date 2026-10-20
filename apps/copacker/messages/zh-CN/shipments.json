@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "文件",
-      "empty": "还没有文件"
+      "empty": "还没有文件",
+      "packingList": "装箱单",
+      "downloadPackingList": "下载装箱单",
+      "packingListFailed": "无法下载装箱单"
     },
     "summary": {
       "title": "货件详情",

@@ -87,6 +87,12 @@ workspace membership and a snapshot hash before and after reading files. The bro
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
+Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.
+`GET /api/shipments/:id/packing-list` returns `packingListSnapshot`: the packed cartons and products, with no label
+assignments, handoff or destination address. The browser renders it with the packing-list template's `packingRecord`
+layout, in the language and paper last chosen for shipping documents. A line without a supplier SKU is listed by the
+buyer's, as the packing page shows it.
+
 The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
 labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton
 carrier assignments and explicit freight/forwarder handoff data before enabling them. It rejects missing information

@@ -9,6 +9,7 @@ import {
   groupProductRequirements,
   groupShippingCartons,
   documentIssues,
+  packingRecordIssues,
   shippingTotals,
   type DocumentKind,
   type DocumentSettings,
@@ -538,14 +539,7 @@ export function ShippingPdf({
   invariant(
     (kind === "overview" ? shipments : [data]).every(
       (shipment) =>
-        !documentIssues(shipment, kind).filter(
-          (issue) =>
-            !(
-              packingRecord &&
-              kind === "packing" &&
-              ["missingAmazon", "missingCarrier", "missingAddress"].includes(issue.code)
-            )
-        ).length
+        !(packingRecord && kind === "packing" ? packingRecordIssues(shipment) : documentIssues(shipment, kind)).length
     ),
     "Complete document details and resolve oversized carton groups before generating."
   )

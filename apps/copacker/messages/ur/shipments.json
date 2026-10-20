@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "دستاویزات",
-      "empty": "ابھی کوئی دستاویز نہیں"
+      "empty": "ابھی کوئی دستاویز نہیں",
+      "packingList": "پیکنگ لسٹ",
+      "downloadPackingList": "پیکنگ لسٹ ڈاؤن لوڈ کریں",
+      "packingListFailed": "پیکنگ لسٹ ڈاؤن لوڈ نہیں ہو سکی"
     },
     "summary": {
       "title": "شپمنٹ کی تفصیلات",
