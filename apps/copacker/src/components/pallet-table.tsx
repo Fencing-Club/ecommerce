@@ -1,4 +1,5 @@
 import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/aisle"
+import { palletRuleCodes } from "@repo/aisle/pallet-policies"
 import { ChevronRight, Copy, Ellipsis, Trash2, X } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
@@ -9,6 +10,11 @@ import { PalletCartonsDialog } from "./pallet-cartons-dialog"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+
+// The issues of where the pallet goes, which sit under the fields they name; the rest sit under the row.
+const ruleCodes = new Set<string>(palletRuleCodes)
+
+type RuledError = { place: "dimensions" | "weight"; fields: NonNullable<ValidationIssue["fields"]>; message: string }
 
 // Toggle, pallet, dimensions, weight, stacking, cartons and the menu. From 50rem the fields have the design's widths,
 // the gaps grow to 2rem as there's room, and cartons takes the rest; from 44rem the columns give a little.
@@ -112,6 +118,7 @@ function PalletRow({
   const t = useTranslations("orders.pallets")
   const units = useTranslations("orders.cartonEditor")
   const rules = useTranslations("server.readiness.packing")
+  const policy = useTranslations("orders.pallets.rules")
   const packing = useTranslations("orders.packing")
   const measure = useMeasure()
   const id = useId()
@@ -126,12 +133,50 @@ function PalletRow({
   const blankSides = (["length", "width", "height"] as const).filter(
     (side) => shown(side, value[side]) && !positive(value[side])
   )
+  // The rules of where the pallet goes that it breaks, each under the field it names with this pallet's numbers.
+  const ruled = issues.flatMap((issue): RuledError[] => {
+    switch (issue.code) {
+      case "palletFootprint":
+        return [
+          {
+            place: "dimensions",
+            fields: issue.fields ?? [],
+            message: policy(issue.code, { ...issue.values, length: value.length, width: value.width })
+          }
+        ]
+      case "palletHeight":
+      case "stackableHeight":
+        return [
+          {
+            place: "dimensions",
+            fields: issue.fields ?? [],
+            message: policy(issue.code, { ...issue.values, height: value.height })
+          }
+        ]
+      case "palletWeight":
+        return [
+          {
+            place: "weight",
+            fields: issue.fields ?? [],
+            message: policy(issue.code, { ...issue.values, weight: value.weight })
+          }
+        ]
+      default:
+        return []
+    }
+  })
+  const ruledAt = (place: "dimensions" | "weight") =>
+    ruled.filter((error) => error.place === place).map((error) => error.message)
+  const outlined = ruled.flatMap((error) => error.fields)
   const errors = {
-    dimensions: blankSides.length ? [t("enterDimensions")] : [],
-    weight: shown("weight", value.weight) && !positive(value.weight) ? [t("enterWeight")] : [],
+    dimensions: [...(blankSides.length ? [t("enterDimensions")] : []), ...ruledAt("dimensions")],
+    weight: [
+      ...(shown("weight", value.weight) && !positive(value.weight) ? [t("enterWeight")] : []),
+      ...ruledAt("weight")
+    ],
     // A new pallet has no cartons until they're chosen, so that waits for submitting.
     pallet: issues
-      .filter((issue) => issue.code !== "emptyPallet" || showErrors)
+      .filter((issue) => !ruleCodes.has(issue.code) && (issue.code !== "emptyPallet" || showErrors))
       .map((issue) => ("values" in issue ? rules(issue.code, issue.values) : rules(issue.code)))
   }
   const count = errors.dimensions.length + errors.weight.length + errors.pallet.length
@@ -242,7 +287,10 @@ function PalletRow({
               value={sides}
               onChange={(patch) => onChange({ ...value, ...patch })}
               onBlur={touch}
-              invalid={blankSides}
+              invalid={[
+                ...blankSides,
+                ...(["length", "width", "height"] as const).filter((side) => outlined.includes(side))
+              ]}
               errorId={`${id}-dimensions`}
               className="wide:col-start-3 wide:row-start-1 wide:self-center"
             />

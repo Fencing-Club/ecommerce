@@ -561,7 +561,13 @@
     "removeCartons": "Quitar {cartons} de {pallet}",
     "noCartons": "Aún no hay cajas en esta tarima",
     "enterDimensions": "Indica el largo, el ancho y el alto de la tarima.",
-    "enterWeight": "Indica el peso bruto de la tarima, incluida la tarima."
+    "enterWeight": "Indica el peso bruto de la tarima, incluida la tarima.",
+    "rules": {
+      "palletFootprint": "Dimensiones: {length, number} × {width, number} cm es más grande que la tarima de {receiver} de {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in). La carga no debe sobresalir de sus bordes.",
+      "palletHeight": "Altura: {height, number} cm supera el límite de {receiver} de {maxCm, number} cm ({maxIn, number} in), incluida la tarima. Reparte las cajas en más tarimas.",
+      "stackableHeight": "Altura: {height, number} cm es demasiado alta para una tarima apilable de {receiver}, que puede medir hasta {maxCm, number} cm ({maxIn, number} in). Márcala como no apilable o baja la carga.",
+      "palletWeight": "Peso: {weight, number} kg supera el límite de {receiver} de {maxLb, number} lb ({maxKg, number} kg), incluida la tarima. Reparte las cajas en más tarimas."
+    }
   },
   "palletCartons": {
     "title": "Elegir cajas para {pallet}",

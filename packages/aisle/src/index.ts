@@ -8,6 +8,14 @@ import {
   type PolicyCarton
 } from "./carton-policies"
 import { packingRequirementsSchema } from "./packing-requirements"
+import {
+  checkPallet,
+  type PalletPolicy,
+  type PalletRuleIssue,
+  palletPolicies,
+  palletRuleCodes,
+  type PolicyPallet
+} from "./pallet-policies"
 
 // Amazon inbound preparation categories.
 export const prepCategories = [
@@ -349,6 +357,7 @@ export type PackingRule =
   | { code: "emptyPallet" | "duplicatePallet"; values: { pallet: string } }
   | { code: "unknownPalletCarton" | "palletCartonTwice"; values: { pallet: string; carton: string } }
   | { code: "cartonsOffPallets"; values: { count: number; cartons: string } }
+  | PalletRuleIssue
 export type ValidationIssue = { cartonId?: string; palletId?: string; fields?: CartonField[] } & PackingRule
 export const palletRules = new Set<PackingRule["code"]>([
   "noPallets",
@@ -356,7 +365,8 @@ export const palletRules = new Set<PackingRule["code"]>([
   "duplicatePallet",
   "unknownPalletCarton",
   "palletCartonTwice",
-  "cartonsOffPallets"
+  "cartonsOffPallets",
+  ...palletRuleCodes
 ])
 
 // Carton IDs split into runs of a sequence, such as B1, B2, B3 or D8, D9, each in the order given.
@@ -510,7 +520,7 @@ export function validatePacking(
     changedIds.add(change.itemId)
   }
   if (packing.palletized) {
-    issues.push(...validatePallets(packing))
+    issues.push(...validatePallets(packing), ...checkPallets(order, packing))
   }
   return { issues, totals, valid: issues.length === 0 }
 }
@@ -522,6 +532,37 @@ function cartonPolicy(order: Pick<OrderInput, "destination">, networks: AmazonNe
     return null
   }
   return cartonPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
+}
+
+// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). The buyer's own locations
+// and forwarders take any pallet.
+export function checkPallets(
+  order: Pick<OrderInput, "destination" | "items">,
+  packing: {
+    cartons: Pick<Packing["cartons"][number], "cartonId" | "items">[]
+    pallets?: (PolicyPallet & { cartonIds: string[] })[]
+  }
+) {
+  return (packing.pallets ?? []).flatMap((pallet): ValidationIssue[] => {
+    const cartons = packing.cartons.filter((carton) =>
+      pallet.cartonIds.some((id) => id.toLowerCase() === carton.cartonId.toLowerCase())
+    )
+    const policy = palletPolicy(
+      order,
+      cartons.flatMap((carton) => cartonNetworks(order, carton))
+    )
+    return policy
+      ? checkPallet(policy, pallet).map(({ issue, fields }) => ({ palletId: pallet.palletId, ...issue, fields }))
+      : []
+  })
+}
+
+// The pallet rules a pallet follows, by where its cartons go: AWD's when any go there, as with cartons, otherwise FBA's.
+function palletPolicy(order: Pick<OrderInput, "destination">, networks: AmazonNetwork[]): PalletPolicy | null {
+  if (order.destination !== "amazon" || !networks.length) {
+    return null
+  }
+  return palletPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
 }
 
 // The Amazon networks a carton's products go to, in network order. A carton to Amazon should have exactly one.

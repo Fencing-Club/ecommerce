@@ -30,7 +30,11 @@
       "duplicatePallet": "Palette {pallet} ist mehrfach aufgeführt",
       "unknownPalletCarton": "Palette {pallet} enthält Karton {carton}, der nicht zu dieser Sendung gehört",
       "palletCartonTwice": "Karton {carton} steht auf mehr als einer Palette. Lassen Sie ihn auf einer.",
-      "cartonsOffPallets": "{count, plural, one {# Karton steht auf keiner Palette: {cartons}. Wählen Sie eine Palette dafür aus oder fügen Sie eine hinzu.} other {# Kartons stehen auf keiner Palette: {cartons}. Wählen Sie für jeden eine Palette aus oder fügen Sie eine hinzu.}}"
+      "cartonsOffPallets": "{count, plural, one {# Karton steht auf keiner Palette: {cartons}. Wählen Sie eine Palette dafür aus oder fügen Sie eine hinzu.} other {# Kartons stehen auf keiner Palette: {cartons}. Wählen Sie für jeden eine Palette aus oder fügen Sie eine hinzu.}}",
+      "palletFootprint": "Palette {pallet}: {receiver}-Paletten höchstens {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} Zoll), ohne Überstand",
+      "palletHeight": "Palette {pallet}: {receiver}-Paletten höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch, einschließlich Palette",
+      "stackableHeight": "Palette {pallet}: stapelbare {receiver}-Paletten höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch, oder als nicht stapelbar kennzeichnen",
+      "palletWeight": "Palette {pallet}: {receiver}-Paletten höchstens {maxLb, number} lb ({maxKg, number} kg), einschließlich Palette"
     },
     "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken.",
     "missingTransport": "Transport nicht bestätigt"

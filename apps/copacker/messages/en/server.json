@@ -30,7 +30,11 @@
       "duplicatePallet": "Pallet {pallet} is listed more than once",
       "unknownPalletCarton": "Pallet {pallet} lists carton {carton}, which isn’t in this shipment",
       "palletCartonTwice": "Carton {carton} is on more than one pallet. Keep it on one.",
-      "cartonsOffPallets": "{count, plural, one {# carton isn’t on a pallet: {cartons}. Choose a pallet for it, or add one.} other {# cartons aren’t on a pallet: {cartons}. Choose a pallet for each, or add one.}}"
+      "cartonsOffPallets": "{count, plural, one {# carton isn’t on a pallet: {cartons}. Choose a pallet for it, or add one.} other {# cartons aren’t on a pallet: {cartons}. Choose a pallet for each, or add one.}}",
+      "palletFootprint": "Pallet {pallet}: keep {receiver} pallets to {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in), with nothing over the edges",
+      "palletHeight": "Pallet {pallet}: keep {receiver} pallets to {maxCm, number} cm ({maxIn, number} in) tall or less, including the pallet",
+      "stackableHeight": "Pallet {pallet}: keep stackable {receiver} pallets to {maxCm, number} cm ({maxIn, number} in) tall or less, or mark it not stackable",
+      "palletWeight": "Pallet {pallet}: keep {receiver} pallets to {maxLb, number} lb ({maxKg, number} kg) or less, including the pallet"
     },
     "networkMismatch": "Pack only products assigned to this shipment’s Amazon network.",
     "missingTransport": "Transport not confirmed"

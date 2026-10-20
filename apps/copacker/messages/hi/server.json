@@ -30,7 +30,11 @@
       "duplicatePallet": "पैलेट {pallet} एक से ज़्यादा बार दर्ज है",
       "unknownPalletCarton": "पैलेट {pallet} में कार्टन {carton} दर्ज है, जो इस शिपमेंट में नहीं है",
       "palletCartonTwice": "कार्टन {carton} एक से ज़्यादा पैलेट पर है। इसे एक ही पर रखें।",
-      "cartonsOffPallets": "{count, plural, one {# कार्टन किसी पैलेट पर नहीं है: {cartons}। इसके लिए पैलेट चुनें या नया जोड़ें।} other {# कार्टन किसी पैलेट पर नहीं हैं: {cartons}। हर एक के लिए पैलेट चुनें या नया जोड़ें।}}"
+      "cartonsOffPallets": "{count, plural, one {# कार्टन किसी पैलेट पर नहीं है: {cartons}। इसके लिए पैलेट चुनें या नया जोड़ें।} other {# कार्टन किसी पैलेट पर नहीं हैं: {cartons}। हर एक के लिए पैलेट चुनें या नया जोड़ें।}}",
+      "palletFootprint": "पैलेट {pallet}: {receiver} पैलेट अधिकतम {lengthCm, number} × {widthCm, number} सेमी ({lengthIn, number} × {widthIn, number} इंच) रखें, किनारों से बाहर कुछ न निकले",
+      "palletHeight": "पैलेट {pallet}: {receiver} पैलेट की ऊंचाई पैलेट सहित अधिकतम {maxCm, number} सेमी ({maxIn, number} इंच) रखें",
+      "stackableHeight": "पैलेट {pallet}: स्टैक होने वाले {receiver} पैलेट की ऊंचाई अधिकतम {maxCm, number} सेमी ({maxIn, number} इंच) रखें, या इसे स्टैक न होने वाला चिह्नित करें",
+      "palletWeight": "पैलेट {pallet}: {receiver} पैलेट का वज़न पैलेट सहित अधिकतम {maxLb, number} lb ({maxKg, number} किग्रा) रखें"
     },
     "networkMismatch": "केवल इस शिपमेंट के Amazon नेटवर्क को आवंटित उत्पाद पैक करें।",
     "missingTransport": "परिवहन की पुष्टि नहीं हुई"

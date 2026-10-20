@@ -30,7 +30,11 @@
       "duplicatePallet": "Палету {pallet} вказано кілька разів",
       "unknownPalletCarton": "Палета {pallet} містить коробку {carton}, якої немає в цьому відправленні",
       "palletCartonTwice": "Коробка {carton} є на кількох палетах. Залиште її на одній.",
-      "cartonsOffPallets": "{count, plural, one {# коробка не на палеті: {cartons}. Виберіть для неї палету або додайте нову.} few {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.} many {# коробок не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.} other {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.}}"
+      "cartonsOffPallets": "{count, plural, one {# коробка не на палеті: {cartons}. Виберіть для неї палету або додайте нову.} few {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.} many {# коробок не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.} other {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте нову.}}",
+      "palletFootprint": "Палета {pallet}: палети {receiver} мають бути не більше {lengthCm, number} × {widthCm, number} см ({lengthIn, number} × {widthIn, number} дюйм.), без виступів за краї",
+      "palletHeight": "Палета {pallet}: палети {receiver} мають бути не вищими за {maxCm, number} см ({maxIn, number} дюйм.) разом із палетою",
+      "stackableHeight": "Палета {pallet}: штабельовані палети {receiver} мають бути не вищими за {maxCm, number} см ({maxIn, number} дюйм.), або позначте її як нештабельовану",
+      "palletWeight": "Палета {pallet}: палети {receiver} мають важити не більше {maxLb, number} lb ({maxKg, number} кг) разом із палетою"
     },
     "networkMismatch": "Пакуйте лише товари, призначені для мережі Amazon цього відправлення.",
     "missingTransport": "Транспорт не підтверджено"

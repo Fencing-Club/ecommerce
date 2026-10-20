@@ -561,7 +561,13 @@
     "removeCartons": "Remove {cartons} from {pallet}",
     "noCartons": "No cartons on this pallet yet",
     "enterDimensions": "Enter the pallet’s length, width and height.",
-    "enterWeight": "Enter the pallet’s gross weight, with the pallet itself."
+    "enterWeight": "Enter the pallet’s gross weight, with the pallet itself.",
+    "rules": {
+      "palletFootprint": "Dimensions: {length, number} × {width, number} cm is larger than {receiver}’s {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in) pallet. Keep the load within its edges.",
+      "palletHeight": "Height: {height, number} cm is over {receiver}’s limit of {maxCm, number} cm ({maxIn, number} in), including the pallet. Spread the cartons over more pallets.",
+      "stackableHeight": "Height: {height, number} cm is too tall for a stackable {receiver} pallet, which may be up to {maxCm, number} cm ({maxIn, number} in). Mark it not stackable, or lower the load.",
+      "palletWeight": "Weight: {weight, number} kg exceeds {receiver}’s limit of {maxLb, number} lb ({maxKg, number} kg), including the pallet. Spread the cartons over more pallets."
+    }
   },
   "palletCartons": {
     "title": "Choose cartons for {pallet}",

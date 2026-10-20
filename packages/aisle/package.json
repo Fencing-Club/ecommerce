@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./carton-policies": "./src/carton-policies.ts",
+    "./pallet-policies": "./src/pallet-policies.ts",
     "./labels": "./src/labels.ts",
     "./amazon": "./src/amazon.ts",
     "./shopify": "./src/shopify.ts",

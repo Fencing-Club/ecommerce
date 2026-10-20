@@ -30,7 +30,11 @@
       "duplicatePallet": "پیلٹ {pallet} ایک سے زیادہ بار درج ہے",
       "unknownPalletCarton": "پیلٹ {pallet} میں کارٹن {carton} درج ہے، جو اس شپمنٹ میں نہیں",
       "palletCartonTwice": "کارٹن {carton} ایک سے زیادہ پیلٹ پر ہے۔ اسے ایک ہی پر رکھیں۔",
-      "cartonsOffPallets": "{count, plural, one {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ اس کے لیے پیلٹ منتخب کریں یا نیا شامل کریں۔} other {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ ہر ایک کے لیے پیلٹ منتخب کریں یا نیا شامل کریں۔}}"
+      "cartonsOffPallets": "{count, plural, one {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ اس کے لیے پیلٹ منتخب کریں یا نیا شامل کریں۔} other {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ ہر ایک کے لیے پیلٹ منتخب کریں یا نیا شامل کریں۔}}",
+      "palletFootprint": "پیلٹ {pallet}: {receiver} پیلٹ زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} سینٹی میٹر ({lengthIn, number} × {widthIn, number} انچ) رکھیں، کناروں سے کچھ باہر نہ ہو",
+      "palletHeight": "پیلٹ {pallet}: {receiver} پیلٹ کی اونچائی پیلٹ سمیت زیادہ سے زیادہ {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) رکھیں",
+      "stackableHeight": "پیلٹ {pallet}: اسٹیک ہونے والے {receiver} پیلٹ کی اونچائی زیادہ سے زیادہ {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) رکھیں، یا اسے اسٹیک نہ ہونے والا نشان زد کریں",
+      "palletWeight": "پیلٹ {pallet}: {receiver} پیلٹ کا وزن پیلٹ سمیت زیادہ سے زیادہ {maxLb, number} lb ({maxKg, number} کلوگرام) رکھیں"
     },
     "networkMismatch": "صرف اس شپمنٹ کے Amazon نیٹ ورک کو تفویض کردہ مصنوعات پیک کریں۔",
     "missingTransport": "نقل و حمل کی تصدیق نہیں ہوئی"

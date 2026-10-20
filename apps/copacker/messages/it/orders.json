@@ -561,7 +561,13 @@
     "removeCartons": "Rimuovi {cartons} da {pallet}",
     "noCartons": "Ancora nessun cartone su questo pallet",
     "enterDimensions": "Indica lunghezza, larghezza e altezza del pallet.",
-    "enterWeight": "Indica il peso lordo del pallet, pallet compreso."
+    "enterWeight": "Indica il peso lordo del pallet, pallet compreso.",
+    "rules": {
+      "palletFootprint": "Dimensioni: {length, number} × {width, number} cm supera il pallet {receiver} da {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in). Il carico non deve sporgere dai bordi.",
+      "palletHeight": "Altezza: {height, number} cm supera il limite {receiver} di {maxCm, number} cm ({maxIn, number} in), pallet compreso. Distribuisci i cartoni su più pallet.",
+      "stackableHeight": "Altezza: {height, number} cm è troppo per un pallet {receiver} sovrapponibile, che può arrivare a {maxCm, number} cm ({maxIn, number} in). Indicalo come non sovrapponibile o abbassa il carico.",
+      "palletWeight": "Peso: {weight, number} kg supera il limite {receiver} di {maxLb, number} lb ({maxKg, number} kg), pallet compreso. Distribuisci i cartoni su più pallet."
+    }
   },
   "palletCartons": {
     "title": "Scegli i cartoni per {pallet}",

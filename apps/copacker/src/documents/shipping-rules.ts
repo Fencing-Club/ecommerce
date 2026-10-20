@@ -1,4 +1,11 @@
 import { type CartonPolicy, cartonPolicies, sizeLimit, weightLimit } from "@repo/aisle/carton-policies"
+import {
+  footprintLimit,
+  heightLimit,
+  type PalletPolicy,
+  palletPolicies,
+  palletWeightLimit
+} from "@repo/aisle/pallet-policies"
 import type { ShippingCopyKey } from "./shipping-copy"
 import type { ShippingDocumentData } from "./shipping-model"
 
@@ -10,7 +17,7 @@ export type ShippingCheck = {
 
 // What the supplier checks for each of a policy's carton rules, in the policy's order. Amazon's product identifiers
 // are the buyer's to add, so they have no check.
-function policyChecks(policy: CartonPolicy) {
+export function policyChecks(policy: CartonPolicy) {
   return policy.rules.flatMap((rule): ShippingCheck[] => {
     switch (rule.type) {
       case "oneSku":
@@ -50,30 +57,48 @@ const receivingChecks: Record<ShippingDocumentData["network"], ShippingCheck[]> 
   warehouse: [],
   forwarder: []
 }
-// Amazon's rules for FBA pallets on LTL and FTL deliveries: 40 × 48 in pallets, 72 in and 1,500 lb at most, and
-// 50 in for a pallet another stands on. Amazon labels FBA pallets only, four to a pallet; AWD takes the cartons as cases.
-const fbaPalletLimits = {
-  lengthCm: 121.9,
-  widthCm: 101.6,
-  lengthIn: 48,
-  widthIn: 40,
-  heightCm: 182.9,
-  heightIn: 72,
-  stackCm: 127,
-  stackIn: 50,
-  kg: 680,
-  lb: 1500
+// What the supplier checks for each of a pallet policy's rules, in the policy's order.
+export function palletPolicyChecks(policy: PalletPolicy) {
+  return policy.rules.map((rule): ShippingCheck => {
+    switch (rule.type) {
+      case "footprint":
+        return {
+          title: "palletType",
+          detail: rule.gmaGrade ? "gmaPalletText" : "palletSizeText",
+          values: { ...footprintLimit(rule), grade: rule.gmaGrade ?? "" }
+        }
+      case "stacking":
+        return { title: "pallet", detail: "stackingText" }
+      case "maxHeight": {
+        const { maxCm, maxIn, stackable } = heightLimit(rule)
+        return stackable
+          ? {
+              title: "palletHeight",
+              detail: "stackablePalletHeightText",
+              values: { heightCm: maxCm, heightIn: maxIn, stackCm: stackable.maxCm, stackIn: stackable.maxIn }
+            }
+          : { title: "palletHeight", detail: "palletHeightText", values: { heightCm: maxCm, heightIn: maxIn } }
+      }
+      case "maxWeight": {
+        const { maxKg, maxLb } = palletWeightLimit(rule)
+        return { title: "weightLimit", detail: "palletWeightText", values: { kg: maxKg, lb: maxLb } }
+      }
+      case "stretchWrap":
+        return { title: "secure", detail: "stretchWrapText" }
+      case "palletLabels":
+        return { title: "palletLabel", detail: "palletLabelText" }
+    }
+  })
 }
-const palletChecks: Record<"fba" | "other", ShippingCheck[]> = {
-  fba: [
-    { title: "palletType", detail: "fbaPalletTypeText", values: fbaPalletLimits },
-    { title: "pallet", detail: "fbaPalletText" },
-    { title: "palletHeight", detail: "fbaPalletHeightText", values: fbaPalletLimits },
-    { title: "weightLimit", detail: "fbaPalletWeightText", values: fbaPalletLimits },
-    { title: "secure", detail: "fbaSecureText" },
-    { title: "palletLabel", detail: "palletLabelText" }
+// Pallets to Amazon follow its network's pallet policy; the buyer's own locations and forwarders get the general steps.
+const palletChecks: Record<ShippingDocumentData["network"], ShippingCheck[]> = {
+  fba: palletPolicyChecks(palletPolicies.fba),
+  awd: palletPolicyChecks(palletPolicies.awd_us),
+  warehouse: [
+    { title: "pallet", detail: "palletText" },
+    { title: "secure", detail: "secureText" }
   ],
-  other: [
+  forwarder: [
     { title: "pallet", detail: "palletText" },
     { title: "secure", detail: "secureText" }
   ]
@@ -125,7 +150,7 @@ export function shipmentDocumentChecks(data: ShippingDocumentData) {
   // Loading the pallets comes before the handoff, where the bill of lading goes with them.
   const pallets: ShippingCheck[] = []
   if (data.transport.palletized) {
-    pallets.push(...palletChecks[data.network === "fba" ? "fba" : "other"])
+    pallets.push(...palletChecks[data.network])
     handoff.push({ title: "bol", detail: "bolText" })
   }
   handoff.push(handoffChecks[data.transport.collection])

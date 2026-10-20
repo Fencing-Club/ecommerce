@@ -561,7 +561,13 @@
     "removeCartons": "从 {pallet} 移除 {cartons}",
     "noCartons": "此托盘上尚无纸箱",
     "enterDimensions": "请输入托盘的长、宽、高。",
-    "enterWeight": "请输入托盘毛重（含托盘本身）。"
+    "enterWeight": "请输入托盘毛重（含托盘本身）。",
+    "rules": {
+      "palletFootprint": "尺寸：{length, number} × {width, number} 厘米大于 {receiver} 的 {lengthCm, number} × {widthCm, number} 厘米（{lengthIn, number} × {widthIn, number} 英寸）托盘。货物不得超出托盘边缘。",
+      "palletHeight": "高度：{height, number} 厘米超过 {receiver} 含托盘 {maxCm, number} 厘米（{maxIn, number} 英寸）的上限。请将纸箱分到更多托盘上。",
+      "stackableHeight": "高度：{height, number} 厘米对可堆叠的 {receiver} 托盘来说太高，上限为 {maxCm, number} 厘米（{maxIn, number} 英寸）。请标记为不可堆叠，或降低货物高度。",
+      "palletWeight": "重量：{weight, number} 千克超过 {receiver} 含托盘 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请将纸箱分到更多托盘上。"
+    }
   },
   "palletCartons": {
     "title": "为 {pallet} 选择纸箱",

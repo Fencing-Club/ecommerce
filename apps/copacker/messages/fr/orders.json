@@ -561,7 +561,13 @@
     "removeCartons": "Retirer {cartons} de {pallet}",
     "noCartons": "Aucun carton sur cette palette pour l’instant",
     "enterDimensions": "Indiquez la longueur, la largeur et la hauteur de la palette.",
-    "enterWeight": "Indiquez le poids brut de la palette, palette comprise."
+    "enterWeight": "Indiquez le poids brut de la palette, palette comprise.",
+    "rules": {
+      "palletFootprint": "Dimensions : {length, number} × {width, number} cm dépasse la palette {receiver} de {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} po). La charge ne doit pas dépasser de ses bords.",
+      "palletHeight": "Hauteur : {height, number} cm dépasse la limite {receiver} de {maxCm, number} cm ({maxIn, number} po), palette comprise. Répartissez les cartons sur plus de palettes.",
+      "stackableHeight": "Hauteur : {height, number} cm est trop haut pour une palette {receiver} gerbable, limitée à {maxCm, number} cm ({maxIn, number} po). Indiquez-la non gerbable ou réduisez la charge.",
+      "palletWeight": "Poids : {weight, number} kg dépasse la limite {receiver} de {maxLb, number} lb ({maxKg, number} kg), palette comprise. Répartissez les cartons sur plus de palettes."
+    }
   },
   "palletCartons": {
     "title": "Choisir les cartons de {pallet}",

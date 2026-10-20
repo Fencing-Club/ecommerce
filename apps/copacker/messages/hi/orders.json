@@ -561,7 +561,13 @@
     "removeCartons": "{pallet} से {cartons} हटाएँ",
     "noCartons": "इस पैलेट पर अभी कोई कार्टन नहीं",
     "enterDimensions": "पैलेट की लंबाई, चौड़ाई और ऊँचाई दर्ज करें।",
-    "enterWeight": "पैलेट का कुल वज़न, पैलेट सहित, दर्ज करें।"
+    "enterWeight": "पैलेट का कुल वज़न, पैलेट सहित, दर्ज करें।",
+    "rules": {
+      "palletFootprint": "आयाम: {length, number} × {width, number} सेमी {receiver} के {lengthCm, number} × {widthCm, number} सेमी ({lengthIn, number} × {widthIn, number} इंच) पैलेट से बड़ा है। लोड किनारों से बाहर नहीं निकलना चाहिए।",
+      "palletHeight": "ऊंचाई: {height, number} सेमी पैलेट सहित {receiver} की {maxCm, number} सेमी ({maxIn, number} इंच) की सीमा से अधिक है। कार्टन को और पैलेट पर बांटें।",
+      "stackableHeight": "ऊंचाई: {height, number} सेमी स्टैक होने वाले {receiver} पैलेट के लिए बहुत अधिक है, जिसकी सीमा {maxCm, number} सेमी ({maxIn, number} इंच) है। इसे स्टैक न होने वाला चिह्नित करें या लोड कम करें।",
+      "palletWeight": "वज़न: {weight, number} किग्रा पैलेट सहित {receiver} की {maxLb, number} lb ({maxKg, number} किग्रा) की सीमा से अधिक है। कार्टन को और पैलेट पर बांटें।"
+    }
   },
   "palletCartons": {
     "title": "{pallet} के लिए कार्टन चुनें",

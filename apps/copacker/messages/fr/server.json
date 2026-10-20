@@ -30,7 +30,11 @@
       "duplicatePallet": "La palette {pallet} apparaît plusieurs fois",
       "unknownPalletCarton": "La palette {pallet} indique le carton {carton}, qui ne fait pas partie de cet envoi",
       "palletCartonTwice": "Le carton {carton} est sur plusieurs palettes. Laissez-le sur une seule.",
-      "cartonsOffPallets": "{count, plural, one {# carton n’est sur aucune palette : {cartons}. Choisissez-lui une palette ou ajoutez-en une.} other {# cartons ne sont sur aucune palette : {cartons}. Choisissez une palette pour chacun ou ajoutez-en une.}}"
+      "cartonsOffPallets": "{count, plural, one {# carton n’est sur aucune palette : {cartons}. Choisissez-lui une palette ou ajoutez-en une.} other {# cartons ne sont sur aucune palette : {cartons}. Choisissez une palette pour chacun ou ajoutez-en une.}}",
+      "palletFootprint": "Palette {pallet} : les palettes {receiver} doivent mesurer au plus {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} po), sans dépassement",
+      "palletHeight": "Palette {pallet} : les palettes {receiver} doivent mesurer au plus {maxCm, number} cm ({maxIn, number} po) de haut, palette comprise",
+      "stackableHeight": "Palette {pallet} : les palettes {receiver} gerbables doivent mesurer au plus {maxCm, number} cm ({maxIn, number} po) de haut, sinon indiquez-la non gerbable",
+      "palletWeight": "Palette {pallet} : les palettes {receiver} doivent peser au plus {maxLb, number} lb ({maxKg, number} kg), palette comprise"
     },
     "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi.",
     "missingTransport": "Transport non confirmé"

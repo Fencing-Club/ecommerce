@@ -149,15 +149,18 @@ const en = {
   secure: "Secure the load",
   secureText: "Secure the cartons to the pallet for transport.",
   palletType: "Pallet type",
-  fbaPalletTypeText:
-    "Use {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} in) wooden pallets with four-way entry, GMA grade B or better, in good condition.",
-  fbaPalletText:
+  palletSizeText:
+    "Use {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} in) pallets in good condition, with nothing over the edges.",
+  palletHeightText: "At most {heightCm} cm ({heightIn} in) tall including the pallet.",
+  gmaPalletText:
+    "Use {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} in) wooden pallets with four-way entry, GMA grade {grade} or better, in good condition.",
+  stackingText:
     "Load each pallet with the cartons assigned in the packing list. Stack them flush, heaviest at the bottom, with the carton labels facing out and nothing over the edge.",
   palletHeight: "Height",
-  fbaPalletHeightText:
+  stackablePalletHeightText:
     "At most {heightCm} cm ({heightIn} in) tall including the pallet. A stackable pallet should be no taller than {stackCm} cm ({stackIn} in).",
-  fbaPalletWeightText: "At most {kg} kg ({lb} lb) including the pallet.",
-  fbaSecureText:
+  palletWeightText: "At most {kg} kg ({lb} lb) including the pallet.",
+  stretchWrapText:
     "Wrap each pallet in clear stretch wrap and mark it “Do not break stretch wrap”. The cartons must stay stable without the wrap.",
   palletLabel: "Pallet labels",
   palletLabelText:
@@ -328,15 +331,18 @@ const de: ShippingCopy = {
   secure: "Ladung sichern",
   secureText: "Sichern Sie die Kartons für den Transport auf der Palette.",
   palletType: "Palettentyp",
-  fbaPalletTypeText:
-    "Verwenden Sie Holzpaletten mit {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} Zoll), vierseitig einfahrbar, mindestens GMA-Klasse B und in gutem Zustand.",
-  fbaPalletText:
+  palletSizeText:
+    "Verwenden Sie Paletten mit {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} Zoll) in gutem Zustand, ohne Überstand.",
+  palletHeightText: "Höchstens {heightCm} cm ({heightIn} Zoll) hoch einschließlich Palette.",
+  gmaPalletText:
+    "Verwenden Sie Holzpaletten mit {lengthCm} × {widthCm} cm ({lengthIn} × {widthIn} Zoll), vierseitig einfahrbar, mindestens GMA-Klasse {grade} und in gutem Zustand.",
+  stackingText:
     "Beladen Sie jede Palette mit den in der Packliste zugeordneten Kartons. Stapeln Sie bündig, die schwersten unten, mit den Kartonetiketten nach außen und ohne Überstand.",
   palletHeight: "Höhe",
-  fbaPalletHeightText:
+  stackablePalletHeightText:
     "Höchstens {heightCm} cm ({heightIn} Zoll) hoch einschließlich Palette. Eine stapelbare Palette sollte höchstens {stackCm} cm ({stackIn} Zoll) hoch sein.",
-  fbaPalletWeightText: "Höchstens {kg} kg ({lb} lb) einschließlich Palette.",
-  fbaSecureText:
+  palletWeightText: "Höchstens {kg} kg ({lb} lb) einschließlich Palette.",
+  stretchWrapText:
     "Umwickeln Sie jede Palette mit klarer Stretchfolie und kennzeichnen Sie sie mit „Do not break stretch wrap“. Die Kartons müssen auch ohne Folie stabil stehen.",
   palletLabel: "Palettenetiketten",
   palletLabelText:
@@ -504,14 +510,16 @@ const zh: ShippingCopy = {
   secure: "固定货物",
   secureText: "将纸箱固定在托盘上以便运输。",
   palletType: "托盘类型",
-  fbaPalletTypeText:
-    "使用 {lengthCm} × {widthCm} 厘米（{lengthIn} × {widthIn} 英寸）、四向进叉、GMA B 级或以上且状况良好的木托盘。",
-  fbaPalletText: "按照装箱单，将指定纸箱装载到对应托盘上。码放平齐，重箱在下，箱标签朝外，不得超出托盘边缘。",
+  palletSizeText: "使用 {lengthCm} × {widthCm} 厘米（{lengthIn} × {widthIn} 英寸）且状况良好的托盘，货物不得超出边缘。",
+  palletHeightText: "含托盘在内高度不超过 {heightCm} 厘米（{heightIn} 英寸）。",
+  gmaPalletText:
+    "使用 {lengthCm} × {widthCm} 厘米（{lengthIn} × {widthIn} 英寸）、四向进叉、GMA {grade} 级或以上且状况良好的木托盘。",
+  stackingText: "按照装箱单，将指定纸箱装载到对应托盘上。码放平齐，重箱在下，箱标签朝外，不得超出托盘边缘。",
   palletHeight: "高度",
-  fbaPalletHeightText:
+  stackablePalletHeightText:
     "含托盘在内高度不超过 {heightCm} 厘米（{heightIn} 英寸）。可堆叠托盘的高度应不超过 {stackCm} 厘米（{stackIn} 英寸）。",
-  fbaPalletWeightText: "含托盘在内重量不超过 {kg} 千克（{lb} 磅）。",
-  fbaSecureText: "用透明缠绕膜包裹每个托盘，并标注“Do not break stretch wrap”。去掉缠绕膜后纸箱也必须稳固。",
+  palletWeightText: "含托盘在内重量不超过 {kg} 千克（{lb} 磅）。",
+  stretchWrapText: "用透明缠绕膜包裹每个托盘，并标注“Do not break stretch wrap”。去掉缠绕膜后纸箱也必须稳固。",
   palletLabel: "托盘标签",
   palletLabelText: "每个托盘有四张标签，在四个侧面各贴一张，位于顶部居中、缠绕膜外侧。每个纸箱保留自己的标签。",
   bol: "提单",
@@ -679,15 +687,18 @@ const ur: ShippingCopy = {
   secure: "سامان محفوظ کریں",
   secureText: "نقل و حمل کے لیے کارٹنوں کو پیلٹ پر مضبوطی سے باندھیں۔",
   palletType: "پیلٹ کی قسم",
-  fbaPalletTypeText:
-    "{lengthCm} × {widthCm} سینٹی میٹر ({lengthIn} × {widthIn} انچ) کے لکڑی کے پیلٹ استعمال کریں جن میں چاروں طرف سے فورک لفٹ داخل ہو سکے، GMA گریڈ B یا بہتر، اور اچھی حالت میں۔",
-  fbaPalletText:
+  palletSizeText:
+    "{lengthCm} × {widthCm} سینٹی میٹر ({lengthIn} × {widthIn} انچ) کے اچھی حالت والے پیلٹ استعمال کریں، کناروں سے کچھ باہر نہ ہو۔",
+  palletHeightText: "پیلٹ سمیت زیادہ سے زیادہ {heightCm} سینٹی میٹر ({heightIn} انچ) اونچا۔",
+  gmaPalletText:
+    "{lengthCm} × {widthCm} سینٹی میٹر ({lengthIn} × {widthIn} انچ) کے لکڑی کے پیلٹ استعمال کریں جن میں چاروں طرف سے فورک لفٹ داخل ہو سکے، GMA گریڈ {grade} یا بہتر، اور اچھی حالت میں۔",
+  stackingText:
     "ہر پیلٹ پر پیکنگ لسٹ میں اس کے لیے مختص کارٹن رکھیں۔ انہیں برابر رکھیں، بھاری کارٹن نیچے، کارٹن لیبل باہر کی طرف، اور کچھ بھی کنارے سے باہر نہ ہو۔",
   palletHeight: "اونچائی",
-  fbaPalletHeightText:
+  stackablePalletHeightText:
     "پیلٹ سمیت زیادہ سے زیادہ {heightCm} سینٹی میٹر ({heightIn} انچ) اونچا۔ اسٹیک ہونے والا پیلٹ {stackCm} سینٹی میٹر ({stackIn} انچ) سے اونچا نہ ہو۔",
-  fbaPalletWeightText: "پیلٹ سمیت زیادہ سے زیادہ {kg} کلوگرام ({lb} پاؤنڈ)۔",
-  fbaSecureText:
+  palletWeightText: "پیلٹ سمیت زیادہ سے زیادہ {kg} کلوگرام ({lb} پاؤنڈ)۔",
+  stretchWrapText:
     "ہر پیلٹ کو شفاف اسٹریچ ریپ میں لپیٹیں اور اس پر “Do not break stretch wrap” لکھیں۔ ریپ کے بغیر بھی کارٹن مستحکم رہیں۔",
   palletLabel: "پیلٹ لیبل",
   palletLabelText:

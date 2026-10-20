@@ -2,16 +2,17 @@ import { Toast } from "@base-ui/react/toast"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   type Address,
-  type OrderInput,
-  type PackingDraft,
-  type Packing,
-  packingSchema,
   cartonInputSchema,
+  checkPallets,
+  money,
+  type OrderInput,
+  type Packing,
+  type PackingDraft,
+  packingSchema,
   palletInputSchema,
   palletRules,
   validatePacking,
-  validatePallets,
-  money
+  validatePallets
 } from "@repo/aisle"
 import { useRouter } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
@@ -249,7 +250,12 @@ export function PackingForm({
             order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
           )
         ).issues,
-        ...(palletized ? validatePallets({ cartons: physicalCartons, pallets }) : [])
+        ...(palletized
+          ? [
+              ...validatePallets({ cartons: physicalCartons, pallets }),
+              ...checkPallets(order, { cartons: physicalCartons, pallets })
+            ]
+          : [])
       ]
   const palletIssues = packingIssues.filter((issue) => palletRules.has(issue.code))
   const completePallets = pallets.flatMap((pallet) => {

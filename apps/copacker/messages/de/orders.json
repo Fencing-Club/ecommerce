@@ -561,7 +561,13 @@
     "removeCartons": "{cartons} von {pallet} entfernen",
     "noCartons": "Noch keine Kartons auf dieser Palette",
     "enterDimensions": "Geben Sie Länge, Breite und Höhe der Palette ein.",
-    "enterWeight": "Geben Sie das Bruttogewicht der Palette einschließlich der Palette selbst ein."
+    "enterWeight": "Geben Sie das Bruttogewicht der Palette einschließlich der Palette selbst ein.",
+    "rules": {
+      "palletFootprint": "Abmessungen: {length, number} × {width, number} cm ist größer als die {receiver}-Palette mit {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} Zoll). Die Ladung darf nicht überstehen.",
+      "palletHeight": "Höhe: {height, number} cm überschreitet die {receiver}-Obergrenze von {maxCm, number} cm ({maxIn, number} Zoll) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten.",
+      "stackableHeight": "Höhe: {height, number} cm ist zu hoch für eine stapelbare {receiver}-Palette, die höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch sein darf. Kennzeichnen Sie sie als nicht stapelbar oder verringern Sie die Ladung.",
+      "palletWeight": "Gewicht: {weight, number} kg überschreiten die {receiver}-Obergrenze von {maxLb, number} lb ({maxKg, number} kg) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten."
+    }
   },
   "palletCartons": {
     "title": "Kartons für {pallet} auswählen",

@@ -561,7 +561,13 @@
     "removeCartons": "Зняти {cartons} з палети: {pallet}",
     "noCartons": "На цій палеті ще немає коробок",
     "enterDimensions": "Укажіть довжину, ширину й висоту палети.",
-    "enterWeight": "Укажіть вагу брутто палети разом із самою палетою."
+    "enterWeight": "Укажіть вагу брутто палети разом із самою палетою.",
+    "rules": {
+      "palletFootprint": "Розміри: {length, number} × {width, number} см більше за палету {receiver} {lengthCm, number} × {widthCm, number} см ({lengthIn, number} × {widthIn, number} дюйм.). Вантаж не повинен виступати за краї.",
+      "palletHeight": "Висота: {height, number} см перевищує ліміт {receiver} {maxCm, number} см ({maxIn, number} дюйм.) разом із палетою. Розподіліть коробки на більше палет.",
+      "stackableHeight": "Висота: {height, number} см завелика для штабельованої палети {receiver}, яка може бути до {maxCm, number} см ({maxIn, number} дюйм.). Позначте її як нештабельовану або зменште вантаж.",
+      "palletWeight": "Вага: {weight, number} кг перевищує ліміт {receiver} {maxLb, number} lb ({maxKg, number} кг) разом із палетою. Розподіліть коробки на більше палет."
+    }
   },
   "palletCartons": {
     "title": "Виберіть коробки: {pallet}",

@@ -561,7 +561,13 @@
     "removeCartons": "{pallet} سے {cartons} ہٹائیں",
     "noCartons": "اس پیلٹ پر ابھی کوئی کارٹن نہیں",
     "enterDimensions": "پیلٹ کی لمبائی، چوڑائی اور اونچائی درج کریں۔",
-    "enterWeight": "پیلٹ کا کل وزن، پیلٹ سمیت، درج کریں۔"
+    "enterWeight": "پیلٹ کا کل وزن، پیلٹ سمیت، درج کریں۔",
+    "rules": {
+      "palletFootprint": "پیمائش: {length, number} × {width, number} سینٹی میٹر {receiver} کے {lengthCm, number} × {widthCm, number} سینٹی میٹر ({lengthIn, number} × {widthIn, number} انچ) پیلٹ سے بڑا ہے۔ لوڈ کناروں سے باہر نہ ہو۔",
+      "palletHeight": "اونچائی: {height, number} سینٹی میٹر پیلٹ سمیت {receiver} کی {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) کی حد سے زیادہ ہے۔ کارٹنوں کو زیادہ پیلٹوں پر تقسیم کریں۔",
+      "stackableHeight": "اونچائی: {height, number} سینٹی میٹر اسٹیک ہونے والے {receiver} پیلٹ کے لیے بہت زیادہ ہے، جس کی حد {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) ہے۔ اسے اسٹیک نہ ہونے والا نشان زد کریں یا لوڈ کم کریں۔",
+      "palletWeight": "وزن: {weight, number} کلوگرام پیلٹ سمیت {receiver} کی {maxLb, number} lb ({maxKg, number} کلوگرام) کی حد سے زیادہ ہے۔ کارٹنوں کو زیادہ پیلٹوں پر تقسیم کریں۔"
+    }
   },
   "palletCartons": {
     "title": "{pallet} کے لیے کارٹن منتخب کریں",

@@ -30,7 +30,11 @@
       "duplicatePallet": "La tarima {pallet} aparece más de una vez",
       "unknownPalletCarton": "La tarima {pallet} incluye la caja {carton}, que no está en este envío",
       "palletCartonTwice": "La caja {carton} está en más de una tarima. Déjala en una sola.",
-      "cartonsOffPallets": "{count, plural, one {# caja no está en ninguna tarima: {cartons}. Elige una tarima para ella o agrega una.} other {# cajas no están en ninguna tarima: {cartons}. Elige una tarima para cada una o agrega una.}}"
+      "cartonsOffPallets": "{count, plural, one {# caja no está en ninguna tarima: {cartons}. Elige una tarima para ella o agrega una.} other {# cajas no están en ninguna tarima: {cartons}. Elige una tarima para cada una o agrega una.}}",
+      "palletFootprint": "Tarima {pallet}: las tarimas de {receiver} deben medir como máximo {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in), sin nada que sobresalga",
+      "palletHeight": "Tarima {pallet}: las tarimas de {receiver} deben medir como máximo {maxCm, number} cm ({maxIn, number} in) de alto, incluida la tarima",
+      "stackableHeight": "Tarima {pallet}: las tarimas apilables de {receiver} deben medir como máximo {maxCm, number} cm ({maxIn, number} in) de alto, o márcala como no apilable",
+      "palletWeight": "Tarima {pallet}: las tarimas de {receiver} deben pesar como máximo {maxLb, number} lb ({maxKg, number} kg), incluida la tarima"
     },
     "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío.",
     "missingTransport": "Transporte sin confirmar"
