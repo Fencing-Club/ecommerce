@@ -21,7 +21,6 @@
     },
     "metaTitle": "Envío",
     "title": "Envío {number}",
-    "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
     "parents": {
       "purchaseOrders": "Órdenes de compra",
       "orders": "Pedidos"
@@ -33,7 +32,8 @@
       "retry": "Reintentar envío",
       "cancelInAmazon": "Cancelar en Amazon",
       "getAmazonLabels": "Obtener etiquetas de Amazon",
-      "createAmazonShipment": "Crear envío de Amazon"
+      "createAmazonShipment": "Crear envío de Amazon",
+      "editPacking": "Editar empaque"
     },
     "needsAttention": "Requiere atención",
     "changesWaiting": {
@@ -85,7 +85,24 @@
     },
     "documents": {
       "title": "Documentos",
-      "empty": "Aún no hay documentos"
+      "empty": "Aún no hay documentos",
+      "packingList": "Lista de empaque",
+      "downloadPackingList": "Descargar lista de empaque",
+      "packingListFailed": "No se pudo descargar la lista de empaque"
+    },
+    "summary": {
+      "title": "Detalles del envío",
+      "readyDate": "Fecha de disponibilidad",
+      "cartons": "Cajas",
+      "units": "Unidades",
+      "grossWeight": "Peso bruto",
+      "volume": "Volumen"
+    },
+    "legs": {
+      "shipsTo": "El proveedor envía a {place}.",
+      "amazonPickup": "Amazon recoge en {place}.",
+      "carrierPickup": "El transportista recoge en {place}.",
+      "dropoff": "{place} entrega las cajas al transportista."
     }
   },
   "actions": {
@@ -153,8 +170,8 @@
       "hanger": "Coloca cada prenda en un gancho.",
       "label": "Etiqueta cada unidad."
     },
-    "fbaCartons": "Cajas de FBA: se permiten SKU mixtos; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb), salvo que una sola unidad sea más grande.",
-    "awdUsCartons": "Cajas de AWD US: un SKU por caja, máximo 150 unidades, todas las cajas de un mismo SKU empacadas igual; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb).",
+    "fbaCartons": "Cajas de FBA: se permiten SKU mixtos; máximo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} y {maxKg, number} kg ({maxLb, number} lb), salvo que una sola unidad sea más grande.",
+    "awdUsCartons": "Cajas de AWD US: un SKU por caja, máximo {units, number} unidades, todas las cajas de un mismo SKU empacadas igual; máximo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} y {maxKg, number} kg ({maxLb, number} lb).",
     "separateCartons": "Empaca los productos de {networks} en cajas separadas.",
     "unitLabels": "Etiqueta cada unidad con su código de barras FNSKU, cubriendo cualquier otro código de barras.",
     "suffocationWarnings": "Las bolsas de polietileno necesitan una advertencia de asfixia cuando la abertura mide 5 in (12.7 cm) o más.",
@@ -204,5 +221,16 @@
     "document": "Documento",
     "issues": "Resuelve estos problemas antes de descargar los documentos.",
     "pages": "{count, plural, one {# página} other {# páginas}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etiquetas de producto",
+    "labelsFor": "Etiquetas de {name}",
+    "download": "Descargar {label}",
+    "downloadAll": "Descargar todas las etiquetas de producto",
+    "sku": "Etiquetas SKU",
+    "fnsku": "Etiquetas FNSKU",
+    "suffocation": "Etiquetas de advertencia de asfixia",
+    "choking": "Etiquetas de peligro de asfixia por piezas pequeñas",
+    "notProvided": "Etiqueta no proporcionada"
   }
 }

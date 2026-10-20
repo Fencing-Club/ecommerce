@@ -31,8 +31,8 @@ explicit tasks must be confirmed before generating these documents; destination 
 task. Custom packaging with reference photos remains a planned follow-up.
 
 Carton grouping includes contents, quantities, dimensions, and weight. Each physical carton retains its own Amazon
-and carrier label identifier. When both labels are required, the packing list pairs them on one row per carton under
-Carton, Amazon box label, and Carrier label columns. Single-label shipments use the compact label-number grid.
+and carrier label identifier. The packing list leaves label numbers out; the carton label reference lists them, one row
+per carton under Carton, Amazon carton label, and Carrier label columns.
 Carton groups stay intact with repeated headings on each page; a group too large for one page blocks generation for
 layout review. Missing required assignments and duplicate IDs block download. Provider label PDFs
 must be downloaded separately in their original form and page size; these templates are reference documents,
@@ -69,7 +69,7 @@ and verification provenance. It never accesses a database or books transport.
 
 `shippingDocumentSnapshot` validates packing with the same rules as the app and requires one explicit label assignment
 per carton. The exporter matches original PDF labels by SKU, FNSKU and quantity, preserves the original PDF bytes,
-and creates the packing list, checklist, carton reference, and combined packet. A verification manifest records
+and creates the packing list, checklist, carton reference, and combined packet (in the app's packet order). A verification manifest records
 the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
 supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
 
@@ -86,6 +86,17 @@ The API serves `verify`, `carton_labels`, `carrier_labels` and `product_labels` 
 workspace membership and a snapshot hash before and after reading files. The browser verifies that same hash before
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
+
+The packet runs: the packing list, the checklist, the carton label reference, the carton labels (Amazon's, then the
+carrier's), then the product labels. The reference lists every carton with its labels in one table, right before the
+label pages; a packet without carton labels leaves it out. `renderSupplierPacket` owns this order.
+
+Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.
+`GET /api/shipments/:id/packing-list` returns `packingListSnapshot`: the packed cartons and products, with no label
+assignments, handoff or destination address. The browser renders it with the packing-list template's `packingRecord`
+layout, in the language and paper last chosen for shipping documents. A line without a supplier SKU is listed by the
+buyer's, as the packing page shows it. When the packet page can't make its reference documents, it still offers the
+packing list beside the label files.
 
 The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
 labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton

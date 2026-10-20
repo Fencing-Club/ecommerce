@@ -165,7 +165,7 @@
     "shipmentTo": "Відправлення до {destination}",
     "shipmentCounts": "{count, plural, one {# варіант} few {# варіанти} other {# варіантів}}, {pieces, number} шт.",
     "selectProduct": "Вибрати {name}",
-    "packCount": "{count, number} упаковок по {size}",
+    "packCount": "{count, number} упаковок, по {size} у кожній",
     "supplierCharges": "Витрати постачальника",
     "addSupplierCharge": "Додати витрати",
     "removeSupplierCharge": "Видалити витрати",
@@ -284,6 +284,7 @@
       "packingSplit": "Пакування надіслано; розділено на відправлення {networks} і поставлено в чергу для Amazon",
       "forwarderShipped": "{forwarder} відвантажив товар: {tracking}",
       "packingReady": "Пакування надіслано; готово до відправлення",
+      "packingReopened": "Пакування знову відкрито для змін",
       "invoiceEntered": "Рахунок внесено зі змінами до замовлення на закупівлю",
       "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення",
       "existingAwdLinked": "Пов’язано наявне відправлення AWD {shipmentId}",
@@ -410,7 +411,10 @@
     "removeCartonProduct": "Видалити товар {number} з коробки",
     "finishPacking": "Завершити пакування",
     "addNewAddress": "Додати адресу",
-    "chooseAddress": "Адреса забору"
+    "chooseAddress": "Адреса забору",
+    "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "leftCount": "Залишилось {count}",
+    "overCount": "На {count} більше"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -472,7 +476,15 @@
     "packCount": "{count} пак.",
     "addToCarton": "Додати до коробки",
     "selectedCount": "Вибрано: {count}",
-    "cartonGroup": "Коробки {cartons}"
+    "cartonGroup": "Коробки {cartons}",
+    "addProductsToCartons": "Додати товари до коробок {cartons}",
+    "rules": {
+      "unitsPerCarton": "Кількість: {units, number} одиниць для продажу в коробці перевищує ліміт {receiver} у {max, number}. Розподіліть їх на менші коробки.",
+      "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {receiver} дозволяє {shape, select, cube {не більше {lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {для цієї коробки не більше {lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}.",
+      "cartonWeight": "Вага: {weight, number} кг перевищує ліміт {maxLb, number} lb ({maxKg, number} кг). Зменште вагу кожної коробки.",
+      "oneSku": "Товари: {receiver} вимагає один SKU на коробку. Перемістіть ці SKU в окремі коробки.",
+      "samePacking": "Шаблон пакування: цей SKU в іншій частині відправлення використовує {difference, select, units {{units, number} од. на коробку} other {коробки {length, number} × {width, number} × {height, number} см вагою {weight, number} кг}}. Використовуйте однаковий шаблон пакування для кожної коробки цього SKU."
+    }
   },
   "cartonImport": {
     "title": "Імпортувати коробки",

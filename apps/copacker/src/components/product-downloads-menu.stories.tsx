@@ -2,7 +2,7 @@ import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ProductDownloadsMenu } from "./product-downloads-menu"
 const meta = preview.meta({
-  title: "Unused/Products/Product downloads menu",
+  title: "Components/Products/Product downloads menu",
   component: ProductDownloadsMenu,
   args: {
     items: [
@@ -54,7 +54,7 @@ export const SingleLabel = meta.story({
     attachment: true
   },
   play: async ({ canvas, args }) => {
-    const download = canvas.getByRole("button", { name: "Download fnsku labels" })
+    const download = canvas.getByRole("button", { name: "Download FNSKU labels" })
     await expect(download).not.toHaveAttribute("aria-haspopup")
     await userEvent.click(download)
     await expect(args.onDownload).toHaveBeenCalledWith(["fnsku"])

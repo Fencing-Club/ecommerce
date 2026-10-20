@@ -33,14 +33,16 @@ const base: ShippingDocumentData = {
     {
       id: "towel",
       supplierSku: "NT-WBT-NAT",
-      description: "Waffle bath towel / Natural",
+      description: "Waffle bath towel",
+      variant: "Natural",
       piecesPerPack: 1,
       tasks: ["sealedPolybag", "fnsku"]
     },
     {
       id: "bag",
       supplierSku: "NT-CDB-SAG",
-      description: "Cotton drawstring bag / Sage",
+      description: "Cotton drawstring bag",
+      variant: "Sage",
       piecesPerPack: 1,
       tasks: ["sealedPolybag", "fnsku"]
     }
@@ -137,7 +139,16 @@ const awd: ShippingDocumentData = {
     address: ["200 Distribution Road", "Ontario, CA 91761, United States"]
   },
   transport: aglTransport,
-  products: [{ id: "towel", supplierSku: "NT-TT-2", description: "Cotton tea towel", piecesPerPack: 2, tasks: [] }],
+  products: [
+    {
+      id: "towel",
+      supplierSku: "NT-TT-2",
+      description: "Cotton tea towel",
+      variant: "Natural (2 pack)",
+      piecesPerPack: 2,
+      tasks: []
+    }
+  ],
   cartons: [1, 2, 3, 4].map((index) => ({
     id: `A${index}`,
     dimensions: [40, 40, 30],
@@ -157,21 +168,24 @@ export const shippingScenarios: { id: string; name: string; data: ShippingDocume
         {
           id: "natural",
           supplierSku: "NT-TT-NAT-2",
-          description: "Cotton tea towel / Natural (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Natural (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         },
         {
           id: "sage",
           supplierSku: "NT-TT-SAG-2",
-          description: "Cotton tea towel / Sage (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Sage (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         },
         {
           id: "stripe",
           supplierSku: "NT-TT-STR-2",
-          description: "Cotton tea towel / Stripe (2 pack)",
+          description: "Cotton tea towel",
+          variant: "Stripe (2 pack)",
           piecesPerPack: 2,
           tasks: ["sealedPolybag"]
         }
@@ -207,6 +221,70 @@ export const shippingScenarios: { id: string; name: string; data: ShippingDocume
     }
   },
   { id: "parcel-pickup", name: "FBA / Parcel pickup", data: base },
+  {
+    id: "mixed-cartons",
+    name: "FBA / Mixed cartons",
+    data: {
+      ...base,
+      shipment: "DEMO-FBA-05",
+      products: [
+        ...base.products,
+        {
+          id: "tea-towel",
+          supplierSku: "NT-TT-NAT-2",
+          description: "Cotton tea towel",
+          variant: "Natural (2 pack)",
+          piecesPerPack: 2,
+          tasks: ["sealedPolybag", "fnsku"]
+        },
+        {
+          id: "napkin",
+          supplierSku: "NT-NPK-SAG-4",
+          description: "Linen napkin",
+          variant: "Sage (4 pack)",
+          piecesPerPack: 4,
+          tasks: ["sealedPolybag", "fnsku"]
+        }
+      ],
+      // Three carton configurations, each holding several products.
+      cartons: [
+        ...[1, 2, 3].map((index) => ({
+          id: `A${index}`,
+          dimensions: [50, 40, 35] as [number, number, number],
+          weight: 14.2,
+          contents: [
+            { productId: "towel", packs: 18 },
+            { productId: "bag", packs: 12 },
+            { productId: "tea-towel", packs: 10 }
+          ]
+        })),
+        ...[1, 2].map((index) => ({
+          id: `B${index}`,
+          dimensions: [40, 40, 30] as [number, number, number],
+          weight: 9.6,
+          contents: [
+            { productId: "tea-towel", packs: 20 },
+            { productId: "napkin", packs: 15 }
+          ]
+        })),
+        {
+          id: "C1",
+          dimensions: [40, 30, 25] as [number, number, number],
+          weight: 6.8,
+          contents: [
+            { productId: "bag", packs: 16 },
+            { productId: "napkin", packs: 10 },
+            { productId: "towel", packs: 6 },
+            { productId: "tea-towel", packs: 4 }
+          ]
+        }
+      ].map((carton, index) => ({
+        ...carton,
+        amazonLabel: `DEMO-FBA-05-BOX-0${index + 1}`,
+        carrierLabel: `DEMO-TRACK-1${index + 1}`
+      }))
+    }
+  },
   {
     id: "parcel-dropoff",
     name: "FBA / Parcel drop-off",

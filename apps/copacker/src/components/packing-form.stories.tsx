@@ -161,7 +161,7 @@ export const CheckFindsIssues = meta.story({
       packingActions({
         canSubmit: false,
         requiresApproval: false,
-        issues: [{ message: "Weighs more than 22.68 kg", cartonId: "C2" }, { message: "Pack Linen apron too" }]
+        issues: [{ message: "Weighs more than 22.67 kg", cartonId: "C2" }, { message: "Pack Linen apron too" }]
       })
     )
   },
@@ -176,7 +176,7 @@ export const CheckFindsIssues = meta.story({
     await expect(canvas.queryByRole("textbox", { name: /Price per unit/ })).toBeNull()
 
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
-    await expect(await canvas.findByText(/Carton C2: Weighs more than 22.68 kg/)).toBeVisible()
+    await expect(await canvas.findByText(/Carton C2: Weighs more than 22.67 kg/)).toBeVisible()
     await expect(canvas.getByText(/Pack Linen apron too/)).toBeVisible()
     await expect(actions).toHaveBeenCalledWith({ action: "shipment.check", data: { id: shipment.id } })
   }
@@ -401,8 +401,12 @@ export const AwdPackingErrors = meta.story({
   args: { order: awdOrder, initial: awdErrors, addresses: [savedAddress] },
   play: async ({ canvas }) => {
     const carton = within(canvas.getByRole("region", { name: "Carton C1" }))
-    await expect(carton.getByText("Pack one SKU per AWD carton")).toBeVisible()
-    await expect(carton.getByText(/150 sellable units/)).toBeVisible()
+    await expect(
+      carton.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+    ).toBeVisible()
+    await expect(
+      carton.getByText(/^Quantity: 160 sellable units per carton exceeds AWD’s limit of 150\./)
+    ).toBeVisible()
     await expect(carton.getByRole("spinbutton", { name: "Carton C1: Weight (kg)" })).toHaveAttribute(
       "aria-invalid",
       "true"
@@ -479,7 +483,11 @@ export const AwdConfigurationMismatch = meta.story({
     }
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/give every carton the same contents/)).toBeVisible()
+    await expect(
+      canvas.getByText(
+        "Packing template: This SKU uses 40 units per carton elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+      )
+    ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
   }
 })
@@ -505,7 +513,9 @@ export const AwdPackingErrorsMobile = meta.story({
   },
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Pack one SKU per AWD carton")).toBeVisible()
+    await expect(
+      canvas.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+    ).toBeVisible()
   }
 })
 

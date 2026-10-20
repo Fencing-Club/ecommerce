@@ -223,6 +223,8 @@
   "packetIncomplete": "Shipment packet is incomplete. Ask the buyer to review its documents.",
   "packetNotReleased": "Shipment packet hasn’t been released",
   "packingDraftChanged": "The purchase order or packing draft has changed. Refresh before saving.",
+  "packingListIncomplete": "The packing list couldn’t be made from this shipment’s cartons",
+  "packingListUnavailable": "The packing list is available once packing is finished",
   "passwordTooShort": "Use at least {count, plural, one {# character} other {# characters}}.",
   "passwordWeak": "Choose a stronger password.",
   "passwordWeakBecause": "{warning} Choose a stronger password.",
@@ -358,5 +360,6 @@
   "transportChanged": "Transport changed or is already released. Reload the shipment.",
   "transportForwarderMissing": "Add a freight forwarder stop to the order first.",
   "packetDestinationUnavailable": "Confirm the shipment’s delivery address before downloading the packet.",
-  "packetNoLabelsRequired": "No labels of this type are required for this shipment."
+  "packetNoLabelsRequired": "No labels of this type are required for this shipment.",
+  "shipmentHasNoLabels": "This shipment has no product labels"
 }

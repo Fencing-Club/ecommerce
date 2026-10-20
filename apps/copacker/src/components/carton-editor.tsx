@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput, ValidationIssue } from "@repo/aisle"
 import { CircleAlert, Copy, Ellipsis, Search, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 
-export type CartonIssue = { message: string; field?: string; fields?: string[] }
+type CartonIssue = { message: string; field?: string; fields?: string[] }
 
 function NumberField({
   label,
@@ -98,7 +98,10 @@ function CartonProducts({
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<string[]>([])
   const selectionId = useId()
-  const title = t("addProductsTo", { carton: carton.cartonId })
+  const title =
+    carton.count > 1 && carton.cartonIds?.length === carton.count
+      ? t("addProductsToCartons", { cartons: cartonGroupLabel(carton.cartonIds.map((id) => ({ id }))) })
+      : t("addProductsTo", { carton: carton.cartonId })
   const visible = products.filter(
     (item) =>
       (remainingPieces[item.id] ?? 0) > 0 &&
@@ -227,13 +230,15 @@ export function CartonEditor({
   onChange?: (value: CartonGroup) => void
   onDuplicate?: () => void
   onDelete?: () => void
-  issues?: CartonIssue[]
+  // The packing rules this carton breaks, as validatePacking reports them.
+  issues?: ValidationIssue[]
   remainingPieces?: Record<string, number>
   context?: string
   readOnly?: boolean
   showErrors?: boolean
 }) {
   const t = useTranslations("orders.cartonEditor")
+  const rules = useTranslations("server.readiness.packing")
   const packing = useTranslations("orders.packing")
   const format = useFormatter()
   const errorId = useId()
@@ -246,7 +251,63 @@ export function CartonEditor({
   const update = (patch: Partial<CartonGroup>) => onChange?.({ ...value, ...patch })
   const touch = (field: string) => setTouched((current) => (current.includes(field) ? current : [...current, field]))
   const fields = ["count", "length", "width", "height", "weight"] as const
-  const errors = [...issues]
+  // Each error names its field, says what's wrong with this carton, then how to fix it, and outlines the fields it
+  // names. Rules without carton-specific copy read as the server states them; a products error outlines nothing.
+  const ruleError = (issue: ValidationIssue): CartonIssue => {
+    const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
+    const index = value.items.findIndex(
+      (content) => products.find((item) => item.id === content.itemId)?.buyerSku === sku
+    )
+    const field = index >= 0 ? `items.${index}` : undefined
+    if (issue.code === "unitsPerCarton") {
+      return { field, message: t("rules.unitsPerCarton", issue.values) }
+    }
+    if (issue.code === "cartonSize") {
+      const side = issue.fields?.find((field): field is "length" | "width" | "height" => field !== "weight") ?? "length"
+      return {
+        fields: issue.fields,
+        message: t("rules.cartonSize", { ...issue.values, side, size: value[side] })
+      }
+    }
+    if (issue.code === "cartonWeight") {
+      return { field: "weight", message: t("rules.cartonWeight", { ...issue.values, weight: value.weight }) }
+    }
+    if (issue.code === "oneSku") {
+      return { message: t("rules.oneSku", issue.values) }
+    }
+    // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
+    if (issue.code === "samePacking") {
+      const content = value.items[index]
+      const item = products.find((product) => product.id === content?.itemId)
+      const units = content && item ? content.pieces / item.piecesPerSet : undefined
+      return {
+        message: t("rules.samePacking", {
+          ...issue.values,
+          difference: units === issue.values.units ? "size" : "units"
+        })
+      }
+    }
+    // Of the rest, only incomplete multi-packs are about a quantity; a missing ASIN or FNSKU outlines nothing.
+    return {
+      field: issue.code === "incompletePacks" ? field : undefined,
+      message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+    }
+  }
+  // A group's cartons break the same rules, so each shows once: products first, then quantities, dimensions and
+  // weight.
+  const rank = (issue: CartonIssue) => {
+    if (issue.fields) {
+      return 2
+    }
+    if (issue.field === "weight") {
+      return 3
+    }
+    return issue.field?.startsWith("items.") ? 1 : 0
+  }
+  const errors = issues
+    .map(ruleError)
+    .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+    .toSorted((a, b) => rank(a) - rank(b))
   for (const field of fields) {
     const number = value[field]
     if (
@@ -383,7 +444,7 @@ export function CartonEditor({
         <span>{packing("supplierSku")}</span>
         <span className={cn("w-24 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
       </div>
-      <div className={cn("divide-y", invalid("items") && "ring-1 ring-inset ring-destructive")}>
+      <div className="divide-y">
         {value.items.map((content, index) => {
           const item = products.find((product) => product.id === content.itemId)
           if (!item) {
@@ -395,10 +456,10 @@ export function CartonEditor({
               key={content.itemId}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 p-4 @sm/carton:grid-cols-[minmax(0,1fr)_minmax(7rem,0.65fr)_auto]"
             >
-              <div className="col-span-2 min-w-0 [overflow-wrap:anywhere] @sm/carton:col-span-1">
+              <div className="col-span-2 min-w-0 text-base [overflow-wrap:anywhere] @sm/carton:col-span-1">
                 <ProductIdentity item={item} showPackSize={false} showSku={false} />
               </div>
-              <div className="min-w-0 break-all">
+              <div className="min-w-0 text-base break-all">
                 <span className="mb-1 block text-xs text-muted-foreground @sm/carton:hidden">
                   {packing("supplierSku")}
                 </span>

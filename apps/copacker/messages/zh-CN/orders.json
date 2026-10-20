@@ -284,6 +284,7 @@
       "packingSplit": "已提交装箱信息；已拆分为 {networks} 货件并排队提交至 Amazon",
       "forwarderShipped": "{forwarder} 已发货：{tracking}",
       "packingReady": "已提交装箱信息；可以发货",
+      "packingReopened": "已重新打开装箱以进行修改",
       "invoiceEntered": "已录入发票，其中包含对采购订单的修改",
       "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批",
       "existingAwdLinked": "已关联现有 AWD 货件 {shipmentId}",
@@ -410,7 +411,10 @@
     "removeCartonProduct": "从纸箱移除商品 {number}",
     "finishPacking": "完成装箱",
     "addNewAddress": "添加地址",
-    "chooseAddress": "提货地址"
+    "chooseAddress": "提货地址",
+    "packedUnits": "{count} / {available} 件",
+    "leftCount": "还剩 {count}",
+    "overCount": "多出 {count}"
   },
   "paymentTerms": {
     "net7": "7 天账期",
@@ -472,7 +476,15 @@
     "packCount": "{count} 包",
     "addToCarton": "添加到纸箱",
     "selectedCount": "已选择 {count} 项",
-    "cartonGroup": "箱 {cartons}"
+    "cartonGroup": "箱 {cartons}",
+    "addProductsToCartons": "向纸箱 {cartons} 添加商品",
+    "rules": {
+      "unitsPerCarton": "数量：每箱 {units, number} 件可售商品，超过 {receiver} 的 {max, number} 件上限。请拆分到更小的纸箱中。",
+      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）。} other {{receiver} 允许此纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）。}}",
+      "cartonWeight": "重量：{weight, number} 千克，超过 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请减轻每箱重量。",
+      "oneSku": "商品：{receiver} 要求每箱只装一个 SKU。请将这些 SKU 分装到不同纸箱。",
+      "samePacking": "装箱模板：此 SKU 在本次发货的其他纸箱中使用{difference, select, units {每箱 {units, number} 件} other {{length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克的纸箱}}。请为此 SKU 的每个纸箱使用相同的装箱模板。"
+    }
   },
   "cartonImport": {
     "title": "导入纸箱",

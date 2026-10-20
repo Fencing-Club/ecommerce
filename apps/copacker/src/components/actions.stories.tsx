@@ -26,7 +26,8 @@ export const Succeeds = meta.story({
   play: async ({ canvas, msw }) => {
     const posted = recordActions(msw)
     await userEvent.click(canvas.getByRole("button", { name: "Send reminder" }))
-    await expect(await canvas.findByText("Reminder sent")).toBeVisible()
+    // The outcome shows as a toast, outside the button's row.
+    await expect(await screen.findByText("Reminder sent")).toBeVisible()
     await expect(posted).toEqual([{ action: "order.remind", data: { orderId: "order-1045" } }])
     await expect(getStoryRouter().invalidate).toHaveBeenCalled()
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
@@ -47,8 +48,10 @@ export const Fails = meta.story({
   play: async ({ canvas, msw }) => {
     recordActions(msw, () => HttpResponse.json({ error: "The supplier has no email address" }, { status: 400 }))
     await userEvent.click(canvas.getByRole("button", { name: "Send reminder" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("The supplier has no email address")
-    await expect(canvas.queryByText("Reminder sent")).toBeNull()
+    await expect(await screen.findByText("The supplier has no email address")).toBeVisible()
+    await expect(screen.queryByText("Reminder sent")).toBeNull()
+    // Nothing is added beside the button.
+    await expect(canvas.queryByRole("alert")).toBeNull()
   }
 })
 
@@ -73,9 +76,9 @@ export const WaitsForRefresh = meta.story({
       await userEvent.click(button)
       await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
       await expect(button).toBeDisabled()
-      await expect(canvas.queryByText("Reminder sent")).toBeNull()
+      await expect(screen.queryByText("Reminder sent")).toBeNull()
       refresh.resolve()
-      await expect(await canvas.findByText("Reminder sent")).toBeVisible()
+      await expect(await screen.findByText("Reminder sent")).toBeVisible()
       await expect(button).toBeEnabled()
     } finally {
       refresh.resolve()

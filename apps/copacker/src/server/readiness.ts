@@ -11,6 +11,19 @@ type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
 // The supplier packet is released from "ready" on; "received" means the goods arrived where the PO sent them.
 export const releasedStates: readonly ShipmentState[] = ["ready", "shipped", "forwarded", "received"]
+// From "packed" on, the shipment's packing is finished, so its packing list prints; a correction reopens it.
+export const packedStates: readonly ShipmentState[] = [
+  "packed",
+  "approval",
+  "queued",
+  "creating",
+  "waiting_labels",
+  "ready",
+  "shipped",
+  "forwarded",
+  "received",
+  "needs_attention"
+]
 // Once the supplier ships, a shipment's cartons and documents can't change any more.
 export const finishedStates: readonly ShipmentState[] = ["shipped", "forwarded", "received", "cancelled"]
 

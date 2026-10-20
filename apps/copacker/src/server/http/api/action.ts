@@ -53,6 +53,7 @@ import {
   prepareAmazonShipment,
   approveInvoice,
   correctShipment,
+  reopenPacking,
   savePacking,
   checkPacking,
   closeOrder,
@@ -490,6 +491,11 @@ export async function POST(request: Request) {
     if (action === "shipment.prepareAmazon") {
       requireAccess(s, "shipments", "edit")
       await prepareAmazonShipment(s, id(), revision())
+      return Response.json({ ok: true })
+    }
+    if (action === "shipment.reopenPacking") {
+      requireAccess(s, "shipments", "edit")
+      await reopenPacking(s, id(), revision())
       return Response.json({ ok: true })
     }
     if (action === "shipment.correct") {

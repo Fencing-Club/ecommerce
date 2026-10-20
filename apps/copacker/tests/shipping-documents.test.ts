@@ -12,6 +12,7 @@ import {
   shippingPdfFilename
 } from "../src/documents/shipping-model"
 import { renderShippingDocument, ShippingPdf } from "../src/documents/shipping-pdf"
+import { renderSupplierPacket } from "../src/documents/supplier-packet"
 import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { shippingOverview, shippingScenarios } from "../src/stories/fixtures/shipping-documents"
 
@@ -119,6 +120,40 @@ describe("shipping document contract", () => {
 })
 
 describe("rendered shipping PDFs", () => {
+  it("orders the supplier packet, keeping each label file's page size", async () => {
+    const label = async (size: [number, number]) => {
+      const pdf = await PDFDocument.create()
+      pdf.addPage(size)
+      return pdf.save()
+    }
+    const bytes = await renderSupplierPacket(
+      data,
+      defaultDocumentSettings,
+      { product: [await label([144, 72])], carton: [await label([288, 432])], carrier: [await label([288, 430])] },
+      fontBase
+    )
+    const sizes = (await PDFDocument.load(bytes)).getPages().map((page) => page.getSize())
+    // Packing list, checklist, carton label reference, Amazon carton labels, carrier labels, product labels.
+    expect(sizes.map(({ width, height }) => [Math.round(width), Math.round(height)])).toEqual([
+      [595, 842],
+      [595, 842],
+      [595, 842],
+      [288, 432],
+      [288, 430],
+      [144, 72]
+    ])
+    const task = getDocument({ data: Uint8Array.from(bytes) })
+    try {
+      const doc = await task.promise
+      const title = async (page: number) =>
+        (await (await doc.getPage(page)).getTextContent()).items.flatMap((item) => ("str" in item ? [item.str] : []))
+      expect(await title(1)).toContain("Packing list")
+      expect(await title(2)).toContain("Packing checklist")
+      expect(await title(3)).toContain("Carton label reference")
+    } finally {
+      await task.destroy()
+    }
+  })
   it("preserves punctuation and word boundaries across successive and overlapping document requests", async () => {
     const awd = shippingScenarios.find((scenario) => scenario.id === "agl-awd")!.data
     const files = await Promise.all(
@@ -148,32 +183,58 @@ describe("rendered shipping PDFs", () => {
       }
     }
   })
-  it.each(["A4", "LETTER"] as const)("pairs both labels on the same carton row on %s", async (paper) => {
+  it("leaves the label numbers to the carton label reference", async () => {
     const dropoff = shippingScenarios.find((scenario) => scenario.id === "parcel-dropoff")!.data
     const bytes = await renderToBuffer(
-      ShippingPdf({ data: dropoff, kind: "packing", settings: { ...defaultDocumentSettings, paper } })
+      ShippingPdf({ data: dropoff, kind: "packing", settings: defaultDocumentSettings })
     )
     const task = getDocument({ data: Uint8Array.from(bytes) })
     try {
       const doc = await task.promise
-      const content = await (await doc.getPage(1)).getTextContent()
-      const items = content.items.filter((item) => "str" in item)
-      expect(items.map((item) => item.str)).toContain("Carton label assignments")
-      expect(items.map((item) => item.str)).toContain("Amazon box label")
-      for (const carton of dropoff.cartons) {
-        const id = items.find((item) => item.str === carton.id)!
-        const amazon = items.find((item) => item.str === carton.amazonLabel)!
-        const carrier = items.find((item) => item.str === carton.carrierLabel)!
-        expect(id.transform[5]).toBeCloseTo(amazon.transform[5], 1)
-        expect(amazon.transform[5]).toBeCloseTo(carrier.transform[5], 1)
-        expect(id.transform[4]).toBeLessThan(amazon.transform[4]!)
-        expect(amazon.transform[4]).toBeLessThan(carrier.transform[4]!)
+      const text = (await (await doc.getPage(1)).getTextContent()).items.flatMap((item) =>
+        "str" in item ? [item.str] : []
+      )
+      expect(text).toContain("Waffle bath towel")
+      for (const label of [
+        "Amazon carton label",
+        "Carrier label",
+        ...dropoff.cartons.map((carton) => carton.amazonLabel)
+      ]) {
+        expect(text).not.toContain(label)
       }
     } finally {
       await task.destroy()
     }
   })
-  it("shows multipack quantities and their piece totals with each explicit carton mapping", async () => {
+  it.each(["A4", "LETTER"] as const)(
+    "pairs both labels on the same carton row of the reference on %s",
+    async (paper) => {
+      const dropoff = shippingScenarios.find((scenario) => scenario.id === "parcel-dropoff")!.data
+      const bytes = await renderToBuffer(
+        ShippingPdf({ data: dropoff, kind: "reference", settings: { ...defaultDocumentSettings, paper } })
+      )
+      const task = getDocument({ data: Uint8Array.from(bytes) })
+      try {
+        const doc = await task.promise
+        const content = await (await doc.getPage(1)).getTextContent()
+        const items = content.items.filter((item) => "str" in item)
+        expect(items.map((item) => item.str)).toContain("Amazon carton label")
+        for (const carton of dropoff.cartons) {
+          const id = items.find((item) => item.str === carton.id)!
+          const amazon = items.find((item) => item.str === carton.amazonLabel)!
+          const carrier = items.find((item) => item.str === carton.carrierLabel)!
+          // The larger, centred carton ID sits within a point or two of the label baseline.
+          expect(Math.abs(id.transform[5]! - amazon.transform[5]!)).toBeLessThan(2)
+          expect(amazon.transform[5]).toBeCloseTo(carrier.transform[5], 1)
+          expect(id.transform[4]).toBeLessThan(amazon.transform[4]!)
+          expect(amazon.transform[4]).toBeLessThan(carrier.transform[4]!)
+        }
+      } finally {
+        await task.destroy()
+      }
+    }
+  )
+  it("shows multipack quantities and their piece totals", async () => {
     const awd = shippingScenarios.find((scenario) => scenario.id === "agl-awd")!.data
     const bytes = await renderToBuffer(ShippingPdf({ data: awd, kind: "packing", settings: defaultDocumentSettings }))
     const task = getDocument({ data: Uint8Array.from(bytes) })
@@ -184,13 +245,9 @@ describe("rendered shipping PDFs", () => {
         .flatMap((item) => ("str" in item ? [item.str] : []))
         .join(" ")
         .replace(/\s+/g, " ")
-      for (const value of ["A1–A4", "60 packs", "120 units", "240 packs", "480 units", "Amazon carton labels"]) {
+      for (const value of ["A1–A4", "60 packs, 2 each", "120 units", "240 packs, 2 each", "480 units"]) {
         expect(text).toContain(value)
       }
-      for (const carton of awd.cartons) {
-        expect(text).toContain(`${carton.id} ${carton.amazonLabel}`)
-      }
-      expect(text).not.toContain("Carrier label numbers")
     } finally {
       await task.destroy()
     }
@@ -227,11 +284,13 @@ describe("rendered shipping PDFs", () => {
             expect(text.join(" ")).toContain(kind === "packing" ? "Per carton" : "Carrier label")
             expect(text.join(" ")).toContain(`Page ${index} of ${doc.numPages}`)
           }
-          for (let index = 1; index <= 40; index += 2) {
-            const first = `DEMO-FBA-01-BOX-${String(index).padStart(3, "0")}`
-            expect(pages.filter((page) => page.includes(first))).toHaveLength(1)
-            const groupPages = kind === "packing" ? pages.find((page) => page.includes(first)) : pages.flat()
-            expect(groupPages).toContain(`DEMO-FBA-01-BOX-${String(index + 1).padStart(3, "0")}`)
+          // The packing list keeps each carton group whole on one page; the reference lists each label once.
+          const markers =
+            kind === "packing"
+              ? groupShippingCartons(long.data.cartons).map(cartonGroupLabel)
+              : long.data.cartons.map((carton) => carton.amazonLabel)
+          for (const marker of markers) {
+            expect(pages.filter((page) => marker !== undefined && page.includes(marker))).toHaveLength(1)
           }
         } finally {
           await task.destroy()
@@ -254,7 +313,7 @@ describe("rendered shipping PDFs", () => {
         const content = await page.getTextContent()
         const text = content.items.flatMap((item) => ("str" in item ? [item.str] : [])).join(" ")
         expect(text).toContain("NT-WBT-NAT")
-        expect(text).toContain("DEMO-TRACK-01")
+        expect(text).toContain("NT-CDB-SAG")
         expect(text).not.toContain("\uFFFD")
         expect(doc.numPages).toBe(1)
       } finally {

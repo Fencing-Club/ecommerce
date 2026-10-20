@@ -165,7 +165,7 @@
     "shipmentTo": "Sendung an {destination}",
     "shipmentCounts": "{count, plural, one {# Variante} other {# Varianten}}, {pieces, number} Stück",
     "selectProduct": "{name} auswählen",
-    "packCount": "{count, number} Packungen à {size}",
+    "packCount": "{count, number} Packungen, je {size}",
     "supplierCharges": "Lieferantenkosten",
     "addSupplierCharge": "Ausgabe hinzufügen",
     "removeSupplierCharge": "Ausgabe entfernen",
@@ -284,6 +284,7 @@
       "packingSplit": "Packliste gesendet; in {networks} Sendungen aufgeteilt und für Amazon in die Warteschlange gestellt",
       "forwarderShipped": "{forwarder} hat die Ware versendet: {tracking}",
       "packingReady": "Packliste gesendet; versandbereit",
+      "packingReopened": "Verpackung für Änderungen wieder geöffnet",
       "invoiceEntered": "Rechnung mit Änderungen an der Bestellung erfasst",
       "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet",
       "existingAwdLinked": "Vorhandene AWD-Sendung {shipmentId} verknüpft",
@@ -410,7 +411,10 @@
     "removeCartonProduct": "Produkt {number} aus dem Karton entfernen",
     "finishPacking": "Verpacken abschließen",
     "addNewAddress": "Adresse hinzufügen",
-    "chooseAddress": "Abholadresse"
+    "chooseAddress": "Abholadresse",
+    "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}",
+    "leftCount": "{count} offen",
+    "overCount": "{count} zu viel"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",
@@ -472,7 +476,15 @@
     "packCount": "{count, plural, one {# Packung} other {# Packungen}}",
     "addToCarton": "Zum Karton hinzufügen",
     "selectedCount": "{count} ausgewählt",
-    "cartonGroup": "Kartons {cartons}"
+    "cartonGroup": "Kartons {cartons}",
+    "addProductsToCartons": "Produkte zu Kartons {cartons} hinzufügen",
+    "rules": {
+      "unitsPerCarton": "Menge: {units, number} verkaufsfähige Einheiten pro Karton überschreiten die {receiver}-Obergrenze von {max, number}. Verteilen Sie die Einheiten auf mehrere Kartons.",
+      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. {shape, select, cube {Bei {receiver} darf keine Kartonseite länger als {lengthCm, number} cm ({lengthIn, number} Zoll) sein.} other {{receiver} erlaubt für diesen Karton höchstens {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} Zoll).}}",
+      "cartonWeight": "Gewicht: {weight, number} kg überschreiten das zulässige Höchstgewicht von {maxLb, number} lb ({maxKg, number} kg). Verringern Sie das Gewicht jedes Kartons.",
+      "oneSku": "Produkte: {receiver} erlaubt nur eine SKU pro Karton. Verteilen Sie diese SKUs auf separate Kartons.",
+      "samePacking": "Verpackungsvorlage: Diese SKU verwendet an anderer Stelle in dieser Sendung {difference, select, units {{units, number} Einheiten pro Karton} other {Kartons mit {length, number} × {width, number} × {height, number} cm und {weight, number} kg}}. Verwenden Sie für jeden Karton dieser SKU dieselbe Verpackungsvorlage."
+    }
   },
   "cartonImport": {
     "title": "Kartons importieren",
