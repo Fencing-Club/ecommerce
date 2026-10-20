@@ -247,7 +247,8 @@ function CartonRow({
         ))}
       </div>
     )
-  const caption = "text-xs text-muted-foreground"
+  // Captions and field labels, as 06.27 to 06.30 set them: 12px medium, a shade darker than muted text.
+  const caption = "text-xs font-medium text-neutral-600 dark:text-neutral-400"
   const sides = { length: value.length, width: value.width, height: value.height }
 
   return (
