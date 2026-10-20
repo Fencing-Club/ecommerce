@@ -514,11 +514,11 @@
     "cartonGroup": "箱 {cartons}",
     "addProductsToCartons": "向纸箱 {cartons} 添加商品",
     "rules": {
-      "awdUnits": "数量：每箱 {units, number} 件可售商品，超过 AWD 的 150 件上限。请拆分到更小的纸箱中。",
-      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{network} 每边最长 63.5 厘米（25 英寸）。",
-      "cartonWeight": "重量：{weight, number} 千克，超过 50 磅（22.68 千克）的上限。请减轻每箱重量。",
-      "awdOneSku": "商品：AWD 要求每箱只装一个 SKU。请将这些 SKU 分装到不同纸箱。",
-      "awdConfiguration": "装箱模板：此 SKU 在本次发货的其他纸箱中使用{difference, select, units {每箱 {units, number} 件} other {{length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克的纸箱}}。请为此 SKU 的每个纸箱使用相同的装箱模板。"
+      "unitsPerCarton": "数量：每箱 {units, number} 件可售商品，超过 {receiver} 的 {max, number} 件上限。请拆分到更小的纸箱中。",
+      "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）。} other {{receiver} 允许此纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）。}}",
+      "cartonWeight": "重量：{weight, number} 千克，超过 {maxLb, number} 磅（{maxKg, number} 千克）的上限。请减轻每箱重量。",
+      "oneSku": "商品：{receiver} 要求每箱只装一个 SKU。请将这些 SKU 分装到不同纸箱。",
+      "samePacking": "装箱模板：此 SKU 在本次发货的其他纸箱中使用{difference, select, units {每箱 {units, number} 件} other {{length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克的纸箱}}。请为此 SKU 的每个纸箱使用相同的装箱模板。"
     }
   },
   "cartonImport": {

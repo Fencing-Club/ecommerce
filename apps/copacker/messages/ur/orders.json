@@ -514,11 +514,11 @@
     "cartonGroup": "کارٹن {cartons}",
     "addProductsToCartons": "کارٹن {cartons} میں مصنوعات شامل کریں",
     "rules": {
-      "awdUnits": "مقدار: ہر کارٹن میں {units, number} قابل فروخت یونٹس AWD کی 150 کی حد سے زیادہ ہیں۔ انہیں چھوٹے کارٹنوں میں تقسیم کریں۔",
-      "cartonSize": "پیمائش: {side, select, width {چوڑائی} height {اونچائی} other {لمبائی}} {size, number} cm ہے۔ {network} ہر طرف زیادہ سے زیادہ 63.5 cm (25 in) کی اجازت دیتا ہے۔",
-      "cartonWeight": "وزن: {weight, number} kg، 50 lb (22.68 kg) کی حد سے زیادہ ہے۔ ہر کارٹن کا وزن کم کریں۔",
-      "awdOneSku": "مصنوعات: AWD میں ہر کارٹن میں ایک ہی SKU ہونا چاہیے۔ ان SKUs کو الگ کارٹنوں میں رکھیں۔",
-      "awdConfiguration": "پیکنگ ٹیمپلیٹ: یہ SKU اس شپمنٹ میں کسی اور جگہ {difference, select, units {ہر کارٹن میں {units, number} یونٹس} other {{length, number} × {width, number} × {height, number} cm اور {weight, number} kg کے کارٹن}} استعمال کرتا ہے۔ اس SKU کے ہر کارٹن کے لیے ایک ہی پیکنگ ٹیمپلیٹ استعمال کریں۔"
+      "unitsPerCarton": "مقدار: ہر کارٹن میں {units, number} قابل فروخت یونٹس {receiver} کی {max, number} کی حد سے زیادہ ہیں۔ انہیں چھوٹے کارٹنوں میں تقسیم کریں۔",
+      "cartonSize": "پیمائش: {side, select, width {چوڑائی} height {اونچائی} other {لمبائی}} {size, number} cm ہے۔ {receiver} {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {اس کارٹن کے لیے زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} کی اجازت دیتا ہے۔",
+      "cartonWeight": "وزن: {weight, number} kg، {maxLb, number} lb ({maxKg, number} kg) کی حد سے زیادہ ہے۔ ہر کارٹن کا وزن کم کریں۔",
+      "oneSku": "مصنوعات: {receiver} میں ہر کارٹن میں ایک ہی SKU ہونا چاہیے۔ ان SKUs کو الگ کارٹنوں میں رکھیں۔",
+      "samePacking": "پیکنگ ٹیمپلیٹ: یہ SKU اس شپمنٹ میں کسی اور جگہ {difference, select, units {ہر کارٹن میں {units, number} یونٹس} other {{length, number} × {width, number} × {height, number} cm اور {weight, number} kg کے کارٹن}} استعمال کرتا ہے۔ اس SKU کے ہر کارٹن کے لیے ایک ہی پیکنگ ٹیمپلیٹ استعمال کریں۔"
     }
   },
   "cartonImport": {
