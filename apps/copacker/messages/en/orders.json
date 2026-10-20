@@ -512,7 +512,13 @@
     "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
     "cartonGroup": "Cartons {cartons}",
-    "addProductsToCartons": "Add products to cartons {cartons}"
+    "addProductsToCartons": "Add products to cartons {cartons}",
+    "rules": {
+      "awdUnits": "Quantity: {units, number} sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons.",
+      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {network} allows up to 63.5 cm (25 in) on each side.",
+      "cartonWeight": "Weight: {weight, number} kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton.",
+      "awdOneSku": "Products: AWD requires one SKU per carton. Move these SKUs into separate cartons."
+    }
   },
   "cartonImport": {
     "title": "Import cartons",

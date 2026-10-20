@@ -512,7 +512,13 @@
     "addToCarton": "Zum Karton hinzufügen",
     "selectedCount": "{count} ausgewählt",
     "cartonGroup": "Kartons {cartons}",
-    "addProductsToCartons": "Produkte zu Kartons {cartons} hinzufügen"
+    "addProductsToCartons": "Produkte zu Kartons {cartons} hinzufügen",
+    "rules": {
+      "awdUnits": "Menge: {units, number} verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
+      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. Bei {network} darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
+      "cartonWeight": "Gewicht: {weight, number} kg überschreiten das zulässige Höchstgewicht von 50 lb (22,68 kg). Verringern Sie das Gewicht jedes Kartons.",
+      "awdOneSku": "Produkte: AWD erlaubt nur eine SKU pro Karton. Verteilen Sie diese SKUs auf separate Kartons."
+    }
   },
   "cartonImport": {
     "title": "Kartons importieren",

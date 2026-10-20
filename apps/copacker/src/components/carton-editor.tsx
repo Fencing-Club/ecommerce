@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput, ValidationIssue } from "@repo/aisle"
 import { CircleAlert, Copy, Ellipsis, Search, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 
-export type CartonIssue = { message: string; field?: string; fields?: string[] }
+type CartonIssue = { message: string; field?: string; fields?: string[] }
 
 function NumberField({
   label,
@@ -230,13 +230,15 @@ export function CartonEditor({
   onChange?: (value: CartonGroup) => void
   onDuplicate?: () => void
   onDelete?: () => void
-  issues?: CartonIssue[]
+  // The packing rules this carton breaks, as validatePacking reports them.
+  issues?: ValidationIssue[]
   remainingPieces?: Record<string, number>
   context?: string
   readOnly?: boolean
   showErrors?: boolean
 }) {
   const t = useTranslations("orders.cartonEditor")
+  const rules = useTranslations("server.readiness.packing")
   const packing = useTranslations("orders.packing")
   const format = useFormatter()
   const errorId = useId()
@@ -249,7 +251,54 @@ export function CartonEditor({
   const update = (patch: Partial<CartonGroup>) => onChange?.({ ...value, ...patch })
   const touch = (field: string) => setTouched((current) => (current.includes(field) ? current : [...current, field]))
   const fields = ["count", "length", "width", "height", "weight"] as const
-  const errors = [...issues]
+  // Each error names its field, says what's wrong with this carton, then how to fix it, and outlines the fields it
+  // names. Rules without carton-specific copy read as the server states them; a products error outlines nothing.
+  const ruleError = (issue: ValidationIssue): CartonIssue => {
+    const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
+    const index = value.items.findIndex(
+      (content) => products.find((item) => item.id === content.itemId)?.buyerSku === sku
+    )
+    const content = value.items[index]
+    const item = products.find((product) => product.id === content?.itemId)
+    if (issue.code === "awdUnits" && content && item) {
+      return {
+        field: `items.${index}`,
+        message: t("rules.awdUnits", { units: content.pieces / item.piecesPerSet })
+      }
+    }
+    if (issue.code === "cartonSize") {
+      const side = issue.fields?.find((field): field is "length" | "width" | "height" => field !== "weight") ?? "length"
+      return {
+        fields: issue.fields,
+        message: t("rules.cartonSize", { side, size: value[side], network: issue.values.network })
+      }
+    }
+    if (issue.code === "cartonWeight") {
+      return { field: "weight", message: t("rules.cartonWeight", { weight: value.weight }) }
+    }
+    if (issue.code === "awdOneSku") {
+      return { message: t("rules.awdOneSku") }
+    }
+    return {
+      field: index >= 0 ? `items.${index}` : undefined,
+      message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+    }
+  }
+  // A group's cartons break the same rules, so each shows once: products first, then quantities, dimensions and
+  // weight.
+  const rank = (issue: CartonIssue) => {
+    if (issue.fields) {
+      return 2
+    }
+    if (issue.field === "weight") {
+      return 3
+    }
+    return issue.field?.startsWith("items.") ? 1 : 0
+  }
+  const errors = issues
+    .map(ruleError)
+    .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+    .toSorted((a, b) => rank(a) - rank(b))
   for (const field of fields) {
     const number = value[field]
     if (
@@ -386,7 +435,7 @@ export function CartonEditor({
         <span>{packing("supplierSku")}</span>
         <span className={cn("w-24 text-end", !readOnly && "me-12")}>{t("quantityPerCarton")}</span>
       </div>
-      <div className={cn("divide-y", invalid("items") && "ring-1 ring-inset ring-destructive")}>
+      <div className="divide-y">
         {value.items.map((content, index) => {
           const item = products.find((product) => product.id === content.itemId)
           if (!item) {

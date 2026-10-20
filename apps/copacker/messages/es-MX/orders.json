@@ -512,7 +512,13 @@
     "addToCarton": "Agregar a la caja",
     "selectedCount": "{count} seleccionados",
     "cartonGroup": "Cajas {cartons}",
-    "addProductsToCartons": "Agregar productos a las cajas {cartons}"
+    "addProductsToCartons": "Agregar productos a las cajas {cartons}",
+    "rules": {
+      "awdUnits": "Cantidad: {units, number} unidades vendibles por caja superan el límite de 150 de AWD. Divídelas en cajas más pequeñas.",
+      "cartonSize": "Dimensiones: el {side, select, width {ancho} height {alto} other {largo}} es de {size, number} cm. {network} permite hasta 63.5 cm (25 in) por lado.",
+      "cartonWeight": "Peso: {weight, number} kg supera el límite de 50 lb (22.68 kg). Reduce el peso de cada caja.",
+      "awdOneSku": "Productos: AWD requiere un solo SKU por caja. Mueve estos SKU a cajas separadas."
+    }
   },
   "cartonImport": {
     "title": "Importar cajas",

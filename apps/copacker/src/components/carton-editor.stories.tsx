@@ -1,7 +1,9 @@
+import { validatePacking } from "@repo/aisle"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { groupCartons } from "@/lib/carton-groups"
+import { type CartonGroup, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
+import { awdBagCartons, awdBagOrder } from "@/stories/fixtures/packing"
 import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { CartonEditor } from "./carton-editor"
 
@@ -104,20 +106,80 @@ export const Validation = meta.story({
   args: {
     value: { ...value, length: 70, weight: Number.NaN },
     showErrors: true,
-    issues: [
-      { field: "length", message: "Length must be 63.5 cm or less." },
-      { message: "AWD cartons must contain one SKU. Move the second product to another carton." }
-    ]
+    issues: [{ cartonId: "1", code: "cartonSize", values: { network: "AWD" }, fields: ["length"] }]
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Weight (kg)" })).toHaveAttribute(
       "aria-invalid",
       "true"
     )
-    await expect(canvas.getByText(/AWD cartons must/)).toBeVisible()
+    await expect(canvas.getByText(/^Dimensions: Length is 70 cm\./)).toBeVisible()
     await expect(
       within(canvas.getByRole("region", { name: "Carton 1" })).getByText(/Enter a positive number for Weight/)
     ).toBeVisible()
+  }
+})
+
+// Board 06.17 (Carton editor errors), AWD US: the rules a carton breaks, as validatePacking reports them.
+const [awdLimits, awdMixed] = awdBagCartons()
+const awd = (carton: CartonGroup) => ({
+  value: carton,
+  products: awdBagOrder.items,
+  context: "PO39 / Shipment 1",
+  issues: validatePacking(awdBagOrder, { cartons: expandCartonGroups([carton]), changes: [] }).issues
+})
+const limitErrors = [
+  "Quantity: 160 sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons.",
+  "Dimensions: Length is 70 cm. AWD allows up to 63.5 cm (25 in) on each side.",
+  "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+]
+
+// Cartons 1–2 hold too many units and are too long and too heavy: each error shows once for the group, and outlines
+// the field it names.
+export const AwdLimits = meta.story({
+  name: "AWD limits",
+  args: awd(awdLimits!),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "Cartons 1–2" })).toBeVisible()
+    await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual(limitErrors)
+    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Length (cm)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Width (cm)" })).not.toHaveAttribute("aria-invalid")
+    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Weight (kg)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+    await expect(canvas.getByRole("spinbutton", { name: "DB-2031: quantity per carton 1" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+  }
+})
+
+// Carton 3 mixes two SKUs, which AWD doesn't allow. A products error outlines no field.
+export const AwdMixedSkus = meta.story({
+  name: "AWD mixed SKUs",
+  args: awd(awdMixed!),
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Products: AWD requires one SKU per carton. Move these SKUs into separate cartons."
+    ])
+    for (const quantity of canvas.getAllByRole("spinbutton")) {
+      await expect(quantity).not.toHaveAttribute("aria-invalid")
+    }
+  }
+})
+
+export const AwdLimitsOnAPhone = meta.story({
+  ...AwdLimits.input,
+  name: "AWD limits on a phone",
+  globals: { viewport: { value: "iphone12" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual(limitErrors)
+    const region = canvas.getByRole("region", { name: "Carton 1" })
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
   }
 })
 export const Mobile = meta.story({

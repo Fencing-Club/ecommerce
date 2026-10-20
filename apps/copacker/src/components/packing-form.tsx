@@ -504,21 +504,7 @@ export function PackingForm({
                     {cartons.fields.map((carton, index) => {
                       const value = cartonValues[index] ?? carton
                       const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-                      const issues = packingIssues
-                        .filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                        .map((issue) => {
-                          const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
-                          let field: string | undefined
-                          if (issue.code === "cartonWeight") {
-                            field = "weight"
-                          } else if (["awdOneSku", "mixedNetworks", "repeatedProduct"].includes(issue.code)) {
-                            field = "items"
-                          } else if (sku && ["incompletePacks", "awdUnits", "overQuantity"].includes(issue.code)) {
-                            field = `items.${value.items.findIndex((content) => order.items.find((item) => item.id === content.itemId)?.buyerSku === sku)}`
-                          }
-                          return { message: issueText(issue), field, fields: issue.fields }
-                        })
-                        .filter((issue, i, all) => all.findIndex((other) => other.message === issue.message) === i)
+                      const issues = packingIssues.filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
                       const note = renderCartonNote?.(ids)
                       const editor = (
                         <CartonEditor

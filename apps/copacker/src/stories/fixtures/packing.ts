@@ -1,4 +1,5 @@
-import type { Address, OrderInput, Packing, PackingDraft } from "@repo/aisle"
+import type { Address, AmazonNetwork, OrderInput, Packing, PackingDraft } from "@repo/aisle"
+import type { CartonGroup } from "@/lib/carton-groups"
 import { orderData, orderItem } from "./orders"
 
 // Shipment 1 of PO38 from the 06 packing boards: Northwind Textiles packs three towels for Amazon AWD US, by way of
@@ -74,7 +75,7 @@ export const towelOrder: OrderInput = orderData({
 // PO39 from the same boards: drawstring bags without a supplier SKU and a tea towel, sent to Amazon FBA US as individual
 // units, so each carton can mix products.
 const fbaLabels = { preparation: "none", labels: ["fnsku"], countryCode: "", instructions: "" } as const
-const bag = (variant: string, sku: string, pieces: number) =>
+const bag = (variant: string, sku: string, pieces: number, amazonNetwork: AmazonNetwork = "fba") =>
   orderItem({
     name: "Cotton drawstring bag",
     variant,
@@ -84,7 +85,26 @@ const bag = (variant: string, sku: string, pieces: number) =>
     unitPrice: 180,
     asin: `B0DB${sku}00`,
     fnsku: `X0DB${sku}00`,
-    amazonNetwork: "fba",
+    amazonNetwork,
+    packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
+  })
+const cottonTeaTowel = (
+  variant: string,
+  sku: string,
+  supplierSku: string,
+  pieces: number,
+  amazonNetwork: AmazonNetwork
+) =>
+  orderItem({
+    name: "Cotton tea towel",
+    variant,
+    buyerSku: `CT-${sku}`,
+    supplierSku,
+    pieces,
+    unitPrice: 155,
+    asin: `B0CT${sku}01`,
+    fnsku: `X0CT${sku}01`,
+    amazonNetwork,
     packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
   })
 
@@ -96,20 +116,51 @@ export const bagOrder: OrderInput = orderData({
   items: [
     bag("Sage / Medium / 20 × 30 cm", "2030", 60),
     bag("Natural / Medium / 20 × 30 cm", "2031", 45),
-    orderItem({
-      name: "Cotton tea towel",
-      variant: "Stripe / 50 × 70 cm",
-      buyerSku: "CT-3100",
-      supplierSku: "NT-CT-3100",
-      pieces: 75,
-      unitPrice: 155,
-      asin: "B0CT310001",
-      fnsku: "X0CT310001",
-      amazonNetwork: "fba",
-      packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
-    })
+    cottonTeaTowel("Stripe / 50 × 70 cm", "3100", "NT-CT-3100", 75, "fba")
   ]
 })
+
+// PO39 sent to Amazon AWD US instead, for the carton editor errors board (06.17).
+export const awdBagOrder: OrderInput = orderData({
+  reference: "PO39",
+  destination: "amazon",
+  deliveryId: undefined,
+  via: towelOrder.via,
+  items: [
+    bag("Natural / Medium / 20 × 30 cm", "2031", 320, "awd_us"),
+    bag("Sage / Medium / 20 × 30 cm", "2030", 40, "awd_us"),
+    cottonTeaTowel("Stripe / 50 × 70 cm", "3100", "NT-CT-3100", 40, "awd_us"),
+    cottonTeaTowel("Ivory / 50 × 70 cm", "3101", "", 120, "awd_us")
+  ]
+})
+
+// Cartons 1–2 break AWD's unit, size and weight limits, and carton 3 mixes two SKUs; carton 4 is fine.
+export function awdBagCartons(): CartonGroup[] {
+  const [natural, sage, stripe, ivory] = awdBagOrder.items
+  const carton = (
+    cartonIds: string[],
+    size: [number, number, number],
+    weight: number,
+    items: CartonGroup["items"]
+  ) => ({
+    cartonId: cartonIds[0]!,
+    cartonIds,
+    count: cartonIds.length,
+    length: size[0],
+    width: size[1],
+    height: size[2],
+    weight,
+    items
+  })
+  return [
+    carton(["1", "2"], [70, 40, 40], 25, [{ itemId: natural!.id, pieces: 160 }]),
+    carton(["3"], [60, 40, 40], 12.4, [
+      { itemId: sage!.id, pieces: 40 },
+      { itemId: stripe!.id, pieces: 40 }
+    ]),
+    carton(["4"], [60, 40, 40], 12.4, [{ itemId: ivory!.id, pieces: 120 }])
+  ]
+}
 
 // Three cartons of 60 × 40 × 40 cm at 12.4 kg, each mixing products, which pack all 180 units.
 export function bagPacking(): Packing {

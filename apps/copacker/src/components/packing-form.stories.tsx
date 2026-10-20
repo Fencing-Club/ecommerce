@@ -401,8 +401,12 @@ export const AwdPackingErrors = meta.story({
   args: { order: awdOrder, initial: awdErrors, addresses: [savedAddress] },
   play: async ({ canvas }) => {
     const carton = within(canvas.getByRole("region", { name: "Carton C1" }))
-    await expect(carton.getByText("Pack one SKU per AWD carton")).toBeVisible()
-    await expect(carton.getByText(/150 sellable units/)).toBeVisible()
+    await expect(
+      carton.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+    ).toBeVisible()
+    await expect(
+      carton.getByText(/^Quantity: 160 sellable units per carton exceeds AWD’s limit of 150\./)
+    ).toBeVisible()
     await expect(carton.getByRole("spinbutton", { name: "Carton C1: Weight (kg)" })).toHaveAttribute(
       "aria-invalid",
       "true"
@@ -505,7 +509,9 @@ export const AwdPackingErrorsMobile = meta.story({
   },
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Pack one SKU per AWD carton")).toBeVisible()
+    await expect(
+      canvas.getByText("Products: AWD requires one SKU per carton. Move these SKUs into separate cartons.")
+    ).toBeVisible()
   }
 })
 
