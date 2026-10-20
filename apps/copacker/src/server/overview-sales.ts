@@ -196,17 +196,15 @@ export async function salesByDay(orgId: string, accounts: Account[], since: Date
     from sales_orders o
     where o."orgId" = ${orgId} and o."orderedAt" >= ${since} and (${accountFilter(accounts)})
     group by 1, 2`)
-  return rows(result).map(
-    (row): DayRow => ({
-      source: row.source as SalesSource,
-      date: String(row.date),
-      orders: count(row.orders),
-      units: count(row.units),
-      priced: count(row.priced),
-      revenueMinor: count(row.revenue),
-      currency: count(row.priced) > 0 ? currency : null
-    })
-  )
+  return rows(result).map((row): DayRow => ({
+    source: row.source as SalesSource,
+    date: String(row.date),
+    orders: count(row.orders),
+    units: count(row.units),
+    priced: count(row.priced),
+    revenueMinor: count(row.revenue),
+    currency: count(row.priced) > 0 ? currency : null
+  }))
 }
 
 export type ItemRow = {
@@ -272,17 +270,15 @@ export async function salesByItem(
       coalesce(sum(units) filter (where priced), 0) as "pricedUnits"
     from grouped
     group by source, period, key`)
-  return rows(result).map(
-    (row): ItemRow => ({
-      source: row.source as SalesSource,
-      key: String(row.key),
-      period: row.period === "current" ? "current" : "previous",
-      units: count(row.units),
-      revenueMinor: count(row.revenue),
-      pricedUnits: count(row.pricedUnits),
-      currency: count(row.pricedUnits) > 0 ? currency : null
-    })
-  )
+  return rows(result).map((row): ItemRow => ({
+    source: row.source as SalesSource,
+    key: String(row.key),
+    period: row.period === "current" ? "current" : "previous",
+    units: count(row.units),
+    revenueMinor: count(row.revenue),
+    pricedUnits: count(row.pricedUnits),
+    currency: count(row.pricedUnits) > 0 ? currency : null
+  }))
 }
 
 // Shopify customers, from the orders copied with a customer ID (guest orders have none), in `currency`:
@@ -368,13 +364,11 @@ export async function orderFees(orgId: string, account: Account, from: Date, to:
     from sales_orders o
     where o."orgId" = ${orgId} and (${accountFilter([account])})
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to}`)
-  return rows(result).map(
-    (row): OrderFees => ({
-      orderId: String(row.orderId),
-      revenueMinor: row.revenue === null || row.revenue === undefined ? null : Number(row.revenue),
-      feesMinor: row.fees === null || row.fees === undefined ? null : Number(row.fees)
-    })
-  )
+  return rows(result).map((row): OrderFees => ({
+    orderId: String(row.orderId),
+    revenueMinor: row.revenue === null || row.revenue === undefined ? null : Number(row.revenue),
+    feesMinor: row.fees === null || row.fees === undefined ? null : Number(row.fees)
+  }))
 }
 
 // A platform's fees on a period's orders. Orders whose fees aren't known yet (Amazon posts them after shipping) are

@@ -88,7 +88,7 @@ function stepFor(days: number): Step {
 // The rows each point sums: one day, seven days, or a calendar month.
 function groups(rows: DailySales[], step: Step) {
   const result: { start: number; end: number }[] = []
-  for (let index = 0; index < rows.length; ) {
+  for (let index = 0; index < rows.length;) {
     let end = index + 1
     if (step === "week") {
       end = Math.min(rows.length, index + 7)

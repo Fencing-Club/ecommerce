@@ -11,7 +11,7 @@ if (!path) {
 const decode = (file: Buffer) => {
   const view = new DataView(file.buffer, file.byteOffset, file.byteLength)
   let format = { encoding: 0, channels: 0, rate: 0, bits: 0 }
-  for (let at = 12; at + 8 <= file.length; ) {
+  for (let at = 12; at + 8 <= file.length;) {
     const id = file.toString("ascii", at, at + 4)
     const size = view.getUint32(at + 4, true)
     if (id === "fmt ") {
