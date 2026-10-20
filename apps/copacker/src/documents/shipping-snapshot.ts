@@ -51,11 +51,12 @@ export function shippingDocumentSnapshot(input: {
     }
   }
   const origin = packing.origin
-  const placed = palletLabels(packing.pallets ?? [], labels)
   let network: ShippingDocumentData["network"] = "warehouse"
   if (order.destination === "amazon") {
     network = items[0]?.amazonNetwork === "awd_us" ? "awd" : "fba"
   }
+  // Amazon labels pallets for FBA only; AWD takes its cartons as cases.
+  const placed = network === "fba" ? palletLabels(packing.pallets ?? [], labels) : []
   const data: ShippingDocumentData = {
     company: input.company,
     order: order.reference,
@@ -82,7 +83,7 @@ export function shippingDocumentSnapshot(input: {
       carrierLabels: requirements.carrierLabels,
       palletized: Boolean(packing.palletized)
     },
-    // Each pallet's label, once Amazon has labelled its cartons: its Amazon shipment and its number there, as Amazon
+    // Each FBA pallet's label, once Amazon has labelled its cartons: its Amazon shipment and its number there, as Amazon
     // prints it, such as FBA18ABCD123 1/2.
     ...(packing.palletized && {
       pallets: (packing.pallets ?? []).map((pallet) => {
