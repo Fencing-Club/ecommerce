@@ -320,8 +320,11 @@ export const DraftPacking = meta.story({
 
     // The documents beside the cartons start with the label types the packing details ask for.
     const documents = canvas.getByRole("region", { name: "Documents" })
+    const summaryTop = summary.getBoundingClientRect().top
     await userEvent.click(within(documents).getByRole("button", { name: "Product labels" }))
     const menu = within(await screen.findByRole("menu"))
+    // Opening the menu leaves the shipment details where they were.
+    await expect(summary.getBoundingClientRect().top).toBe(summaryTop)
     await expect(menu.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
       "SKU labels",
       "FNSKU labels",

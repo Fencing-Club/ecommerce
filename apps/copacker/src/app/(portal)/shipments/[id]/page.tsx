@@ -204,9 +204,10 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             )
           }
           renderSidebar={(totals) => (
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               {(productDownloads().some((download) => !download.unavailable) || visibleDocs.length > 0) && (
-                <section aria-label={t("documents.title")} className="space-y-3">
+                // A gap, not space-y: the open menu adds hidden focus guards beside its trigger, which would change its margin.
+                <section aria-label={t("documents.title")} className="flex flex-col gap-3">
                   <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
                   <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
                   {visibleDocs.length > 0 && (
