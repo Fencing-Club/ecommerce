@@ -91,7 +91,8 @@ needs a human discussion**, not a silent add.
 - Never test migrations. No test runs, replays, hashes or inspects them: suites that do grow without bound and slow
   every run. Database tests create the current schema from `apps/copacker/src/db/schema.ts` with `applySchema` from
   `apps/copacker/tests/database.ts`, built once per run. A SQL function the app calls, which the schema can't describe,
-  lives in `apps/copacker/tests/database-schema.ts` as well as its migration.
+  lives in `apps/copacker/tests/database-schema.ts` as well as its migration. The one exception is CI's `verify` job,
+  which applies every migration to an empty Postgres once per run as a release gate; don't add to it.
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is
   disposable; never reset or delete production data unless the user explicitly asks, and keep integration credentials
   and unrelated external configuration when resetting application data unless a full reset is requested.
