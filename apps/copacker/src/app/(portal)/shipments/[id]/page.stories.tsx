@@ -607,6 +607,12 @@ export const PackingForSupplier = meta.story({
     )
     await expect(canvas.getByRole("button", { name: "Add carton" })).toBeVisible()
     await expect(canvas.queryByRole("textbox", { name: /Supplier SKU/ })).toBeNull()
+    // The buyer's Transport card follows the page header, outside the packing form, so saving the packing leaves it
+    // usable.
+    const heading = canvas.getByRole("heading", { level: 1 })
+    const transport = canvas.getByText("Transport", { selector: "[data-slot=card-title]" })
+    await expect(transport.getBoundingClientRect().top).toBeGreaterThan(heading.getBoundingClientRect().bottom)
+    await expect(transport.closest("fieldset")).toBeNull()
   }
 })
 
