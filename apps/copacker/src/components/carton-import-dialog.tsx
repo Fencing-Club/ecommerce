@@ -1,34 +1,14 @@
 import { type OrderInput, validatePacking } from "@repo/aisle"
-import { useFormatter, useTranslations, useLocale } from "use-intl"
+import { useFormatter, useTranslations } from "use-intl"
+import { useCartonTemplate } from "@/hooks/use-import-templates"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
-import {
-  cartonColumns,
-  cartonExample,
-  cartonTemplate,
-  readCartonFile,
-  type CartonImportResult
-} from "@/lib/carton-import"
+import { readCartonFile, type CartonImportResult } from "@/lib/carton-import"
 import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
 import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion"
 
 export type CartonImportMode = ImportMode
-
-// What to enter in each of the template's columns, in the order of cartonColumns.
-const columnKeys = [
-  "cartonId",
-  "cartonCount",
-  "supplierSku",
-  "quantity",
-  "length",
-  "width",
-  "height",
-  "weight",
-  "product",
-  "variant",
-  "unitsPerPack"
-] as const
 
 export function CartonImportDialog({
   open,
@@ -50,8 +30,7 @@ export function CartonImportDialog({
   const t = useTranslations("orders.cartonImport")
   const rules = useTranslations("server.readiness.packing")
   const editor = useTranslations("orders.cartonEditor")
-  const templateText = useTranslations("orders.importTemplate")
-  const locale = useLocale()
+  const template = useCartonTemplate(order)
 
   function check(result: CartonImportResult, mode: CartonImportMode) {
     const combined = mode === "add" ? [...existing, ...result.groups] : result.groups
@@ -108,23 +87,7 @@ export function CartonImportDialog({
       check={check}
       template={{
         title: "Carton template",
-        build: () => {
-          const example = cartonExample(order.items)
-          return cartonTemplate(
-            order.items,
-            {
-              headings: [templateText("column"), templateText("entry"), templateText("example")],
-              columns: cartonColumns.map((column, index) => ({
-                column,
-                entry: t(`template.columns.${columnKeys[index]!}`),
-                example: example[0]?.[index] ?? ""
-              })),
-              notes: [t("template.notes.rows"), t("template.notes.sameCarton"), t("template.notes.format")]
-            },
-            example,
-            locale === "ur"
-          )
-        }
+        build: () => template()
       }}
       renderReview={(result) => <CartonReview groups={result.groups} order={order} />}
       onImport={(result, mode) => onImport(result.groups, mode)}

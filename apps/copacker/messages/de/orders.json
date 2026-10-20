@@ -427,7 +427,6 @@
     "addCarton": "Karton hinzufügen",
     "noCartons": "Noch keine Kartons",
     "noCartonsDescription": "Fügen Sie einen Karton hinzu und duplizieren Sie dann identische.",
-    "cartonsAndUnits": "{cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
     "saveDraft": "Entwurf speichern",
     "check": "Packliste prüfen",
     "submit": "Packliste senden",
@@ -584,6 +583,8 @@
   },
   "cartonImport": {
     "title": "Kartons importieren",
+    "export": "Kartons exportieren",
+    "exportFailed": "Die Kartons konnten nicht exportiert werden.",
     "reviewTitle": "Kartonimport prüfen",
     "downloadTemplate": "Vorlage herunterladen",
     "templateHint": "In der Vorlage Inhalt, Mengen, Abmessungen und Gewicht der Kartons eintragen.",
@@ -644,6 +645,8 @@
   },
   "palletImport": {
     "title": "Paletten importieren",
+    "export": "Paletten exportieren",
+    "exportFailed": "Die Paletten konnten nicht exportiert werden.",
     "reviewTitle": "Palettenimport prüfen",
     "review": "Paletten prüfen",
     "failed": "Paletten konnten nicht importiert werden. Es wurden keine Änderungen vorgenommen.",

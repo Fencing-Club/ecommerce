@@ -1,7 +1,7 @@
 import { CircleAlert, Download, LoaderCircle } from "lucide-react"
 import { type ReactNode, useId, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
-import { filenamePart } from "@/lib/filenames"
+import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { FileDropzone } from "./file-dropzone"
 import { Button } from "./ui/button"
@@ -114,16 +114,7 @@ export function SpreadsheetImportDialog<T>({
     setDownloading(true)
     setDownloadError(false)
     try {
-      const url = URL.createObjectURL(
-        new Blob([await template.build()], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        })
-      )
-      const anchor = document.createElement("a")
-      anchor.href = url
-      anchor.download = `${[template.title, reference, shipmentName].map(filenamePart).join(" - ")}.xlsx`
-      anchor.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      downloadSpreadsheet(await template.build(), [template.title, reference, shipmentName])
     } catch {
       setDownloadError(true)
     } finally {

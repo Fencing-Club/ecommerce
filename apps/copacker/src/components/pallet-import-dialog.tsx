@@ -1,21 +1,14 @@
 import { cartonList, type Pallet, validatePallets } from "@repo/aisle"
 import { arrayIncludes } from "ts-extras"
-import { useFormatter, useLocale, useTranslations } from "use-intl"
+import { useFormatter, useTranslations } from "use-intl"
+import { usePalletTemplate } from "@/hooks/use-import-templates"
 import type { PalletValue } from "@/lib/carton-groups"
-import {
-  palletColumns,
-  palletExample,
-  palletTemplate,
-  readPalletFile,
-  type PalletImportResult
-} from "@/lib/pallet-import"
+import { readPalletFile, type PalletImportResult } from "@/lib/pallet-import"
 import { cn } from "@/lib/utils"
 import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
 
 // Issues with the file's columns, the file itself or a number say the same as the carton import's.
 const sharedIssues = ["missingColumns", "duplicateColumns", "unknownColumns", "unreadable", "number"] as const
-// What to enter in each of the template's columns, in the order of palletColumns.
-const columnKeys = ["palletId", "length", "width", "height", "weight", "stacking", "cartonIds"] as const
 
 // Boards 07.13 to 07.15: a shipment's pallets from a spreadsheet, a row to a pallet with its size, gross weight,
 // stacking and cartons by their IDs. They're checked against the shipment's cartons, and against the pallets already
@@ -42,8 +35,7 @@ export function PalletImportDialog({
   const t = useTranslations("orders.palletImport")
   const cartonText = useTranslations("orders.cartonImport")
   const palletText = useTranslations("orders.pallets")
-  const templateText = useTranslations("orders.importTemplate")
-  const locale = useLocale()
+  const template = usePalletTemplate(cartonIds)
 
   const location = (row: number, pallet: string) =>
     [cartonText("row", { row }), pallet ? palletText("name", { pallet }) : ""].filter(Boolean).join(" / ")
@@ -121,26 +113,7 @@ export function PalletImportDialog({
       check={check}
       template={{
         title: "Pallet template",
-        build: () => {
-          const example = palletExample(cartonIds)
-          return palletTemplate(
-            {
-              headings: [templateText("column"), templateText("entry"), templateText("example")],
-              columns: palletColumns.map((column, index) => ({
-                column,
-                entry: t(`template.columns.${columnKeys[index]!}`),
-                example: example[0]?.[index] ?? ""
-              })),
-              notes: [
-                t("template.notes.rows"),
-                ...(cartonIds.length ? [t("template.notes.shipmentCartons", { cartons: cartonList(cartonIds) })] : []),
-                t("template.notes.format")
-              ]
-            },
-            example,
-            locale === "ur"
-          )
-        }
+        build: () => template()
       }}
       renderReview={(result) => <PalletReview pallets={result.pallets} />}
       onImport={(result, mode) => onImport(result.pallets, mode)}

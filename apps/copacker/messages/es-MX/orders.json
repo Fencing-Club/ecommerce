@@ -427,7 +427,6 @@
     "addCarton": "Agregar caja",
     "noCartons": "Aún no hay cajas",
     "noCartonsDescription": "Agrega una caja y luego duplica las idénticas.",
-    "cartonsAndUnits": "{cartons, plural, one {# caja} other {# cajas}}, {units, plural, one {# unidad} other {# unidades}}",
     "saveDraft": "Guardar borrador",
     "check": "Revisar empaque",
     "submit": "Enviar lista de empaque",
@@ -584,6 +583,8 @@
   },
   "cartonImport": {
     "title": "Importar cajas",
+    "export": "Exportar cajas",
+    "exportFailed": "No se pudieron exportar las cajas.",
     "reviewTitle": "Revisar importación de cajas",
     "downloadTemplate": "Descargar plantilla",
     "templateHint": "Usa la plantilla para indicar el contenido, las cantidades, las dimensiones y el peso de las cajas.",
@@ -644,6 +645,8 @@
   },
   "palletImport": {
     "title": "Importar tarimas",
+    "export": "Exportar tarimas",
+    "exportFailed": "No se pudieron exportar las tarimas.",
     "reviewTitle": "Revisar importación de tarimas",
     "review": "Revisar tarimas",
     "failed": "No se pudieron importar las tarimas. No se realizaron cambios.",

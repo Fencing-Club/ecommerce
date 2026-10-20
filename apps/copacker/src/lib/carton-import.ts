@@ -1,7 +1,15 @@
-import type { OrderInput } from "@repo/aisle"
+import { cartonRuns, type OrderInput } from "@repo/aisle"
 import { z } from "zod"
-import type { CartonGroup } from "./carton-groups"
-import { addGuide, matchColumns, readSpreadsheet, styleTemplateSheet, type TemplateGuide } from "./spreadsheet-import"
+import { type CartonGroup, groupCartonIds } from "./carton-groups"
+import {
+  addGuide,
+  cellNumber,
+  matchColumns,
+  readSpreadsheet,
+  styleTemplateSheet,
+  type TemplateGuide,
+  type TemplateRow
+} from "./spreadsheet-import"
 
 export const cartonColumns = [
   "Carton ID",
@@ -176,32 +184,56 @@ export function cartonExample(products: OrderInput["items"]) {
     })
 }
 
-// The carton template: a Cartons sheet with a row for each of the order's products to fill in, the same filled in on an
-// Example sheet, and the instructions in the reader's language, right to left for Urdu. The product cells are grey,
-// to keep as they are.
+// A shipment's cartons as the template's rows, to export and import again: a row for each product of each kind of
+// carton. A kind's cartons share a row when the import would number them back the same (A1 with a count of 3 for
+// A1–A3); otherwise they go in runs, or one by one, so every carton keeps its ID. Unfinished values stay blank, for
+// the import to point out.
+export function cartonRows(groups: CartonGroup[], products: OrderInput["items"]): TemplateRow[] {
+  const ids = groupCartonIds(groups)
+  return groups.flatMap((group, index) => {
+    const size = [group.length, group.width, group.height, group.weight].map(cellNumber)
+    return cartonRuns(ids[index] ?? [])
+      .flatMap((run) => {
+        const [numbered = []] = groupCartonIds([{ ...group, cartonId: run[0]!, cartonIds: [], count: run.length }])
+        return numbered.join() === run.join() ? [run] : run.map((id) => [id])
+      })
+      .flatMap((run) =>
+        (group.items.length ? group.items : [undefined]).map((content) => {
+          const product = products.find((item) => item.id === content?.itemId)
+          return product && content
+            ? [
+                run[0]!,
+                run.length,
+                product.supplierSku,
+                cellNumber(content.pieces / product.piecesPerSet),
+                ...size,
+                product.name,
+                product.variant,
+                product.piecesPerSet
+              ]
+            : [run[0]!, run.length, "", "", ...size, "", "", ""]
+        })
+      )
+  })
+}
+
+// The carton template: a Cartons sheet with a row for each of the order's products to fill in, under the shipment's
+// cartons when it's an export, the same filled in on an Example sheet, and the instructions in the reader's language,
+// right to left for Urdu. The product cells are grey, to keep as they are.
 export async function cartonTemplate(
   products: OrderInput["items"],
   guide: TemplateGuide,
   example: ReturnType<typeof cartonExample>,
-  rightToLeft = false
+  rightToLeft = false,
+  cartons: readonly TemplateRow[] = []
 ) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
-  const references = products.map((item) => [
-    "",
-    "",
-    item.supplierSku,
-    "",
-    "",
-    "",
-    "",
-    "",
-    item.name,
-    item.variant,
-    item.piecesPerSet
-  ])
+  const references = products.map(
+    (item): TemplateRow => ["", "", item.supplierSku, "", "", "", "", "", item.name, item.variant, item.piecesPerSet]
+  )
   for (const [name, rows] of [
-    ["Cartons", references],
+    ["Cartons", [...cartons, ...references]],
     ["Example", example]
   ] as const) {
     const sheet = book.addWorksheet(name)

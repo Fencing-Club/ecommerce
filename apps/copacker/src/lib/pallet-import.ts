@@ -1,11 +1,14 @@
 import { cartonList, type Pallet, palletInputSchema } from "@repo/aisle"
+import type { PalletValue } from "./carton-groups"
 import {
   addGuide,
+  cellNumber,
   type FileIssue,
   matchColumns,
   readSpreadsheet,
   styleTemplateSheet,
-  type TemplateGuide
+  type TemplateGuide,
+  type TemplateRow
 } from "./spreadsheet-import"
 
 export const palletColumns = [
@@ -198,17 +201,30 @@ export function palletExample(cartonIds: readonly string[]) {
   ].filter((row) => row[6])
 }
 
-// The pallet template: a Pallets sheet to fill, a row to a pallet, the same filled in on an Example sheet, and the
-// instructions in the reader's language, right to left for Urdu. Stacking is chosen from a list on both.
+// A shipment's pallets as the template's rows, to export and import again. Unfinished values stay blank, for the import
+// to point out.
+export function palletRows(pallets: PalletValue[]): TemplateRow[] {
+  return pallets.map((pallet) => [
+    pallet.palletId,
+    ...[pallet.length, pallet.width, pallet.height, pallet.weight].map(cellNumber),
+    pallet.stackable ? "Stackable" : "Not stackable",
+    cartonList(pallet.cartonIds)
+  ])
+}
+
+// The pallet template: a Pallets sheet to fill, a row to a pallet, with the shipment's pallets when it's an export, the
+// same filled in on an Example sheet, and the instructions in the reader's language, right to left for Urdu. Stacking
+// is chosen from a list on both.
 export async function palletTemplate(
   guide: TemplateGuide,
   example: ReturnType<typeof palletExample>,
-  rightToLeft = false
+  rightToLeft = false,
+  pallets: readonly TemplateRow[] = []
 ) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
   for (const [name, rows] of [
-    ["Pallets", []],
+    ["Pallets", pallets],
     ["Example", example]
   ] as const) {
     const sheet = book.addWorksheet(name)
@@ -216,7 +232,7 @@ export async function palletTemplate(
     sheet.getColumn(1).numFmt = "@"
     sheet.getColumn(palletColumns.length).numFmt = "@"
     sheet.addRows([...rows])
-    for (let row = 2; row <= 201; row++) {
+    for (let row = 2; row <= rows.length + 201; row++) {
       sheet.getCell(row, palletColumns.indexOf("Stacking") + 1).dataValidation = {
         type: "list",
         allowBlank: true,

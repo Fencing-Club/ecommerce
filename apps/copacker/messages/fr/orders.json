@@ -427,7 +427,6 @@
     "addCarton": "Ajouter un carton",
     "noCartons": "Aucun carton pour l’instant",
     "noCartonsDescription": "Ajoutez un carton, puis dupliquez les cartons identiques.",
-    "cartonsAndUnits": "{cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unité} other {# unités}}",
     "saveDraft": "Enregistrer le brouillon",
     "check": "Vérifier l’emballage",
     "submit": "Envoyer la liste de colisage",
@@ -584,6 +583,8 @@
   },
   "cartonImport": {
     "title": "Importer des cartons",
+    "export": "Exporter les cartons",
+    "exportFailed": "Impossible d’exporter les cartons.",
     "reviewTitle": "Vérifier l’importation des cartons",
     "downloadTemplate": "Télécharger le modèle",
     "templateHint": "Utilisez le modèle pour saisir le contenu, les quantités, les dimensions et le poids des cartons.",
@@ -644,6 +645,8 @@
   },
   "palletImport": {
     "title": "Importer des palettes",
+    "export": "Exporter les palettes",
+    "exportFailed": "Impossible d’exporter les palettes.",
     "reviewTitle": "Vérifier l’importation des palettes",
     "review": "Vérifier les palettes",
     "failed": "Impossible d’importer les palettes. Aucune modification effectuée.",

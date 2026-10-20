@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   palletColumns,
   palletExample,
+  palletRows,
   palletTemplate,
   parsePalletTable,
   readCartonIds,
@@ -186,6 +187,37 @@ describe("pallet import", () => {
     const result = await readPalletFile(new File([await book.xlsx.writeBuffer()], "pallets.xlsx"), cartonIds)
     expect(result.issues).toEqual([])
     expect(result.pallets[0]).toMatchObject({ palletId: "1", weight: 68.5, cartonIds })
+  })
+
+  it("exports pallets that import back the same", async () => {
+    const pallets = [
+      {
+        palletId: "1",
+        length: 120,
+        width: 100,
+        height: 150,
+        weight: 420.5,
+        stackable: true,
+        cartonIds: ["A1", "A2", "A3", "B1"]
+      },
+      { palletId: "2", length: 120, width: 100, height: Number.NaN, weight: 310, stackable: false, cartonIds: ["C1"] }
+    ]
+    expect(palletRows(pallets)).toEqual([
+      ["1", 120, 100, 150, 420.5, "Stackable", "A1–A3, B1"],
+      ["2", 120, 100, "", 310, "Not stackable", "C1"]
+    ])
+    const book = new ExcelJS.Workbook()
+    await book.xlsx.load(
+      await palletTemplate(
+        { headings: ["Column", "What to enter", "Example"], columns: [], notes: [] },
+        palletExample(cartonIds),
+        false,
+        palletRows(pallets.slice(0, 1))
+      )
+    )
+    const result = await readPalletFile(new File([await book.xlsx.writeBuffer()], "pallets.xlsx"), cartonIds)
+    expect(result.issues).toEqual([])
+    expect(result.pallets).toEqual(pallets.slice(0, 1))
   })
 
   it("reads CSV files and reports other files and workbooks without a Pallets sheet", async () => {

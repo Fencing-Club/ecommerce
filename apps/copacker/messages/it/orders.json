@@ -427,7 +427,6 @@
     "addCarton": "Aggiungi cartone",
     "noCartons": "Ancora nessun cartone",
     "noCartonsDescription": "Aggiungi un cartone, poi duplica quelli identici.",
-    "cartonsAndUnits": "{cartons, plural, one {# cartone} other {# cartoni}}, {units, plural, one {# unità} other {# unità}}",
     "saveDraft": "Salva bozza",
     "check": "Verifica imballaggio",
     "submit": "Invia packing list",
@@ -584,6 +583,8 @@
   },
   "cartonImport": {
     "title": "Importa cartoni",
+    "export": "Esporta cartoni",
+    "exportFailed": "Impossibile esportare i cartoni.",
     "reviewTitle": "Controlla importazione cartoni",
     "downloadTemplate": "Scarica modello",
     "templateHint": "Usa il modello per inserire contenuto, quantità, dimensioni e peso dei cartoni.",
@@ -644,6 +645,8 @@
   },
   "palletImport": {
     "title": "Importa pallet",
+    "export": "Esporta pallet",
+    "exportFailed": "Impossibile esportare i pallet.",
     "reviewTitle": "Controlla importazione pallet",
     "review": "Controlla pallet",
     "failed": "Impossibile importare i pallet. Nessuna modifica effettuata.",

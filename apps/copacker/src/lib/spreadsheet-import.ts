@@ -1,5 +1,22 @@
 import type { CellValue, Workbook, Worksheet } from "exceljs"
 import { csvTable } from "./csv-table"
+import { filenamePart } from "./filenames"
+
+// A template row's cells: text, a number, or blank for a number not entered yet.
+export type TemplateRow = (string | number)[]
+export const cellNumber = (number: number) => (Number.isFinite(number) ? number : "")
+
+// Saves a workbook named like the app's other downloads, its parts joined by dashes: "Cartons - PO38 - Shipment 1.xlsx".
+export function downloadSpreadsheet(content: BlobPart, name: readonly string[]) {
+  const url = URL.createObjectURL(
+    new Blob([content], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+  )
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = `${name.map(filenamePart).join(" - ")}.xlsx`
+  anchor.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 
 // What stops a file before its rows are read: its columns, its worksheet, or the file itself.
 export type FileIssue = {

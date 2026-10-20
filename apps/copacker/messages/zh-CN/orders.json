@@ -427,7 +427,6 @@
     "addCarton": "添加箱子",
     "noCartons": "还没有箱子",
     "noCartonsDescription": "添加一个箱子，然后复制相同的箱子。",
-    "cartonsAndUnits": "{cartons, plural, other {# 箱}}，{units, plural, other {# 件}}",
     "saveDraft": "保存草稿",
     "check": "检查装箱",
     "submit": "提交装箱单",
@@ -584,6 +583,8 @@
   },
   "cartonImport": {
     "title": "导入纸箱",
+    "export": "导出纸箱",
+    "exportFailed": "无法导出纸箱。",
     "reviewTitle": "检查纸箱导入",
     "downloadTemplate": "下载模板",
     "templateHint": "使用模板填写纸箱内容、数量、尺寸和重量。",
@@ -644,6 +645,8 @@
   },
   "palletImport": {
     "title": "导入托盘",
+    "export": "导出托盘",
+    "exportFailed": "无法导出托盘。",
     "reviewTitle": "检查托盘导入",
     "review": "检查托盘",
     "failed": "无法导入托盘。未进行任何更改。",

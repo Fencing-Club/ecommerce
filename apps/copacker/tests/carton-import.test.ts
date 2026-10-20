@@ -1,8 +1,15 @@
 import { validatePacking } from "@repo/aisle"
 import ExcelJS from "exceljs"
 import { describe, expect, it } from "vitest"
-import { cartonTotals, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
-import { cartonColumns, cartonExample, cartonTemplate, parseCartonTable, readCartonFile } from "@/lib/carton-import"
+import { type CartonGroup, cartonTotals, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
+import {
+  cartonColumns,
+  cartonExample,
+  cartonRows,
+  cartonTemplate,
+  parseCartonTable,
+  readCartonFile
+} from "@/lib/carton-import"
 import { orderData } from "@/stories/fixtures/orders"
 
 const products = orderData().items.map((item, index) => ({ ...item, piecesPerSet: index === 1 ? 2 : 1 }))
@@ -157,6 +164,52 @@ describe("carton import", () => {
     const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), padded)
     expect(result.issues).toEqual([])
     expect(result.groups[0]?.items[0]?.itemId).toBe(padded[0]!.id)
+  })
+  it("exports cartons that import back as the same cartons with the same IDs", async () => {
+    const [tote, apron] = products
+    const carton = (cartonIds: string[], items: { itemId: string; pieces: number }[], weight = 12) => ({
+      cartonId: cartonIds[0]!,
+      cartonIds,
+      count: cartonIds.length,
+      length: 60,
+      width: 40,
+      height: 40,
+      weight,
+      items
+    })
+    // A gap in a kind's IDs and zero-padded IDs, which counting from the first ID wouldn't give back, and a mixed carton.
+    const groups = [
+      carton(["A1", "A2", "A5"], [{ itemId: tote!.id, pieces: 10 }]),
+      carton(
+        ["B01", "B02"],
+        [
+          { itemId: tote!.id, pieces: 4 },
+          { itemId: apron!.id, pieces: 6 }
+        ]
+      )
+    ]
+    const rows = cartonRows(groups, products)
+    expect(rows.map((cells) => cells.slice(0, 4))).toEqual([
+      ["A1", 2, tote!.supplierSku, 10],
+      ["A5", 1, tote!.supplierSku, 10],
+      ["B01", 1, tote!.supplierSku, 4],
+      ["B01", 1, apron!.supplierSku, 3],
+      ["B02", 1, tote!.supplierSku, 4],
+      ["B02", 1, apron!.supplierSku, 3]
+    ])
+    const book = new ExcelJS.Workbook()
+    await book.xlsx.load(await cartonTemplate(products, guide([]), cartonExample(products), false, rows))
+    // The order's products follow the cartons, to copy for more.
+    expect(book.getWorksheet("Cartons")?.getCell("C8").value).toBe(products[0]!.supplierSku)
+    const result = await readCartonFile(new File([await book.xlsx.writeBuffer()], "cartons.xlsx"), products)
+    expect(result.issues).toEqual([])
+    const physical = (cartons: CartonGroup[]) =>
+      expandCartonGroups(cartons).map(({ cartonId, items, weight }) => ({ cartonId, items, weight }))
+    expect(physical(result.groups)).toEqual(physical(groups))
+    // Unfinished values stay blank, and a carton without products keeps its row.
+    expect(cartonRows([carton(["C1"], [], Number.NaN)], products)).toEqual([
+      ["C1", 1, "", "", 60, 40, 40, "", "", "", ""]
+    ])
   })
   it("reports unreadable files and ignores formula values", async () => {
     expect((await readCartonFile(new File(["broken"], "cartons.xlsx"), products)).issues[0]?.code).toBe("unreadable")

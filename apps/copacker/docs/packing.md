@@ -43,6 +43,12 @@ pallets, and choosing a carton on another pallet moves it.
 `validatePacking` checks pallets only when `palletized` is set: there's at least one pallet, each carton is on exactly
 one pallet of the shipment, and no pallet is empty or listed twice. The cartons off pallets show under the table
 ("2 cartons aren't on a pallet: B1, C1"). Unchecking Packed on pallets leaves the pallets out of the saved draft.
+**Finish packing** stays off until every carton, and every pallet when packed on them, is complete and nothing breaks
+these rules; the header's "7 of 7 cartons on pallets" turns green, as "420 of 420 units" does for the cartons.
+
+The form's actions sit at the top, in the page header: **Finish packing** (or **Save draft** while units are left to
+pack) and the Actions menu with **Save draft**. On a phone the button moves below the cartons. The totals are the side
+panel's, so there's no summary bar.
 
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.
 
@@ -69,6 +75,15 @@ left for Urdu; the sheets of English headers and values stay left to right.
   carton, as AWD requires; the notes say how rows sharing a Carton ID make a mixed carton.
 - **Pallets**: empty, with Stacking chosen from a list. The example (`palletExample`) splits the shipment's cartons
   across a stackable and a non-stackable pallet, and the notes list the shipment's cartons.
+
+The download buttons beside the upload ones export what the form holds in the same templates ("Cartons - PO38 -
+Shipment 1.xlsx", "Pallets - PO38 - Shipment 1.xlsx"), to edit in a spreadsheet and import again with **Replace**. The
+templates and their copy come from `useCartonTemplate` and `usePalletTemplate` (`hooks/use-import-templates.ts`), which
+the import dialogs share. `cartonRows` writes a row for each product of each kind of carton, above the order's product
+rows; a kind's cartons share a row only when the import would number them back the same (A1 with a count of 3 for
+A1–A3), and otherwise go in runs or one by one, so a gap (A1, A2, A5) or zero-padded IDs (B01, B02) come back unchanged
+and the pallets still find their cartons. `palletRows` writes a pallet to a row, its cartons as runs. Values not entered
+yet stay blank, for the import to point out by row.
 
 A pallet file (`lib/pallet-import.ts`) has a row per pallet: Pallet ID, length, width and height in cm, gross weight in
 kg, Stacking (Stackable or Not stackable, a list in the XLSX template) and Carton IDs. Carton IDs take IDs and runs as
