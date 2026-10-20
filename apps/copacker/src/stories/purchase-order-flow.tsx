@@ -981,11 +981,15 @@ export function PurchaseOrderFlow({
         (record) => !shipmentId || record.shipment.id === shipmentId
       )) {
         if (labelsReady) {
-          const labels = [await sampleLabels("Carton labels", record.shipment.items)]
-          if (record.shipment.transport !== "Amazon pickup") {
-            labels.push(await sampleLabels("Carrier labels", record.shipment.items))
-          }
-          files.push(await renderSupplierPacket(releasedDocument(record), documentSettingsForLocale(locale), labels))
+          files.push(
+            await renderSupplierPacket(releasedDocument(record), documentSettingsForLocale(locale), {
+              carton: [await sampleLabels("Carton labels", record.shipment.items)],
+              carrier:
+                record.shipment.transport === "Amazon pickup"
+                  ? []
+                  : [await sampleLabels("Carrier labels", record.shipment.items)]
+            })
+          )
         } else {
           const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
           const blob = await renderShippingDocument(

@@ -1,5 +1,3 @@
-import { Toast } from "@base-ui/react/toast"
-import { useLocalStorage } from "@mantine/hooks"
 import { money } from "@repo/aisle"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/aisle/transport"
 import { Link } from "@tanstack/react-router"
@@ -14,7 +12,7 @@ import {
   Loader2,
   PackageCheck
 } from "lucide-react"
-import { Fragment, useState } from "react"
+import { Fragment } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
 import { Attachment } from "@/components/attachment"
@@ -33,14 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Upload } from "@/components/upload"
-import {
-  documentSettingsForLocale,
-  documentSettingsSchema,
-  shippingPdfFilename,
-  shippingSettingsKey
-} from "@/documents/shipping-model"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useLazyPackingListQuery } from "@/lib/api"
+import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { printableLabelTypes } from "@/lib/printable-labels"
 import { finishedStates, packedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
@@ -570,43 +561,9 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   )
 }
 
-// The packing list, rendered here from the packed cartons the server sends, in the language and paper last chosen for
-// shipping documents.
 function PackingListDownload({ id }: { id: string }) {
   const t = useTranslations("shipments.detail.documents")
-  const locale = useLocale()
-  const toast = Toast.useToastManager()
-  const errorText = useErrorMessage()
-  const [loadPackingList] = useLazyPackingListQuery()
-  const [storedSettings] = useLocalStorage<unknown>({ key: shippingSettingsKey })
-  const [busy, setBusy] = useState(false)
-  async function download() {
-    setBusy(true)
-    try {
-      const saved = documentSettingsSchema.safeParse(storedSettings)
-      const settings = saved.success ? saved.data : documentSettingsForLocale(locale)
-      const { data } = await loadPackingList(id).unwrap()
-      const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
-      const blob = await renderShippingDocument(
-        <ShippingPdf data={data} kind="packing" settings={settings} packingRecord />
-      )
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = shippingPdfFilename(data, "packing", settings)
-      link.click()
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    } catch (error) {
-      // A refused request says why, such as packing that was reopened; a PDF that couldn't render has nothing to add.
-      toast.add({
-        title: t("packingListFailed"),
-        description: error instanceof Error ? undefined : errorText(error),
-        type: "error"
-      })
-    } finally {
-      setBusy(false)
-    }
-  }
+  const { download, busy } = usePackingListDownload(id)
   return (
     <Attachment label={t("packingList")} downloadLabel={t("downloadPackingList")} busy={busy} onDownload={download} />
   )

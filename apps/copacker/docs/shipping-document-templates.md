@@ -69,7 +69,8 @@ and verification provenance. It never accesses a database or books transport.
 
 `shippingDocumentSnapshot` validates packing with the same rules as the app and requires one explicit label assignment
 per carton. The exporter matches original PDF labels by SKU, FNSKU and quantity, preserves the original PDF bytes,
-and creates the packing list, checklist, carton reference, and combined packet. A verification manifest records
+and creates the packing list, checklist, carton reference, and combined packet (in the app's packet order, without the
+reference). A verification manifest records
 the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
 supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
 
@@ -87,11 +88,16 @@ workspace membership and a snapshot hash before and after reading files. The bro
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
+The packet runs in the order the supplier works: the checklist, the product labels for each unit, the packing list,
+then the Amazon and carrier labels for the sealed cartons. The packing list already pairs each carton with its labels,
+so the carton label reference stays a separate document in the preview. `renderSupplierPacket` owns this order.
+
 Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.
 `GET /api/shipments/:id/packing-list` returns `packingListSnapshot`: the packed cartons and products, with no label
 assignments, handoff or destination address. The browser renders it with the packing-list template's `packingRecord`
 layout, in the language and paper last chosen for shipping documents. A line without a supplier SKU is listed by the
-buyer's, as the packing page shows it.
+buyer's, as the packing page shows it. When the packet page can't make its reference documents, it still offers the
+packing list beside the label files.
 
 The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
 labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton

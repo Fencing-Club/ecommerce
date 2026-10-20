@@ -12,6 +12,7 @@ import {
   shippingPdfFilename
 } from "../src/documents/shipping-model"
 import { renderShippingDocument, ShippingPdf } from "../src/documents/shipping-pdf"
+import { renderSupplierPacket } from "../src/documents/supplier-packet"
 import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { shippingOverview, shippingScenarios } from "../src/stories/fixtures/shipping-documents"
 
@@ -119,6 +120,38 @@ describe("shipping document contract", () => {
 })
 
 describe("rendered shipping PDFs", () => {
+  it("orders the supplier packet as the supplier works, keeping each label file's page size", async () => {
+    const label = async (size: [number, number]) => {
+      const pdf = await PDFDocument.create()
+      pdf.addPage(size)
+      return pdf.save()
+    }
+    const bytes = await renderSupplierPacket(
+      data,
+      defaultDocumentSettings,
+      { product: [await label([144, 72])], carton: [await label([288, 432])], carrier: [await label([288, 430])] },
+      fontBase
+    )
+    const sizes = (await PDFDocument.load(bytes)).getPages().map((page) => page.getSize())
+    // Checklist, product labels, packing list, Amazon carton labels, carrier labels; no carton label reference.
+    expect(sizes.map(({ width, height }) => [Math.round(width), Math.round(height)])).toEqual([
+      [595, 842],
+      [144, 72],
+      [595, 842],
+      [288, 432],
+      [288, 430]
+    ])
+    const task = getDocument({ data: Uint8Array.from(bytes) })
+    try {
+      const doc = await task.promise
+      const title = async (page: number) =>
+        (await (await doc.getPage(page)).getTextContent()).items.flatMap((item) => ("str" in item ? [item.str] : []))
+      expect(await title(1)).toContain("Packing checklist")
+      expect(await title(3)).toContain("Packing list")
+    } finally {
+      await task.destroy()
+    }
+  })
   it("preserves punctuation and word boundaries across successive and overlapping document requests", async () => {
     const awd = shippingScenarios.find((scenario) => scenario.id === "agl-awd")!.data
     const files = await Promise.all(

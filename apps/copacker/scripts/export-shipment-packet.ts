@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { orderInputSchema, packingSchema } from "@repo/aisle"
-import { combinePdfs } from "@repo/aisle/documents"
 import { matchLabels } from "@repo/aisle/labels"
 import { transportSchema } from "@repo/aisle/transport"
 import { PDFDocument } from "pdf-lib"
@@ -16,6 +15,7 @@ import {
 } from "../src/documents/shipping-model"
 import { renderShippingDocument, ShippingPdf } from "../src/documents/shipping-pdf"
 import { shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
+import { renderSupplierPacket } from "../src/documents/supplier-packet"
 
 // Local, read-only export: input is an audited snapshot, never a live database or a new Amazon booking.
 const [inputPath, outputPath] = process.argv.slice(2)
@@ -65,7 +65,8 @@ for (const kind of ["packing", "checklist", "reference"] as const) {
 const originalName = `Amazon-carton-labels-${input.shipmentId}-original.pdf`
 await writeFile(resolve(outputPath, originalName), original)
 const packetName = `Supplier-packet-${data.order}-${data.shipment}-r${data.revision}-${input.settings.language}-${input.settings.paper}.pdf`
-const packet = await combinePdfs([...documents.map((doc) => doc.bytes), original])
+// The same page order as the app’s supplier packet: checklist, packing list, then the original carton labels.
+const packet = await renderSupplierPacket(data, input.settings, { carton: [original] }, fontBase)
 await writeFile(resolve(outputPath, packetName), packet)
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex")
 const manifest = {
