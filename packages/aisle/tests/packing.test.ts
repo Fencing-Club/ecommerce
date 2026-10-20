@@ -230,6 +230,15 @@ describe("FBA shipments", () => {
     expect(validatePacking(awd, mixed).issues.map((issue) => issue.code)).toContain("awdOneSku")
     const both = { ...fbaOrder, items: [awd.items[0]!, fbaOrder.items[1]!] }
     expect(validatePacking(both, mixed).issues.map((issue) => issue.code)).toContain("mixedNetworks")
+    // Every AWD carton of a SKU matches the SKU's first, which the issue reports for the carton editor to compare.
+    const uneven = cartons([{ items: [[gloveId, 6]] }, { weight: 16, items: [[gloveId, 6]] }])
+    expect(validatePacking(awd, uneven).issues).toEqual([
+      {
+        cartonId: "C2",
+        code: "awdConfiguration",
+        values: { sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 }
+      }
+    ])
   })
 
   it("plans sellable units per SKU with owners from Amazon's record of each SKU", () => {
