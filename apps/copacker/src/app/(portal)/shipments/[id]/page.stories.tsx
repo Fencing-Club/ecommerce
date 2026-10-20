@@ -390,7 +390,8 @@ export const DraftPacking = meta.story({
       "aria-disabled",
       "true"
     )
-    await expect(teaTowelMenu.getByText("Label not provided")).toBeVisible()
+    // The menu fades in, so its text is visible only once the animation ends.
+    await waitFor(() => expect(teaTowelMenu.getByText("Label not provided")).toBeVisible())
     await userEvent.keyboard("{Escape}")
   }
 })
