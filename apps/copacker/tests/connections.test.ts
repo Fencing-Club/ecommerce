@@ -15,7 +15,7 @@ import {
   amazonSelfAuthEnabled
 } from "../src/server/connections"
 import { encrypt, decrypt } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -24,7 +24,7 @@ const fetchMock = vi.fn<typeof fetch>()
 
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

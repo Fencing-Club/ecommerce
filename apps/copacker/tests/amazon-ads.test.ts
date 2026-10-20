@@ -4,7 +4,7 @@ import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, orgId: "", userId: "user-1", role: "owner" }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 
@@ -76,7 +76,7 @@ const reportRow = (cost: number, product = "Sponsored Products") => ({
 const fetchMock = vi.fn<typeof fetch>()
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

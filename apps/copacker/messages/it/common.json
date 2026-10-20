@@ -53,7 +53,8 @@
     "accepted": "Accettato",
     "declined": "Rifiutato",
     "atForwarder": "Presso lo spedizioniere",
-    "packed": "Imballato"
+    "packed": "Imballato",
+    "changesProposed": "Modifiche proposte"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "In attesa di {name}",
     "working": "In elaborazione"
   },
-  "viewOnly": "Solo visualizzazione"
+  "viewOnly": "Solo visualizzazione",
+  "logistics": {
+    "views": {
+      "needsYou": "Da gestire",
+      "draft": "Bozze",
+      "active": "Attivi",
+      "closed": "Chiusi",
+      "received": "Ricevuti",
+      "all": "Tutti"
+    },
+    "columns": {
+      "route": "Tratta",
+      "shipped": "Spedito",
+      "total": "Totale",
+      "cartons": "Cartoni",
+      "ready": "Pronto",
+      "status": "Stato",
+      "waiting": "In attesa di"
+    },
+    "filters": {
+      "supplier": "Fornitore",
+      "customer": "Cliente",
+      "allSuppliers": "Tutti i fornitori",
+      "allCustomers": "Tutti i clienti",
+      "button": "Filtri",
+      "label": "Filtri dell’elenco",
+      "status": "Stato",
+      "destination": "Destinazione",
+      "forwarder": "Spedizioniere",
+      "source": "Origine",
+      "ready": "Data di disponibilità",
+      "from": "Da",
+      "to": "A",
+      "any": "Qualsiasi",
+      "clear": "Cancella filtri",
+      "done": "Fatto",
+      "applied": "Filtri applicati",
+      "remove": "Rimuovi il filtro {name}",
+      "chip": "{name}: {value}",
+      "readyRange": "Data di disponibilità: da {from} a {to}"
+    },
+    "sort": {
+      "label": "Ordina per {name}",
+      "newest": "Più recenti",
+      "ready": "Data di disponibilità"
+    },
+    "sources": {
+      "order": "Ordine di acquisto",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "Tu",
+      "buyer": "Acquirente",
+      "customer": "Cliente",
+      "supplier": "Fornitore",
+      "forwarder": "Spedizioniere",
+      "amazon": "Amazon",
+      "carrier": "Corriere",
+      "done": "Completato"
+    },
+    "selection": {
+      "count": "{count} selezionati",
+      "export": "Esporta selezione",
+      "clear": "Cancella selezione",
+      "select": "Seleziona {reference}"
+    },
+    "columnsLabel": "Colonne",
+    "export": "Esporta",
+    "direct": "Diretto",
+    "route": "{forwarder} a {destination}",
+    "products": "{count, plural, one {# prodotto} other {# prodotti}}",
+    "shipped": "{shipped} di {quantity} spediti",
+    "shippedLabel": "{reference} spedito",
+    "cartons": "{count, plural, one {# cartone} other {# cartoni}}",
+    "readyOn": "Pronto il {date}",
+    "shipmentReference": "{reference}, spedizione {number}",
+    "opensInSellerCentral": "(si apre in Seller Central)",
+    "actionsColumn": "Azioni",
+    "rowActions": "Azioni per {reference}",
+    "viewShipment": "Visualizza spedizione",
+    "viewPurchaseOrder": "Visualizza ordine di acquisto",
+    "viewOrder": "Visualizza ordine di acquisto",
+    "noMatchesDescription": "Prova un’altra ricerca o cambia i filtri.",
+    "previousPage": "Pagina precedente",
+    "nextPage": "Pagina successiva",
+    "orders": {
+      "title": "Ordini di acquisto",
+      "reference": "Ordine di acquisto",
+      "views": "Viste degli ordini di acquisto",
+      "search": "Cerca ordini di acquisto",
+      "searchPlaceholder": "Cerca per riferimento, fornitore o ID Amazon",
+      "table": "Ordini di acquisto",
+      "selectAll": "Seleziona tutti gli ordini di acquisto visibili",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# ordine di acquisto} other {# ordini di acquisto}}",
+      "showing": "Visualizzati {from}–{to} di {count} ordini di acquisto",
+      "noMatches": "Nessun ordine di acquisto corrispondente",
+      "empty": {
+        "needsYou": "Al momento non c’è nulla da fare",
+        "draft": "Nessuna bozza",
+        "active": "Nessun ordine di acquisto attivo",
+        "closed": "Nessun ordine di acquisto chiuso",
+        "received": "Nessun ordine di acquisto ricevuto",
+        "all": "Nessun ordine di acquisto"
+      }
+    },
+    "shipments": {
+      "title": "Spedizioni",
+      "reference": "Spedizione",
+      "views": "Viste delle spedizioni",
+      "search": "Cerca spedizioni",
+      "searchPlaceholder": "Cerca per ordine di acquisto, spedizione o ID Amazon",
+      "table": "Spedizioni",
+      "selectAll": "Seleziona tutte le spedizioni visibili",
+      "file": "shipments",
+      "count": "{count, plural, one {# spedizione} other {# spedizioni}}",
+      "showing": "Visualizzate {from}–{to} di {count} spedizioni",
+      "noMatches": "Nessuna spedizione corrispondente",
+      "empty": {
+        "needsYou": "Al momento non c’è nulla da fare",
+        "draft": "Nessuna bozza",
+        "active": "Nessuna spedizione attiva",
+        "closed": "Nessuna spedizione chiusa",
+        "received": "Nessuna spedizione ricevuta",
+        "all": "Nessuna spedizione"
+      }
+    }
+  }
 }

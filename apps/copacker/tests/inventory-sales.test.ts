@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -67,7 +67,7 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
 const save = (body: unknown, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

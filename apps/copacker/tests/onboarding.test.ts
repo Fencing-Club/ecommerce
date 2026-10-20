@@ -36,7 +36,7 @@ vi.mock("../src/server/workos", () => ({
 import { findInvitation } from "../src/server/invitations"
 import { joinWorkspace, setUpWorkspace } from "../src/server/onboarding"
 import { hash } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -58,7 +58,7 @@ const week = () => new Date(Date.now() + 7 * 86400000)
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

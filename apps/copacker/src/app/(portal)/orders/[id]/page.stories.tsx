@@ -480,12 +480,17 @@ export const AmazonShipmentGroups = meta.story({
         ...orderData,
         destination: "amazon",
         deliveryId: undefined,
-        items: orderData.items.map((item, index) => ({ ...item, amazonNetwork: index === 0 ? "awd_us" : "fba" }))
+        items: orderData.items.map((item, index) => ({
+          ...item,
+          amazonNetwork: index === 0 ? "awd_us" : "fba",
+          piecesPerSet: index === 0 ? 2 : item.piecesPerSet
+        }))
       }
     }),
     shipments: [],
     workflow: { items: remainingAll, shipments: [], documents: [] }
   },
+  // A multipack shows its pack size beneath the product and its pack count beneath the quantity.
   play: async ({ canvas }) => {
     const awdToggle = canvas.getByRole("button", { name: /AWD US shipment/ })
     const awd = within(awdToggle.closest("[data-slot=collapsible]")!)
@@ -496,6 +501,9 @@ export const AmazonShipmentGroups = meta.story({
     await expect(fba.getByText("Linen apron")).toBeVisible()
     await expect(fba.getByText("Market basket")).toBeVisible()
     await expect(canvas.queryByText(/^Pack for (FBA|AWD US)/)).toBeNull()
+    await expect(awd.getByText("2 per pack")).toBeVisible()
+    await expect(awd.getByText(`${orderData.items[0]!.pieces / 2} packs, 2 each`)).toBeVisible()
+    await expect(fba.queryByText(/per pack|packs of/)).toBeNull()
     await userEvent.click(awdToggle)
     await expect(awd.getByText("Canvas tote bag")).not.toBeVisible()
     await userEvent.click(awdToggle)

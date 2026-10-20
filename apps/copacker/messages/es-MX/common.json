@@ -53,7 +53,8 @@
     "accepted": "Aceptado",
     "declined": "Rechazado",
     "atForwarder": "Con el agente de carga",
-    "packed": "Empacado"
+    "packed": "Empacado",
+    "changesProposed": "Cambios propuestos"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "Esperando a {name}",
     "working": "En proceso"
   },
-  "viewOnly": "Solo lectura"
+  "viewOnly": "Solo lectura",
+  "logistics": {
+    "views": {
+      "needsYou": "Requiere tu atención",
+      "draft": "Borradores",
+      "active": "Activos",
+      "closed": "Cerrados",
+      "received": "Recibidos",
+      "all": "Todos"
+    },
+    "columns": {
+      "route": "Ruta",
+      "shipped": "Enviado",
+      "total": "Total",
+      "cartons": "Cajas",
+      "ready": "Listo",
+      "status": "Estado",
+      "waiting": "Esperando a"
+    },
+    "filters": {
+      "supplier": "Proveedor",
+      "customer": "Cliente",
+      "allSuppliers": "Todos los proveedores",
+      "allCustomers": "Todos los clientes",
+      "button": "Filtros",
+      "label": "Filtros de la lista",
+      "status": "Estado",
+      "destination": "Destino",
+      "forwarder": "Agente de carga",
+      "source": "Origen",
+      "ready": "Fecha de disponibilidad",
+      "from": "Desde",
+      "to": "Hasta",
+      "any": "Cualquiera",
+      "clear": "Borrar filtros",
+      "done": "Listo",
+      "applied": "Filtros aplicados",
+      "remove": "Quitar el filtro {name}",
+      "chip": "{name}: {value}",
+      "readyRange": "Fecha de disponibilidad: {from} a {to}"
+    },
+    "sort": {
+      "label": "Ordenar por {name}",
+      "newest": "Más recientes",
+      "ready": "Fecha de disponibilidad"
+    },
+    "sources": {
+      "order": "Orden de compra",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "Tú",
+      "buyer": "Comprador",
+      "customer": "Cliente",
+      "supplier": "Proveedor",
+      "forwarder": "Agente de carga",
+      "amazon": "Amazon",
+      "carrier": "Transportista",
+      "done": "Completado"
+    },
+    "selection": {
+      "count": "{count} seleccionados",
+      "export": "Exportar selección",
+      "clear": "Borrar selección",
+      "select": "Seleccionar {reference}"
+    },
+    "columnsLabel": "Columnas",
+    "export": "Exportar",
+    "direct": "Directo",
+    "route": "{forwarder} a {destination}",
+    "products": "{count, plural, one {# producto} other {# productos}}",
+    "shipped": "{shipped} de {quantity} enviados",
+    "shippedLabel": "{reference} enviado",
+    "cartons": "{count, plural, one {# caja} other {# cajas}}",
+    "readyOn": "Listo el {date}",
+    "shipmentReference": "{reference}, envío {number}",
+    "opensInSellerCentral": "(se abre en Seller Central)",
+    "actionsColumn": "Acciones",
+    "rowActions": "Acciones para {reference}",
+    "viewShipment": "Ver envío",
+    "viewPurchaseOrder": "Ver orden de compra",
+    "viewOrder": "Ver orden de compra",
+    "noMatchesDescription": "Prueba otra búsqueda o cambia tus filtros.",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "orders": {
+      "title": "Órdenes de compra",
+      "reference": "Orden de compra",
+      "views": "Vistas de órdenes de compra",
+      "search": "Buscar órdenes de compra",
+      "searchPlaceholder": "Busca por referencia, proveedor o ID de Amazon",
+      "table": "Órdenes de compra",
+      "selectAll": "Seleccionar todas las órdenes de compra visibles",
+      "file": "purchase-orders",
+      "count": "{count, plural, one {# orden de compra} other {# órdenes de compra}}",
+      "showing": "Mostrando {from}–{to} de {count} órdenes de compra",
+      "noMatches": "No hay órdenes de compra que coincidan",
+      "empty": {
+        "needsYou": "Por ahora no necesitas hacer nada",
+        "draft": "No hay borradores",
+        "active": "No hay órdenes de compra activas",
+        "closed": "No hay órdenes de compra cerradas",
+        "received": "No hay órdenes de compra recibidas",
+        "all": "No hay órdenes de compra"
+      }
+    },
+    "shipments": {
+      "title": "Envíos",
+      "reference": "Envío",
+      "views": "Vistas de envíos",
+      "search": "Buscar envíos",
+      "searchPlaceholder": "Busca por orden de compra, envío o ID de Amazon",
+      "table": "Envíos",
+      "selectAll": "Seleccionar todos los envíos visibles",
+      "file": "shipments",
+      "count": "{count, plural, one {# envío} other {# envíos}}",
+      "showing": "Mostrando {from}–{to} de {count} envíos",
+      "noMatches": "No hay envíos que coincidan",
+      "empty": {
+        "needsYou": "Por ahora no necesitas hacer nada",
+        "draft": "No hay borradores",
+        "active": "No hay envíos activos",
+        "closed": "No hay envíos cerrados",
+        "received": "No hay envíos recibidos",
+        "all": "No hay envíos"
+      }
+    }
+  }
 }

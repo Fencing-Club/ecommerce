@@ -4,7 +4,6 @@ import { connections, suppliers } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { forwarderOrders, visibleOrders } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
-import { storeTimeZone } from "@/server/store-time-zone"
 import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 import { serverTranslator } from "@/server/translation"
 import { orderListRows } from "./order-list"
@@ -68,13 +67,24 @@ export async function ordersPage(input: { query: Record<string, string | string[
   return {
     view: "other" as const,
     rows: await orderListRows(rows, showValue),
-    showValue,
-    isBuyer,
     creates,
     nextStep,
     guided,
     kind: s.org.kind,
-    status: typeof input.query.status === "string" ? input.query.status : undefined,
-    timeZone: await storeTimeZone(s.org)
+    listView: orderView(input.query)
   }
+}
+
+// The list's view from the URL. Links from before the views, such as /orders?status=draft, open the view that holds
+// the same orders.
+function orderView(query: Record<string, string | string[]>) {
+  if (typeof query.view === "string") {
+    return query.view
+  }
+  const legacy = new Map([
+    ["draft", "draft"],
+    ["submitted", "active"],
+    ["closed", "closed"]
+  ])
+  return typeof query.status === "string" ? legacy.get(query.status) : undefined
 }

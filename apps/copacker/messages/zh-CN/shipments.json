@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "货件",
-    "stats": {
-      "packing": "装箱中",
-      "actionNeeded": "需要处理",
-      "waitingOnBuyer": "等待买家",
-      "readyForPickup": "待提货"
-    },
     "amazonFailed": {
       "title": "Amazon 货件未能加载",
       "description": "刷新页面重试。"
     },
-    "tabsLabel": "货件状态",
-    "tabs": {
-      "active": "进行中",
-      "received": "已收货",
-      "cancelled": "已取消",
-      "all": "全部"
-    },
-    "empty": {
-      "active": "没有进行中的货件",
-      "received": "没有已收货的货件",
-      "cancelled": "没有已取消的货件",
-      "all": "没有货件"
-    },
-    "columns": {
-      "shipment": "货件",
-      "supplier": "供应商",
-      "customer": "客户",
-      "destination": "目的地",
-      "cartons": "箱数",
-      "readyDate": "就绪日期",
-      "status": "状态"
-    },
-    "shipmentNumber": "货件 {number}",
-    "opensInSellerCentral": "（在 Seller Central 中打开）",
     "none": {
       "title": "还没有货件",
       "buyerDescription": "从已发送的采购订单创建货件。",

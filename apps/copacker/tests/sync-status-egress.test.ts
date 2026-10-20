@@ -16,7 +16,7 @@ vi.mock("../src/server/auth", async (original) => ({
 import { GET as inventory } from "../src/server/http/api/inventory"
 import { GET as status } from "../src/server/http/api/inventory/status"
 import { salesSyncStatus } from "../src/server/sales-orders"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -25,7 +25,7 @@ const domain = "status-test.myshopify.com"
 const observedAt = "2026-10-16T10:00:00.000Z"
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => pg.close())
 beforeEach(async () => {

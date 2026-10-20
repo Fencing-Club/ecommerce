@@ -13,6 +13,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Amazon booking dialogs: AGL and FBA in Storybook](booking-dialogs.md)
 - [Sales demand integration contract](sales-demand.md): Orders and Financial data sync cards
 - [Overview page](overview.md)
+- [Purchase order and shipment lists: views, waiting on, filters and export](logistics-lists.md)
 - [Amazon Ads expense reporting](amazon-ads.md)
 - [Amazon FBA returns ingestion](amazon-returns.md)
 - [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): daily-report reuse and refresh coverage

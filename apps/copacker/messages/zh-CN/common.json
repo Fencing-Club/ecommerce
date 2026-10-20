@@ -53,7 +53,8 @@
     "accepted": "已接受",
     "declined": "已拒绝",
     "atForwarder": "在货代处",
-    "packed": "已装箱"
+    "packed": "已装箱",
+    "changesProposed": "已提出修改"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -202,5 +203,132 @@
     "waitingOn": "等待 {name}",
     "working": "正在处理"
   },
-  "viewOnly": "仅查看"
+  "viewOnly": "仅查看",
+  "logistics": {
+    "views": {
+      "needsYou": "待你处理",
+      "draft": "草稿",
+      "active": "进行中",
+      "closed": "已关闭",
+      "received": "已收货",
+      "all": "全部"
+    },
+    "columns": {
+      "route": "路线",
+      "shipped": "已发货",
+      "total": "总计",
+      "cartons": "箱数",
+      "ready": "就绪",
+      "status": "状态",
+      "waiting": "等待对象"
+    },
+    "filters": {
+      "supplier": "供应商",
+      "customer": "客户",
+      "allSuppliers": "全部供应商",
+      "allCustomers": "全部客户",
+      "button": "筛选",
+      "label": "列表筛选",
+      "status": "状态",
+      "destination": "目的地",
+      "forwarder": "货运代理",
+      "source": "来源",
+      "ready": "就绪日期",
+      "from": "从",
+      "to": "至",
+      "any": "不限",
+      "clear": "清除筛选",
+      "done": "完成",
+      "applied": "已应用的筛选",
+      "remove": "移除{name}筛选",
+      "chip": "{name}：{value}",
+      "readyRange": "就绪日期：{from} 至 {to}"
+    },
+    "sort": {
+      "label": "按{name}排序",
+      "newest": "最新",
+      "ready": "就绪日期"
+    },
+    "sources": {
+      "order": "采购订单",
+      "amazon": "Amazon"
+    },
+    "waiting": {
+      "you": "你",
+      "buyer": "买家",
+      "customer": "客户",
+      "supplier": "供应商",
+      "forwarder": "货运代理",
+      "amazon": "Amazon",
+      "carrier": "承运商",
+      "done": "已完成"
+    },
+    "selection": {
+      "count": "已选 {count} 项",
+      "export": "导出所选",
+      "clear": "清除选择",
+      "select": "选择 {reference}"
+    },
+    "columnsLabel": "列",
+    "export": "导出",
+    "direct": "直发",
+    "route": "{forwarder} 至 {destination}",
+    "products": "{count, plural, other {# 个商品}}",
+    "shipped": "已发货 {shipped} / {quantity}",
+    "shippedLabel": "{reference} 已发货",
+    "cartons": "{count, plural, other {# 箱}}",
+    "readyOn": "{date} 就绪",
+    "shipmentReference": "{reference}，货件 {number}",
+    "opensInSellerCentral": "（在 Seller Central 中打开）",
+    "actionsColumn": "操作",
+    "rowActions": "{reference} 的操作",
+    "viewShipment": "查看货件",
+    "viewPurchaseOrder": "查看采购订单",
+    "viewOrder": "查看采购订单",
+    "noMatchesDescription": "试试其他搜索词，或调整筛选条件。",
+    "previousPage": "上一页",
+    "nextPage": "下一页",
+    "orders": {
+      "title": "采购订单",
+      "reference": "采购订单",
+      "views": "采购订单视图",
+      "search": "搜索采购订单",
+      "searchPlaceholder": "按编号、供应商或 Amazon ID 搜索",
+      "table": "采购订单",
+      "selectAll": "选择所有可见的采购订单",
+      "file": "purchase-orders",
+      "count": "{count, plural, other {# 个采购订单}}",
+      "showing": "显示第 {from}–{to} 个，共 {count} 个采购订单",
+      "noMatches": "没有匹配的采购订单",
+      "empty": {
+        "needsYou": "目前没有需要你处理的事项",
+        "draft": "没有草稿",
+        "active": "没有进行中的采购订单",
+        "closed": "没有已关闭的采购订单",
+        "received": "没有已收货的采购订单",
+        "all": "没有采购订单"
+      }
+    },
+    "shipments": {
+      "title": "货件",
+      "reference": "货件",
+      "views": "货件视图",
+      "search": "搜索货件",
+      "searchPlaceholder": "按采购订单、货件或 Amazon ID 搜索",
+      "table": "货件",
+      "selectAll": "选择所有可见的货件",
+      "file": "shipments",
+      "count": "{count, plural, other {# 个货件}}",
+      "showing": "显示第 {from}–{to} 个，共 {count} 个货件",
+      "noMatches": "没有匹配的货件",
+      "empty": {
+        "needsYou": "目前没有需要你处理的事项",
+        "draft": "没有草稿",
+        "active": "没有进行中的货件",
+        "closed": "没有已关闭的货件",
+        "received": "没有已收货的货件",
+        "all": "没有货件"
+      }
+    }
+  }
 }

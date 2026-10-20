@@ -22,7 +22,7 @@ vi.mock("@/server/amazon-notifications", () => ({
 vi.mock("@/server/first-sync", () => ({ startFirstSync: vi.fn<() => Promise<void>>().mockResolvedValue(undefined) }))
 import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -32,7 +32,7 @@ const fetchMock = vi.fn<typeof fetch>()
 beforeAll(async () => {
   context.current = database
   context.orgId = orgId
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

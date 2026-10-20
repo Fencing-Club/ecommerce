@@ -279,7 +279,7 @@ units per carton, trucks), **Each unit** (labels, preparation), and **Each carto
 
 | Destination    | Cartons                                                                  | Each unit                                   | Each carton                                                |
 | -------------- | ------------------------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------------- |
-| FBA            | Mixed SKUs allowed if they fit one packing group; up to 63.5 cm a side and 22.67 kg unless one unit is larger | FNSKU label covering other barcodes; Amazon's prep, such as a suffocation warning on polybags | Amazon's carton label once the buyer releases labels |
+| FBA            | Mixed SKUs allowed if they fit one packing group; up to 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger | FNSKU label covering other barcodes; Amazon's prep, such as a suffocation warning on polybags | Amazon's carton label once the buyer releases labels |
 | AWD US         | One SKU per carton; at most 150 units; every carton of a SKU packed the same way; 63.5 cm and 22.67 kg; never shares a trailer with FBA freight | FNSKU label covering other barcodes         | Amazon's SSCC carton label once the buyer releases labels  |
 | Your warehouse | Mixed SKUs; no size, weight or unit limits                               | A SKU label only for products set to get one; your instructions | None                                            |
 | GWD            | Its rules still need checking; it gets a column when they're known       |                                             |                                                            |

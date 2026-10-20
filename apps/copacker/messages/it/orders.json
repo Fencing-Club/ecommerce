@@ -1,34 +1,4 @@
 {
-  "list": {
-    "statusTabs": "Stato dell’ordine di acquisto",
-    "tabs": {
-      "all": {
-        "label": "Tutti",
-        "empty": "Nessun ordine di acquisto"
-      },
-      "draft": {
-        "label": "Bozza",
-        "empty": "Nessuna bozza"
-      },
-      "submitted": {
-        "label": "Presso il fornitore",
-        "empty": "Nessun ordine di acquisto presso i fornitori"
-      },
-      "closed": {
-        "label": "Chiusi",
-        "empty": "Nessun ordine di acquisto chiuso"
-      }
-    },
-    "columns": {
-      "purchaseOrder": "Ordine di acquisto",
-      "supplier": "Fornitore",
-      "destination": "Destinazione",
-      "created": "Creato",
-      "status": "Stato",
-      "value": "Valore"
-    },
-    "products": "{count, plural, one {# prodotto} other {# prodotti}}"
-  },
   "index": {
     "title": "Ordini di acquisto",
     "supplierTitle": "Ordini",
@@ -46,11 +16,6 @@
         "description": "Invita il fornitore, poi crea il tuo primo ordine di acquisto.",
         "action": "Invita un fornitore"
       }
-    },
-    "stats": {
-      "open": "Ordini aperti",
-      "withSuppliers": "Presso i fornitori",
-      "drafts": "Bozze"
     },
     "empty": {
       "guidedTitle": "La tua prossima spedizione inizia qui",
