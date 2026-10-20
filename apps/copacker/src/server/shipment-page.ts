@@ -1,3 +1,4 @@
+import { needsWarningLabel } from "@repo/aisle/requirements"
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -95,14 +96,28 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   // What happens next, where nothing below shows it: the forwarder's leg, or cancelling in Amazon first.
   const nextStep =
     step.next.step === "forward" || (isBuyer && step.next.step === "cancellation") ? step.next.message : undefined
+  const labels = await lineLabels({ ...order, data: snapshot })
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
     hasProductLabels: hasProductLabels(
       snapshot.items,
-      await lineLabels({ ...order, data: snapshot }),
+      labels,
       new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
     ),
+    // What each line being packed can print: its barcode label, or why there's none yet, and a warning label.
+    lineLabels: packingOrder.items.map((item) => {
+      // A line with a label it can't make yet shows why, as its PO line does.
+      const label =
+        labels.find((row) => row.itemId === item.id && row.state === "missing") ??
+        labels.find((row) => row.itemId === item.id)
+      return {
+        itemId: item.id,
+        state: label?.state ?? ("none" as const),
+        problem: label?.state === "missing" ? label.problem : undefined,
+        warning: needsWarningLabel(item)
+      }
+    }),
     delivery: await shipmentDelivery(order, shipment),
     destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,

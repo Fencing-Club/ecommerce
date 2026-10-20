@@ -358,5 +358,6 @@
   "transportChanged": "运输设置已更改或已发布。请重新加载货件。",
   "transportForwarderMissing": "请先为订单添加货运代理站点。",
   "packetDestinationUnavailable": "下载文件包前，请确认货件的收货地址。",
-  "packetNoLabelsRequired": "此货件不需要此类标签。"
+  "packetNoLabelsRequired": "此货件不需要此类标签。",
+  "shipmentHasNoLabels": "此货件没有商品标签"
 }

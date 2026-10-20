@@ -17,6 +17,7 @@ import { ActionButton } from "@/components/actions"
 import { CartonEditor } from "@/components/carton-editor"
 import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
+import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentDetails } from "@/components/shipment-details"
@@ -62,12 +63,38 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     summary,
     nextStep,
     delivery,
-    destinationName
+    destinationName,
+    lineLabels
   } = page
   const t = useTranslations("shipments.detail"),
     format = useFormatter(),
     locale = useLocale()
   const packingText = useTranslations("orders.packing")
+  const labelsText = useTranslations("shipments.labels")
+  const labelsHref = (query: Record<string, string>) =>
+    `/api/shipments/${id}/labels${Object.keys(query).length ? `?${new URLSearchParams(query)}` : ""}`
+  // The label types one line, or the whole shipment, can print, each from its own file.
+  const productDownloads = (itemId?: string): ProductDownload[] => {
+    const lines = lineLabels.filter((line) => !itemId || line.itemId === itemId)
+    const labelled = lines.some((line) => line.state === "standard" || line.state === "uploaded")
+    const missing = lines.find((line) => line.state === "missing")
+    const item: Record<string, string> = itemId ? { item: itemId } : {}
+    return [
+      ...(labelled || missing
+        ? [
+            {
+              id: "label",
+              label: labelsText(itemId ? "barcodeLabel" : "barcodeLabels"),
+              href: labelsHref({ ...item, kind: "label" }),
+              unavailable: labelled ? undefined : missing?.problem
+            }
+          ]
+        : []),
+      ...(lines.some((line) => line.warning)
+        ? [{ id: "warning", label: labelsText("warningLabels"), href: labelsHref({ ...item, kind: "warning" }) }]
+        : [])
+    ]
+  }
   const forwarder = snapshot.via ? delivery.addresses[0]?.name : undefined
   // How the cartons travel: to the forwarder first, then from the handoff location by the booked transport.
   const handoff = shipment.transport?.handoff === "forwarder" && forwarder ? forwarder : supplier.name
@@ -165,12 +192,24 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               {notices}
             </>
           )}
+          renderProductActions={(item) =>
+            productDownloads(item.id).length > 0 && (
+              <ProductDownloadsMenu
+                productName={item.supplierSku || item.buyerSku}
+                items={productDownloads(item.id)}
+                allHref={labelsHref({ item: item.id })}
+              />
+            )
+          }
           renderSidebar={(totals) => (
             <div className="space-y-6">
-              {visibleDocs.length > 0 && (
+              {(productDownloads().some((download) => !download.unavailable) || visibleDocs.length > 0) && (
                 <section aria-label={t("documents.title")} className="space-y-3">
                   <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
-                  <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+                  <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
+                  {visibleDocs.length > 0 && (
+                    <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+                  )}
                 </section>
               )}
               <ShipmentDetails {...totals} />

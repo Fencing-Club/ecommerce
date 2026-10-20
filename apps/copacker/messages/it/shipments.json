@@ -247,5 +247,15 @@
     "document": "Documento",
     "issues": "Risolvi questi problemi prima di scaricare i documenti.",
     "pages": "{count, plural, one {# pagina} other {# pagine}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etichette prodotto",
+    "labelsFor": "Etichette per {name}",
+    "barcodeLabel": "Etichetta con codice a barre",
+    "barcodeLabels": "Etichette con codice a barre",
+    "warningLabels": "Etichette di avvertenza soffocamento",
+    "download": "Scarica {label}",
+    "downloadFor": "Scarica {label} per {name}",
+    "downloadAll": "Scarica tutte le etichette prodotto"
   }
 }

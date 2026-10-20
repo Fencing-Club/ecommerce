@@ -247,5 +247,15 @@
     "document": "दस्तावेज़",
     "issues": "डाउनलोड करने से पहले दस्तावेज़ों की ये समस्याएँ ठीक करें।",
     "pages": "{count} पृष्ठ / {paper}"
+  },
+  "labels": {
+    "productLabels": "उत्पाद लेबल",
+    "labelsFor": "{name} के लेबल",
+    "barcodeLabel": "बारकोड लेबल",
+    "barcodeLabels": "बारकोड लेबल",
+    "warningLabels": "दम घुटने की चेतावनी वाले लेबल",
+    "download": "{label} डाउनलोड करें",
+    "downloadFor": "{name} के लिए {label} डाउनलोड करें",
+    "downloadAll": "सभी उत्पाद लेबल डाउनलोड करें"
   }
 }

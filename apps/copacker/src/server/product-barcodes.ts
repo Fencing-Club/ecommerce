@@ -3,12 +3,14 @@ import type { OrderInput } from "@repo/aisle"
 import { combinePdfs } from "@repo/aisle/documents"
 import { splitPdfPages } from "@repo/aisle/labels"
 import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/aisle/product-labels"
+import { needsWarningLabel } from "@repo/aisle/requirements"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, productBarcodes, stockSnapshots } from "@/db/schema"
-import { LocalizedError, type ErrorKey } from "@/i18n/errors"
+import { connections, productBarcodes, shipments, stockSnapshots } from "@/db/schema"
+import { LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
+import { requireAccess } from "./authorization"
 import { amazonFor, shopifyFor } from "./connections"
 import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
@@ -435,11 +437,7 @@ type LabelOrder = { buyerOrgId: string; shopifyDomain: string; data: OrderInput 
 export function hasProductLabels(items: OrderInput["items"], labels: LineLabel[], included: ReadonlySet<string>) {
   return (
     labels.some((label) => included.has(label.itemId) && (label.state === "standard" || label.state === "uploaded")) ||
-    items.some(
-      (item) =>
-        included.has(item.id) &&
-        (item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning)
-    )
+    items.some((item) => included.has(item.id) && needsWarningLabel(item))
   )
 }
 
@@ -576,9 +574,7 @@ export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
 export async function warningLabelFile(
   items: readonly Pick<OrderInput["items"][number], "suffocationWarning" | "packingRequirements">[]
 ) {
-  return items.some((item) =>
-    item.packingRequirements ? item.packingRequirements.labels.includes("suffocation") : item.suffocationWarning
-  )
+  return items.some(needsWarningLabel)
     ? { name: "Suffocation warning labels.pdf", bytes: await suffocationWarningLabels() }
     : null
 }
@@ -606,6 +602,49 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   const files = await lineLabelFiles(order, labels)
   return {
     ...files[0]!,
+    bytes: files.length === 1 ? files[0]!.bytes : await combinePdfs(files.map((file) => file.bytes))
+  }
+}
+
+// A shipment's product labels for whoever packs it, who may not open purchase orders: one line's barcode label, the
+// warning label sheet, or both for one line or every line the shipment carries.
+export async function shipmentLabelsPdf(
+  s: Session,
+  shipmentId: string,
+  { itemId, kind }: { itemId?: string; kind: "label" | "warning" | "all" }
+) {
+  requireAccess(s, "shipments")
+  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
+  if (!shipment) {
+    throw new NotFoundError()
+  }
+  const { order } = await accessibleOrder(s, shipment.orderId)
+  const data = shipment.snapshot ?? order.data
+  const items = data.items.filter(
+    (item) =>
+      (!shipment.amazonNetwork || item.amazonNetwork === shipment.amazonNetwork) && (!itemId || item.id === itemId)
+  )
+  if (itemId && !items.length) {
+    throw new ProductBarcodeError("lineNotOnOrder", 404)
+  }
+  const labels =
+    kind === "warning"
+      ? []
+      : (await lineLabels({ ...order, data })).filter((label) => items.some((item) => item.id === label.itemId))
+  const missing = labels.find((label) => label.state === "missing")
+  if (itemId && kind === "label" && missing?.state === "missing") {
+    throw new ProductBarcodeError(missing.problemKey, 404)
+  }
+  const files = await lineLabelFiles({ ...order, data }, labels)
+  const warnings = kind === "label" ? null : await warningLabelFile(items)
+  if (warnings) {
+    files.push({ itemId: "", ...warnings })
+  }
+  if (!files.length) {
+    throw new ProductBarcodeError(itemId ? "productNeedsNoLabel" : "shipmentHasNoLabels", 404)
+  }
+  return {
+    name: files.length === 1 ? files[0]!.name : labelFileName(`${data.reference} product labels`),
     bytes: files.length === 1 ? files[0]!.bytes : await combinePdfs(files.map((file) => file.bytes))
   }
 }

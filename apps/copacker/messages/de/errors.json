@@ -358,5 +358,6 @@
   "transportChanged": "Transport geändert oder bereits freigegeben. Sendung neu laden.",
   "transportForwarderMissing": "Fügen Sie zuerst einen Speditionsstopp hinzu.",
   "packetDestinationUnavailable": "Bestätigen Sie vor dem Herunterladen die Lieferadresse der Sendung.",
-  "packetNoLabelsRequired": "Für diese Sendung sind keine Etiketten dieses Typs erforderlich."
+  "packetNoLabelsRequired": "Für diese Sendung sind keine Etiketten dieses Typs erforderlich.",
+  "shipmentHasNoLabels": "Diese Sendung hat keine Produktetiketten"
 }

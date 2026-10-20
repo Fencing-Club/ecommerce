@@ -247,5 +247,15 @@
     "document": "دستاویز",
     "issues": "ڈاؤن لوڈ سے پہلے دستاویزات کے یہ مسائل درست کریں۔",
     "pages": "{count} صفحات / {paper}"
+  },
+  "labels": {
+    "productLabels": "پروڈکٹ لیبل",
+    "labelsFor": "{name} کے لیبل",
+    "barcodeLabel": "بارکوڈ لیبل",
+    "barcodeLabels": "بارکوڈ لیبل",
+    "warningLabels": "دم گھٹنے کی وارننگ والے لیبل",
+    "download": "{label} ڈاؤن لوڈ کریں",
+    "downloadFor": "{name} کے لیے {label} ڈاؤن لوڈ کریں",
+    "downloadAll": "تمام پروڈکٹ لیبل ڈاؤن لوڈ کریں"
   }
 }

@@ -247,5 +247,15 @@
     "document": "文档",
     "issues": "请先解决以下文档问题再下载。",
     "pages": "{count} 页 / {paper}"
+  },
+  "labels": {
+    "productLabels": "商品标签",
+    "labelsFor": "{name} 的标签",
+    "barcodeLabel": "条码标签",
+    "barcodeLabels": "条码标签",
+    "warningLabels": "窒息警告标签",
+    "download": "下载{label}",
+    "downloadFor": "下载 {name} 的{label}",
+    "downloadAll": "下载全部商品标签"
   }
 }

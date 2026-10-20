@@ -247,5 +247,15 @@
     "document": "Documento",
     "issues": "Resuelve estos problemas antes de descargar los documentos.",
     "pages": "{count, plural, one {# página} other {# páginas}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Etiquetas de producto",
+    "labelsFor": "Etiquetas de {name}",
+    "barcodeLabel": "Etiqueta de código de barras",
+    "barcodeLabels": "Etiquetas de código de barras",
+    "warningLabels": "Etiquetas de advertencia de asfixia",
+    "download": "Descargar {label}",
+    "downloadFor": "Descargar {label} de {name}",
+    "downloadAll": "Descargar todas las etiquetas de producto"
   }
 }

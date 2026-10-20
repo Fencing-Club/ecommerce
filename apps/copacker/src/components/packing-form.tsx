@@ -357,7 +357,7 @@ export function PackingForm({
                           {prices && <TableHead>{t("pricePerUnit")}</TableHead>}
                           {renderProductActions && (
                             <TableHead className="w-10">
-                              <span className="sr-only">Actions</span>
+                              <span className="sr-only">{actionsText("actions")}</span>
                             </TableHead>
                           )}
                         </TableRow>

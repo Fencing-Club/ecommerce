@@ -207,6 +207,10 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   has neither.
 - `GET /api/orders/:id/labels/:itemId`: one line's product label; 404 when it needs none or can't be made yet.
 - `GET /api/orders/:id/labels/warning`: the PO's suffocation warning sheet, when a line needs it.
+- `GET /api/shipments/:id/labels`: Shipments. The product labels of the lines a shipment carries, for whoever packs
+  it, including members who can't open purchase orders. `item` narrows them to one line; `kind` is `label` (barcode
+  labels only), `warning` (the suffocation warning sheet) or `all` (the default). 404 when there's nothing to print or
+  the line's label can't be made yet.
 - `POST /api/orders/:id/proposal` `{revision, proposal}`: supplier, Orders: Edit. Proposes changes to a sent PO:
   quantities, prices, added and removed products, payment terms and ready date. One can be pending at a time; packing
   waits while it is.

@@ -247,5 +247,15 @@
     "document": "Документ",
     "issues": "Виправте ці проблеми перед завантаженням документів.",
     "pages": "{count, plural, one {# сторінка} few {# сторінки} many {# сторінок} other {# сторінки}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Етикетки товарів",
+    "labelsFor": "Етикетки для {name}",
+    "barcodeLabel": "Етикетка зі штрихкодом",
+    "barcodeLabels": "Етикетки зі штрихкодом",
+    "warningLabels": "Етикетки з попередженням про задуху",
+    "download": "Завантажити: {label}",
+    "downloadFor": "Завантажити: {label} для {name}",
+    "downloadAll": "Завантажити всі етикетки товарів"
   }
 }

@@ -358,5 +358,6 @@
   "transportChanged": "Transport changed or is already released. Reload the shipment.",
   "transportForwarderMissing": "Add a freight forwarder stop to the order first.",
   "packetDestinationUnavailable": "Confirm the shipment’s delivery address before downloading the packet.",
-  "packetNoLabelsRequired": "No labels of this type are required for this shipment."
+  "packetNoLabelsRequired": "No labels of this type are required for this shipment.",
+  "shipmentHasNoLabels": "This shipment has no product labels"
 }

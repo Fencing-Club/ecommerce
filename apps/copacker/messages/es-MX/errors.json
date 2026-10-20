@@ -358,5 +358,6 @@
   "transportChanged": "El transporte cambió o ya fue liberado. Recarga el envío.",
   "transportForwarderMissing": "Primero agrega una parada con un agente de carga.",
   "packetDestinationUnavailable": "Confirma la dirección de entrega del envío antes de descargar el paquete.",
-  "packetNoLabelsRequired": "Este envío no requiere etiquetas de este tipo."
+  "packetNoLabelsRequired": "Este envío no requiere etiquetas de este tipo.",
+  "shipmentHasNoLabels": "Este envío no tiene etiquetas de producto"
 }

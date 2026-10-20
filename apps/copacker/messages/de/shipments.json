@@ -247,5 +247,15 @@
     "document": "Dokument",
     "issues": "Beheben Sie diese Dokumentprobleme vor dem Herunterladen.",
     "pages": "{count, plural, one {# Seite} other {# Seiten}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Produktetiketten",
+    "labelsFor": "Etiketten für {name}",
+    "barcodeLabel": "Barcode-Etikett",
+    "barcodeLabels": "Barcode-Etiketten",
+    "warningLabels": "Erstickungswarnetiketten",
+    "download": "{label} herunterladen",
+    "downloadFor": "{label} für {name} herunterladen",
+    "downloadAll": "Alle Produktetiketten herunterladen"
   }
 }

@@ -247,5 +247,15 @@
     "document": "Document",
     "issues": "Resolve these document issues before downloading.",
     "pages": "{count, plural, one {# page} other {# pages}} / {paper}"
+  },
+  "labels": {
+    "productLabels": "Product labels",
+    "labelsFor": "Labels for {name}",
+    "barcodeLabel": "Barcode label",
+    "barcodeLabels": "Barcode labels",
+    "warningLabels": "Suffocation warning labels",
+    "download": "Download {label}",
+    "downloadFor": "Download {label} for {name}",
+    "downloadAll": "Download all product labels"
   }
 }
