@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "导入纸箱",
-    "reviewTitle": "检查导入",
+    "reviewTitle": "检查纸箱导入",
     "downloadTemplate": "下载模板",
     "templateHint": "使用模板填写纸箱内容、数量、尺寸和重量。",
     "downloadFailed": "无法下载模板。",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton 按包计数。例如每包 2 件时，数量 10 表示 20 件。同组相同纸箱必须装有相同产品和数量。",
       "measurements": "尺寸单位为厘米，重量单位为千克。相同 Carton ID 的每一行都应填写相同的纸箱数量、尺寸和重量。",
       "format": "填写白色包装单元格。保留英文列标题和 Cartons 工作表名称。上传 XLSX 工作簿，或将 Cartons 表导出为 CSV。"
+    }
+  },
+  "palletImport": {
+    "title": "导入托盘",
+    "reviewTitle": "检查托盘导入",
+    "review": "检查托盘",
+    "failed": "无法导入托盘。未进行任何更改。",
+    "add": "添加托盘",
+    "replace": "替换托盘",
+    "import": "导入托盘",
+    "importing": "正在导入托盘…",
+    "palletCount": "{count, plural, other {# 个托盘}}",
+    "cartons": "{count, plural, other {纸箱 {cartons}}}",
+    "dimensions": "{length} × {width} × {height} 厘米",
+    "weight": "{weight} 千克",
+    "weightAndStacking": "{weight} 千克 / {stacking}",
+    "errors": {
+      "empty": "文件中没有托盘数据行。",
+      "worksheet": "文件需要包含名为 Pallets 的工作表。",
+      "palletId": "请输入 1–60 个字符的托盘编号。",
+      "duplicatePallet": "托盘 {pallet} 也在第 {other} 行。每个托盘只用一行。",
+      "stacking": "请输入 Stackable 或 Not stackable。",
+      "cartons": "请输入此托盘上的纸箱，例如 A1–A6、B1。",
+      "unknownCarton": "{count, plural, other {纸箱 {cartons} 不在此货件中。}}",
+      "cartonTwice": "{count, plural, other {纸箱 {cartons} 也在托盘 {pallet} 上。}}每个纸箱只放在一个托盘上。"
+    },
+    "template": {
+      "rows": "每个托盘填写一行。Pallet ID 是您的托盘编号，例如 1、2、3。",
+      "measurements": "填写装货后托盘的长、宽、高（厘米），以及含托盘本身的毛重（千克）。",
+      "stacking": "在 Stacking 列中，如果上面可以再放托盘，选择 Stackable，否则选择 Not stackable。",
+      "cartons": "在 Carton IDs 列中，按装箱单上的编号填写托盘上的纸箱，例如 A1–A6、B1。每个纸箱只放在一个托盘上。",
+      "shipmentCartons": "此货件的纸箱：{cartons}。",
+      "format": "保留英文列标题、Stacking 的取值和 Pallets 工作表名称。上传 XLSX 工作簿，或将 Pallets 表导出为 CSV。"
     }
   }
 }

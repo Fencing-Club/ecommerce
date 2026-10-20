@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "कार्टन आयात करें",
-    "reviewTitle": "आयात की समीक्षा करें",
+    "reviewTitle": "कार्टन आयात की समीक्षा करें",
     "downloadTemplate": "टेम्पलेट डाउनलोड करें",
     "templateHint": "कार्टन की सामग्री, मात्रा, आयाम और वज़न दर्ज करने के लिए टेम्पलेट का उपयोग करें।",
     "downloadFailed": "टेम्पलेट डाउनलोड नहीं हो सका।",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton पैक की संख्या है। 2 के पैक में मात्रा 10 का मतलब 20 नग है। एक जैसे समूह के सभी कार्टन में समान उत्पाद और मात्रा होनी चाहिए।",
       "measurements": "माप सेंटीमीटर में और वजन किलोग्राम में भरें। एक ही Carton ID वाली हर पंक्ति में कार्टन की संख्या, माप और वजन समान रखें।",
       "format": "सफेद पैकिंग कोशिकाएँ भरें। अंग्रेज़ी शीर्षक और Cartons शीट का नाम न बदलें। XLSX अपलोड करें या Cartons तालिका को CSV के रूप में निर्यात करें।"
+    }
+  },
+  "palletImport": {
+    "title": "पैलेट आयात करें",
+    "reviewTitle": "पैलेट आयात की समीक्षा करें",
+    "review": "पैलेट की समीक्षा करें",
+    "failed": "पैलेट आयात नहीं हो सके। कोई बदलाव नहीं किया गया।",
+    "add": "पैलेट जोड़ें",
+    "replace": "पैलेट बदलें",
+    "import": "पैलेट आयात करें",
+    "importing": "पैलेट आयात हो रहे हैं…",
+    "palletCount": "{count, plural, one {# पैलेट} other {# पैलेट}}",
+    "cartons": "{count, plural, one {कार्टन {cartons}} other {कार्टन {cartons}}}",
+    "dimensions": "{length} × {width} × {height} सेमी",
+    "weight": "{weight} किग्रा",
+    "weightAndStacking": "{weight} किग्रा / {stacking}",
+    "errors": {
+      "empty": "फ़ाइल में पैलेट की कोई पंक्ति नहीं है।",
+      "worksheet": "फ़ाइल में Pallets नाम की वर्कशीट होनी चाहिए।",
+      "palletId": "1–60 अक्षरों की पैलेट ID दर्ज करें।",
+      "duplicatePallet": "पैलेट {pallet} पंक्ति {other} में भी है। हर पैलेट के लिए एक पंक्ति रखें।",
+      "stacking": "Stackable या Not stackable दर्ज करें।",
+      "cartons": "इस पैलेट के कार्टन दर्ज करें, जैसे A1–A6, B1।",
+      "unknownCarton": "{count, plural, one {कार्टन {cartons} इस शिपमेंट में नहीं है।} other {कार्टन {cartons} इस शिपमेंट में नहीं हैं।}}",
+      "cartonTwice": "{count, plural, one {कार्टन {cartons} पैलेट {pallet} पर भी है।} other {कार्टन {cartons} पैलेट {pallet} पर भी हैं।}} हर कार्टन को एक ही पैलेट पर रखें।"
+    },
+    "template": {
+      "rows": "हर पैलेट के लिए एक पंक्ति रखें। Pallet ID पैलेट के लिए आपका संदर्भ है, जैसे 1, 2, 3।",
+      "measurements": "लदे हुए पैलेट की लंबाई, चौड़ाई और ऊँचाई सेंटीमीटर में, और पैलेट सहित उसका कुल वज़न किलोग्राम में भरें।",
+      "stacking": "Stacking में Stackable चुनें अगर उस पर दूसरा पैलेट रखा जा सकता है, नहीं तो Not stackable।",
+      "cartons": "Carton IDs में पैलेट के कार्टन पैकिंग सूची की उनकी ID से लिखें, जैसे A1–A6, B1। हर कार्टन को एक ही पैलेट पर रखें।",
+      "shipmentCartons": "इस शिपमेंट के कार्टन: {cartons}।",
+      "format": "अंग्रेज़ी शीर्षक, Stacking के मान और Pallets शीट का नाम न बदलें। XLSX अपलोड करें या Pallets तालिका को CSV के रूप में निर्यात करें।"
     }
   }
 }

@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "Importa cartoni",
-    "reviewTitle": "Controlla importazione",
+    "reviewTitle": "Controlla importazione cartoni",
     "downloadTemplate": "Scarica modello",
     "templateHint": "Usa il modello per inserire contenuto, quantità, dimensioni e peso dei cartoni.",
     "downloadFailed": "Impossibile scaricare il modello.",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton conta le confezioni. Per una confezione da 2, quantità 10 significa 20 pezzi. Tutti i cartoni di un gruppo identico devono contenere gli stessi prodotti e quantità.",
       "measurements": "Inserisci le dimensioni in centimetri e il peso in chilogrammi. Ripeti numero di cartoni, dimensioni e peso su ogni riga con lo stesso Carton ID.",
       "format": "Compila le celle bianche di imballaggio. Mantieni le intestazioni inglesi e il nome del foglio Cartons. Carica il file XLSX o esporta la tabella Cartons in CSV."
+    }
+  },
+  "palletImport": {
+    "title": "Importa pallet",
+    "reviewTitle": "Controlla importazione pallet",
+    "review": "Controlla pallet",
+    "failed": "Impossibile importare i pallet. Nessuna modifica effettuata.",
+    "add": "Aggiungi pallet",
+    "replace": "Sostituisci pallet",
+    "import": "Importa pallet",
+    "importing": "Importazione pallet…",
+    "palletCount": "{count, plural, one {# pallet} other {# pallet}}",
+    "cartons": "{count, plural, one {Cartone {cartons}} other {Cartoni {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "Il file non contiene righe di pallet.",
+      "worksheet": "Il file deve contenere un foglio chiamato Pallets.",
+      "palletId": "Inserisci un ID pallet da 1 a 60 caratteri.",
+      "duplicatePallet": "Il pallet {pallet} è anche nella riga {other}. Usa una riga per pallet.",
+      "stacking": "Inserisci Stackable o Not stackable.",
+      "cartons": "Inserisci i cartoni di questo pallet, ad esempio A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Il cartone {cartons} non fa parte di questa spedizione.} other {I cartoni {cartons} non fanno parte di questa spedizione.}}",
+      "cartonTwice": "{count, plural, one {Il cartone {cartons} è anche sul pallet {pallet}.} other {I cartoni {cartons} sono anche sul pallet {pallet}.}} Metti ogni cartone su un solo pallet."
+    },
+    "template": {
+      "rows": "Usa una riga per pallet. Pallet ID è il tuo riferimento per il pallet, ad esempio 1, 2, 3.",
+      "measurements": "Inserisci lunghezza, larghezza e altezza del pallet carico in centimetri, e il suo peso lordo in chilogrammi, pallet compreso.",
+      "stacking": "In Stacking, scegli Stackable se un altro pallet può stare sopra, altrimenti Not stackable.",
+      "cartons": "In Carton IDs, elenca i cartoni del pallet con i loro ID della packing list, ad esempio A1–A6, B1. Metti ogni cartone su un solo pallet.",
+      "shipmentCartons": "Cartoni di questa spedizione: {cartons}.",
+      "format": "Mantieni le intestazioni inglesi, i valori di Stacking e il nome del foglio Pallets. Carica il file XLSX o esporta la tabella Pallets in CSV."
     }
   }
 }

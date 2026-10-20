@@ -604,6 +604,46 @@ export const PackedOnPallets = meta.story({
   }
 })
 
+// Boards 07.13 and 07.14 from the Pallets section: a spreadsheet of pallets fills the table, and the shipment's weight
+// and volume become theirs.
+export const ImportPallets = meta.story({
+  args: {
+    initial: { ...completeDraft, palletized: true },
+    addresses: [savedAddress],
+    renderSidebar: ({ weight, volume }) => (
+      <output>
+        {weight ?? "—"} kg, {volume ?? "—"} m³
+      </output>
+    )
+  },
+  play: async ({ canvas }) => {
+    const pallets = within(canvas.getByRole("region", { name: "Pallets" }))
+    await userEvent.click(pallets.getByRole("button", { name: "Import pallets" }))
+    const upload = await shownDialog("Import pallets")
+    const input = screen.getByRole("dialog").querySelector("input[type=file]")
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("Missing file input")
+    }
+    const file = [
+      "Pallet ID,Length (cm),Width (cm),Height (cm),Weight (kg),Stacking,Carton IDs",
+      "1,120,100,120,110,Stackable,1-1–1-4",
+      '2,120,100,120,110,Not stackable,"2-1, 2-2, 3-1"'
+    ].join("\n")
+    await userEvent.upload(input, new File([file], "pallets.csv", { type: "text/csv" }))
+    await waitFor(() => expect(upload.getByRole("button", { name: "Review import" })).toBeEnabled())
+    await userEvent.click(upload.getByRole("button", { name: "Review import" }))
+    const review = await shownDialog("Review pallet import")
+    await expect(review.getByText("7 cartons")).toBeVisible()
+    await userEvent.click(review.getByRole("button", { name: "Import pallets" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+
+    await expect(pallets.getByText("7 of 7 cartons on pallets")).toBeVisible()
+    await expect(canvas.getByRole("region", { name: "Pallet 2" })).toBeVisible()
+    await expect(canvas.getByText("220 kg, 2.88 m³")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
+  }
+})
+
 // Unchecking Packed on pallets hides the pallets and leaves them out of the draft.
 export const NotPackedOnPallets = meta.story({
   args: {

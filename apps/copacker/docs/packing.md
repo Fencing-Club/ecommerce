@@ -42,6 +42,23 @@ one pallet of the shipment, and no pallet is empty or listed twice. The cartons 
 
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.
 
+## Importing cartons and pallets
+
+The upload buttons beside **Add carton** and **Add pallet** open a spreadsheet import (copacker.pen section 07: 07.01
+to 07.12 for cartons, 07.13 to 07.15 for pallets). Both use `SpreadsheetImportDialog`: download the template, upload an
+XLSX or CSV file, review what it holds ("Review carton import", "Review pallet import"), then add it to what's there or
+replace it. The file's own issues (by row) hide that choice, since the other mode won't fix them; issues from adding to
+what's there, such as a repeated pallet ID, keep it so **Replace** can clear them. Templates keep English headers and
+sheet names (`Cartons`, `Pallets`) and carry their instructions, in the reader's language, on an Instructions sheet.
+
+A pallet file (`lib/pallet-import.ts`) has a row per pallet: Pallet ID, length, width and height in cm, gross weight in
+kg, Stacking (Stackable or Not stackable, a list in the XLSX template) and Carton IDs. Carton IDs take IDs and runs as
+packing lists write them: `A1–A6, B1`, `A1-A6`, `A10–12`, split by commas (including Chinese and Urdu ones),
+semicolons, new lines or spaces. An ID the shipment has, such as `01-2`, is never read as a run. Each row is checked on
+its own (a valid size and weight, a stacking value, at least one carton, cartons the shipment has) and against the rows
+above it (a pallet ID once, each carton on one pallet), then `validatePallets` checks the imported pallets against the
+ones they're added to. Cartons left off every pallet don't stop an import; the Pallets section lists them as usual.
+
 ## What Amazon gets
 
 - **FBA**: once Amazon places the cartons, each Amazon shipment's transportation request carries the pallets its
@@ -50,5 +67,3 @@ When packed on pallets, Shipment details' gross weight and volume are the pallet
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
 - **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only.
 - **Documents**: the supplier packet's packing list lists each pallet with its cartons, size and gross weight.
-
-Pallet import (07.13 to 07.15) isn't built yet.

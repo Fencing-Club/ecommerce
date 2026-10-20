@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "کارٹن درآمد کریں",
-    "reviewTitle": "درآمد کا جائزہ لیں",
+    "reviewTitle": "کارٹن درآمد کا جائزہ لیں",
     "downloadTemplate": "سانچہ ڈاؤن لوڈ کریں",
     "templateHint": "کارٹن کے مواد، مقدار، ابعاد اور وزن درج کرنے کے لیے سانچہ استعمال کریں۔",
     "downloadFailed": "سانچہ ڈاؤن لوڈ نہیں ہو سکا۔",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton پیک کی تعداد ہے۔ 2 کے پیک میں مقدار 10 کا مطلب 20 عدد ہے۔ یکساں گروپ کے تمام کارٹنوں میں مصنوعات اور ان کی تعداد یکساں ہونی چاہیے۔",
       "measurements": "پیمائش سینٹی میٹر میں اور وزن کلوگرام میں درج کریں۔ ایک ہی Carton ID والی ہر قطار میں کارٹنوں کی تعداد، پیمائش اور وزن یکساں رکھیں۔",
       "format": "سفید پیکنگ خانے بھریں۔ انگریزی سرخیاں اور Cartons شیٹ کا نام تبدیل نہ کریں۔ XLSX اپ لوڈ کریں یا Cartons جدول کو CSV میں برآمد کریں۔"
+    }
+  },
+  "palletImport": {
+    "title": "پیلٹ درآمد کریں",
+    "reviewTitle": "پیلٹ درآمد کا جائزہ لیں",
+    "review": "پیلٹ کا جائزہ لیں",
+    "failed": "پیلٹ درآمد نہیں ہو سکے۔ کوئی تبدیلی نہیں کی گئی۔",
+    "add": "پیلٹ شامل کریں",
+    "replace": "پیلٹ بدلیں",
+    "import": "پیلٹ درآمد کریں",
+    "importing": "پیلٹ درآمد ہو رہے ہیں…",
+    "palletCount": "{count, plural, one {# پیلٹ} other {# پیلٹ}}",
+    "cartons": "{count, plural, one {کارٹن {cartons}} other {کارٹن {cartons}}}",
+    "dimensions": "{length} × {width} × {height} سینٹی میٹر",
+    "weight": "{weight} کلوگرام",
+    "weightAndStacking": "{weight} کلوگرام / {stacking}",
+    "errors": {
+      "empty": "فائل میں پیلٹ کی کوئی قطار نہیں ہے۔",
+      "worksheet": "فائل میں Pallets نام کی ورک شیٹ ہونی چاہیے۔",
+      "palletId": "1–60 حروف پر مشتمل پیلٹ ID درج کریں۔",
+      "duplicatePallet": "پیلٹ {pallet} قطار {other} میں بھی ہے۔ ہر پیلٹ کے لیے ایک قطار رکھیں۔",
+      "stacking": "Stackable یا Not stackable درج کریں۔",
+      "cartons": "اس پیلٹ کے کارٹن درج کریں، جیسے A1–A6، B1۔",
+      "unknownCarton": "{count, plural, one {کارٹن {cartons} اس شپمنٹ میں نہیں ہے۔} other {کارٹن {cartons} اس شپمنٹ میں نہیں ہیں۔}}",
+      "cartonTwice": "{count, plural, one {کارٹن {cartons} پیلٹ {pallet} پر بھی ہے۔} other {کارٹن {cartons} پیلٹ {pallet} پر بھی ہیں۔}} ہر کارٹن کو ایک ہی پیلٹ پر رکھیں۔"
+    },
+    "template": {
+      "rows": "ہر پیلٹ کے لیے ایک قطار رکھیں۔ Pallet ID پیلٹ کے لیے آپ کا حوالہ ہے، جیسے 1، 2، 3۔",
+      "measurements": "لدے ہوئے پیلٹ کی لمبائی، چوڑائی اور اونچائی سینٹی میٹر میں، اور پیلٹ سمیت اس کا کل وزن کلوگرام میں درج کریں۔",
+      "stacking": "Stacking میں Stackable چنیں اگر اس پر دوسرا پیلٹ رکھا جا سکتا ہے، ورنہ Not stackable۔",
+      "cartons": "Carton IDs میں پیلٹ کے کارٹن پیکنگ لسٹ کے ID کے ساتھ لکھیں، جیسے A1–A6، B1۔ ہر کارٹن کو ایک ہی پیلٹ پر رکھیں۔",
+      "shipmentCartons": "اس شپمنٹ کے کارٹن: {cartons}۔",
+      "format": "انگریزی سرخیاں، Stacking کی قدریں اور Pallets شیٹ کا نام تبدیل نہ کریں۔ XLSX اپ لوڈ کریں یا Pallets جدول کو CSV میں برآمد کریں۔"
     }
   }
 }

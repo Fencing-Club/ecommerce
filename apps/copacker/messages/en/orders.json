@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "Import cartons",
-    "reviewTitle": "Review import",
+    "reviewTitle": "Review carton import",
     "downloadTemplate": "Download template",
     "templateHint": "Use the template to enter carton contents, quantities, dimensions, and weight.",
     "downloadFailed": "Couldn’t download the template.",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton counts packs. For a 2-pack, quantity 10 means 20 pieces. Every carton in an identical group must have the same products and quantities.",
       "measurements": "Enter dimensions in centimetres and weight in kilograms. Repeat the same count, dimensions and weight on every row sharing a Carton ID.",
       "format": "Fill the white packing cells. Keep the English headers and Cartons sheet name unchanged. Upload the XLSX workbook or export the Cartons table as CSV."
+    }
+  },
+  "palletImport": {
+    "title": "Import pallets",
+    "reviewTitle": "Review pallet import",
+    "review": "Review import",
+    "failed": "Couldn’t import pallets. No changes were made.",
+    "add": "Add pallets",
+    "replace": "Replace pallets",
+    "import": "Import pallets",
+    "importing": "Importing pallets…",
+    "palletCount": "{count, plural, one {# pallet} other {# pallets}}",
+    "cartons": "{count, plural, one {Carton {cartons}} other {Cartons {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "The file has no pallet rows.",
+      "worksheet": "The file needs a worksheet named Pallets.",
+      "palletId": "Enter a pallet ID of 1–60 characters.",
+      "duplicatePallet": "Pallet {pallet} is also on row {other}. Use one row per pallet.",
+      "stacking": "Enter Stackable or Not stackable.",
+      "cartons": "Enter the cartons on this pallet, such as A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Carton {cartons} isn’t in this shipment.} other {Cartons {cartons} aren’t in this shipment.}}",
+      "cartonTwice": "{count, plural, one {Carton {cartons} is also on Pallet {pallet}.} other {Cartons {cartons} are also on Pallet {pallet}.}} Put each carton on one pallet."
+    },
+    "template": {
+      "rows": "Use one row per pallet. Pallet ID is your reference for the pallet, such as 1, 2, 3.",
+      "measurements": "Enter the loaded pallet’s length, width and height in centimetres, and its gross weight in kilograms, with the pallet itself.",
+      "stacking": "Under Stacking, choose Stackable if another pallet can go on top of this one, or Not stackable.",
+      "cartons": "Under Carton IDs, list the pallet’s cartons by their IDs on the packing list, such as A1–A6, B1. Put each carton on one pallet.",
+      "shipmentCartons": "This shipment’s cartons: {cartons}.",
+      "format": "Keep the English headers, the Stacking values and the Pallets sheet name unchanged. Upload the XLSX workbook or export the Pallets table as CSV."
     }
   }
 }

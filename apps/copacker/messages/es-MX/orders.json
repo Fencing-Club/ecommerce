@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "Importar cajas",
-    "reviewTitle": "Revisar importación",
+    "reviewTitle": "Revisar importación de cajas",
     "downloadTemplate": "Descargar plantilla",
     "templateHint": "Usa la plantilla para indicar el contenido, las cantidades, las dimensiones y el peso de las cajas.",
     "downloadFailed": "No se pudo descargar la plantilla.",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton cuenta paquetes. Para un paquete de 2, una cantidad de 10 equivale a 20 piezas. Todas las cajas de un grupo idéntico deben contener los mismos productos y cantidades.",
       "measurements": "Ingresa las dimensiones en centímetros y el peso en kilogramos. Repite la cantidad de cajas, dimensiones y peso en cada fila con el mismo Carton ID.",
       "format": "Llena las celdas blancas de empaque. Conserva los encabezados en inglés y el nombre de hoja Cartons. Sube el archivo XLSX o exporta la tabla Cartons como CSV."
+    }
+  },
+  "palletImport": {
+    "title": "Importar tarimas",
+    "reviewTitle": "Revisar importación de tarimas",
+    "review": "Revisar tarimas",
+    "failed": "No se pudieron importar las tarimas. No se realizaron cambios.",
+    "add": "Agregar tarimas",
+    "replace": "Reemplazar tarimas",
+    "import": "Importar tarimas",
+    "importing": "Importando tarimas…",
+    "palletCount": "{count, plural, one {# tarima} other {# tarimas}}",
+    "cartons": "{count, plural, one {Caja {cartons}} other {Cajas {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "El archivo no contiene filas de tarimas.",
+      "worksheet": "El archivo necesita una hoja llamada Pallets.",
+      "palletId": "Ingresa un ID de tarima de 1 a 60 caracteres.",
+      "duplicatePallet": "La tarima {pallet} también está en la fila {other}. Usa una fila por tarima.",
+      "stacking": "Ingresa Stackable o Not stackable.",
+      "cartons": "Ingresa las cajas de esta tarima, por ejemplo A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {La caja {cartons} no está en este envío.} other {Las cajas {cartons} no están en este envío.}}",
+      "cartonTwice": "{count, plural, one {La caja {cartons} también está en la tarima {pallet}.} other {Las cajas {cartons} también están en la tarima {pallet}.}} Pon cada caja en una sola tarima."
+    },
+    "template": {
+      "rows": "Usa una fila por tarima. Pallet ID es tu referencia para la tarima, por ejemplo 1, 2, 3.",
+      "measurements": "Ingresa el largo, ancho y alto de la tarima cargada en centímetros, y su peso bruto en kilogramos, incluida la tarima.",
+      "stacking": "En Stacking, elige Stackable si otra tarima puede ir encima, o Not stackable.",
+      "cartons": "En Carton IDs, anota las cajas de la tarima con sus IDs de la lista de empaque, por ejemplo A1–A6, B1. Pon cada caja en una sola tarima.",
+      "shipmentCartons": "Cajas de este envío: {cartons}.",
+      "format": "Conserva los encabezados en inglés, los valores de Stacking y el nombre de hoja Pallets. Sube el archivo XLSX o exporta la tabla Pallets como CSV."
     }
   }
 }

@@ -45,6 +45,7 @@ import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
@@ -176,7 +177,9 @@ export function PackingForm({
   const [working, setWorking] = useState<"save" | "submit" | "link" | null>(null)
   const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const [importing, setImporting] = useState(false)
+  const [importingPallets, setImportingPallets] = useState(false)
   const importText = useTranslations("orders.cartonImport")
+  const palletImportText = useTranslations("orders.palletImport")
   const palletText = useTranslations("orders.pallets")
   // A packing list without a pickup address yet starts from the supplier's only saved one.
   const noOrigin = objectKeys(emptyAddress).every((key) => !initial?.origin?.[key])
@@ -609,28 +612,46 @@ export function PackingForm({
                       </span>
                     </div>
                     {!readOnly && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="max-sm:w-[34px] max-sm:px-0"
-                        onClick={() =>
-                          setPallets([
-                            ...pallets,
-                            {
-                              palletId: nextPalletId(pallets),
-                              length: blank,
-                              width: blank,
-                              height: blank,
-                              weight: blank,
-                              stackable: true,
-                              cartonIds: []
+                      <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={palletImportText("title")}
+                                onClick={() => setImportingPallets(true)}
+                              />
                             }
-                          ])
-                        }
-                      >
-                        <Plus />
-                        <span className="max-sm:sr-only">{palletText("addPallet")}</span>
-                      </Button>
+                          >
+                            <Upload />
+                          </TooltipTrigger>
+                          <TooltipContent>{palletImportText("title")}</TooltipContent>
+                        </Tooltip>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="max-sm:w-[34px] max-sm:px-0"
+                          onClick={() =>
+                            setPallets([
+                              ...pallets,
+                              {
+                                palletId: nextPalletId(pallets),
+                                length: blank,
+                                width: blank,
+                                height: blank,
+                                weight: blank,
+                                stackable: true,
+                                cartonIds: []
+                              }
+                            ])
+                          }
+                        >
+                          <Plus />
+                          <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                        </Button>
+                      </div>
                     )}
                   </div>
                   {pallets.length > 0 ? (
@@ -767,6 +788,16 @@ export function PackingForm({
           availablePieces={availablePieces}
           onImport={async (groups, mode) => {
             cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
+          }}
+        />
+        <PalletImportDialog
+          open={importingPallets}
+          onOpenChange={setImportingPallets}
+          context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+          cartonIds={physicalCartons.map((carton) => carton.cartonId)}
+          existing={pallets}
+          onImport={async (next, mode) => {
+            setPallets(mode === "replace" ? next : [...pallets, ...next])
           }}
         />
       </fieldset>

@@ -584,7 +584,7 @@
   },
   "cartonImport": {
     "title": "Importer des cartons",
-    "reviewTitle": "Vérifier l’importation",
+    "reviewTitle": "Vérifier l’importation des cartons",
     "downloadTemplate": "Télécharger le modèle",
     "templateHint": "Utilisez le modèle pour saisir le contenu, les quantités, les dimensions et le poids des cartons.",
     "downloadFailed": "Impossible de télécharger le modèle.",
@@ -628,6 +628,39 @@
       "quantity": "Quantity per carton compte les lots. Pour un lot de 2, une quantité de 10 représente 20 pièces. Les cartons d’un groupe identique doivent contenir les mêmes produits et quantités.",
       "measurements": "Indiquez les dimensions en centimètres et le poids en kilogrammes. Répétez le nombre, les dimensions et le poids sur chaque ligne ayant le même Carton ID.",
       "format": "Remplissez les cellules d’emballage blanches. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le classeur XLSX ou exportez la table Cartons au format CSV."
+    }
+  },
+  "palletImport": {
+    "title": "Importer des palettes",
+    "reviewTitle": "Vérifier l’importation des palettes",
+    "review": "Vérifier les palettes",
+    "failed": "Impossible d’importer les palettes. Aucune modification effectuée.",
+    "add": "Ajouter des palettes",
+    "replace": "Remplacer les palettes",
+    "import": "Importer des palettes",
+    "importing": "Importation des palettes…",
+    "palletCount": "{count, plural, one {# palette} other {# palettes}}",
+    "cartons": "{count, plural, one {Carton {cartons}} other {Cartons {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "Le fichier ne contient aucune ligne de palette.",
+      "worksheet": "Le fichier doit contenir une feuille nommée Pallets.",
+      "palletId": "Saisissez un identifiant de palette de 1 à 60 caractères.",
+      "duplicatePallet": "La palette {pallet} figure aussi à la ligne {other}. Utilisez une ligne par palette.",
+      "stacking": "Saisissez Stackable ou Not stackable.",
+      "cartons": "Saisissez les cartons de cette palette, par exemple A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Le carton {cartons} ne fait pas partie de cet envoi.} other {Les cartons {cartons} ne font pas partie de cet envoi.}}",
+      "cartonTwice": "{count, plural, one {Le carton {cartons} est aussi sur la palette {pallet}.} other {Les cartons {cartons} sont aussi sur la palette {pallet}.}} Mettez chaque carton sur une seule palette."
+    },
+    "template": {
+      "rows": "Utilisez une ligne par palette. Pallet ID est votre référence pour la palette, par exemple 1, 2, 3.",
+      "measurements": "Indiquez la longueur, la largeur et la hauteur de la palette chargée en centimètres, et son poids brut en kilogrammes, palette comprise.",
+      "stacking": "Dans Stacking, choisissez Stackable si une autre palette peut être posée dessus, sinon Not stackable.",
+      "cartons": "Dans Carton IDs, indiquez les cartons de la palette par leurs identifiants de la liste de colisage, par exemple A1–A6, B1. Mettez chaque carton sur une seule palette.",
+      "shipmentCartons": "Cartons de cet envoi : {cartons}.",
+      "format": "Conservez les en-têtes anglais, les valeurs de Stacking et le nom de feuille Pallets. Importez le classeur XLSX ou exportez la table Pallets au format CSV."
     }
   }
 }
