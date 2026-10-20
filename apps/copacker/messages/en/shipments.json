@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "Product labels",
     "labelsFor": "Labels for {name}",
-    "barcodeLabel": "Barcode label",
-    "barcodeLabels": "Barcode labels",
-    "warningLabels": "Suffocation warning labels",
     "download": "Download {label}",
-    "downloadFor": "Download {label} for {name}",
-    "downloadAll": "Download all product labels"
+    "downloadAll": "Download all product labels",
+    "sku": "SKU labels",
+    "fnsku": "FNSKU labels",
+    "suffocation": "Suffocation warning labels",
+    "choking": "Choking hazard labels",
+    "notProvided": "Label not provided"
   }
 }

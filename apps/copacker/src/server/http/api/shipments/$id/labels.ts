@@ -6,15 +6,14 @@ import { ProductBarcodeError, shipmentLabelsPdf } from "@/server/product-barcode
 
 const headers = { "Cache-Control": "private, no-store" }
 
-// A shipment's product labels while it's packed: ?item= narrows them to one line, and ?kind= to its barcode label or
-// the warning label sheet.
+// A shipment's product labels while it's packed: ?item= narrows them to one line, and ?kind= to one label type.
 export async function GET(request: Request, context: { params: { id: string } }) {
   const query = new URL(request.url).searchParams
   const params = z
     .object({
       id: z.uuid(),
       item: z.uuid().optional(),
-      kind: z.enum(["label", "warning", "all"]).default("all")
+      kind: z.enum(["sku", "fnsku", "suffocation", "all"]).default("all")
     })
     .safeParse({
       id: (await context.params).id,

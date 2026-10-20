@@ -354,6 +354,7 @@ describe("standard product labels", () => {
     expect(await lineLabels(po)).toEqual([
       {
         itemId: line,
+        type: "fnsku",
         state: "missing",
         problem: "Upload its label on the Products page",
         problemKey: "uploadLabelOnProducts"
@@ -376,6 +377,7 @@ describe("standard product labels", () => {
     expect(await lineLabels(amazonBound)).toEqual([
       {
         itemId: line,
+        type: "fnsku",
         state: "missing",
         problem: "Its FNSKU is looked up when the purchase order is sent",
         problemKey: "fnskuLookedUpOnSend"
@@ -578,11 +580,13 @@ describe("shipment labels", () => {
     // The FBA line's label and the warning sheet; the AWD line ships separately.
     expect((await PDFDocument.load(await all.arrayBuffer())).getPageCount()).toBe(2)
 
-    const line = await download(shipment!.id, `?item=${glove}&kind=label`)
+    const line = await download(shipment!.id, `?item=${glove}&kind=fnsku`)
     expect(line.status).toBe(200)
     expect((await PDFDocument.load(await line.arrayBuffer())).getPageCount()).toBe(1)
-    const warning = await download(shipment!.id, "?kind=warning")
+    const warning = await download(shipment!.id, "?kind=suffocation")
     expect(warning.headers.get("content-disposition")).toContain(encodeURIComponent("Suffocation warning labels.pdf"))
+    // The glove has no SKU label of its own, and the cord ships separately.
+    expect((await download(shipment!.id, `?item=${glove}&kind=sku`)).status).toBe(404)
     expect((await download(shipment!.id, `?item=${cord}`)).status).toBe(404)
     expect((await download(shipment!.id, `?item=${cord}&kind=wrong`)).status).toBe(404)
   })

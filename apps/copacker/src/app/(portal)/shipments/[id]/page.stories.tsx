@@ -1,10 +1,10 @@
 import { type Address, type OrderInput } from "@repo/aisle"
-import { needsWarningLabel } from "@repo/aisle/requirements"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
 import { can, type Permissions } from "@/lib/access"
+import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { releasedStates } from "@/server/readiness"
@@ -57,8 +57,14 @@ type Args = {
   productLabels?: boolean
   // The next stop's address, as shipmentDelivery reads it.
   delivery?: { addresses: Address[]; pending: boolean }
-  // Each packed line's barcode label, as lineLabels reads it; every line has its standard label by default.
-  lineLabels?: Array<{ itemId: string; state: "uploaded" | "standard" | "none" | "missing"; problem?: string }>
+  // Each packed line's SKU and FNSKU labels, as lineLabels reads them; by default every barcode label its packing
+  // details ask for is made from the standard template.
+  lineLabels?: Array<{
+    itemId: string
+    type: "sku" | "fnsku"
+    state: "uploaded" | "standard" | "missing"
+    problem?: string
+  }>
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -127,12 +133,17 @@ async function ShipmentPage({
         id,
         hasProductLabels: productLabels,
         lineLabels: packingOrder.items.map((item) => {
-          const label = lineLabels?.find((row) => row.itemId === item.id)
+          const given = lineLabels?.filter((row) => row.itemId === item.id) ?? []
           return {
             itemId: item.id,
-            state: label?.state ?? "standard",
-            problem: label?.problem,
-            warning: needsWarningLabel(item)
+            labels: printableLabels(
+              item,
+              given.length
+                ? given
+                : (item.packingRequirements?.labels ?? [item.fnsku ? "fnsku" : "sku"]).flatMap((type) =>
+                    type === "sku" || type === "fnsku" ? [{ type, state: "standard" as const }] : []
+                  )
+            )
           }
         }),
         delivery: delivery ?? { addresses: [], pending: amazon },
@@ -307,59 +318,91 @@ export const DraftPacking = meta.story({
     await expect(canvas.getByRole("button", { name: "Add products to cartons 1–10" })).toBeVisible()
     await expect(canvas.getByText("Cartons 11–16")).toBeVisible()
 
-    // The documents beside the cartons start with the shipment's product labels.
+    // The documents beside the cartons start with the label types the packing details ask for.
     const documents = canvas.getByRole("region", { name: "Documents" })
     await userEvent.click(within(documents).getByRole("button", { name: "Product labels" }))
-    await expect(await screen.findByRole("menuitem", { name: "Barcode labels" })).toHaveAttribute(
+    const menu = within(await screen.findByRole("menu"))
+    await expect(menu.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "SKU labels",
+      "FNSKU labels",
+      "Suffocation warning labels",
+      "Download all product labels"
+    ])
+    await expect(menu.getByRole("menuitem", { name: "SKU labels" })).toHaveAttribute(
       "href",
-      `/api/shipments/${shipmentId}/labels?kind=label`
+      `/api/shipments/${shipmentId}/labels?kind=sku`
     )
-    await expect(screen.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
+    await expect(menu.getByRole("menuitem", { name: "FNSKU labels" })).toHaveAttribute(
       "href",
-      `/api/shipments/${shipmentId}/labels?kind=warning`
+      `/api/shipments/${shipmentId}/labels?kind=fnsku`
     )
-    await expect(screen.getByRole("menuitem", { name: "Download all product labels" })).toHaveAttribute(
+    await expect(menu.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
+      "href",
+      `/api/shipments/${shipmentId}/labels?kind=suffocation`
+    )
+    await expect(menu.getByRole("menuitem", { name: "Download all product labels" })).toHaveAttribute(
       "href",
       `/api/shipments/${shipmentId}/labels`
     )
     await userEvent.keyboard("{Escape}")
 
-    // Each product's row prints just its labels.
+    // Each product's row prints just its own labels.
+    const [towel, , teaTowel] = towelOrder.items
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
-    await expect(await screen.findByRole("menuitem", { name: "Barcode label" })).toHaveAttribute(
+    const towelMenu = within(await screen.findByRole("menu"))
+    await expect(towelMenu.getByRole("menuitem", { name: "FNSKU labels" })).toHaveAttribute(
       "href",
-      `/api/shipments/${shipmentId}/labels?item=${towelOrder.items[0]!.id}&kind=label`
+      `/api/shipments/${shipmentId}/labels?item=${towel!.id}&kind=fnsku`
     )
-    await expect(screen.getByRole("menuitem", { name: "Download all product labels" })).toHaveAttribute(
+    await expect(towelMenu.queryByRole("menuitem", { name: "SKU labels" })).toBeNull()
+    await expect(towelMenu.getByRole("menuitem", { name: "Download all product labels" })).toHaveAttribute(
       "href",
-      `/api/shipments/${shipmentId}/labels?item=${towelOrder.items[0]!.id}`
+      `/api/shipments/${shipmentId}/labels?item=${towel!.id}`
     )
+    await userEvent.keyboard("{Escape}")
+    // Copacker doesn't make choking hazard labels, so the buyer provides them.
+    await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-CT-3100" }))
+    const teaTowelMenu = within(await screen.findByRole("menu"))
+    await expect(teaTowelMenu.getByRole("menuitem", { name: "SKU labels" })).toHaveAttribute(
+      "href",
+      `/api/shipments/${shipmentId}/labels?item=${teaTowel!.id}&kind=sku`
+    )
+    await expect(teaTowelMenu.getByRole("menuitem", { name: /Choking hazard labels/ })).toHaveAttribute(
+      "aria-disabled",
+      "true"
+    )
+    await expect(teaTowelMenu.getByText("Label not provided")).toBeVisible()
     await userEvent.keyboard("{Escape}")
   }
 })
 
-// A line whose barcode label can't be made yet says why, and its warning labels still print.
+// A line whose barcode label can't be made yet says why. Its warning labels still print, and with one label left there's
+// nothing to download all at once.
 export const DraftPackingMissingLabel = meta.story({
   ...supplier,
   args: {
     ...DraftPacking.input.args,
     lineLabels: [
-      { itemId: towelOrder.items[0]!.id, state: "missing", problem: "Add the product’s FNSKU in Seller Central." }
+      {
+        itemId: towelOrder.items[0]!.id,
+        type: "fnsku",
+        state: "missing",
+        problem: "Its FNSKU is looked up when the purchase order is sent"
+      }
     ]
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
-    await expect(await screen.findByRole("menuitem", { name: /Barcode label/ })).toHaveAttribute(
-      "aria-disabled",
-      "true"
-    )
-    await expect(screen.getByText("Add the product’s FNSKU in Seller Central.")).toBeVisible()
-    await expect(screen.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
+    const menu = within(await screen.findByRole("menu"))
+    await expect(menu.getByRole("menuitem", { name: /FNSKU labels/ })).toHaveAttribute("aria-disabled", "true")
+    await expect(menu.getByText("Its FNSKU is looked up when the purchase order is sent")).toBeVisible()
+    await expect(menu.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
       "href",
-      `/api/shipments/${shipmentId}/labels?item=${towelOrder.items[0]!.id}&kind=warning`
+      `/api/shipments/${shipmentId}/labels?item=${towelOrder.items[0]!.id}&kind=suffocation`
     )
+    await expect(menu.queryByRole("menuitem", { name: "Download all product labels" })).toBeNull()
     await userEvent.keyboard("{Escape}")
   }
 })

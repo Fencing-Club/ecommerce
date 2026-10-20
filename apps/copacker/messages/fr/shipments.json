@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "Étiquettes produit",
     "labelsFor": "Étiquettes pour {name}",
-    "barcodeLabel": "Étiquette code-barres",
-    "barcodeLabels": "Étiquettes code-barres",
-    "warningLabels": "Étiquettes d’avertissement d’étouffement",
     "download": "Télécharger : {label}",
-    "downloadFor": "Télécharger : {label} pour {name}",
-    "downloadAll": "Télécharger toutes les étiquettes produit"
+    "downloadAll": "Télécharger toutes les étiquettes produit",
+    "sku": "Étiquettes SKU",
+    "fnsku": "Étiquettes FNSKU",
+    "suffocation": "Étiquettes d’avertissement d’étouffement",
+    "choking": "Étiquettes de risque d’étouffement",
+    "notProvided": "Étiquette non fournie"
   }
 }

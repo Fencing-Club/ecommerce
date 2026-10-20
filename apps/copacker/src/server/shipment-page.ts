@@ -1,4 +1,3 @@
-import { needsWarningLabel } from "@repo/aisle/requirements"
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -6,6 +5,7 @@ import { shipmentDestinations, shipmentDelivery } from "@/app/(portal)/shipments
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
+import { printableLabels } from "@/lib/printable-labels"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
@@ -105,19 +105,16 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
       labels,
       new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
     ),
-    // What each line being packed can print: its barcode label, or why there's none yet, and a warning label.
-    lineLabels: packingOrder.items.map((item) => {
-      // A line with a label it can't make yet shows why, as its PO line does.
-      const label =
-        labels.find((row) => row.itemId === item.id && row.state === "missing") ??
-        labels.find((row) => row.itemId === item.id)
-      return {
-        itemId: item.id,
-        state: label?.state ?? ("none" as const),
-        problem: label?.state === "missing" ? label.problem : undefined,
-        warning: needsWarningLabel(item)
-      }
-    }),
+    // The label types each line being packed prints, and why a barcode label can't be made yet.
+    lineLabels: packingOrder.items.map((item) => ({
+      itemId: item.id,
+      labels: printableLabels(
+        item,
+        labels
+          .filter((row) => row.itemId === item.id)
+          .map((row) => ({ ...row, problem: row.state === "missing" ? row.problem : undefined }))
+      )
+    })),
     delivery: await shipmentDelivery(order, shipment),
     destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,

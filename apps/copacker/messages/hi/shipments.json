@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "उत्पाद लेबल",
     "labelsFor": "{name} के लेबल",
-    "barcodeLabel": "बारकोड लेबल",
-    "barcodeLabels": "बारकोड लेबल",
-    "warningLabels": "दम घुटने की चेतावनी वाले लेबल",
     "download": "{label} डाउनलोड करें",
-    "downloadFor": "{name} के लिए {label} डाउनलोड करें",
-    "downloadAll": "सभी उत्पाद लेबल डाउनलोड करें"
+    "downloadAll": "सभी उत्पाद लेबल डाउनलोड करें",
+    "sku": "SKU लेबल",
+    "fnsku": "FNSKU लेबल",
+    "suffocation": "दम घुटने की चेतावनी वाले लेबल",
+    "choking": "छोटे हिस्सों से दम घुटने के खतरे के लेबल",
+    "notProvided": "लेबल नहीं दिया गया"
   }
 }

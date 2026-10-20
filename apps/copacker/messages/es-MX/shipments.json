@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "Etiquetas de producto",
     "labelsFor": "Etiquetas de {name}",
-    "barcodeLabel": "Etiqueta de código de barras",
-    "barcodeLabels": "Etiquetas de código de barras",
-    "warningLabels": "Etiquetas de advertencia de asfixia",
     "download": "Descargar {label}",
-    "downloadFor": "Descargar {label} de {name}",
-    "downloadAll": "Descargar todas las etiquetas de producto"
+    "downloadAll": "Descargar todas las etiquetas de producto",
+    "sku": "Etiquetas SKU",
+    "fnsku": "Etiquetas FNSKU",
+    "suffocation": "Etiquetas de advertencia de asfixia",
+    "choking": "Etiquetas de peligro de asfixia por piezas pequeñas",
+    "notProvided": "Etiqueta no proporcionada"
   }
 }

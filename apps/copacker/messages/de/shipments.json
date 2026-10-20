@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "Produktetiketten",
     "labelsFor": "Etiketten für {name}",
-    "barcodeLabel": "Barcode-Etikett",
-    "barcodeLabels": "Barcode-Etiketten",
-    "warningLabels": "Erstickungswarnetiketten",
     "download": "{label} herunterladen",
-    "downloadFor": "{label} für {name} herunterladen",
-    "downloadAll": "Alle Produktetiketten herunterladen"
+    "downloadAll": "Alle Produktetiketten herunterladen",
+    "sku": "SKU-Etiketten",
+    "fnsku": "FNSKU-Etiketten",
+    "suffocation": "Erstickungswarnetiketten",
+    "choking": "Warnetiketten für Kleinteile",
+    "notProvided": "Etikett nicht bereitgestellt"
   }
 }

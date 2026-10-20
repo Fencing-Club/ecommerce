@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "پروڈکٹ لیبل",
     "labelsFor": "{name} کے لیبل",
-    "barcodeLabel": "بارکوڈ لیبل",
-    "barcodeLabels": "بارکوڈ لیبل",
-    "warningLabels": "دم گھٹنے کی وارننگ والے لیبل",
     "download": "{label} ڈاؤن لوڈ کریں",
-    "downloadFor": "{name} کے لیے {label} ڈاؤن لوڈ کریں",
-    "downloadAll": "تمام پروڈکٹ لیبل ڈاؤن لوڈ کریں"
+    "downloadAll": "تمام پروڈکٹ لیبل ڈاؤن لوڈ کریں",
+    "sku": "SKU لیبل",
+    "fnsku": "FNSKU لیبل",
+    "suffocation": "دم گھٹنے کی وارننگ والے لیبل",
+    "choking": "چھوٹے حصوں سے دم گھٹنے کے خطرے کے لیبل",
+    "notProvided": "لیبل فراہم نہیں کیا گیا"
   }
 }

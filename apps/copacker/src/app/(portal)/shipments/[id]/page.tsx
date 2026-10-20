@@ -31,6 +31,7 @@ import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/comp
 import { Upload } from "@/components/upload"
 import { groupCartons } from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
+import { printableLabelTypes } from "@/lib/printable-labels"
 import { finishedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
 
@@ -73,27 +74,28 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const labelsText = useTranslations("shipments.labels")
   const labelsHref = (query: Record<string, string>) =>
     `/api/shipments/${id}/labels${Object.keys(query).length ? `?${new URLSearchParams(query)}` : ""}`
-  // The label types one line, or the whole shipment, can print, each from its own file.
+  // The label types one line's packing details, or the whole shipment's, ask for, each from its own file. A type
+  // prints when any line can make it; choking hazard labels come from the buyer.
   const productDownloads = (itemId?: string): ProductDownload[] => {
-    const lines = lineLabels.filter((line) => !itemId || line.itemId === itemId)
-    const labelled = lines.some((line) => line.state === "standard" || line.state === "uploaded")
-    const missing = lines.find((line) => line.state === "missing")
+    const labels = lineLabels.filter((line) => !itemId || line.itemId === itemId).flatMap((line) => line.labels)
     const item: Record<string, string> = itemId ? { item: itemId } : {}
-    return [
-      ...(labelled || missing
-        ? [
-            {
-              id: "label",
-              label: labelsText(itemId ? "barcodeLabel" : "barcodeLabels"),
-              href: labelsHref({ ...item, kind: "label" }),
-              unavailable: labelled ? undefined : missing?.problem
-            }
-          ]
-        : []),
-      ...(lines.some((line) => line.warning)
-        ? [{ id: "warning", label: labelsText("warningLabels"), href: labelsHref({ ...item, kind: "warning" }) }]
-        : [])
-    ]
+    return printableLabelTypes.flatMap((type) => {
+      const found = labels.filter((label) => label.type === type)
+      if (!found.length) {
+        return []
+      }
+      const printable = type !== "choking" && found.some((label) => !label.problem)
+      return [
+        {
+          id: type,
+          label: labelsText(type),
+          href: labelsHref({ ...item, kind: type }),
+          unavailable: printable
+            ? undefined
+            : (found.find((label) => label.problem)?.problem ?? labelsText("notProvided"))
+        }
+      ]
+    })
   }
   const forwarder = snapshot.via ? delivery.addresses[0]?.name : undefined
   // How the cartons travel: to the forwarder first, then from the handoff location by the booked transport.

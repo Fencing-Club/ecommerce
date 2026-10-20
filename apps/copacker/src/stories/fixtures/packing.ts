@@ -38,7 +38,7 @@ const towel = (variant: string, sku: string, pieces: number) =>
     asin: `B0WB${sku}00`,
     fnsku: `X0WB${sku}00`,
     amazonNetwork: "awd_us",
-    suffocationWarning: true
+    packingRequirements: { preparation: "polybag", labels: ["fnsku", "suffocation"], countryCode: "", instructions: "" }
   })
 
 export const towelOrder: OrderInput = orderData({
@@ -60,7 +60,13 @@ export const towelOrder: OrderInput = orderData({
       asin: "B0CT310000",
       fnsku: "X0CT310000",
       amazonNetwork: "awd_us",
-      suffocationWarning: false
+      suffocationWarning: false,
+      packingRequirements: {
+        preparation: "none",
+        labels: ["sku", "fnsku", "choking"],
+        countryCode: "",
+        instructions: ""
+      }
     })
   ]
 })

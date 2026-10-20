@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "Etichette prodotto",
     "labelsFor": "Etichette per {name}",
-    "barcodeLabel": "Etichetta con codice a barre",
-    "barcodeLabels": "Etichette con codice a barre",
-    "warningLabels": "Etichette di avvertenza soffocamento",
     "download": "Scarica {label}",
-    "downloadFor": "Scarica {label} per {name}",
-    "downloadAll": "Scarica tutte le etichette prodotto"
+    "downloadAll": "Scarica tutte le etichette prodotto",
+    "sku": "Etichette SKU",
+    "fnsku": "Etichette FNSKU",
+    "suffocation": "Etichette di avvertenza soffocamento",
+    "choking": "Etichette di pericolo di soffocamento",
+    "notProvided": "Etichetta non fornita"
   }
 }

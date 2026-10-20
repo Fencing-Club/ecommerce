@@ -251,11 +251,12 @@
   "labels": {
     "productLabels": "商品标签",
     "labelsFor": "{name} 的标签",
-    "barcodeLabel": "条码标签",
-    "barcodeLabels": "条码标签",
-    "warningLabels": "窒息警告标签",
     "download": "下载{label}",
-    "downloadFor": "下载 {name} 的{label}",
-    "downloadAll": "下载全部商品标签"
+    "downloadAll": "下载全部商品标签",
+    "sku": "SKU 标签",
+    "fnsku": "FNSKU 标签",
+    "suffocation": "窒息警告标签",
+    "choking": "小零件窒息危险标签",
+    "notProvided": "未提供标签"
   }
 }
