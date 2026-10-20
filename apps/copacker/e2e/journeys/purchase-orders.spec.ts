@@ -4,42 +4,49 @@ import { openOrder, titleStatus } from "./orders"
 
 test.use({ role: "buyer" })
 
-test("the purchase order list filters by status", { tag: "@mobile" }, async ({ page }) => {
+test("the purchase order list sorts orders into views", { tag: "@mobile" }, async ({ page }) => {
   await page.goto("/orders")
   await expect(page.getByRole("heading", { level: 1, name: "Purchase orders" })).toBeVisible()
-  for (const stat of ["Open orders", "With suppliers", "Drafts"]) {
-    await expect(page.getByText(stat, { exact: true })).toBeVisible()
-  }
-  const tabs = page.getByRole("navigation", { name: "Purchase order status" })
-  const draft = page.getByRole("row", { name: /^E2E-DRAFT / })
-  const sent = page.getByRole("row", { name: /^DEMO-1 / })
+  const views = page.getByRole("navigation", { name: "Purchase order views" })
+  // Each row starts with its checkbox, named for the order.
+  const draft = page.getByRole("row", { name: /E2E-DRAFT / })
+  const sent = page.getByRole("row", { name: /DEMO-1 / })
 
-  await expect(tabs.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page")
+  // The buyer's draft waits on the buyer.
+  await expect(views.getByRole("link", { name: /^Needs you/ })).toHaveAttribute("aria-current", "page")
   await expect(draft).toContainText("Demo supplier")
   await expect(draft).toContainText("Draft")
   await expect(draft).toContainText("$1,275")
-  await expect(sent).toContainText("With supplier")
-  await expect(sent).toContainText("$600")
 
-  await tabs.getByRole("link", { name: "Draft" }).click()
-  await expect(page).toHaveURL(/\?status=draft$/)
-  await expect(tabs.getByRole("link", { name: "Draft" })).toHaveAttribute("aria-current", "page")
+  await views.getByRole("link", { name: /^Drafts/ }).click()
+  await expect(page).toHaveURL(/\?view=draft$/)
+  await expect(views.getByRole("link", { name: /^Drafts/ })).toHaveAttribute("aria-current", "page")
   await expect(draft).toBeVisible()
   await expect(sent).toHaveCount(0)
 
-  await tabs.getByRole("link", { name: "With supplier" }).click()
-  await expect(page).toHaveURL(/\?status=submitted$/)
-  await expect(sent).toBeVisible()
+  await views.getByRole("link", { name: /^Active/ }).click()
+  await expect(page).toHaveURL(/\?view=active$/)
+  await expect(sent).toContainText("$600")
   await expect(draft).toHaveCount(0)
 
-  await tabs.getByRole("link", { name: "Closed" }).click()
-  await expect(page).toHaveURL(/\?status=closed$/)
+  await views.getByRole("link", { name: /^Closed/ }).click()
+  await expect(page).toHaveURL(/\?view=closed$/)
   await expect(sent).toHaveCount(0)
   await expect(draft).toHaveCount(0)
 
-  // A click anywhere on a row opens its purchase order.
-  await tabs.getByRole("link", { name: "All" }).click()
-  await sent.getByRole("cell", { name: "$600" }).click()
+  // Search narrows every view.
+  await views.getByRole("link", { name: /^All/ }).click()
+  await page.getByRole("searchbox", { name: "Search purchase orders" }).fill("E2E-DRAFT")
+  await expect(draft).toBeVisible()
+  await expect(sent).toHaveCount(0)
+  await page.getByRole("searchbox", { name: "Search purchase orders" }).fill("")
+
+  // Links from before the views open the matching orders.
+  await page.goto("/orders?status=draft")
+  await expect(views.getByRole("link", { name: /^Drafts/ })).toHaveAttribute("aria-current", "page")
+
+  await page.goto("/orders?view=all")
+  await sent.getByRole("link", { name: "DEMO-1" }).click()
   await expect(page.getByRole("heading", { level: 1, name: "DEMO-1" })).toBeVisible()
 })
 

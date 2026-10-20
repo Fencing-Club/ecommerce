@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "Spedizioni",
-    "stats": {
-      "packing": "In imballaggio",
-      "actionNeeded": "Azione richiesta",
-      "waitingOnBuyer": "In attesa dell’acquirente",
-      "readyForPickup": "Pronte per il ritiro"
-    },
     "amazonFailed": {
       "title": "Le spedizioni Amazon non sono state caricate",
       "description": "Aggiorna la pagina per riprovare."
     },
-    "tabsLabel": "Stato della spedizione",
-    "tabs": {
-      "active": "Attive",
-      "received": "Ricevute",
-      "cancelled": "Annullate",
-      "all": "Tutte"
-    },
-    "empty": {
-      "active": "Nessuna spedizione attiva",
-      "received": "Nessuna spedizione ricevuta",
-      "cancelled": "Nessuna spedizione annullata",
-      "all": "Nessuna spedizione"
-    },
-    "columns": {
-      "shipment": "Spedizione",
-      "supplier": "Fornitore",
-      "customer": "Cliente",
-      "destination": "Destinazione",
-      "cartons": "Cartoni",
-      "readyDate": "Data di disponibilità",
-      "status": "Stato"
-    },
-    "shipmentNumber": "Spedizione {number}",
-    "opensInSellerCentral": "(si apre in Seller Central)",
     "none": {
       "title": "Ancora nessuna spedizione",
       "buyerDescription": "Creane una da un ordine di acquisto inviato.",

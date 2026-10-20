@@ -23,6 +23,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   submitted: { label: "submitted", tone: "info" },
   accepted: { label: "accepted", tone: "info" },
   declined: { label: "declined", tone: "warning" },
+  changes_proposed: { label: "changesProposed", tone: "warning" },
   closed: { label: "closed", tone: "neutral" },
   // Shipments
   packing: { label: "packing", tone: "info" },
@@ -120,9 +121,17 @@ function words(status: string) {
 }
 
 export function Status({ status }: { status: string }) {
+  const label = useStatusLabel()
+  return <StatusBadge tone={statuses[statusKey(status)]?.tone ?? "neutral"}>{label(status)}</StatusBadge>
+}
+
+// A status's words without its pill, for filters and exports.
+export function useStatusLabel() {
   const t = useTranslations("common.status")
-  const known = statuses[statusKey(status)]
-  return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
+  return (status: string) => {
+    const known = statuses[statusKey(status)]
+    return known ? t(known.label) : words(status)
+  }
 }
 
 // The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title (on a phone,
