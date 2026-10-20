@@ -21,6 +21,7 @@ import { Markdown } from "@/components/markdown"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
 import { PoTimeline } from "@/components/po-timeline"
 import { ProductIdentity } from "@/components/product-identity"
+import { QuantityDisplay } from "@/components/quantity-display"
 import { RoutePill } from "@/components/route-pill"
 import { ProposalPanel } from "@/components/supplier/proposal-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -257,7 +258,9 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                             <SupplierSku item={item} notSet={t("detail.notSet")} />
                           </TableCell>
                           <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
-                            {item.pieces}
+                            <QuantityDisplay pieces={item.pieces} packSize={item.piecesPerSet}>
+                              {item.pieces}
+                            </QuantityDisplay>
                             {remainingFor(item.id) !== item.pieces && (
                               <p className="text-xs text-muted-foreground">
                                 {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
