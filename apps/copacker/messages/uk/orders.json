@@ -200,7 +200,7 @@
     "shipmentTo": "Відправлення до {destination}",
     "shipmentCounts": "{count, plural, one {# варіант} few {# варіанти} other {# варіантів}}, {pieces, number} шт.",
     "selectProduct": "Вибрати {name}",
-    "packCount": "{count, number} упаковок по {size}",
+    "packCount": "{count, number} упаковок, по {size} у кожній",
     "supplierCharges": "Витрати постачальника",
     "addSupplierCharge": "Додати витрати",
     "removeSupplierCharge": "Видалити витрати",

@@ -15,6 +15,7 @@ import {
 import { Fragment } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
+import { Attachment } from "@/components/attachment"
 import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
@@ -30,8 +31,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Upload } from "@/components/upload"
+import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { printableLabelTypes } from "@/lib/printable-labels"
-import { finishedStates } from "@/server/readiness"
+import { finishedStates, packedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
 
 export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof shipmentPage>> }) {
@@ -260,6 +262,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     ))
   ]
   const viewOrder = isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")
+  // Finished packing prints its packing list, before Amazon's labels or the supplier packet exist.
+  const packed = !!shipment.packing && packedStates.includes(shipment.status)
 
   // After packing, the same layout without the form: the state's alerts and next step lead the column beside the
   // documents and totals, and the cartons follow as packed.
@@ -509,13 +513,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         <div className="flex flex-col gap-6">
           <section aria-label={t("documents.title")} className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
-            {productDownloads().length > 0 && (
-              <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
-            )}
-            {visibleDocs.length > 0 && (
-              <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
-            )}
-            {productDownloads().length === 0 && visibleDocs.length === 0 && (
+            <div className="flex flex-col gap-2 empty:hidden">
+              {productDownloads().length > 0 && (
+                <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
+              )}
+              {packed && <PackingListDownload id={id} />}
+              {visibleDocs.length > 0 && (
+                <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
+              )}
+            </div>
+            {productDownloads().length === 0 && !packed && visibleDocs.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
             )}
           </section>
@@ -551,5 +558,13 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       initial={shipment.packing ?? shipment.packingDraft}
       addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
     />
+  )
+}
+
+function PackingListDownload({ id }: { id: string }) {
+  const t = useTranslations("shipments.detail.documents")
+  const { download, busy } = usePackingListDownload(id)
+  return (
+    <Attachment label={t("packingList")} downloadLabel={t("downloadPackingList")} busy={busy} onDownload={download} />
   )
 }

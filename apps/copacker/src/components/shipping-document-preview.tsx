@@ -8,6 +8,7 @@ import {
   documentIssues,
   documentSettingsSchema,
   shippingPdfFilename,
+  shippingSettingsKey,
   type DocumentKind,
   type DocumentSettings,
   type ShippingDocumentData
@@ -19,8 +20,6 @@ import { Button } from "./ui/button"
 import { ButtonGroup, ButtonGroupSeparator } from "./ui/button-group"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "./ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-
-export const shippingSettingsKey = "copacker.shipping-document-settings"
 
 type Props = {
   data: ShippingDocumentData

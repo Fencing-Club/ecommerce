@@ -200,7 +200,7 @@
     "shipmentTo": "{destination} शिपमेंट",
     "shipmentCounts": "{count} वेरिएंट, {pieces, number} इकाइयाँ",
     "selectProduct": "{name} चुनें",
-    "packCount": "{size} के {count, number} पैक",
+    "packCount": "{count, number} पैक, हर एक में {size}",
     "supplierCharges": "आपूर्तिकर्ता लागत",
     "addSupplierCharge": "खर्च जोड़ें",
     "removeSupplierCharge": "खर्च हटाएँ",
