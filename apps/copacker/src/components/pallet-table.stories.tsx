@@ -79,6 +79,18 @@ export const Editing = meta.story({
   }
 })
 
+// On a tablet, or beside Shipment details on a laptop, the pallets stay a table, with room for Not stackable.
+export const Tablet = meta.story({
+  globals: { viewport: { value: "ipad" } },
+  play: async ({ canvas }) => {
+    const row = canvas.getByRole("region", { name: "Pallet 2" })
+    await expect(getComputedStyle(row).display).toBe("grid")
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+    const stacking = within(row).getByText("Not stackable")
+    await expect(stacking.scrollWidth).toBeLessThanOrEqual(stacking.clientWidth)
+  }
+})
+
 // Choosing cartons for a pallet moves them off any other pallet.
 export const ChooseCartons = meta.story({
   play: async ({ canvas, args }) => {

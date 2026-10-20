@@ -15,9 +15,12 @@ never change; an ID that isn't a letter and a number, such as an imported `01`, 
 ## The carton table
 
 `CartonTable` has one row per configuration, with the same columns at every width so its products line up beneath:
-toggle, cartons, count, dimensions (L × W × H in one field), weight per carton, contents and the row menu. From 50rem
+toggle, cartons, count, dimensions (L × W × H in one field), weight per carton, contents and the row menu. From 44rem
 wide (the `wide:` variant, an `@container/packing` query) it's a table; narrower, each row is a card with its fields
-under labels, and read-only cards put count, dimensions and weight on one line.
+under labels, and read-only cards put count, dimensions and weight on one line. From 50rem (`wider:`) the columns have
+the design's widths and gaps; between 44rem and 50rem they give a little and the dimensions drop their L × W × H hint,
+so the table still fits beside Shipment details on a laptop and on a tablet. The product band is a CSS subgrid of the
+row, so products line up under the carton's columns at any width.
 
 - A closed row shows its units and what it holds ("1 product, 24 per carton"). Opening it shows its products in a
   lighter band, with Add product at the end. Captions head the first product only.

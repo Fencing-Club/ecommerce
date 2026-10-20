@@ -14,11 +14,12 @@ type Place = "carton" | "count" | "dimensions" | "weight" | number
 // fields it outlines.
 type CartonError = { message: string; place: Place; outlines: string[] }
 
-// One set of columns at every width, so the product band lines up under the cartons: toggle, cartons, count,
-// dimensions, weight, contents and the menu.
-const columns = "wide:grid-cols-[2rem_4.5rem_4rem_14.75rem_6.5rem_minmax(0,1fr)_2rem]"
+// One set of columns, so the product band lines up under the cartons: toggle, cartons, count, dimensions, weight,
+// contents and the menu. They reach the design's widths from 50rem and give a little up to 44rem.
+const columns =
+  "wide:grid-cols-[2rem_minmax(3.5rem,4.5rem)_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5.5rem,6.5rem)_minmax(7.5rem,1fr)_2rem] wide:gap-x-3 wider:gap-x-4"
 
-// The cartons of a shipment, a row per carton configuration (A1–A10), each opening onto its products. From 50rem the
+// The cartons of a shipment, a row per carton configuration (A1–A10), each opening onto its products. From 44rem the
 // rows are a table; narrower, each is a card.
 export function CartonTable({
   cartons,
@@ -59,7 +60,7 @@ export function CartonTable({
       <div className="flex flex-col gap-3 wide:gap-0 wide:overflow-hidden wide:rounded-lg wide:border wide:bg-card">
         <div
           aria-hidden
-          className={cn("hidden gap-x-4 bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
+          className={cn("hidden bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
         >
           <span className="col-start-2">{t("columns.cartons")}</span>
           <span className={readOnly ? undefined : "text-end"}>{t("columns.count")}</span>
@@ -253,7 +254,7 @@ function CartonRow({
     <section
       aria-label={title}
       className={cn(
-        "overflow-hidden rounded-lg border bg-card wide:grid wide:gap-x-4 wide:overflow-visible wide:rounded-none wide:border-0 wide:border-t wide:bg-transparent wide:px-4",
+        "overflow-hidden rounded-lg border bg-card wide:grid wide:overflow-visible wide:rounded-none wide:border-0 wide:border-t wide:bg-transparent wide:px-4",
         columns
       )}
     >
@@ -385,10 +386,12 @@ function CartonRow({
       </div>
       {note && <div className="px-3.5 pb-3.5 wide:col-[2/-1] wide:row-start-6 wide:px-0">{note}</div>}
       {open && (
+        // In the table the band reaches the row's edges and shares its columns: a product spans cartons to dimensions,
+        // its supplier SKU sits under weight and its quantity under contents.
         <div
           id={`${id}-products`}
           className={cn(
-            "border-t bg-muted/30 wide:col-span-full wide:row-start-7 wide:-mx-4",
+            "border-t bg-muted/30 wide:col-span-full wide:row-start-7 wide:-mx-4 wide:grid wide:grid-cols-subgrid wide:px-4",
             errors.some((error) => typeof error.place === "string") && "wide:mt-1.5"
           )}
         >
@@ -403,114 +406,102 @@ function CartonRow({
             return (
               <div
                 key={content.itemId}
-                className={cn("px-3.5 py-3 wide:px-0 wide:py-0 wide:ps-16", !first && "border-t wide:border-t-0")}
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-3 px-3.5 py-3 wide:col-[2/-1] wide:grid-cols-subgrid wide:px-0 wide:py-3.5 wide:[column-gap:normal]",
+                  !first && "border-t"
+                )}
               >
-                <div
-                  className={cn(
-                    "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 wide:gap-x-4 wide:py-3.5 wide:pe-4",
-                    readOnly
-                      ? "wide:grid-cols-[25.25rem_6.5rem_minmax(0,1fr)]"
-                      : "wide:grid-cols-[25.25rem_6.5rem_8rem_minmax(0,1fr)_2rem]",
-                    !first && "wide:border-t"
+                <div className="col-span-3 min-w-0 [overflow-wrap:anywhere]">
+                  {first && <p className={cn(caption, "mb-2 hidden wide:block")}>{packing("product")}</p>}
+                  <p className="font-medium">{item.name}</p>
+                  {item.variant && item.variant !== "Default Title" && (
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">{item.variant}</p>
                   )}
-                >
-                  <div className="col-span-3 min-w-0 [overflow-wrap:anywhere] wide:col-span-1">
-                    {first && <p className={cn(caption, "mb-2 hidden wide:block")}>{packing("product")}</p>}
-                    <p className="font-medium">{item.name}</p>
-                    {item.variant && item.variant !== "Default Title" && (
-                      <p className="mt-0.5 text-[13px] text-muted-foreground">{item.variant}</p>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{packing("supplierSku")}</p>
-                    <p className={cn("break-all", !readOnly && "py-3 sm:py-2")}>{item.supplierSku || "—"}</p>
-                  </div>
-                  <div className="min-w-0">
-                    <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{t("quantityPerCarton")}</p>
-                    {readOnly ? (
-                      <p className="tabular-nums">{t("unitCount", { count: content.pieces })}</p>
-                    ) : (
-                      <NumberField
-                        label={t("productQuantity", { sku: item.buyerSku, carton: value.cartonId })}
-                        suffix={t("units")}
-                        value={content.pieces}
-                        onChange={(pieces) =>
-                          update({ items: value.items.map((row, i) => (i === index ? { ...row, pieces } : row)) })
-                        }
-                        onBlur={() => touch(field)}
-                        invalid={outlined(field)}
-                        integer
-                        errorId={errorId(index)}
-                      />
-                    )}
-                    {multipack && (
-                      <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-                        {t("packsOf", { packs: content.pieces / item.piecesPerSet, size: item.piecesPerSet })}
-                      </p>
-                    )}
-                  </div>
-                  {!readOnly && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "mt-[1.375rem] size-11 text-muted-foreground sm:size-9 wide:col-start-5",
-                        !first && "wide:mt-0"
-                      )}
-                      aria-label={t("removeProduct", { sku: item.buyerSku, carton: value.cartonId })}
-                      onClick={() => update({ items: value.items.filter((_, i) => i !== index) })}
-                    >
-                      <Trash2 />
-                    </Button>
-                  )}
-                  {errorLines(index, "col-span-full")}
                 </div>
+                <div className="min-w-0">
+                  <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{packing("supplierSku")}</p>
+                  <p className={cn("break-all", !readOnly && "py-3 sm:py-2")}>{item.supplierSku || "—"}</p>
+                </div>
+                <div className="min-w-0 wide:max-w-32">
+                  <p className={cn(caption, "mb-1.5", !first && "wide:hidden")}>{t("quantityPerCarton")}</p>
+                  {readOnly ? (
+                    <p className="tabular-nums">{t("unitCount", { count: content.pieces })}</p>
+                  ) : (
+                    <NumberField
+                      label={t("productQuantity", { sku: item.buyerSku, carton: value.cartonId })}
+                      suffix={t("units")}
+                      value={content.pieces}
+                      onChange={(pieces) =>
+                        update({ items: value.items.map((row, i) => (i === index ? { ...row, pieces } : row)) })
+                      }
+                      onBlur={() => touch(field)}
+                      invalid={outlined(field)}
+                      integer
+                      errorId={errorId(index)}
+                    />
+                  )}
+                  {multipack && (
+                    <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+                      {t("packsOf", { packs: content.pieces / item.piecesPerSet, size: item.piecesPerSet })}
+                    </p>
+                  )}
+                </div>
+                {!readOnly && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "mt-[1.375rem] size-11 text-muted-foreground sm:size-9 wide:col-start-6 wide:justify-self-end",
+                      !first && "wide:mt-0"
+                    )}
+                    aria-label={t("removeProduct", { sku: item.buyerSku, carton: value.cartonId })}
+                    onClick={() => update({ items: value.items.filter((_, i) => i !== index) })}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
+                {errorLines(index, "col-span-full")}
               </div>
             )
           })}
           {!value.items.length && readOnly && (
-            <p className="px-3.5 py-3 text-muted-foreground wide:ps-16">{t("emptyCarton")}</p>
+            <p className="px-3.5 py-3 text-muted-foreground wide:col-[2/-1] wide:px-0">{t("emptyCarton")}</p>
           )}
           {!readOnly && (
             <div
-              className={cn(
-                "px-3.5 py-3 wide:px-0 wide:py-0 wide:ps-16",
-                value.items.length > 0 && "border-t wide:border-t-0"
-              )}
+              className={cn("px-3.5 py-3 wide:col-[2/-1] wide:px-0 wide:py-3.5", value.items.length > 0 && "border-t")}
             >
-              <div className={cn("wide:py-3.5 wide:pe-4", value.items.length > 0 && "wide:border-t")}>
-                <CartonProductsDialog
-                  label={
-                    grouped
-                      ? t("addProductsToCartons", { cartons: label })
-                      : t("addProductsTo", { carton: value.cartonId })
-                  }
-                  added={value.items.map((item) => item.itemId)}
-                  products={products}
-                  context={context}
-                  remainingPieces={
-                    remainingPieces ??
-                    Object.fromEntries(
-                      products.map((item) => [
-                        item.id,
-                        item.pieces -
-                          (value.items.find((content) => content.itemId === item.id)?.pieces || 0) * (count || 1)
-                      ])
-                    )
-                  }
-                  onAdd={(added) =>
-                    update({
-                      items: [
-                        ...value.items,
-                        ...added
-                          .filter((itemId) => !value.items.some((item) => item.itemId === itemId))
-                          .map((itemId) => ({ itemId, pieces: Number.NaN }))
-                      ]
-                    })
-                  }
-                />
-              </div>
+              <CartonProductsDialog
+                label={
+                  grouped
+                    ? t("addProductsToCartons", { cartons: label })
+                    : t("addProductsTo", { carton: value.cartonId })
+                }
+                added={value.items.map((item) => item.itemId)}
+                products={products}
+                context={context}
+                remainingPieces={
+                  remainingPieces ??
+                  Object.fromEntries(
+                    products.map((item) => [
+                      item.id,
+                      item.pieces -
+                        (value.items.find((content) => content.itemId === item.id)?.pieces || 0) * (count || 1)
+                    ])
+                  )
+                }
+                onAdd={(added) =>
+                  update({
+                    items: [
+                      ...value.items,
+                      ...added
+                        .filter((itemId) => !value.items.some((item) => item.itemId === itemId))
+                        .map((itemId) => ({ itemId, pieces: Number.NaN }))
+                    ]
+                  })
+                }
+              />
             </div>
           )}
         </div>

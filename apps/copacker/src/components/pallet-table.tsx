@@ -10,10 +10,12 @@ import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
-// Toggle, pallet, dimensions, weight, stacking, cartons and the menu, at every width.
-const columns = "wide:grid-cols-[1.75rem_4rem_14.75rem_6rem_8.25rem_minmax(0,1fr)_2rem]"
+// Toggle, pallet, dimensions, weight, stacking, cartons and the menu. They reach the design's widths from 50rem and
+// give a little up to 44rem.
+const columns =
+  "wide:grid-cols-[1.75rem_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5rem,6rem)_8.25rem_minmax(5rem,1fr)_2rem] wide:gap-x-3 wider:gap-x-5"
 
-// The pallets a shipment's cartons are packed on, a row per pallet opening onto its cartons. From 50rem the rows are a
+// The pallets a shipment's cartons are packed on, a row per pallet opening onto its cartons. From 44rem the rows are a
 // table; narrower, each is a card.
 export function PalletTable({
   pallets,
@@ -42,7 +44,7 @@ export function PalletTable({
       <div className="flex flex-col gap-3 wide:gap-0 wide:overflow-hidden wide:rounded-lg wide:border wide:bg-card">
         <div
           aria-hidden
-          className={cn("hidden gap-x-5 bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
+          className={cn("hidden bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
         >
           <span className="col-start-2">{t("columns.pallet")}</span>
           <span>{t("columns.dimensions")}</span>
@@ -159,7 +161,7 @@ function PalletRow({
     <section
       aria-label={name}
       className={cn(
-        "overflow-hidden rounded-lg border bg-card wide:grid wide:gap-x-5 wide:overflow-visible wide:rounded-none wide:border-0 wide:border-t wide:bg-transparent wide:px-4",
+        "overflow-hidden rounded-lg border bg-card wide:grid wide:overflow-visible wide:rounded-none wide:border-0 wide:border-t wide:bg-transparent wide:px-4",
         columns
       )}
     >
@@ -299,7 +301,7 @@ function PalletRow({
         <div
           id={`${id}-cartons`}
           className={cn(
-            "border-t bg-muted/30 px-3.5 py-3 wide:col-span-full wide:row-start-5 wide:-mx-4 wide:py-3.5 wide:ps-16 wide:pe-4",
+            "border-t bg-muted/30 px-3.5 py-3 wide:col-span-full wide:row-start-5 wide:-mx-4 wide:py-3.5 wide:ps-14 wide:pe-4 wider:ps-16",
             count > 0 && "wide:mt-1.5"
           )}
         >
