@@ -30,7 +30,7 @@ const requirements = [
   "One SKU per AWD US carton",
   "FNSKU label on every unit",
   "Suffocation warning on polybags",
-  "Cartons at most 22.68 kg (50 lb)"
+  "Cartons at most 22.67 kg (50 lb)"
 ]
 
 // The supplier's side: the shipment's packet ready to download, and the checklist to work through.

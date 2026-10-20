@@ -7,8 +7,9 @@ cartons the same way and every message, checklist and requirement states the sam
 ## How it works
 
 - **A rule** is one typed entry, such as `{ type: "maxSize", sides: [36, 25, 25], unit: "in" }`. Limits are kept in
-  the units the receiver states them in and converted exactly where they're shown (36 in is 91.44 cm, 50 lb is
-  22.6796185 kg, shown as 22.68 kg).
+  the units the receiver states them in and converted where they're shown. A converted weight is rounded down to the
+  hundredth, so the limit shown is one a carton can meet, and cartons are checked against it: 50 lb is 22.6796185 kg,
+  shown and checked as 22.67 kg, because 22.68 kg is over 50 lb. Sizes convert exactly (36 in is 91.44 cm).
 - **A policy** is a receiver's name and its list of rules (`cartonPolicies`, one per Amazon network today).
 - **`checkCarton`** runs each of a policy's rules against one carton, with the cartons checked before it under the same
   policy for rules across cartons. Each rule type has one case there, and TypeScript requires a case for every type.
@@ -52,7 +53,7 @@ so cartons may mix SKUs and hold any number of units.
 | Rule                                | Limit                                                                  |
 | ----------------------------------- | ---------------------------------------------------------------------- |
 | Size (`maxSize`, `exceptOneUnit`)   | 36 × 25 × 25 in (91.44 × 63.5 × 63.5 cm), unless one unit is larger    |
-| Weight (`maxWeight`, `exceptOneUnit`) | 50 lb (22.68 kg), unless one unit is heavier                         |
+| Weight (`maxWeight`, `exceptOneUnit`) | 50 lb (22.67 kg), unless one unit is heavier                         |
 | Identifiers (`amazonIds`)           | Every product has its ASIN and FNSKU                                   |
 
 - [Shipping and routing requirements](https://sellercentral.amazon.com/help/hub/reference/external/200141510?locale=en-US):
@@ -73,7 +74,7 @@ AWD only takes case packs: it has no individual-units packing.
 | Units (`maxUnits`)         | 150 sellable units per box                                               |
 | Same packing (`samePacking`) | One packing template per SKU in a shipment: same units, size and weight |
 | Size (`maxSize`)           | 25 in (63.5 cm) on every side, with no single-unit exception             |
-| Weight (`maxWeight`)       | 50 lb (22.68 kg), with no single-unit exception                          |
+| Weight (`maxWeight`)       | 50 lb (22.67 kg), with no single-unit exception                          |
 | Identifiers (`amazonIds`)  | Every product has its ASIN and FNSKU                                     |
 
 - [AWD shipping requirements](https://sellercentral.amazon.com/help/hub/reference/GVEPW8A7PZ3YGPJE?locale=en-US):

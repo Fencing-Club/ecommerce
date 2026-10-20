@@ -127,7 +127,7 @@ Optional.
 (180 to FBA and 60 to the Oakland warehouse). Lines start at FBA, or at AWD for products set to it.
 
 **Notes and instructions** says Amazon's [packing requirements](design-spec.md#packing-requirements) for the PO's
-networks are added automatically, as chips ("FBA", "Mixed SKUs allowed", "Up to 22.68 kg a carton"), with **Preview what
+networks are added automatically, as chips ("FBA", "Mixed SKUs allowed", "Up to 22.67 kg a carton"), with **Preview what
 the supplier sees**. The buyer's own packing instructions are for anything beyond them. Setting a line's network to
 AWD US adds AWD's rules. The PO page's Items tab shows the same card, read-only, as the supplier sees it.
 
