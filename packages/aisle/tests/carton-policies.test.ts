@@ -41,7 +41,7 @@ const codes = (policy: CartonPolicy, checked: PolicyCarton, earlier: PolicyCarto
   checkCarton(policy, checked, earlier).map(({ issue, fields }) => [issue.code, ...(fields ?? [])])
 
 describe("carton policies", () => {
-  it("converts limits exactly from the units Amazon states them in", () => {
+  it("converts limits from the units Amazon states them in, rounding a converted weight down", () => {
     expect(cartonLimits(cartonPolicies.fba)).toEqual({
       size: {
         shape: "box",
@@ -52,7 +52,7 @@ describe("carton policies", () => {
         widthIn: 25,
         heightIn: 25
       },
-      weight: { maxKg: 22.6796185, maxLb: 50 },
+      weight: { maxKg: 22.67, maxLb: 50 },
       maxUnits: null,
       oneSku: false,
       samePacking: false,
@@ -66,7 +66,7 @@ describe("carton policies", () => {
       exceptOneUnit: false
     })
     expect(sizeLimit({ type: "maxSize", sides: [60, 40, 40], unit: "cm" })).toMatchObject({ lengthIn: 23.6220472441 })
-    expect(weightLimit({ type: "maxWeight", weight: 20, unit: "kg" })).toEqual({ maxKg: 20, maxLb: 44.092452437 })
+    expect(weightLimit({ type: "maxWeight", weight: 20, unit: "kg" })).toEqual({ maxKg: 20, maxLb: 44.09 })
   })
 
   it("lets an FBA carton fit its limit in any orientation, and outlines the sides that don't", () => {

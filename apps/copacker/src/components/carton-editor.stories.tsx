@@ -148,7 +148,7 @@ const [awdLimits, awdMixed, awdIvory] = errorCartons(awdBagOrder, 70)
 const limitErrors = [
   "Quantity: 160 sellable units per carton exceeds AWD’s limit of 150. Split them into smaller cartons.",
   "Dimensions: Length is 70 cm. AWD allows up to 63.5 cm (25 in) on each side.",
-  "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+  "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
 ]
 
 // Cartons 1–2 hold too many units and are too long and too heavy: each error shows once for the group, and outlines
@@ -216,7 +216,7 @@ export const AwdLimitsInGerman = meta.story({
     await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       "Menge: 160 verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
       "Abmessungen: Die Länge beträgt 70 cm. Bei AWD darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
-      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,68 kg). Verringern Sie das Gewicht jedes Kartons."
+      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,67 kg). Verringern Sie das Gewicht jedes Kartons."
     ])
     const region = canvas.getByRole("region", { name: "Karton 1" })
     await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
@@ -255,7 +255,7 @@ export const FbaLimits = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       "Dimensions: Length is 100 cm. FBA allows up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) for this carton.",
-      "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+      "Weight: 25 kg exceeds the 50 lb limit (22.67 kg). Reduce the weight of each carton."
     ])
     await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Length (cm)" })).toHaveAttribute(
       "aria-invalid",
