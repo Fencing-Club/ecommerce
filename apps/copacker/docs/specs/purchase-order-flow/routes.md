@@ -175,7 +175,7 @@ Unic, from its US warehouse.
 | Draft and send | You | In Copacker | Proposed | Set the Incoterm. |  |
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing. The supplier can upload its own instead. |  |
 | Amazon inbound | Copacker | Copacker, through Amazon's API | Today | Create the FBA inbound plan: packing option, placement, box contents, your own carrier, a delivery window and box labels. | Every SKU needs a prep category, and each carton's products must fit one packing group. |
@@ -230,7 +230,7 @@ Unic, from its US warehouse.
 | Draft and send | You | In Copacker | Proposed | Set the Incoterm. |  |
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing. The supplier can upload its own instead. |  |
 | Amazon inbound | Copacker | Copacker, through Amazon's API | Today | Create the FBA inbound plan: packing option, placement, box contents, your own carrier, a delivery window and box labels. | Every SKU needs a prep category, and each carton's products must fit one packing group. |
@@ -286,7 +286,7 @@ Unic, from its US warehouse.
 | Draft and send | You | In Copacker | Proposed | Set the Incoterm. |  |
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing, with customs details and your EIN as importer of record. The supplier can upload its own instead. |  |
 | Make and pack | You | In Copacker | Planned | Check the invoice's customs details: HS codes, country of origin, Incoterm and importer of record. |  |
@@ -357,7 +357,7 @@ Unic, from its US warehouse.
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Draft and send | Copacker | In Copacker | Proposed | Email the forwarder that a shipment is coming. |  |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing, with customs details and your EIN as importer of record. The supplier can upload its own instead. |  |
 | Make and pack | You | In Copacker | Planned | Check the invoice's customs details: HS codes, country of origin, Incoterm and importer of record. |  |
@@ -669,7 +669,7 @@ Amazon Global Logistics, not Amazon's warehouses in China (GWD).
 | Draft and send | You | In Copacker | Proposed | Set the Incoterm. |  |
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. AWD cartons hold one SKU, at most 150 units, packed the same way. One network per carton. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. AWD cartons hold one SKU, at most 150 units, packed the same way. One network per carton. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing. The supplier can upload its own instead. |  |
 | Make and pack | Copacker | In Copacker | Today | Split the shipment by network: one for FBA and one for AWD US. |  |
@@ -730,7 +730,7 @@ Amazon Global Logistics, not Amazon's warehouses in China (GWD).
 | Draft and send | You | In Copacker | Proposed | Set the Incoterm. |  |
 | Draft and send | You | In Copacker | Today | Send, then email the purchase order PDF to the supplier yourself. Copacker opens the first shipment. | Amazon must be connected and list every SKU. |
 | Make and pack | Supplier | Outside Copacker | Today | Make the goods and set the ready date. |  |
-| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless they hold one unit. AWD cartons hold one SKU, at most 150 units, packed the same way. One destination per carton. |
+| Make and pack | You | In Copacker | Today | Enter the cartons with contents, size in cm and weight in kg, the pickup address and phone, and the ready date. | Whole packs only, never more than ordered, with a current invoice. FBA cartons are at most 91.44 × 63.5 × 63.5 cm and 22.67 kg unless one unit is larger. AWD cartons hold one SKU, at most 150 units, packed the same way. One destination per carton. |
 | Make and pack | You | In Copacker | Today | Upload the commercial invoice, or keep the one Copacker generated. | Required to submit packing, and again to ship. |
 | Make and pack | Copacker | In Copacker | Planned | Generate the commercial invoice from the purchase order and packing. The supplier can upload its own instead. |  |
 | Make and pack | Copacker | In Copacker | Planned | Split the shipment by destination: one each for FBA, AWD US and your warehouse, each on its own route. |  |
