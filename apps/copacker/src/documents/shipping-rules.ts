@@ -33,7 +33,7 @@ function policyChecks(policy: CartonPolicy) {
           {
             title: "weightLimit",
             detail: rule.exceptOneUnit ? "oneUnitWeightText" : "weightLimitText",
-            values: { kg: Math.round(maxKg * 100) / 100, lb: maxLb }
+            values: { kg: maxKg, lb: maxLb }
           }
         ]
       }

@@ -161,7 +161,7 @@ export const CheckFindsIssues = meta.story({
       packingActions({
         canSubmit: false,
         requiresApproval: false,
-        issues: [{ message: "Weighs more than 22.68 kg", cartonId: "C2" }, { message: "Pack Linen apron too" }]
+        issues: [{ message: "Weighs more than 22.67 kg", cartonId: "C2" }, { message: "Pack Linen apron too" }]
       })
     )
   },
@@ -176,7 +176,7 @@ export const CheckFindsIssues = meta.story({
     await expect(canvas.queryByRole("textbox", { name: /Price per unit/ })).toBeNull()
 
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
-    await expect(await canvas.findByText(/Carton C2: Weighs more than 22.68 kg/)).toBeVisible()
+    await expect(await canvas.findByText(/Carton C2: Weighs more than 22.67 kg/)).toBeVisible()
     await expect(canvas.getByText(/Pack Linen apron too/)).toBeVisible()
     await expect(actions).toHaveBeenCalledWith({ action: "shipment.check", data: { id: shipment.id } })
   }

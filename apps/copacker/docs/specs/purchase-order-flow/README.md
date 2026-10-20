@@ -82,7 +82,7 @@ to AWD) and packing splits the shipment by network. Planned:
 | Rule                   | FBA                                                        | AWD US                                   | Your warehouse                            |
 | ---------------------- | ---------------------------------------------------------- | ---------------------------------------- | ----------------------------------------- |
 | Products per carton    | Mixed, if they fit one Amazon packing group                | One SKU per carton                       | Mixed                                     |
-| Carton size and weight | At most 63.5 cm a side and 22.68 kg, unless one unit       | At most 63.5 cm a side and 22.68 kg      | No limit                                  |
+| Carton size and weight | At most 63.5 cm a side and 22.67 kg, unless one unit       | At most 63.5 cm a side and 22.67 kg      | No limit                                  |
 | Units per carton       | No limit                                                   | At most 150                              | No limit                                  |
 | Cartons of one SKU     | Can differ                                                 | Must match in contents, size and weight  | Can differ                                |
 | Unit labels            | FNSKU on every unit                                        | FNSKU on every unit                      | Only for products set to get SKU labels   |
