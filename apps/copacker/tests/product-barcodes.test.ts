@@ -590,4 +590,22 @@ describe("shipment labels", () => {
     expect((await download(shipment!.id, `?item=${cord}`)).status).toBe(404)
     expect((await download(shipment!.id, `?item=${cord}&kind=wrong`)).status).toBe(404)
   })
+
+  it("says why a line's label can't be made yet when it has nothing else to print", async () => {
+    const cord = randomUUID()
+    const po = await order([item(cord, variantA)], "amazon")
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, po.id))
+    const [shipment] = await database
+      .insert(tables.shipments)
+      .values({ orderId: po.id, orderRevision: 1, status: "packing", amazonNetwork: "fba" })
+      .returning()
+    context.actor = packer()
+
+    // The cord needs no warning sheet, so its missing FNSKU label leaves nothing to print, with or without a kind.
+    for (const query of [`?item=${cord}`, `?item=${cord}&kind=fnsku`]) {
+      const response = await download(shipment!.id, query)
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ error: "Its FNSKU is looked up when the purchase order is sent" })
+    }
+  })
 })

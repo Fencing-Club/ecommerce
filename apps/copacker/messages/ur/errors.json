@@ -223,6 +223,8 @@
   "packetIncomplete": "شپمنٹ پیکٹ نامکمل ہے۔ خریدار سے اس کی دستاویزات کا جائزہ لینے کو کہیں۔",
   "packetNotReleased": "شپمنٹ پیکٹ ابھی جاری نہیں ہوا",
   "packingDraftChanged": "خریداری آرڈر یا پیکنگ ڈرافٹ بدل گیا ہے۔ محفوظ کرنے سے پہلے ریفریش کریں۔",
+  "packingListIncomplete": "اس شپمنٹ کے کارٹنز سے پیکنگ لسٹ نہیں بن سکی",
+  "packingListUnavailable": "پیکنگ مکمل ہونے کے بعد پیکنگ لسٹ دستیاب ہوگی",
   "passwordTooShort": "کم از کم {count, plural, one {# حرف} other {# حروف}} استعمال کریں۔",
   "passwordWeak": "زیادہ مضبوط پاس ورڈ منتخب کریں۔",
   "passwordWeakBecause": "{warning} زیادہ مضبوط پاس ورڈ منتخب کریں۔",

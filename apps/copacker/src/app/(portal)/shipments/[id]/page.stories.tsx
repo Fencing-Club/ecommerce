@@ -1,8 +1,13 @@
 import { type Address, type OrderInput } from "@repo/aisle"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { http, HttpResponse } from "msw"
+import { PDFDocument } from "pdf-lib"
+import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
+import invariant from "tiny-invariant"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
+import { shippingSettingsKey } from "@/documents/shipping-model"
+import { packingListSnapshot } from "@/documents/shipping-snapshot"
 import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
@@ -387,7 +392,8 @@ export const DraftPacking = meta.story({
       "aria-disabled",
       "true"
     )
-    await expect(teaTowelMenu.getByText("Label not provided")).toBeVisible()
+    // The menu fades in, so its text is visible only once the animation ends.
+    await waitFor(() => expect(teaTowelMenu.getByText("Label not provided")).toBeVisible())
     await userEvent.keyboard("{Escape}")
   }
 })
@@ -461,6 +467,35 @@ export const Packed = meta.story({
       "Packing is complete. The buyer can now prepare the Amazon shipment and retrieve its labels."
     )
   },
+  beforeEach: ({ msw }) => {
+    // The packing list as the server sends it for these cartons; the browser renders and saves the PDF.
+    msw.use(
+      http.get(`/api/shipments/${shipmentId}/packing-list`, () =>
+        HttpResponse.json({
+          data: packingListSnapshot({
+            order: towelOrder,
+            packing: towelPacking(),
+            transport: {
+              service: "agl",
+              handoff: "forwarder",
+              collection: "pickup",
+              carrierLabels: "none",
+              instructions: ""
+            },
+            company: "Harbor Goods",
+            supplier: "Northwind Textiles",
+            destination: "Amazon AWD US",
+            revision: 3,
+            shipmentId: "Shipment 1",
+            generatedDate: "2026-10-20"
+          })
+        })
+      )
+    )
+    localStorage.removeItem(shippingSettingsKey)
+    const click = spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined)
+    return () => click.mockRestore()
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Shipment 1" })).toBeVisible()
     await expect(within(canvas.getByRole("navigation", { name: "Breadcrumb" })).getByText("Shipment 1")).toBeVisible()
@@ -476,11 +511,27 @@ export const Packed = meta.story({
     await expect(canvas.getByRole("button", { name: /^Products \(3\)/ })).toBeVisible()
     const summary = canvas.getByRole("region", { name: "Shipment details" })
     await expect(within(summary).getByText("230.8 kg")).toBeVisible()
-    await expect(
-      within(canvas.getByRole("region", { name: "Documents" })).getByRole("button", { name: "Product labels" })
-    ).toBeVisible()
     await expect(canvas.queryByText(/Packing is complete/)).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
+
+    // The documents: the product labels menu, then the packing list, which prints before Amazon's labels exist.
+    const documents = canvas.getByRole("region", { name: "Documents" })
+    const productLabels = within(documents).getByRole("button", { name: "Product labels" })
+    const packingList = within(documents).getByRole("button", { name: "Download packing list" })
+    await expect(productLabels).toBeVisible()
+    await expect(packingList).toHaveTextContent("Packing list")
+    // Below the menu, eight pixels apart, as on the board.
+    await expect(packingList.getBoundingClientRect().top - productLabels.getBoundingClientRect().bottom).toBe(8)
+    await userEvent.click(packingList)
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce(), { timeout: 20000 })
+    const [link] = mocked(HTMLAnchorElement.prototype.click).mock.contexts
+    invariant(link instanceof HTMLAnchorElement)
+    await expect(link.download).toBe("Packing-list-PO38-Shipment 1-r3-en-A4-ltr.pdf")
+    const pdf = await PDFDocument.load(await (await fetch(link.href)).arrayBuffer())
+    await expect(pdf.getPageCount()).toBe(1)
+    const { width, height } = pdf.getPage(0).getSize()
+    await expect([Math.round(width), Math.round(height)]).toEqual([595, 842])
+    await expect(packingList).toBeEnabled()
 
     // Edit packing reopens it.
     await userEvent.click(canvas.getByRole("button", { name: "Edit packing" }))
@@ -520,6 +571,26 @@ export const FbaMixedCartons = meta.story({
     await expect(within(summary).getByText("3")).toBeVisible()
     await expect(within(summary).getByText("37.2 kg")).toBeVisible()
     await expect(within(summary).getByText("0.29 m³")).toBeVisible()
+  }
+})
+
+// The buyer's view of the packed shipment lists the packing list too. When packing was reopened since the page loaded,
+// the failure says why there's no packing list.
+export const PackedPackingListRefused = meta.story({
+  ...buyer,
+  args: { ...Packed.input.args, kind: "buyer" },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      http.get(`/api/shipments/${shipmentId}/packing-list`, () =>
+        HttpResponse.json({ error: "The packing list is available once packing is finished" }, { status: 409 })
+      )
+    )
+  },
+  play: async ({ canvas }) => {
+    const documents = canvas.getByRole("region", { name: "Documents" })
+    await userEvent.click(within(documents).getByRole("button", { name: "Download packing list" }))
+    await expect(await screen.findByText("Couldn’t download the packing list")).toBeVisible()
+    await expect(screen.getByText("The packing list is available once packing is finished")).toBeVisible()
   }
 })
 
@@ -572,6 +643,12 @@ export const PackingForSupplier = meta.story({
     )
     await expect(canvas.getByRole("button", { name: "Add carton" })).toBeVisible()
     await expect(canvas.queryByRole("textbox", { name: /Supplier SKU/ })).toBeNull()
+    // The buyer's Transport card follows the page header, outside the packing form, so saving the packing leaves it
+    // usable.
+    const heading = canvas.getByRole("heading", { level: 1 })
+    const transport = canvas.getByText("Transport", { selector: "[data-slot=card-title]" })
+    await expect(transport.getBoundingClientRect().top).toBeGreaterThan(heading.getBoundingClientRect().bottom)
+    await expect(transport.closest("fieldset")).toBeNull()
   }
 })
 

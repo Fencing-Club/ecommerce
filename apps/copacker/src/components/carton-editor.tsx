@@ -258,39 +258,38 @@ export function CartonEditor({
     const index = value.items.findIndex(
       (content) => products.find((item) => item.id === content.itemId)?.buyerSku === sku
     )
-    const content = value.items[index]
-    const item = products.find((product) => product.id === content?.itemId)
-    if (issue.code === "awdUnits" && content && item) {
-      return {
-        field: `items.${index}`,
-        message: t("rules.awdUnits", { units: content.pieces / item.piecesPerSet })
-      }
+    const field = index >= 0 ? `items.${index}` : undefined
+    if (issue.code === "unitsPerCarton") {
+      return { field, message: t("rules.unitsPerCarton", issue.values) }
     }
     if (issue.code === "cartonSize") {
       const side = issue.fields?.find((field): field is "length" | "width" | "height" => field !== "weight") ?? "length"
       return {
         fields: issue.fields,
-        message: t("rules.cartonSize", { side, size: value[side], network: issue.values.network })
+        message: t("rules.cartonSize", { ...issue.values, side, size: value[side] })
       }
     }
     if (issue.code === "cartonWeight") {
-      return { field: "weight", message: t("rules.cartonWeight", { weight: value.weight }) }
+      return { field: "weight", message: t("rules.cartonWeight", { ...issue.values, weight: value.weight }) }
     }
-    if (issue.code === "awdOneSku") {
-      return { message: t("rules.awdOneSku") }
+    if (issue.code === "oneSku") {
+      return { message: t("rules.oneSku", issue.values) }
     }
     // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
-    if (issue.code === "awdConfiguration" && content && item) {
-      const units = content.pieces / item.piecesPerSet
+    if (issue.code === "samePacking") {
+      const content = value.items[index]
+      const item = products.find((product) => product.id === content?.itemId)
+      const units = content && item ? content.pieces / item.piecesPerSet : undefined
       return {
-        message: t("rules.awdConfiguration", {
+        message: t("rules.samePacking", {
           ...issue.values,
           difference: units === issue.values.units ? "size" : "units"
         })
       }
     }
+    // Of the rest, only incomplete multi-packs are about a quantity; a missing ASIN or FNSKU outlines nothing.
     return {
-      field: index >= 0 ? `items.${index}` : undefined,
+      field: issue.code === "incompletePacks" ? field : undefined,
       message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
     }
   }

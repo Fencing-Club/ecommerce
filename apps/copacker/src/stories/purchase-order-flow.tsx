@@ -964,28 +964,39 @@ export function PurchaseOrderFlow({
     try {
       const { combinePdfs } = await import("@repo/aisle/documents")
       const { renderSupplierPacket } = await import("@/documents/supplier-packet")
-      const items = shipments
-        .filter((shipment) => !shipmentId || shipment.id === shipmentId)
-        .flatMap((shipment) => shipment.items)
-      const files = await Promise.all(
-        productDownloads(items)
-          .filter((label) => !label.unavailable)
-          .map((label) =>
-            productLabelPdf(
-              label.id,
-              items.filter((item) => labelsForItem(item).some((kind) => kind === label.id))
+      const productLabels = (items: Item[]) =>
+        Promise.all(
+          productDownloads(items)
+            .filter((label) => !label.unavailable)
+            .map((label) =>
+              productLabelPdf(
+                label.id,
+                items.filter((item) => labelsForItem(item).some((kind) => kind === label.id))
+              )
             )
+        )
+      // A released packet carries its own shipment's product labels; otherwise they lead the pack.
+      const files = labelsReady
+        ? []
+        : await productLabels(
+            shipments
+              .filter((shipment) => !shipmentId || shipment.id === shipmentId)
+              .flatMap((shipment) => shipment.items)
           )
-      )
       for (const record of Object.values(packingRecords).filter(
         (record) => !shipmentId || record.shipment.id === shipmentId
       )) {
         if (labelsReady) {
-          const labels = [await sampleLabels("Carton labels", record.shipment.items)]
-          if (record.shipment.transport !== "Amazon pickup") {
-            labels.push(await sampleLabels("Carrier labels", record.shipment.items))
-          }
-          files.push(await renderSupplierPacket(releasedDocument(record), documentSettingsForLocale(locale), labels))
+          files.push(
+            await renderSupplierPacket(releasedDocument(record), documentSettingsForLocale(locale), {
+              product: await productLabels(record.shipment.items),
+              carton: [await sampleLabels("Carton labels", record.shipment.items)],
+              carrier:
+                record.shipment.transport === "Amazon pickup"
+                  ? []
+                  : [await sampleLabels("Carrier labels", record.shipment.items)]
+            })
+          )
         } else {
           const { ShippingPdf, renderShippingDocument } = await import("@/documents/shipping-pdf")
           const blob = await renderShippingDocument(

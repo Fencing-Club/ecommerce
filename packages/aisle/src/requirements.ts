@@ -1,3 +1,4 @@
+import { cartonLimits, cartonPolicies } from "./carton-policies"
 import {
   type AmazonNetwork,
   amazonNetworkNames,
@@ -42,10 +43,23 @@ const prepInstructions: Record<PrepCategory, string> = {
   LABELING: "Label each unit"
 }
 
-const cartonRules: Record<AmazonNetwork, string> = {
-  fba: "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
-  awd_us:
-    "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb)."
+// A network's carton rules in English, from its policy, such as "FBA cartons: mixed SKUs are allowed; at most …".
+function cartonRules(network: AmazonNetwork) {
+  const limits = cartonLimits(cartonPolicies[network])
+  const contents = [
+    limits.oneSku ? "one SKU per carton" : "mixed SKUs are allowed",
+    ...(limits.maxUnits ? [`at most ${limits.maxUnits} units`] : []),
+    ...(limits.samePacking ? ["every carton of a SKU packed the same way"] : [])
+  ]
+  const { size, weight } = limits
+  const sizeText =
+    size &&
+    (size.shape === "cube"
+      ? `${size.lengthCm} cm (${size.lengthIn} in) on each side`
+      : `${size.lengthCm} × ${size.widthCm} × ${size.heightCm} cm (${size.lengthIn} × ${size.widthIn} × ${size.heightIn} in)`)
+  const weightText = weight && `${Math.round(weight.maxKg * 100) / 100} kg (${weight.maxLb} lb)`
+  const measures = [sizeText, weightText].filter(Boolean).join(" and ")
+  return `${amazonNetworkNames[network]} cartons: ${contents.join(", ")}${measures ? `; at most ${measures}` : ""}${limits.exceptOneUnit ? ", unless one unit is larger" : ""}.`
 }
 
 const networkList = (networks: AmazonNetwork[]) => networks.map((network) => amazonNetworkNames[network]).join(" and ")
@@ -68,7 +82,7 @@ export function requirementText(requirement: Requirement): string {
     case "prep":
       return prepInstructions[requirement.prep]
     case "cartons":
-      return cartonRules[requirement.network]
+      return cartonRules(requirement.network)
     case "separateCartons":
       return `Pack ${networkList(requirement.networks)} products in separate cartons.`
     case "unitLabels":

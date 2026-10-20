@@ -91,9 +91,9 @@ export const ToWarehouse = meta.story({
     // Carton labels show once the buyer releases the shipment.
     const documents = within(canvas.getByText("Documents").closest("[data-slot=card]")!)
     await expect(documents.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
-      "Download Commercial invoice",
-      "Download Packing list",
-      "Download Carton label C1"
+      "Download Commercial invoice Commercial invoice PO-1042.pdf",
+      "Download Packing list Packing list.pdf",
+      "Download Carton label C1 Carton labels.pdf"
     ])
   }
 })

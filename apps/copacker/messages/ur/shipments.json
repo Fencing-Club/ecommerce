@@ -115,7 +115,10 @@
     },
     "documents": {
       "title": "دستاویزات",
-      "empty": "ابھی کوئی دستاویز نہیں"
+      "empty": "ابھی کوئی دستاویز نہیں",
+      "packingList": "پیکنگ لسٹ",
+      "downloadPackingList": "پیکنگ لسٹ ڈاؤن لوڈ کریں",
+      "packingListFailed": "پیکنگ لسٹ ڈاؤن لوڈ نہیں ہو سکی"
     },
     "summary": {
       "title": "شپمنٹ کی تفصیلات",
@@ -197,8 +200,8 @@
       "hanger": "ہر کپڑے کو ہینگر پر لٹکائیں۔",
       "label": "ہر یونٹ پر لیبل لگائیں۔"
     },
-    "fbaCartons": "FBA کارٹن: مختلف SKU ایک ساتھ رکھ سکتے ہیں؛ ہر طرف زیادہ سے زیادہ 63.5 cm (25 in) اور 22.68 kg (50 lb)، الا یہ کہ ایک یونٹ اس سے بڑا ہو۔",
-    "awdUsCartons": "AWD US کارٹن: ہر کارٹن میں ایک SKU، زیادہ سے زیادہ 150 یونٹس، ایک SKU کے تمام کارٹن ایک ہی طرح پیک؛ ہر طرف زیادہ سے زیادہ 63.5 cm (25 in) اور 22.68 kg (50 lb)۔",
+    "fbaCartons": "FBA کارٹن: مختلف SKU ایک ساتھ رکھ سکتے ہیں؛ {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} اور {maxKg, number} kg ({maxLb, number} lb)، الا یہ کہ ایک یونٹ اس سے بڑا ہو۔",
+    "awdUsCartons": "AWD US کارٹن: ہر کارٹن میں ایک SKU، زیادہ سے زیادہ {units, number} یونٹس، ایک SKU کے تمام کارٹن ایک ہی طرح پیک؛ {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} اور {maxKg, number} kg ({maxLb, number} lb)۔",
     "separateCartons": "{networks} پروڈکٹس الگ الگ کارٹن میں پیک کریں۔",
     "unitLabels": "ہر یونٹ پر اس کا FNSKU بارکوڈ لگائیں، کسی بھی دوسرے بارکوڈ کو ڈھانپتے ہوئے۔",
     "suffocationWarnings": "جن پولی بیگز کا منہ 5 in (12.7 cm) یا اس سے چوڑا ہو، ان پر دم گھٹنے کی وارننگ ضروری ہے۔",

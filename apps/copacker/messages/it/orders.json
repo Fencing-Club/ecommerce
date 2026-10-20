@@ -200,7 +200,7 @@
     "shipmentTo": "Spedizione a {destination}",
     "shipmentCounts": "{count, plural, one {# variante} other {# varianti}}, {pieces, number} pezzi",
     "selectProduct": "Seleziona {name}",
-    "packCount": "{count, number} confezioni da {size}",
+    "packCount": "{count, number} confezioni, {size} ciascuna",
     "supplierCharges": "Costi del fornitore",
     "addSupplierCharge": "Aggiungi spesa",
     "removeSupplierCharge": "Rimuovi spesa",
@@ -514,11 +514,11 @@
     "cartonGroup": "Cartoni {cartons}",
     "addProductsToCartons": "Aggiungi prodotti ai cartoni {cartons}",
     "rules": {
-      "awdUnits": "Quantità: {units, number} unità vendibili per cartone superano il limite AWD di 150. Suddividile in cartoni più piccoli.",
-      "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {network} consente al massimo 63,5 cm (25 in) per lato.",
-      "cartonWeight": "Peso: {weight, number} kg superano il limite di 50 lb (22,68 kg). Riduci il peso di ogni cartone.",
-      "awdOneSku": "Prodotti: AWD richiede un solo SKU per cartone. Sposta questi SKU in cartoni separati.",
-      "awdConfiguration": "Modello di imballaggio: questo SKU usa {difference, select, units {{units, number} unità per cartone} other {cartoni da {length, number} × {width, number} × {height, number} cm e {weight, number} kg}} altrove in questa spedizione. Usa lo stesso modello di imballaggio per ogni cartone di questo SKU."
+      "unitsPerCarton": "Quantità: {units, number} unità vendibili per cartone superano il limite {receiver} di {max, number}. Suddividile in cartoni più piccoli.",
+      "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {receiver} consente al massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) per questo cartone}}.",
+      "cartonWeight": "Peso: {weight, number} kg superano il limite di {maxLb, number} lb ({maxKg, number} kg). Riduci il peso di ogni cartone.",
+      "oneSku": "Prodotti: {receiver} richiede un solo SKU per cartone. Sposta questi SKU in cartoni separati.",
+      "samePacking": "Modello di imballaggio: questo SKU usa {difference, select, units {{units, number} unità per cartone} other {cartoni da {length, number} × {width, number} × {height, number} cm e {weight, number} kg}} altrove in questa spedizione. Usa lo stesso modello di imballaggio per ogni cartone di questo SKU."
     }
   },
   "cartonImport": {

@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { ShippingDocumentData } from "@/documents/shipping-model"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
 import type { LineDefaults } from "./order-lines"
@@ -65,13 +66,19 @@ export const api = createApi({
       query: (q) => ({ url: "sales/orders", params: { q } })
     }),
     // Whether Copacker is down for maintenance, which the maintenance page asks until it can reload.
-    maintenance: build.query<{ active: boolean }, void>({ query: () => "maintenance" })
+    maintenance: build.query<{ active: boolean }, void>({ query: () => "maintenance" }),
+    // A packed shipment's packing list, which the browser renders into its PDF. Each download asks again.
+    packingList: build.query<{ data: ShippingDocumentData }, string>({
+      query: (id) => `shipments/${id}/packing-list`,
+      keepUnusedDataFor: 0
+    })
   })
 })
 
 export const {
   useActionMutation,
   useLazyCatalogQuery,
+  useLazyPackingListQuery,
   useMaintenanceQuery,
   useSalesSearchQuery,
   useSearchQuery,

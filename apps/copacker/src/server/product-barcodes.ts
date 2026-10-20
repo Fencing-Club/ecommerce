@@ -666,6 +666,10 @@ export async function shipmentLabelsPdf(
     files.push({ itemId: "", ...warnings })
   }
   if (!files.length) {
+    // One line with nothing to print says why its label can't be made yet, rather than that it needs none.
+    if (itemId && missing?.state === "missing") {
+      throw new ProductBarcodeError(missing.problemKey, 404)
+    }
     throw new ProductBarcodeError(itemId ? "productNeedsNoLabel" : "shipmentHasNoLabels", 404)
   }
   return {

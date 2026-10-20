@@ -47,7 +47,9 @@ runs again, reading the plan to find where it is:
 
 Mixed-SKU cartons are allowed. The packing editor shows every product and quantity in each carton, with Add product
 to carton and individual removal. Saving, reopening, duplicating and counting cartons preserve all their contents.
-AWD cartons keep one product. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
+AWD cartons keep one product. Each network's carton limits, with Amazon's sources, are in
+[carton rules](../../../packages/aisle/docs/carton-rules.md); FBA cartons are always individual units
+([case packs](amazon-case-packs.md)).
 
 ## Origin
 

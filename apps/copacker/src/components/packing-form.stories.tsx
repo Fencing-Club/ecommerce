@@ -483,7 +483,11 @@ export const AwdConfigurationMismatch = meta.story({
     }
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/give every carton the same contents/)).toBeVisible()
+    await expect(
+      canvas.getByText(
+        "Packing template: This SKU uses 40 units per carton elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+      )
+    ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
   }
 })

@@ -212,6 +212,11 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   it, including members who can't open purchase orders. `item` narrows them to one line; `kind` is one label type its
   packing details ask for, `sku`, `fnsku` or `suffocation` (the warning sheet), or `all` (the default). Choking hazard
   labels come from the buyer and aren't made here. 404 when there's nothing to print or the label can't be made yet.
+- `GET /api/shipments/:id/packing-list`: Shipments, with the same access as its labels. Once packing is finished
+  (`packed` and every later state, but not a correction or a cancellation), `{ data }`: the packing list's document
+  data, which the browser renders into the PDF. It lists the cartons and products, without prices, label assignments or
+  the destination's address, so it needs neither Amazon's labels nor the released packet. 409 with `{ error }` before
+  packing is finished or when the cartons can't make a packing list.
 - `POST /api/orders/:id/proposal` `{revision, proposal}`: supplier, Orders: Edit. Proposes changes to a sent PO:
   quantities, prices, added and removed products, payment terms and ready date. One can be pending at a time; packing
   waits while it is.
@@ -297,11 +302,13 @@ show one download per label type and shipment. Individual source files remain st
 Sending a PO stores its PDF with the PO; a storage failure is logged as `po_document_failed` and doesn't undo sending,
 since the PDF is made again when it's emailed or downloaded.
 
-`GET /api/shipments/:id/packet` returns the released supplier packet as one PDF: packing list, checklist, the product
-labels and suffocation warning sheet for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels
-and the buyer's shipping labels. Original page dimensions are preserved; print at actual size. The packing list shows
-supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg and the Amazon label number (an AWD SSCC
-or an FBA box ID), with the destination warehouse codes as its ship-to.
+`GET /api/shipments/:id/packet` serves the released supplier packet's label sections, and the browser assembles the
+packet in this order: the packing list, the checklist, then, for a shipment with carton labels, the carton label
+reference, Amazon's carton labels and the buyer's shipping labels, then the product labels and suffocation warning sheet
+for the lines it carries. Original page dimensions are preserved; print at actual size. The packing list shows
+supplier carton number, buyer SKU, supplier SKU, pieces/sellable units and cm/kg, with the destination warehouse codes as
+its ship-to. The carton label reference lists each carton's Amazon label number (an AWD SSCC or an FBA box ID) and
+carrier label.
 
 A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
 and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the

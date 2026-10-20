@@ -223,6 +223,8 @@
   "packetIncomplete": "El paquete de documentos del envío está incompleto. Pide al comprador que revise sus documentos.",
   "packetNotReleased": "El paquete de documentos del envío aún no se ha liberado",
   "packingDraftChanged": "La orden de compra o el borrador de empaque cambió. Actualiza antes de guardar.",
+  "packingListIncomplete": "No se pudo generar la lista de empaque con las cajas de este envío",
+  "packingListUnavailable": "La lista de empaque estará disponible cuando termine el empaque",
   "passwordTooShort": "Usa al menos {count, plural, one {# carácter} other {# caracteres}}.",
   "passwordWeak": "Elige una contraseña más segura.",
   "passwordWeakBecause": "{warning} Elige una contraseña más segura.",
