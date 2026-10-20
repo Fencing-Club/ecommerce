@@ -4,9 +4,10 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type CartonGroup, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
 import {
-  awdBagCartons,
   awdBagOrder,
   bagOrder,
+  errorCartons,
+  fbaBagOrder,
   towelOrder,
   towelPacking,
   towelPackingDraft
@@ -161,14 +162,15 @@ export const ClosedWithIssues = meta.story({
   }
 })
 
-// Board 06.17 (Carton editor errors), AWD US: the rules a carton breaks, as validatePacking reports them.
-const [awdLimits, awdMixed, awdIvory] = awdBagCartons()
-const awd = (carton: CartonGroup) => ({
+// Board 06.17 (Carton editor errors): the rules a carton breaks, as validatePacking reports them.
+const checked = (order: typeof awdBagOrder) => (carton: CartonGroup) => ({
   cartons: [carton],
-  products: awdBagOrder.items,
+  products: order.items,
   context: "PO39 / Shipment 1",
-  issues: issuesOf([carton], awdBagOrder)
+  issues: issuesOf([carton], order)
 })
+const awd = checked(awdBagOrder)
+const [awdLimits, awdMixed, awdIvory] = errorCartons(awdBagOrder, 70)
 const rowErrors = [
   "Dimensions: Length is 70 cm. AWD allows up to 63.5 cm (25 in) on each side.",
   "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
@@ -285,6 +287,47 @@ export const AwdPackingTemplate = meta.story({
     await expect(canvas.getByRole("spinbutton", { name: "CT-3101: quantity per carton C2" })).not.toHaveAttribute(
       "aria-invalid"
     )
+  }
+})
+
+// FBA cartons are individual units: they may mix SKUs and hold any number of units, and be up to 36 × 25 × 25 in.
+const fba = checked(fbaBagOrder)
+const [fbaLimits, fbaMixed] = errorCartons(fbaBagOrder, 100)
+
+// Cartons A1–A2 are too long and too heavy for FBA, but may hold 160 units.
+export const FbaLimits = meta.story({
+  name: "FBA limits",
+  args: fba(fbaLimits!),
+  play: async ({ canvas }) => {
+    for (const error of [
+      "Dimensions: Length is 100 cm. FBA allows up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in) for this carton.",
+      "Weight: 25 kg exceeds the 50 lb limit (22.68 kg). Reduce the weight of each carton."
+    ]) {
+      await expect(canvas.getByText(error)).toBeVisible()
+    }
+    await expect(canvas.queryByText(/sellable units per carton/)).toBeNull()
+    await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Length (cm)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+    await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Width (cm)" })).not.toHaveAttribute("aria-invalid")
+    await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Weight (kg)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+    await expect(canvas.getByRole("spinbutton", { name: "DB-2031: quantity per carton A1" })).not.toHaveAttribute(
+      "aria-invalid"
+    )
+  }
+})
+
+// Carton B1 mixes two SKUs, which FBA allows.
+export const FbaMixedSkus = meta.story({
+  name: "FBA mixed SKUs",
+  args: fba(fbaMixed!),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "B1" })).toBeVisible()
+    await expect(canvas.queryByText(/issue/)).toBeNull()
   }
 })
 

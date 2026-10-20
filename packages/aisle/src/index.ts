@@ -1,4 +1,12 @@
 import { z } from "zod"
+import {
+  type CartonField,
+  type CartonPolicy,
+  type CartonRuleIssue,
+  cartonPolicies,
+  checkCarton,
+  type PolicyCarton
+} from "./carton-policies"
 import { packingRequirementsSchema } from "./packing-requirements"
 
 // Amazon inbound preparation categories.
@@ -21,29 +29,6 @@ export const destinationSchema = z.enum(["amazon", "warehouse"])
 export const amazonNetworks = ["fba", "awd_us"] as const
 export type AmazonNetwork = (typeof amazonNetworks)[number]
 export const amazonNetworkNames: Record<AmazonNetwork, string> = { fba: "FBA", awd_us: "AWD US" }
-// Receiving policy is independent of transport and label ownership. UI validation and documents share these limits.
-export const amazonCartonPolicies = {
-  fba: {
-    maxSideCm: 63.5,
-    maxSideIn: 25,
-    maxWeightKg: 22.6796185,
-    maxWeightLb: 50,
-    maxUnits: null,
-    singleSku: false,
-    identicalCartons: false,
-    singleUnitException: true
-  },
-  awd_us: {
-    maxSideCm: 63.5,
-    maxSideIn: 25,
-    maxWeightKg: 22.6796185,
-    maxWeightLb: 50,
-    maxUnits: 150,
-    singleSku: true,
-    identicalCartons: true,
-    singleUnitException: false
-  }
-} as const
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),
@@ -352,27 +337,19 @@ export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
 export type Pallet = z.infer<typeof palletInputSchema>
 // A packing rule a carton or the whole packing breaks, as a code and the values it names, so the app can say it in each
-// reader's language.
+// reader's language. The rules of where a carton goes come from its policy (see carton-policies.ts); the rest hold
+// everywhere.
 export type PackingRule =
-  | {
-      code: "duplicateCarton" | "mixedNetworks" | "awdOneSku" | "repeatedProduct" | "unknownProduct" | "unknownChange"
-    }
-  | { code: "cartonSize" | "cartonWeight"; values: { network: "FBA" | "AWD" } }
+  | { code: "duplicateCarton" | "mixedNetworks" | "repeatedProduct" | "unknownProduct" | "unknownChange" }
   | { code: "incompletePacks"; values: { sku: string; pack: number } }
-  | { code: "awdUnits" | "missingAmazonIds" | "overQuantity"; values: { sku: string } }
-  // The SKU's first carton, which every other carton of it must match.
-  | { code: "awdConfiguration"; values: { sku: string } & AwdTemplate }
+  | { code: "overQuantity"; values: { sku: string } }
+  | CartonRuleIssue
   // Cartons packed on pallets: each on exactly one pallet of this shipment.
   | { code: "noPallets" }
   | { code: "emptyPallet" | "duplicatePallet"; values: { pallet: string } }
   | { code: "unknownPalletCarton" | "palletCartonTwice"; values: { pallet: string; carton: string } }
   | { code: "cartonsOffPallets"; values: { count: number; cartons: string } }
-type AwdTemplate = { units: number; length: number; width: number; height: number; weight: number }
-export type ValidationIssue = {
-  cartonId?: string
-  palletId?: string
-  fields?: ("length" | "width" | "height" | "weight")[]
-} & PackingRule
+export type ValidationIssue = { cartonId?: string; palletId?: string; fields?: CartonField[] } & PackingRule
 export const palletRules = new Set<PackingRule["code"]>([
   "noPallets",
   "emptyPallet",
@@ -459,11 +436,9 @@ export function validatePacking(
 ) {
   const issues: ValidationIssue[] = []
   const totals: Record<string, number> = {}
-  const templates = new Map<string, AwdTemplate>()
   const cartonIds = new Set<string>()
-  // Amazon's carton and labeling rules apply only to Amazon shipments, by each carton's network; the buyer's own
-  // locations accept any cartons.
-  const amazon = order.destination === "amazon"
+  // The cartons checked so far under each policy, for its rules across cartons.
+  const checked = new Map<CartonPolicy, PolicyCarton[]>()
   for (const carton of packing.cartons) {
     const add = (rule: PackingRule, fields?: ValidationIssue["fields"]) =>
       issues.push({ cartonId: carton.cartonId, ...rule, ...(fields && { fields }) })
@@ -472,32 +447,13 @@ export function validatePacking(
     }
     cartonIds.add(carton.cartonId.toLowerCase())
     const networks = cartonNetworks(order, carton)
-    if (amazon && networks.length > 1) {
+    if (order.destination === "amazon" && networks.length > 1) {
       add({ code: "mixedNetworks" })
-    }
-    const awd = amazon && networks.includes("awd_us")
-    const policy = amazonCartonPolicies[awd ? "awd_us" : "fba"]
-    const network = awd ? "AWD" : "FBA"
-    // FBA takes a larger carton when it holds one unit that doesn't fit a standard one.
-    const oneUnit =
-      carton.items.length === 1 &&
-      carton.items[0]!.pieces === order.items.find((i) => i.id === carton.items[0]!.itemId)?.piecesPerSet
-    const limited = amazon && !(policy.singleUnitException && oneUnit)
-    if (limited && Math.max(carton.length, carton.width, carton.height) > policy.maxSideCm) {
-      add(
-        { code: "cartonSize", values: { network } },
-        (["length", "width", "height"] as const).filter((field) => carton[field] > policy.maxSideCm)
-      )
-    }
-    if (limited && carton.weight > policy.maxWeightKg) {
-      add({ code: "cartonWeight", values: { network } }, ["weight"])
-    }
-    if (amazon && policy.singleSku && carton.items.length !== 1) {
-      add({ code: "awdOneSku" })
     }
     if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
       add({ code: "repeatedProduct" })
     }
+    const contents: PolicyCarton["contents"] = []
     for (const content of carton.items) {
       const item = order.items.find((i) => i.id === content.itemId)
       if (!item) {
@@ -509,22 +465,16 @@ export function validatePacking(
       if (!Number.isInteger(units)) {
         add({ code: "incompletePacks", values: { sku: item.buyerSku, pack: item.piecesPerSet } })
       }
-      if (amazon && policy.maxUnits !== null && units > policy.maxUnits) {
-        add({ code: "awdUnits", values: { sku: item.buyerSku } })
+      contents.push({ item, pieces: content.pieces, units })
+    }
+    const policy = cartonPolicy(order, networks)
+    if (policy) {
+      const earlier = checked.get(policy) ?? []
+      const current = { ...carton, contents }
+      for (const { issue, fields } of checkCarton(policy, current, earlier)) {
+        add(issue, fields)
       }
-      if (amazon && (!item.fnsku || !item.asin)) {
-        add({ code: "missingAmazonIds", values: { sku: item.buyerSku } })
-      }
-      const { length, width, height, weight } = carton
-      const template = templates.get(item.id) ?? { units, length, width, height, weight }
-      if (
-        amazon &&
-        policy.identicalCartons &&
-        JSON.stringify(template) !== JSON.stringify({ units, length, width, height, weight })
-      ) {
-        add({ code: "awdConfiguration", values: { sku: item.buyerSku, ...template } })
-      }
-      templates.set(item.id, template)
+      checked.set(policy, [...earlier, current])
     }
   }
   for (const item of order.items) {
@@ -543,6 +493,15 @@ export function validatePacking(
     issues.push(...validatePallets(packing))
   }
   return { issues, totals, valid: issues.length === 0 }
+}
+
+// The carton rules a carton follows, by where it goes. A carton to Amazon follows its network's, or AWD's, the stricter,
+// when it wrongly mixes networks; the buyer's own locations take any carton.
+function cartonPolicy(order: Pick<OrderInput, "destination">, networks: AmazonNetwork[]) {
+  if (order.destination !== "amazon") {
+    return null
+  }
+  return cartonPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
 }
 
 // The Amazon networks a carton's products go to, in network order. A carton to Amazon should have exactly one.

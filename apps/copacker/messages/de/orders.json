@@ -523,11 +523,11 @@
     "enterUnits": "Geben Sie an, wie viele Einheiten dieses Produkts jeder Karton enthält.",
     "cartonCount": "{count, plural, one {# Karton} other {# Kartons}}",
     "rules": {
-      "awdUnits": "Menge: {units, number} verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
-      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. Bei {network} darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
-      "cartonWeight": "Gewicht: {weight, number} kg überschreiten das zulässige Höchstgewicht von 50 lb (22,68 kg). Verringern Sie das Gewicht jedes Kartons.",
-      "awdOneSku": "Produkte: AWD erlaubt nur eine SKU pro Karton. Verteilen Sie diese SKUs auf separate Kartons.",
-      "awdConfiguration": "Verpackungsvorlage: Diese SKU verwendet an anderer Stelle in dieser Sendung {difference, select, units {{units, number} Einheiten pro Karton} other {Kartons mit {length, number} × {width, number} × {height, number} cm und {weight, number} kg}}. Verwenden Sie für jeden Karton dieser SKU dieselbe Verpackungsvorlage.",
+      "unitsPerCarton": "Menge: {units, number} verkaufsfähige Einheiten pro Karton überschreiten die {receiver}-Obergrenze von {max, number}. Verteilen Sie die Einheiten auf mehrere Kartons.",
+      "cartonSize": "Abmessungen: Die {side, select, width {Breite} height {Höhe} other {Länge}} beträgt {size, number} cm. {shape, select, cube {Bei {receiver} darf keine Kartonseite länger als {lengthCm, number} cm ({lengthIn, number} Zoll) sein.} other {{receiver} erlaubt für diesen Karton höchstens {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} Zoll).}}",
+      "cartonWeight": "Gewicht: {weight, number} kg überschreiten das zulässige Höchstgewicht von {maxLb, number} lb ({maxKg, number} kg). Verringern Sie das Gewicht jedes Kartons.",
+      "oneSku": "Produkte: {receiver} erlaubt nur eine SKU pro Karton. Verteilen Sie diese SKUs auf separate Kartons.",
+      "samePacking": "Verpackungsvorlage: Diese SKU verwendet an anderer Stelle in dieser Sendung {difference, select, units {{units, number} Einheiten pro Karton} other {Kartons mit {length, number} × {width, number} × {height, number} cm und {weight, number} kg}}. Verwenden Sie für jeden Karton dieser SKU dieselbe Verpackungsvorlage.",
       "incompletePacks": "Menge: Dieses Produkt gibt es in Packungen zu {pack, number}. Geben Sie ein Vielfaches von {pack, number} Einheiten ein."
     }
   },

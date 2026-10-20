@@ -1,5 +1,6 @@
 import type { AmazonNetwork } from "@repo/aisle"
 import { amazonNetworkNames, type PrepCategory } from "@repo/aisle"
+import { cartonLimits, cartonPolicies } from "@repo/aisle/carton-policies"
 import type { Requirement } from "@repo/aisle/requirements"
 import { match, P } from "ts-pattern"
 import { createFormatter, createTranslator } from "use-intl"
@@ -40,7 +41,10 @@ export async function requirementTranslator() {
           return packing(keys[task]) + (task === "countryOfOrigin" ? `: ${countryCode}` : "")
         })
         .with({ code: "prep" }, ({ prep }) => t(`prep.${prepKeys[prep]}`))
-        .with({ code: "cartons" }, ({ network }) => t(network === "fba" ? "fbaCartons" : "awdUsCartons"))
+        .with({ code: "cartons" }, ({ network }) => {
+          const { size, weight, maxUnits } = cartonLimits(cartonPolicies[network])
+          return t(network === "fba" ? "fbaCartons" : "awdUsCartons", { ...size, ...weight, units: maxUnits ?? 0 })
+        })
         .with({ code: "separateCartons" }, ({ networks }) => t("separateCartons", { networks: names(networks) }))
         .with({ code: "packFor" }, ({ network }) => t("packFor", { network: amazonNetworkNames[network] }))
         .with({ code: "bundle" }, ({ units }) => t("bundle", { count: units }))

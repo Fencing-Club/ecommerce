@@ -259,6 +259,7 @@ export function PackingForm({
   // Finishing takes every carton, and every pallet when packed on them, complete, with nothing for the checks to point
   // out.
   const cantFinish =
+    working !== null ||
     totals.cartons > 1000 ||
     (allUnitsPacked &&
       (!cartons.fields.length ||
@@ -369,6 +370,7 @@ export function PackingForm({
     <div className="flex items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger
+          disabled={working !== null}
           render={<Button type="button" variant="outline" size="icon" aria-label={actionsText("actions")} />}
         >
           <Ellipsis />
@@ -392,7 +394,8 @@ export function PackingForm({
   )
   return (
     <FormProvider {...form}>
-      <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+      {/* The page's header sits outside the fieldset, so a form it holds stays usable while packing saves. */}
+      <div className="flex min-w-0 flex-col gap-6">
         {renderHeader
           ? renderHeader(actions)
           : (heading || actions) && (
@@ -401,253 +404,152 @@ export function PackingForm({
                 {actions}
               </div>
             )}
-        <div
-          className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
-        >
-          <div className="flex min-w-0 flex-col gap-6">
-            {notices}
-            {linkedId !== undefined && (
-              <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
-            )}
-            <PackingDetailsFields
-              addresses={addresses}
-              addAddressTo={addAddressTo}
-              pickup={pickup}
-              onPickupChange={setPickup}
-              readOnly={readOnly}
-              route={shippingDetails?.route}
-              shipTo={shippingDetails?.shipTo ?? destination}
-              transport={shippingDetails?.transport}
-            />
-            {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
-            {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-            <form
-              id={formId}
-              onSubmit={(event) => {
-                if (allUnitsPacked) {
-                  return validated()(event)
-                }
-                event.preventDefault()
-                void perform("save", form.getValues())
-              }}
-              onKeyDown={keepEnterFromSubmitting}
-              noValidate
-              className="flex flex-col gap-6"
-            >
-              <Accordion className="rounded-lg border bg-card">
-                <AccordionItem value="products">
-                  <AccordionTrigger className="items-center gap-3 px-4 py-3.5 text-sm font-medium hover:no-underline">
-                    {detail("columns.products")} ({order.items.length})
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
-                    {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
+        <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
+          <div
+            className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
+          >
+            <div className="flex min-w-0 flex-col gap-6">
+              {notices}
+              {linkedId !== undefined && (
+                <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
+              )}
+              <PackingDetailsFields
+                addresses={addresses}
+                addAddressTo={addAddressTo}
+                pickup={pickup}
+                onPickupChange={setPickup}
+                readOnly={readOnly}
+                route={shippingDetails?.route}
+                shipTo={shippingDetails?.shipTo ?? destination}
+                transport={shippingDetails?.transport}
+              />
+              {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
+              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+              <form
+                id={formId}
+                onSubmit={(event) => {
+                  if (allUnitsPacked) {
+                    return validated()(event)
+                  }
+                  event.preventDefault()
+                  void perform("save", form.getValues())
+                }}
+                onKeyDown={keepEnterFromSubmitting}
+                noValidate
+                className="flex flex-col gap-6"
+              >
+                <Accordion className="rounded-lg border bg-card">
+                  <AccordionItem value="products">
+                    <AccordionTrigger className="items-center gap-3 px-4 py-3.5 text-sm font-medium hover:no-underline">
+                      {detail("columns.products")} ({order.items.length})
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
+                      {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
                         are packed. Below 32rem each line stacks, with its column names above the values. */}
-                    <div className="@container/products border-t">
-                      <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
-                        <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead>{t("product")}</TableHead>
-                            <TableHead className="w-36">{t("supplierSku")}</TableHead>
-                            <TableHead className="w-28 text-end">{t("packed")}</TableHead>
-                            {prices && <TableHead className="w-28 text-end">{t("pricePerUnit")}</TableHead>}
-                            {renderProductActions && (
-                              <TableHead className="w-14">
-                                <span className="sr-only">{actionsText("actions")}</span>
-                              </TableHead>
-                            )}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody className="@max-lg/products:block">
-                          {order.items.map((item) => {
-                            const available = availablePieces[item.id] ?? 0
-                            const count = packed(item.id)
-                            return (
-                              <TableRow
-                                key={item.id}
-                                className="hover:bg-transparent @max-lg/products:relative @max-lg/products:grid @max-lg/products:grid-cols-3 @max-lg/products:gap-x-4 @max-lg/products:gap-y-2 @max-lg/products:p-4 [&>td]:py-3 [&>td]:align-top @max-lg/products:[&>td]:p-0"
-                              >
-                                <TableCell className="whitespace-normal [overflow-wrap:anywhere] @max-lg/products:col-span-3 @max-lg/products:ps-0! @max-lg/products:pe-10!">
-                                  <ProductIdentity item={item} showSku={false} showPackSize={false} />
-                                </TableCell>
-                                <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
-                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                    {t("supplierSku")}
-                                  </span>
-                                  {item.components?.length ? (
-                                    <span className="flex flex-col gap-1">
-                                      {item.components.map((component) => (
-                                        <span key={component.variantId}>
-                                          {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
-                                        </span>
-                                      ))}
+                      <div className="@container/products border-t">
+                        <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
+                          <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
+                            <TableRow className="hover:bg-transparent">
+                              <TableHead>{t("product")}</TableHead>
+                              <TableHead className="w-36">{t("supplierSku")}</TableHead>
+                              <TableHead className="w-28 text-end">{t("packed")}</TableHead>
+                              {prices && <TableHead className="w-28 text-end">{t("pricePerUnit")}</TableHead>}
+                              {renderProductActions && (
+                                <TableHead className="w-14">
+                                  <span className="sr-only">{actionsText("actions")}</span>
+                                </TableHead>
+                              )}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody className="@max-lg/products:block">
+                            {order.items.map((item) => {
+                              const available = availablePieces[item.id] ?? 0
+                              const count = packed(item.id)
+                              return (
+                                <TableRow
+                                  key={item.id}
+                                  className="hover:bg-transparent @max-lg/products:relative @max-lg/products:grid @max-lg/products:grid-cols-3 @max-lg/products:gap-x-4 @max-lg/products:gap-y-2 @max-lg/products:p-4 [&>td]:py-3 [&>td]:align-top @max-lg/products:[&>td]:p-0"
+                                >
+                                  <TableCell className="whitespace-normal [overflow-wrap:anywhere] @max-lg/products:col-span-3 @max-lg/products:ps-0! @max-lg/products:pe-10!">
+                                    <ProductIdentity item={item} showSku={false} showPackSize={false} />
+                                  </TableCell>
+                                  <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
+                                    <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                      {t("supplierSku")}
                                     </span>
-                                  ) : (
-                                    item.supplierSku || "—"
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-end tabular-nums @max-lg/products:text-start">
-                                  <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                    {t("packed")}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      "inline-flex items-center gap-1",
-                                      available > 0 && count === available && "text-success",
-                                      count > available && "text-destructive"
+                                    {item.components?.length ? (
+                                      <span className="flex flex-col gap-1">
+                                        {item.components.map((component) => (
+                                          <span key={component.variantId}>
+                                            {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                                          </span>
+                                        ))}
+                                      </span>
+                                    ) : (
+                                      item.supplierSku || "—"
                                     )}
-                                  >
-                                    {available > 0 && count === available && (
-                                      <CircleCheck aria-hidden className="size-3.5" />
-                                    )}
-                                    {t("packedOf", { count, available })}
-                                  </span>
-                                  {count < available && (
-                                    <span className="block text-xs text-muted-foreground">
-                                      {t("leftCount", { count: available - count })}
-                                    </span>
-                                  )}
-                                  {count > available && (
-                                    <span className="block text-xs text-destructive">
-                                      {t("overCount", { count: count - available })}
-                                    </span>
-                                  )}
-                                </TableCell>
-                                {prices && (
+                                  </TableCell>
                                   <TableCell className="text-end tabular-nums @max-lg/products:text-start">
                                     <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
-                                      {t("pricePerUnit")}
+                                      {t("packed")}
                                     </span>
-                                    {money(item.unitPrice, order.currency, locale)}
+                                    <span
+                                      className={cn(
+                                        "inline-flex items-center gap-1",
+                                        available > 0 && count === available && "text-success",
+                                        count > available && "text-destructive"
+                                      )}
+                                    >
+                                      {available > 0 && count === available && (
+                                        <CircleCheck aria-hidden className="size-3.5" />
+                                      )}
+                                      {t("packedOf", { count, available })}
+                                    </span>
+                                    {count < available && (
+                                      <span className="block text-xs text-muted-foreground">
+                                        {t("leftCount", { count: available - count })}
+                                      </span>
+                                    )}
+                                    {count > available && (
+                                      <span className="block text-xs text-destructive">
+                                        {t("overCount", { count: count - available })}
+                                      </span>
+                                    )}
                                   </TableCell>
-                                )}
-                                {renderProductActions && (
-                                  <TableCell className="py-2! text-end @max-lg/products:absolute @max-lg/products:end-3 @max-lg/products:top-3">
-                                    {renderProductActions(item)}
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
-                    <span
-                      className={cn(
-                        "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-                        pieces === availableUnits && "text-success"
-                      )}
-                    >
-                      {t("packedUnits", { count: pieces, available: availableUnits })}
-                    </span>
-                  </div>
-                  {!readOnly && (
-                    <div className="flex gap-2">
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              aria-label={importText("export")}
-                              disabled={!cartons.fields.length}
-                              onClick={() =>
-                                void exportSheet(
-                                  "Cartons",
-                                  () => cartonTemplate(cartonValues),
-                                  importText("exportFailed")
-                                )
-                              }
-                            />
-                          }
-                        >
-                          <Download />
-                        </TooltipTrigger>
-                        <TooltipContent>{importText("export")}</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              aria-label={importText("title")}
-                              onClick={() => setImporting(true)}
-                            />
-                          }
-                        >
-                          <Upload />
-                        </TooltipTrigger>
-                        <TooltipContent>{importText("title")}</TooltipContent>
-                      </Tooltip>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="max-sm:w-[34px] max-sm:px-0"
-                        onClick={addCarton}
-                      >
-                        <Plus />
-                        <span className="max-sm:sr-only">{t("addCarton")}</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {cartons.fields.length > 0 && (
-                  <CartonTable
-                    cartons={cartons.fields.map((carton, index) => cartonValues[index] ?? carton)}
-                    rowKeys={cartons.fields.map((carton) => carton.id)}
-                    products={order.items}
-                    issues={packingIssues}
-                    context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                    remainingPieces={Object.fromEntries(
-                      order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
-                    )}
-                    showErrors={(ids) =>
-                      form.formState.submitCount > 0 ||
-                      Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
-                    }
-                    readOnly={readOnly}
-                    renderNote={renderCartonNote}
-                    onChange={(index, next) =>
-                      form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                    }
-                    onDuplicate={(index) =>
-                      cartons.append({
-                        ...structuredClone(cartonValues[index]!),
-                        cartonId: nextCartonId(cartonValues),
-                        cartonIds: []
-                      })
-                    }
-                    onDelete={(index) => cartons.remove(index)}
-                  />
-                )}
-                {!cartons.fields.length && (
-                  <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
-                )}
-                {cartonsError && <FormError message={cartonsError} />}
-                {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
-              </section>
-              {palletized && (
-                <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={palletText("title")}>
+                                  {prices && (
+                                    <TableCell className="text-end tabular-nums @max-lg/products:text-start">
+                                      <span className="mb-1 block text-xs text-muted-foreground @lg/products:hidden">
+                                        {t("pricePerUnit")}
+                                      </span>
+                                      {money(item.unitPrice, order.currency, locale)}
+                                    </TableCell>
+                                  )}
+                                  {renderProductActions && (
+                                    <TableCell className="py-2! text-end @max-lg/products:absolute @max-lg/products:end-3 @max-lg/products:top-3">
+                                      {renderProductActions(item)}
+                                    </TableCell>
+                                  )}
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
-                      <h2 className="text-sm font-semibold max-sm:text-base">{palletText("title")}</h2>
+                    {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
                       <span
                         className={cn(
-                          "text-xs tabular-nums text-muted-foreground",
-                          physicalCartons.length > 0 && onPallets === physicalCartons.length && "text-success"
+                          "text-xs tabular-nums text-muted-foreground max-sm:hidden",
+                          pieces === availableUnits && "text-success"
                         )}
                       >
-                        {palletText("onPallets", { count: onPallets, total: physicalCartons.length })}
+                        {t("packedUnits", { count: pieces, available: availableUnits })}
                       </span>
                     </div>
                     {!readOnly && (
@@ -659,13 +561,13 @@ export function PackingForm({
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                aria-label={palletImportText("export")}
-                                disabled={!pallets.length}
+                                aria-label={importText("export")}
+                                disabled={!cartons.fields.length}
                                 onClick={() =>
                                   void exportSheet(
-                                    "Pallets",
-                                    () => palletTemplate(pallets),
-                                    palletImportText("exportFailed")
+                                    "Cartons",
+                                    () => cartonTemplate(cartonValues),
+                                    importText("exportFailed")
                                   )
                                 }
                               />
@@ -673,7 +575,7 @@ export function PackingForm({
                           >
                             <Download />
                           </TooltipTrigger>
-                          <TooltipContent>{palletImportText("export")}</TooltipContent>
+                          <TooltipContent>{importText("export")}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger
@@ -682,152 +584,255 @@ export function PackingForm({
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                aria-label={palletImportText("title")}
-                                onClick={() => setImportingPallets(true)}
+                                aria-label={importText("title")}
+                                onClick={() => setImporting(true)}
                               />
                             }
                           >
                             <Upload />
                           </TooltipTrigger>
-                          <TooltipContent>{palletImportText("title")}</TooltipContent>
+                          <TooltipContent>{importText("title")}</TooltipContent>
                         </Tooltip>
                         <Button
                           type="button"
                           variant="outline"
                           className="max-sm:w-[34px] max-sm:px-0"
-                          onClick={() =>
-                            setPallets([
-                              ...pallets,
-                              {
-                                palletId: nextPalletId(pallets),
-                                length: blank,
-                                width: blank,
-                                height: blank,
-                                weight: blank,
-                                stackable: true,
-                                cartonIds: []
-                              }
-                            ])
-                          }
+                          onClick={addCarton}
                         >
                           <Plus />
-                          <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                          <span className="max-sm:sr-only">{t("addCarton")}</span>
                         </Button>
                       </div>
                     )}
                   </div>
-                  {pallets.length > 0 ? (
-                    <PalletTable
-                      pallets={pallets}
-                      cartons={chooserCartons}
-                      issues={palletIssues}
+                  {cartons.fields.length > 0 && (
+                    <CartonTable
+                      cartons={cartons.fields.map((carton, index) => cartonValues[index] ?? carton)}
+                      rowKeys={cartons.fields.map((carton) => carton.id)}
+                      products={order.items}
+                      issues={packingIssues}
                       context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                      remainingPieces={Object.fromEntries(
+                        order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                      )}
+                      showErrors={(ids) =>
+                        form.formState.submitCount > 0 ||
+                        Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
+                      }
                       readOnly={readOnly}
-                      showErrors={form.formState.submitCount > 0}
-                      onChange={setPallets}
+                      renderNote={renderCartonNote}
+                      onChange={(index, next) =>
+                        form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                      }
+                      onDuplicate={(index) =>
+                        cartons.append({
+                          ...structuredClone(cartonValues[index]!),
+                          cartonId: nextCartonId(cartonValues),
+                          cartonIds: []
+                        })
+                      }
+                      onDelete={(index) => cartons.remove(index)}
                     />
-                  ) : (
-                    <EmptyState title={palletText("noPallets")} description={palletText("noPalletsDescription")} />
                   )}
-                  {palletIssues.some((issue) => !issue.palletId) && (
-                    <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
-                      {palletIssues
-                        .filter((issue) => !issue.palletId)
-                        .map((issue) => (
-                          <li key={issue.code} className="flex items-start gap-2">
-                            <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                            {issueText(issue)}
+                  {!cartons.fields.length && (
+                    <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
+                  )}
+                  {cartonsError && <FormError message={cartonsError} />}
+                  {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
+                </section>
+                {palletized && (
+                  <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={palletText("title")}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
+                        <h2 className="text-sm font-semibold max-sm:text-base">{palletText("title")}</h2>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums text-muted-foreground",
+                            physicalCartons.length > 0 && onPallets === physicalCartons.length && "text-success"
+                          )}
+                        >
+                          {palletText("onPallets", { count: onPallets, total: physicalCartons.length })}
+                        </span>
+                      </div>
+                      {!readOnly && (
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={palletImportText("export")}
+                                  disabled={!pallets.length}
+                                  onClick={() =>
+                                    void exportSheet(
+                                      "Pallets",
+                                      () => palletTemplate(pallets),
+                                      palletImportText("exportFailed")
+                                    )
+                                  }
+                                />
+                              }
+                            >
+                              <Download />
+                            </TooltipTrigger>
+                            <TooltipContent>{palletImportText("export")}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={palletImportText("title")}
+                                  onClick={() => setImportingPallets(true)}
+                                />
+                              }
+                            >
+                              <Upload />
+                            </TooltipTrigger>
+                            <TooltipContent>{palletImportText("title")}</TooltipContent>
+                          </Tooltip>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="max-sm:w-[34px] max-sm:px-0"
+                            onClick={() =>
+                              setPallets([
+                                ...pallets,
+                                {
+                                  palletId: nextPalletId(pallets),
+                                  length: blank,
+                                  width: blank,
+                                  height: blank,
+                                  weight: blank,
+                                  stackable: true,
+                                  cartonIds: []
+                                }
+                              ])
+                            }
+                          >
+                            <Plus />
+                            <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {pallets.length > 0 ? (
+                      <PalletTable
+                        pallets={pallets}
+                        cartons={chooserCartons}
+                        issues={palletIssues}
+                        context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                        readOnly={readOnly}
+                        showErrors={form.formState.submitCount > 0}
+                        onChange={setPallets}
+                      />
+                    ) : (
+                      <EmptyState title={palletText("noPallets")} description={palletText("noPalletsDescription")} />
+                    )}
+                    {palletIssues.some((issue) => !issue.palletId) && (
+                      <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
+                        {palletIssues
+                          .filter((issue) => !issue.palletId)
+                          .map((issue) => (
+                            <li key={issue.code} className="flex items-start gap-2">
+                              <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                              {issueText(issue)}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </section>
+                )}
+              </form>
+              {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
+              {!(readOnly && renderSidebar) && (
+                <div className="flex flex-col gap-3 text-sm">
+                  {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
+                    <ul aria-live="polite" className="text-sm text-destructive">
+                      {packingIssues
+                        .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
+                        .map((issue, index) => (
+                          <li key={index}>
+                            {issue.cartonId
+                              ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
+                              : issueText(issue)}
                           </li>
                         ))}
                     </ul>
                   )}
-                </section>
-              )}
-            </form>
-            {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
-            {!(readOnly && renderSidebar) && (
-              <div className="flex flex-col gap-3 text-sm">
-                {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
-                  <ul aria-live="polite" className="text-sm text-destructive">
-                    {packingIssues
-                      .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
-                      .map((issue, index) => (
-                        <li key={index}>
-                          {issue.cartonId
-                            ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                            : issueText(issue)}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-                {serverError && (
-                  <div className="max-h-48 overflow-y-auto">
-                    <FormError message={serverError} />
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                  {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
-                  {renderSidebar && (
-                    <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
-                      <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
-                      <span className="text-muted-foreground">
-                        {t("packedUnits", { count: pieces, available: availableUnits })}
-                      </span>
-                    </p>
-                  )}
-                  {!readOnly && (
-                    <div className="flex flex-wrap gap-2 max-sm:w-full sm:hidden">
-                      <SubmitButton
-                        type="submit"
-                        form={formId}
-                        pending={working === (allUnitsPacked ? "submit" : "save")}
-                        className="max-sm:flex-1"
-                        disabled={cantFinish}
-                      >
-                        {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
-                      </SubmitButton>
+                  {serverError && (
+                    <div className="max-h-48 overflow-y-auto">
+                      <FormError message={serverError} />
                     </div>
                   )}
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
+                    {renderSidebar && (
+                      <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+                        <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
+                        <span className="text-muted-foreground">
+                          {t("packedUnits", { count: pieces, available: availableUnits })}
+                        </span>
+                      </p>
+                    )}
+                    {!readOnly && (
+                      <div className="flex flex-wrap gap-2 max-sm:w-full sm:hidden">
+                        <SubmitButton
+                          type="submit"
+                          form={formId}
+                          pending={working === (allUnitsPacked ? "submit" : "save")}
+                          className="max-sm:flex-1"
+                          disabled={cantFinish}
+                        >
+                          {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
+                        </SubmitButton>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              {footer}
+            </div>
+            {renderSidebar && (
+              <aside className="min-w-0">
+                {renderSidebar({
+                  cartons: totals.cartons,
+                  units: pieces,
+                  readyDate,
+                  weight,
+                  volume
+                })}
+              </aside>
             )}
-            {footer}
           </div>
-          {renderSidebar && (
-            <aside className="min-w-0">
-              {renderSidebar({
-                cartons: totals.cartons,
-                units: pieces,
-                readyDate,
-                weight,
-                volume
-              })}
-            </aside>
-          )}
-        </div>
-        <CartonImportDialog
-          open={importing}
-          onOpenChange={setImporting}
-          order={order}
-          shipmentName={shipmentName ?? t("cartons")}
-          existing={cartonValues}
-          availablePieces={availablePieces}
-          onImport={async (groups, mode) => {
-            cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
-          }}
-        />
-        <PalletImportDialog
-          open={importingPallets}
-          onOpenChange={setImportingPallets}
-          reference={order.reference}
-          shipmentName={shipmentName ?? t("cartons")}
-          cartonIds={physicalCartons.map((carton) => carton.cartonId)}
-          existing={pallets}
-          onImport={async (next, mode) => {
-            setPallets(mode === "replace" ? next : [...pallets, ...next])
-          }}
-        />
-      </fieldset>
+          <CartonImportDialog
+            open={importing}
+            onOpenChange={setImporting}
+            order={order}
+            shipmentName={shipmentName ?? t("cartons")}
+            existing={cartonValues}
+            availablePieces={availablePieces}
+            onImport={async (groups, mode) => {
+              cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
+            }}
+          />
+          <PalletImportDialog
+            open={importingPallets}
+            onOpenChange={setImportingPallets}
+            reference={order.reference}
+            shipmentName={shipmentName ?? t("cartons")}
+            cartonIds={physicalCartons.map((carton) => carton.cartonId)}
+            existing={pallets}
+            onImport={async (next, mode) => {
+              setPallets(mode === "replace" ? next : [...pallets, ...next])
+            }}
+          />
+        </fieldset>
+      </div>
     </FormProvider>
   )
 }

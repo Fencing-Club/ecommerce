@@ -200,8 +200,8 @@
       "hanger": "हर कपड़े को हैंगर पर लगाएं।",
       "label": "हर यूनिट पर लेबल लगाएं।"
     },
-    "fbaCartons": "FBA कार्टन: मिक्स SKU की अनुमति है; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb), जब तक कोई एक यूनिट इससे बड़ी न हो।",
-    "awdUsCartons": "AWD US कार्टन: हर कार्टन में एक SKU, अधिकतम 150 यूनिट, एक SKU के सभी कार्टन एक ही तरह पैक; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb)।",
+    "fbaCartons": "FBA कार्टन: मिक्स SKU की अनुमति है; {shape, select, cube {हर साइड अधिकतम {lengthCm, number} cm ({lengthIn, number} in)} other {अधिकतम {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} और {maxKg, number} kg ({maxLb, number} lb), जब तक कोई एक यूनिट इससे बड़ी न हो।",
+    "awdUsCartons": "AWD US कार्टन: हर कार्टन में एक SKU, अधिकतम {units, number} यूनिट, एक SKU के सभी कार्टन एक ही तरह पैक; {shape, select, cube {हर साइड अधिकतम {lengthCm, number} cm ({lengthIn, number} in)} other {अधिकतम {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} और {maxKg, number} kg ({maxLb, number} lb)।",
     "separateCartons": "{networks} प्रोडक्ट अलग-अलग कार्टन में पैक करें।",
     "unitLabels": "हर यूनिट पर उसका FNSKU बारकोड लगाएं, जिससे कोई भी दूसरा बारकोड ढक जाए।",
     "suffocationWarnings": "जिन पॉलीबैग का मुंह 5 in (12.7 cm) या उससे चौड़ा हो, उन पर दम घुटने की चेतावनी ज़रूरी है।",

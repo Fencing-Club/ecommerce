@@ -119,11 +119,12 @@ const en = {
   unitLimitText: "Use no more than {units} sellable units per carton.",
   sameQuantity: "Same quantity",
   sameQuantityText: "For each SKU, use the same number of sellable units in every carton.",
-  fbaDimensionsText:
-    "Maximum carton size: {sideCm} × {sideCm} × {sideCm} cm ({sideIn} × {sideIn} × {sideIn} in), unless a single unit requires a larger carton.",
-  fbaWeightText: "Maximum packed carton weight: {kg} kg ({lb} lb), unless a single unit exceeds this limit.",
+  oneUnitDimensionsText:
+    "Maximum carton size: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} in), unless a single unit requires a larger carton.",
+  oneUnitWeightText: "Maximum packed carton weight: {kg} kg ({lb} lb), unless a single unit exceeds this limit.",
   dimensions: "Dimensions",
-  dimensionsText: "Maximum carton size: {sideCm} × {sideCm} × {sideCm} cm ({sideIn} × {sideIn} × {sideIn} in).",
+  dimensionsText:
+    "Maximum carton size: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} in).",
   weightLimit: "Weight",
   weightLimitText: "Each packed carton must weigh no more than {kg} kg ({lb} lb).",
   amazonLabelText: "Apply the Amazon label assigned to each carton.",
@@ -286,12 +287,13 @@ const de: ShippingCopy = {
   unitLimitText: "Packen Sie höchstens {units} Verkaufseinheiten in einen Karton.",
   sameQuantity: "Gleiche Menge",
   sameQuantityText: "Verwenden Sie für jede SKU dieselbe Anzahl an Verkaufseinheiten in jedem Karton.",
-  fbaDimensionsText:
-    "Maximale Kartongröße: {sideCm} × {sideCm} × {sideCm} cm ({sideIn} × {sideIn} × {sideIn} Zoll), außer wenn eine einzelne Einheit einen größeren Karton erfordert.",
-  fbaWeightText:
+  oneUnitDimensionsText:
+    "Maximale Kartongröße: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} Zoll), außer wenn eine einzelne Einheit einen größeren Karton erfordert.",
+  oneUnitWeightText:
     "Maximales Kartongewicht: {kg} kg ({lb} lb), außer wenn eine einzelne Einheit diesen Grenzwert überschreitet.",
   dimensions: "Abmessungen",
-  dimensionsText: "Maximale Kartongröße: {sideCm} × {sideCm} × {sideCm} cm ({sideIn} × {sideIn} × {sideIn} Zoll).",
+  dimensionsText:
+    "Maximale Kartongröße: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} Zoll).",
   weightLimit: "Gewicht",
   weightLimitText: "Jeder gepackte Karton darf höchstens {kg} kg ({lb} lb) wiegen.",
   amazonLabelText: "Bringen Sie an jedem Karton das zugeordnete Amazon-Etikett an.",
@@ -452,11 +454,12 @@ const zh: ShippingCopy = {
   unitLimitText: "每箱不得超过 {units} 个销售单元。",
   sameQuantity: "数量一致",
   sameQuantityText: "同一 SKU 的每个纸箱必须装入相同数量的销售单元。",
-  fbaDimensionsText:
-    "纸箱最大尺寸：{sideCm} × {sideCm} × {sideCm} 厘米（{sideIn} × {sideIn} × {sideIn} 英寸），单件商品需要更大纸箱的情况除外。",
-  fbaWeightText: "纸箱最大重量：{kg} 千克（{lb} 磅），单件商品超出该限制的情况除外。",
+  oneUnitDimensionsText:
+    "纸箱最大尺寸：{lengthCm} × {widthCm} × {heightCm} 厘米（{lengthIn} × {widthIn} × {heightIn} 英寸），单件商品需要更大纸箱的情况除外。",
+  oneUnitWeightText: "纸箱最大重量：{kg} 千克（{lb} 磅），单件商品超出该限制的情况除外。",
   dimensions: "尺寸",
-  dimensionsText: "纸箱最大尺寸：{sideCm} × {sideCm} × {sideCm} 厘米（{sideIn} × {sideIn} × {sideIn} 英寸）。",
+  dimensionsText:
+    "纸箱最大尺寸：{lengthCm} × {widthCm} × {heightCm} 厘米（{lengthIn} × {widthIn} × {heightIn} 英寸）。",
   weightLimit: "重量",
   weightLimitText: "每个装满的纸箱重量不得超过 {kg} 千克（{lb} 磅）。",
   amazonLabelText: "在每个纸箱上粘贴为其分配的亚马逊标签。",
@@ -618,13 +621,13 @@ const ur: ShippingCopy = {
   unitLimitText: "ہر کارٹن میں زیادہ سے زیادہ {units} قابل فروخت یونٹ رکھیں۔",
   sameQuantity: "یکساں تعداد",
   sameQuantityText: "ہر SKU کے تمام کارٹنوں میں قابل فروخت یونٹوں کی تعداد یکساں رکھیں۔",
-  fbaDimensionsText:
-    "کارٹن کا زیادہ سے زیادہ سائز: {sideCm} × {sideCm} × {sideCm} سینٹی میٹر ({sideIn} × {sideIn} × {sideIn} انچ)، سوائے اس صورت کے جب ایک یونٹ کے لیے بڑا کارٹن ضروری ہو۔",
-  fbaWeightText:
+  oneUnitDimensionsText:
+    "کارٹن کا زیادہ سے زیادہ سائز: {lengthCm} × {widthCm} × {heightCm} سینٹی میٹر ({lengthIn} × {widthIn} × {heightIn} انچ)، سوائے اس صورت کے جب ایک یونٹ کے لیے بڑا کارٹن ضروری ہو۔",
+  oneUnitWeightText:
     "پیک شدہ کارٹن کا زیادہ سے زیادہ وزن: {kg} کلوگرام ({lb} پاؤنڈ)، سوائے اس صورت کے جب ایک یونٹ کا وزن اس حد سے زیادہ ہو۔",
   dimensions: "ابعاد",
   dimensionsText:
-    "کارٹن کا زیادہ سے زیادہ سائز: {sideCm} × {sideCm} × {sideCm} سینٹی میٹر ({sideIn} × {sideIn} × {sideIn} انچ)۔",
+    "کارٹن کا زیادہ سے زیادہ سائز: {lengthCm} × {widthCm} × {heightCm} سینٹی میٹر ({lengthIn} × {widthIn} × {heightIn} انچ)۔",
   weightLimit: "وزن",
   weightLimitText: "ہر پیک شدہ کارٹن کا وزن {kg} کلوگرام ({lb} پاؤنڈ) سے زیادہ نہیں ہونا چاہیے۔",
   amazonLabelText: "ہر کارٹن پر اس کے لیے مختص ایمازون لیبل لگائیں۔",
