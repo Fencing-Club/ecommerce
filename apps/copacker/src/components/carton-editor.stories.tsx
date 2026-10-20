@@ -182,6 +182,29 @@ export const AwdLimitsOnAPhone = meta.story({
     await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
   }
 })
+
+// Board 06.14 (Longer translations, mobile error layout): German's longer errors wrap beneath the carton on a phone.
+export const AwdLimitsInGerman = meta.story({
+  ...AwdLimitsOnAPhone.input,
+  name: "AWD limits in German",
+  args: {
+    ...awd(awdLimits!),
+    products: awdBagOrder.items.map((item, index) =>
+      index ? item : { ...item, name: "Baumwollbeutel mit Kordelzug", variant: "Natur / Mittel / 20 × 30 cm" }
+    )
+  },
+  globals: { locale: "de", viewport: { value: "iphone12" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "Kartons 1–2" })).toBeVisible()
+    await expect(canvas.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Menge: 160 verkaufsfähige Einheiten pro Karton überschreiten die AWD-Obergrenze von 150. Verteilen Sie die Einheiten auf mehrere Kartons.",
+      "Abmessungen: Die Länge beträgt 70 cm. Bei AWD darf keine Kartonseite länger als 63,5 cm (25 Zoll) sein.",
+      "Gewicht: 25 kg überschreiten das zulässige Höchstgewicht von 50 lb (22,68 kg). Verringern Sie das Gewicht jedes Kartons."
+    ])
+    const region = canvas.getByRole("region", { name: "Karton 1" })
+    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
+  }
+})
 export const Mobile = meta.story({
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
