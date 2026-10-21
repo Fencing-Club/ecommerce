@@ -28,6 +28,8 @@ export const Optional = meta.story({
     await userEvent.click(screen.getByRole("option", { name: "Net 30" }))
     await expect(args.onChange).toHaveBeenCalledWith({ target: { value: "net30" } })
     await expect(select).toHaveTextContent("Net 30")
+    // Reopening while the list is still closing would find its options, which no longer take clicks.
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
     // An optional field's placeholder is a choice too, which empties it.
     await userEvent.click(select)
     await userEvent.click(await screen.findByRole("option", { name: "Choose terms" }))
