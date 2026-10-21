@@ -16,6 +16,7 @@ type Shipment = Pick<
   | "snapshot"
   | "amazonNetwork"
   | "amazonShipmentId"
+  | "linkedAmazonShipmentId"
   | "forwarderReference"
   | "bookingReference"
   | "createdAt"
@@ -161,7 +162,12 @@ export function shipmentRow(input: {
     orderHref: `/orders/${order.id}`,
     reference: order.data.reference,
     number,
-    detail: shipment.amazonShipmentId ?? shipment.forwarderReference ?? shipment.bookingReference ?? undefined,
+    detail:
+      shipment.amazonShipmentId ??
+      shipment.linkedAmazonShipmentId ??
+      shipment.forwarderReference ??
+      shipment.bookingReference ??
+      undefined,
     partner,
     forwarder,
     destination,
@@ -213,7 +219,13 @@ export async function shipmentListRows(input: {
       })
     ]
   })
-  const linked = new Set(list.flatMap((shipment) => shipment.amazonShipmentId?.split(", ") ?? []))
+  // An AWD shipment linked from Seller Central keeps its ID apart, so it has a row only once.
+  const linked = new Set(
+    list.flatMap((shipment) => [
+      ...(shipment.amazonShipmentId?.split(", ") ?? []),
+      ...(shipment.linkedAmazonShipmentId ? [shipment.linkedAmazonShipmentId] : [])
+    ])
+  )
   const amazonRows = amazon
     .filter((row) => !linked.has(row.shipmentId))
     .map((row): LogisticsRow => ({
