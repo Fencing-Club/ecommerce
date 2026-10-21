@@ -36,7 +36,7 @@ jobs:
           qualified=false
           for run in $runs; do
             if gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs" \
-              --jq '.jobs[] | select((.name | startswith("deploy-staging /")) and .conclusion == "success") | .id' | grep -q .; then
+              --jq '.jobs[] | select((.name == "deploy-staging / release") and .conclusion == "success") | .id' | grep -q .; then
               qualified=true
               break
             fi
