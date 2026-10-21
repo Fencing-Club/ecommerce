@@ -17,7 +17,7 @@
       "cartonSize": "Limitez les cartons {receiver} à {shape, select, cube {{lengthCm, number} cm maximum sur chaque côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm maximum}}",
       "cartonWeight": "Limitez les cartons {receiver} à {maxLb, number} lb ({maxKg, number} kg) maximum",
       "oneSku": "Emballez un seul SKU par carton {receiver}",
-      "packingGroups": "Emballez {sku} et {other} dans des cartons séparés : {receiver} les a placés dans des groupes d’emballage différents",
+      "packingGroups": "{receiver} exige {product} et {other} dans des cartons séparés",
       "repeatedProduct": "Indiquez chaque produit une seule fois par carton",
       "unknownProduct": "Retirez les produits qui ne figurent pas sur ce bon de commande",
       "incompletePacks": "{sku} : utilisez un multiple de {pack} unités",

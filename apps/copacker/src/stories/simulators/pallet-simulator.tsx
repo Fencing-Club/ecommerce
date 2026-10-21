@@ -77,7 +77,7 @@ export function PalletSimulator({ dataSet: initial }: { dataSet: string }) {
         showErrors
         onChange={setPallets}
       />
-      <IssueReport issues={issues} codes={palletCodes} />
+      <IssueReport issues={issues} codes={palletCodes} products={order.items} />
     </div>
   )
 }

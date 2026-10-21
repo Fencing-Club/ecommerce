@@ -39,10 +39,14 @@ An FBA carton holds products of one of Amazon's packing groups (see
 plans a shipment, and the booking job keeps each SKU's group on the shipment ([Amazon inbound](amazon-inbound.md#fba-fba)).
 The packing checks (the form, the carton import and readiness) use the shipment's own groups or, until Amazon has
 planned it, the latest Amazon set for another of the PO's shipments (`knownPackingGroups`), so a shipment packed again
-after Amazon refused its cartons shows which ones mix groups ("Products: FBA put DB-2030 and CT-3100 in different
-packing groups. Pack each group in its own cartons."). Before Amazon has planned any of the PO's shipments, the Cartons
-section says the groups aren't checked yet (06.15's "When Amazon checks are unavailable"); there's nothing to retry
-until Amazon plans one, so it has no Retry button.
+after Amazon refused its cartons shows which ones mix groups.
+
+The copy doesn't say "packing group", and it names products as the carton lists them, by supplier SKU, or by name for a
+product without one (with the variant when two share a name), since the supplier never sees the buyer's SKUs
+(`issueValues` in `lib/packing-messages.ts`): "Products: FBA needs Cotton drawstring bag and NT-CT-3100 in separate
+cartons. Move one of them to another carton." Before
+Amazon has planned any of the PO's shipments, the Cartons section says "Products that can share a carton aren't checked
+yet" (06.15's as-built card, in place on 06.18). The groups aren't fetched live, so it has no Retry button.
 
 ## Pallets
 

@@ -5,6 +5,7 @@ import { shipmentLabelRequirements } from "@repo/aisle/transport"
 import { validatePacking } from "@repo/copacker-packing-rules"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
+import { issueValues } from "@/lib/packing-messages"
 import type { ShipmentState } from "../db/schema"
 import type { documents, shipments } from "../db/schema"
 
@@ -153,8 +154,7 @@ export function packingReadiness(
     ).issues.map((issue) => ({
       code: "packing_rule",
       cartonId: issue.cartonId,
-      message:
-        "values" in issue ? t(`readiness.packing.${issue.code}`, issue.values) : t(`readiness.packing.${issue.code}`)
+      message: t(`readiness.packing.${issue.code}`, issueValues(issue, order.items))
     }))
   )
   return { packing, issues }

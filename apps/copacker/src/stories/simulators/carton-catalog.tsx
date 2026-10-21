@@ -3,6 +3,7 @@ import { useMessages, useTranslations } from "use-intl"
 import { FieldError } from "@/components/packing-fields"
 import { useCartonIssueErrors, usePackingIssueText } from "@/components/packing-issues"
 import { expandCartonGroups } from "@/lib/carton-groups"
+import { issueValues } from "@/lib/packing-messages"
 import { everyReceiver, useCartonExamples } from "./carton-examples"
 import { dataSetOrder } from "./data"
 import { type ErrorRow, ErrorTable, simulatorHref } from "./error-table"
@@ -43,7 +44,7 @@ export function CartonCatalog() {
         ) : (
           <FieldError>{packingText(issue)}</FieldError>
         ),
-        readiness: "values" in issue ? readiness(issue.code, issue.values) : readiness(issue.code),
+        readiness: readiness(issue.code, issueValues(issue, order.items)),
         simulator: simulatorHref("simulators-carton-validation--error-example", example.id)
       }
     })

@@ -416,8 +416,8 @@
     "leftCount": "Залишилось {count}",
     "overCount": "На {count} більше",
     "groupsUnchecked": {
-      "title": "Групи пакування Amazon ще не перевірено",
-      "description": "Amazon визначає групи пакування, коли планує відправлення, і в коробці може бути лише одна група. До того пакуйте товари, які Amazon приймає окремо, наприклад небезпечні вантажі, в окремі коробки."
+      "title": "Ще не перевірено, які товари можуть бути в одній коробці",
+      "description": "Amazon визначає, яким товарам потрібні окремі коробки, коли планує відправлення. До того пакуйте товари, які Amazon обробляє окремо, наприклад небезпечні вантажі, в окремі коробки."
     }
   },
   "paymentTerms": {
@@ -497,7 +497,7 @@
       "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {receiver} дозволяє {shape, select, cube {не більше {lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {не більше {lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, окрім коробки з однією одиницею} other {}}.",
       "cartonWeight": "Вага: {weight, number} кг перевищує ліміт {receiver} {maxKg, number} кг ({maxLb, number} lb){exception, select, oneUnit {, окрім коробки з однією одиницею} other {}}. Пакуйте менше одиниць у кожну коробку.",
       "oneSku": "Товари: у цій коробці більше одного SKU, а {receiver} приймає один SKU на коробку. Пакуйте кожен SKU в окремі коробки.",
-      "packingGroups": "Товари: {receiver} відніс {sku} і {other} до різних груп пакування. Пакуйте кожну групу в окремі коробки.",
+      "packingGroups": "Товари: {receiver} вимагає пакувати {product} і {other} в окремі коробки. Перенесіть один із них в іншу коробку.",
       "samePacking": "{difference, select, units {Кількість: інші коробки {sku} містять по {units, number} од.} other {Розміри: інші коробки {sku} мають розмір {length, number} × {width, number} × {height, number} см і вагу {weight, number} кг.}} {receiver} вимагає, щоб усі коробки одного SKU збігалися за кількістю, розміром і вагою. Вирівняйте їх або відправте цю коробку в іншому відправленні.",
       "incompletePacks": "Кількість: {sku} продається упаковками по {pack, number}. Введіть число, кратне {pack, number}.",
       "missingAsin": "Товари: у {sku} немає ASIN, потрібного {receiver} для приймання. Покупець додає його в замовлення.",

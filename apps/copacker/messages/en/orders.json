@@ -416,8 +416,8 @@
     "leftCount": "{count} left",
     "overCount": "{count} too many",
     "groupsUnchecked": {
-      "title": "Amazon packing groups not checked yet",
-      "description": "Amazon sets its packing groups when it plans the shipment, and a carton can hold only one. Until then, pack products Amazon receives separately, such as dangerous goods, in their own cartons."
+      "title": "Products that can share a carton aren’t checked yet",
+      "description": "Amazon says which products need separate cartons when it plans the shipment. Until then, pack products Amazon handles separately, such as dangerous goods, in their own cartons."
     }
   },
   "paymentTerms": {
@@ -497,7 +497,7 @@
       "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, unless the carton holds a single unit} other {}}.",
       "cartonWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, unless the carton holds a single unit} other {}}. Pack fewer units in each carton.",
       "oneSku": "Products: this carton holds more than one SKU, and {receiver} takes one SKU per carton. Pack each SKU in its own cartons.",
-      "packingGroups": "Products: {receiver} put {sku} and {other} in different packing groups. Pack each group in its own cartons.",
+      "packingGroups": "Products: {receiver} needs {product} and {other} in separate cartons. Move one of them to another carton.",
       "samePacking": "{difference, select, units {Quantity: {sku}’s other cartons hold {units, number} units each.} other {Dimensions: {sku}’s other cartons are {length, number} × {width, number} × {height, number} cm at {weight, number} kg.}} {receiver} needs every carton of a SKU to match in units, size and weight. Match them, or ship this carton in another shipment.",
       "incompletePacks": "Quantity: {sku} is sold in packs of {pack, number}. Enter a multiple of {pack, number}.",
       "missingAsin": "Products: {sku} has no ASIN, which {receiver} needs to receive it. The buyer adds it on the purchase order.",

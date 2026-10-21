@@ -4196,7 +4196,7 @@ describe("PO to a released FBA shipment", () => {
     )
     expect(cancelled.status).toBe(200)
     const next = await newShipment(supplier, orderId)
-    const message = "Pack foil-2 and glove-6 in separate cartons: FBA put them in different packing groups"
+    const message = "FBA needs B-2 and G-6 in separate cartons"
     expect((await checkPacking(supplier, next.id, shipment!.packing)).issues).toContainEqual(
       expect.objectContaining({ code: "packing_rule", cartonId: "M1", message })
     )

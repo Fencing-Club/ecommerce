@@ -1,7 +1,9 @@
+import type { OrderInput } from "@repo/aisle"
 import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
 
 // The simulator that lists each code validatePacking can report, in the order its coverage strip shows them, so the
@@ -109,8 +111,17 @@ export function PolicyRules({
   )
 }
 
-// Every issue the engine reported, as readiness checks word them, and which of the codes it can report appeared.
-export function IssueReport({ issues, codes }: { issues: ValidationIssue[]; codes: readonly PackingRule["code"][] }) {
+// Every issue the engine reported, as readiness checks word them for the order's products, and which of the codes it
+// can report appeared.
+export function IssueReport({
+  issues,
+  codes,
+  products
+}: {
+  issues: ValidationIssue[]
+  codes: readonly PackingRule["code"][]
+  products: OrderInput["items"]
+}) {
   const rules = useTranslations("server.readiness.packing")
   const seen = new Set(issues.map((issue) => issue.code))
   return (
@@ -139,7 +150,7 @@ export function IssueReport({ issues, codes }: { issues: ValidationIssue[]; code
                   {issue.cartonId ?? (issue.palletId && `Pallet ${issue.palletId}`) ?? "Packing"}
                 </td>
                 <td className="py-1.5 pe-3">{issue.fields?.join(", ")}</td>
-                <td className="py-1.5">{"values" in issue ? rules(issue.code, issue.values) : rules(issue.code)}</td>
+                <td className="py-1.5">{rules(issue.code, issueValues(issue, products))}</td>
               </tr>
             ))}
           </tbody>

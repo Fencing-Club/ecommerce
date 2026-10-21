@@ -17,7 +17,7 @@
       "cartonSize": "Keep {receiver} cartons to {shape, select, cube {{lengthCm, number} cm or less on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm or less}}",
       "cartonWeight": "Keep {receiver} cartons to {maxLb, number} lb ({maxKg, number} kg) or less",
       "oneSku": "Pack one SKU per {receiver} carton",
-      "packingGroups": "Pack {sku} and {other} in separate cartons: {receiver} put them in different packing groups",
+      "packingGroups": "{receiver} needs {product} and {other} in separate cartons",
       "repeatedProduct": "List each product once per carton",
       "unknownProduct": "Remove products that aren’t on this purchase order",
       "incompletePacks": "{sku}: use a multiple of {pack} units",

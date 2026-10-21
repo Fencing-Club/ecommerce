@@ -17,7 +17,7 @@
       "cartonSize": "{receiver} कार्टन {shape, select, cube {की हर साइड {lengthCm, number} cm या उससे कम रखें} other {का आकार {lengthCm, number} × {widthCm, number} × {heightCm, number} cm या उससे कम रखें}}",
       "cartonWeight": "{receiver} कार्टन का वज़न {maxLb, number} lb ({maxKg, number} kg) या उससे कम रखें",
       "oneSku": "हर {receiver} कार्टन में एक ही SKU पैक करें",
-      "packingGroups": "{sku} और {other} को अलग-अलग कार्टन में पैक करें: {receiver} ने इन्हें अलग-अलग पैकिंग ग्रुप में रखा है",
+      "packingGroups": "{receiver} को {product} और {other} अलग-अलग कार्टन में चाहिए",
       "repeatedProduct": "हर कार्टन में हर प्रोडक्ट एक ही बार लिखें",
       "unknownProduct": "जो प्रोडक्ट इस खरीद ऑर्डर में नहीं हैं, उन्हें हटाएं",
       "incompletePacks": "{sku}: {pack} यूनिट के गुणज का इस्तेमाल करें",

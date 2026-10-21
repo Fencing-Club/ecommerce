@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from "use-intl"
 import { useCartonTemplate } from "@/hooks/use-import-templates"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
 import { readCartonFile, type CartonImportResult } from "@/lib/carton-import"
+import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
 import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
@@ -62,7 +63,7 @@ export function CartonImportDialog({
       issues: [
         ...checked.map((issue) => ({
           location: issue.cartonId ? editor("carton", { carton: issue.cartonId }) : "",
-          message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+          message: rules(issue.code, issueValues(issue, order.items))
         })),
         ...(tooMany ? [{ location: "", message: t("errors.limit") }] : [])
       ],

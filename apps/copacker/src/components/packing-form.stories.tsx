@@ -296,13 +296,13 @@ export const MixedCarton = meta.story({
 // Amazon has set the PO's packing groups (board 06.15): the carton holds two of them, so packing can't finish until
 // each group has its own cartons.
 const packingGroups = { [tote!.buyerSku]: "pg-totes", [apron!.buyerSku]: "pg-aprons", [basket!.buyerSku]: "pg-totes" }
-const groupsError = `Products: FBA put ${tote!.buyerSku} and ${apron!.buyerSku} in different packing groups. Pack each group in its own cartons.`
+const groupsError = `Products: FBA needs ${tote!.supplierSku} and ${apron!.supplierSku} in separate cartons. Move one of them to another carton.`
 export const FbaPackingGroups = meta.story({
   args: { order: fbaOrder, initial: mixedDraft, addresses: [savedAddress], packingGroups },
   play: async ({ canvas }) => {
     const carton = within(canvas.getByRole("region", { name: "Carton C1" }))
     await expect(carton.getByText(groupsError)).toBeVisible()
-    await expect(canvas.queryByText("Amazon packing groups not checked yet")).toBeNull()
+    await expect(canvas.queryByText("Products that can share a carton aren’t checked yet")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: `Remove ${apron!.buyerSku} from carton C1` }))
     await expect(carton.queryByText(groupsError)).toBeNull()
   }
@@ -315,8 +315,10 @@ export const FbaPackingGroupsUnchecked = meta.story({
   play: async ({ canvas }) => {
     const cartons = within(canvas.getByRole("region", { name: "Cartons" }))
     const notice = cartons.getByRole("note")
-    await expect(within(notice).getByText("Amazon packing groups not checked yet")).toBeVisible()
-    await expect(within(notice).getByText(/^Amazon sets its packing groups when it plans the shipment/)).toBeVisible()
+    await expect(within(notice).getByText("Products that can share a carton aren’t checked yet")).toBeVisible()
+    await expect(
+      within(notice).getByText(/^Amazon says which products need separate cartons when it plans/)
+    ).toBeVisible()
     await expect(canvas.queryByText(groupsError)).toBeNull()
     // It stays while there are no cartons, too.
     await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
@@ -332,7 +334,7 @@ export const FbaPackingGroupsUncheckedMobile = meta.story({
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
     const notice = within(canvas.getByRole("region", { name: "Cartons" })).getByRole("note")
-    await expect(within(notice).getByText("Amazon packing groups not checked yet")).toBeVisible()
+    await expect(within(notice).getByText("Products that can share a carton aren’t checked yet")).toBeVisible()
     await expect(notice.scrollWidth).toBeLessThanOrEqual(notice.clientWidth)
   }
 })

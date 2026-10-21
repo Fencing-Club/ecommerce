@@ -169,7 +169,7 @@ export const PackingGroups = meta.story({
     const dialog = await upload(
       csv([`D1,1,${tote!.supplierSku},20,60,40,40,12`, `D1,1,${apron!.supplierSku},10,60,40,40,12`])
     )
-    const message = `Pack ${tote!.buyerSku} and ${apron!.buyerSku} in separate cartons: FBA put them in different packing groups`
+    const message = `FBA needs ${tote!.supplierSku} and ${apron!.supplierSku} in separate cartons`
     await expect(dialog.getByText(message)).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
   }

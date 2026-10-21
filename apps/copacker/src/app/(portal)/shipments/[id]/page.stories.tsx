@@ -583,7 +583,9 @@ export const FbaMixedCartons = meta.story({
     await expect(within(second).getAllByText("—")).toHaveLength(2)
     await expect(canvas.queryByText(/one SKU/i)).toBeNull()
     // No shipment of the PO has been planned, so Amazon hasn't set the packing groups to check yet.
-    await expect(within(cartons).getByRole("note")).toHaveTextContent("Amazon packing groups not checked yet")
+    await expect(within(cartons).getByRole("note")).toHaveTextContent(
+      "Products that can share a carton aren’t checked yet"
+    )
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     // The one label type FBA asks for downloads straight from Documents, and every carton is weighed.
     await expect(canvas.getByRole("link", { name: "Download FNSKU labels" })).toBeVisible()
@@ -612,16 +614,13 @@ export const FbaPackingGroups = meta.story({
     ]
   },
   play: async ({ canvas }) => {
-    const first = within(canvas.getByRole("region", { name: "Carton A1" }))
-    await expect(
-      first.getByText(
-        "Products: FBA put DB-2030 and CT-3100 in different packing groups. Pack each group in its own cartons."
-      )
-    ).toBeVisible()
-    await expect(
-      within(canvas.getByRole("region", { name: "Carton B1" })).getByText(/DB-2031 and CT-3100 in different packing/)
-    ).toBeVisible()
-    await expect(canvas.queryByText("Amazon packing groups not checked yet")).toBeNull()
+    // The errors name each product by the supplier SKU the carton lists, or, for a bag without one, by its name.
+    const error =
+      "Products: FBA needs Cotton drawstring bag and NT-CT-3100 in separate cartons. Move one of them to another carton."
+    for (const carton of ["A1", "B1", "C1"]) {
+      await expect(within(canvas.getByRole("region", { name: `Carton ${carton}` })).getByText(error)).toBeVisible()
+    }
+    await expect(canvas.queryByText("Products that can share a carton aren’t checked yet")).toBeNull()
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
   }
 })
