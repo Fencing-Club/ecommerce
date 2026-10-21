@@ -4801,7 +4801,8 @@ describe("tenant sales demand reads", () => {
 })
 
 describe("stored sales orders", () => {
-  const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString()
+  // On a whole minute, so a timestamp ends in "00.000Z" and a search such as "10.00" never matches the clock.
+  const daysAgo = (days: number) => new Date(Math.floor(Date.now() / 60000) * 60000 - days * 86400000).toISOString()
   const amazonOrder = (orderId: string, createdTime: string, quantity: number) => ({
     orderId,
     createdTime,
