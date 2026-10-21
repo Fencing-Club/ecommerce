@@ -4,12 +4,16 @@ import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-docum
 
 const meta = preview.meta({
   ...shippingDocumentStory,
+  // Renders real PDFs to look at, so test runs leave it out (vitest.config.ts).
+  tags: ["documents"],
   title: "Components/Shipping documents/Layout"
 })
 
 export const MultiplePages = meta.story({ args: { data: scenario("long-order") }, play: ready })
 
+// Blocked before anything renders, so it stays a test.
 export const ManyIdenticalCartons = meta.story({
+  tags: ["!documents"],
   args: { data: scenario("identical-cartons") },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("alert")).toHaveTextContent("This carton group is too large for one page")

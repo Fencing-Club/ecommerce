@@ -3,6 +3,8 @@ import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-docum
 
 const meta = preview.meta({
   ...shippingDocumentStory,
+  // Renders real PDFs to look at, so test runs leave it out (vitest.config.ts).
+  tags: ["documents"],
   title: "Components/Shipping documents/Arrangements"
 })
 
