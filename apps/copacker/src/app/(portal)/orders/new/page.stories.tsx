@@ -1,4 +1,4 @@
-import { HttpResponse } from "msw"
+import { HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"

@@ -1,5 +1,5 @@
 import type { OrderInput } from "@repo/aisle"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"

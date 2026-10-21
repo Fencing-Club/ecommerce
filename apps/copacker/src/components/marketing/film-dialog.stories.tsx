@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { createRef } from "react"
 import { expect, fn, screen, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
