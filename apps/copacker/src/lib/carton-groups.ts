@@ -169,7 +169,8 @@ export function editorPallets(pallets: DraftPallet[] = []): PalletValue[] {
 export function cartonTotals(groups: CartonGroup[]) {
   return groups.reduce(
     (total, carton) => {
-      const count = Number.isInteger(carton.count) && carton.count > 0 ? carton.count : 0
+      // A count being typed still shows one carton, as expandCartonGroups renders it.
+      const count = Number.isInteger(carton.count) && carton.count > 0 ? carton.count : 1
       return {
         cartons: total.cartons + count,
         pieces: total.pieces + count * carton.items.reduce((sum, item) => sum + (item.pieces || 0), 0)
