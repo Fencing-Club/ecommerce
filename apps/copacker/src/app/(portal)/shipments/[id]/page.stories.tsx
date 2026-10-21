@@ -539,16 +539,6 @@ export const Packed = meta.story({
     await expect(packingList).toHaveTextContent("Packing list")
     // Below the menu, eight pixels apart, as on the board.
     await expect(packingList.getBoundingClientRect().top - productLabels.getBoundingClientRect().bottom).toBe(8)
-    await userEvent.click(packingList)
-    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce(), { timeout: 20000 })
-    const [link] = mocked(HTMLAnchorElement.prototype.click).mock.contexts
-    invariant(link instanceof HTMLAnchorElement)
-    await expect(link.download).toBe("Packing-list-PO38-Shipment 1-r3-en-A4-ltr.pdf")
-    const pdf = await PDFDocument.load(await (await fetch(link.href)).arrayBuffer())
-    await expect(pdf.getPageCount()).toBe(1)
-    const { width, height } = pdf.getPage(0).getSize()
-    await expect([Math.round(width), Math.round(height)]).toEqual([595, 842])
-    await expect(packingList).toBeEnabled()
 
     // Edit packing reopens it.
     await userEvent.click(canvas.getByRole("button", { name: "Edit packing" }))
@@ -622,6 +612,28 @@ export const FbaPackingGroups = meta.story({
     }
     await expect(canvas.queryByText("Products that can share a carton aren’t checked yet")).toBeNull()
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
+  }
+})
+
+// Downloading the packing list renders the real PDF, so test runs leave this story out (vitest.config.ts).
+export const PackedPackingListDownload = meta.story({
+  ...supplier,
+  args: Packed.input.args,
+  beforeEach: Packed.input.beforeEach,
+  tags: ["documents"],
+  play: async ({ canvas }) => {
+    const documents = canvas.getByRole("region", { name: "Documents" })
+    const packingList = within(documents).getByRole("button", { name: "Download packing list" })
+    await userEvent.click(packingList)
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce(), { timeout: 20000 })
+    const [link] = mocked(HTMLAnchorElement.prototype.click).mock.contexts
+    invariant(link instanceof HTMLAnchorElement)
+    await expect(link.download).toBe("Packing-list-PO38-Shipment 1-r3-en-A4-ltr.pdf")
+    const pdf = await PDFDocument.load(await (await fetch(link.href)).arrayBuffer())
+    await expect(pdf.getPageCount()).toBe(1)
+    const { width, height } = pdf.getPage(0).getSize()
+    await expect([Math.round(width), Math.round(height)]).toEqual([595, 842])
+    await expect(packingList).toBeEnabled()
   }
 })
 
