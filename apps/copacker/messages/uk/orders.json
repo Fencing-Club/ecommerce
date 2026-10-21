@@ -371,6 +371,7 @@
     },
     "draftSaved": "Чернетку збережено",
     "cartonIssue": "Коробка {carton}: {message}",
+    "ruleSource": "Вимоги {receiver}",
     "readyToSubmit": "Готово до надсилання",
     "readyToSubmitApproval": "Готово до надсилання, зміни підуть на схвалення покупцю",
     "readyToSubmitUpdates": "Готово до надсилання, зміни оновлять замовлення на закупівлю",
@@ -413,7 +414,11 @@
     "chooseAddress": "Адреса забору",
     "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
     "leftCount": "Залишилось {count}",
-    "overCount": "На {count} більше"
+    "overCount": "На {count} більше",
+    "groupsUnchecked": {
+      "title": "Ще не перевірено, які товари можуть бути в одній коробці",
+      "description": "Amazon визначає, яким товарам потрібні окремі коробки, коли планує відправлення. До того пакуйте товари, які Amazon обробляє окремо, наприклад небезпечні вантажі, в окремі коробки."
+    }
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",
@@ -488,12 +493,21 @@
     "enterUnits": "Укажіть, скільки одиниць цього товару містить кожна коробка.",
     "cartonCount": "{count, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}",
     "rules": {
-      "unitsPerCarton": "Кількість: {units, number} одиниць для продажу в коробці перевищує ліміт {receiver} у {max, number}. Розподіліть їх на менші коробки.",
-      "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {receiver} дозволяє {shape, select, cube {не більше {lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {для цієї коробки не більше {lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}.",
-      "cartonWeight": "Вага: {weight, number} кг перевищує ліміт {maxLb, number} lb ({maxKg, number} кг). Зменште вагу кожної коробки.",
-      "oneSku": "Товари: {receiver} вимагає один SKU на коробку. Перемістіть ці SKU в окремі коробки.",
-      "samePacking": "Шаблон пакування: цей SKU в іншій частині відправлення використовує {difference, select, units {{units, number} од. на коробку} other {коробки {length, number} × {width, number} × {height, number} см вагою {weight, number} кг}}. Використовуйте однаковий шаблон пакування для кожної коробки цього SKU.",
-      "incompletePacks": "Кількість: цей товар продається упаковками по {pack, number}. Укажіть кількість одиниць, кратну {pack, number}."
+      "unitsPerCarton": "Кількість: {units, number} од. перевищує ліміт {receiver} у {max, number} на коробку. Пакуйте не більше {max, number} у кожну коробку.",
+      "cartonSize": "Розміри: {side, select, width {ширина} height {висота} other {довжина}} становить {size, number} см. {receiver} дозволяє {shape, select, cube {не більше {lengthCm, number} см ({lengthIn, number} in) з кожного боку} other {не більше {lengthCm, number} × {widthCm, number} × {heightCm, number} см ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, окрім коробки з однією одиницею} other {}}.",
+      "cartonWeight": "Вага: {weight, number} кг перевищує ліміт {receiver} {maxKg, number} кг ({maxLb, number} lb){exception, select, oneUnit {, окрім коробки з однією одиницею} other {}}. Пакуйте менше одиниць у кожну коробку.",
+      "oneSku": "Товари: у цій коробці більше одного SKU, а {receiver} приймає один SKU на коробку. Пакуйте кожен SKU в окремі коробки.",
+      "packingGroups": "Товари: {receiver} не приймає {product} і {other} в одній коробці. Amazon обробляє їх по-різному, наприклад через небезпечні вантажі, підготовку чи етикетки, і може відправити їх на різні склади. Перенесіть один із них в іншу коробку.",
+      "samePacking": "{difference, select, units {Кількість: інші коробки {sku} містять по {units, number} од.} other {Розміри: інші коробки {sku} мають розмір {length, number} × {width, number} × {height, number} см і вагу {weight, number} кг.}} {receiver} вимагає, щоб усі коробки одного SKU збігалися за кількістю, розміром і вагою. Вирівняйте їх або відправте цю коробку в іншому відправленні.",
+      "incompletePacks": "Кількість: {sku} продається упаковками по {pack, number}. Введіть число, кратне {pack, number}.",
+      "missingAsin": "Товари: у {sku} немає ASIN, потрібного {receiver} для приймання. Покупець додає його в замовлення.",
+      "missingFnsku": "Товари: у {sku} немає FNSKU, потрібного {receiver} для маркування. Покупець додає його в замовлення.",
+      "duplicateCarton": "Ідентифікатор коробки: {carton} уже має інша коробка. Дайте кожній коробці власний ідентифікатор.",
+      "repeatedProduct": "Товари: {sku} указано в цій коробці більше одного разу. Укажіть його один раз з усіма одиницями.",
+      "mixedNetworks": "Товари: у цій коробці змішано товари FBA і AWD. Пакуйте товари кожної мережі в окремі коробки.",
+      "unknownProduct": "Товари: у цій коробці є товар, якого немає в замовленні. Вийміть його з коробки.",
+      "overQuantity": "Кількість: у коробках {packed, number} од. {sku}, а в замовленні залишилося {remaining, number}. Приберіть {extra, plural, one {# одиницю} few {# одиниці} many {# одиниць} other {# одиниці}}.",
+      "unknownChange": "Зміни рахунку: одна зміна стосується товару, якого немає в замовленні, або повторює іншу зміну. Видаліть її."
     }
   },
   "pallets": {
@@ -526,7 +540,19 @@
     "removeCartons": "Зняти {cartons} з палети: {pallet}",
     "noCartons": "На цій палеті ще немає коробок",
     "enterDimensions": "Укажіть довжину, ширину й висоту палети.",
-    "enterWeight": "Укажіть вагу брутто палети разом із самою палетою."
+    "enterWeight": "Укажіть вагу брутто палети разом із самою палетою.",
+    "rules": {
+      "palletFootprint": "Розміри: вантаж {length, number} × {width, number} см виступає за краї палети {receiver} {lengthCm, number} × {widthCm, number} см ({lengthIn, number} × {widthIn, number} дюйм.). Тримайте коробки в межах палети.",
+      "palletHeight": "Висота: {height, number} см перевищує ліміт {receiver} {maxCm, number} см ({maxIn, number} дюйм.) разом із палетою. Розподіліть коробки на більше палет.",
+      "stackableHeight": "Висота: {height, number} см завелика для штабельованої палети {receiver}, яка може бути до {maxCm, number} см ({maxIn, number} дюйм.). Встановіть «Штабелювання» на «Не штабелювати» або зменште вантаж.",
+      "palletWeight": "Вага: {weight, number} кг перевищує ліміт {receiver} {maxKg, number} кг ({maxLb, number} lb) разом із палетою. Розподіліть коробки на більше палет.",
+      "emptyPallet": "Коробки: на цій палеті ще немає коробок. Виберіть її коробки або видаліть палету.",
+      "duplicatePallet": "Палети: дві палети мають номер {pallet}. Імпортуйте їх знову з унікальними номерами.",
+      "unknownPalletCarton": "Коробки: {carton} не є коробкою цього відправлення. Приберіть її з цієї палети.",
+      "palletCartonTwice": "Коробки: {carton} вже є на іншій палеті. Приберіть її з цієї палети або з іншої.",
+      "noPallets": "Палети: ці коробки відправляються на палетах, а палет ще немає. Додайте палету або зніміть позначку «Упаковано на палети».",
+      "cartonsOffPallets": "Коробки: {count, plural, one {# коробка не на палеті: {cartons}. Виберіть для неї палету або додайте палету.} few {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте палету.} many {# коробок не на палетах: {cartons}. Виберіть палету для кожної або додайте палету.} other {# коробки не на палетах: {cartons}. Виберіть палету для кожної або додайте палету.}}"
+    }
   },
   "palletCartons": {
     "title": "Виберіть коробки: {pallet}",

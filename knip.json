@@ -53,6 +53,9 @@
     "packages/aisle": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
+    "packages/copacker-packing-rules": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
     "packages/copacker-emails": {
       "entry": ["src/emails/*.tsx"],
       "ignoreDependencies": ["@repo/oxlint-config"]

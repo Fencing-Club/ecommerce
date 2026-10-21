@@ -11,7 +11,7 @@ import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedLabelKinds, releasedStates, reservedPieces } from "@/server/readiness"
+import { knownPackingGroups, releasedLabelKinds, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
@@ -39,11 +39,18 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const { order, supplier } = await accessibleOrder(s, shipment.orderId)
   const workflow = await orderWorkflow(s, order.id)
   const step = workflow.shipments.find((row) => row.id === id)!
-  const reserved = reservedPieces(await db().select().from(shipments).where(eq(shipments.orderId, order.id)), id)
+  const rows = await db().select().from(shipments).where(eq(shipments.orderId, order.id))
+  const reserved = reservedPieces(rows, id)
   const snapshot = shipment.snapshot ?? order.data
   const packingOrder = shipment.amazonNetwork
     ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
     : order.data
+  // FBA cartons keep to Amazon's packing groups, which the packing checks know once Amazon has planned a shipment of
+  // the PO. Until then they're null, and the supplier is told the groups aren't checked.
+  const packingGroups =
+    order.data.destination === "amazon" && packingOrder.items.some((item) => item.amazonNetwork === "fba")
+      ? (knownPackingGroups(rows, shipment) ?? null)
+      : undefined
   const [docs, addresses] = await Promise.all([
     db()
       .select()
@@ -141,6 +148,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
       canRelease: step.canRelease
     },
     reserved,
+    packingGroups,
     snapshot: prices ? snapshot : unpricedOrder(snapshot),
     addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
     awaitingChanges,

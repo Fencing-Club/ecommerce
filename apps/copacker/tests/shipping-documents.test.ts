@@ -141,18 +141,20 @@ describe("pallets", () => {
   const awd = shippingScenarios.find((scenario) => scenario.id === "awd-freight")!.data
   const titles = (checks: { title: string }[]) => checks.map((check) => check.title)
 
-  it("gives FBA pallets Amazon's type, height, weight and four labels, and AWD's none of them", () => {
-    const checks = shipmentDocumentChecks(fba)
-    expect(titles(checks.pallets)).toEqual([
-      "palletType",
-      "pallet",
-      "palletHeight",
-      "weightLimit",
-      "secure",
-      "palletLabel"
-    ])
-    expect(checks.pallets[0]!.values).toMatchObject({ lengthCm: 121.9, widthCm: 101.6, heightCm: 182.9, kg: 680 })
-    expect(titles(shipmentDocumentChecks(awd).pallets)).toEqual(["pallet", "secure"])
+  it("gives FBA and AWD pallets Amazon's type, height, weight and wrap, and only FBA's the four labels", () => {
+    // AWD's shipping requirements send sellers to the same LTL and FTL pallet rules.
+    for (const shipment of [fba, awd]) {
+      const checks = shipmentDocumentChecks(shipment).pallets
+      expect(titles(checks)).toEqual(expect.arrayContaining(["palletType", "palletHeight", "weightLimit", "secure"]))
+      expect(checks.find((check) => check.title === "palletType")!.values).toMatchObject({
+        lengthCm: 121.9,
+        widthCm: 101.6
+      })
+      expect(checks.find((check) => check.title === "palletHeight")!.values).toMatchObject({ heightCm: 182.9 })
+      expect(checks.find((check) => check.title === "weightLimit")!.values).toMatchObject({ kg: 680, lb: 1500 })
+    }
+    expect(titles(shipmentDocumentChecks(fba).pallets)).toContain("palletLabel")
+    expect(titles(shipmentDocumentChecks(awd).pallets)).not.toContain("palletLabel")
   })
 
   it("has the bill of lading ready at the handoff once the pallets are loaded", () => {

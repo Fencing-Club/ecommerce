@@ -49,6 +49,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     shipment,
     step,
     reserved,
+    packingGroups,
     snapshot,
     addresses,
     awaitingChanges,
@@ -236,6 +237,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           orderRevision={order.revision}
           availablePieces={availablePieces}
           order={packingOrder}
+          packingGroups={packingGroups}
           initial={shipment.packingDraft ?? shipment.packing}
           addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
           addAddressTo={enteringFor && editsPartners ? { id: supplier.id, name: enteringFor } : undefined}

@@ -371,6 +371,7 @@
     },
     "draftSaved": "Bozza salvata",
     "cartonIssue": "Cartone {carton}: {message}",
+    "ruleSource": "Requisiti di {receiver}",
     "readyToSubmit": "Pronto per l’invio",
     "readyToSubmitApproval": "Pronto per l’invio; le modifiche vanno all’acquirente per l’approvazione",
     "readyToSubmitUpdates": "Pronto per l’invio; le modifiche aggiornano l’ordine di acquisto",
@@ -413,7 +414,11 @@
     "chooseAddress": "Indirizzo di ritiro",
     "packedUnits": "{count} di {available} unità",
     "leftCount": "{count} rimanenti",
-    "overCount": "{count} in eccesso"
+    "overCount": "{count} in eccesso",
+    "groupsUnchecked": {
+      "title": "Prodotti che possono condividere un cartone non ancora verificati",
+      "description": "Amazon indica quali prodotti richiedono cartoni separati quando pianifica la spedizione. Nel frattempo, imballa in cartoni propri i prodotti che Amazon gestisce separatamente, come le merci pericolose."
+    }
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -488,12 +493,21 @@
     "enterUnits": "Indica quante unità di questo prodotto contiene ogni cartone.",
     "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
     "rules": {
-      "unitsPerCarton": "Quantità: {units, number} unità vendibili per cartone superano il limite {receiver} di {max, number}. Suddividile in cartoni più piccoli.",
-      "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {receiver} consente al massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) per questo cartone}}.",
-      "cartonWeight": "Peso: {weight, number} kg superano il limite di {maxLb, number} lb ({maxKg, number} kg). Riduci il peso di ogni cartone.",
-      "oneSku": "Prodotti: {receiver} richiede un solo SKU per cartone. Sposta questi SKU in cartoni separati.",
-      "samePacking": "Modello di imballaggio: questo SKU usa {difference, select, units {{units, number} unità per cartone} other {cartoni da {length, number} × {width, number} × {height, number} cm e {weight, number} kg}} altrove in questa spedizione. Usa lo stesso modello di imballaggio per ogni cartone di questo SKU.",
-      "incompletePacks": "Quantità: questo prodotto è in confezioni da {pack, number}. Inserisci un multiplo di {pack, number} unità."
+      "unitsPerCarton": "Quantità: {units, number} unità superano il limite {receiver} di {max, number} per cartone. Metti al massimo {max, number} unità in ogni cartone.",
+      "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {receiver} consente al massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, a meno che il cartone contenga una sola unità} other {}}.",
+      "cartonWeight": "Peso: {weight, number} kg superano il limite {receiver} di {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, a meno che il cartone contenga una sola unità} other {}}. Metti meno unità in ogni cartone.",
+      "oneSku": "Prodotti: questo cartone contiene più di uno SKU, e {receiver} accetta un solo SKU per cartone. Imballa ogni SKU in cartoni propri.",
+      "packingGroups": "Prodotti: {receiver} non accetta {product} e {other} nello stesso cartone. Amazon li gestisce in modo diverso, ad esempio per merci pericolose, preparazione o etichette, e può inviarli a magazzini diversi. Sposta uno dei due in un altro cartone.",
+      "samePacking": "{difference, select, units {Quantità: gli altri cartoni di {sku} contengono {units, number} unità ciascuno.} other {Dimensioni: gli altri cartoni di {sku} misurano {length, number} × {width, number} × {height, number} cm e pesano {weight, number} kg.}} {receiver} richiede che tutti i cartoni di uno SKU abbiano le stesse unità, dimensioni e peso. Allineali, o spedisci questo cartone in un’altra spedizione.",
+      "incompletePacks": "Quantità: {sku} è venduto in confezioni da {pack, number}. Inserisci un multiplo di {pack, number}.",
+      "missingAsin": "Prodotti: {sku} non ha l’ASIN, che serve a {receiver} per riceverlo. L’acquirente lo aggiunge nell’ordine d’acquisto.",
+      "missingFnsku": "Prodotti: {sku} non ha l’FNSKU, che serve a {receiver} per etichettarlo. L’acquirente lo aggiunge nell’ordine d’acquisto.",
+      "duplicateCarton": "ID cartone: {carton} è già usato da un altro cartone. Dai a ogni cartone il suo ID.",
+      "repeatedProduct": "Prodotti: {sku} compare più volte in questo cartone. Indicalo una volta sola con tutte le sue unità.",
+      "mixedNetworks": "Prodotti: questo cartone mescola prodotti FBA e AWD. Imballa i prodotti di ogni rete in cartoni separati.",
+      "unknownProduct": "Prodotti: questo cartone contiene un prodotto che non è nell’ordine d’acquisto. Toglilo dal cartone.",
+      "overQuantity": "Quantità: i cartoni contengono {packed, number} unità di {sku}, ma nell’ordine d’acquisto ne restano {remaining, number}. Togli {extra, plural, one {# unità} other {# unità}}.",
+      "unknownChange": "Modifiche alla fattura: una modifica riguarda un prodotto che non è nell’ordine d’acquisto, o ripete un’altra modifica. Rimuovila."
     }
   },
   "pallets": {
@@ -526,7 +540,19 @@
     "removeCartons": "Rimuovi {cartons} da {pallet}",
     "noCartons": "Ancora nessun cartone su questo pallet",
     "enterDimensions": "Indica lunghezza, larghezza e altezza del pallet.",
-    "enterWeight": "Indica il peso lordo del pallet, pallet compreso."
+    "enterWeight": "Indica il peso lordo del pallet, pallet compreso.",
+    "rules": {
+      "palletFootprint": "Dimensioni: il carico misura {length, number} × {width, number} cm e sporge dal pallet {receiver} da {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in). Tieni i cartoni entro i bordi del pallet.",
+      "palletHeight": "Altezza: {height, number} cm supera il limite {receiver} di {maxCm, number} cm ({maxIn, number} in), pallet compreso. Distribuisci i cartoni su più pallet.",
+      "stackableHeight": "Altezza: {height, number} cm è troppo per un pallet {receiver} sovrapponibile, che può arrivare a {maxCm, number} cm ({maxIn, number} in). Imposta Impilabilità su Non impilabile o abbassa il carico.",
+      "palletWeight": "Peso: {weight, number} kg superano il limite {receiver} di {maxKg, number} kg ({maxLb, number} lb), pallet compreso. Distribuisci i cartoni su più pallet.",
+      "emptyPallet": "Cartoni: questo pallet non ha ancora cartoni. Scegli i suoi cartoni o elimina il pallet.",
+      "duplicatePallet": "Pallet: due pallet hanno il numero {pallet}. Importali di nuovo con numeri univoci.",
+      "unknownPalletCarton": "Cartoni: {carton} non è un cartone di questa spedizione. Toglilo da questo pallet.",
+      "palletCartonTwice": "Cartoni: {carton} è già su un altro pallet. Toglilo da questo pallet o dall’altro.",
+      "noPallets": "Pallet: questi cartoni viaggiano su pallet e non ce n’è ancora nessuno. Aggiungi un pallet o deseleziona “Imballato su pallet”.",
+      "cartonsOffPallets": "Cartoni: {count, plural, one {# cartone non è su nessun pallet: {cartons}. Scegli un pallet per il cartone o aggiungi un pallet.} other {# cartoni non sono su nessun pallet: {cartons}. Scegli un pallet per ognuno o aggiungi un pallet.}}"
+    }
   },
   "palletCartons": {
     "title": "Scegli i cartoni per {pallet}",

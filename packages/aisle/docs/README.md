@@ -24,10 +24,11 @@ decimals, calendar dates (including timezone-bearing aged-fee snapshots) and raw
 dates. It retains source codes and split shipments without assuming financial or inventory postings. See
 [removal evidence](../../../apps/copacker/docs/amazon-removals.md).
 
-## Carton rules
+## Packing rules
 
-`@repo/aisle/carton-policies` keeps each receiver's carton rules (FBA, AWD US) as data, checked by `validatePacking`.
-See [carton rules](carton-rules.md) for how it works, how to add a receiver, and Amazon's rules with their sources.
+The carton and pallet rules, and `validatePacking`, live in
+[`@repo/copacker-packing-rules`](../../copacker-packing-rules/docs/README.md). Aisle uses it to check a packing before
+building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports `amazonNetworks` from it.
 
 ## Supplier service costs
 

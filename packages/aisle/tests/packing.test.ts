@@ -1,17 +1,16 @@
 import { randomUUID } from "node:crypto"
+import { validatePacking, cartonNetworks, cartonList } from "@repo/copacker-packing-rules"
+import { amazonSources } from "@repo/copacker-packing-rules/carton-policies"
 import { describe, expect, it } from "vitest"
 import {
   orderInputSchema,
   packingSchema,
-  validatePacking,
   buildAwdRequest,
   buildFbaPlan,
-  cartonNetworks,
   fbaBoxes,
   splitByNetwork,
   commercialChanges,
   approveChanges,
-  cartonList,
   cartonsValue,
   fbaPallets,
   money,
@@ -309,6 +308,7 @@ describe("FBA shipments", () => {
         code: "cartonSize",
         values: {
           receiver: "FBA",
+          exception: "oneUnit",
           shape: "box",
           lengthCm: 91.44,
           widthCm: 63.5,
@@ -317,7 +317,8 @@ describe("FBA shipments", () => {
           widthIn: 25,
           heightIn: 25
         },
-        fields: ["length"]
+        fields: ["length"],
+        source: amazonSources.fbaShipping
       }
     ])
     // FBA cartons may be 36 in long, where AWD's stop at 25 in.
@@ -335,7 +336,8 @@ describe("FBA shipments", () => {
       {
         cartonId: "C2",
         code: "samePacking",
-        values: { sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 }
+        values: { receiver: "AWD", sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 },
+        source: amazonSources.awdInventory
       }
     ])
   })

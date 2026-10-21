@@ -9,6 +9,9 @@ The **Documents / Supplier packet** Storybook folder groups examples into:
 - **Layout**: pagination, large carton groups, Markdown instructions, and mobile.
 - **States and settings**: loading, failure, missing label assignments, and saved download preferences.
 
+**Simulators / Supplier packet** builds the whole packet from a shipment as production does, with sample labels, and
+lists every checklist line with when it's printed (see [Storybook](storybook.md#simulators)).
+
 It is the review surface for the Pen packing list, checklist,
 label reference, and shipment overview. It generates a real PDF with `@react-pdf/renderer` and previews that same
 file with PDF.js. No Chromium executable, backend service, customer data, or credentials are needed to generate it.

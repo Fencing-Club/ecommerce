@@ -1,10 +1,11 @@
-import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/aisle"
+import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/copacker-packing-rules"
 import { ChevronRight, Copy, Ellipsis, Trash2, X } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { nextPalletId, type PalletCarton, type PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
-import { DimensionsField, FieldError, IssueBadge, NumberField, useMeasure } from "./packing-fields"
+import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
+import { type PalletIssuePlace, usePalletIssueErrors } from "./packing-issues"
 import { PalletCartonsDialog } from "./pallet-cartons-dialog"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
@@ -111,7 +112,7 @@ function PalletRow({
 }) {
   const t = useTranslations("orders.pallets")
   const units = useTranslations("orders.cartonEditor")
-  const rules = useTranslations("server.readiness.packing")
+  const issueErrors = usePalletIssueErrors()
   const packing = useTranslations("orders.packing")
   const measure = useMeasure()
   const id = useId()
@@ -126,13 +127,21 @@ function PalletRow({
   const blankSides = (["length", "width", "height"] as const).filter(
     (side) => shown(side, value[side]) && !positive(value[side])
   )
-  const errors = {
-    dimensions: blankSides.length ? [t("enterDimensions")] : [],
-    weight: shown("weight", value.weight) && !positive(value.weight) ? [t("enterWeight")] : [],
-    // A new pallet has no cartons until they're chosen, so that waits for submitting.
-    pallet: issues
-      .filter((issue) => issue.code !== "emptyPallet" || showErrors)
-      .map((issue) => ("values" in issue ? rules(issue.code, issue.values) : rules(issue.code)))
+  // The rules the pallet breaks: where it goes under the field it names, with this pallet's numbers, and how it matches
+  // the cartons under the row. A new pallet has no cartons until they're chosen, so that waits for submitting.
+  const ruled = issueErrors(
+    issues.filter((issue) => issue.code !== "emptyPallet" || showErrors),
+    value
+  )
+  const ruledAt = (...places: PalletIssuePlace[]) => ruled.filter((error) => places.includes(error.place))
+  const outlined = ruled.flatMap((error) => error.fields)
+  const errors: Record<"dimensions" | "weight" | "pallet", { message: string; source?: RuleSource }[]> = {
+    dimensions: [...(blankSides.length ? [{ message: t("enterDimensions") }] : []), ...ruledAt("dimensions")],
+    weight: [
+      ...(shown("weight", value.weight) && !positive(value.weight) ? [{ message: t("enterWeight") }] : []),
+      ...ruledAt("weight")
+    ],
+    pallet: ruledAt("pallet", "pallets")
   }
   const count = errors.dimensions.length + errors.weight.length + errors.pallet.length
   // Like a carton row, a pallet opens when it has problems or no cartons, and when it gets a problem unless closed by hand.
@@ -149,8 +158,10 @@ function PalletRow({
     open &&
     errors[place].length > 0 && (
       <div id={`${id}-${place}`} aria-live="polite" className={cn("flex flex-col gap-2", className)}>
-        {errors[place].map((message) => (
-          <FieldError key={message}>{message}</FieldError>
+        {errors[place].map((error) => (
+          <FieldError key={error.message} source={error.source}>
+            {error.message}
+          </FieldError>
         ))}
       </div>
     )
@@ -242,7 +253,10 @@ function PalletRow({
               value={sides}
               onChange={(patch) => onChange({ ...value, ...patch })}
               onBlur={touch}
-              invalid={blankSides}
+              invalid={[
+                ...blankSides,
+                ...(["length", "width", "height"] as const).filter((side) => outlined.includes(side))
+              ]}
               errorId={`${id}-dimensions`}
               className="wide:col-start-3 wide:row-start-1 wide:self-center"
             />

@@ -15,6 +15,7 @@ package's own `docs/` folder, next to its code: its product rules, pages, APIs, 
 
 - [Copacker](../apps/copacker/docs/README.md)
 - [Aisle commerce and purchasing contracts](../packages/aisle/docs/README.md)
+- [Copacker packing rules: carton and pallet policies](../packages/copacker-packing-rules/docs/README.md)
 - [Video: the Copacker ad in Remotion](../apps/video/docs/README.md)
 - [Turbo remote cache on Cloudflare](../apps/turbo-cache/docs/README.md)
 - [Fencing Club email and print templates](../packages/fc-templates/README.md)

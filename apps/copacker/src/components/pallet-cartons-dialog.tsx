@@ -1,4 +1,4 @@
-import { cartonList } from "@repo/aisle"
+import { cartonList } from "@repo/copacker-packing-rules"
 import { ChevronDown, ListChecks, Search } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

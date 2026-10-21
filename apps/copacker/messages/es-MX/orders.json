@@ -371,6 +371,7 @@
     },
     "draftSaved": "Borrador guardado",
     "cartonIssue": "Caja {carton}: {message}",
+    "ruleSource": "Requisitos de {receiver}",
     "readyToSubmit": "Listo para enviar",
     "readyToSubmitApproval": "Listo para enviar; los cambios van al comprador para su aprobación",
     "readyToSubmitUpdates": "Listo para enviar; los cambios actualizan la orden de compra",
@@ -413,7 +414,11 @@
     "chooseAddress": "Dirección de recolección",
     "packedUnits": "{count} de {available, plural, one {# unidad} other {# unidades}}",
     "leftCount": "Faltan {count}",
-    "overCount": "{count} de más"
+    "overCount": "{count} de más",
+    "groupsUnchecked": {
+      "title": "Aún no se revisa qué productos pueden compartir caja",
+      "description": "Amazon indica qué productos necesitan cajas separadas al planear el envío. Mientras tanto, empaca en sus propias cajas los productos que Amazon maneja por separado, como las mercancías peligrosas."
+    }
   },
   "paymentTerms": {
     "net7": "Neto 7 días",
@@ -488,12 +493,21 @@
     "enterUnits": "Indica cuántas unidades de este producto lleva cada caja.",
     "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
     "rules": {
-      "unitsPerCarton": "Cantidad: {units, number} unidades vendibles por caja superan el límite de {max, number} de {receiver}. Divídelas en cajas más pequeñas.",
-      "cartonSize": "Dimensiones: el {side, select, width {ancho} height {alto} other {largo}} es de {size, number} cm. {receiver} permite hasta {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) para esta caja}}.",
-      "cartonWeight": "Peso: {weight, number} kg supera el límite de {maxLb, number} lb ({maxKg, number} kg). Reduce el peso de cada caja.",
-      "oneSku": "Productos: {receiver} requiere un solo SKU por caja. Mueve estos SKU a cajas separadas.",
-      "samePacking": "Plantilla de empaque: este SKU usa {difference, select, units {{units, number} unidades por caja} other {cajas de {length, number} × {width, number} × {height, number} cm y {weight, number} kg}} en otra parte de este envío. Usa la misma plantilla de empaque en todas las cajas de este SKU.",
-      "incompletePacks": "Cantidad: este producto viene en paquetes de {pack, number}. Usa un múltiplo de {pack, number} unidades."
+      "unitsPerCarton": "Cantidad: {units, number} unidades superan el límite de {receiver} de {max, number} por caja. Empaca {max, number} o menos en cada caja.",
+      "cartonSize": "Dimensiones: el {side, select, width {ancho} height {alto} other {largo}} es de {size, number} cm. {receiver} permite hasta {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, salvo que la caja contenga una sola unidad} other {}}.",
+      "cartonWeight": "Peso: {weight, number} kg supera el límite de {receiver} de {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, salvo que la caja contenga una sola unidad} other {}}. Empaca menos unidades en cada caja.",
+      "oneSku": "Productos: esta caja contiene más de un SKU, y {receiver} acepta un solo SKU por caja. Empaca cada SKU en sus propias cajas.",
+      "packingGroups": "Productos: {receiver} no acepta {product} y {other} en la misma caja. Amazon los maneja de forma distinta, por ejemplo por mercancías peligrosas, preparación o etiquetas, y puede enviarlos a almacenes distintos. Mueve uno de ellos a otra caja.",
+      "samePacking": "{difference, select, units {Cantidad: las otras cajas de {sku} contienen {units, number} unidades cada una.} other {Dimensiones: las otras cajas de {sku} miden {length, number} × {width, number} × {height, number} cm y pesan {weight, number} kg.}} {receiver} exige que todas las cajas de un SKU coincidan en unidades, tamaño y peso. Iguálalas o envía esta caja en otro envío.",
+      "incompletePacks": "Cantidad: {sku} se vende en paquetes de {pack, number}. Ingresa un múltiplo de {pack, number}.",
+      "missingAsin": "Productos: {sku} no tiene ASIN, que {receiver} necesita para recibirlo. El comprador lo agrega en la orden de compra.",
+      "missingFnsku": "Productos: {sku} no tiene FNSKU, que {receiver} necesita para etiquetarlo. El comprador lo agrega en la orden de compra.",
+      "duplicateCarton": "ID de caja: {carton} ya lo usa otra caja. Dale a cada caja su propio ID.",
+      "repeatedProduct": "Productos: {sku} aparece más de una vez en esta caja. Inclúyelo una sola vez con todas sus unidades.",
+      "mixedNetworks": "Productos: esta caja mezcla productos de FBA y AWD. Empaca los productos de cada red en cajas separadas.",
+      "unknownProduct": "Productos: esta caja contiene un producto que no está en la orden de compra. Quítalo de la caja.",
+      "overQuantity": "Cantidad: las cajas contienen {packed, number} unidades de {sku}, pero a la orden de compra le quedan {remaining, number}. Quita {extra, plural, one {# unidad} other {# unidades}}.",
+      "unknownChange": "Cambios de factura: un cambio es de un producto que no está en la orden de compra, o repite otro cambio. Quítalo."
     }
   },
   "pallets": {
@@ -526,7 +540,19 @@
     "removeCartons": "Quitar {cartons} de {pallet}",
     "noCartons": "Aún no hay cajas en esta tarima",
     "enterDimensions": "Indica el largo, el ancho y el alto de la tarima.",
-    "enterWeight": "Indica el peso bruto de la tarima, incluida la tarima."
+    "enterWeight": "Indica el peso bruto de la tarima, incluida la tarima.",
+    "rules": {
+      "palletFootprint": "Dimensiones: la carga mide {length, number} × {width, number} cm y sobresale de la tarima de {receiver} de {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in). Mantén las cajas dentro de la tarima.",
+      "palletHeight": "Altura: {height, number} cm supera el límite de {receiver} de {maxCm, number} cm ({maxIn, number} in), incluida la tarima. Reparte las cajas en más tarimas.",
+      "stackableHeight": "Altura: {height, number} cm es demasiado alta para una tarima apilable de {receiver}, que puede medir hasta {maxCm, number} cm ({maxIn, number} in). Cambia Apilado a No apilable o baja la carga.",
+      "palletWeight": "Peso: {weight, number} kg supera el límite de {receiver} de {maxKg, number} kg ({maxLb, number} lb), incluida la tarima. Reparte las cajas en más tarimas.",
+      "emptyPallet": "Cajas: esta tarima aún no tiene cajas. Elige sus cajas o elimina la tarima.",
+      "duplicatePallet": "Tarimas: dos tarimas tienen el número {pallet}. Vuelve a importarlas con números únicos.",
+      "unknownPalletCarton": "Cajas: {carton} no es una caja de este envío. Quítala de esta tarima.",
+      "palletCartonTwice": "Cajas: {carton} ya está en otra tarima. Quítala de esta tarima o de la otra.",
+      "noPallets": "Tarimas: estas cajas se envían en tarimas y aún no hay ninguna. Agrega una tarima o desmarca «Empacado en tarimas».",
+      "cartonsOffPallets": "Cajas: {count, plural, one {# caja no está en ninguna tarima: {cartons}. Elige una tarima para ella o agrega una tarima.} other {# cajas no están en ninguna tarima: {cartons}. Elige una tarima para cada una o agrega una tarima.}}"
+    }
   },
   "palletCartons": {
     "title": "Elegir cajas para {pallet}",

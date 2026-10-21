@@ -371,6 +371,7 @@
     },
     "draftSaved": "ڈرافٹ محفوظ ہو گیا",
     "cartonIssue": "کارٹن {carton}: {message}",
+    "ruleSource": "{receiver} کی شرائط",
     "readyToSubmit": "جمع کرانے کے لیے تیار",
     "readyToSubmitApproval": "جمع کرانے کے لیے تیار؛ تبدیلیاں منظوری کے لیے خریدار کو جائیں گی",
     "readyToSubmitUpdates": "جمع کرانے کے لیے تیار؛ تبدیلیاں خریداری آرڈر کو اپ ڈیٹ کریں گی",
@@ -413,7 +414,11 @@
     "chooseAddress": "پک اپ کا پتہ",
     "packedUnits": "{available} اکائیوں میں سے {count}",
     "leftCount": "{count} باقی",
-    "overCount": "{count} زیادہ"
+    "overCount": "{count} زیادہ",
+    "groupsUnchecked": {
+      "title": "ابھی چیک نہیں ہوا کہ کون سی مصنوعات ایک کارٹن میں رہ سکتی ہیں",
+      "description": "Amazon شپمنٹ کی منصوبہ بندی کرتے وقت بتاتا ہے کہ کن مصنوعات کو الگ کارٹن چاہئیں۔ تب تک، جن مصنوعات کو Amazon الگ سے سنبھالتا ہے، جیسے خطرناک سامان، انہیں ان کے اپنے کارٹنوں میں پیک کریں۔"
+    }
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -488,12 +493,21 @@
     "enterUnits": "بتائیں کہ ہر کارٹن میں اس پروڈکٹ کی کتنی اکائیاں ہیں۔",
     "cartonCount": "{count, plural, one {# کارٹن} other {# کارٹن}}",
     "rules": {
-      "unitsPerCarton": "مقدار: ہر کارٹن میں {units, number} قابل فروخت یونٹس {receiver} کی {max, number} کی حد سے زیادہ ہیں۔ انہیں چھوٹے کارٹنوں میں تقسیم کریں۔",
-      "cartonSize": "پیمائش: {side, select, width {چوڑائی} height {اونچائی} other {لمبائی}} {size, number} cm ہے۔ {receiver} {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {اس کارٹن کے لیے زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} کی اجازت دیتا ہے۔",
-      "cartonWeight": "وزن: {weight, number} kg، {maxLb, number} lb ({maxKg, number} kg) کی حد سے زیادہ ہے۔ ہر کارٹن کا وزن کم کریں۔",
-      "oneSku": "مصنوعات: {receiver} میں ہر کارٹن میں ایک ہی SKU ہونا چاہیے۔ ان SKUs کو الگ کارٹنوں میں رکھیں۔",
-      "samePacking": "پیکنگ ٹیمپلیٹ: یہ SKU اس شپمنٹ میں کسی اور جگہ {difference, select, units {ہر کارٹن میں {units, number} یونٹس} other {{length, number} × {width, number} × {height, number} cm اور {weight, number} kg کے کارٹن}} استعمال کرتا ہے۔ اس SKU کے ہر کارٹن کے لیے ایک ہی پیکنگ ٹیمپلیٹ استعمال کریں۔",
-      "incompletePacks": "مقدار: یہ پروڈکٹ {pack, number} کے پیک میں آتی ہے۔ {pack, number} اکائیوں کا ضعف درج کریں۔"
+      "unitsPerCarton": "مقدار: {units, number} یونٹس {receiver} کی فی کارٹن {max, number} کی حد سے زیادہ ہیں۔ ہر کارٹن میں {max, number} یا اس سے کم پیک کریں۔",
+      "cartonSize": "پیمائش: {side, select, width {چوڑائی} height {اونچائی} other {لمبائی}} {size, number} cm ہے۔ {receiver} {shape, select, cube {ہر طرف زیادہ سے زیادہ {lengthCm, number} cm ({lengthIn, number} in)} other {زیادہ سے زیادہ {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}} کی اجازت دیتا ہے{exception, select, oneUnit {، سوائے اس کارٹن کے جس میں صرف ایک یونٹ ہو} other {}}۔",
+      "cartonWeight": "وزن: {weight, number} kg، {receiver} کی {maxKg, number} kg ({maxLb, number} lb) کی حد سے زیادہ ہے{exception, select, oneUnit {، سوائے اس کارٹن کے جس میں صرف ایک یونٹ ہو} other {}}۔ ہر کارٹن میں کم یونٹس پیک کریں۔",
+      "oneSku": "مصنوعات: اس کارٹن میں ایک سے زیادہ SKU ہیں، اور {receiver} فی کارٹن ایک SKU لیتا ہے۔ ہر SKU کو اس کے اپنے کارٹنوں میں پیک کریں۔",
+      "packingGroups": "مصنوعات: {receiver} {product} اور {other} کو ایک کارٹن میں قبول نہیں کرتا۔ Amazon انہیں مختلف طریقے سے سنبھالتا ہے، مثلاً خطرناک سامان، پریپ یا لیبلز کی وجہ سے، اور انہیں مختلف گوداموں میں بھیج سکتا ہے۔ ان میں سے ایک کو دوسرے کارٹن میں منتقل کریں۔",
+      "samePacking": "{difference, select, units {مقدار: {sku} کے دوسرے کارٹنوں میں {units, number} یونٹس ہیں۔} other {پیمائش: {sku} کے دوسرے کارٹن {length, number} × {width, number} × {height, number} cm اور {weight, number} kg کے ہیں۔}} {receiver} کے لیے کسی SKU کے تمام کارٹنوں کے یونٹس، سائز اور وزن ایک جیسے ہونے ضروری ہیں۔ انہیں ایک جیسا کریں، یا اس کارٹن کو کسی دوسری شپمنٹ میں بھیجیں۔",
+      "incompletePacks": "مقدار: {sku} {pack, number} کے پیک میں فروخت ہوتا ہے۔ {pack, number} کا ضرب درج کریں۔",
+      "missingAsin": "مصنوعات: {sku} کا ASIN موجود نہیں، جو {receiver} کو اسے وصول کرنے کے لیے درکار ہے۔ خریدار اسے پرچیز آرڈر میں شامل کرتا ہے۔",
+      "missingFnsku": "مصنوعات: {sku} کا FNSKU موجود نہیں، جو {receiver} کو اس پر لیبل لگانے کے لیے درکار ہے۔ خریدار اسے پرچیز آرڈر میں شامل کرتا ہے۔",
+      "duplicateCarton": "کارٹن ID: {carton} پہلے سے کسی اور کارٹن کی ID ہے۔ ہر کارٹن کو اپنی ID دیں۔",
+      "repeatedProduct": "پروڈکٹس: {sku} اس کارٹن میں ایک سے زیادہ بار درج ہے۔ اسے تمام یونٹس کے ساتھ ایک بار درج کریں۔",
+      "mixedNetworks": "مصنوعات: اس کارٹن میں FBA اور AWD کی مصنوعات ملی ہوئی ہیں۔ ہر نیٹ ورک کی مصنوعات الگ کارٹنوں میں پیک کریں۔",
+      "unknownProduct": "پروڈکٹس: اس کارٹن میں ایسا پروڈکٹ ہے جو پرچیز آرڈر میں نہیں ہے۔ اسے کارٹن سے نکالیں۔",
+      "overQuantity": "مقدار: کارٹنوں میں {sku} کے {packed, number} یونٹس ہیں، لیکن پرچیز آرڈر میں صرف {remaining, number} باقی ہیں۔ {extra, plural, one {# یونٹ} other {# یونٹس}} نکالیں۔",
+      "unknownChange": "انوائس تبدیلیاں: کوئی تبدیلی ایسی پروڈکٹ کی ہے جو پرچیز آرڈر میں نہیں، یا کسی دوسری تبدیلی کو دہراتی ہے۔ اسے ہٹائیں۔"
     }
   },
   "pallets": {
@@ -526,7 +540,19 @@
     "removeCartons": "{pallet} سے {cartons} ہٹائیں",
     "noCartons": "اس پیلٹ پر ابھی کوئی کارٹن نہیں",
     "enterDimensions": "پیلٹ کی لمبائی، چوڑائی اور اونچائی درج کریں۔",
-    "enterWeight": "پیلٹ کا کل وزن، پیلٹ سمیت، درج کریں۔"
+    "enterWeight": "پیلٹ کا کل وزن، پیلٹ سمیت، درج کریں۔",
+    "rules": {
+      "palletFootprint": "پیمائش: لوڈ {length, number} × {width, number} سینٹی میٹر ہے، جو {receiver} کے {lengthCm, number} × {widthCm, number} سینٹی میٹر ({lengthIn, number} × {widthIn, number} انچ) پیلٹ کے کناروں سے باہر ہے۔ کارٹنوں کو پیلٹ کے اندر رکھیں۔",
+      "palletHeight": "اونچائی: {height, number} سینٹی میٹر پیلٹ سمیت {receiver} کی {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) کی حد سے زیادہ ہے۔ کارٹنوں کو زیادہ پیلٹوں پر تقسیم کریں۔",
+      "stackableHeight": "اونچائی: {height, number} سینٹی میٹر اسٹیک ہونے والے {receiver} پیلٹ کے لیے بہت زیادہ ہے، جس کی حد {maxCm, number} سینٹی میٹر ({maxIn, number} انچ) ہے۔ اسٹیکنگ کو “اسٹیک نہیں ہو سکتا” پر سیٹ کریں یا لوڈ کم کریں۔",
+      "palletWeight": "وزن: {weight, number} kg پیلٹ سمیت {receiver} کی {maxKg, number} kg ({maxLb, number} lb) کی حد سے زیادہ ہے۔ کارٹنوں کو زیادہ پیلٹوں پر تقسیم کریں۔",
+      "emptyPallet": "کارٹن: اس پیلٹ پر ابھی کوئی کارٹن نہیں۔ اس کے کارٹن منتخب کریں یا پیلٹ حذف کریں۔",
+      "duplicatePallet": "پیلٹ: دو پیلٹوں کا نمبر {pallet} ہے۔ انہیں منفرد نمبروں کے ساتھ دوبارہ امپورٹ کریں۔",
+      "unknownPalletCarton": "کارٹن: {carton} اس شپمنٹ کا کارٹن نہیں ہے۔ اسے اس پیلٹ سے ہٹائیں۔",
+      "palletCartonTwice": "کارٹن: {carton} پہلے سے کسی دوسرے پیلٹ پر ہے۔ اسے اس پیلٹ سے یا دوسرے سے ہٹائیں۔",
+      "noPallets": "پیلٹس: یہ کارٹن پیلٹس پر بھیجے جاتے ہیں، اور ابھی کوئی پیلٹ نہیں۔ پیلٹ شامل کریں یا “پیلٹ پر پیک” سے نشان ہٹائیں۔",
+      "cartonsOffPallets": "کارٹن: {count, plural, one {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ اس کے لیے پیلٹ منتخب کریں یا نیا پیلٹ شامل کریں۔} other {# کارٹن کسی پیلٹ پر نہیں: {cartons}۔ ہر ایک کے لیے پیلٹ منتخب کریں یا نیا پیلٹ شامل کریں۔}}"
+    }
   },
   "palletCartons": {
     "title": "{pallet} کے لیے کارٹن منتخب کریں",

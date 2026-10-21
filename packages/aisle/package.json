@@ -5,7 +5,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./carton-policies": "./src/carton-policies.ts",
     "./labels": "./src/labels.ts",
     "./amazon": "./src/amazon.ts",
     "./shopify": "./src/shopify.ts",
@@ -34,6 +33,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@repo/copacker-packing-rules": "workspace:*",
     "zod": "^4.6.7",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.4.299",

@@ -1,4 +1,4 @@
-import { validatePallets } from "@repo/aisle"
+import { validatePallets } from "@repo/copacker-packing-rules"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
@@ -116,7 +116,9 @@ export const Errors = meta.story({
     const third = within(canvas.getByRole("region", { name: "Pallet 3" }))
     await expect(third.getByText("Enter the pallet’s length, width and height.")).toBeVisible()
     await expect(third.getByText("Enter the pallet’s gross weight, with the pallet itself.")).toBeVisible()
-    await expect(third.getByText("Pallet 3 has no cartons. Choose its cartons, or delete it.")).toBeVisible()
+    await expect(
+      third.getByText("Cartons: this pallet has no cartons yet. Choose its cartons, or delete the pallet.")
+    ).toBeVisible()
     await expect(third.getByRole("spinbutton", { name: "Pallet 3: Height (cm)" })).toHaveAttribute(
       "aria-invalid",
       "true"

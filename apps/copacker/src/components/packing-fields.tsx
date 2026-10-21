@@ -1,4 +1,4 @@
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, ExternalLink } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
@@ -142,16 +142,41 @@ export function IssueBadge({ count, className }: { count: number; className?: st
 export function FieldError({
   children,
   id,
-  className
+  className,
+  source
 }: {
   children: React.ReactNode
   id?: string
   className?: string
+  // Where the receiver states the rule, linked after the message, such as "FBA requirements".
+  source?: RuleSource
 }) {
+  const t = useTranslations("orders.packing")
+  const booking = useTranslations("booking")
   return (
     <p id={id} className={cn("flex items-start gap-2 text-[13px] text-destructive", className)}>
       <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-      <span>{children}</span>
+      <span>
+        <span>{children}</span>
+        {source && (
+          <>
+            {" "}
+            <a
+              href={source.href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-sm whitespace-nowrap text-foreground underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {t("ruleSource", { receiver: source.receiver })}
+              <ExternalLink className="size-3 text-muted-foreground" aria-hidden />
+              <span className="sr-only">{booking("newTab")}</span>
+            </a>
+          </>
+        )}
+      </span>
     </p>
   )
 }
+
+// The page where a receiver states a rule, such as Amazon's help on FBA's box sizes, and who it is.
+export type RuleSource = { href: string; receiver: string }

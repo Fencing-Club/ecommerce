@@ -1,18 +1,20 @@
-import type { OrderInput, ValidationIssue } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import type { ValidationIssue } from "@repo/copacker-packing-rules"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cartonGroupLabel, type CartonGroup, groupCartonIds } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { CartonProductsDialog } from "./carton-products-dialog"
-import { DimensionsField, FieldError, IssueBadge, NumberField, useMeasure } from "./packing-fields"
+import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
+import { useCartonIssueErrors } from "./packing-issues"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 type Place = "carton" | "count" | "dimensions" | "weight" | number
 // A problem with a carton configuration: where it shows (under the row, a field or a product, by its index), and the
 // fields it outlines.
-type CartonError = { message: string; place: Place; outlines: string[] }
+type CartonError = { message: string; place: Place; outlines: string[]; source?: RuleSource }
 
 // One set of columns, so the product band lines up under the cartons: toggle, cartons, count, dimensions, weight,
 // contents and the menu. From 50rem the fields have the design's widths, the gaps grow from 1rem to 2rem as there's room,
@@ -123,7 +125,7 @@ function CartonRow({
   onDelete: () => void
 }) {
   const t = useTranslations("orders.cartonEditor")
-  const rules = useTranslations("server.readiness.packing")
+  const issueErrors = useCartonIssueErrors()
   const packing = useTranslations("orders.packing")
   const format = useFormatter()
   const measure = useMeasure()
@@ -154,53 +156,7 @@ function CartonRow({
   const errorId = (place: Place) => `${id}-${place}`
 
   function cartonErrors() {
-    const found: CartonError[] = []
-    const indexOf = (sku?: string) =>
-      value.items.findIndex((content) => products.find((item) => item.id === content.itemId)?.buyerSku === sku)
-    for (const issue of issues) {
-      const sku = "values" in issue && "sku" in issue.values ? issue.values.sku : undefined
-      const index = indexOf(sku)
-      const content = value.items[index]
-      const item = products.find((product) => product.id === content?.itemId)
-      if (issue.code === "unitsPerCarton" && index >= 0) {
-        found.push({ place: index, outlines: [`items.${index}`], message: t("rules.unitsPerCarton", issue.values) })
-      } else if (issue.code === "cartonSize") {
-        const side = issue.fields?.find((field) => field !== "weight") ?? "length"
-        found.push({
-          place: "dimensions",
-          outlines: issue.fields ?? [],
-          message: t("rules.cartonSize", { ...issue.values, side, size: value[side] })
-        })
-      } else if (issue.code === "cartonWeight") {
-        found.push({
-          place: "weight",
-          outlines: ["weight"],
-          message: t("rules.cartonWeight", { ...issue.values, weight: value.weight })
-        })
-      } else if (issue.code === "oneSku") {
-        found.push({ place: "carton", outlines: [], message: t("rules.oneSku", issue.values) })
-      } else if (issue.code === "incompletePacks" && index >= 0) {
-        found.push({ place: index, outlines: [`items.${index}`], message: t("rules.incompletePacks", issue.values) })
-      } else if (issue.code === "samePacking" && content && item) {
-        // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
-        const sellable = content.pieces / item.piecesPerSet
-        found.push({
-          place: index,
-          outlines: [],
-          message: t("rules.samePacking", {
-            ...issue.values,
-            difference: sellable === issue.values.units ? "size" : "units"
-          })
-        })
-      } else {
-        // The rest read as the server states them, under the product they name or the row.
-        found.push({
-          place: index >= 0 ? index : "carton",
-          outlines: [],
-          message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-        })
-      }
-    }
+    const found: CartonError[] = issueErrors(issues, value, products)
     // Blank or impossible numbers, once they've been entered, left or submitted.
     const shown = (field: string, number: number) => showErrors || touched.includes(field) || Number.isFinite(number)
     const positive = (number: number) => Number.isFinite(number) && number > 0
@@ -218,11 +174,16 @@ function CartonRow({
     }
     for (const [index, content] of value.items.entries()) {
       const field = `items.${index}`
-      const pack = products.find((item) => item.id === content.itemId)?.piecesPerSet ?? 1
+      const product = products.find((item) => item.id === content.itemId)
+      const pack = product?.piecesPerSet ?? 1
       if (shown(field, content.pieces) && !(Number.isInteger(content.pieces) && content.pieces > 0)) {
         found.push({ place: index, outlines: [field], message: t("enterUnits") })
       } else if (content.pieces % pack !== 0) {
-        found.push({ place: index, outlines: [field], message: t("rules.incompletePacks", { pack }) })
+        found.push({
+          place: index,
+          outlines: [field],
+          message: t("rules.incompletePacks", { pack, sku: product?.buyerSku ?? "" })
+        })
       }
     }
     if (showErrors && !value.items.length) {
@@ -240,7 +201,9 @@ function CartonRow({
     at(place).length > 0 && (
       <div id={errorId(place)} aria-live="polite" className={cn("flex flex-col gap-2", className)}>
         {at(place).map((error) => (
-          <FieldError key={error.message}>{error.message}</FieldError>
+          <FieldError key={error.message} source={error.source}>
+            {error.message}
+          </FieldError>
         ))}
       </div>
     )
