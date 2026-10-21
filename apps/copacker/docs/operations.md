@@ -91,7 +91,7 @@ Then, side by side:
 - `worker`: Copacker's build, the built-Worker webhook and job regressions and every migration on an empty Postgres 18,
   when Copacker is affected.
 - `stories`: the Storybook tests, in four shards, when Copacker is affected.
-- `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
+- `e2e`: the [end-to-end suite](e2e.md), in three shards, when Copacker is affected.
 
 Turbo replays tasks whose inputs have not changed. `ci-ok` is the required aggregate check. The Cloudflare release
 workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the environment's `RELEASE_CUTOVER_READY`. These gates are enabled
