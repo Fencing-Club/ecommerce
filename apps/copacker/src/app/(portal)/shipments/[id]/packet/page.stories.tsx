@@ -30,10 +30,11 @@ const meta = preview.meta({
         if (new URL(request.url).searchParams.get("section") === "verify") {
           return new HttpResponse(null, { status: 204 })
         }
-        // Product labels come on small pages, carton labels on 4 × 6 inch ones.
-        const small = new URL(request.url).searchParams.get("section") === "product_labels"
+        // Product labels come on small pages, carton labels on 4 × 6 inch ones, and pallet labels on Letter paper.
+        const section = new URL(request.url).searchParams.get("section")
+        const sizes: Record<string, [number, number]> = { product_labels: [144, 72], pallet_labels: [612, 792] }
         const pdf = await PDFDocument.create()
-        pdf.addPage(small ? [144, 72] : [288, 432]).drawText("STORYBOOK LABEL FIXTURE", { x: 8, y: 20, size: 8 })
+        pdf.addPage(sizes[section ?? ""] ?? [288, 432]).drawText("STORYBOOK LABEL FIXTURE", { x: 8, y: 20, size: 8 })
         return new HttpResponse(await pdf.save(), { headers: { "Content-Type": "application/pdf" } })
       })
     )
@@ -88,6 +89,42 @@ export const PacketOrder = meta.story({
   }
 })
 
+// Packed on pallets for FBA: Amazon's pallet labels follow the carton labels, before the product labels.
+export const FbaPallets = meta.story({
+  args: { page: { ...released, data: scenario("fba-freight"), hasProductLabels: true } },
+  beforeEach: () => {
+    const click = spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined)
+    return () => click.mockRestore()
+  },
+  play: async (context) => {
+    await ready(context)
+    const { canvas } = context
+    await expect(
+      canvas.getAllByRole("button", { name: /labels$/ }).map((button) => button.getAttribute("aria-label"))
+    ).toEqual(["Carton labels", "Pallet labels", "Product labels"])
+    await expect(canvas.getByRole("button", { name: "Pallet labels" })).toHaveAttribute(
+      "href",
+      `/api/shipments/${id}/packet?section=pallet_labels&version=released-snapshot`
+    )
+    await userEvent.click(canvas.getByRole("button", { name: "Download packet" }))
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce(), { timeout: 30000 })
+    const [link] = mocked(HTMLAnchorElement.prototype.click).mock.contexts
+    invariant(link instanceof HTMLAnchorElement)
+    const pdf = await PDFDocument.load(await (await fetch(link.href)).arrayBuffer())
+    await expect(
+      pdf
+        .getPages()
+        .map((page) => page.getSize())
+        .map(({ width, height }) => [Math.round(width), Math.round(height)])
+        .slice(-3)
+    ).toEqual([
+      [288, 432],
+      [612, 792],
+      [144, 72]
+    ])
+  }
+})
+
 export const RevisionChanged = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(http.get(`/api/shipments/${id}/packet`, () => new HttpResponse("Packet changed", { status: 409 })))
@@ -123,7 +160,7 @@ export const LabelsWithoutReferenceDocuments = meta.story({
       unavailable: true,
       id,
       message: "Complete the shipment details before downloading the supplier packet.",
-      labelSections: ["carton_labels", "carrier_labels", "product_labels"]
+      labelSections: ["carton_labels", "carrier_labels", "pallet_labels", "product_labels"]
     }
   },
   play: async ({ canvas }) => {
@@ -135,6 +172,6 @@ export const LabelsWithoutReferenceDocuments = meta.story({
     // The packing list, then the labels in the packet’s order.
     await expect(
       canvas.getAllByRole("button", { name: /^Download packing list$|labels$/ }).map((button) => button.textContent)
-    ).toEqual(["Packing list", "Carton labels", "Carrier labels", "Product labels"])
+    ).toEqual(["Packing list", "Carton labels", "Carrier labels", "Pallet labels", "Product labels"])
   }
 })

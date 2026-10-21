@@ -9,6 +9,9 @@ The **Documents / Supplier packet** Storybook folder groups examples into:
 - **Layout**: pagination, large carton groups, Markdown instructions, and mobile.
 - **States and settings**: loading, failure, missing label assignments, and saved download preferences.
 
+**Simulators / Supplier packet** builds the whole packet from a shipment as production does, with sample labels, and
+lists every checklist line with when it's printed (see [Storybook](storybook.md#simulators)).
+
 It is the review surface for the Pen packing list, checklist,
 label reference, and shipment overview. It generates a real PDF with `@react-pdf/renderer` and previews that same
 file with PDF.js. No Chromium executable, backend service, customer data, or credentials are needed to generate it.
@@ -32,7 +35,7 @@ task. Custom packaging with reference photos remains a planned follow-up.
 
 Carton grouping includes contents, quantities, dimensions, and weight. Each physical carton retains its own Amazon
 and carrier label identifier. The packing list leaves label numbers out; the carton label reference lists them, one row
-per carton under Carton, Amazon carton label, and Carrier label columns.
+per carton under Carton, Carton label, and Carrier label columns, then each pallet's label.
 Carton groups stay intact with repeated headings on each page; a group too large for one page blocks generation for
 layout review. Missing required assignments and duplicate IDs block download. Provider label PDFs
 must be downloaded separately in their original form and page size; these templates are reference documents,
@@ -82,13 +85,13 @@ requirements stay in `@repo/aisle/transport`.
 explicit product tasks, supplier SKUs and the destination returned for the exact linked Amazon shipment. The page
 does not expose prices or storage keys. Incomplete input shows an explanation and a link back to the shipment.
 
-The API serves `verify`, `carton_labels`, `carrier_labels` and `product_labels` sections. Each download checks current
+The API serves `verify`, `carton_labels`, `carrier_labels`, `pallet_labels` and `product_labels` sections. Each download checks current
 workspace membership and a snapshot hash before and after reading files. The browser verifies that same hash before
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
 The packet runs: the packing list, the checklist, the carton label reference, the carton labels (Amazon's, then the
-carrier's), then the product labels. The reference lists every carton with its labels in one table, right before the
+carrier's), the pallet labels for an FBA shipment on pallets, then the product labels. The reference lists every carton with its labels in one table, right before the
 label pages; a packet without carton labels leaves it out. `renderSupplierPacket` owns this order.
 
 Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.

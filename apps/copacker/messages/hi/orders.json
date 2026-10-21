@@ -371,6 +371,7 @@
     },
     "draftSaved": "ड्राफ़्ट सेव हो गया",
     "cartonIssue": "कार्टन {carton}: {message}",
+    "ruleSource": "{receiver} की आवश्यकताएँ",
     "readyToSubmit": "सबमिट करने के लिए तैयार",
     "readyToSubmitApproval": "सबमिट करने के लिए तैयार; बदलाव मंज़ूरी के लिए खरीदार के पास जाएंगे",
     "readyToSubmitUpdates": "सबमिट करने के लिए तैयार; बदलाव खरीद ऑर्डर को अपडेट करेंगे",
@@ -392,7 +393,6 @@
     "addCarton": "कार्टन जोड़ें",
     "noCartons": "अभी कोई कार्टन नहीं",
     "noCartonsDescription": "एक कार्टन जोड़ें, फिर एक जैसे कार्टन डुप्लिकेट करें।",
-    "cartonsAndUnits": "{cartons, plural, one {# कार्टन} other {# कार्टन}}, {units, plural, one {# यूनिट} other {# यूनिट}}",
     "saveDraft": "ड्राफ़्ट सेव करें",
     "check": "पैकिंग जांचें",
     "submit": "पैकिंग लिस्ट सबमिट करें",
@@ -415,7 +415,11 @@
     "chooseAddress": "पिकअप का पता",
     "packedUnits": "{available} इकाइयों में से {count}",
     "leftCount": "{count} बाकी",
-    "overCount": "{count} ज़्यादा"
+    "overCount": "{count} ज़्यादा",
+    "groupsUnchecked": {
+      "title": "अभी जाँचा नहीं गया कि कौन-से उत्पाद एक कार्टन में रह सकते हैं",
+      "description": "Amazon शिपमेंट की योजना बनाते समय बताता है कि किन उत्पादों को अलग कार्टन चाहिए। तब तक, जिन उत्पादों को Amazon अलग से संभालता है, जैसे खतरनाक सामान, उन्हें उनके अपने कार्टन में पैक करें।"
+    }
   },
   "paymentTerms": {
     "net7": "नेट 7",
@@ -451,15 +455,7 @@
     "cancel": "रद्द करें",
     "addSelected": "{count} उत्पाद जोड़ें",
     "carton": "कार्टन {carton}",
-    "count": "कार्टन",
-    "length": "लंबाई",
-    "width": "चौड़ाई",
-    "height": "ऊँचाई",
-    "weight": "वज़न",
-    "enterNumber": "{field} के लिए धनात्मक संख्या दर्ज करें।",
-    "enterQuantity": "{sku} के लिए पूर्णांक मात्रा दर्ज करें।",
     "addProductRequired": "इस कार्टन में एक उत्पाद जोड़ें।",
-    "dimensions": "आयाम (सेमी)",
     "axis": {
       "length": "ल",
       "width": "चौ",
@@ -474,22 +470,115 @@
     "removeProduct": "कार्टन {carton} से {sku} हटाएँ",
     "product": "उत्पाद",
     "leftToPack": "पैक करना बाकी",
-    "packCount": "{count} पैक",
     "addToCarton": "कार्टन में जोड़ें",
     "selectedCount": "{count} चुने गए",
-    "cartonGroup": "कार्टन {cartons}",
     "addProductsToCartons": "कार्टन {cartons} में उत्पाद जोड़ें",
+    "columns": {
+      "cartons": "कार्टन",
+      "count": "संख्या",
+      "dimensions": "आयाम",
+      "weight": "वज़न",
+      "contents": "सामग्री"
+    },
+    "toggleProducts": "{cartons} में उत्पाद",
+    "contentsDetail": "{products, plural, one {# उत्पाद, हर कार्टन में {perCarton, number}} other {# उत्पाद}}",
+    "contentsSummary": "{units}, {detail}",
+    "emptyCarton": "अभी कोई उत्पाद नहीं",
+    "issues": "{count, plural, one {# समस्या} other {# समस्याएँ}}",
+    "addProduct": "उत्पाद जोड़ें",
+    "units": "इकाइयाँ",
+    "packsOf": "{packs, plural, one {# पैक} other {# पैक}}, हर पैक में {size, number} इकाइयाँ",
+    "enterCount": "बताएँ कि इस तरह कितने कार्टन पैक हैं।",
+    "enterDimensions": "हर कार्टन की लंबाई, चौड़ाई और ऊँचाई दर्ज करें।",
+    "enterWeight": "हर कार्टन का वज़न दर्ज करें।",
+    "enterUnits": "बताएँ कि हर कार्टन में इस उत्पाद की कितनी इकाइयाँ हैं।",
+    "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
     "rules": {
-      "unitsPerCarton": "मात्रा: हर कार्टन में {units, number} बिकने योग्य यूनिट {receiver} की {max, number} की सीमा से ज़्यादा हैं। इन्हें छोटे कार्टन में बाँटें।",
-      "cartonSize": "आयाम: {side, select, width {चौड़ाई} height {ऊँचाई} other {लंबाई}} {size, number} cm है। {receiver} {shape, select, cube {हर साइड {lengthCm, number} cm ({lengthIn, number} in) तक की अनुमति देता है} other {इस कार्टन के लिए {lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) तक की अनुमति देता है}}।",
-      "cartonWeight": "वज़न: {weight, number} kg, {maxLb, number} lb ({maxKg, number} kg) की सीमा से ज़्यादा है। हर कार्टन का वज़न कम करें।",
-      "oneSku": "उत्पाद: {receiver} में हर कार्टन में एक ही SKU होना चाहिए। इन SKU को अलग-अलग कार्टन में रखें।",
-      "samePacking": "पैकिंग टेम्पलेट: यह SKU इस शिपमेंट में कहीं और {difference, select, units {हर कार्टन में {units, number} यूनिट} other {{length, number} × {width, number} × {height, number} cm और {weight, number} kg के कार्टन}} इस्तेमाल करता है। इस SKU के हर कार्टन के लिए एक ही पैकिंग टेम्पलेट इस्तेमाल करें।"
+      "unitsPerCarton": "मात्रा: {units, number} यूनिट {receiver} की हर कार्टन में {max, number} की सीमा से ज़्यादा हैं। हर कार्टन में {max, number} या उससे कम पैक करें।",
+      "cartonSize": "आयाम: {side, select, width {चौड़ाई} height {ऊँचाई} other {लंबाई}} {size, number} cm है। {receiver} {shape, select, cube {हर साइड {lengthCm, number} cm ({lengthIn, number} in) तक की अनुमति देता है} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) तक की अनुमति देता है}}{exception, select, oneUnit {, जब तक कार्टन में सिर्फ़ एक यूनिट न हो} other {}}।",
+      "cartonWeight": "वज़न: {weight, number} kg, {receiver} की {maxKg, number} kg ({maxLb, number} lb) की सीमा से ज़्यादा है{exception, select, oneUnit {, जब तक कार्टन में सिर्फ़ एक यूनिट न हो} other {}}। हर कार्टन में कम यूनिट पैक करें।",
+      "oneSku": "उत्पाद: इस कार्टन में एक से ज़्यादा SKU हैं, और {receiver} हर कार्टन में एक ही SKU लेता है। हर SKU को उसके अपने कार्टन में पैक करें।",
+      "packingGroups": "उत्पाद: {receiver} {product} और {other} को एक कार्टन में नहीं लेता। Amazon इन्हें अलग तरह से संभालता है, जैसे खतरनाक सामान, प्रेप या लेबल के लिए, और इन्हें अलग-अलग वेयरहाउस भेज सकता है। इनमें से एक को दूसरे कार्टन में रखें।",
+      "samePacking": "{difference, select, units {मात्रा: {sku} के दूसरे कार्टन में {units, number} यूनिट हैं।} other {आयाम: {sku} के दूसरे कार्टन {length, number} × {width, number} × {height, number} cm और {weight, number} kg के हैं।}} {receiver} के लिए किसी SKU के हर कार्टन की यूनिट, आकार और वज़न एक जैसे होने चाहिए। इन्हें मिलाएं, या इस कार्टन को किसी दूसरे शिपमेंट में भेजें।",
+      "incompletePacks": "मात्रा: {sku} {pack, number} के पैक में बिकता है। {pack, number} का गुणज दर्ज करें।",
+      "missingAsin": "उत्पाद: {sku} का ASIN नहीं है, जो {receiver} को इसे प्राप्त करने के लिए चाहिए। खरीदार इसे परचेज़ ऑर्डर में जोड़ता है।",
+      "missingFnsku": "उत्पाद: {sku} का FNSKU नहीं है, जो {receiver} को इस पर लेबल लगाने के लिए चाहिए। खरीदार इसे परचेज़ ऑर्डर में जोड़ता है।",
+      "duplicateCarton": "कार्टन ID: {carton} पहले से किसी दूसरे कार्टन की ID है। हर कार्टन को अपनी ID दें।",
+      "repeatedProduct": "प्रोडक्ट: {sku} इस कार्टन में एक से ज़्यादा बार है। इसे सभी यूनिट के साथ एक बार लिखें।",
+      "mixedNetworks": "उत्पाद: इस कार्टन में FBA और AWD के उत्पाद मिले हुए हैं। हर नेटवर्क के उत्पाद अलग कार्टन में पैक करें।",
+      "unknownProduct": "प्रोडक्ट: इस कार्टन में ऐसा प्रोडक्ट है जो परचेज़ ऑर्डर में नहीं है। इसे कार्टन से हटाएं।",
+      "overQuantity": "मात्रा: कार्टन में {sku} की {packed, number} यूनिट हैं, लेकिन परचेज़ ऑर्डर में {remaining, number} ही बची हैं। {extra, plural, one {# यूनिट} other {# यूनिट}} हटाएं।",
+      "unknownChange": "इनवॉइस बदलाव: कोई बदलाव ऐसे उत्पाद का है जो परचेज़ ऑर्डर में नहीं है, या किसी दूसरे बदलाव को दोहराता है। उसे हटाएं।"
     }
+  },
+  "pallets": {
+    "title": "पैलेट",
+    "packedOnPallets": "पैलेट पर पैक",
+    "packedOnPalletsHelp": "पैलेट पर पैक के बारे में",
+    "packedOnPalletsHint": "अगर कार्टन पैलेट पर भेजे जाते हैं तो इसे चुनें, फिर हर पैलेट और उस पर रखे कार्टन दर्ज करें।",
+    "onPallets": "{total, plural, one {# कार्टन} other {# कार्टन}} में से {count, number} पैलेट पर",
+    "addPallet": "पैलेट जोड़ें",
+    "noPallets": "अभी कोई पैलेट नहीं",
+    "noPalletsDescription": "पैलेट जोड़ें, फिर उस पर रखे कार्टन चुनें।",
+    "columns": {
+      "pallet": "पैलेट",
+      "dimensions": "आयाम",
+      "weight": "वज़न",
+      "stacking": "स्टैकिंग",
+      "cartons": "कार्टन"
+    },
+    "name": "पैलेट {pallet}",
+    "toggleCartons": "{pallet} पर कार्टन",
+    "summary": "{cartons}, {units}",
+    "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
+    "stackable": "स्टैक किया जा सकता है",
+    "notStackable": "स्टैक नहीं किया जा सकता",
+    "actions": "{pallet} की कार्रवाइयाँ",
+    "duplicate": "पैलेट की प्रतिलिपि बनाएँ",
+    "delete": "पैलेट हटाएँ",
+    "cartonsOnPallet": "पैलेट पर कार्टन",
+    "chooseCartons": "कार्टन चुनें",
+    "removeCartons": "{pallet} से {cartons} हटाएँ",
+    "noCartons": "इस पैलेट पर अभी कोई कार्टन नहीं",
+    "enterDimensions": "पैलेट की लंबाई, चौड़ाई और ऊँचाई दर्ज करें।",
+    "enterWeight": "पैलेट का कुल वज़न, पैलेट सहित, दर्ज करें।",
+    "rules": {
+      "palletFootprint": "आयाम: लोड {length, number} × {width, number} सेमी है, जो {receiver} के {lengthCm, number} × {widthCm, number} सेमी ({lengthIn, number} × {widthIn, number} इंच) पैलेट के किनारों से बाहर है। कार्टन को पैलेट के अंदर रखें।",
+      "palletHeight": "ऊंचाई: {height, number} सेमी पैलेट सहित {receiver} की {maxCm, number} सेमी ({maxIn, number} इंच) की सीमा से अधिक है। कार्टन को और पैलेट पर बांटें।",
+      "stackableHeight": "ऊंचाई: {height, number} सेमी स्टैक होने वाले {receiver} पैलेट के लिए बहुत अधिक है, जिसकी सीमा {maxCm, number} सेमी ({maxIn, number} इंच) है। स्टैकिंग को “स्टैक नहीं किया जा सकता” पर सेट करें या लोड कम करें।",
+      "palletWeight": "वज़न: {weight, number} kg पैलेट सहित {receiver} की {maxKg, number} kg ({maxLb, number} lb) की सीमा से ज़्यादा है। कार्टन को और पैलेट पर बांटें।",
+      "emptyPallet": "कार्टन: इस पैलेट पर अभी कोई कार्टन नहीं है। इसके कार्टन चुनें या पैलेट हटाएं।",
+      "palletMixedNetworks": "कार्टन: इस पैलेट पर FBA और AWD के कार्टन मिले हुए हैं। हर नेटवर्क के कार्टन अलग पैलेट पर रखें।",
+      "duplicatePallet": "पैलेट: दो पैलेट का नंबर {pallet} है। इन्हें अलग-अलग नंबरों के साथ फिर से इंपोर्ट करें।",
+      "unknownPalletCarton": "कार्टन: {carton} इस शिपमेंट का कार्टन नहीं है। इसे इस पैलेट से हटाएं।",
+      "palletCartonTwice": "कार्टन: {carton} पहले से किसी दूसरे पैलेट पर है। इसे इस पैलेट से या दूसरे पैलेट से हटाएं।",
+      "noPallets": "पैलेट: ये कार्टन पैलेट पर भेजे जाते हैं, और अभी कोई पैलेट नहीं है। पैलेट जोड़ें या “पैलेट पर पैक” से चेक हटाएं।",
+      "cartonsOffPallets": "कार्टन: {count, plural, one {# कार्टन किसी पैलेट पर नहीं है: {cartons}। इसके लिए पैलेट चुनें या नया पैलेट जोड़ें।} other {# कार्टन किसी पैलेट पर नहीं हैं: {cartons}। हर एक के लिए पैलेट चुनें या नया पैलेट जोड़ें।}}"
+    }
+  },
+  "palletCartons": {
+    "title": "{pallet} के लिए कार्टन चुनें",
+    "search": "कार्टन या उत्पाद खोजें",
+    "cartons": "कार्टन",
+    "sizeAndWeight": "आकार और वज़न",
+    "pallet": "पैलेट",
+    "thisPallet": "यह पैलेट",
+    "palletCount": "{count, plural, one {# पैलेट} other {# पैलेट}}",
+    "onThisPallet": "इस पैलेट पर {count, number}",
+    "content": "{sku}, {count, plural, one {# इकाई} other {# इकाइयाँ}}",
+    "contentEach": "{sku}, हर एक में {count, plural, one {# इकाई} other {# इकाइयाँ}}",
+    "measure": "{dimensions}, {weight}",
+    "showCartons": "कार्टन {cartons} दिखाएँ",
+    "selection": "{count, plural, one {# कार्टन} other {# कार्टन}}, {weight}",
+    "noCartons": "कोई कार्टन नहीं मिला",
+    "cancel": "रद्द करें",
+    "save": "कार्टन सहेजें"
   },
   "cartonImport": {
     "title": "कार्टन आयात करें",
-    "reviewTitle": "आयात की समीक्षा करें",
+    "export": "कार्टन निर्यात करें",
+    "exportFailed": "कार्टन निर्यात नहीं हो सके।",
+    "reviewTitle": "कार्टन आयात की समीक्षा करें",
     "downloadTemplate": "टेम्पलेट डाउनलोड करें",
     "templateHint": "कार्टन की सामग्री, मात्रा, आयाम और वज़न दर्ज करने के लिए टेम्पलेट का उपयोग करें।",
     "downloadFailed": "टेम्पलेट डाउनलोड नहीं हो सका।",
@@ -527,12 +616,77 @@
       "limit": "एक शिपमेंट में अधिकतम 1,000 कार्टन हो सकते हैं।"
     },
     "template": {
-      "identity": "पहले से भरे आपूर्तिकर्ता SKU, उत्पाद, प्रकार और प्रति पैक इकाइयों को न बदलें। अधूरी या गलत जानकारी ठीक करने के लिए खरीदार से कहें।",
-      "rows": "हर कार्टन में प्रत्येक उत्पाद के लिए एक पंक्ति रखें। अतिरिक्त कार्टन के लिए उत्पाद की पंक्ति कॉपी करें। साथ पैक किए उत्पादों का Carton ID एक ही रखें। उपयोग न की गई पैकिंग कोशिकाएँ खाली छोड़ें।",
-      "cartons": "Carton ID आपका संदर्भ है, Amazon लेबल नंबर नहीं। अलग कार्टन के लिए A1, A2 आदि और Carton count 1 रखें। एक जैसे कार्टन के लिए संख्या 1 से अधिक रखें: A1 की संख्या 3 होने पर A1, A1-2 और A1-3 बनते हैं। मौजूदा ID छोड़ दिए जाते हैं।",
-      "quantity": "Quantity per carton पैक की संख्या है। 2 के पैक में मात्रा 10 का मतलब 20 नग है। एक जैसे समूह के सभी कार्टन में समान उत्पाद और मात्रा होनी चाहिए।",
-      "measurements": "माप सेंटीमीटर में और वजन किलोग्राम में भरें। एक ही Carton ID वाली हर पंक्ति में कार्टन की संख्या, माप और वजन समान रखें।",
-      "format": "सफेद पैकिंग कोशिकाएँ भरें। अंग्रेज़ी शीर्षक और Cartons शीट का नाम न बदलें। XLSX अपलोड करें या Cartons तालिका को CSV के रूप में निर्यात करें।"
+      "columns": {
+        "cartonId": "एक तरह के कार्टन के लिए आपका संदर्भ, Amazon लेबल नंबर नहीं: हर तरह के लिए एक अक्षर, 1 से क्रमांकित, जैसे A1, B1, C1। एक से अधिक उत्पाद वाले कार्टन की हर पंक्ति में इसे दोहराएँ।",
+        "cartonCount": "इस तरह के एक जैसे कार्टन कितने हैं। A1 की संख्या 3 होने पर A1, A2 और A3 बनते हैं। शिपमेंट में पहले से मौजूद ID छोड़ दिए जाते हैं।",
+        "supplierSku": "ऑर्डर से पहले से भरा हुआ। इसे न बदलें; अधूरा या गलत उत्पाद ठीक करने के लिए खरीदार से कहें।",
+        "quantity": "हर कार्टन में इस उत्पाद के पैक। 2 के पैक में 10 का मतलब 20 इकाइयाँ है।",
+        "length": "कार्टन की लंबाई, सेंटीमीटर में।",
+        "width": "कार्टन की चौड़ाई, सेंटीमीटर में।",
+        "height": "कार्टन की ऊँचाई, सेंटीमीटर में।",
+        "weight": "पैक किए गए कार्टन का वज़न, किलोग्राम में।",
+        "product": "ऑर्डर से पहले से भरा हुआ। इसे न बदलें।",
+        "variant": "ऑर्डर से पहले से भरा हुआ। इसे न बदलें।",
+        "unitsPerPack": "ऑर्डर से पहले से भरा हुआ: एक पैक की इकाइयाँ। इसे न बदलें।"
+      },
+      "notes": {
+        "rows": "हर कार्टन में प्रत्येक उत्पाद के लिए एक पंक्ति रखें। किसी उत्पाद को और तरह के कार्टन में पैक करने के लिए उसकी पंक्ति कॉपी करें। उपयोग न की गई पंक्तियाँ खाली छोड़ें। Example शीट में इस शिपमेंट के लिए भरा हुआ टेम्पलेट है।",
+        "sameCarton": "एक ही Carton ID वाली पंक्तियाँ एक कार्टन हैं: उनमें संख्या, माप और वज़न समान रखें। एक जैसे कार्टन में समान उत्पाद और मात्रा होती है।",
+        "format": "सफ़ेद कोशिकाएँ भरें और धूसर कोशिकाएँ न बदलें। अंग्रेज़ी शीर्षक और Cartons शीट का नाम न बदलें। XLSX फ़ाइल अपलोड करें या Cartons शीट को CSV के रूप में निर्यात करें।"
+      }
     }
+  },
+  "palletImport": {
+    "title": "पैलेट आयात करें",
+    "export": "पैलेट निर्यात करें",
+    "exportFailed": "पैलेट निर्यात नहीं हो सके।",
+    "reviewTitle": "पैलेट आयात की समीक्षा करें",
+    "review": "पैलेट की समीक्षा करें",
+    "failed": "पैलेट आयात नहीं हो सके। कोई बदलाव नहीं किया गया।",
+    "add": "पैलेट जोड़ें",
+    "replace": "पैलेट बदलें",
+    "import": "पैलेट आयात करें",
+    "importing": "पैलेट आयात हो रहे हैं…",
+    "palletCount": "{count, plural, one {# पैलेट} other {# पैलेट}}",
+    "cartons": "{count, plural, one {कार्टन {cartons}} other {कार्टन {cartons}}}",
+    "dimensions": "{length} × {width} × {height} सेमी",
+    "weight": "{weight} किग्रा",
+    "weightAndStacking": "{weight} किग्रा / {stacking}",
+    "errors": {
+      "empty": "फ़ाइल में पैलेट की कोई पंक्ति नहीं है।",
+      "worksheet": "फ़ाइल में Pallets नाम की वर्कशीट होनी चाहिए।",
+      "palletId": "1–60 अक्षरों की पैलेट ID दर्ज करें।",
+      "duplicatePallet": "पैलेट {pallet} पंक्ति {other} में भी है। हर पैलेट के लिए एक पंक्ति रखें।",
+      "stacking": "Stackable या Not stackable दर्ज करें।",
+      "cartons": "इस पैलेट के कार्टन दर्ज करें, जैसे A1–A6, B1।",
+      "unknownCarton": "{count, plural, one {कार्टन {cartons} इस शिपमेंट में नहीं है।} other {कार्टन {cartons} इस शिपमेंट में नहीं हैं।}}",
+      "cartonTwice": "{count, plural, one {कार्टन {cartons} पैलेट {pallet} पर भी है।} other {कार्टन {cartons} पैलेट {pallet} पर भी हैं।}} हर कार्टन को एक ही पैलेट पर रखें।"
+    },
+    "clashes": {
+      "replace": "{count, plural, one {ये पैलेट इस शिपमेंट में पहले से मौजूद पैलेट से टकराते हैं।} other {ये पैलेट इस शिपमेंट में पहले से मौजूद # पैलेट से टकराते हैं।}} सिर्फ़ फ़ाइल के पैलेट इस्तेमाल करने के लिए पैलेट बदलें चुनें।",
+      "palletExists": "पैलेट {pallet} पहले से मौजूद है। इसे कोई दूसरी ID दें।",
+      "cartonsOnPallet": "{count, plural, one {कार्टन {cartons} पहले से पैलेट {pallet} पर है।} other {कार्टन {cartons} पहले से पैलेट {pallet} पर हैं।}}"
+    },
+    "template": {
+      "columns": {
+        "palletId": "पैलेट के लिए आपका संदर्भ, जैसे 1, 2, 3। हर ID एक ही बार इस्तेमाल करें।",
+        "length": "लदे हुए पैलेट की लंबाई, सेंटीमीटर में।",
+        "width": "लदे हुए पैलेट की चौड़ाई, सेंटीमीटर में।",
+        "height": "लदे हुए पैलेट की ऊँचाई, सेंटीमीटर में, ज़मीन से कार्टनों के ऊपर तक।",
+        "weight": "किलोग्राम में कुल वज़न: पैलेट उसके कार्टनों सहित।",
+        "stacking": "अगर उस पर दूसरा पैलेट रखा जा सकता है तो Stackable, नहीं तो Not stackable। सूची से चुनें।",
+        "cartonIds": "पैलेट पर रखे कार्टन, पैकिंग सूची की उनकी ID से। लगातार ID को डैश से जोड़ें और बाकी को कॉमा से अलग करें। हर कार्टन को एक ही पैलेट पर रखें।"
+      },
+      "notes": {
+        "rows": "हर पैलेट के लिए एक पंक्ति रखें। Example शीट में इस शिपमेंट के लिए भरा हुआ टेम्पलेट है।",
+        "shipmentCartons": "इस शिपमेंट के कार्टन: {cartons}।",
+        "format": "अंग्रेज़ी शीर्षक, Stacking के मान और Pallets शीट का नाम न बदलें। XLSX फ़ाइल अपलोड करें या Pallets शीट को CSV के रूप में निर्यात करें।"
+      }
+    }
+  },
+  "importTemplate": {
+    "column": "कॉलम",
+    "entry": "क्या भरें",
+    "example": "उदाहरण"
   }
 }

@@ -1,4 +1,4 @@
-import { type Address, type OrderInput } from "@repo/aisle"
+import { type Address, type AmazonNetwork, type OrderInput, type OrderItem } from "@repo/aisle"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
@@ -12,7 +12,7 @@ import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedStates } from "@/server/readiness"
+import { knownPackingGroups, releasedLabelKinds, releasedStates } from "@/server/readiness"
 import {
   type ActionRequest,
   buyerContacts,
@@ -27,6 +27,7 @@ import {
   type ShipmentRow,
   supplierRecordId
 } from "@/stories/fixtures/logistics"
+import { daysAgo } from "@/stories/fixtures/orders"
 import {
   bagOrder,
   bagPacking,
@@ -62,14 +63,14 @@ type Args = {
   number: number
   // Pieces of each line other shipments already hold.
   reserved: Record<string, number>
+  // The purchase order's other shipments, whose packing groups an FBA draft is checked against (knownPackingGroups).
+  others?: ShipmentRow[]
   docs: DocumentRow[]
   // The supplier's pickup addresses.
   addresses: PartnerAddress[]
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
   productLabels?: boolean
-  // The next stop's address, as shipmentDelivery reads it.
-  delivery?: { addresses: Address[]; pending: boolean }
   // Each packed line's SKU and FNSKU labels, as lineLabels reads them; by default every barcode label its packing
   // details ask for is made from the standard template.
   lineLabels?: Array<{
@@ -78,6 +79,55 @@ type Args = {
     state: "uploaded" | "standard" | "missing"
     problem?: string
   }>
+}
+
+// The Amazon warehouses the stories' Amazon shipments go to, as Amazon gives their addresses: FBA's ONT8, where the
+// carton labels send the cartons, and an AWD warehouse.
+const amazonWarehouses: Record<AmazonNetwork, Address> = {
+  fba: {
+    name: "Amazon ONT8",
+    phoneNumber: "",
+    email: "",
+    addressLine1: "100 Warehouse Road",
+    addressLine2: "",
+    city: "Moreno Valley",
+    stateOrRegion: "CA",
+    postalCode: "92551",
+    countryCode: "US"
+  },
+  awd_us: {
+    name: "Amazon IUSP",
+    phoneNumber: "",
+    email: "",
+    addressLine1: "200 Distribution Road",
+    addressLine2: "",
+    city: "Hesperia",
+    stateOrRegion: "CA",
+    postalCode: "92344",
+    countryCode: "US"
+  }
+}
+
+// The next stop as shipmentDelivery reads it: the forwarder until the goods move on from it, the buyer's warehouse, or
+// the Amazon warehouse once Amazon has the shipment. Amazon gives an FBA shipment's warehouse only once its inbound
+// plan's shipments are confirmed.
+function nextStop(order: OrderInput, shipment: ShipmentRow): { addresses: Address[]; pending: boolean } {
+  const data = shipment.snapshot ?? order
+  if (data.via && !["forwarded", "received"].includes(shipment.status)) {
+    return { addresses: [baylineWarehouse], pending: false }
+  }
+  if (data.destination === "warehouse") {
+    const places = buyerContacts.filter((contact) => contact.id === data.deliveryId)
+    return { addresses: places.map((place) => ({ ...place.address, name: place.name })), pending: false }
+  }
+  if (!(shipment.amazonShipmentId ?? shipment.linkedAmazonShipmentId)) {
+    return { addresses: [], pending: true }
+  }
+  const network = shipment.amazonNetwork
+  if (network === "awd_us" || (network === "fba" && shipment.amazonOrderId)) {
+    return { addresses: [amazonWarehouses[network]], pending: false }
+  }
+  return { addresses: [], pending: false }
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -90,11 +140,11 @@ async function ShipmentPage({
   step,
   number,
   reserved,
+  others = [],
   docs,
   addresses,
   awaitingChanges,
   productLabels = true,
-  delivery,
   lineLabels
 }: Args) {
   const t = await translateStory("shipments.detail")
@@ -105,6 +155,10 @@ async function ShipmentPage({
   const packingOrder = shipment.amazonNetwork
     ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
     : order.data
+  const packingGroups =
+    order.data.destination === "amazon" && packingOrder.items.some((item) => item.amazonNetwork === "fba")
+      ? (knownPackingGroups([...others, shipment], shipment) ?? null)
+      : undefined
   const snapshot = shipment.snapshot ?? order.data
   const editable =
     editsShipments &&
@@ -120,7 +174,7 @@ async function ShipmentPage({
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
     (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
       !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
@@ -153,7 +207,7 @@ async function ShipmentPage({
             )
           }
         }),
-        delivery: delivery ?? { addresses: [], pending: amazon },
+        delivery: nextStop(order.data, shipment),
         destinationName: destination(order.data, shipment.amazonNetwork),
         editsShipments,
         seesOrder,
@@ -184,6 +238,7 @@ async function ShipmentPage({
         },
         step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl, canRelease: step.canRelease },
         reserved,
+        packingGroups,
         snapshot: prices ? snapshot : unpricedOrder(snapshot),
         addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
         awaitingChanges,
@@ -220,15 +275,31 @@ function step(next: string, message: string, changes: Partial<Step> = {}): Step 
 
 const warehouse = orderRecords.warehouse
 const amazonOrder = orderRecords.amazon
+// The same purchase order sent to Amazon AWD US.
+const awdOrder = {
+  ...amazonOrder,
+  data: {
+    ...amazonOrder.data,
+    items: amazonOrder.data.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const }))
+  }
+}
 const [firstLine, secondLine] = warehouse.data.items
 const packet = `/shipments/${shipmentId}/packet`
 const invoice = documentRow("invoice", "Lotus invoice 2291.pdf")
 const packingList = documentRow("packing_list", "Packing list.pdf")
-const shippingLabel = documentRow("shipping_label", "AGL labels.pdf")
+const shippingLabel = documentRow("shipping_label", "Carrier labels.pdf")
 const cartonLabel = documentRow("carton_label", "Carton label.pdf", { cartonId: "C1" })
+const palletLabel = documentRow("pallet_label", "Pallet labels.pdf")
+// The FBA inbound plan and the Amazon shipment its cartons travel in, with a label for each carton.
+const fbaPlanId = "wf0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"
 const labels = [
   { cartonId: "C1", labelNumber: "FBA18ABCD123U000001", destinationCode: "ONT8", amazonShipmentId: "FBA18ABCD123" },
   { cartonId: "C2", labelNumber: "FBA18ABCD123U000002", destinationCode: "ONT8", amazonShipmentId: "FBA18ABCD123" }
+]
+// An AWD order's carton labels, as Amazon numbers them.
+const awdLabels = [
+  { cartonId: "C1", labelNumber: "201952611540373988", destinationCode: "IUSP", amazonShipmentId: "STAR-8KQ2M7-1" },
+  { cartonId: "C2", labelNumber: "201952611540373989", destinationCode: "IUSP", amazonShipmentId: "STAR-8KQ2M7-1" }
 ]
 
 const sent: ActionRequest[] = []
@@ -301,8 +372,7 @@ export const DraftPacking = meta.story({
     docs: [],
     addresses: [
       { id: partnerAddresses.factory.id, name: "Northwind Textiles / Main factory", address: northwindFactory }
-    ],
-    delivery: { addresses: [baylineWarehouse], pending: false }
+    ]
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Shipment 1" })).toBeVisible()
@@ -326,8 +396,15 @@ export const DraftPacking = meta.story({
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("504 of 540 units")).toBeVisible()
     await expect(within(cartons).getByRole("button", { name: "Add carton" })).toHaveTextContent("Add carton")
-    await expect(canvas.getByRole("button", { name: "Add products to cartons 1–10" })).toBeVisible()
-    await expect(canvas.getByText("Cartons 11–16")).toBeVisible()
+    // Complete rows stay closed; B1–B6, still to be weighed, opens with its error under the row.
+    await expect(canvas.getByRole("button", { name: "Products in A1–A10" })).toHaveAttribute("aria-expanded", "false")
+    await expect(canvas.getByRole("button", { name: "Products in B1–B6" })).toHaveAttribute("aria-expanded", "true")
+    await expect(canvas.getByRole("button", { name: "Add products to cartons B1–B6" })).toBeVisible()
+    await expect(canvas.getByText("Enter the weight of each carton.")).toBeVisible()
+    await expect(canvas.getByRole("spinbutton", { name: "Carton B1: Weight (kg)" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
 
     // The documents beside the cartons start with the label types the packing details ask for.
     const documents = canvas.getByRole("region", { name: "Documents" })
@@ -549,11 +626,16 @@ export const FbaMixedCartons = meta.story({
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("180 of 180 units")).toBeVisible()
     // One carton holds a bag in each color and a tea towel; a bag without a supplier SKU shows a dash.
-    const second = canvas.getByRole("region", { name: "Carton 2" })
+    const second = canvas.getByRole("region", { name: "Carton B1" })
+    await userEvent.click(within(second).getByRole("button", { name: "Products in B1" }))
     await expect(within(second).getAllByText("Cotton drawstring bag")).toHaveLength(2)
     await expect(within(second).getByText("NT-CT-3100")).toBeVisible()
     await expect(within(second).getAllByText("—")).toHaveLength(2)
     await expect(canvas.queryByText(/one SKU/i)).toBeNull()
+    // No shipment of the PO has been planned, so Amazon hasn't set the packing groups to check yet.
+    await expect(within(cartons).getByRole("note")).toHaveTextContent(
+      "Products that can share a carton aren’t checked yet"
+    )
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     // The one label type FBA asks for downloads straight from Documents, and every carton is weighed.
     await expect(canvas.getByRole("link", { name: "Download FNSKU labels" })).toBeVisible()
@@ -561,6 +643,35 @@ export const FbaMixedCartons = meta.story({
     await expect(within(summary).getByText("3")).toBeVisible()
     await expect(within(summary).getByText("37.2 kg")).toBeVisible()
     await expect(within(summary).getByText("0.29 m³")).toBeVisible()
+  }
+})
+
+// Board 06.15 (Additional validation states): packed again after Amazon refused the PO's earlier shipment, whose plan put
+// the bags and the tea towel in different packing groups, each mixed carton shows the groups it holds, so packing
+// can't finish until they're apart.
+export const FbaPackingGroups = meta.story({
+  ...supplier,
+  args: {
+    ...FbaMixedCartons.input.args,
+    others: [
+      shipmentRow({
+        id: "c0ffee00-1234-4abc-9def-000000000021",
+        status: "cancelled",
+        amazonNetwork: "fba",
+        packingGroups: { "DB-2030": "pg-bags", "DB-2031": "pg-bags", "CT-3100": "pg-towels" },
+        createdAt: daysAgo(3)
+      })
+    ]
+  },
+  play: async ({ canvas }) => {
+    // The errors name each product by the supplier SKU the carton lists, or, for a bag without one, by its name.
+    const error =
+      "Products: FBA can’t take Cotton drawstring bag and NT-CT-3100 in one carton. Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different warehouses. Move one of them to another carton."
+    for (const carton of ["A1", "B1", "C1"]) {
+      await expect(within(canvas.getByRole("region", { name: `Carton ${carton}` })).getByText(error)).toBeVisible()
+    }
+    await expect(canvas.queryByText("Products that can share a carton aren’t checked yet")).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
   }
 })
 
@@ -727,8 +838,10 @@ export const Approval = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Invoice changes")).toBeVisible()
     await expect(canvas.getByText("Canvas tote bag / Natural")).toBeVisible()
-    // Packed products are shown in the shared read-only carton editor.
-    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
+    // Packed products are shown in the shared read-only carton table, under each row.
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await userEvent.click(within(cartons).getByRole("button", { name: "Products in C1" }))
+    await expect(cartons).toHaveTextContent("TOTE-016")
     await expect(canvas.getByText(/Price per unit \$4\.25/)).toHaveTextContent("$4.50")
     await expect(canvas.getByText(/Supplier SKU LM-TOTE/)).toHaveTextContent("LM-APRON-CH")
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
@@ -781,25 +894,29 @@ export const Creating = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Creating the Amazon shipment")).toBeVisible()
     await expect(canvas.getByText("Amazon FBA")).toBeVisible()
+    // Amazon picks the warehouse as it creates the shipment.
+    await expect(canvas.getByText("Amazon assigns the delivery address after shipment creation.")).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
     await expect(canvas.getByRole("region", { name: "Cartons" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
 
+// Amazon has made the AWD order's carton labels.
 const waitingLabels = shipmentRow({
   status: "waiting_labels",
-  packing: packingFor(amazonOrder.data),
+  packing: packingFor(awdOrder.data),
   amazonNetwork: "awd_us",
   amazonOrderId: "STAR-8KQ2M7",
-  amazonShipmentId: "STAR-8KQ2M7-1"
+  amazonShipmentId: "STAR-8KQ2M7-1",
+  labels: awdLabels
 })
 
-// The buyer books AGL transport and uploads its labels; what's missing is listed.
+// The buyer uploads the parcel carrier's label for each carton; what's missing is listed.
 export const WaitingForLabels = meta.story({
   ...buyer,
   args: {
-    order: amazonOrder,
+    order: awdOrder,
     shipment: waitingLabels,
     step: step("labels", "Book shipping and add the missing documents below", {
       issues: [{ message: "Upload the shipping label for carton C2" }]
@@ -815,6 +932,11 @@ export const WaitingForLabels = meta.story({
       "href",
       "https://sellercentral.amazon.com/awd/inbound-shipment/STAR-8KQ2M7-1"
     )
+    // The cartons go to the AWD warehouse Amazon chose, each with Amazon's label.
+    await expect(canvas.getByText("Amazon IUSP")).toBeVisible()
+    await expect(canvas.getByText("200 Distribution Road, Hesperia, CA, 92344, US")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: /^Products \(2\)/ })).toBeVisible()
+    await expect(canvas.getByText("C1: 201952611540373988")).toBeVisible()
   }
 })
 
@@ -822,7 +944,14 @@ export const Release = meta.story({
   ...buyer,
   args: {
     order: amazonOrder,
-    shipment: { ...waitingLabels, amazonNetwork: "fba" },
+    shipment: shipmentRow({
+      status: "waiting_labels",
+      packing: packingFor(amazonOrder.data),
+      amazonNetwork: "fba",
+      amazonOrderId: fbaPlanId,
+      amazonShipmentId: "FBA18ABCD123",
+      labels
+    }),
     step: step("release", "Enter the booking reference and release the supplier packet", { canRelease: true })
   },
   play: async ({ canvas }) => {
@@ -842,10 +971,10 @@ export const WaitingForLabelsSupplier = meta.story({
   ...supplier,
   args: {
     kind: "supplier",
-    order: amazonOrder,
+    order: awdOrder,
     shipment: waitingLabels,
     step: step("labels", "Book shipping and add the missing documents below"),
-    docs: [invoice, shippingLabel]
+    docs: [invoice, cartonLabel, shippingLabel]
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Waiting for labels")).toBeVisible()
@@ -853,8 +982,41 @@ export const WaitingForLabelsSupplier = meta.story({
     await expect(canvas.getByText("STAR-8KQ2M7-1")).toBeVisible()
     await expect(canvas.queryByRole("link", { name: /STAR-8KQ2M7-1/ })).toBeNull()
     // Labels reach the supplier once they're released.
+    await expect(canvas.queryByRole("link", { name: /Download Carton labels/ })).toBeNull()
     await expect(canvas.queryByRole("link", { name: "Download Shipping labels" })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
+  }
+})
+
+// Packed on pallets for FBA: Amazon's pallet labels come with the carton labels, as one file.
+export const ReadyOnPalletsSupplier = meta.story({
+  ...supplier,
+  args: {
+    kind: "supplier",
+    order: amazonOrder,
+    shipment: shipmentRow({
+      status: "ready",
+      packing: packingFor(amazonOrder.data, {
+        palletized: true,
+        pallets: [
+          { palletId: "1", length: 120, width: 100, height: 120, weight: 62, stackable: true, cartonIds: ["C1", "C2"] }
+        ]
+      }),
+      amazonNetwork: "fba",
+      amazonOrderId: fbaPlanId,
+      amazonShipmentId: "FBA18ABCD123",
+      labels
+    }),
+    docs: [invoice, cartonLabel, palletLabel]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
+    const download = canvas.getByRole("link", { name: "Download Pallet labels Pallet labels.pdf" })
+    await expect(download).toHaveAttribute("href", `/api/documents/${palletLabel.id}`)
+    await expect(canvas.getByRole("link", { name: "Download Carton labels" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("?bundle=true")
+    )
   }
 })
 
@@ -868,6 +1030,7 @@ export const ReadySupplier = meta.story({
       status: "ready",
       packing: packingFor(amazonOrder.data),
       amazonNetwork: "fba",
+      amazonOrderId: fbaPlanId,
       amazonShipmentId: "FBA18ABCD123",
       labels
     }),
@@ -875,6 +1038,9 @@ export const ReadySupplier = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
+    // The cartons go to the FBA warehouse their labels name.
+    await expect(canvas.getByText("Amazon ONT8")).toBeVisible()
+    await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA, 92551, US")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute("href", packet)
     await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Download Shipping labels" })).toHaveAttribute(
@@ -902,9 +1068,10 @@ export const ReadyIncomplete = meta.story({
     await expect(canvas.getByText("Supplier packet incomplete")).toBeVisible()
     await expect(canvas.getByText("Add a product label for Linen apron / Charcoal")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
-    // A warehouse shipment has no Amazon labels.
-    await expect(canvas.queryByRole("columnheader", { name: "Amazon label" })).toBeNull()
+    // A warehouse shipment has no Amazon labels, and ships to the buyer's warehouse.
+    await expect(canvas.queryByRole("columnheader", { name: "Carton label" })).toBeNull()
     await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
+    await expect(canvas.getByText("2400 NW Front Ave, Portland, OR, 97209, US")).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
   }
 })
@@ -935,11 +1102,22 @@ export const ReadyForSupplierNotOnCopacker = meta.story({
   }
 })
 
-// Shipped through a forwarder, whose leg comes next.
+// Shipped to the PO's forwarder, whose leg to the buyer's warehouse comes next.
 export const ShippedToForwarder = meta.story({
   ...buyer,
   args: {
-    shipment: shipmentRow({ status: "shipped", packing: packingFor(warehouse.data) }),
+    order: { ...warehouse, data: { ...warehouse.data, via: towelOrder.via } },
+    shipment: shipmentRow({
+      status: "shipped",
+      packing: packingFor(warehouse.data),
+      transport: {
+        service: "parcel",
+        handoff: "forwarder",
+        collection: "pickup",
+        carrierLabels: "per_carton",
+        instructions: ""
+      }
+    }),
     step: step("forward", "The forwarder ships the goods on and adds the freight cost, carrier, and tracking", {
       packetUrl: packet
     })
@@ -948,6 +1126,9 @@ export const ShippedToForwarder = meta.story({
     await expect(
       canvas.getByText("The forwarder ships the goods on and adds the freight cost, carrier, and tracking")
     ).toBeVisible()
+    // Until the forwarder sends the goods on, its warehouse is the next stop.
+    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(canvas.getByText("18 Gangqiao Road, Beilun, Ningbo, Zhejiang, 315800, CN")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
@@ -978,23 +1159,25 @@ export const Received = meta.story({
   }
 })
 
-// Amazon refused the shipment: the buyer sees why and retries.
+// Amazon confirmed the AWD order but couldn't make its carton labels: the buyer sees why and retries.
 export const NeedsAttention = meta.story({
   ...buyer,
   args: {
-    order: amazonOrder,
+    order: awdOrder,
     shipment: shipmentRow({
       status: "needs_attention",
-      packing: packingFor(amazonOrder.data),
+      packing: packingFor(awdOrder.data),
       amazonNetwork: "awd_us",
-      issue: "Amazon rejected carton C2: it's over 22.68 kg."
+      amazonOrderId: "STAR-8KQ2M7",
+      amazonShipmentId: "STAR-8KQ2M7-1",
+      issue: "Amazon could not generate carton labels"
     }),
     step: step("retry", "Resolve the reported problem, then retry the shipment")
   },
   play: async ({ canvas }) => {
     const alert = canvas.getByRole("alert")
     await expect(alert).toHaveTextContent("Needs attention")
-    await expect(alert).toHaveTextContent("Amazon rejected carton C2: it's over 22.68 kg.")
+    await expect(alert).toHaveTextContent("Amazon could not generate carton labels")
     await userEvent.click(canvas.getByRole("button", { name: "Retry shipment" }))
     await waitFor(() => expect(sent).toEqual([{ action: "shipment.retry", data: { id: shipmentId, revision: 3 } }]))
     await expect(canvas.getByRole("button", { name: "Request a correction" })).toBeVisible()
@@ -1005,10 +1188,10 @@ export const NeedsAttention = meta.story({
 export const Reconcile = meta.story({
   ...buyer,
   args: {
-    order: amazonOrder,
+    order: awdOrder,
     shipment: shipmentRow({
       status: "needs_attention",
-      packing: packingFor(amazonOrder.data),
+      packing: packingFor(awdOrder.data),
       amazonNetwork: "awd_us",
       operation: "sending",
       issue: "Amazon didn't answer in time."
@@ -1056,24 +1239,38 @@ export const ViewOnly = meta.story({
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
-    await expect(canvas.getByRole("region", { name: "Cartons" })).toHaveTextContent("TOTE-016")
+    const cartons = canvas.getByRole("region", { name: "Cartons" })
+    await userEvent.click(within(cartons).getByRole("button", { name: "Products in C1" }))
+    await expect(cartons).toHaveTextContent("TOTE-016")
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await expect(screen.queryByRole("dialog")).toBeNull()
   }
 })
 
+// Products that carry their own barcodes and need no warning print no product labels, so the supplier packet offers the
+// carton labels alone.
+const noLabels: OrderItem["packingRequirements"] = {
+  preparation: "none",
+  labels: [],
+  countryCode: "",
+  instructions: ""
+}
 export const ReadyWithoutProductLabels = meta.story({
   ...supplier,
   args: {
     productLabels: false,
     kind: "supplier",
-    order: amazonOrder,
+    order: {
+      ...awdOrder,
+      data: { ...awdOrder.data, items: awdOrder.data.items.map((item) => ({ ...item, packingRequirements: noLabels })) }
+    },
     shipment: shipmentRow({
       status: "ready",
-      packing: packingFor(amazonOrder.data),
+      packing: packingFor(awdOrder.data),
       amazonNetwork: "awd_us",
-      amazonShipmentId: "STAR-EXAMPLE",
-      labels
+      amazonOrderId: "STAR-8KQ2M7",
+      amazonShipmentId: "STAR-8KQ2M7-1",
+      labels: awdLabels
     }),
     docs: [cartonLabel]
   },

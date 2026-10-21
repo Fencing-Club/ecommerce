@@ -170,7 +170,7 @@
       "description": "Laden Sie die Etiketten jetzt herunter oder finden Sie sie jederzeit unter {shipment}.",
       "summary": "{service}, {total}",
       "booked": "Gebucht",
-      "amazonLabels": "Amazon-Kartonetiketten",
+      "amazonLabels": "Kartonetiketten",
       "carrierLabels": "Versandetiketten"
     },
     "problems": {

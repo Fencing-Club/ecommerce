@@ -147,7 +147,7 @@ describe("packing list", () => {
     expect(data.products.map((product) => product.supplierSku)).toEqual(["NT-WB-2210", "NT-WB-2214", "CT-3100"])
     expect(data.cartons).toHaveLength(18)
     expect(data.cartons.every((carton) => !carton.amazonLabel && !carton.carrierLabel)).toBe(true)
-    expect(data.cartons.at(-1)).toMatchObject({ id: "18", contents: [{ packs: 30 }] })
+    expect(data.cartons.at(-1)).toMatchObject({ id: "C2", contents: [{ packs: 30 }] })
     // The carton groups it prints: each group's cartons, product and packs. The tea towels come in packs of 2.
     const [natural, sage, teaTowel] = towelOrder.items
     expect(
@@ -156,9 +156,9 @@ describe("packing list", () => {
         contents: group[0]!.contents
       }))
     ).toEqual([
-      { cartons: "1–10", contents: [{ productId: natural!.id, packs: 24 }] },
-      { cartons: "11–16", contents: [{ productId: sage!.id, packs: 30 }] },
-      { cartons: "17–18", contents: [{ productId: teaTowel!.id, packs: 30 }] }
+      { cartons: "A1–A10", contents: [{ productId: natural!.id, packs: 24 }] },
+      { cartons: "B1–B6", contents: [{ productId: sage!.id, packs: 30 }] },
+      { cartons: "C1–C2", contents: [{ productId: teaTowel!.id, packs: 30 }] }
     ])
 
     // The browser prints it as it comes, without label assignments.

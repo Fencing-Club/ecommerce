@@ -68,11 +68,11 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
 
   await test.step("enter cartons with quantities for each product", async () => {
     await page.getByRole("button", { name: "Add carton" }).click()
-    await fillCarton(page, "1", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "9.5" })
-    await addCartonProduct(page, "1", "Left", "grip-left", "100")
+    await fillCarton(page, "A1", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "9.5" })
+    await addCartonProduct(page, "A1", "Left", "grip-left", "100")
     await page.getByRole("button", { name: "Add carton" }).click()
-    await fillCarton(page, "2", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "7" })
-    await addCartonProduct(page, "2", "Right", "grip-right", "50")
+    await fillCarton(page, "B1", { "Length (cm)": "40", "Width (cm)": "30", "Height (cm)": "25", "Weight (kg)": "7" })
+    await addCartonProduct(page, "B1", "Right", "grip-right", "50")
     await expect(page.getByRole("region", { name: "Cartons" }).getByText("150 of 150 units")).toBeVisible()
     await expect(page.getByRole("button", { name: "Check packing" })).toHaveCount(0)
     await expect(page.getByRole("button", { name: "Finish packing" })).toBeEnabled()
@@ -82,9 +82,12 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByRole("button", { name: "Finish packing" }).click()
     // Submitting makes the shipment's documents, which takes a while on a busy machine.
     await expect(titleStatus(page)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    // Packed cartons list each product by the supplier's SKU.
-    await expect(page.getByRole("region", { name: "Carton 1", exact: true })).toContainText("GRIP-L")
-    await expect(page.getByRole("region", { name: "Carton 2", exact: true })).toContainText("GRIP-R")
+    // Packed cartons, opened, list each product by the supplier's SKU.
+    for (const carton of ["A1", "B1"]) {
+      await page.getByRole("button", { name: `Products in ${carton}`, exact: true }).click()
+    }
+    await expect(page.getByRole("region", { name: "Carton A1", exact: true })).toContainText("GRIP-L")
+    await expect(page.getByRole("region", { name: "Carton B1", exact: true })).toContainText("GRIP-R")
     await expect(page.getByText("200 Factory Road")).toBeVisible()
     await expect(page.getByRole("note").filter({ hasText: "Supplier packet ready" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute(

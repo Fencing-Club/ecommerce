@@ -1,17 +1,20 @@
 import { randomUUID } from "node:crypto"
+import { validatePacking, cartonNetworks, cartonList } from "@repo/copacker-packing-rules"
+import { amazonSources } from "@repo/copacker-packing-rules/carton-policies"
 import { describe, expect, it } from "vitest"
 import {
   orderInputSchema,
   packingSchema,
-  validatePacking,
   buildAwdRequest,
   buildFbaPlan,
-  cartonNetworks,
   fbaBoxes,
   splitByNetwork,
   commercialChanges,
   approveChanges,
-  money
+  cartonsValue,
+  fbaPallets,
+  money,
+  palletLabels
 } from "../src/index"
 import {
   destinationName,
@@ -173,6 +176,83 @@ describe("Supplier piece and carton contract", () => {
   })
 })
 
+describe("Cartons on pallets", () => {
+  const pallet = (palletId: string, cartonIds: string[], weight = 62) => ({
+    palletId,
+    length: 120,
+    width: 100,
+    height: 55,
+    weight,
+    stackable: true,
+    cartonIds
+  })
+  const codes = (pallets: ReturnType<typeof pallet>[], palletized = true) =>
+    validatePacking(order, { ...packing, palletized, pallets }).issues.map((issue) => [issue.code, issue.palletId])
+
+  it("puts every carton on exactly one pallet of the shipment", () => {
+    expect(codes([pallet("1", ["A6", "A7"])])).toEqual([])
+    expect(codes([], false)).toEqual([])
+    expect(codes([])).toEqual([["noPallets", undefined]])
+    expect(codes([pallet("1", ["A6"]), pallet("2", [])])).toEqual([
+      ["emptyPallet", "2"],
+      ["cartonsOffPallets", undefined]
+    ])
+    expect(codes([pallet("1", ["A6", "A7", "Z9"]), pallet("1", ["a7"])])).toEqual([
+      ["unknownPalletCarton", "1"],
+      ["duplicatePallet", "1"],
+      ["palletCartonTwice", "1"]
+    ])
+  })
+
+  it("lists the cartons off pallets with runs as ranges", () => {
+    const issue = validatePacking(order, { ...packing, palletized: true, pallets: [pallet("1", ["A6"])] }).issues[0]
+    expect(issue).toEqual({ code: "cartonsOffPallets", values: { count: 1, cartons: "A7" } })
+    expect(cartonList(["B4", "B6", "D1", "D8", "D9", "D11", "CTN-009", "CTN-010", "X"])).toBe(
+      "B4, B6, D1, D8–D9, D11, CTN-009–CTN-010, X"
+    )
+  })
+
+  it("gives Amazon each shipment's whole pallets, identical ones counted together", () => {
+    const pallets = { pallets: [pallet("1", ["A1", "A2"]), pallet("2", ["A3"]), pallet("3", ["B1"], 80)] }
+    expect(fbaPallets(pallets, new Set(["A1", "A2", "A3"]))).toEqual({
+      pallets: [
+        {
+          quantity: 2,
+          dimensions: { length: 120, width: 100, height: 55, unitOfMeasurement: "CM" },
+          weight: { value: 62, unit: "KG" },
+          stackability: "STACKABLE"
+        }
+      ],
+      split: []
+    })
+    expect(fbaPallets(pallets, new Set(["A1", "B1"])).split).toEqual(["1"])
+    // Carton IDs match in any case, as validatePacking matches them.
+    expect(fbaPallets({ pallets: [pallet("1", ["a1", "A2"])] }, new Set(["A1", "A2"]))).toMatchObject({
+      pallets: [{ quantity: 1 }],
+      split: []
+    })
+  })
+
+  it("numbers each pallet within the Amazon shipment its cartons travel in", () => {
+    const labels = [
+      { cartonId: "A1", amazonShipmentId: "FBA18AAAA" },
+      { cartonId: "A3", amazonShipmentId: "FBA18AAAA" },
+      { cartonId: "B1", amazonShipmentId: "FBA18BBBB" }
+    ]
+    expect(
+      palletLabels([pallet("1", ["A1", "A2"]), pallet("2", ["B1"]), pallet("3", ["A3"]), pallet("4", ["C1"])], labels)
+    ).toEqual([
+      { palletId: "1", amazonShipmentId: "FBA18AAAA", number: 1, count: 2 },
+      { palletId: "2", amazonShipmentId: "FBA18BBBB", number: 1, count: 1 },
+      { palletId: "3", amazonShipmentId: "FBA18AAAA", number: 2, count: 2 }
+    ])
+  })
+
+  it("declares the cartons' goods at the PO's prices", () => {
+    expect(cartonsValue(order, packing.cartons)).toBe(320 * 210)
+  })
+})
+
 describe("FBA shipments", () => {
   const gloveId = randomUUID()
   const fbaOrder = orderInputSchema.parse({
@@ -233,6 +313,7 @@ describe("FBA shipments", () => {
         code: "cartonSize",
         values: {
           receiver: "FBA",
+          exception: "oneUnit",
           shape: "box",
           lengthCm: 91.44,
           widthCm: 63.5,
@@ -241,7 +322,8 @@ describe("FBA shipments", () => {
           widthIn: 25,
           heightIn: 25
         },
-        fields: ["length"]
+        fields: ["length"],
+        source: amazonSources.fbaShipping
       }
     ])
     // FBA cartons may be 36 in long, where AWD's stop at 25 in.
@@ -259,7 +341,8 @@ describe("FBA shipments", () => {
       {
         cartonId: "C2",
         code: "samePacking",
-        values: { sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 }
+        values: { receiver: "AWD", sku: "glove-6", units: 6, length: 50, width: 40, height: 30, weight: 15 },
+        source: amazonSources.awdInventory
       }
     ])
   })
@@ -356,6 +439,31 @@ describe("POs to Amazon with lines for several networks", () => {
     // Invoice changes stay with the first part, and the rest keep the shared details.
     expect(parts.map((part) => part.packing.changes.length)).toEqual([1, 0])
     expect(parts[1]!.packing.readyDate).toBe(split.readyDate)
+  })
+
+  it("keeps each pallet to one network's cartons", () => {
+    const pallet = (palletId: string, cartonIds: string[]) => ({
+      palletId,
+      length: 120,
+      width: 100,
+      height: 90,
+      weight: 62,
+      stackable: true,
+      cartonIds
+    })
+    const issues = (pallets: ReturnType<typeof pallet>[]) =>
+      validatePacking(both, { ...split, palletized: true, pallets })
+        .issues.filter((issue) => issue.code === "palletMixedNetworks")
+        .map((issue) => issue.palletId)
+    expect(issues([pallet("1", ["G1", "A6", "A7"])])).toEqual(["1"])
+    expect(issues([pallet("1", ["G1"]), pallet("2", ["A6", "A7"])])).toEqual([])
+    // Each network's packing keeps its own pallets, whatever case their carton IDs are in.
+    const parts = splitByNetwork(both, {
+      ...split,
+      palletized: true,
+      pallets: [pallet("1", ["g1"]), pallet("2", ["a6", "A7"])]
+    })
+    expect(parts.map((part) => part.packing.pallets?.map((each) => each.palletId))).toEqual([["1"], ["2"]])
   })
 
   it("gives each network its own carton rules and each line its network", () => {

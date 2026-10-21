@@ -22,7 +22,7 @@ export async function GET(request: Request, context: { params: { id: string } })
 async function packet(request: Request, context: { params: { id: string } }) {
   const query = new URL(request.url).searchParams
   const section = z
-    .enum(["verify", "carton_labels", "carrier_labels", "product_labels"])
+    .enum(["verify", "carton_labels", "carrier_labels", "pallet_labels", "product_labels"])
     .safeParse(query.get("section"))
   if (!section.success) {
     return new Response("Unknown packet section", { status: 400 })
@@ -49,7 +49,9 @@ async function packet(request: Request, context: { params: { id: string } }) {
       files.push(warnings.bytes)
     }
   } else {
-    const kind = section.data === "carton_labels" ? "carton_label" : "shipping_label"
+    const kind = (
+      { carton_labels: "carton_label", carrier_labels: "shipping_label", pallet_labels: "pallet_label" } as const
+    )[section.data]
     if (kind !== "shipping_label" || shipment.transport?.carrierLabels === "per_carton") {
       const selected = docs
         .filter((doc) => doc.shipmentId === id && doc.shipmentRevision === shipment.revision && doc.kind === kind)
@@ -63,9 +65,14 @@ async function packet(request: Request, context: { params: { id: string } }) {
   const bytes = files.length === 1 ? files[0]! : await combinePdfs(files)
   await releasedPacket(s, id, version)
   const filename = shipmentDocumentFilename(
-    ({ product_labels: "product_label", carton_labels: "carton_label", carrier_labels: "shipping_label" } as const)[
-      section.data
-    ],
+    (
+      {
+        product_labels: "product_label",
+        carton_labels: "carton_label",
+        carrier_labels: "shipping_label",
+        pallet_labels: "pallet_label"
+      } as const
+    )[section.data],
     {
       orderReference: labelOrder.data.reference,
       shipmentReference: shipment.amazonShipmentId ?? shipment.id,

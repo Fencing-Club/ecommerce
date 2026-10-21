@@ -111,7 +111,15 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   // The documents kept with the PO that this workspace can download: the PO's own, then each shipment's, in the order
   // they're made. Product labels are made from each product instead, in the Products table.
-  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
+  const documentOrder = [
+    "purchase_order",
+    "invoice",
+    "packing_list",
+    "checklist",
+    "carton_label",
+    "pallet_label",
+    "shipping_label"
+  ]
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
     // Shipments' documents are for those who can open shipments.

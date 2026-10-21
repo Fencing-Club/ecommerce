@@ -68,6 +68,7 @@
       "cartonLabels": "Carton labels",
       "unitLabels": "Product labels",
       "carrierLabels": "Carrier labels",
+      "palletLabels": "Pallet labels",
       "backToShipment": "Back to shipment"
     },
     "cartons": {
@@ -77,7 +78,7 @@
       "units": "Units",
       "dimensions": "Dimensions (cm)",
       "weight": "Weight (kg)",
-      "amazonLabel": "Amazon label"
+      "amazonLabel": "Carton label"
     },
     "pickup": {
       "title": "Pickup",

@@ -49,6 +49,9 @@ export const Indeterminate = meta.story({
   args: { indeterminate: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("checkbox")).toHaveAttribute("aria-checked", "mixed")
+    // A filled box with a minus, not a tick.
+    await expect(canvas.getByRole("checkbox").querySelector(".lucide-minus")).toBeVisible()
+    await expect(canvas.getByRole("checkbox").querySelector(".lucide-check")).not.toBeVisible()
   }
 })
 

@@ -68,6 +68,7 @@
       "cartonLabels": "外箱标签",
       "unitLabels": "商品标签",
       "carrierLabels": "承运商标签",
+      "palletLabels": "托盘标签",
       "backToShipment": "返回货件"
     },
     "cartons": {
@@ -77,7 +78,7 @@
       "units": "件数",
       "dimensions": "尺寸（cm）",
       "weight": "重量（kg）",
-      "amazonLabel": "Amazon 标签"
+      "amazonLabel": "箱标"
     },
     "pickup": {
       "title": "提货",

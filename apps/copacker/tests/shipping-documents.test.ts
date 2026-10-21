@@ -9,6 +9,7 @@ import {
   shippingPdfFilename
 } from "../src/documents/shipping-model"
 import { ShippingPdf } from "../src/documents/shipping-pdf"
+import { shipmentDocumentChecks } from "../src/documents/shipping-rules"
 import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { shippingOverview, shippingScenarios } from "../src/stories/fixtures/shipping-documents"
 
@@ -132,5 +133,51 @@ describe("what a document can be made from", () => {
     expect(() =>
       ShippingPdf({ data: pending, kind: "packing", settings: defaultDocumentSettings, packingRecord: true })
     ).not.toThrow()
+  })
+})
+
+describe("pallets", () => {
+  const fba = shippingScenarios.find((scenario) => scenario.id === "fba-freight")!.data
+  const awd = shippingScenarios.find((scenario) => scenario.id === "awd-freight")!.data
+  const titles = (checks: { title: string }[]) => checks.map((check) => check.title)
+
+  it("gives FBA and AWD pallets Amazon's type, height, weight and wrap, and only FBA's the four labels", () => {
+    // AWD's shipping requirements send sellers to the same LTL and FTL pallet rules.
+    for (const shipment of [fba, awd]) {
+      const checks = shipmentDocumentChecks(shipment).pallets
+      expect(titles(checks)).toEqual(expect.arrayContaining(["palletType", "palletHeight", "weightLimit", "secure"]))
+      expect(checks.find((check) => check.title === "palletType")!.values).toMatchObject({
+        lengthCm: 121.9,
+        widthCm: 101.6
+      })
+      expect(checks.find((check) => check.title === "palletHeight")!.values).toMatchObject({ heightCm: 182.9 })
+      expect(checks.find((check) => check.title === "weightLimit")!.values).toMatchObject({ kg: 680, lb: 1500 })
+    }
+    expect(titles(shipmentDocumentChecks(fba).pallets)).toContain("palletLabel")
+    expect(titles(shipmentDocumentChecks(awd).pallets)).not.toContain("palletLabel")
+  })
+
+  it("has the bill of lading ready at the handoff once the pallets are loaded", () => {
+    for (const shipment of [fba, awd]) {
+      expect(titles(shipmentDocumentChecks(shipment).handoff)).toEqual(["bol", "ready"])
+    }
+  })
+
+  it("makes the packing list, label reference and packing record for pallets", () => {
+    const settings = defaultDocumentSettings
+    expect(fba.pallets?.every((pallet) => pallet.label)).toBe(true)
+    for (const kind of ["packing", "reference"] as const) {
+      expect(documentIssues(fba, kind)).toEqual([])
+      expect(() => ShippingPdf({ data: fba, kind, settings })).not.toThrow()
+    }
+    for (const shipment of [fba, awd]) {
+      const record = {
+        ...shipment,
+        destination: { name: shipment.destination.name, address: [] },
+        cartons: shipment.cartons.map((carton) => ({ ...carton, amazonLabel: undefined })),
+        pallets: shipment.pallets?.map(({ label: _label, ...pallet }) => pallet)
+      }
+      expect(() => ShippingPdf({ data: record, kind: "packing", settings, packingRecord: true })).not.toThrow()
+    }
   })
 })

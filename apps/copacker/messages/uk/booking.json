@@ -170,7 +170,7 @@
       "description": "Скачайте етикетки зараз або знайдіть їх у {shipment} будь-коли.",
       "summary": "{service}, {total}",
       "booked": "Заброньовано",
-      "amazonLabels": "Етикетки коробок Amazon",
+      "amazonLabels": "Етикетки коробок",
       "carrierLabels": "Етикетки перевізника"
     },
     "problems": {

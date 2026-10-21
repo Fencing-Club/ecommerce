@@ -1,9 +1,11 @@
 import type { OrderInput } from "@repo/aisle"
 import type { Packing } from "@repo/aisle"
-import { packingSchema, validatePacking } from "@repo/aisle"
+import { packingSchema } from "@repo/aisle"
 import { shipmentLabelRequirements } from "@repo/aisle/transport"
+import { validatePacking } from "@repo/copacker-packing-rules"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
+import { issueValues } from "@/lib/packing-messages"
 import type { ShipmentState } from "../db/schema"
 import type { documents, shipments } from "../db/schema"
 
@@ -26,6 +28,8 @@ export const packedStates: readonly ShipmentState[] = [
 ]
 // Once the supplier ships, a shipment's cartons and documents can't change any more.
 export const finishedStates: readonly ShipmentState[] = ["shipped", "forwarded", "received", "cancelled"]
+// Amazon's and the carrier's labels reach the supplier and forwarder only once the buyer releases the shipment.
+export const releasedLabelKinds: ReadonlyArray<Document["kind"]> = ["carton_label", "pallet_label", "shipping_label"]
 
 // Pieces per PO item in shipments that arrived.
 export function receivedPieces(rows: Shipment[]) {
@@ -92,11 +96,23 @@ export function orderCoverage(order: OrderInput, rows: Shipment[]) {
   })
 }
 
+// Amazon's packing groups for a shipment's FBA cartons, by SKU: the ones Amazon set when it planned this shipment or,
+// until it has, the latest it set for another of the purchase order's shipments, since Amazon groups the same products
+// the same way. Undefined until Amazon has planned one, when the packing checks can't check the groups.
+export function knownPackingGroups(rows: Shipment[], shipment: Shipment) {
+  const [latest] = rows
+    .filter((row) => row.orderId === shipment.orderId && row.packingGroups)
+    .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  return shipment.packingGroups ?? latest?.packingGroups ?? undefined
+}
+
+// Whether a shipment's packing is ready to submit, given the purchase order's shipments (rows): what the others hold and
+// Amazon's packing groups (see knownPackingGroups).
 export function packingReadiness(
   order: OrderInput,
   shipment: Shipment,
   raw: unknown,
-  reserved: Record<string, number>,
+  rows: Shipment[],
   orderRevision: number,
   t: ServerText = serverTextInEnglish,
   now: Date | number = Date.now()
@@ -143,11 +159,14 @@ export function packingReadiness(
     issues.push({ code: "network_mismatch", message: t("readiness.networkMismatch") })
   }
   issues.push(
-    ...validatePacking(order, packing, reserved).issues.map((issue) => ({
+    ...validatePacking(
+      order,
+      { ...packing, packingGroups: knownPackingGroups(rows, shipment) },
+      reservedPieces(rows, shipment.id)
+    ).issues.map((issue) => ({
       code: "packing_rule",
       cartonId: issue.cartonId,
-      message:
-        "values" in issue ? t(`readiness.packing.${issue.code}`, issue.values) : t(`readiness.packing.${issue.code}`)
+      message: t(`readiness.packing.${issue.code}`, issueValues(issue, order.items))
     }))
   )
   return { packing, issues }
@@ -222,6 +241,10 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
         message: t("readiness.missingShippingLabel", { carton: carton.cartonId })
       })
     }
+  }
+  // Amazon labels an FBA shipment's pallets with its cartons, four labels for each pallet.
+  if (shipment.amazonNetwork === "fba" && packing.palletized && !current.some((doc) => doc.kind === "pallet_label")) {
+    issues.push({ code: "missing_pallet_label", message: t("readiness.missingPalletLabels") })
   }
   return issues
 }

@@ -10,9 +10,9 @@ import {
   finishedStates,
   orderCoverage,
   packingReadiness,
+  releasedLabelKinds,
   releasedStates,
-  releaseIssues,
-  reservedPieces
+  releaseIssues
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { serverText } from "./text"
@@ -52,7 +52,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           order.data,
           shipment,
           shipment.packingDraft ?? shipment.packing ?? {},
-          reservedPieces(rows, shipment.id),
+          rows,
           order.revision,
           t
         )
@@ -184,7 +184,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           const shipment = rows.find((row) => row.id === doc.shipmentId)
           const downloadable =
             s.org.kind === "buyer" ||
-            !["carton_label", "shipping_label"].includes(doc.kind) ||
+            !releasedLabelKinds.includes(doc.kind) ||
             (!!shipment && releasedStates.includes(shipment.status))
           return {
             id: doc.id,

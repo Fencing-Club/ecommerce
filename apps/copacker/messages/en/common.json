@@ -70,6 +70,7 @@
     "shippingLabel": "Shipping label",
     "productLabel": "Product label",
     "cartonLabels": "Carton labels",
+    "palletLabels": "Pallet labels",
     "shippingLabels": "Shipping labels"
   },
   "format": {

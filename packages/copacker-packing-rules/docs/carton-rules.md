@@ -1,21 +1,24 @@
 # Carton rules
 
 Where cartons go decides what they may be: their size and weight, how many units of a product they hold, and whether
-they may mix products. `@repo/aisle/carton-policies` keeps those rules as data, so Copacker checks every receiver's
+they may mix products. `@repo/copacker-packing-rules/carton-policies` keeps those rules as data, so Copacker checks every receiver's
 cartons the same way and every message, checklist and requirement states the same limits.
 
 ## How it works
 
-- **A rule** is one typed entry, such as `{ type: "maxSize", sides: [36, 25, 25], unit: "in" }`. Limits are kept in
+- **A rule** is one typed entry, such as `{ type: "maxSize", sides: [36, 25, 25], unit: "in", description, source }`.
+  Its `description` states the rule as the receiver does, so a policy reads as its own documentation, and `source` is
+  the page where the receiver states it: each issue carries it, and the editor's error links to it. A test fails when
+  a limit changes and its description doesn't say so. Limits are kept in
   the units the receiver states them in and converted where they're shown. A converted weight is rounded down to the
   hundredth, so the limit shown is one a carton can meet, and cartons are checked against it: 50 lb is 22.6796185 kg,
   shown and checked as 22.67 kg, because 22.68 kg is over 50 lb. Sizes convert exactly (36 in is 91.44 cm).
 - **A policy** is a receiver's name and its list of rules (`cartonPolicies`, one per Amazon network today).
 - **`checkCarton`** runs each of a policy's rules against one carton, with the cartons checked before it under the same
   policy for rules across cartons. Each rule type has one case there, and TypeScript requires a case for every type.
-- **`validatePacking`** (in `@repo/aisle`) picks each carton's policy from where it goes, then adds the rules that hold
+- **`validatePacking`** (in `@repo/copacker-packing-rules`) picks each carton's policy from where it goes, then adds the rules that hold
   everywhere: unique carton numbers, one network per carton, products on the PO, complete multi-packs and quantities
-  within the PO.
+  within the PO. `packingRuleDescriptions` describes each of those, and a new code fails type checks until it has one.
 
 | Rule type     | What it checks                                                                 | Issue code         |
 | ------------- | ------------------------------------------------------------------------------ | ------------------ |
@@ -24,7 +27,9 @@ cartons the same way and every message, checklist and requirement states the sam
 | `maxUnits`    | Sellable units of one product in a carton                                      | `unitsPerCarton`   |
 | `oneSku`      | A carton holds one product                                                     | `oneSku`           |
 | `samePacking` | Every carton of a SKU has the same units, size and weight as its first carton  | `samePacking`      |
-| `amazonIds`   | Every product has its ASIN and FNSKU                                           | `missingAmazonIds` |
+| `asin`        | Every product has its ASIN                                                     | `missingAsin`      |
+| `fnsku`       | Every product has its FNSKU                                                    | `missingFnsku`     |
+| `packingGroups` | A carton's products are in one of the receiver's packing groups, once it has set them | `packingGroups` |
 
 `maxSize` and `maxWeight` take `exceptOneUnit`: a carton holding one sellable unit may be larger or heavier. Each issue
 carries the values its message names (the receiver, the limit in both units, the SKU), and the app writes every message
@@ -33,8 +38,8 @@ requirements (`shipments.requirements`) and the supplier's checklist (`shippingC
 
 ### Adding a receiver or a rule
 
-- **A receiver with existing kinds of rules**, such as GWD or a 3PL: add a policy and resolve cartons to it in
-  `cartonPolicy` (in `index.ts`). No other code changes. A policy is plain data, so a 3PL's rules could later be saved
+- **A receiver with existing kinds of rules**, such as GWD or a 3PL: add a policy, each rule with its description
+  and source, and resolve cartons to it in `cartonPolicy` (in `index.ts`). No other code changes. A policy is plain data, so a 3PL's rules could later be saved
   per account.
 - **A new kind of rule**: add its type to `CartonRule`, its case to `checkCarton` and its issue to `CartonRuleIssue`,
   then its message in every locale and its checklist line in `apps/copacker/src/documents/shipping-rules.ts`. Type
@@ -54,15 +59,21 @@ so cartons may mix SKUs and hold any number of units.
 | ----------------------------------- | ---------------------------------------------------------------------- |
 | Size (`maxSize`, `exceptOneUnit`)   | 36 × 25 × 25 in (91.44 × 63.5 × 63.5 cm), unless one unit is larger    |
 | Weight (`maxWeight`, `exceptOneUnit`) | 50 lb (22.67 kg), unless one unit is heavier                         |
-| Identifiers (`amazonIds`)           | Every product has its ASIN and FNSKU                                   |
+| ASIN (`asin`)                       | Every product has its ASIN                                             |
+| FNSKU (`fnsku`)                     | Every product has its FNSKU                                            |
+| Packing groups (`packingGroups`)    | A carton holds products of one of Amazon's packing groups               |
 
 - [Shipping and routing requirements](https://sellercentral.amazon.com/help/hub/reference/external/200141510?locale=en-US):
   a box may be up to 36 in long, 25 in wide and 25 in high, and weigh up to 50 lb. Only a box holding one oversize unit
   may be larger, and only a single item over 50 lb may make it heavier. Copacker used to hold FBA cartons to 25 in on
   every side, as older guides still do.
-- Not checked: boxes of jewelry or watches are limited to 40 lb, and a box over 50 lb needs Team Lift labels. Amazon's
-  packing options also put some SKUs in separate packing groups, which the FBA booking job handles
-  ([Amazon inbound](../../../apps/copacker/docs/amazon-inbound.md)).
+- [Create an inbound shipment](https://developer-docs.amazon.com/sp-api/docs/create-an-inbound-shipment) (Fulfillment
+  Inbound API): Amazon puts the SKUs that can share a box in a packing group, and keeps apart SKUs it receives
+  separately, such as dangerous goods. The groups exist only once Amazon plans the shipment, so `validatePacking` checks
+  them when the packing passes them in (`packingGroups`, by SKU) and skips the rule otherwise. The FBA booking job
+  confirms the packing option that keeps each carton in one group, and keeps each SKU's group on the shipment for
+  Copacker's packing checks ([Amazon inbound](../../../apps/copacker/docs/amazon-inbound.md)).
+- Not checked: boxes of jewelry or watches are limited to 40 lb, and a box over 50 lb needs Team Lift labels.
 
 ### AWD US (`cartonPolicies.awd_us`)
 
@@ -75,7 +86,8 @@ AWD only takes case packs: it has no individual-units packing.
 | Same packing (`samePacking`) | One packing template per SKU in a shipment: same units, size and weight |
 | Size (`maxSize`)           | 25 in (63.5 cm) on every side, with no single-unit exception             |
 | Weight (`maxWeight`)       | 50 lb (22.67 kg), with no single-unit exception                          |
-| Identifiers (`amazonIds`)  | Every product has its ASIN and FNSKU                                     |
+| ASIN (`asin`)              | Every product has its ASIN                                               |
+| FNSKU (`fnsku`)            | Every product has its FNSKU                                              |
 
 - [AWD shipping requirements](https://sellercentral.amazon.com/help/hub/reference/GVEPW8A7PZ3YGPJE?locale=en-US):
   boxes may be at most 25 in on any side and 50 lb.

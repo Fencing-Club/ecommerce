@@ -175,6 +175,17 @@ describe("private document streaming", () => {
     expect((await downloadDocument(session, document, undefined, true)).status).toBe(409)
     expect(context.readFile).not.toHaveBeenCalled()
   })
+  it("keeps Amazon's pallet labels from the supplier until the buyer releases the shipment", async () => {
+    await database
+      .update(tables.documents)
+      .set({ kind: "pallet_label", name: "Pallet labels.pdf" })
+      .where(eq(tables.documents.id, document))
+    expect((await downloadDocument(session, document)).status).toBe(200)
+    await database.update(tables.shipments).set({ status: "waiting_labels" }).where(eq(tables.shipments.id, shipment))
+    context.readFile.mockClear()
+    expect((await downloadDocument(session, document)).status).toBe(409)
+    expect(context.readFile).not.toHaveBeenCalled()
+  })
   it("streams an authorized file with the existing filename and security headers", async () => {
     const response = await downloadDocument(session, document)
     expect(response.status).toBe(200)

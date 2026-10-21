@@ -64,6 +64,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@reduxjs/toolkit": "^2.13.0",
     "@repo/aisle": "workspace:*",
+    "@repo/copacker-packing-rules": "workspace:*",
     "@repo/copacker-emails": "workspace:*",
     "@tanstack/react-router": "1.170.45",
     "@tanstack/react-start": "1.169.3",

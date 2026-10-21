@@ -70,6 +70,7 @@
     "shippingLabel": "Etiqueta de envío",
     "productLabel": "Etiqueta de producto",
     "cartonLabels": "Etiquetas de cajas",
+    "palletLabels": "Etiquetas de tarima",
     "shippingLabels": "Etiquetas de envío"
   },
   "format": {

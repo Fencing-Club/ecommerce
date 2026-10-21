@@ -32,7 +32,7 @@ What choosing case packs changes:
   Each box is sent with its own contents, and identical boxes are a `quantity`.
 - **AWD** takes nothing but case packs: every SKU uses one packing template per shipment
   ([choose inventory to send](https://sellercentral.amazon.com/help/hub/reference/GZLL7RYU2FJRN9BU?locale=en-US)).
-  Copacker's AWD rules already hold every carton to that (see [carton rules](../../../packages/aisle/docs/carton-rules.md)).
+  Copacker's AWD rules already hold every carton to that (see [carton rules](../../../packages/copacker-packing-rules/docs/carton-rules.md)).
 - **AGL** is booked in Seller Central from an upload file, so case packs there would skip the box-content template
   step. The AGL booking design (board 10.03) has a "Single-SKU case packs" variation for this.
 
