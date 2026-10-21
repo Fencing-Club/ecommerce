@@ -2,6 +2,7 @@ import { packingSchema } from "@repo/aisle"
 import { packingRequirementsSchema } from "@repo/aisle/packing-requirements"
 import { transportSchema } from "@repo/aisle/transport"
 import { describe, expect, it } from "vitest"
+import { shipmentDocumentChecks } from "../src/documents/shipping-rules"
 import { packingListSnapshot, shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
 import { pickupAddress } from "../src/stories/fixtures/logistics"
 import { orderData, orderItem } from "../src/stories/fixtures/orders"
@@ -104,6 +105,22 @@ describe("accepted shipment document snapshot", () => {
     })
     expect(data.network).toBe("fba")
     expect(data.pallets?.map((row) => row.label)).toEqual(["FBA18ABCD123 1/2", "FBA18ABCD123 2/2"])
+  })
+
+  it("exports a shipment on pallets that goes by freight from the supplier, with its pallet steps", () => {
+    const pallet = { length: 120, width: 100, height: 90, weight: 62, stackable: false }
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: { ...input.order, items: [{ ...product, amazonNetwork: "fba" as const }] },
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, palletId: "1", cartonIds: ["A1", "A2"] }] },
+      labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
+      transport: { ...input.transport, service: "freight" }
+    })
+    expect(data.transport).toMatchObject({ service: "freight", collection: "pickup", palletized: true })
+    expect(data.pallets?.map((row) => row.label)).toEqual(["FBA18ABCD123 1/1"])
+    const checks = shipmentDocumentChecks(data)
+    expect(checks.pallets.map((check) => check.title)).toContain("palletLabel")
+    expect(checks.handoff.map((check) => check.title)).toEqual(["bol", "ready"])
   })
 
   it("lists the pallets in the packing list download, before Amazon labels them", () => {
