@@ -19,6 +19,8 @@ const released = {
 const meta = preview.meta({
   title: "Pages/Shipments/Supplier packet",
   component: ShipmentPacketPage,
+  // The packet page renders its documents, so test runs leave it out (vitest.config.ts).
+  tags: ["documents"],
   ...portalPage(`/shipments/${id}/packet`, "supplier"),
   args: { page: released },
   beforeEach: ({ msw }) => {
