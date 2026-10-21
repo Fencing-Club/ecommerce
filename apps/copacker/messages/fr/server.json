@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "Le bon de commande a changé. Vérifiez-le et enregistrez le brouillon d’emballage avant d’envoyer.",
     "shipmentLocked": "Réglez l’expédition existante avant de modifier sa liste de colisage",
+    "readyDatePassed": "Prêt pour l’enlèvement : choisissez aujourd’hui ou une date ultérieure",
     "missingInvoice": "Importez la facture commerciale officielle de cette expédition",
     "missingPacking": "Envoyez d’abord la liste de colisage",
     "unmatchedCartons": "Les étiquettes de carton Amazon ne correspondent pas aux cartons",

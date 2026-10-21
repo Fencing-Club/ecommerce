@@ -1,12 +1,23 @@
 import { cartonInputSchema, type PackingDraft, packingSchema } from "@repo/aisle"
 import { z } from "zod"
+import { zonedDay } from "./time-zone"
 
 // Counts are an editor convenience. The saved packing list still identifies every physical carton.
 export const cartonGroupSchema = cartonInputSchema.extend({
   count: z.number().int().min(1).max(1000),
   cartonIds: z.array(z.string()).default([])
 })
-export const packingEditorSchema = packingSchema.extend({ cartons: z.array(cartonGroupSchema).min(1).max(1000) })
+// Finishing packing also needs a ready date of today or later in the supplier's time zone. Today is read when the form
+// checks, so a form left open past midnight moves on to the next day.
+export function packingEditorSchema(timeZone: string) {
+  return packingSchema.extend({
+    readyDate: packingSchema.shape.readyDate.refine(
+      (date) => date >= zonedDay(Date.now(), timeZone),
+      "orders.packing.readyDatePassed"
+    ),
+    cartons: z.array(cartonGroupSchema).min(1).max(1000)
+  })
+}
 export type CartonGroup = z.input<typeof cartonGroupSchema>
 type DraftCarton = NonNullable<PackingDraft["cartons"]>[number]
 

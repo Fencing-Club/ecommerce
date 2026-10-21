@@ -407,6 +407,7 @@
     "readyForPickup": "Pronto per il ritiro",
     "shipFrom": "Indirizzo di ritiro",
     "readyDate": "Pronto per il ritiro",
+    "readyDatePassed": "Scegli oggi o una data successiva",
     "addCartonProduct": "Aggiungi prodotto al cartone",
     "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone",
     "finishPacking": "Completa imballaggio",

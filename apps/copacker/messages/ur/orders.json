@@ -407,6 +407,7 @@
     "readyForPickup": "پک اپ کے لیے تیار",
     "shipFrom": "پک اپ کا پتہ",
     "readyDate": "پک اپ کے لیے تیار",
+    "readyDatePassed": "آج یا اس کے بعد کی تاریخ منتخب کریں",
     "addCartonProduct": "کارٹن میں پروڈکٹ شامل کریں",
     "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں",
     "finishPacking": "پیکنگ مکمل کریں",

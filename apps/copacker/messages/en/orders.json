@@ -407,6 +407,7 @@
     "readyForPickup": "Ready for pickup",
     "shipFrom": "Ship from",
     "readyDate": "Ready date",
+    "readyDatePassed": "Choose today or a later date",
     "addCartonProduct": "Add product to carton",
     "removeCartonProduct": "Remove product {number} from carton",
     "finishPacking": "Finish packing",

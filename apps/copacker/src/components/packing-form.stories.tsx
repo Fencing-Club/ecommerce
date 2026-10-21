@@ -1,8 +1,10 @@
 import type { OrderInput, PackingDraft } from "@repo/aisle"
 import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { storyTimeZone } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { addDays, zonedDay } from "@/lib/time-zone"
 import { supplierId } from "@/stories/fixtures/orders"
 import { actionHandler, order, pickupAddress, shipmentRecord, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { member } from "@/stories/workspace"
@@ -12,10 +14,12 @@ const actions = fn()
 const shipment = shipmentRecord()
 const [tote, apron, basket] = order.items
 const savedAddress = { id: "5d6e7f80-1a2b-4c3d-8e9f-000000000001", name: "Ningbo factory", address: pickupAddress }
+// Today where the stories are set, which packing can finish on at the earliest.
+const today = zonedDay(Date.now(), storyTimeZone)
 
-// A packing list ready to check: two cartons of totes, ready on a day, from the factory.
+// A packing list ready to check: two cartons of totes, ready in two weeks, from the factory.
 const draft: PackingDraft = {
-  readyDate: "2026-10-05",
+  readyDate: addDays(today, 14),
   origin: pickupAddress,
   cartons: [
     { cartonId: "C1", length: 60, width: 40, height: 40, weight: 12, items: [{ itemId: tote!.id, pieces: 40 }] },
@@ -368,6 +372,48 @@ export const LiveValidation = meta.story({
     await expect(weight).toHaveAttribute("aria-invalid", "true")
     await userEvent.type(weight, "12")
     await expect(weight).not.toHaveAttribute("aria-invalid", "true")
+  }
+})
+
+// A draft saved with a ready date that has since passed. It still saves, but packing finishes only with today or later.
+export const PassedReadyDate = meta.story({
+  args: { initial: { ...completeDraft, readyDate: "2026-10-05" }, addresses: [savedAddress] },
+  play: async ({ canvas }) => {
+    const readyDate = canvas.getByLabelText(/Ready date/)
+    await expect(readyDate).toHaveAttribute("min", today)
+    await expect(readyDate).not.toHaveAttribute("aria-invalid", "true")
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({ draft: expect.objectContaining({ readyDate: "2026-10-05" }) })
+    })
+    actions.mockClear()
+
+    await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
+    await expect(await canvas.findByText("Choose today or a later date")).toBeVisible()
+    await expect(readyDate).toHaveAttribute("aria-invalid", "true")
+    // The field's own error is the only one, and the field takes focus.
+    await expect(readyDate).toHaveFocus()
+    await expect(canvas.queryByText("Fix the highlighted fields")).toBeNull()
+    await expect(actions).not.toHaveBeenCalled()
+    // The field checks each date as it's chosen.
+    fireEvent.change(readyDate, { target: { value: today } })
+    await waitFor(() => expect(readyDate).not.toHaveAttribute("aria-invalid", "true"))
+    await expect(canvas.queryByText("Choose today or a later date")).toBeNull()
+    fireEvent.change(readyDate, { target: { value: addDays(today, -1) } })
+    await expect(await canvas.findByText("Choose today or a later date")).toBeVisible()
+    fireEvent.change(readyDate, { target: { value: today } })
+    await waitFor(() => expect(readyDate).not.toHaveAttribute("aria-invalid", "true"))
+
+    await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
+    await waitFor(() =>
+      expect(actions).toHaveBeenLastCalledWith({ action: "shipment.submit", data: { id: shipment.id, revision: 2 } })
+    )
+    await expect(actions).toHaveBeenCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({ draft: expect.objectContaining({ readyDate: today }) })
+    })
   }
 })
 

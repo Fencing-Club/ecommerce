@@ -407,6 +407,7 @@
     "readyForPickup": "可提货日期",
     "shipFrom": "提货地址",
     "readyDate": "可提货日期",
+    "readyDatePassed": "请选择今天或之后的日期",
     "addCartonProduct": "向纸箱添加商品",
     "removeCartonProduct": "从纸箱移除商品 {number}",
     "finishPacking": "完成装箱",
