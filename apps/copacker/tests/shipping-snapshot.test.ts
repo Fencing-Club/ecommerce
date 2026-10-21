@@ -123,6 +123,19 @@ describe("accepted shipment document snapshot", () => {
     expect(checks.handoff.map((check) => check.title)).toEqual(["bol", "ready"])
   })
 
+  it("asks for the bill of lading on freight loaded loose, without pallet steps", () => {
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: { ...input.order, items: [{ ...product, amazonNetwork: "fba" as const }] },
+      labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
+      transport: { ...input.transport, service: "freight" }
+    })
+    expect(data.transport).toMatchObject({ service: "freight", palletized: false })
+    const checks = shipmentDocumentChecks(data)
+    expect(checks.pallets).toEqual([])
+    expect(checks.handoff.map((check) => check.title)).toEqual(["bol", "ready"])
+  })
+
   it("lists the pallets in the packing list download, before Amazon labels them", () => {
     const pallet = { palletId: "1", length: 120, width: 100, height: 90, weight: 62, stackable: true }
     const data = packingListSnapshot({
