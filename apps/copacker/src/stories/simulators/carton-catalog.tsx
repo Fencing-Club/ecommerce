@@ -37,7 +37,7 @@ export function CartonCatalog() {
             </FieldError>
           ))
         ) : (
-          <p className="text-sm text-destructive">{packingText(issue)}</p>
+          <FieldError>{packingText(issue)}</FieldError>
         ),
         readiness: "values" in issue ? readiness(issue.code, issue.values) : readiness(issue.code),
         simulator: simulatorHref("simulators-carton-validation--error-example", example.id)

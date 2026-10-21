@@ -12,7 +12,7 @@
     "missingPalletLabels": "پیلٹ لیبل موجود نہیں",
     "missingProductLabel": "پروڈکٹس کے صفحے پر {sku} کا پروڈکٹ لیبل شامل کریں",
     "packing": {
-      "duplicateCarton": "ہر کارٹن کو منفرد نمبر دیں",
+      "duplicateCarton": "ہر کارٹن کو اپنی الگ ID دیں",
       "mixedNetworks": "FBA اور AWD US پروڈکٹس الگ الگ کارٹن میں پیک کریں",
       "cartonSize": "{receiver} کارٹن {shape, select, cube {کی ہر طرف {lengthCm, number} cm یا اس سے کم رکھیں} other {کا سائز {lengthCm, number} × {widthCm, number} × {heightCm, number} cm یا اس سے کم رکھیں}}",
       "cartonWeight": "{receiver} کارٹن کا وزن {maxLb, number} lb ({maxKg, number} kg) یا اس سے کم رکھیں",

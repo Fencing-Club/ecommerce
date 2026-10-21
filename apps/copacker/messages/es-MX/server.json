@@ -12,7 +12,7 @@
     "missingPalletLabels": "Faltan las etiquetas de tarima",
     "missingProductLabel": "Agrega una etiqueta de producto para {sku} en la página Productos",
     "packing": {
-      "duplicateCarton": "Asigna un número único a cada caja",
+      "duplicateCarton": "Asigna a cada caja su propio ID",
       "mixedNetworks": "Empaca los productos de FBA y AWD US en cajas separadas",
       "cartonSize": "Usa cajas de {receiver} de {shape, select, cube {{lengthCm, number} cm o menos por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm o menos}}",
       "cartonWeight": "Usa cajas de {receiver} de {maxLb, number} lb ({maxKg, number} kg) o menos",

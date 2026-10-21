@@ -12,7 +12,7 @@
     "missingPalletLabels": "Les étiquettes de palette sont manquantes",
     "missingProductLabel": "Ajoutez une étiquette produit pour {sku} sur la page Produits",
     "packing": {
-      "duplicateCarton": "Attribuez un numéro unique à chaque carton",
+      "duplicateCarton": "Attribuez à chaque carton son propre identifiant",
       "mixedNetworks": "Emballez les produits FBA et AWD US dans des cartons séparés",
       "cartonSize": "Limitez les cartons {receiver} à {shape, select, cube {{lengthCm, number} cm maximum sur chaque côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm maximum}}",
       "cartonWeight": "Limitez les cartons {receiver} à {maxLb, number} lb ({maxKg, number} kg) maximum",

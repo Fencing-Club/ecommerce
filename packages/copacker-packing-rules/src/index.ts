@@ -88,7 +88,7 @@ export const packingRuleDescriptions: Record<
   Exclude<PackingRule["code"], CartonRuleIssue["code"] | PalletRuleIssue["code"]>,
   string
 > = {
-  duplicateCarton: "Every carton has its own number.",
+  duplicateCarton: "Every carton has its own ID.",
   repeatedProduct: "A carton lists each product once, with all its units.",
   mixedNetworks: "A carton to Amazon holds one network's products, FBA's or AWD's.",
   unknownProduct: "A carton holds only products on the purchase order.",

@@ -12,7 +12,7 @@
     "missingPalletLabels": "缺少托盘标签",
     "missingProductLabel": "请在“产品”页面为 {sku} 添加产品标签",
     "packing": {
-      "duplicateCarton": "请为每个箱子设置唯一的箱号",
+      "duplicateCarton": "请为每个纸箱设置不同的编号",
       "mixedNetworks": "请将 FBA 和 AWD US 的产品分箱包装",
       "cartonSize": "请将 {receiver} 箱{shape, select, cube {每边控制在 {lengthCm, number} 厘米以内} other {尺寸控制在 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米以内}}",
       "cartonWeight": "请将 {receiver} 箱重量控制在 {maxLb, number} 磅（{maxKg, number} 千克）以内",

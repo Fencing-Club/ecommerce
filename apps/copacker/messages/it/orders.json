@@ -497,7 +497,7 @@
       "incompletePacks": "Quantità: {sku} è venduto in confezioni da {pack, number}. Inserisci un multiplo di {pack, number}.",
       "missingAsin": "Prodotti: {sku} non ha l’ASIN, che serve a {receiver} per riceverlo. L’acquirente lo aggiunge nell’ordine d’acquisto.",
       "missingFnsku": "Prodotti: {sku} non ha l’FNSKU, che serve a {receiver} per etichettarlo. L’acquirente lo aggiunge nell’ordine d’acquisto.",
-      "duplicateCarton": "Numero cartone: {carton} è già usato da un altro cartone. Dai a ogni cartone il suo numero.",
+      "duplicateCarton": "ID cartone: {carton} è già usato da un altro cartone. Dai a ogni cartone il suo ID.",
       "repeatedProduct": "Prodotti: {sku} compare più volte in questo cartone. Indicalo una volta sola con tutte le sue unità.",
       "mixedNetworks": "Prodotti: questo cartone mescola prodotti FBA e AWD. Imballa i prodotti di ogni rete in cartoni separati.",
       "unknownProduct": "Prodotti: questo cartone contiene un prodotto che non è nell’ordine d’acquisto. Toglilo dal cartone.",

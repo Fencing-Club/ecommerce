@@ -497,7 +497,7 @@
       "incompletePacks": "Quantity: {sku} is sold in packs of {pack, number}. Enter a multiple of {pack, number}.",
       "missingAsin": "Products: {sku} has no ASIN, which {receiver} needs to receive it. The buyer adds it on the purchase order.",
       "missingFnsku": "Products: {sku} has no FNSKU, which {receiver} needs to label it. The buyer adds it on the purchase order.",
-      "duplicateCarton": "Carton number: {carton} is already used by another carton. Give each carton its own number.",
+      "duplicateCarton": "Carton ID: {carton} is already used by another carton. Give each carton its own ID.",
       "repeatedProduct": "Products: {sku} is listed more than once in this carton. List it once, with all its units.",
       "mixedNetworks": "Products: this carton mixes FBA and AWD products. Pack each network’s products in separate cartons.",
       "unknownProduct": "Products: this carton holds a product that isn’t on the purchase order. Remove it from the carton.",

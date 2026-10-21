@@ -12,7 +12,7 @@
     "missingPalletLabels": "Pallet labels are missing",
     "missingProductLabel": "Add a product label for {sku} on the Products page",
     "packing": {
-      "duplicateCarton": "Give each carton a unique number",
+      "duplicateCarton": "Give each carton its own ID",
       "mixedNetworks": "Pack FBA and AWD US products in separate cartons",
       "cartonSize": "Keep {receiver} cartons to {shape, select, cube {{lengthCm, number} cm or less on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm or less}}",
       "cartonWeight": "Keep {receiver} cartons to {maxLb, number} lb ({maxKg, number} kg) or less",

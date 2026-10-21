@@ -12,7 +12,7 @@
     "missingPalletLabels": "पैलेट लेबल नहीं हैं",
     "missingProductLabel": "{sku} का प्रोडक्ट लेबल प्रोडक्ट पेज पर जोड़ें",
     "packing": {
-      "duplicateCarton": "हर कार्टन को एक अलग नंबर दें",
+      "duplicateCarton": "हर कार्टन को अपनी अलग ID दें",
       "mixedNetworks": "FBA और AWD US प्रोडक्ट अलग-अलग कार्टन में पैक करें",
       "cartonSize": "{receiver} कार्टन {shape, select, cube {की हर साइड {lengthCm, number} cm या उससे कम रखें} other {का आकार {lengthCm, number} × {widthCm, number} × {heightCm, number} cm या उससे कम रखें}}",
       "cartonWeight": "{receiver} कार्टन का वज़न {maxLb, number} lb ({maxKg, number} kg) या उससे कम रखें",

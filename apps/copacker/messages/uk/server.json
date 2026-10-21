@@ -12,7 +12,7 @@
     "missingPalletLabels": "Немає етикеток палет",
     "missingProductLabel": "Додайте етикетку для {sku} на сторінці «Товари»",
     "packing": {
-      "duplicateCarton": "Призначте кожній коробці унікальний номер",
+      "duplicateCarton": "Призначте кожній коробці власний ідентифікатор",
       "mixedNetworks": "Пакуйте товари FBA та AWD US в окремі коробки",
       "cartonSize": "Коробки {receiver} мають бути не більше {shape, select, cube {{lengthCm, number} см з кожного боку} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} см}}",
       "cartonWeight": "Коробки {receiver} мають важити не більше {maxLb, number} lb ({maxKg, number} кг)",

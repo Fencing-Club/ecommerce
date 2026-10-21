@@ -497,7 +497,7 @@
       "incompletePacks": "Cantidad: {sku} se vende en paquetes de {pack, number}. Ingresa un múltiplo de {pack, number}.",
       "missingAsin": "Productos: {sku} no tiene ASIN, que {receiver} necesita para recibirlo. El comprador lo agrega en la orden de compra.",
       "missingFnsku": "Productos: {sku} no tiene FNSKU, que {receiver} necesita para etiquetarlo. El comprador lo agrega en la orden de compra.",
-      "duplicateCarton": "Número de caja: {carton} ya lo usa otra caja. Dale a cada caja su propio número.",
+      "duplicateCarton": "ID de caja: {carton} ya lo usa otra caja. Dale a cada caja su propio ID.",
       "repeatedProduct": "Productos: {sku} aparece más de una vez en esta caja. Inclúyelo una sola vez con todas sus unidades.",
       "mixedNetworks": "Productos: esta caja mezcla productos de FBA y AWD. Empaca los productos de cada red en cajas separadas.",
       "unknownProduct": "Productos: esta caja contiene un producto que no está en la orden de compra. Quítalo de la caja.",

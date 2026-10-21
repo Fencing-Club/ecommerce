@@ -45,6 +45,7 @@ import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { FieldError } from "./packing-fields"
 import { usePackingIssueText, usePalletIssueErrors } from "./packing-issues"
 import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
@@ -753,11 +754,13 @@ export function PackingForm({
               {!(readOnly && renderSidebar) && (
                 <div className="flex flex-col gap-3 text-sm">
                   {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
-                    <ul aria-live="polite" className="text-sm text-destructive">
+                    <ul aria-live="polite" className="flex flex-col gap-1">
                       {packingIssues
                         .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
                         .map((issue, index) => (
-                          <li key={index}>{packingIssueText(issue)}</li>
+                          <li key={index}>
+                            <FieldError>{packingIssueText(issue)}</FieldError>
+                          </li>
                         ))}
                     </ul>
                   )}

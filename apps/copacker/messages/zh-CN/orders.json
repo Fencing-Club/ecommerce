@@ -497,7 +497,7 @@
       "incompletePacks": "数量：{sku} 按 {pack, number} 件一包出售。请输入 {pack, number} 的倍数。",
       "missingAsin": "商品：{sku} 没有 ASIN，{receiver} 需要它才能收货。买家会在采购订单中添加。",
       "missingFnsku": "商品：{sku} 没有 FNSKU，{receiver} 需要它来贴标。买家会在采购订单中添加。",
-      "duplicateCarton": "箱号：{carton} 已被另一个纸箱使用。请为每个纸箱设置不同的箱号。",
+      "duplicateCarton": "纸箱编号：{carton} 已被另一个纸箱使用。请为每个纸箱设置不同的编号。",
       "repeatedProduct": "商品：{sku} 在此纸箱中出现了多次。请只列一次，并填写全部数量。",
       "mixedNetworks": "商品：此纸箱混装了 FBA 和 AWD 的商品。请将各网络的商品分箱包装。",
       "unknownProduct": "商品：此纸箱中有不在采购订单上的商品。请将其从纸箱中移除。",
