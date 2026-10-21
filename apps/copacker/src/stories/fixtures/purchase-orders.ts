@@ -110,6 +110,7 @@ export function shipmentRecord(overrides: Partial<Shipment> = {}): Shipment {
     linkedAmazonShipmentId: null,
     amazonOrderId: null,
     amazonShipmentId: null,
+    packingGroups: null,
     operation: "none",
     labels: [],
     stockTaken: null,

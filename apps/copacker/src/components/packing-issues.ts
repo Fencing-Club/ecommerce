@@ -2,6 +2,7 @@ import type { OrderInput } from "@repo/aisle"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
 import { useTranslations } from "use-intl"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
+import { issueValues } from "@/lib/packing-messages"
 import type { RuleSource } from "./packing-fields"
 
 // Where a carton row shows a rule it breaks: under the row, a field, or a product by its index.
@@ -58,7 +59,7 @@ export function useCartonIssueErrors() {
       case "oneSku":
         return { place: "carton", outlines: [], message: t("rules.oneSku", issue.values) }
       case "packingGroups":
-        return { place: "carton", outlines: [], message: t("rules.packingGroups", issue.values) }
+        return { place: "carton", outlines: [], message: t("rules.packingGroups", issueValues(issue, products)) }
       case "samePacking": {
         // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
         const sellable = content && item ? content.pieces / item.piecesPerSet : issue.values.units

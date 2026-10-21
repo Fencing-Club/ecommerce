@@ -490,7 +490,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         order.data,
         shipment,
         keepOrderPrices(s, order.data, raw ?? shipment.packingDraft),
-        reservedPieces(others, shipmentId),
+        others,
         order.revision,
         await serverText()
       )
@@ -558,7 +558,7 @@ export async function prepareAmazonShipment(s: Session, shipmentId: string, expe
         order.data,
         shipment,
         shipment.packing,
-        reservedPieces(others, shipmentId),
+        others,
         order.revision,
         await serverText()
       )
@@ -843,7 +843,7 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
       order.data,
       shipment,
       keepOrderPrices(s, order.data, raw ?? shipment.packingDraft ?? shipment.packing ?? {}),
-      reserved,
+      all,
       order.revision,
       await serverText()
     )

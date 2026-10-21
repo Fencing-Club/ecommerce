@@ -75,7 +75,7 @@ export function CartonSimulator({ dataSet: initial }: { dataSet: string }) {
         onDuplicate={(index) => setCartons((current) => current.toSpliced(index + 1, 0, current[index]!))}
         onDelete={(index) => setCartons((current) => current.toSpliced(index, 1))}
       />
-      <IssueReport issues={issues} codes={cartonCodes} />
+      <IssueReport issues={issues} codes={cartonCodes} products={order.items} />
     </div>
   )
 }

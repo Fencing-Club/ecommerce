@@ -414,7 +414,11 @@
     "chooseAddress": "Indirizzo di ritiro",
     "packedUnits": "{count} di {available} unità",
     "leftCount": "{count} rimanenti",
-    "overCount": "{count} in eccesso"
+    "overCount": "{count} in eccesso",
+    "groupsUnchecked": {
+      "title": "Prodotti che possono condividere un cartone non ancora verificati",
+      "description": "Amazon indica quali prodotti richiedono cartoni separati quando pianifica la spedizione. Nel frattempo, imballa in cartoni propri i prodotti che Amazon gestisce separatamente, come le merci pericolose."
+    }
   },
   "paymentTerms": {
     "net7": "7 giorni netti",
@@ -493,7 +497,7 @@
       "cartonSize": "Dimensioni: la {side, select, width {larghezza} height {altezza} other {lunghezza}} è di {size, number} cm. {receiver} consente al massimo {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) per lato} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, a meno che il cartone contenga una sola unità} other {}}.",
       "cartonWeight": "Peso: {weight, number} kg superano il limite {receiver} di {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, a meno che il cartone contenga una sola unità} other {}}. Metti meno unità in ogni cartone.",
       "oneSku": "Prodotti: questo cartone contiene più di uno SKU, e {receiver} accetta un solo SKU per cartone. Imballa ogni SKU in cartoni propri.",
-      "packingGroups": "Prodotti: {receiver} ha messo {sku} e {other} in gruppi di imballaggio diversi. Imballa ogni gruppo in cartoni propri.",
+      "packingGroups": "Prodotti: {receiver} non accetta {product} e {other} nello stesso cartone. Amazon li gestisce in modo diverso, ad esempio per merci pericolose, preparazione o etichette, e può inviarli a magazzini diversi. Sposta uno dei due in un altro cartone.",
       "samePacking": "{difference, select, units {Quantità: gli altri cartoni di {sku} contengono {units, number} unità ciascuno.} other {Dimensioni: gli altri cartoni di {sku} misurano {length, number} × {width, number} × {height, number} cm e pesano {weight, number} kg.}} {receiver} richiede che tutti i cartoni di uno SKU abbiano le stesse unità, dimensioni e peso. Allineali, o spedisci questo cartone in un’altra spedizione.",
       "incompletePacks": "Quantità: {sku} è venduto in confezioni da {pack, number}. Inserisci un multiplo di {pack, number}.",
       "missingAsin": "Prodotti: {sku} non ha l’ASIN, che serve a {receiver} per riceverlo. L’acquirente lo aggiunge nell’ordine d’acquisto.",

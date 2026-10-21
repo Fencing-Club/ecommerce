@@ -12,7 +12,7 @@ import {
 } from "@repo/aisle"
 import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
 import { useRouter } from "@tanstack/react-router"
-import { CircleAlert, CircleCheck, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
+import { CircleAlert, CircleCheck, Clock3, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
@@ -21,6 +21,7 @@ import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
@@ -110,6 +111,7 @@ export function PackingForm({
   orderRevision,
   availablePieces,
   order,
+  packingGroups,
   initial,
   addresses,
   addAddressTo,
@@ -153,6 +155,9 @@ export function PackingForm({
   orderRevision: number
   availablePieces: Record<string, number>
   order: OrderInput
+  // Amazon's packing groups by SKU, for a packing with FBA cartons, which keep to one group each; null while Amazon
+  // hasn't set them, when the cartons can't be checked against them.
+  packingGroups?: Readonly<Record<string, string>> | null
   initial: PackingDraft | null
   // The supplier's saved pickup addresses.
   addresses: PartnerAddress[]
@@ -244,7 +249,7 @@ export function PackingForm({
     : [
         ...validatePacking(
           order,
-          { cartons: completeCartons, changes: [] },
+          { cartons: completeCartons, changes: [], packingGroups: packingGroups ?? undefined },
           Object.fromEntries(
             order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
           )
@@ -608,6 +613,13 @@ export function PackingForm({
                       </div>
                     )}
                   </div>
+                  {packingGroups === null && !readOnly && (
+                    <Alert role="note" className="p-4 has-[>svg]:gap-x-3 *:[svg]:text-muted-foreground">
+                      <Clock3 aria-hidden className="size-4.5" />
+                      <AlertTitle>{t("groupsUnchecked.title")}</AlertTitle>
+                      <AlertDescription className="text-[13px]">{t("groupsUnchecked.description")}</AlertDescription>
+                    </Alert>
+                  )}
                   {cartons.fields.length > 0 && (
                     <CartonTable
                       cartons={cartons.fields.map((carton, index) => cartonValues[index] ?? carton)}
@@ -815,6 +827,7 @@ export function PackingForm({
             shipmentName={shipmentName ?? t("cartons")}
             existing={cartonValues}
             availablePieces={availablePieces}
+            packingGroups={packingGroups ?? undefined}
             onImport={async (groups, mode) => {
               cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
             }}

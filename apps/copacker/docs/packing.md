@@ -32,6 +32,24 @@ products line up under the carton's columns at any width.
 - Rows with errors open, and so do new rows, to add their products; a row also opens when it gets an error, unless it
   was closed by hand. A closed row with errors shows how many by its menu.
 
+### Amazon's packing groups
+
+An FBA carton holds products of one of Amazon's packing groups (see
+[carton rules](../../../packages/copacker-packing-rules/docs/carton-rules.md)). Amazon sets the groups only when it
+plans a shipment, and the booking job keeps each SKU's group on the shipment ([Amazon inbound](amazon-inbound.md#fba-fba)).
+The packing checks (the form, the carton import and readiness) use the shipment's own groups or, until Amazon has
+planned it, the latest Amazon set for another of the PO's shipments (`knownPackingGroups`), so a shipment packed again
+after Amazon refused its cartons shows which ones mix groups.
+
+The copy doesn't say "packing group", and it names products as the carton lists them, by supplier SKU, or by name for a
+product without one (with the variant when two share a name), since the supplier never sees the buyer's SKUs
+(`issueValues` in `lib/packing-messages.ts`). Amazon doesn't say why two products are in different groups, so the error
+gives the reasons it lists in general: "Products: FBA can't take Cotton drawstring bag and NT-CT-3100 in one carton.
+Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different
+warehouses. Move one of them to another carton." Before
+Amazon has planned any of the PO's shipments, the Cartons section says "Products that can share a carton aren't checked
+yet" (06.15, and in place on 06.18). The groups aren't fetched live, so it has no Retry button.
+
 ## Pallets
 
 **Packed on pallets**, beside Ready date, adds a Pallets section below the cartons (`PalletTable`). Each pallet has

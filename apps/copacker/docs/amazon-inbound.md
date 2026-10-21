@@ -37,7 +37,9 @@ runs again, reading the plan to find where it is:
 
 1. Create the plan with each SKU's sellable units.
 2. Confirm the packing option with the fewest packing groups (then lowest fees) that keeps each carton's products in one
-   group. When none does, the shipment needs attention: the supplier repacks those products separately.
+   group. When none does, the shipment needs attention: the supplier repacks those products separately. Either way the
+   shipment keeps each SKU's group (`packingGroups`: the confirmed option's, or the one with the fewest groups), and
+   the PO's next packing is checked against them ([packing](packing.md#amazons-packing-groups)).
 3. Send each carton as a box with its size, weight and contents.
 4. Confirm the placement with the lowest fees (then fewest shipments). A plan can split into several Amazon shipments;
    `amazonShipmentId` lists the ones its cartons travel in, comma-separated, and each carton label records its own.

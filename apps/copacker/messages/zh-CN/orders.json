@@ -414,7 +414,11 @@
     "chooseAddress": "提货地址",
     "packedUnits": "{count} / {available} 件",
     "leftCount": "还剩 {count}",
-    "overCount": "多出 {count}"
+    "overCount": "多出 {count}",
+    "groupsUnchecked": {
+      "title": "尚未检查哪些商品可以同箱",
+      "description": "Amazon 会在规划货件时说明哪些商品需要分开装箱。在此之前，请将 Amazon 单独处理的商品（如危险品）单独装箱。"
+    }
   },
   "paymentTerms": {
     "net7": "7 天账期",
@@ -493,7 +497,7 @@
       "cartonSize": "尺寸：{side, select, width {宽} height {高} other {长}}为 {size, number} 厘米。{shape, select, cube {{receiver} 每边最长 {lengthCm, number} 厘米（{lengthIn, number} 英寸）} other {{receiver} 允许的纸箱最大为 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米（{lengthIn, number} × {widthIn, number} × {heightIn, number} 英寸）}}{exception, select, oneUnit {，仅装一件商品的纸箱除外} other {}}。",
       "cartonWeight": "重量：{weight, number} 千克，超过 {receiver} {maxKg, number} 千克（{maxLb, number} 磅）的上限{exception, select, oneUnit {，仅装一件商品的纸箱除外} other {}}。请减少每箱的件数。",
       "oneSku": "商品：此纸箱装有多个 SKU，而 {receiver} 每箱只接受一个 SKU。请将每个 SKU 单独装箱。",
-      "packingGroups": "商品：{receiver} 将 {sku} 和 {other} 分在不同的包装组。请将每个包装组单独装箱。",
+      "packingGroups": "商品：{receiver} 不接受 {product} 和 {other} 装在同一箱。Amazon 对它们的处理方式不同，例如危险品、预处理或标签，并可能将它们送往不同的仓库。请将其中一个移到另一个箱子。",
       "samePacking": "{difference, select, units {数量：{sku} 的其他纸箱每箱 {units, number} 件。} other {尺寸：{sku} 的其他纸箱为 {length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克。}}{receiver} 要求同一 SKU 的所有纸箱件数、尺寸和重量一致。请调整一致，或将此纸箱放入另一批发货。",
       "incompletePacks": "数量：{sku} 按 {pack, number} 件一包出售。请输入 {pack, number} 的倍数。",
       "missingAsin": "商品：{sku} 没有 ASIN，{receiver} 需要它才能收货。买家会在采购订单中添加。",

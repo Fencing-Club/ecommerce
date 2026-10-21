@@ -158,6 +158,22 @@ export const MultipleCartons = meta.story({
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeEnabled()
   }
 })
+// Amazon has set the FBA shipment's packing groups, so a carton holding two of them is an issue to fix before importing.
+const [tote, apron] = order.items
+export const PackingGroups = meta.story({
+  args: {
+    order: { ...order, destination: "amazon" },
+    packingGroups: { [tote!.buyerSku]: "pg-totes", [apron!.buyerSku]: "pg-aprons" }
+  },
+  play: async () => {
+    const dialog = await upload(
+      csv([`D1,1,${tote!.supplierSku},20,60,40,40,12`, `D1,1,${apron!.supplierSku},10,60,40,40,12`])
+    )
+    const message = `FBA can’t take ${tote!.supplierSku} and ${apron!.supplierSku} in one carton: Amazon handles them differently, for example for dangerous goods, prep or labels`
+    await expect(dialog.getByText(message)).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
+  }
+})
 export const Loading = meta.story({
   args: {
     onImport: fn(
