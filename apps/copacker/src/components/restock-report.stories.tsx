@@ -1,4 +1,6 @@
-import { delay, http, HttpResponse, type JsonBodyType } from "msw"
+import type { JsonBodyType } from "msw"
+import { http, HttpResponse } from "msw/http"
+import { delay } from "msw/utils/delay"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { restockChannels, restockLines, restockReport, suppliers } from "@/stories/fixtures/catalog"

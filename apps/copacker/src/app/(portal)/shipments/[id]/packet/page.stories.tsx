@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, spyOn, userEvent, waitFor } from "storybook/test"
 import invariant from "tiny-invariant"
