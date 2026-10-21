@@ -9,7 +9,7 @@
     "missingPackingList": "Genera la packing list aggiornata prima di rilasciare le etichette",
     "missingChecklist": "Genera la checklist aggiornata prima di rilasciare le etichette",
     "missingCartonLabel": "Manca l’etichetta per il cartone {carton}",
-    "missingShippingLabel": "Assegna un’etichetta di spedizione al cartone {carton}",
+    "missingShippingLabel": "Aggiungi un’etichetta del corriere al cartone {carton}",
     "missingPalletLabels": "Mancano le etichette dei pallet",
     "missingProductLabel": "Aggiungi un’etichetta prodotto per {sku} nella pagina Prodotti",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "Pallet {pallet}: i pallet {receiver} devono pesare al massimo {maxLb, number} lb ({maxKg, number} kg), pallet compreso"
     },
     "networkMismatch": "Imballa solo prodotti assegnati alla rete Amazon di questa spedizione.",
-    "missingTransport": "Trasporto non confermato"
+    "missingTransport": "Trasporto non confermato",
+    "missingTrackingNumber": "Aggiungi il numero di tracking dell’etichetta del corriere del cartone {carton}"
   },
   "workflow": {
     "arrived": "La merce è arrivata",
@@ -50,7 +51,6 @@
     "approval": "Controlla i prezzi e gli SKU fornitore proposti dal fornitore",
     "processing": "Amazon sta elaborando la spedizione e le etichette dei cartoni",
     "labels": "Prenota la spedizione e aggiungi i documenti mancanti qui sotto",
-    "release": "Inserisci il riferimento della prenotazione e rilascia il pacchetto fornitore",
     "ship": "Stampa il pacchetto, imballa i cartoni e segnali come spediti",
     "forward": "Lo spedizioniere inoltra la merce e aggiunge costo del trasporto, corriere e tracciamento",
     "receive": "Segna la merce come ricevuta quando arriva",

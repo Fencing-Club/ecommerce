@@ -51,8 +51,7 @@
       "waitingForBuyer": "خریدار کی منظوری کا انتظار"
     },
     "labels": {
-      "title": "لیبل",
-      "waiting": "لیبل کا انتظار"
+      "heldBack": "لیبل سپلائر کو جانے سے پہلے"
     },
     "creating": {
       "title": "Amazon شپمنٹ بنائی جا رہی ہے",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "سپلائر پیکٹ تیار ہے",
-      "description": "لیبلز اصل سائز میں پرنٹ کریں۔",
-      "downloadLabel": "سپلائر پیکٹ ڈاؤن لوڈ کریں",
-      "download": "پیکٹ ڈاؤن لوڈ کریں",
+      "downloadLabel": "شپمنٹ پیکٹ ڈاؤن لوڈ کریں",
       "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
       "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے",
       "cartonLabels": "کارٹن لیبل",
       "unitLabels": "مصنوعات کے لیبل",
       "carrierLabels": "کیریئر لیبل",
       "palletLabels": "پیلٹ لیبل",
-      "backToShipment": "شپمنٹ پر واپس جائیں"
+      "backToShipment": "شپمنٹ پر واپس جائیں",
+      "document": "شپمنٹ پیکٹ",
+      "documentDescription": "شپمنٹ کی تمام دستاویزات"
     },
     "cartons": {
       "title": "کارٹن",
@@ -111,10 +110,6 @@
       "updateCost": "Shopify میں یونٹ لاگت بھی اپ ڈیٹ کریں",
       "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے۔",
       "submit": "تبدیلیاں منظور کریں"
-    },
-    "release": {
-      "submit": "لیبلز سپلائر کو جاری کریں",
-      "bookingReference": "Amazon ٹرانسپورٹ بکنگ ریفرنس"
     },
     "correction": {
       "trigger": "درستگی کی درخواست کریں",
@@ -233,5 +228,63 @@
     "suffocation": "دم گھٹنے کی وارننگ والے لیبل",
     "choking": "چھوٹے حصوں سے دم گھٹنے کے خطرے کے لیبل",
     "notProvided": "لیبل فراہم نہیں کیا گیا"
+  },
+  "carrierLabels": {
+    "title": "کیریئر لیبل اپ لوڈ کریں",
+    "upload": "لیبل اپ لوڈ کریں",
+    "intro": "کیریئر کی لیبل PDF فائلیں شامل کریں۔ لیبل وزن اور سائز کے مطابق کارٹن سے ملائے جاتے ہیں۔",
+    "reading": "{files, plural, =1 {{name} پڑھا جا رہا ہے} other {# PDF پڑھی جا رہی ہیں}}",
+    "source": "{name}، صفحہ {page}",
+    "savedLabel": "محفوظ شدہ لیبل",
+    "trackingNumber": "ٹریکنگ نمبر",
+    "enterTracking": "ٹریکنگ نمبر درج کریں",
+    "noTracking": "ٹریکنگ نمبر نہیں ہے",
+    "addTracking": "شامل کریں",
+    "addTrackingFor": "{name} کا ٹریکنگ نمبر شامل کریں",
+    "trackingNotRead": "ٹریکنگ لیبل کی شناخت نہیں ہوئی۔",
+    "trackingRecognized": "ٹریکنگ نمبر کی شناخت ہو گئی۔",
+    "trackingUnknown": "ٹریکنگ نمبر کی شناخت نہیں ہوئی۔ اسے لیبل سے ملائیں۔",
+    "trackingInvalid": "ٹریکنگ نمبر ویسے ہی درج کریں جیسے لیبل پر چھپا ہے۔",
+    "notPdf": "{name} PDF نہیں ہے۔",
+    "unreadable": "{name} پڑھا نہیں جا سکا۔",
+    "alreadyAdded": "{labels, plural, =1 {1 لیبل پہلے ہی شامل تھا، اس لیے اسے چھوڑ دیا گیا۔} other {# لیبل پہلے ہی شامل تھے، اس لیے انہیں چھوڑ دیا گیا۔}}",
+    "cancel": "منسوخ کریں",
+    "save": "لیبل محفوظ کریں",
+    "failed": "لیبل محفوظ نہیں ہوئے۔ دوبارہ کوشش کریں۔",
+    "saved": "کیریئر لیبل محفوظ ہو گئے",
+    "sent": "کیریئر لیبل سپلائر کو بھیج دیے گئے",
+    "notPlaced": "نہیں لگائے گئے",
+    "fill": "کارٹن ترتیب سے بھریں",
+    "dropTitle": "کیریئر کی PDF فائلیں یہاں ڈالیں",
+    "dropNote": "ہر لیبل کے لیے ایک PDF، یا ہر لیبل کے لیے ایک صفحے والی ایک PDF",
+    "browse": "براؤز کریں",
+    "dropMore": "مزید PDF فائلیں یہاں ڈالیں یا <browse>براؤز کریں</browse>",
+    "files": "{count, plural, one {# فائل} other {# فائلیں}}",
+    "dropFiles": "{count, plural, one {# PDF شامل کرنے کے لیے چھوڑیں} other {# PDF شامل کرنے کے لیے چھوڑیں}}",
+    "dropFilesNote": "ہر صفحہ ایک لیبل بن جاتا ہے",
+    "dropToTakeOff": "{name} کو اس کے کارٹن سے ہٹانے کے لیے چھوڑیں",
+    "cartons": "کارٹن",
+    "cartonsLabelled": "{total} میں سے {count} پر لیبل ہے",
+    "dragHere": "لیبل یہاں کھینچیں",
+    "dropOnCarton": "{name} کو {carton} پر لگانے کے لیے چھوڑیں",
+    "takeOff": "{carton} سے لیبل ہٹائیں",
+    "preview": "{name} دیکھیں",
+    "pictureOf": "{name} کا لیبل",
+    "noPicture": "اس لیبل کی کوئی تصویر نہیں",
+    "readingText": "لیبل کا متن پڑھا جا رہا ہے",
+    "trackingFor": "{name} کا ٹریکنگ نمبر",
+    "carrier": "کیریئر",
+    "unknownCarrier": "معلوم نہیں",
+    "allLabels": "تمام لیبل",
+    "previousLabel": "پچھلا لیبل",
+    "nextLabel": "اگلا لیبل",
+    "positionNotPlaced": "{count} میں سے {position}، نہیں لگائے گئے",
+    "positionPlaced": "{count} میں سے {position}، کارٹن پر",
+    "carton": "کارٹن",
+    "cartonTaken": "{carton}، لیبل لگا ہے",
+    "notRead": "نہیں پڑھا گیا",
+    "doesNotFit": "وزن اور سائز {cartons} سے نہیں ملتے",
+    "weight": "وزن",
+    "dimensions": "پیمائش"
   }
 }

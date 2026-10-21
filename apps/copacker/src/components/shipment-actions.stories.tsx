@@ -2,13 +2,7 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
-import {
-  ApproveInvoice,
-  CorrectionForm,
-  ReconcileShipment,
-  ReleaseLabels,
-  LinkExistingShipment
-} from "./shipment-actions"
+import { ApproveInvoice, CorrectionForm, ReconcileShipment, LinkExistingShipment } from "./shipment-actions"
 
 const sent: ActionRequest[] = []
 const linked = fn(async (_shipmentId: string | null) => undefined)
@@ -78,25 +72,6 @@ export const ApproveFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
     await expect(await canvas.findByText("The invoice changed. Reload to see the latest version.")).toBeVisible()
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
-  }
-})
-
-export const Release = meta.story({
-  render: () => <ReleaseLabels id={shipmentId} revision={4} />,
-  play: async ({ canvas }) => {
-    const submit = canvas.getByRole("button", { name: "Release labels to supplier" })
-    await expect(submit).toBeEnabled()
-    const field = canvas.getByRole("textbox", { name: "Amazon transport booking reference" })
-    await expect(field).not.toBeRequired()
-    await userEvent.type(field, " AGL-778812 ")
-    await userEvent.click(submit)
-    await waitFor(() =>
-      expect(sent).toEqual([
-        { action: "shipment.release", data: { id: shipmentId, revision: 4, bookingReference: "AGL-778812" } }
-      ])
-    )
-    // The form clears for the next entry.
-    await waitFor(() => expect(field).toHaveValue(""))
   }
 })
 
@@ -180,17 +155,5 @@ export const ReconcileFails = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Existing Amazon AWD order ID" }), "STAR-8KQ2M7")
     await userEvent.click(canvas.getByRole("button", { name: "Verify and resume" }))
     await expect(await screen.findByText("Amazon has no order STAR-8KQ2M7.")).toBeInTheDocument()
-  }
-})
-
-export const ReleaseWithoutBookingReference = meta.story({
-  render: () => <ReleaseLabels id={shipmentId} revision={4} />,
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Release labels to supplier" }))
-    await waitFor(() =>
-      expect(sent).toEqual([
-        { action: "shipment.release", data: { id: shipmentId, revision: 4, bookingReference: "" } }
-      ])
-    )
   }
 })

@@ -51,8 +51,7 @@
       "waitingForBuyer": "Wartet auf Genehmigung durch den Käufer"
     },
     "labels": {
-      "title": "Etiketten",
-      "waiting": "Warten auf Etiketten"
+      "heldBack": "Bevor die Etiketten an den Lieferanten gehen"
     },
     "creating": {
       "title": "Amazon-Sendung wird erstellt",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Lieferantenunterlagen bereit",
-      "description": "Drucken Sie Etiketten in Originalgröße.",
-      "downloadLabel": "Lieferantenunterlagen herunterladen",
-      "download": "Unterlagen herunterladen",
+      "downloadLabel": "Sendungsunterlagen herunterladen",
       "incompleteTitle": "Lieferantenunterlagen unvollständig",
       "waitingForLabels": "Wartet auf die Etiketten des Käufers",
       "cartonLabels": "Kartonetiketten",
       "unitLabels": "Produktetiketten",
       "carrierLabels": "Versandetiketten",
       "palletLabels": "Palettenetiketten",
-      "backToShipment": "Zurück zur Sendung"
+      "backToShipment": "Zurück zur Sendung",
+      "document": "Sendungsunterlagen",
+      "documentDescription": "Alle Dokumente der Sendung"
     },
     "cartons": {
       "title": "Kartons",
@@ -111,10 +110,6 @@
       "updateCost": "Auch Stückkosten in Shopify aktualisieren",
       "updateCostDescription": "Shopify-Kosten müssen in der Währung der Bestellung sein.",
       "submit": "Änderungen genehmigen"
-    },
-    "release": {
-      "submit": "Etiketten für den Lieferanten freigeben",
-      "bookingReference": "Buchungsreferenz des Amazon-Transports"
     },
     "correction": {
       "trigger": "Korrektur anfordern",
@@ -233,5 +228,63 @@
     "suffocation": "Erstickungswarnetiketten",
     "choking": "Warnetiketten für Kleinteile",
     "notProvided": "Etikett nicht bereitgestellt"
+  },
+  "carrierLabels": {
+    "title": "Versandetiketten hochladen",
+    "upload": "Etiketten hochladen",
+    "intro": "Fügen Sie die Etiketten-PDFs des Versanddienstleisters hinzu. Etiketten werden Kartons nach Gewicht und Größe zugeordnet.",
+    "reading": "{files, plural, =1 {{name} wird gelesen} other {# PDF-Dateien werden gelesen}}",
+    "source": "{name}, Seite {page}",
+    "savedLabel": "Gespeichertes Etikett",
+    "trackingNumber": "Sendungsnummer",
+    "enterTracking": "Sendungsnummer eingeben",
+    "noTracking": "Keine Sendungsnummer",
+    "addTracking": "Hinzufügen",
+    "addTrackingFor": "Sendungsnummer für {name} hinzufügen",
+    "trackingNotRead": "Versandetikett nicht erkannt.",
+    "trackingRecognized": "Sendungsnummer erkannt.",
+    "trackingUnknown": "Sendungsnummer nicht erkannt. Prüfen Sie sie anhand des Etiketts.",
+    "trackingInvalid": "Geben Sie die Sendungsnummer so ein, wie sie auf dem Etikett steht.",
+    "notPdf": "{name} ist keine PDF-Datei.",
+    "unreadable": "{name} konnte nicht gelesen werden.",
+    "alreadyAdded": "{labels, plural, =1 {1 Etikett war schon hinzugefügt und wurde übersprungen.} other {# Etiketten waren schon hinzugefügt und wurden übersprungen.}}",
+    "cancel": "Abbrechen",
+    "save": "Etiketten speichern",
+    "failed": "Die Etiketten wurden nicht gespeichert. Versuchen Sie es erneut.",
+    "saved": "Versandetiketten gespeichert",
+    "sent": "Versandetiketten an den Lieferanten gesendet",
+    "notPlaced": "Nicht zugeordnet",
+    "fill": "Kartons der Reihe nach füllen",
+    "dropTitle": "PDF-Dateien des Versanddienstleisters hier ablegen",
+    "dropNote": "Eine PDF-Datei pro Etikett oder eine mit einer Seite pro Etikett",
+    "browse": "Durchsuchen",
+    "dropMore": "Weitere PDF-Dateien hier ablegen oder <browse>durchsuchen</browse>",
+    "files": "{count, plural, one {# Datei} other {# Dateien}}",
+    "dropFiles": "{count, plural, one {Ablegen, um # PDF-Datei hinzuzufügen} other {Ablegen, um # PDF-Dateien hinzuzufügen}}",
+    "dropFilesNote": "Jede Seite wird zu einem Etikett",
+    "dropToTakeOff": "Ablegen, um {name} von seinem Karton zu nehmen",
+    "cartons": "Kartons",
+    "cartonsLabelled": "{count} von {total} haben ein Etikett",
+    "dragHere": "Etikett hierher ziehen",
+    "dropOnCarton": "Ablegen, um {name} auf {carton} zu legen",
+    "takeOff": "Etikett von {carton} nehmen",
+    "preview": "Vorschau von {name}",
+    "pictureOf": "Etikett aus {name}",
+    "noPicture": "Kein Bild dieses Etiketts",
+    "readingText": "Text des Etiketts wird gelesen",
+    "trackingFor": "Sendungsnummer für {name}",
+    "carrier": "Versanddienstleister",
+    "unknownCarrier": "Unbekannt",
+    "allLabels": "Alle Etiketten",
+    "previousLabel": "Vorheriges Etikett",
+    "nextLabel": "Nächstes Etikett",
+    "positionNotPlaced": "{position} von {count} nicht zugeordnet",
+    "positionPlaced": "{position} von {count} auf Kartons",
+    "carton": "Karton",
+    "cartonTaken": "{carton}, hat ein Etikett",
+    "notRead": "Nicht gelesen",
+    "doesNotFit": "Gewicht und Größe passen nicht zu {cartons}",
+    "weight": "Gewicht",
+    "dimensions": "Abmessungen"
   }
 }

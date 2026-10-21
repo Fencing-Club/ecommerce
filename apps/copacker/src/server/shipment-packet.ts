@@ -60,7 +60,7 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
 }
 
 export async function shipmentPacketPage(s: Session, id: string) {
-  const { shipment, order, supplier, version, labels } = await releasedPacket(s, id)
+  const { shipment, order, supplier, version, labels, docs } = await releasedPacket(s, id)
   if (!shipment.packing || !shipment.snapshot || !shipment.transport) {
     throw new StatusError("packetIncomplete", 409)
   }
@@ -83,6 +83,12 @@ export async function shipmentPacketPage(s: Session, id: string) {
       order: shipment.snapshot,
       packing: shipment.packing,
       labels: shipment.labels,
+      // Each carton's carrier label number: the tracking number the buyer added it with.
+      carrierLabels: docs.flatMap((doc) =>
+        doc.shipmentId === id && doc.kind === "shipping_label" && doc.cartonId && doc.trackingNumber
+          ? [{ cartonId: doc.cartonId, labelNumber: doc.trackingNumber }]
+          : []
+      ),
       transport: shipment.transport,
       company: buyer.name,
       supplier: supplier.name,

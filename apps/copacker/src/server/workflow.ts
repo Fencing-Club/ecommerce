@@ -87,18 +87,8 @@ export async function orderWorkflow(s: Session, orderId: string) {
         } else if (["queued", "creating"].includes(shipment.status)) {
           next = { owner: "system", step: "processing", message: t("workflow.processing") }
         } else if (shipment.status === "waiting_labels") {
-          next = release.length
-            ? {
-                owner: "buyer",
-                step: "labels",
-                message: t("workflow.labels")
-              }
-            : {
-                owner: "buyer",
-                step: "release",
-                action: "shipment.release",
-                message: t("workflow.release")
-              }
+          // The labels go to the supplier by themselves once nothing in release is left.
+          next = { owner: "buyer", step: "labels", message: t("workflow.labels") }
         } else if (shipment.status === "ready") {
           next = {
             owner: "supplier",
@@ -171,7 +161,6 @@ export async function orderWorkflow(s: Session, orderId: string) {
           next,
           editable,
           canSubmit: editable && !packing.issues.length,
-          canRelease: s.org.kind === "buyer" && shipment.status === "waiting_labels" && !release.length,
           issues,
           // The packet downloads only while it's complete.
           packetUrl:

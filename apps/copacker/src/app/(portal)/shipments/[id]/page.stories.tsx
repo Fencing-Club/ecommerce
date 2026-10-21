@@ -42,12 +42,11 @@ import { member, owner } from "@/stories/workspace"
 import { shipmentDestinations } from "../destination"
 import ShipmentPageView from "./page"
 
-// The shipment's step as orderWorkflow reports it: what happens next, what its packet lacks, and whether its labels
-// can be released.
+// The shipment's step as orderWorkflow reports it: what happens next, what its packet lacks, and its packet once the
+// labels are with the supplier.
 type Step = {
   next: { step: string; message: string }
-  issues: Array<{ message: string }>
-  canRelease: boolean
+  issues: Array<{ code: string; message: string }>
   packetUrl: string | null
 }
 
@@ -70,7 +69,6 @@ type Args = {
   addresses: PartnerAddress[]
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
-  productLabels?: boolean
   // Each packed line's SKU and FNSKU labels, as lineLabels reads them; by default every barcode label its packing
   // details ask for is made from the standard template.
   lineLabels?: Array<{
@@ -144,7 +142,6 @@ async function ShipmentPage({
   docs,
   addresses,
   awaitingChanges,
-  productLabels = true,
   lineLabels
 }: Args) {
   const t = await translateStory("shipments.detail")
@@ -192,7 +189,6 @@ async function ShipmentPage({
     <ShipmentPageView
       page={{
         id,
-        hasProductLabels: productLabels,
         lineLabels: packingOrder.items.map((item) => {
           const given = lineLabels?.filter((row) => row.itemId === item.id) ?? []
           return {
@@ -236,7 +232,22 @@ async function ShipmentPage({
           packingDraft: prices ? shipment.packingDraft : unpricedDraft(shipment.packingDraft),
           labels: shipment.labels.map((label) => ({ cartonId: label.cartonId, labelNumber: label.labelNumber }))
         },
-        step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl, canRelease: step.canRelease },
+        step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl },
+        carrierLabels: isBuyer
+          ? docs.flatMap((doc) =>
+              doc.kind === "shipping_label" && doc.cartonId
+                ? [
+                    {
+                      cartonId: doc.cartonId,
+                      documentId: doc.id,
+                      trackingNumber: doc.trackingNumber,
+                      sourceName: doc.sourceName,
+                      sourcePage: doc.sourcePage
+                    }
+                  ]
+                : []
+            )
+          : [],
         reserved,
         packingGroups,
         snapshot: prices ? snapshot : unpricedOrder(snapshot),
@@ -270,7 +281,7 @@ async function ShipmentPage({
 }
 
 function step(next: string, message: string, changes: Partial<Step> = {}): Step {
-  return { next: { step: next, message }, issues: [], canRelease: false, packetUrl: null, ...changes }
+  return { next: { step: next, message }, issues: [], packetUrl: null, ...changes }
 }
 
 const warehouse = orderRecords.warehouse
@@ -287,7 +298,12 @@ const [firstLine, secondLine] = warehouse.data.items
 const packet = `/shipments/${shipmentId}/packet`
 const invoice = documentRow("invoice", "Lotus invoice 2291.pdf")
 const packingList = documentRow("packing_list", "Packing list.pdf")
-const shippingLabel = documentRow("shipping_label", "Carrier labels.pdf")
+const shippingLabel = documentRow("shipping_label", "Carrier label - C1.pdf", {
+  cartonId: "C1",
+  trackingNumber: "1Z4F7E210393821041",
+  sourceName: "ups-labels.pdf",
+  sourcePage: 1
+})
 const cartonLabel = documentRow("carton_label", "Carton label.pdf", { cartonId: "C1" })
 const palletLabel = documentRow("pallet_label", "Pallet labels.pdf")
 // The FBA inbound plan and the Amazon shipment its cartons travel in, with a label for each carton.
@@ -902,31 +918,33 @@ export const Creating = meta.story({
   }
 })
 
-// Amazon has made the AWD order's carton labels.
+// Amazon has made the AWD order's carton labels. AGL books the transport, so no carrier labels are needed.
 const waitingLabels = shipmentRow({
   status: "waiting_labels",
   packing: packingFor(awdOrder.data),
   amazonNetwork: "awd_us",
   amazonOrderId: "STAR-8KQ2M7",
   amazonShipmentId: "STAR-8KQ2M7-1",
-  labels: awdLabels
+  labels: awdLabels,
+  transport: { service: "agl", handoff: "supplier", collection: "pickup", carrierLabels: "none", instructions: "" }
 })
 
-// The buyer uploads the parcel carrier's label for each carton; what's missing is listed.
+// The labels go to the supplier by themselves, so the page only lists what still holds them back.
 export const WaitingForLabels = meta.story({
   ...buyer,
   args: {
     order: awdOrder,
     shipment: waitingLabels,
     step: step("labels", "Book shipping and add the missing documents below", {
-      issues: [{ message: "Upload the shipping label for carton C2" }]
+      issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
     })
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Labels")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Edit" })).toBeVisible()
-    await expect(canvas.getByText("Upload the shipping label for carton C2")).toBeVisible()
-    await expect(canvas.queryByRole("button", { name: "Release labels to supplier" })).toBeNull()
+    await expect(canvas.getByText("Before the labels go to the supplier")).toBeVisible()
+    await expect(canvas.getByText("Add a product label for Linen apron / Charcoal")).toBeVisible()
+    // Nothing to release, and no carrier labels to add for AGL.
+    await expect(canvas.queryByRole("button", { name: /Release/ })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Upload labels" })).toBeNull()
     // The buyer's Amazon shipment opens in Seller Central.
     await expect(canvas.getByRole("link", { name: /STAR-8KQ2M7-1/ })).toHaveAttribute(
       "href",
@@ -940,7 +958,9 @@ export const WaitingForLabels = meta.story({
   }
 })
 
-export const Release = meta.story({
+// 10.05: an FBA parcel shipment booked with the buyer's own carrier. Upload labels is the page's one action, and the
+// dialog opens with the labels saved so far; the page shows no other label status.
+export const WaitingForCarrierLabels = meta.story({
   ...buyer,
   args: {
     order: amazonOrder,
@@ -952,17 +972,25 @@ export const Release = meta.story({
       amazonShipmentId: "FBA18ABCD123",
       labels
     }),
-    step: step("release", "Enter the booking reference and release the supplier packet", { canRelease: true })
+    step: step("labels", "Book shipping and add the missing documents below", {
+      issues: [{ code: "missing_shipping_label", message: "Add a carrier label for carton C2" }]
+    }),
+    docs: [invoice, cartonLabel, shippingLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Labels", { exact: true })).toBeVisible()
-    await userEvent.type(canvas.getByRole("textbox", { name: "Amazon transport booking reference" }), "AGL-778812")
-    await userEvent.click(canvas.getByRole("button", { name: "Release labels to supplier" }))
-    await waitFor(() =>
-      expect(sent).toEqual([
-        { action: "shipment.release", data: { id: shipmentId, revision: 3, bookingReference: "AGL-778812" } }
-      ])
-    )
+    await expect(canvas.getByText("Needs shipping labels")).toBeVisible()
+    // The dialog holds the labels' progress, so the page doesn't list it.
+    await expect(canvas.queryByText("Before the labels go to the supplier")).toBeNull()
+    await expect(canvas.queryByText("Add a carrier label for carton C2")).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Upload labels" }))
+    const dialog = await screen.findByRole("dialog", { name: "Upload carrier labels" })
+    await waitFor(() => expect(dialog).toBeVisible())
+    await expect(within(dialog).getByText("1Z4F7E210393821041")).toBeVisible()
+    await expect(within(dialog).getByText("ups-labels.pdf, page 1")).toBeVisible()
+    await expect(within(dialog).getAllByText("Drag a label here")).toHaveLength(1)
+    await expect(within(dialog).getByText("1 of 2 have a label")).toBeVisible()
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })
 
@@ -977,14 +1005,15 @@ export const WaitingForLabelsSupplier = meta.story({
     docs: [invoice, cartonLabel, shippingLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Waiting for labels")).toBeVisible()
+    await expect(canvas.getByText("Needs shipping labels")).toBeVisible()
     // The supplier reads Amazon's shipment ID beside the title, since it can't open Seller Central.
     await expect(canvas.getByText("STAR-8KQ2M7-1")).toBeVisible()
     await expect(canvas.queryByRole("link", { name: /STAR-8KQ2M7-1/ })).toBeNull()
-    // Labels reach the supplier once they're released.
+    // Labels reach the supplier once they're sent.
     await expect(canvas.queryByRole("link", { name: /Download Carton labels/ })).toBeNull()
-    await expect(canvas.queryByRole("link", { name: "Download Shipping labels" })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: "Download Carrier labels" })).toBeNull()
     await expect(canvas.queryByText("Lotus invoice 2291.pdf")).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Upload labels" })).toBeNull()
   }
 })
 
@@ -1010,7 +1039,7 @@ export const ReadyOnPalletsSupplier = meta.story({
     docs: [invoice, cartonLabel, palletLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     const download = canvas.getByRole("link", { name: "Download Pallet labels Pallet labels.pdf" })
     await expect(download).toHaveAttribute("href", `/api/documents/${palletLabel.id}`)
     await expect(canvas.getByRole("link", { name: "Download Carton labels" })).toHaveAttribute(
@@ -1037,13 +1066,14 @@ export const ReadySupplier = meta.story({
     docs: [invoice, cartonLabel, shippingLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Supplier packet ready")).toBeVisible()
+    // The packet is the first of the documents, with no banner.
+    await expect(canvas.queryByText("Supplier packet ready")).toBeNull()
     // The cartons go to the FBA warehouse their labels name.
     await expect(canvas.getByText("Amazon ONT8")).toBeVisible()
     await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA, 92551, US")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute("href", packet)
+    await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "Download Shipping labels" })).toHaveAttribute(
+    await expect(canvas.getByRole("link", { name: "Download Carrier labels" })).toHaveAttribute(
       "href",
       expect.stringContaining("?bundle=true")
     )
@@ -1061,7 +1091,7 @@ export const ReadyIncomplete = meta.story({
   ...buyer,
   args: {
     step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
-      issues: [{ message: "Add a product label for Linen apron / Charcoal" }]
+      issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
     })
   },
   play: async ({ canvas }) => {
@@ -1081,7 +1111,7 @@ export const ReadyIncompleteSupplier = meta.story({
   args: {
     kind: "supplier",
     step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
-      issues: [{ message: "Add a product label for Linen apron / Charcoal" }]
+      issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
     })
   },
   play: async ({ canvas }) => {
@@ -1247,8 +1277,8 @@ export const ViewOnly = meta.story({
   }
 })
 
-// Products that carry their own barcodes and need no warning print no product labels, so the supplier packet offers the
-// carton labels alone.
+// Products that carry their own barcodes and need no warning print no product labels, so the documents offer the carton
+// labels alone.
 const noLabels: OrderItem["packingRequirements"] = {
   preparation: "none",
   labels: [],
@@ -1258,7 +1288,6 @@ const noLabels: OrderItem["packingRequirements"] = {
 export const ReadyWithoutProductLabels = meta.story({
   ...supplier,
   args: {
-    productLabels: false,
     kind: "supplier",
     order: {
       ...awdOrder,
@@ -1275,7 +1304,7 @@ export const ReadyWithoutProductLabels = meta.story({
     docs: [cartonLabel]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Carton labels" })).toHaveAttribute("download")
+    await expect(canvas.getByRole("link", { name: "Download Carton labels" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Product labels" })).not.toBeInTheDocument()
   }
 })

@@ -51,8 +51,7 @@
       "waitingForBuyer": "En attente de l’approbation de l’acheteur"
     },
     "labels": {
-      "title": "Étiquettes",
-      "waiting": "En attente des étiquettes"
+      "heldBack": "Avant l’envoi des étiquettes au fournisseur"
     },
     "creating": {
       "title": "Création de l’expédition Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Dossier fournisseur prêt",
-      "description": "Imprimez les étiquettes en taille réelle.",
-      "downloadLabel": "Télécharger le dossier fournisseur",
-      "download": "Télécharger le dossier",
+      "downloadLabel": "Télécharger le dossier de l’envoi",
       "incompleteTitle": "Dossier fournisseur incomplet",
       "waitingForLabels": "En attente des étiquettes de l’acheteur",
       "cartonLabels": "Étiquettes de carton",
       "unitLabels": "Étiquettes produit",
       "carrierLabels": "Étiquettes du transporteur",
       "palletLabels": "Étiquettes de palette",
-      "backToShipment": "Retour à l’expédition"
+      "backToShipment": "Retour à l’expédition",
+      "document": "Dossier de l’envoi",
+      "documentDescription": "Tous les documents de l’envoi"
     },
     "cartons": {
       "title": "Cartons",
@@ -111,10 +110,6 @@
       "updateCost": "Mettre aussi à jour les coûts unitaires Shopify",
       "updateCostDescription": "Les coûts Shopify doivent être dans la devise du bon de commande.",
       "submit": "Approuver les modifications"
-    },
-    "release": {
-      "submit": "Transmettre les étiquettes au fournisseur",
-      "bookingReference": "Référence de réservation du transport Amazon"
     },
     "correction": {
       "trigger": "Demander une correction",
@@ -233,5 +228,63 @@
     "suffocation": "Étiquettes d’avertissement d’étouffement",
     "choking": "Étiquettes de risque d’étouffement",
     "notProvided": "Étiquette non fournie"
+  },
+  "carrierLabels": {
+    "title": "Importer les étiquettes du transporteur",
+    "upload": "Importer les étiquettes",
+    "intro": "Ajoutez les PDF d’étiquettes du transporteur. Les étiquettes sont associées aux cartons selon le poids et la taille.",
+    "reading": "{files, plural, =1 {Lecture de {name}} other {Lecture de # PDF}}",
+    "source": "{name}, page {page}",
+    "savedLabel": "Étiquette enregistrée",
+    "trackingNumber": "Numéro de suivi",
+    "enterTracking": "Saisissez le numéro de suivi",
+    "noTracking": "Aucun numéro de suivi",
+    "addTracking": "Ajouter",
+    "addTrackingFor": "Ajouter le numéro de suivi de {name}",
+    "trackingNotRead": "Étiquette de suivi non reconnue.",
+    "trackingRecognized": "Numéro de suivi reconnu.",
+    "trackingUnknown": "Numéro de suivi non reconnu. Vérifiez-le sur l’étiquette.",
+    "trackingInvalid": "Saisissez le numéro de suivi tel qu’il est imprimé sur l’étiquette.",
+    "notPdf": "{name} n’est pas un PDF.",
+    "unreadable": "Impossible de lire {name}.",
+    "alreadyAdded": "{labels, plural, =1 {1 étiquette était déjà ajoutée, elle a donc été ignorée.} other {# étiquettes étaient déjà ajoutées, elles ont donc été ignorées.}}",
+    "cancel": "Annuler",
+    "save": "Enregistrer les étiquettes",
+    "failed": "Les étiquettes n’ont pas été enregistrées. Réessayez.",
+    "saved": "Étiquettes du transporteur enregistrées",
+    "sent": "Étiquettes du transporteur envoyées au fournisseur",
+    "notPlaced": "Non placées",
+    "fill": "Remplir les cartons dans l’ordre",
+    "dropTitle": "Déposez ici les PDF du transporteur",
+    "dropNote": "Un PDF par étiquette, ou un avec une page par étiquette",
+    "browse": "Parcourir",
+    "dropMore": "Déposez d’autres PDF ici ou <browse>parcourez</browse>",
+    "files": "{count, plural, one {# fichier} other {# fichiers}}",
+    "dropFiles": "{count, plural, one {Déposez pour ajouter # PDF} other {Déposez pour ajouter # PDF}}",
+    "dropFilesNote": "Chaque page devient une étiquette",
+    "dropToTakeOff": "Déposez pour retirer {name} de son carton",
+    "cartons": "Cartons",
+    "cartonsLabelled": "{count} sur {total} ont une étiquette",
+    "dragHere": "Faites glisser une étiquette ici",
+    "dropOnCarton": "Déposez pour mettre {name} sur {carton}",
+    "takeOff": "Retirer l’étiquette de {carton}",
+    "preview": "Aperçu de {name}",
+    "pictureOf": "Étiquette de {name}",
+    "noPicture": "Aucune image de cette étiquette",
+    "readingText": "Lecture du texte de l’étiquette",
+    "trackingFor": "Numéro de suivi de {name}",
+    "carrier": "Transporteur",
+    "unknownCarrier": "Inconnu",
+    "allLabels": "Toutes les étiquettes",
+    "previousLabel": "Étiquette précédente",
+    "nextLabel": "Étiquette suivante",
+    "positionNotPlaced": "{position} sur {count} non placées",
+    "positionPlaced": "{position} sur {count} sur des cartons",
+    "carton": "Carton",
+    "cartonTaken": "{carton}, a une étiquette",
+    "notRead": "Non lu",
+    "doesNotFit": "Le poids et la taille ne correspondent pas à {cartons}",
+    "weight": "Poids",
+    "dimensions": "Dimensions"
   }
 }

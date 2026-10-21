@@ -1,36 +1,26 @@
 import { money } from "@repo/copacker-shipments"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  Clock,
-  Download,
-  Ellipsis,
-  ExternalLink,
-  Loader2,
-  PackageCheck
-} from "lucide-react"
+import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"
 import { Fragment } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
 import { Attachment } from "@/components/attachment"
+import { UploadCarrierLabels } from "@/components/carrier-labels-dialog"
 import { DocumentList, PageHeader, Status } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
-import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
+import { ApproveInvoice, CorrectionForm, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
-import { Upload } from "@/components/upload"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { printableLabelTypes } from "@/lib/printable-labels"
 import { finishedStates, packedStates } from "@/server/readiness"
@@ -108,6 +98,11 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     shipment.transport?.collection === "pickup" &&
       t(shipment.transport.service === "agl" ? "legs.amazonPickup" : "legs.carrierPickup", { place: handoff })
   ].filter((leg) => typeof leg === "string")
+  const carrierLabels = shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels
+  // What still holds the labels back from the supplier, besides what the page asks for elsewhere.
+  const heldBack = step.issues.filter(
+    (issue) => !["missing_shipping_label", "missing_tracking_number", "missing_transport"].includes(issue.code)
+  )
   const nextAction: Record<string, React.ReactNode> = {
     prepareAmazon: isBuyer && (
       <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
@@ -128,6 +123,17 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       <ActionButton action="shipment.retry" data={{ id, revision: shipment.revision }}>
         {t("actions.retry")}
       </ActionButton>
+    ),
+    // While a carton lacks its carrier label. Saving the last one sends the labels to the supplier.
+    labels: isBuyer && carrierLabels && shipment.packing && (
+      <UploadCarrierLabels
+        shipmentId={id}
+        revision={shipment.revision}
+        reference={order.data.reference}
+        shipmentName={title}
+        cartons={shipment.packing.cartons}
+        saved={page.carrierLabels}
+      />
     ),
     cancellation: isBuyer && (
       <ActionButton action="shipment.cancelAmazon" data={{ id }}>
@@ -375,33 +381,20 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             </Card>
           )}
 
-          {shipment.status === "waiting_labels" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{isBuyer && editsShipments ? t("labels.title") : t("labels.waiting")}</CardTitle>
-              </CardHeader>
-              {isBuyer && editsShipments && (
-                <CardContent className="flex flex-col gap-6">
-                  {shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels && (
-                    <Upload
-                      orderId={order.id}
-                      shipmentId={id}
-                      kind="shipping_label"
-                      label={null}
-                      cartons={shipment.packing?.cartons}
-                    />
-                  )}
-                  {step.issues.length > 0 && (
-                    <ul className="list-disc ps-5 text-sm">
-                      {step.issues.map((issue, index) => (
-                        <li key={index}>{issue.message}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {step.canRelease && <ReleaseLabels id={id} revision={shipment.revision} />}
-                </CardContent>
-              )}
-            </Card>
+          {/* The labels go to the supplier by themselves once nothing holds them back. Carrier labels come from the header's
+              Upload labels and transport from its own card, so this lists anything else, such as a product's label. */}
+          {shipment.status === "waiting_labels" && isBuyer && heldBack.length > 0 && (
+            <Alert role="note">
+              <Clock />
+              <AlertTitle>{t("labels.heldBack")}</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc ps-5">
+                  {heldBack.map((issue, index) => (
+                    <li key={index}>{issue.message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
 
           {["queued", "creating"].includes(shipment.status) && (
@@ -409,59 +402,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <Loader2 className="animate-spin" />
               <AlertTitle>{t("creating.title")}</AlertTitle>
               <AlertDescription>{t("creating.description")}</AlertDescription>
-            </Alert>
-          )}
-
-          {step.packetUrl && (
-            <Alert role="note" className="border-primary/40">
-              {/* The alert colors its icon like its text; this one stays primary. */}
-              <PackageCheck className="text-primary!" />
-              <AlertTitle>{t("packet.title")}</AlertTitle>
-              <AlertDescription>{t("packet.description")}</AlertDescription>
-              {/* Under the text on a phone, top right from sm up. */}
-              <AlertAction className="static col-span-full mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={<a href={step.packetUrl} aria-label={t("packet.downloadLabel")} />}
-                >
-                  <Download data-icon="inline-start" />
-                  {t("packet.download")}
-                </Button>
-                {amazon && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    nativeButton={false}
-                    render={
-                      <a
-                        download
-                        href={`/api/shipments/${id}/packet?section=carton_labels`}
-                        aria-label={t("packet.cartonLabels")}
-                      />
-                    }
-                  >
-                    {t("packet.cartonLabels")}
-                  </Button>
-                )}
-                {page.hasProductLabels && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    nativeButton={false}
-                    render={
-                      <a
-                        download
-                        href={`/api/shipments/${id}/packet?section=product_labels`}
-                        aria-label={t("packet.unitLabels")}
-                      />
-                    }
-                  >
-                    {t("packet.unitLabels")}
-                  </Button>
-                )}
-              </AlertAction>
             </Alert>
           )}
 
@@ -518,6 +458,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           <section aria-label={t("documents.title")} className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
             <div className="flex flex-col gap-2 empty:hidden">
+              {/* Once the labels are with the supplier, the packet holds every document. */}
+              {step.packetUrl && (
+                <Attachment
+                  kind="packet"
+                  label={t("packet.document")}
+                  description={t("packet.documentDescription")}
+                  downloadLabel={t("packet.downloadLabel")}
+                  href={step.packetUrl}
+                />
+              )}
               {productDownloads().length > 0 && (
                 <ProductDownloadsMenu attachment items={productDownloads()} allHref={labelsHref({})} />
               )}
@@ -526,7 +476,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                 <DocumentList documents={visibleDocs.map((doc) => ({ ...doc, shipmentId: id }))} />
               )}
             </div>
-            {productDownloads().length === 0 && !packed && visibleDocs.length === 0 && (
+            {!step.packetUrl && productDownloads().length === 0 && !packed && visibleDocs.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
             )}
           </section>

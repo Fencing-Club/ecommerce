@@ -9,7 +9,7 @@
     "missingPackingList": "Erstellen Sie die aktuelle Packliste, bevor Sie Etiketten freigeben",
     "missingChecklist": "Erstellen Sie die aktuelle Checkliste, bevor Sie Etiketten freigeben",
     "missingCartonLabel": "Das Kartonetikett für Karton {carton} fehlt",
-    "missingShippingLabel": "Ordnen Sie Karton {carton} ein Versandetikett zu",
+    "missingShippingLabel": "Fügen Sie ein Versandetikett für Karton {carton} hinzu",
     "missingPalletLabels": "Die Palettenetiketten fehlen",
     "missingProductLabel": "Fügen Sie auf der Seite Produkte ein Produktetikett für {sku} hinzu",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "Palette {pallet}: {receiver}-Paletten höchstens {maxLb, number} lb ({maxKg, number} kg), einschließlich Palette"
     },
     "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken.",
-    "missingTransport": "Transport nicht bestätigt"
+    "missingTransport": "Transport nicht bestätigt",
+    "missingTrackingNumber": "Fügen Sie die Sendungsnummer des Versandetiketts von Karton {carton} hinzu"
   },
   "workflow": {
     "arrived": "Die Waren sind angekommen",
@@ -50,7 +51,6 @@
     "approval": "Prüfen Sie die vom Lieferanten vorgeschlagenen Preise und Lieferanten-SKUs",
     "processing": "Amazon bearbeitet die Sendung und die Kartonetiketten",
     "labels": "Buchen Sie den Versand und fügen Sie die fehlenden Dokumente unten hinzu",
-    "release": "Geben Sie die Buchungsreferenz ein und geben Sie die Lieferantenunterlagen frei",
     "ship": "Drucken Sie die Unterlagen, packen Sie die Kartons und markieren Sie sie als versendet",
     "forward": "Der Spediteur versendet die Waren weiter und ergänzt Frachtkosten, Transporteur und Sendungsverfolgung",
     "receive": "Markieren Sie die Waren bei Ankunft als eingegangen",
