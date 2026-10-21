@@ -439,7 +439,9 @@ export const PassedReadyDate = meta.story({
     const readyDate = canvas.getByLabelText(/Ready date/)
     await expect(readyDate).toHaveAttribute("min", today)
     await expect(readyDate).not.toHaveAttribute("aria-invalid", "true")
-    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    // Every unit is packed, so Finish packing leads and saving the draft is under Actions.
+    await userEvent.click(canvas.getByRole("button", { name: "Actions" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
     await expect(actions).toHaveBeenLastCalledWith({
       action: "shipment.save",
