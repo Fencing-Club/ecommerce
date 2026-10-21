@@ -147,10 +147,11 @@ const destinations: Record<PacketDataSet["receiver"], DocumentParty> = {
 // A packet as production would export it, and why production refuses to when it does.
 type SimulatedPacket = { data: ShippingDocumentData; refusal?: string }
 
-// The packet for a data set shipped as arranged: production's own snapshot, with a sample Amazon label for every carton
-// to Amazon and a carrier label for each when the carrier labels cartons. When the snapshot refuses the shipment, the
-// documents still show what they would print, built as production builds the packing list, with the labels and address
-// the packet adds.
+// The packet for a data set shipped as arranged: production's own snapshot, given what the packet page gives it (see
+// shipmentPacketPage), with a sample Amazon label for every carton to Amazon. The packet page has no carrier label
+// numbers to give, so a carrier label for each carton comes only in what the documents would print: when the snapshot
+// refuses the shipment, the documents still show that, built as production builds the packing list, with the labels and
+// address the packet adds.
 export function simulatePacket(set: PacketDataSet, arrangement: Arrangement): SimulatedPacket {
   const base = simulatorOrder(set.receiver)
   const order = {
@@ -190,7 +191,6 @@ export function simulatePacket(set: PacketDataSet, arrangement: Arrangement): Si
     order,
     packing,
     labels,
-    carrierLabels,
     transport: { ...arrangement, instructions: "" },
     company: "Harbor Goods",
     supplier: "Northwind Textiles",

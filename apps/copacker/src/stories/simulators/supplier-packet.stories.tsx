@@ -43,21 +43,31 @@ export const EveryChecklistLine = meta.story({
   }
 })
 
-// The packet production exports for cartons to FBA by parcel, with every page.
+// The packet production exports for cartons to FBA by AGL, with every page.
 export const Packet = meta.story({
-  args: { dataSet: "fbaParcel" },
+  args: { dataSet: "fbaAgl" },
   play: async ({ canvas }) => {
     await expect(productionExport(canvas)).toHaveTextContent("Production exports this packet")
+    await expect(checklist(canvas).getByText("Carton label")).toBeVisible()
+  }
+})
+
+// Production has no carrier label numbers to give the snapshot yet, so a shipment with a carrier label for each carton
+// can't export: the documents show what they would print.
+export const WithCarrierLabels = meta.story({
+  args: { dataSet: "fbaParcel" },
+  play: async ({ canvas }) => {
+    await expect(productionExport(canvas)).toHaveTextContent("Production can’t export this packet yet")
     await expect(checklist(canvas).getByText("Carrier label")).toBeVisible()
   }
 })
 
-// Pallets go by freight, which production's packet export doesn't take yet: the documents show what they would print.
+// Pallets go by freight, with Amazon's labels on each pallet and the bill of lading at the handoff.
 export const FbaPallets = meta.story({
   name: "FBA on pallets",
   args: { dataSet: "fbaPallets" },
   play: async ({ canvas }) => {
-    await expect(productionExport(canvas)).toHaveTextContent("Production can’t export this packet yet")
+    await expect(productionExport(canvas)).toHaveTextContent("Production exports this packet")
     await expect(checklist(canvas).getByText("Pallet labels")).toBeVisible()
     await expect(checklist(canvas).getByText("Bill of lading")).toBeVisible()
   }

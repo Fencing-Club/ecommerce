@@ -176,10 +176,12 @@ export function shipmentDocumentChecks(data: ShippingDocumentData) {
     cartons.push({ title: "cartonSealing", detail: "cartonSealingText" }, { title: "identify", detail: "identifyText" })
     handoff.push({ title: "record", detail: "includePackingText" })
   }
-  // Loading the pallets comes before the handoff, where the bill of lading goes with them.
+  // Loading the pallets comes before the handoff. Freight goes with a bill of lading, on pallets or loaded loose.
   const pallets: ShippingCheck[] = []
   if (data.transport.palletized) {
     pallets.push(...palletChecks[data.network])
+  }
+  if (data.transport.palletized || data.transport.service === "freight") {
     handoff.push({ title: "bol", detail: "bolText" })
   }
   handoff.push(handoffChecks[data.transport.collection])
