@@ -18,6 +18,7 @@ export function CartonImportDialog({
   shipmentName,
   existing,
   availablePieces,
+  packingGroups,
   onImport
 }: {
   open: boolean
@@ -26,6 +27,8 @@ export function CartonImportDialog({
   shipmentName: string
   existing: CartonGroup[]
   availablePieces: Record<string, number>
+  // Amazon's packing groups by SKU, once Amazon has set them for the shipment's FBA cartons.
+  packingGroups?: Readonly<Record<string, string>>
   onImport: (groups: CartonGroup[], mode: CartonImportMode) => Promise<void>
 }) {
   const t = useTranslations("orders.cartonImport")
@@ -40,7 +43,7 @@ export function CartonImportDialog({
       result.templateMatches && !result.issues.length && !tooMany
         ? validatePacking(
             order,
-            { cartons: expandCartonGroups(combined), changes: [] },
+            { cartons: expandCartonGroups(combined), changes: [], packingGroups },
             Object.fromEntries(
               order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
             )

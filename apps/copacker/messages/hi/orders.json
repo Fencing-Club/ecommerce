@@ -414,7 +414,11 @@
     "chooseAddress": "पिकअप का पता",
     "packedUnits": "{available} इकाइयों में से {count}",
     "leftCount": "{count} बाकी",
-    "overCount": "{count} ज़्यादा"
+    "overCount": "{count} ज़्यादा",
+    "groupsUnchecked": {
+      "title": "Amazon पैकिंग ग्रुप अभी जाँचे नहीं गए",
+      "description": "Amazon शिपमेंट की योजना बनाते समय अपने पैकिंग ग्रुप तय करता है, और एक कार्टन में केवल एक ग्रुप हो सकता है। तब तक, जिन उत्पादों को Amazon अलग से प्राप्त करता है, जैसे खतरनाक सामान, उन्हें उनके अपने कार्टन में पैक करें।"
+    }
   },
   "paymentTerms": {
     "net7": "नेट 7",

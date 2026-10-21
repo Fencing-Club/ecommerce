@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { releaseIssues } from "../src/server/readiness"
+import { knownPackingGroups, packingReadiness, releaseIssues } from "../src/server/readiness"
 import { documentRow, orderRecords, packingFor, shipmentRow } from "../src/stories/fixtures/logistics"
+import { daysAgo } from "../src/stories/fixtures/orders"
 
 describe("releasing a shipment packed on pallets", () => {
   const order = orderRecords.amazon.data
@@ -32,5 +33,49 @@ describe("releasing a shipment packed on pallets", () => {
       codes("fba", [...cartonLabels, documentRow("pallet_label", "Pallet labels.pdf", { shipmentRevision: 2 })])
     ).toContain("missing_pallet_label")
     expect(codes("awd_us", cartonLabels)).not.toContain("missing_pallet_label")
+  })
+})
+
+describe("Amazon's packing groups", () => {
+  const order = orderRecords.amazon.data
+  const [tote, apron] = order.items.map((item) => item.buyerSku)
+  const groups = { [tote!]: "pg-tote", [apron!]: "pg-apron" }
+  // The PO's first FBA shipment, planned months ago, one Amazon planned since and cancelled, and the draft packed again.
+  const first = shipmentRow({
+    id: "c0ffee00-1234-4abc-9def-000000000101",
+    status: "received",
+    amazonNetwork: "fba",
+    packingGroups: { [tote!]: "pg-all", [apron!]: "pg-all" },
+    createdAt: daysAgo(90)
+  })
+  const cancelled = shipmentRow({
+    id: "c0ffee00-1234-4abc-9def-000000000102",
+    status: "cancelled",
+    amazonNetwork: "fba",
+    packingGroups: groups,
+    createdAt: daysAgo(4)
+  })
+  const draft = shipmentRow({ id: "c0ffee00-1234-4abc-9def-000000000103", amazonNetwork: "fba", createdAt: daysAgo(1) })
+
+  it("are the shipment's own, or the latest Amazon set for the PO", () => {
+    expect(knownPackingGroups([first, cancelled, draft], draft)).toEqual(groups)
+    expect(knownPackingGroups([cancelled, first, draft], first)).toEqual(first.packingGroups)
+    expect(knownPackingGroups([draft], draft)).toBeUndefined()
+  })
+
+  it("keep each FBA carton to one group before it's sent", () => {
+    // C2 holds both products.
+    const issues = (rows: ReturnType<typeof shipmentRow>[]) =>
+      packingReadiness(order, draft, packingFor(order), rows, draft.orderRevision)
+        .issues.filter((issue) => issue.message.includes("packing groups"))
+        .map(({ cartonId, message }) => ({ cartonId, message }))
+    expect(issues([first, cancelled, draft])).toEqual([
+      {
+        cartonId: "C2",
+        message: `Pack ${tote} and ${apron} in separate cartons: FBA put them in different packing groups`
+      }
+    ])
+    expect(issues([first, draft])).toEqual([])
+    expect(issues([draft])).toEqual([])
   })
 })

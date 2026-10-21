@@ -414,7 +414,11 @@
     "chooseAddress": "Choose an address",
     "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
     "leftCount": "{count} left",
-    "overCount": "{count} too many"
+    "overCount": "{count} too many",
+    "groupsUnchecked": {
+      "title": "Amazon packing groups not checked yet",
+      "description": "Amazon sets its packing groups when it plans the shipment, and a carton can hold only one. Until then, pack products Amazon receives separately, such as dangerous goods, in their own cartons."
+    }
   },
   "paymentTerms": {
     "net7": "Net 7",

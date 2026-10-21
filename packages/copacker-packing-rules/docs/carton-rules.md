@@ -71,7 +71,8 @@ so cartons may mix SKUs and hold any number of units.
   Inbound API): Amazon puts the SKUs that can share a box in a packing group, and keeps apart SKUs it receives
   separately, such as dangerous goods. The groups exist only once Amazon plans the shipment, so `validatePacking` checks
   them when the packing passes them in (`packingGroups`, by SKU) and skips the rule otherwise. The FBA booking job
-  confirms the packing option that keeps each carton in one group ([Amazon inbound](../../../apps/copacker/docs/amazon-inbound.md)).
+  confirms the packing option that keeps each carton in one group, and keeps each SKU's group on the shipment for
+  Copacker's packing checks ([Amazon inbound](../../../apps/copacker/docs/amazon-inbound.md)).
 - Not checked: boxes of jewelry or watches are limited to 40 lb, and a box over 50 lb needs Team Lift labels.
 
 ### AWD US (`cartonPolicies.awd_us`)

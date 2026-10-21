@@ -414,7 +414,11 @@
     "chooseAddress": "Indirizzo di ritiro",
     "packedUnits": "{count} di {available} unità",
     "leftCount": "{count} rimanenti",
-    "overCount": "{count} in eccesso"
+    "overCount": "{count} in eccesso",
+    "groupsUnchecked": {
+      "title": "Gruppi di imballaggio Amazon non ancora verificati",
+      "description": "Amazon stabilisce i gruppi di imballaggio quando pianifica la spedizione, e ogni cartone può contenerne uno solo. Nel frattempo, imballa in cartoni propri i prodotti che Amazon riceve separatamente, come le merci pericolose."
+    }
   },
   "paymentTerms": {
     "net7": "7 giorni netti",

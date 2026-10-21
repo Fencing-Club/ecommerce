@@ -414,7 +414,11 @@
     "chooseAddress": "پک اپ کا پتہ",
     "packedUnits": "{available} اکائیوں میں سے {count}",
     "leftCount": "{count} باقی",
-    "overCount": "{count} زیادہ"
+    "overCount": "{count} زیادہ",
+    "groupsUnchecked": {
+      "title": "Amazon پیکنگ گروپس ابھی چیک نہیں ہوئے",
+      "description": "Amazon شپمنٹ کی منصوبہ بندی کرتے وقت اپنے پیکنگ گروپس طے کرتا ہے، اور ایک کارٹن میں صرف ایک گروپ ہو سکتا ہے۔ تب تک، جن مصنوعات کو Amazon الگ سے وصول کرتا ہے، جیسے خطرناک سامان، انہیں ان کے اپنے کارٹنوں میں پیک کریں۔"
+    }
   },
   "paymentTerms": {
     "net7": "Net 7",

@@ -414,7 +414,11 @@
     "chooseAddress": "Abholadresse",
     "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}",
     "leftCount": "{count} offen",
-    "overCount": "{count} zu viel"
+    "overCount": "{count} zu viel",
+    "groupsUnchecked": {
+      "title": "Amazon-Packgruppen noch nicht geprüft",
+      "description": "Amazon legt die Packgruppen fest, wenn es die Sendung plant, und ein Karton darf nur eine enthalten. Packen Sie bis dahin Produkte, die Amazon getrennt annimmt, etwa Gefahrgut, in eigene Kartons."
+    }
   },
   "paymentTerms": {
     "net7": "7 Tage netto",

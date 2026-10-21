@@ -414,7 +414,11 @@
     "chooseAddress": "Адреса забору",
     "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
     "leftCount": "Залишилось {count}",
-    "overCount": "На {count} більше"
+    "overCount": "На {count} більше",
+    "groupsUnchecked": {
+      "title": "Групи пакування Amazon ще не перевірено",
+      "description": "Amazon визначає групи пакування, коли планує відправлення, і в коробці може бути лише одна група. До того пакуйте товари, які Amazon приймає окремо, наприклад небезпечні вантажі, в окремі коробки."
+    }
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",

@@ -148,6 +148,7 @@ export function shipmentRow(overrides: Partial<ShipmentRow> = {}): ShipmentRow {
     linkedAmazonShipmentId: null,
     amazonOrderId: null,
     amazonShipmentId: null,
+    packingGroups: null,
     operation: "none",
     labels: [],
     stockTaken: null,

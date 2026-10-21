@@ -89,11 +89,23 @@ export function orderCoverage(order: OrderInput, rows: Shipment[]) {
   })
 }
 
+// Amazon's packing groups for a shipment's FBA cartons, by SKU: the ones Amazon set when it planned this shipment or,
+// until it has, the latest it set for another of the purchase order's shipments, since Amazon groups the same products
+// the same way. Undefined until Amazon has planned one, when the packing checks can't check the groups.
+export function knownPackingGroups(rows: Shipment[], shipment: Shipment) {
+  const [latest] = rows
+    .filter((row) => row.orderId === shipment.orderId && row.packingGroups)
+    .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  return shipment.packingGroups ?? latest?.packingGroups ?? undefined
+}
+
+// Whether a shipment's packing is ready to submit, given the purchase order's shipments (rows): what the others hold and
+// Amazon's packing groups (see knownPackingGroups).
 export function packingReadiness(
   order: OrderInput,
   shipment: Shipment,
   raw: unknown,
-  reserved: Record<string, number>,
+  rows: Shipment[],
   orderRevision: number,
   t: ServerText = serverTextInEnglish
 ) {
@@ -134,7 +146,11 @@ export function packingReadiness(
     issues.push({ code: "network_mismatch", message: t("readiness.networkMismatch") })
   }
   issues.push(
-    ...validatePacking(order, packing, reserved).issues.map((issue) => ({
+    ...validatePacking(
+      order,
+      { ...packing, packingGroups: knownPackingGroups(rows, shipment) },
+      reservedPieces(rows, shipment.id)
+    ).issues.map((issue) => ({
       code: "packing_rule",
       cartonId: issue.cartonId,
       message:

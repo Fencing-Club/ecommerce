@@ -414,7 +414,11 @@
     "chooseAddress": "Dirección de recolección",
     "packedUnits": "{count} de {available, plural, one {# unidad} other {# unidades}}",
     "leftCount": "Faltan {count}",
-    "overCount": "{count} de más"
+    "overCount": "{count} de más",
+    "groupsUnchecked": {
+      "title": "Grupos de empaque de Amazon aún sin revisar",
+      "description": "Amazon define sus grupos de empaque al planear el envío, y cada caja puede tener solo uno. Mientras tanto, empaca en sus propias cajas los productos que Amazon recibe por separado, como las mercancías peligrosas."
+    }
   },
   "paymentTerms": {
     "net7": "Neto 7 días",

@@ -3852,6 +3852,8 @@ describe("PO to a released FBA shipment", () => {
       status: "waiting_labels",
       amazonOrderId: fbaPlanId,
       amazonShipmentId: "FBA15SH1, FBA15SH2",
+      // Each SKU's group in the confirmed option.
+      packingGroups: { "foil-2": "all", "glove-6": "all" },
       issue: null
     })
     expect(shipment!.labels).toEqual([
@@ -4176,8 +4178,36 @@ describe("PO to a released FBA shipment", () => {
       }
     ])
     const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
-    expect(shipment).toMatchObject({ status: "needs_attention", amazonOrderId: fbaPlanId })
+    expect(shipment).toMatchObject({
+      status: "needs_attention",
+      amazonOrderId: fbaPlanId,
+      packingGroups: { "foil-2": "cords", "glove-6": "gloves" }
+    })
     expect(shipment!.issue).toContain("Pack each product in its own cartons")
+
+    // Packed again after cancelling the plan, the same carton breaks the groups Amazon set before it's sent.
+    await correctShipment(buyer, shipmentId, "Pack cords and gloves apart")
+    const cancelled = await action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "shipment.cancelAmazon", data: { id: shipmentId } })
+      })
+    )
+    expect(cancelled.status).toBe(200)
+    const next = await newShipment(supplier, orderId)
+    const message = "Pack foil-2 and glove-6 in separate cartons: FBA put them in different packing groups"
+    expect((await checkPacking(supplier, next.id, shipment!.packing)).issues).toContainEqual(
+      expect.objectContaining({ code: "packing_rule", cartonId: "M1", message })
+    )
+    const apart = {
+      ...shipment!.packing!,
+      cartons: [
+        { cartonId: "M1", length: 50, width: 40, height: 30, weight: 12, items: [{ itemId, pieces: 160 }] },
+        { cartonId: "M2", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+      ]
+    }
+    expect((await checkPacking(supplier, next.id, apart)).issues).toEqual([])
   })
 
   it("cancels the inbound plan in Amazon before a replacement shipment", async () => {

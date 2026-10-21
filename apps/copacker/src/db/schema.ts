@@ -473,6 +473,10 @@ export const shipments = pgTable(
     linkedAmazonShipmentId: text(),
     amazonOrderId: text(),
     amazonShipmentId: text(),
+    // Each SKU's packing group in the FBA inbound plan, once Amazon has worked out its packing options: the confirmed
+    // option's, or, when none keeps each carton to one group, the option the job would have chosen. The packing checks
+    // read them (see knownPackingGroups).
+    packingGroups: jsonb().$type<Record<string, string>>(),
     operation: text().notNull().default("none"),
     labels: jsonb().$type<CartonLabel[]>().notNull().default([]),
     // Pieces this shipment took from the supplier's stock, by supplier product, once its commercial invoice was

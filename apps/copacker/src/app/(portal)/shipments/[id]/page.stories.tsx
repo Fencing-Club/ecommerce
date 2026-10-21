@@ -12,7 +12,7 @@ import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedLabelKinds, releasedStates } from "@/server/readiness"
+import { knownPackingGroups, releasedLabelKinds, releasedStates } from "@/server/readiness"
 import {
   type ActionRequest,
   buyerContacts,
@@ -27,6 +27,7 @@ import {
   type ShipmentRow,
   supplierRecordId
 } from "@/stories/fixtures/logistics"
+import { daysAgo } from "@/stories/fixtures/orders"
 import {
   bagOrder,
   bagPacking,
@@ -62,6 +63,8 @@ type Args = {
   number: number
   // Pieces of each line other shipments already hold.
   reserved: Record<string, number>
+  // The purchase order's other shipments, whose packing groups an FBA draft is checked against (knownPackingGroups).
+  others?: ShipmentRow[]
   docs: DocumentRow[]
   // The supplier's pickup addresses.
   addresses: PartnerAddress[]
@@ -90,6 +93,7 @@ async function ShipmentPage({
   step,
   number,
   reserved,
+  others = [],
   docs,
   addresses,
   awaitingChanges,
@@ -105,6 +109,10 @@ async function ShipmentPage({
   const packingOrder = shipment.amazonNetwork
     ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
     : order.data
+  const packingGroups =
+    order.data.destination === "amazon" && packingOrder.items.some((item) => item.amazonNetwork === "fba")
+      ? (knownPackingGroups([...others, shipment], shipment) ?? null)
+      : undefined
   const snapshot = shipment.snapshot ?? order.data
   const editable =
     editsShipments &&
@@ -184,6 +192,7 @@ async function ShipmentPage({
         },
         step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl, canRelease: step.canRelease },
         reserved,
+        packingGroups,
         snapshot: prices ? snapshot : unpricedOrder(snapshot),
         addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
         awaitingChanges,
@@ -573,6 +582,8 @@ export const FbaMixedCartons = meta.story({
     await expect(within(second).getByText("NT-CT-3100")).toBeVisible()
     await expect(within(second).getAllByText("—")).toHaveLength(2)
     await expect(canvas.queryByText(/one SKU/i)).toBeNull()
+    // No shipment of the PO has been planned, so Amazon hasn't set the packing groups to check yet.
+    await expect(within(cartons).getByRole("note")).toHaveTextContent("Amazon packing groups not checked yet")
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     // The one label type FBA asks for downloads straight from Documents, and every carton is weighed.
     await expect(canvas.getByRole("link", { name: "Download FNSKU labels" })).toBeVisible()
@@ -580,6 +591,38 @@ export const FbaMixedCartons = meta.story({
     await expect(within(summary).getByText("3")).toBeVisible()
     await expect(within(summary).getByText("37.2 kg")).toBeVisible()
     await expect(within(summary).getByText("0.29 m³")).toBeVisible()
+  }
+})
+
+// Board 06.15 (Additional validation states): packed again after Amazon refused the PO's earlier shipment, whose plan put
+// the bags and the tea towel in different packing groups, each mixed carton shows the groups it holds, so packing
+// can't finish until they're apart.
+export const FbaPackingGroups = meta.story({
+  ...supplier,
+  args: {
+    ...FbaMixedCartons.input.args,
+    others: [
+      shipmentRow({
+        id: "c0ffee00-1234-4abc-9def-000000000021",
+        status: "cancelled",
+        amazonNetwork: "fba",
+        packingGroups: { "DB-2030": "pg-bags", "DB-2031": "pg-bags", "CT-3100": "pg-towels" },
+        createdAt: daysAgo(3)
+      })
+    ]
+  },
+  play: async ({ canvas }) => {
+    const first = within(canvas.getByRole("region", { name: "Carton A1" }))
+    await expect(
+      first.getByText(
+        "Products: FBA put DB-2030 and CT-3100 in different packing groups. Pack each group in its own cartons."
+      )
+    ).toBeVisible()
+    await expect(
+      within(canvas.getByRole("region", { name: "Carton B1" })).getByText(/DB-2031 and CT-3100 in different packing/)
+    ).toBeVisible()
+    await expect(canvas.queryByText("Amazon packing groups not checked yet")).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeDisabled()
   }
 })
 

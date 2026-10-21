@@ -100,8 +100,10 @@ const netFees = (option: Pick<FbaPackingOption, "fees" | "discounts">) =>
   option.fees.reduce((sum, fee) => sum + fee.value.amount, 0) -
   option.discounts.reduce((sum, discount) => sum + discount.value.amount, 0)
 
-// The packing option whose groups keep each carton's products together, with the fewest groups and then the lowest fees.
-// Amazon puts products that must ship separately in different packing groups, and a carton can't span two.
+// The packing option whose groups keep each carton's products together, with the fewest groups and then the lowest fees,
+// and each SKU's group in it. Amazon puts products that must ship separately in different packing groups, and a carton
+// can't span two. When no option keeps every carton to one group, the one with the fewest groups and lowest fees comes
+// back with `fits` false, so its groups can show the supplier which cartons to repack.
 export async function choosePackingOption(
   api: Pick<Amazon, "fbaPackingGroupItems">,
   planId: string,
@@ -109,7 +111,7 @@ export async function choosePackingOption(
   order: OrderInput,
   packing: Packing
 ) {
-  const fitting: Array<{ option: FbaPackingOption; groups: Map<string, string> }> = []
+  const offered: Array<{ option: FbaPackingOption; groups: Map<string, string>; fits: boolean }> = []
   for (const option of options.filter((row) => row.status === "OFFERED")) {
     // Each SKU's packing group in this option.
     const groups = new Map<string, string>()
@@ -120,12 +122,14 @@ export async function choosePackingOption(
     }
     const skus = (carton: Packing["cartons"][number]) =>
       carton.items.map((content) => order.items.find((item) => item.id === content.itemId)!.buyerSku)
-    if (packing.cartons.every((carton) => new Set(skus(carton).map((sku) => groups.get(sku))).size === 1)) {
-      fitting.push({ option, groups })
-    }
+    const fits = packing.cartons.every((carton) => new Set(skus(carton).map((sku) => groups.get(sku))).size === 1)
+    offered.push({ option, groups, fits })
   }
-  const [best] = fitting.toSorted(
-    (a, b) => a.option.packingGroups.length - b.option.packingGroups.length || netFees(a.option) - netFees(b.option)
+  const [best] = offered.toSorted(
+    (a, b) =>
+      Number(b.fits) - Number(a.fits) ||
+      a.option.packingGroups.length - b.option.packingGroups.length ||
+      netFees(a.option) - netFees(b.option)
   )
   if (!best) {
     throw new LocalizedError("amazonPackSeparately")
@@ -320,13 +324,26 @@ export async function fbaShipmentJob(
   }
   await assertOwned()
 
-  // Packing: an option that keeps each carton's products together, then each carton's size, weight and contents.
+  // Packing: an option that keeps each carton's products together, then each carton's size, weight and contents. The
+  // shipment keeps each SKU's group for the packing checks, also when no option fits, to show which cartons to repack.
+  const choosePacking = async (options: FbaPackingOption[]) => {
+    const chosen = await choosePackingOption(api, planId!, options, order, packing)
+    await assertOwned()
+    await db()
+      .update(shipments)
+      .set({ packingGroups: Object.fromEntries(chosen.groups) })
+      .where(eq(shipments.id, shipment.id))
+    if (!chosen.fits) {
+      throw new LocalizedError("amazonPackSeparately")
+    }
+    return chosen
+  }
   if (!plan.packingOptions?.some((option) => option.status === "ACCEPTED")) {
     const options = await api.fbaPackingOptions(planId!)
     if (!options.some((option) => option.status === "OFFERED")) {
       wait("Amazon is working out packing options", await api.fbaGeneratePackingOptions(planId!))
     }
-    const { option } = await choosePackingOption(api, planId!, options, order, packing)
+    const { option } = await choosePacking(options)
     await assertOwned()
     wait("Amazon is confirming the packing option", await api.fbaConfirmPackingOption(planId!, option.packingOptionId))
   }
@@ -336,13 +353,7 @@ export async function fbaShipmentJob(
     if (!(await api.fbaPlanBoxes(planId!)).length) {
       const packingOptions = await api.fbaPackingOptions(planId!)
       const packingOption = packingOptions.find((option) => option.status === "ACCEPTED")!
-      const { groups } = await choosePackingOption(
-        api,
-        planId!,
-        [{ ...packingOption, status: "OFFERED" }],
-        order,
-        packing
-      )
+      const { groups } = await choosePacking([{ ...packingOption, status: "OFFERED" }])
       const grouped = new Map<string, ReturnType<typeof fbaBoxes>[number]["box"][]>()
       for (const { box } of fbaBoxes(order, packing, prep)) {
         const group = groups.get(box.items[0]!.msku)!

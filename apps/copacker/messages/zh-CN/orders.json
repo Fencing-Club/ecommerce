@@ -414,7 +414,11 @@
     "chooseAddress": "提货地址",
     "packedUnits": "{count} / {available} 件",
     "leftCount": "还剩 {count}",
-    "overCount": "多出 {count}"
+    "overCount": "多出 {count}",
+    "groupsUnchecked": {
+      "title": "尚未检查 Amazon 包装组",
+      "description": "Amazon 在规划货件时设定包装组，每个箱子只能装一个包装组的商品。在此之前，请将 Amazon 单独接收的商品（如危险品）单独装箱。"
+    }
   },
   "paymentTerms": {
     "net7": "7 天账期",

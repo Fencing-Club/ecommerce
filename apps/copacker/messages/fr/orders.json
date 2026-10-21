@@ -414,7 +414,11 @@
     "chooseAddress": "Adresse d’enlèvement",
     "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
     "leftCount": "{count} restant(s)",
-    "overCount": "{count} en trop"
+    "overCount": "{count} en trop",
+    "groupsUnchecked": {
+      "title": "Groupes d’emballage Amazon pas encore vérifiés",
+      "description": "Amazon définit ses groupes d’emballage lorsqu’il planifie l’envoi, et un carton ne peut en contenir qu’un. D’ici là, emballez dans leurs propres cartons les produits qu’Amazon reçoit séparément, comme les marchandises dangereuses."
+    }
   },
   "paymentTerms": {
     "net7": "7 jours net",

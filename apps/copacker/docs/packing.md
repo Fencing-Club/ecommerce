@@ -32,6 +32,18 @@ products line up under the carton's columns at any width.
 - Rows with errors open, and so do new rows, to add their products; a row also opens when it gets an error, unless it
   was closed by hand. A closed row with errors shows how many by its menu.
 
+### Amazon's packing groups
+
+An FBA carton holds products of one of Amazon's packing groups (see
+[carton rules](../../../packages/copacker-packing-rules/docs/carton-rules.md)). Amazon sets the groups only when it
+plans a shipment, and the booking job keeps each SKU's group on the shipment ([Amazon inbound](amazon-inbound.md#fba-fba)).
+The packing checks (the form, the carton import and readiness) use the shipment's own groups or, until Amazon has
+planned it, the latest Amazon set for another of the PO's shipments (`knownPackingGroups`), so a shipment packed again
+after Amazon refused its cartons shows which ones mix groups ("Products: FBA put DB-2030 and CT-3100 in different
+packing groups. Pack each group in its own cartons."). Before Amazon has planned any of the PO's shipments, the Cartons
+section says the groups aren't checked yet (06.15's "When Amazon checks are unavailable"); there's nothing to retry
+until Amazon plans one, so it has no Retry button.
+
 ## Pallets
 
 **Packed on pallets**, beside Ready date, adds a Pallets section below the cartons (`PalletTable`). Each pallet has
