@@ -36,7 +36,8 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
 import { type CartonGroup, cartonGroupLabel, groupCartons } from "@/lib/carton-groups"
 import { fitsConfiguration, type LabelMeasurements, readLabelMeasurements } from "@/lib/label-measurements"
-import { readPdfPages } from "@/lib/pdf-preview"
+import { readPictureText } from "@/lib/label-text"
+import { preloadPdfReading, readPdfPages, type TextLine } from "@/lib/pdf-preview"
 import { readTrackingFromBarcodes, readTrackingNumber, trackingNumberSchema } from "@/lib/tracking-numbers"
 import { cn } from "@/lib/utils"
 import { SelectControl } from "./form-select"
@@ -60,9 +61,11 @@ export type CarrierLabelInput = { cartonId: string; trackingNumber: string } & (
   | { file: number; page: number }
   | { documentId: string }
 )
-// A page of a carrier's PDF as the dialog reads it: its text, to find the tracking number, weight and size, a picture of
-// it, and the values of its barcodes when its text has no tracking number.
-export type CarrierLabelPage = { text: string; image?: string; barcodes?: string[] }
+// A page of a carrier's PDF as the dialog reads it: its text, to find the tracking number, weight and size, where that
+// text is printed, a picture of it, and the values of its barcodes when its text has no tracking number.
+export type CarrierLabelPage = { text: string; lines?: TextLine[]; image?: string; barcodes?: string[] }
+// The text on a page that's only a picture, read when its preview first opens.
+export type ReadPictureText = (file: File, page: number) => Promise<{ text: string; lines: TextLine[] }>
 
 // Each page of a PDF, with its barcodes read when its text gives no tracking number, as on UPS labels that are
 // pictures.
@@ -80,6 +83,10 @@ type CarrierLabel = {
   read: boolean
   // The weight and size the page prints, which place the label on its carton configuration when they fit only one.
   measured: LabelMeasurements
+  // Where the page's text is printed, to select and copy it from the preview's picture.
+  lines: TextLine[]
+  // A page with no text of its own is a picture, whose text is read when its preview first opens.
+  picture?: "unread" | "reading" | "read" | "unreadable"
 }
 // A carton configuration and its cartons' IDs.
 type Configuration = { ids: string[]; group: CartonGroup }
@@ -242,7 +249,7 @@ export function UploadCarrierLabels({
   revision: number
 } & Pick<
   React.ComponentProps<typeof CarrierLabelsDialog>,
-  "reference" | "shipmentName" | "cartons" | "saved" | "readPages"
+  "reference" | "shipmentName" | "cartons" | "saved" | "readPages" | "readPicture"
 >) {
   const t = useTranslations("shipments.carrierLabels")
   const router = useRouter()
@@ -292,6 +299,7 @@ export function CarrierLabelsDialog({
   cartons,
   saved,
   readPages = readLabelPages,
+  readPicture = readPictureText,
   onSave
 }: {
   open: boolean
@@ -303,6 +311,7 @@ export function CarrierLabelsDialog({
   saved: SavedCarrierLabel[]
   // Each page of a PDF, to split it into labels, show them and read their tracking numbers.
   readPages?: (file: File) => Promise<CarrierLabelPage[]>
+  readPicture?: ReadPictureText
   onSave: (labels: CarrierLabelInput[], files: File[]) => Promise<void>
 }) {
   const t = useTranslations("shipments.carrierLabels")
@@ -327,6 +336,7 @@ export function CarrierLabelsDialog({
           cartons={cartons}
           saved={saved}
           readPages={readPages}
+          readPicture={readPicture}
           onSave={onSave}
           onClose={() => onOpenChange(false)}
         />
@@ -339,12 +349,14 @@ function CarrierLabelsForm({
   cartons,
   saved,
   readPages,
+  readPicture,
   onSave,
   onClose
 }: {
   cartons: Packing["cartons"]
   saved: SavedCarrierLabel[]
   readPages: (file: File) => Promise<CarrierLabelPage[]>
+  readPicture: ReadPictureText
   onSave: (labels: CarrierLabelInput[], files: File[]) => Promise<void>
   onClose: () => void
 }) {
@@ -362,13 +374,21 @@ function CarrierLabelsForm({
       page: label.sourcePage,
       trackingNumber: label.trackingNumber ?? "",
       read: !!label.trackingNumber,
-      measured: {}
+      measured: {},
+      lines: []
     }))
   )
   // Each carton's label, by carton ID.
   const [placed, setPlaced] = useState<Record<string, string>>(() =>
     Object.fromEntries(kept.map((label) => [label.cartonId, label.documentId]))
   )
+  // The browser's PDF and barcode readers start loading as the dialog opens, so the first PDF dropped doesn't wait for
+  // them. Tesseract waits for a picture's preview.
+  useEffect(() => {
+    if (readPages === readLabelPages) {
+      preloadPdfReading()
+    }
+  }, [readPages])
   const [reading, setReading] = useState("")
   // Why a dropped file added no labels.
   const [error, setError] = useState("")
@@ -401,9 +421,35 @@ function CarrierLabelsForm({
     flushSync(() => setPreview(null))
     document.getElementById(focus)?.focus()
   }
+  // Opens a label's preview. A picture's text is read the first time, which gives what the page didn't: its tracking
+  // number when it has none yet, its weight and size, and text to copy.
+  const openPreview = (labelId: string) => {
+    setPreview(labelId)
+    readPictureOf(labelId)
+  }
   const addTracking = (labelId: string) => {
     flushSync(() => setPreview(labelId))
     document.getElementById(`${id}-${labelId}-tracking`)?.focus()
+    readPictureOf(labelId)
+  }
+  const change = (labelId: string, changed: (label: CarrierLabel) => Partial<CarrierLabel>) =>
+    setLabels((current) => current.map((label) => (label.id === labelId ? { ...label, ...changed(label) } : label)))
+  function readPictureOf(labelId: string) {
+    const label = labels.find((each) => each.id === labelId)
+    if (label?.picture !== "unread" || !("file" in label.source)) {
+      return
+    }
+    change(labelId, () => ({ picture: "reading" }))
+    readPicture(label.source.file, label.source.page).then(
+      ({ text, lines }) =>
+        change(labelId, (current) => ({
+          picture: "read",
+          lines,
+          trackingNumber: current.trackingNumber || (readTrackingNumber(text) ?? ""),
+          measured: { ...readLabelMeasurements(text), ...current.measured }
+        })),
+      () => change(labelId, () => ({ picture: "unreadable" }))
+    )
   }
 
   const byId = new Map(labels.map((label) => [label.id, label]))
@@ -446,6 +492,9 @@ function CarrierLabelsForm({
     }
     setReading(t("reading", { files: files.length, name: files[0]!.name }))
     const added: CarrierLabel[] = []
+    // A page whose tracking number is already here is a label added before, and is left out.
+    const tracked = new Set(labels.flatMap((label) => (label.trackingNumber ? [label.trackingNumber] : [])))
+    let repeated = 0
     for (const file of files) {
       let pages: CarrierLabelPage[]
       try {
@@ -456,6 +505,13 @@ function CarrierLabelsForm({
       }
       pages.forEach((page, index) => {
         const trackingNumber = readTrackingNumber(page.text) ?? readTrackingFromBarcodes(page.barcodes ?? [])
+        if (trackingNumber && tracked.has(trackingNumber)) {
+          repeated += 1
+          return
+        }
+        if (trackingNumber) {
+          tracked.add(trackingNumber)
+        }
         added.push({
           measured: readLabelMeasurements(page.text),
           id: crypto.randomUUID(),
@@ -464,11 +520,16 @@ function CarrierLabelsForm({
           page: pages.length > 1 ? index + 1 : null,
           image: page.image,
           trackingNumber: trackingNumber ?? "",
-          read: !!trackingNumber
+          read: !!trackingNumber,
+          lines: page.lines ?? [],
+          picture: page.text.trim() ? undefined : "unread"
         })
       })
     }
     setReading("")
+    if (repeated) {
+      setError(t("alreadyAdded", { labels: repeated }))
+    }
     setLabels((current) => [...current, ...added])
     setPlaced((current) =>
       placeByMeasurements(
@@ -506,8 +567,7 @@ function CarrierLabelsForm({
       }
       return next
     })
-  const setTracking = (labelId: string, trackingNumber: string) =>
-    setLabels((current) => current.map((label) => (label.id === labelId ? { ...label, trackingNumber } : label)))
+  const setTracking = (labelId: string, trackingNumber: string) => change(labelId, () => ({ trackingNumber }))
 
   async function save() {
     setSubmitted(true)
@@ -547,7 +607,7 @@ function CarrierLabelsForm({
     previewId,
     dragging: dragging ? (byId.get(dragging) ?? null) : null,
     lifted,
-    onPreview: setPreview,
+    onPreview: openPreview,
     onAddTracking: addTracking,
     onTracking: setTracking
   }
@@ -1247,12 +1307,21 @@ function LabelPreview({
       <div className="flex min-h-0 flex-1 flex-col gap-6 max-md:overflow-y-auto md:flex-row">
         <div className="flex shrink-0 justify-center rounded-lg bg-muted p-3 md:h-full">
           {label.image ? (
-            <img
-              src={label.image}
-              alt={t("pictureOf", { name: row.name(label) })}
-              draggable={false}
-              className="aspect-[2/3] w-full max-w-sm rounded-sm border bg-white object-contain shadow-xs md:h-full md:w-auto md:max-w-none"
-            />
+            <div className="relative aspect-[2/3] w-full max-w-sm md:h-full md:w-auto md:max-w-none">
+              <img
+                src={label.image}
+                alt={t("pictureOf", { name: row.name(label) })}
+                draggable={false}
+                className="size-full rounded-sm border bg-white object-contain shadow-xs"
+              />
+              <PrintedText lines={label.lines} />
+              {label.picture === "reading" && (
+                <output className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-md bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
+                  <LoaderCircle aria-hidden className="size-3.5 animate-spin" />
+                  {t("readingText")}
+                </output>
+              )}
+            </div>
           ) : (
             <div className="flex aspect-[2/3] w-full max-w-sm flex-col items-center justify-center gap-2 rounded-sm border bg-background p-4 text-center text-xs text-muted-foreground md:h-full md:w-auto md:max-w-none">
               <Barcode aria-hidden className="size-5" />
@@ -1314,5 +1383,31 @@ function LabelPreview({
         </div>
       </div>
     </section>
+  )
+}
+
+// The text printed on a label, laid invisibly over its picture where it's printed, to select and copy. Each line is as
+// tall as it's printed, in units of the picture's height.
+function PrintedText({ lines }: { lines: TextLine[] }) {
+  return (
+    !!lines.length && (
+      <div aria-hidden className="absolute inset-0 overflow-hidden [container-type:size]">
+        {lines.map((line) => (
+          <span
+            key={`${line.x},${line.y},${line.text}`}
+            className="absolute cursor-text leading-none whitespace-pre text-transparent selection:bg-primary/30"
+            style={{
+              left: `${line.x * 100}%`,
+              top: `${line.y * 100}%`,
+              width: `${line.width * 100}%`,
+              height: `${line.height * 100}%`,
+              fontSize: `${line.height * 100}cqh`
+            }}
+          >
+            {line.text}
+          </span>
+        ))}
+      </div>
+    )
   )
 }

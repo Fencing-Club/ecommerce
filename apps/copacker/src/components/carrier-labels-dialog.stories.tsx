@@ -3,10 +3,13 @@ import { http, HttpResponse } from "msw/http"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { readPictureText } from "@/lib/label-text"
 import {
   type ExampleLabel,
   exampleBarcodes,
+  exampleLines,
   examplePicture,
+  examplePrintedText,
   exampleText,
   fewLabels,
   shipmentLabels
@@ -17,6 +20,7 @@ import {
   type CarrierLabelPage,
   CarrierLabelsDialog,
   readLabelPages,
+  type ReadPictureText,
   type SavedCarrierLabel,
   UploadCarrierLabels
 } from "./carrier-labels-dialog"
@@ -39,21 +43,32 @@ const cartons = [
 // A small one: two cartons of the first configuration and one of the second.
 const fewCartons = [carton("A1", 40, 12.4, 24), carton("A2", 40, 12.4, 24), carton("B1", 50, 15.2, 30)]
 
-// The example labels (stories/fixtures/carrier-labels.ts). Stories never read PDFs: the dialog gets each page's text, a
-// drawing of it and its barcodes' values through `readPages`, except in Example PDFs.
+// The example labels (stories/fixtures/carrier-labels.ts). Stories never read PDFs: the dialog gets each page's text and
+// where it's printed, a drawing of it and its barcodes' values through `readPages`, and the text on a picture through
+// `readPicture`, except in Example PDFs.
 const examples: Record<string, ExampleLabel[]> = { ...shipmentLabels, ...fewLabels }
-// A UPS label scanned too faintly for its barcodes to be read, so nothing on it gives its tracking number.
+// A UPS label scanned too faintly for its barcodes or its text to be read, so nothing on it gives its tracking number.
 const faint = "faint-ups-label.pdf"
+// A UPS label whose barcodes are smudged, though its text can still be read.
+const smudged = "smudged-ups-label.pdf"
+const scanned: Record<string, string> = { [faint]: "ups-3-day-select-1.pdf", [smudged]: "ups-3-day-select-2.pdf" }
 const readPages = async (file: File): Promise<CarrierLabelPage[]> => {
-  const found = examples[file.name === faint ? "ups-3-day-select-1.pdf" : file.name]
+  const found = examples[scanned[file.name] ?? file.name]
   if (!found) {
     throw new Error("Unreadable PDF")
   }
   return found.map((label) => ({
     text: exampleText(label),
+    lines: exampleText(label) ? exampleLines(label) : [],
     image: examplePicture(label),
-    barcodes: file.name === faint ? [] : exampleBarcodes(label)
+    barcodes: scanned[file.name] ? [] : exampleBarcodes(label)
   }))
+}
+// Reading a picture's text gives what's printed on it, a moment later, except on the faint scan.
+const readPicture: ReadPictureText = async (file, page) => {
+  const label = file.name === faint ? undefined : examples[scanned[file.name] ?? file.name]?.[page - 1]
+  await new Promise((resolve) => setTimeout(resolve, 300))
+  return label ? { text: examplePrintedText(label), lines: exampleLines(label) } : { text: "", lines: [] }
 }
 const first = "shopify-labels-1.pdf"
 const second = "shopify-labels-2.pdf"
@@ -86,6 +101,7 @@ const meta = preview.meta({
     cartons,
     saved: [],
     readPages,
+    readPicture,
     onSave: fn<Save>(async () => undefined)
   }
 })
@@ -226,7 +242,7 @@ export const ManyLabels = meta.story({
 })
 
 // A small shipment's labels, a PDF each from FedEx, USPS and DHL. Each fits only one carton configuration, so they go
-// straight onto the cartons, and saving sends them to the supplier.
+// straight onto the cartons, and saving sends them to the supplier. A PDF dropped again adds no label.
 export const FewLabels = meta.story({
   args: { cartons: fewCartons },
   play: async ({ args }) => {
@@ -235,6 +251,9 @@ export const FewLabels = meta.story({
     await expect(await within(cartonRow("A1")).findByText(tracking("fedex-home-delivery.pdf"))).toBeVisible()
     await expect(within(cartonRow("A2")).getByText(tracking("usps-priority-mail.pdf"))).toBeVisible()
     await expect(within(cartonRow("B1")).getByText(tracking("dhl-ecommerce.pdf"))).toBeVisible()
+    await expect(within(notPlaced()).getByText("Drop the carrier’s PDFs here")).toBeVisible()
+    dropFiles(fewPdfs().slice(0, 1))
+    await expect(await within(dialog).findByText("1 label was already added, so it was skipped.")).toBeVisible()
     await expect(within(notPlaced()).getByText("Drop the carrier’s PDFs here")).toBeVisible()
     await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
     await waitFor(() =>
@@ -432,13 +451,37 @@ export const AddTrackingNumber = meta.story({
   }
 })
 
+// A UPS label whose barcodes are smudged has no tracking number until its text is read, when Add opens its preview.
+// The number printed on it fills the field, and its weight and size fill in. Its text can be selected over its
+// picture. Ends with the label ready to go on a carton.
+export const ReadTextFromPicture = meta.story({
+  args: { cartons: fewCartons },
+  play: async () => {
+    const dialog = await shown()
+    dropFiles([pdf(smudged)])
+    await userEvent.click(
+      await within(notPlaced()).findByRole("button", { name: `Add the tracking number for ${smudged}` })
+    )
+    await expect(within(dialog).getByText("Reading the label’s text")).toBeVisible()
+    const field = within(dialog).getByRole("textbox", { name: `Tracking number for ${smudged}` })
+    await waitFor(() => expect(field).toHaveValue(tracking("ups-3-day-select-2.pdf")))
+    await expect(within(dialog).getByText("Tracking number recognized.")).toBeVisible()
+    await expect(within(dialog).getByText("UPS")).toBeVisible()
+    await expect(within(dialog).getByText("15.4 kg")).toBeVisible()
+    await expect(within(dialog).getByText("61 × 51 × 41 cm")).toBeVisible()
+    await expect(within(dialog).getByText(/^TRACKING #: 1Z/)).toBeVisible()
+    await expect(within(dialog).getByRole("combobox", { name: "Carton" })).toBeEnabled()
+  }
+})
+
 // 10.13: a label's picture opens it at the dialog's full height, with what was read from it. The arrows step through
 // the list it's in, and the Carton field puts it on a carton without dragging.
 export const Preview = meta.story({
   play: async () => {
     const dialog = await shown()
     await dropShipment()
-    // A UPS picture gives its tracking number through its barcode, but not the weight and size it prints.
+    // A UPS picture gives its tracking number through its barcode. Its text is read once its preview opens, which gives
+    // the weight and size it prints, and text to copy over its picture.
     await userEvent.click(within(notPlaced()).getByRole("button", { name: `Preview ${tracking(first, 4)}` }))
     await expect(await within(dialog).findByRole("heading", { name: "shopify-labels-1.pdf, page 4" })).toHaveFocus()
     await expect(within(dialog).getByRole("img", { name: "Label from shopify-labels-1.pdf, page 4" })).toBeVisible()
@@ -446,7 +489,11 @@ export const Preview = meta.story({
     await expect(within(dialog).getByRole("button", { name: "Previous label" })).toBeDisabled()
     await expect(within(dialog).getByText(tracking(first, 4))).toBeVisible()
     await expect(within(dialog).getByText("UPS")).toBeVisible()
-    await expect(within(dialog).getAllByText("Not read")).toHaveLength(2)
+    await expect(within(dialog).getByText("Reading the label’s text")).toBeVisible()
+    await expect(await within(dialog).findByText("12.7 kg")).toBeVisible()
+    await expect(within(dialog).getByText("61 × 41 × 41 cm")).toBeVisible()
+    await expect(within(dialog).queryByText("Reading the label’s text")).toBeNull()
+    await expect(within(dialog).getByText(/^TRACKING #: 1Z/)).toBeVisible()
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Next label" }))
     await userEvent.click(within(dialog).getByRole("button", { name: "Next label" }))
@@ -569,11 +616,12 @@ export const UploadLabelsFromThePage = meta.story({
 })
 
 // The example PDFs themselves, read as the browser reads them: pdf.js gives each page's text and picture, the UPS
-// pictures' barcodes give their tracking numbers, and the labels that fit go on their cartons. Reading PDFs is slow, so
-// test runs leave this story out (vitest.config.ts); it's for trying the dialog by hand.
+// pictures' barcodes give their tracking numbers, and the labels that fit go on their cartons. A UPS picture's preview
+// reads its text with Tesseract. Reading PDFs is slow, so test runs leave this story out (vitest.config.ts); it's for
+// trying the dialog by hand.
 export const ExamplePdfs = meta.story({
   tags: ["documents"],
-  render: (args) => <CarrierLabelsDialog {...args} readPages={readLabelPages} />,
+  render: (args) => <CarrierLabelsDialog {...args} readPages={readLabelPages} readPicture={readPictureText} />,
   play: async () => {
     await shown()
     const files = await Promise.all(

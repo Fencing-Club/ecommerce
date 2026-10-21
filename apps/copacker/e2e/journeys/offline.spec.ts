@@ -89,8 +89,8 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByRole("region", { name: "Carton A1", exact: true })).toContainText("GRIP-L")
     await expect(page.getByRole("region", { name: "Carton B1", exact: true })).toContainText("GRIP-R")
     await expect(page.getByText("200 Factory Road")).toBeVisible()
-    await expect(page.getByRole("note").filter({ hasText: "Supplier packet ready" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Download supplier packet" })).toHaveAttribute(
+    // The supplier packet is among the shipment's documents.
+    await expect(page.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute(
       "href",
       /\/shipments\/[0-9a-f-]{36}\/packet$/
     )

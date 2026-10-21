@@ -261,13 +261,35 @@ export function exampleLayout(label: ExampleLabel): LayoutItem[] {
 // Whether a label is only a picture, as UPS labels bought through Shopify are.
 export const isPicture = ({ carrier }: ExampleLabel) => carrier === "ups-ground" || carrier === "ups-3-day"
 
-// What reading the page's text gives: a line for each run of text, and nothing for a picture.
-export function exampleText(label: ExampleLabel) {
-  return isPicture(label)
-    ? ""
-    : exampleLayout(label)
-        .flatMap((item) => (item.kind === "text" ? [item.text] : []))
-        .join("\n")
+// The text printed on the page, a line for each run of it, as reading a page or a picture of it gives.
+export function examplePrintedText(label: ExampleLabel) {
+  return exampleLayout(label)
+    .flatMap((item) => (item.kind === "text" ? [item.text] : []))
+    .join("\n")
+}
+
+// What reading the page's text gives: its printed text, and nothing for a picture.
+export const exampleText = (label: ExampleLabel) => (isPicture(label) ? "" : examplePrintedText(label))
+
+// Where each run of text is printed, as fractions of the page from its top left, as reading a page or a picture of it
+// gives. Its letters average a little over half their size across, as Helvetica's do.
+type PrintedLine = { text: string; x: number; y: number; width: number; height: number }
+export function exampleLines(label: ExampleLabel): PrintedLine[] {
+  return exampleLayout(label).flatMap((item) => {
+    if (item.kind !== "text") {
+      return []
+    }
+    const width = item.text.length * item.size * 0.56
+    return [
+      {
+        text: item.text,
+        x: (item.center ? item.x - width / 2 : item.x) / pageSize.width,
+        y: (item.y - item.size * 0.8) / pageSize.height,
+        width: width / pageSize.width,
+        height: item.size / pageSize.height
+      }
+    ]
+  })
 }
 
 // The values of the page's Code 128 barcodes, as reading them gives.
