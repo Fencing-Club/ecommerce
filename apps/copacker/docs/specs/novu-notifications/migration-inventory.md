@@ -64,10 +64,11 @@ and plain text. The direct-send paths below have different locale rules.
 - **Identity:** `po:{orderId}:{revision}` with conflict suppression; the separately queued Shopify job is not an alert.
 - **Novu mapping:** `purchase-order-revised`, invoice-approval reason; retain transactional publication.
 
-### Explicit shipment release
+### Shipment labels sent
 
-- **Trigger/source:** `shipment.release` in [current action handler](../../../src/app/api/action/route.ts), or
-  `src/server/http/api/action.ts` on PR 43. Requires buyer, Shipments: Edit and release-readiness checks.
+- **Trigger/source:** `sendLabelsWhenComplete` in `src/server/label-release.ts`, once a shipment waiting for labels has
+  nothing missing: after Amazon's labels arrive, the buyer saves carrier labels or transport, or uploads a product
+  barcode. There's no buyer release step.
 - **Recipient:** supplier email only when `supplierOrgId` and email exist. Otherwise the buyer shares the packet.
 - **Channel/template:** queued `ready`, Resend, `labelsReadyEmail`, `emails.labelsReady.*`, shared reader locale.
 - **Links/attachments:** `/shipments/{shipmentId}`, with carton count, destination, ready date and Amazon shipment IDs.

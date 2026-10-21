@@ -71,7 +71,7 @@
     "productLabel": "Etiqueta de producto",
     "cartonLabels": "Etiquetas de cajas",
     "palletLabels": "Etiquetas de tarima",
-    "shippingLabels": "Etiquetas de envío"
+    "shippingLabels": "Etiquetas del transportista"
   },
   "format": {
     "plusAmounts": "Más {amounts}",
@@ -118,27 +118,6 @@
     "remove": "Quitar {name}",
     "replaceFile": "Reemplazar {name}",
     "replace": "Reemplazar"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "Factura comercial oficial",
-      "productLabels": "Etiquetas de producto",
-      "shippingLabels": "Etiquetas de envío de la paquetería"
-    },
-    "chooseVariationError": "Elige una variante del producto",
-    "enterLabelPage": "Ingresa la página de etiqueta de al menos una caja",
-    "failed": "No se pudo subir. Inténtalo de nuevo.",
-    "choosePdf": "Elige un PDF",
-    "variation": "Variante del producto",
-    "chooseVariation": "Elige una variante",
-    "productLabelHint": "Una hoja de etiquetas por variante, hasta 32 MB",
-    "uploading": "Subiendo",
-    "uploaded": "Subido",
-    "upload": "Subir",
-    "labelPages": "Página de etiqueta de cada caja",
-    "labelPagesDescription": "Deja una caja en blanco si su etiqueta está en otro archivo",
-    "carton": "Caja {carton}",
-    "page": "Página"
   },
   "ui": {
     "close": "Cerrar",

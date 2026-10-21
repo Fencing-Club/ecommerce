@@ -9,7 +9,7 @@
     "missingPackingList": "Générez la liste de colisage à jour avant de transmettre les étiquettes",
     "missingChecklist": "Générez la liste de contrôle à jour avant de transmettre les étiquettes",
     "missingCartonLabel": "L’étiquette du carton {carton} est manquante",
-    "missingShippingLabel": "Attribuez une étiquette d’expédition au carton {carton}",
+    "missingShippingLabel": "Ajoutez une étiquette du transporteur au carton {carton}",
     "missingPalletLabels": "Les étiquettes de palette sont manquantes",
     "missingProductLabel": "Ajoutez une étiquette produit pour {sku} sur la page Produits",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "Palette {pallet} : les palettes {receiver} doivent peser au plus {maxLb, number} lb ({maxKg, number} kg), palette comprise"
     },
     "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi.",
-    "missingTransport": "Transport non confirmé"
+    "missingTransport": "Transport non confirmé",
+    "missingTrackingNumber": "Ajoutez le numéro de suivi de l’étiquette du transporteur du carton {carton}"
   },
   "workflow": {
     "arrived": "Les marchandises sont arrivées",
@@ -50,7 +51,6 @@
     "approval": "Vérifiez les prix et les SKU fournisseur proposés par le fournisseur",
     "processing": "Amazon traite l’expédition et les étiquettes de carton",
     "labels": "Réservez le transport et ajoutez les documents manquants ci-dessous",
-    "release": "Saisissez la référence de réservation et transmettez le dossier fournisseur",
     "ship": "Imprimez le dossier, emballez les cartons et marquez-les comme expédiés",
     "forward": "Le transitaire réexpédie les marchandises et ajoute le coût du fret, le transporteur et le suivi",
     "receive": "Marquez les marchandises comme reçues à leur arrivée",

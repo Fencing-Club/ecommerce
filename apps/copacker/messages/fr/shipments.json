@@ -51,8 +51,7 @@
       "waitingForBuyer": "En attente de l’approbation de l’acheteur"
     },
     "labels": {
-      "title": "Étiquettes",
-      "waiting": "En attente des étiquettes"
+      "heldBack": "Avant l’envoi des étiquettes au fournisseur"
     },
     "creating": {
       "title": "Création de l’expédition Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Dossier fournisseur prêt",
-      "description": "Imprimez les étiquettes en taille réelle.",
-      "downloadLabel": "Télécharger le dossier fournisseur",
-      "download": "Télécharger le dossier",
+      "downloadLabel": "Télécharger le dossier de l’envoi",
       "incompleteTitle": "Dossier fournisseur incomplet",
       "waitingForLabels": "En attente des étiquettes de l’acheteur",
       "cartonLabels": "Étiquettes de carton",
       "unitLabels": "Étiquettes produit",
       "carrierLabels": "Étiquettes du transporteur",
       "palletLabels": "Étiquettes de palette",
-      "backToShipment": "Retour à l’expédition"
+      "backToShipment": "Retour à l’expédition",
+      "document": "Dossier de l’envoi",
+      "documentDescription": "Tous les documents de l’envoi"
     },
     "cartons": {
       "title": "Cartons",
@@ -111,10 +110,6 @@
       "updateCost": "Mettre aussi à jour les coûts unitaires Shopify",
       "updateCostDescription": "Les coûts Shopify doivent être dans la devise du bon de commande.",
       "submit": "Approuver les modifications"
-    },
-    "release": {
-      "submit": "Transmettre les étiquettes au fournisseur",
-      "bookingReference": "Référence de réservation du transport Amazon"
     },
     "correction": {
       "trigger": "Demander une correction",
@@ -233,5 +228,33 @@
     "suffocation": "Étiquettes d’avertissement d’étouffement",
     "choking": "Étiquettes de risque d’étouffement",
     "notProvided": "Étiquette non fournie"
+  },
+  "carrierLabels": {
+    "title": "Importer les étiquettes du transporteur",
+    "upload": "Importer les étiquettes",
+    "intro": "Déposez l’étiquette de chaque carton sur sa ligne. Pour en ajouter plusieurs à la fois, déposez leurs PDF, ou un PDF avec une page par étiquette, sur le premier carton concerné. Elles remplissent les cartons dans l’ordre des noms de fichier et des pages.",
+    "prompt": "Déposez un PDF ou <browse>parcourez</browse>",
+    "tryAgain": "Déposez le PDF du transporteur ou <browse>parcourez</browse>",
+    "browseFor": "Choisir un PDF pour {carton}",
+    "dropToAdd": "Déposez pour ajouter l’étiquette de {carton}",
+    "dropToReplace": "Déposez pour remplacer l’étiquette de {carton}",
+    "reading": "{files, plural, =1 {Lecture de {name}} other {Lecture de # PDF}}",
+    "source": "{name}, page {page}",
+    "savedLabel": "Étiquette enregistrée",
+    "tracking": "Suivi {number}",
+    "trackingNumber": "Numéro de suivi",
+    "trackingNotRead": "Impossible de lire un numéro de suivi sur cette page. Saisissez-le depuis l’étiquette.",
+    "trackingInvalid": "Saisissez le numéro de suivi tel qu’il est imprimé sur l’étiquette.",
+    "remove": "Retirer l’étiquette de {carton}",
+    "notPdf": "{name} n’est pas un PDF.",
+    "unreadable": "Impossible de lire {name}.",
+    "tooManyLabels": "Vous avez déposé {labels, plural, one {# étiquette} other {# étiquettes}}, mais il y a {cartons, plural, one {# carton} other {# cartons}} à partir de {carton}. Vérifiez qu’il s’agit des étiquettes de cet envoi.",
+    "progress": "{count, plural, one {# carton} other {# cartons}} sur {total} {count, plural, one {a} other {ont}} une étiquette",
+    "complete": "Chaque carton a une étiquette. L’enregistrement les envoie au fournisseur.",
+    "cancel": "Annuler",
+    "save": "Enregistrer les étiquettes",
+    "failed": "Les étiquettes n’ont pas été enregistrées. Réessayez.",
+    "saved": "Étiquettes du transporteur enregistrées",
+    "sent": "Étiquettes du transporteur envoyées au fournisseur"
   }
 }

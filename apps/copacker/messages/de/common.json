@@ -119,27 +119,6 @@
     "replaceFile": "{name} ersetzen",
     "replace": "Ersetzen"
   },
-  "upload": {
-    "titles": {
-      "invoice": "Offizielle Handelsrechnung",
-      "productLabels": "Produktetiketten",
-      "shippingLabels": "Versandetiketten des Transporteurs"
-    },
-    "chooseVariationError": "Wählen Sie eine Produktvariante",
-    "enterLabelPage": "Geben Sie für mindestens einen Karton die Etikettenseite ein",
-    "failed": "Hochladen fehlgeschlagen. Versuchen Sie es erneut.",
-    "choosePdf": "Wählen Sie eine PDF-Datei",
-    "variation": "Produktvariante",
-    "chooseVariation": "Variante auswählen",
-    "productLabelHint": "Ein Etikettenbogen pro Variante, bis 32 MB",
-    "uploading": "Wird hochgeladen",
-    "uploaded": "Hochgeladen",
-    "upload": "Hochladen",
-    "labelPages": "Etikettenseite für jeden Karton",
-    "labelPagesDescription": "Lassen Sie einen Karton leer, wenn sein Etikett in einer anderen Datei ist",
-    "carton": "Karton {carton}",
-    "page": "Seite"
-  },
   "ui": {
     "close": "Schließen",
     "toggleSidebar": "Seitenleiste ein-/ausblenden",

@@ -231,15 +231,22 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
         message: t("readiness.missingCartonLabel", { carton: carton.cartonId })
       })
     }
-    if (
-      shipmentLabelRequirements(shipment.snapshot!.destination, shipment.transport).carrierLabels &&
-      !current.some((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)
-    ) {
-      issues.push({
-        code: "missing_shipping_label",
-        cartonId: carton.cartonId,
-        message: t("readiness.missingShippingLabel", { carton: carton.cartonId })
-      })
+    // The supplier packet lists each carrier label's tracking number for its carton.
+    const carrierLabel = current.find((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)
+    if (shipmentLabelRequirements(shipment.snapshot!.destination, shipment.transport).carrierLabels) {
+      if (!carrierLabel) {
+        issues.push({
+          code: "missing_shipping_label",
+          cartonId: carton.cartonId,
+          message: t("readiness.missingShippingLabel", { carton: carton.cartonId })
+        })
+      } else if (!carrierLabel.trackingNumber) {
+        issues.push({
+          code: "missing_tracking_number",
+          cartonId: carton.cartonId,
+          message: t("readiness.missingTrackingNumber", { carton: carton.cartonId })
+        })
+      }
     }
   }
   // Amazon labels an FBA shipment's pallets with its cartons, four labels for each pallet.

@@ -20,6 +20,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { PollAgain } from "./job-handlers"
+import { sendLabelsWhenComplete } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
 
@@ -541,4 +542,6 @@ export async function fbaShipmentJob(
   await assertOwned()
   await assertOwned()
   await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
+  // A shipment that needs nothing more from the buyer goes straight to its supplier.
+  await sendLabelsWhenComplete(shipment.id, "amazon")
 }

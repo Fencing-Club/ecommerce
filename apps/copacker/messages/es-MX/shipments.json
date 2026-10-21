@@ -51,8 +51,7 @@
       "waitingForBuyer": "Esperando la aprobación del comprador"
     },
     "labels": {
-      "title": "Etiquetas",
-      "waiting": "Esperando etiquetas"
+      "heldBack": "Antes de que las etiquetas lleguen al proveedor"
     },
     "creating": {
       "title": "Creando el envío de Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Paquete de documentos listo",
-      "description": "Imprime las etiquetas a tamaño real.",
-      "downloadLabel": "Descargar paquete de documentos del proveedor",
-      "download": "Descargar paquete de documentos",
+      "downloadLabel": "Descargar paquete del envío",
       "incompleteTitle": "Paquete de documentos incompleto",
       "waitingForLabels": "Esperando las etiquetas del comprador",
       "cartonLabels": "Etiquetas de cajas",
       "unitLabels": "Etiquetas de productos",
       "carrierLabels": "Etiquetas del transportista",
       "palletLabels": "Etiquetas de tarima",
-      "backToShipment": "Volver al envío"
+      "backToShipment": "Volver al envío",
+      "document": "Paquete del envío",
+      "documentDescription": "Todos los documentos del envío"
     },
     "cartons": {
       "title": "Cajas",
@@ -111,10 +110,6 @@
       "updateCost": "Actualizar también los costos unitarios en Shopify",
       "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra.",
       "submit": "Aprobar cambios"
-    },
-    "release": {
-      "submit": "Liberar etiquetas al proveedor",
-      "bookingReference": "Referencia de reserva del transporte de Amazon"
     },
     "correction": {
       "trigger": "Solicitar una corrección",
@@ -233,5 +228,33 @@
     "suffocation": "Etiquetas de advertencia de asfixia",
     "choking": "Etiquetas de peligro de asfixia por piezas pequeñas",
     "notProvided": "Etiqueta no proporcionada"
+  },
+  "carrierLabels": {
+    "title": "Subir etiquetas del transportista",
+    "upload": "Subir etiquetas",
+    "intro": "Suelta la etiqueta de cada caja en su fila. Para agregar varias a la vez, suelta sus PDF, o un PDF con una página por etiqueta, en la primera caja que les corresponde. Llenan las cajas en orden de nombre de archivo y página.",
+    "prompt": "Suelta un PDF o <browse>búscalo</browse>",
+    "tryAgain": "Suelta el PDF del transportista o <browse>búscalo</browse>",
+    "browseFor": "Elegir un PDF para {carton}",
+    "dropToAdd": "Suelta para agregar la etiqueta de {carton}",
+    "dropToReplace": "Suelta para reemplazar la etiqueta de {carton}",
+    "reading": "{files, plural, =1 {Leyendo {name}} other {Leyendo # PDF}}",
+    "source": "{name}, página {page}",
+    "savedLabel": "Etiqueta guardada",
+    "tracking": "Rastreo {number}",
+    "trackingNumber": "Número de rastreo",
+    "trackingNotRead": "No se pudo leer un número de rastreo en esta página. Escríbelo desde la etiqueta.",
+    "trackingInvalid": "Escribe el número de rastreo tal como aparece en la etiqueta.",
+    "remove": "Quitar la etiqueta de {carton}",
+    "notPdf": "{name} no es un PDF.",
+    "unreadable": "No se pudo leer {name}.",
+    "tooManyLabels": "Soltaste {labels, plural, one {# etiqueta} other {# etiquetas}}, pero desde {carton} hay {cartons, plural, one {# caja} other {# cajas}}. Revisa que sean las etiquetas de este envío.",
+    "progress": "{count} de {total} {total, plural, one {caja tiene} other {cajas tienen}} etiqueta",
+    "complete": "Todas las cajas tienen etiqueta. Al guardar, se envían al proveedor.",
+    "cancel": "Cancelar",
+    "save": "Guardar etiquetas",
+    "failed": "No se guardaron las etiquetas. Inténtalo de nuevo.",
+    "saved": "Etiquetas del transportista guardadas",
+    "sent": "Etiquetas del transportista enviadas al proveedor"
   }
 }

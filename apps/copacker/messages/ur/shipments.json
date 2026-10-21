@@ -51,8 +51,7 @@
       "waitingForBuyer": "خریدار کی منظوری کا انتظار"
     },
     "labels": {
-      "title": "لیبل",
-      "waiting": "لیبل کا انتظار"
+      "heldBack": "لیبل سپلائر کو جانے سے پہلے"
     },
     "creating": {
       "title": "Amazon شپمنٹ بنائی جا رہی ہے",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "سپلائر پیکٹ تیار ہے",
-      "description": "لیبلز اصل سائز میں پرنٹ کریں۔",
-      "downloadLabel": "سپلائر پیکٹ ڈاؤن لوڈ کریں",
-      "download": "پیکٹ ڈاؤن لوڈ کریں",
+      "downloadLabel": "شپمنٹ پیکٹ ڈاؤن لوڈ کریں",
       "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
       "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے",
       "cartonLabels": "کارٹن لیبل",
       "unitLabels": "مصنوعات کے لیبل",
       "carrierLabels": "کیریئر لیبل",
       "palletLabels": "پیلٹ لیبل",
-      "backToShipment": "شپمنٹ پر واپس جائیں"
+      "backToShipment": "شپمنٹ پر واپس جائیں",
+      "document": "شپمنٹ پیکٹ",
+      "documentDescription": "شپمنٹ کی تمام دستاویزات"
     },
     "cartons": {
       "title": "کارٹن",
@@ -111,10 +110,6 @@
       "updateCost": "Shopify میں یونٹ لاگت بھی اپ ڈیٹ کریں",
       "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے۔",
       "submit": "تبدیلیاں منظور کریں"
-    },
-    "release": {
-      "submit": "لیبلز سپلائر کو جاری کریں",
-      "bookingReference": "Amazon ٹرانسپورٹ بکنگ ریفرنس"
     },
     "correction": {
       "trigger": "درستگی کی درخواست کریں",
@@ -233,5 +228,33 @@
     "suffocation": "دم گھٹنے کی وارننگ والے لیبل",
     "choking": "چھوٹے حصوں سے دم گھٹنے کے خطرے کے لیبل",
     "notProvided": "لیبل فراہم نہیں کیا گیا"
+  },
+  "carrierLabels": {
+    "title": "کیریئر لیبل اپ لوڈ کریں",
+    "upload": "لیبل اپ لوڈ کریں",
+    "intro": "ہر کارٹن کا لیبل اس کی قطار پر ڈالیں۔ ایک ساتھ کئی لیبل شامل کرنے کے لیے ان کی PDF فائلیں، یا ہر لیبل کے لیے ایک صفحے والی ایک PDF، اس پہلے کارٹن پر ڈالیں جس کے لیے وہ ہیں۔ وہ فائل کے نام اور صفحے کی ترتیب سے کارٹن بھر دیں گے۔",
+    "prompt": "PDF یہاں ڈالیں یا <browse>براؤز کریں</browse>",
+    "tryAgain": "کیریئر کا PDF ڈالیں یا <browse>براؤز کریں</browse>",
+    "browseFor": "{carton} کے لیے PDF منتخب کریں",
+    "dropToAdd": "{carton} کا لیبل شامل کرنے کے لیے چھوڑیں",
+    "dropToReplace": "{carton} کا لیبل بدلنے کے لیے چھوڑیں",
+    "reading": "{files, plural, =1 {{name} پڑھا جا رہا ہے} other {# PDF پڑھی جا رہی ہیں}}",
+    "source": "{name}، صفحہ {page}",
+    "savedLabel": "محفوظ شدہ لیبل",
+    "tracking": "ٹریکنگ {number}",
+    "trackingNumber": "ٹریکنگ نمبر",
+    "trackingNotRead": "اس صفحے سے ٹریکنگ نمبر نہیں پڑھا جا سکا۔ لیبل سے درج کریں۔",
+    "trackingInvalid": "ٹریکنگ نمبر ویسے ہی درج کریں جیسے لیبل پر چھپا ہے۔",
+    "remove": "{carton} کا لیبل ہٹائیں",
+    "notPdf": "{name} PDF نہیں ہے۔",
+    "unreadable": "{name} پڑھا نہیں جا سکا۔",
+    "tooManyLabels": "{labels, plural, one {آپ نے # لیبل ڈالا} other {آپ نے # لیبل ڈالے}}، لیکن {carton} سے آگے {cartons, plural, one {# کارٹن ہے} other {# کارٹن ہیں}}۔ چیک کریں کہ یہ اسی شپمنٹ کے لیبل ہیں۔",
+    "progress": "{total} میں سے {count} کارٹن پر لیبل ہے",
+    "complete": "ہر کارٹن پر لیبل ہے۔ محفوظ کرنے پر یہ سپلائر کو بھیج دیے جائیں گے۔",
+    "cancel": "منسوخ کریں",
+    "save": "لیبل محفوظ کریں",
+    "failed": "لیبل محفوظ نہیں ہوئے۔ دوبارہ کوشش کریں۔",
+    "saved": "کیریئر لیبل محفوظ ہو گئے",
+    "sent": "کیریئر لیبل سپلائر کو بھیج دیے گئے"
   }
 }

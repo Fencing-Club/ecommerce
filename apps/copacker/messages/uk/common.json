@@ -71,7 +71,7 @@
     "productLabel": "Етикетка товару",
     "cartonLabels": "Етикетки коробок",
     "palletLabels": "Етикетки палет",
-    "shippingLabels": "Транспортні етикетки"
+    "shippingLabels": "Етикетки перевізника"
   },
   "format": {
     "plusAmounts": "Плюс {amounts}",
@@ -118,27 +118,6 @@
     "remove": "Видалити {name}",
     "replaceFile": "Замінити {name}",
     "replace": "Замінити"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "Офіційний комерційний рахунок",
-      "productLabels": "Етикетки товарів",
-      "shippingLabels": "Транспортні етикетки перевізника"
-    },
-    "chooseVariationError": "Виберіть варіант товару",
-    "enterLabelPage": "Вкажіть сторінку етикетки хоча б для однієї коробки",
-    "failed": "Не вдалося завантажити. Спробуйте ще раз.",
-    "choosePdf": "Виберіть PDF",
-    "variation": "Варіант товару",
-    "chooseVariation": "Виберіть варіант",
-    "productLabelHint": "Один аркуш етикеток на варіант, до 32 МБ",
-    "uploading": "Завантаження",
-    "uploaded": "Завантажено",
-    "upload": "Завантажити",
-    "labelPages": "Сторінка етикетки для кожної коробки",
-    "labelPagesDescription": "Залиште поле порожнім, якщо етикетка коробки в іншому файлі",
-    "carton": "Коробка {carton}",
-    "page": "Сторінка"
   },
   "ui": {
     "close": "Закрити",

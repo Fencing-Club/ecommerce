@@ -71,7 +71,7 @@
     "productLabel": "Product label",
     "cartonLabels": "Carton labels",
     "palletLabels": "Pallet labels",
-    "shippingLabels": "Shipping labels"
+    "shippingLabels": "Carrier labels"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",
@@ -118,27 +118,6 @@
     "remove": "Remove {name}",
     "replaceFile": "Replace {name}",
     "replace": "Replace"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "Official commercial invoice",
-      "productLabels": "Product labels",
-      "shippingLabels": "Carrier shipping labels"
-    },
-    "chooseVariationError": "Choose a product variation",
-    "enterLabelPage": "Enter the label page for at least one carton",
-    "failed": "Upload failed. Try again.",
-    "choosePdf": "Choose a PDF",
-    "variation": "Product variation",
-    "chooseVariation": "Choose a variation",
-    "productLabelHint": "One label sheet per variation, up to 32 MB",
-    "uploading": "Uploading",
-    "uploaded": "Uploaded",
-    "upload": "Upload",
-    "labelPages": "Label page for each carton",
-    "labelPagesDescription": "Leave a carton blank if its label is in another file",
-    "carton": "Carton {carton}",
-    "page": "Page"
   },
   "ui": {
     "close": "Close",

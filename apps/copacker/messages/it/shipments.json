@@ -51,8 +51,7 @@
       "waitingForBuyer": "In attesa dell’approvazione dell’acquirente"
     },
     "labels": {
-      "title": "Etichette",
-      "waiting": "In attesa delle etichette"
+      "heldBack": "Prima che le etichette arrivino al fornitore"
     },
     "creating": {
       "title": "Creazione della spedizione Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Pacchetto fornitore pronto",
-      "description": "Stampa le etichette a dimensione reale.",
-      "downloadLabel": "Scarica il pacchetto fornitore",
-      "download": "Scarica pacchetto",
+      "downloadLabel": "Scarica il pacchetto della spedizione",
       "incompleteTitle": "Pacchetto fornitore incompleto",
       "waitingForLabels": "In attesa delle etichette dell’acquirente",
       "cartonLabels": "Etichette cartoni",
       "unitLabels": "Etichette prodotti",
       "carrierLabels": "Etichette del corriere",
       "palletLabels": "Etichette dei pallet",
-      "backToShipment": "Torna alla spedizione"
+      "backToShipment": "Torna alla spedizione",
+      "document": "Pacchetto della spedizione",
+      "documentDescription": "Tutti i documenti della spedizione"
     },
     "cartons": {
       "title": "Cartoni",
@@ -111,10 +110,6 @@
       "updateCost": "Aggiorna anche i costi unitari su Shopify",
       "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto.",
       "submit": "Approva modifiche"
-    },
-    "release": {
-      "submit": "Rilascia etichette al fornitore",
-      "bookingReference": "Riferimento della prenotazione del trasporto Amazon"
     },
     "correction": {
       "trigger": "Richiedi una correzione",
@@ -233,5 +228,33 @@
     "suffocation": "Etichette di avvertenza soffocamento",
     "choking": "Etichette di pericolo di soffocamento",
     "notProvided": "Etichetta non fornita"
+  },
+  "carrierLabels": {
+    "title": "Carica le etichette del corriere",
+    "upload": "Carica etichette",
+    "intro": "Trascina l’etichetta di ogni cartone sulla sua riga. Per aggiungerne più di una alla volta, trascina i loro PDF, o un PDF con una pagina per etichetta, sul primo cartone a cui sono destinate. Riempiono i cartoni in ordine di nome del file e pagina.",
+    "prompt": "Trascina un PDF o <browse>sfoglia</browse>",
+    "tryAgain": "Trascina il PDF del corriere o <browse>sfoglia</browse>",
+    "browseFor": "Scegli un PDF per {carton}",
+    "dropToAdd": "Rilascia per aggiungere l’etichetta di {carton}",
+    "dropToReplace": "Rilascia per sostituire l’etichetta di {carton}",
+    "reading": "{files, plural, =1 {Lettura di {name}} other {Lettura di # PDF}}",
+    "source": "{name}, pagina {page}",
+    "savedLabel": "Etichetta salvata",
+    "tracking": "Tracking {number}",
+    "trackingNumber": "Numero di tracking",
+    "trackingNotRead": "Impossibile leggere un numero di tracking da questa pagina. Inseriscilo dall’etichetta.",
+    "trackingInvalid": "Inserisci il numero di tracking come è stampato sull’etichetta.",
+    "remove": "Rimuovi l’etichetta di {carton}",
+    "notPdf": "{name} non è un PDF.",
+    "unreadable": "Impossibile leggere {name}.",
+    "tooManyLabels": "Hai trascinato {labels, plural, one {# etichetta} other {# etichette}}, ma da {carton} in poi {cartons, plural, one {c’è # cartone} other {ci sono # cartoni}}. Controlla che siano le etichette di questa spedizione.",
+    "progress": "{count, plural, one {# cartone} other {# cartoni}} su {total} {count, plural, one {ha} other {hanno}} un’etichetta",
+    "complete": "Ogni cartone ha un’etichetta. Salvando, vengono inviate al fornitore.",
+    "cancel": "Annulla",
+    "save": "Salva etichette",
+    "failed": "Le etichette non sono state salvate. Riprova.",
+    "saved": "Etichette del corriere salvate",
+    "sent": "Etichette del corriere inviate al fornitore"
   }
 }

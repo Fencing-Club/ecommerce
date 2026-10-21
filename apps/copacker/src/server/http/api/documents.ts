@@ -24,12 +24,12 @@ export async function POST(request: Request) {
     }
     const form = await request.formData(),
       orderId = z.uuid().parse(form.get("orderId"))
-    const kind = z.enum(["invoice", "product_label", "shipping_label"]).parse(form.get("kind"))
+    // Invoices and product labels belong to the PO. A shipment's carrier labels have their own route.
+    const kind = z.enum(["invoice", "product_label"]).parse(form.get("kind"))
     if (kind !== "invoice") {
       requireBuyer(s)
     }
-    // Invoices and product labels belong to the PO; carrier labels belong to a shipment.
-    requireAccess(s, kind === "shipping_label" ? "shipments" : "orders", "edit")
+    requireAccess(s, "orders", "edit")
     if (kind === "invoice") {
       requireAccess(s, "prices")
     }
@@ -43,71 +43,14 @@ export async function POST(request: Request) {
     if (kind === "product_label" && (await splitPdfPages(bytes)).length !== 1) {
       throw new LocalizedError("uploadOneLabelSheet")
     }
-    const shipmentId = kind === "shipping_label" ? z.uuid().parse(form.get("shipmentId")) : null
-    const [shipment] = shipmentId
-      ? await db()
-          .select()
-          .from(shipments)
-          .where(and(eq(shipments.id, shipmentId), eq(shipments.orderId, orderId)))
-      : []
-    if (kind === "shipping_label" && !shipment) {
-      throw new LocalizedError("chooseDocumentShipment")
-    }
-    if (kind === "shipping_label" && shipment?.status !== "waiting_labels") {
-      throw new LocalizedError("shipmentNotWaitingForLabels")
-    }
     const itemId = kind === "product_label" ? z.uuid().parse(form.get("itemId")) : null
     if (itemId && !order.data.items.some((i) => i.id === itemId)) {
       throw new LocalizedError("productNotOnOrder")
     }
-    const uploads: Array<{ data: Uint8Array; cartonId: string | null; name: string }> = []
-    if (kind === "shipping_label") {
-      const assignments = z
-        .array(z.object({ cartonId: z.string(), page: z.number().int().positive() }))
-        .min(1)
-        .max(1000)
-        .parse(JSON.parse(z.string().parse(form.get("assignments"))))
-      if (
-        new Set(assignments.map((a) => a.cartonId)).size !== assignments.length ||
-        new Set(assignments.map((a) => a.page)).size !== assignments.length
-      ) {
-        throw new LocalizedError("labelAssignedOnce")
-      }
-      const pages = await splitPdfPages(bytes)
-      for (const assignment of assignments) {
-        const page = pages.find((p) => p.page === assignment.page)
-        if (!page || !shipment?.packing?.cartons.some((c) => c.cartonId === assignment.cartonId)) {
-          throw new LocalizedError("labelAssignmentUnknown")
-        }
-        uploads.push({
-          data: page.data,
-          cartonId: assignment.cartonId,
-          name: `Shipping label - ${assignment.cartonId}.pdf`
-        })
-      }
-    } else {
-      uploads.push({ data: bytes, cartonId: null, name: file.name.replace(/[^a-zA-Z0-9 ._-]/g, "_").slice(0, 180) })
-    }
-    const staged: Array<typeof documents.$inferInsert> = []
-    for (const upload of uploads) {
-      const id = randomUUID(),
-        objectKey = `orders/${orderId}/${id}.pdf`
-      await putFile(objectKey, upload.data)
-      staged.push({
-        id,
-        orderId,
-        shipmentId,
-        kind,
-        itemId,
-        cartonId: upload.cartonId,
-        objectKey,
-        name: upload.name,
-        bytes: upload.data.length,
-        orderRevision: order.revision,
-        shipmentRevision: shipment?.revision ?? null,
-        uploadedBy: s.user.id
-      })
-    }
+    const name = file.name.replace(/[^a-zA-Z0-9 ._-]/g, "_").slice(0, 180)
+    const id = randomUUID(),
+      objectKey = `orders/${orderId}/${id}.pdf`
+    await putFile(objectKey, bytes)
     await db().transaction(async (tx) => {
       const { order: fresh } = await accessibleOrder(s, orderId, tx, true)
       if (fresh.revision !== order.revision) {
@@ -125,41 +68,30 @@ export async function POST(request: Request) {
           throw new LocalizedError("productLabelReleased")
         }
       }
-      if (shipmentId) {
-        const [freshShipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-        if (freshShipment?.revision !== shipment?.revision || freshShipment?.status !== shipment?.status) {
-          throw new LocalizedError("shipmentChangedDuringUpload")
-        }
-      }
-      for (const document of staged) {
-        if (kind === "shipping_label") {
-          await tx
-            .update(documents)
-            .set({ outdated: 1 })
-            .where(
-              and(
-                eq(documents.shipmentId, shipmentId!),
-                eq(documents.kind, kind),
-                eq(documents.cartonId, document.cartonId!)
-              )
-            )
-        }
-        if (kind === "invoice") {
-          await tx
-            .update(documents)
-            .set({ outdated: 1 })
-            .where(and(eq(documents.orderId, orderId), eq(documents.kind, "invoice")))
-        }
-        if (kind === "product_label") {
-          await tx
-            .update(documents)
-            .set({ outdated: 1 })
-            .where(and(eq(documents.orderId, orderId), eq(documents.kind, kind), eq(documents.itemId, itemId!)))
-        }
-      }
-      await tx.insert(documents).values(staged)
+      // The new file replaces the order's invoice, or the line's product label.
+      await tx
+        .update(documents)
+        .set({ outdated: 1 })
+        .where(
+          and(
+            eq(documents.orderId, orderId),
+            eq(documents.kind, kind),
+            ...(kind === "product_label" ? [eq(documents.itemId, itemId!)] : [])
+          )
+        )
+      await tx.insert(documents).values({
+        id,
+        orderId,
+        kind,
+        itemId,
+        objectKey,
+        name,
+        bytes: bytes.length,
+        orderRevision: order.revision,
+        uploadedBy: s.user.id
+      })
     })
-    return Response.json({ documents: staged.map((d) => ({ id: d.id, name: d.name })) })
+    return Response.json({ documents: [{ id, name }] })
   } catch (error) {
     return Response.json(
       { error: await failureMessage(error, "documentUploadFailed") },

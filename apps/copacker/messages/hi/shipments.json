@@ -51,8 +51,7 @@
       "waitingForBuyer": "खरीदार की मंज़ूरी का इंतज़ार"
     },
     "labels": {
-      "title": "लेबल",
-      "waiting": "लेबल की प्रतीक्षा"
+      "heldBack": "लेबल सप्लायर को भेजे जाने से पहले"
     },
     "creating": {
       "title": "Amazon शिपमेंट बनाया जा रहा है",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "सप्लायर पैकेट तैयार",
-      "description": "लेबल असली साइज़ में प्रिंट करें।",
-      "downloadLabel": "सप्लायर पैकेट डाउनलोड करें",
-      "download": "पैकेट डाउनलोड करें",
+      "downloadLabel": "शिपमेंट पैकेट डाउनलोड करें",
       "incompleteTitle": "सप्लायर पैकेट अधूरा है",
       "waitingForLabels": "खरीदार के लेबल का इंतज़ार है",
       "cartonLabels": "कार्टन लेबल",
       "unitLabels": "उत्पाद लेबल",
       "carrierLabels": "वाहक लेबल",
       "palletLabels": "पैलेट लेबल",
-      "backToShipment": "शिपमेंट पर वापस जाएँ"
+      "backToShipment": "शिपमेंट पर वापस जाएँ",
+      "document": "शिपमेंट पैकेट",
+      "documentDescription": "शिपमेंट के सभी दस्तावेज़"
     },
     "cartons": {
       "title": "कार्टन",
@@ -111,10 +110,6 @@
       "updateCost": "Shopify यूनिट लागत भी अपडेट करें",
       "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए।",
       "submit": "बदलाव मंज़ूर करें"
-    },
-    "release": {
-      "submit": "लेबल सप्लायर को जारी करें",
-      "bookingReference": "Amazon ट्रांसपोर्ट बुकिंग रेफ़रेंस"
     },
     "correction": {
       "trigger": "सुधार का अनुरोध करें",
@@ -233,5 +228,33 @@
     "suffocation": "दम घुटने की चेतावनी वाले लेबल",
     "choking": "छोटे हिस्सों से दम घुटने के खतरे के लेबल",
     "notProvided": "लेबल नहीं दिया गया"
+  },
+  "carrierLabels": {
+    "title": "वाहक लेबल अपलोड करें",
+    "upload": "लेबल अपलोड करें",
+    "intro": "हर कार्टन का लेबल उसकी पंक्ति पर छोड़ें। एक साथ कई लेबल जोड़ने के लिए उनकी PDF फ़ाइलें, या हर लेबल के लिए एक पेज वाली एक PDF, उस पहले कार्टन पर छोड़ें जिसके लिए वे हैं। वे फ़ाइल नाम और पेज के क्रम से कार्टन भर देंगे।",
+    "prompt": "PDF यहां छोड़ें या <browse>ब्राउज़ करें</browse>",
+    "tryAgain": "वाहक का PDF छोड़ें या <browse>ब्राउज़ करें</browse>",
+    "browseFor": "{carton} के लिए PDF चुनें",
+    "dropToAdd": "{carton} का लेबल जोड़ने के लिए छोड़ें",
+    "dropToReplace": "{carton} का लेबल बदलने के लिए छोड़ें",
+    "reading": "{files, plural, =1 {{name} पढ़ा जा रहा है} other {# PDF पढ़ी जा रही हैं}}",
+    "source": "{name}, पेज {page}",
+    "savedLabel": "सहेजा गया लेबल",
+    "tracking": "ट्रैकिंग {number}",
+    "trackingNumber": "ट्रैकिंग नंबर",
+    "trackingNotRead": "इस पेज से ट्रैकिंग नंबर नहीं पढ़ा जा सका। लेबल से इसे दर्ज करें।",
+    "trackingInvalid": "ट्रैकिंग नंबर वैसे ही दर्ज करें जैसे लेबल पर छपा है।",
+    "remove": "{carton} का लेबल हटाएं",
+    "notPdf": "{name} PDF नहीं है।",
+    "unreadable": "{name} पढ़ा नहीं जा सका।",
+    "tooManyLabels": "{labels, plural, one {आपने # लेबल छोड़ा} other {आपने # लेबल छोड़े}}, लेकिन {carton} से आगे {cartons, plural, one {# कार्टन है} other {# कार्टन हैं}}। जांचें कि ये इसी शिपमेंट के लेबल हैं।",
+    "progress": "{total} में से {count} कार्टन पर लेबल है",
+    "complete": "हर कार्टन पर लेबल है। सहेजने पर ये सप्लायर को भेज दिए जाएंगे।",
+    "cancel": "रद्द करें",
+    "save": "लेबल सहेजें",
+    "failed": "लेबल सहेजे नहीं गए। फिर से कोशिश करें।",
+    "saved": "वाहक लेबल सहेजे गए",
+    "sent": "वाहक लेबल सप्लायर को भेजे गए"
   }
 }

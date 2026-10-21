@@ -1,6 +1,7 @@
 import type { ErrorKey } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { sendCompleteLabels } from "@/server/label-release"
 import {
   ProductBarcodeError,
   productLabelFile,
@@ -37,7 +38,10 @@ export async function POST(request: Request) {
     const form = await request.formData().catch(() => {
       throw new ProductBarcodeError("choosePdfToUpload", 400)
     })
-    return Response.json(await saveProductBarcode(s, form), { headers })
+    const saved = await saveProductBarcode(s, form)
+    // A product's barcode can complete the packets of shipments that waited on it.
+    await sendCompleteLabels(s.org.id, s.user.id)
+    return Response.json(saved, { headers })
   } catch (error) {
     return failure(error, "barcodeNotUploaded")
   }

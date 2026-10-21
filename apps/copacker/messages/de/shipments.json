@@ -51,8 +51,7 @@
       "waitingForBuyer": "Wartet auf Genehmigung durch den Käufer"
     },
     "labels": {
-      "title": "Etiketten",
-      "waiting": "Warten auf Etiketten"
+      "heldBack": "Bevor die Etiketten an den Lieferanten gehen"
     },
     "creating": {
       "title": "Amazon-Sendung wird erstellt",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Lieferantenunterlagen bereit",
-      "description": "Drucken Sie Etiketten in Originalgröße.",
-      "downloadLabel": "Lieferantenunterlagen herunterladen",
-      "download": "Unterlagen herunterladen",
+      "downloadLabel": "Sendungsunterlagen herunterladen",
       "incompleteTitle": "Lieferantenunterlagen unvollständig",
       "waitingForLabels": "Wartet auf die Etiketten des Käufers",
       "cartonLabels": "Kartonetiketten",
       "unitLabels": "Produktetiketten",
       "carrierLabels": "Versandetiketten",
       "palletLabels": "Palettenetiketten",
-      "backToShipment": "Zurück zur Sendung"
+      "backToShipment": "Zurück zur Sendung",
+      "document": "Sendungsunterlagen",
+      "documentDescription": "Alle Dokumente der Sendung"
     },
     "cartons": {
       "title": "Kartons",
@@ -111,10 +110,6 @@
       "updateCost": "Auch Stückkosten in Shopify aktualisieren",
       "updateCostDescription": "Shopify-Kosten müssen in der Währung der Bestellung sein.",
       "submit": "Änderungen genehmigen"
-    },
-    "release": {
-      "submit": "Etiketten für den Lieferanten freigeben",
-      "bookingReference": "Buchungsreferenz des Amazon-Transports"
     },
     "correction": {
       "trigger": "Korrektur anfordern",
@@ -233,5 +228,33 @@
     "suffocation": "Erstickungswarnetiketten",
     "choking": "Warnetiketten für Kleinteile",
     "notProvided": "Etikett nicht bereitgestellt"
+  },
+  "carrierLabels": {
+    "title": "Versandetiketten hochladen",
+    "upload": "Etiketten hochladen",
+    "intro": "Legen Sie das Etikett jedes Kartons in seiner Zeile ab. Um mehrere auf einmal hinzuzufügen, legen Sie ihre PDF-Dateien oder eine PDF-Datei mit einer Seite pro Etikett beim ersten Karton ab, für den sie bestimmt sind. Sie füllen die Kartons in der Reihenfolge von Dateiname und Seite.",
+    "prompt": "PDF-Datei ablegen oder <browse>durchsuchen</browse>",
+    "tryAgain": "PDF-Datei des Versanddienstleisters ablegen oder <browse>durchsuchen</browse>",
+    "browseFor": "PDF-Datei für {carton} wählen",
+    "dropToAdd": "Ablegen, um das Etikett für {carton} hinzuzufügen",
+    "dropToReplace": "Ablegen, um das Etikett von {carton} zu ersetzen",
+    "reading": "{files, plural, =1 {{name} wird gelesen} other {# PDF-Dateien werden gelesen}}",
+    "source": "{name}, Seite {page}",
+    "savedLabel": "Gespeichertes Etikett",
+    "tracking": "Sendungsnummer {number}",
+    "trackingNumber": "Sendungsnummer",
+    "trackingNotRead": "Auf dieser Seite wurde keine Sendungsnummer gefunden. Geben Sie sie vom Etikett ein.",
+    "trackingInvalid": "Geben Sie die Sendungsnummer so ein, wie sie auf dem Etikett steht.",
+    "remove": "Etikett von {carton} entfernen",
+    "notPdf": "{name} ist keine PDF-Datei.",
+    "unreadable": "{name} konnte nicht gelesen werden.",
+    "tooManyLabels": "Sie haben {labels, plural, one {# Etikett} other {# Etiketten}} abgelegt, ab {carton} gibt es aber {cartons, plural, one {# Karton} other {# Kartons}}. Prüfen Sie, ob es die Etiketten dieser Sendung sind.",
+    "progress": "{count} von {total} {total, plural, one {Karton hat} other {Kartons haben}} ein Etikett",
+    "complete": "Jeder Karton hat ein Etikett. Beim Speichern gehen sie an den Lieferanten.",
+    "cancel": "Abbrechen",
+    "save": "Etiketten speichern",
+    "failed": "Die Etiketten wurden nicht gespeichert. Versuchen Sie es erneut.",
+    "saved": "Versandetiketten gespeichert",
+    "sent": "Versandetiketten an den Lieferanten gesendet"
   }
 }

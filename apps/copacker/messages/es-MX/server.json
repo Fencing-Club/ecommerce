@@ -9,7 +9,7 @@
     "missingPackingList": "Genera la lista de empaque actual antes de liberar las etiquetas",
     "missingChecklist": "Genera la lista de verificación actual antes de liberar las etiquetas",
     "missingCartonLabel": "Falta la etiqueta de la caja {carton}",
-    "missingShippingLabel": "Asigna una etiqueta de envío a la caja {carton}",
+    "missingShippingLabel": "Agrega una etiqueta del transportista a la caja {carton}",
     "missingPalletLabels": "Faltan las etiquetas de tarima",
     "missingProductLabel": "Agrega una etiqueta de producto para {sku} en la página Productos",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "Tarima {pallet}: las tarimas de {receiver} deben pesar como máximo {maxLb, number} lb ({maxKg, number} kg), incluida la tarima"
     },
     "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío.",
-    "missingTransport": "Transporte sin confirmar"
+    "missingTransport": "Transporte sin confirmar",
+    "missingTrackingNumber": "Agrega el número de rastreo de la etiqueta del transportista de la caja {carton}"
   },
   "workflow": {
     "arrived": "La mercancía llegó",
@@ -50,7 +51,6 @@
     "approval": "Revisa los precios y SKU de proveedor que propuso el proveedor",
     "processing": "Amazon está procesando el envío y las etiquetas de caja",
     "labels": "Reserva el transporte y agrega los documentos que faltan abajo",
-    "release": "Ingresa la referencia de la reserva y libera el paquete de documentos del proveedor",
     "ship": "Imprime el paquete de documentos, empaca las cajas y márcalas como enviadas",
     "forward": "El agente de carga reenvía la mercancía y agrega el costo de flete, el transportista y el rastreo",
     "receive": "Marca la mercancía como recibida cuando llegue",
