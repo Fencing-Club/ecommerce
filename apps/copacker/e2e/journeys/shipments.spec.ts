@@ -6,7 +6,7 @@ test.use({ role: "buyer" })
 
 async function openTab(page: Page, tab: string) {
   await page
-    .getByRole("navigation", { name: "Shipment status" })
+    .getByRole("navigation", { name: "Shipment views" })
     .getByRole("link", { name: new RegExp(`^${tab}`) })
     .click()
 }
@@ -23,33 +23,30 @@ test("the buyer's and supplier's shipment lists show a shipment by status", asyn
 
   await page.goto("/shipments")
   await expect(page.getByRole("heading", { level: 1, name: "Shipments" })).toBeVisible()
-  for (const stat of ["Packing", "Action needed", "Ready for pickup"]) {
-    await expect(page.getByText(stat, { exact: true }).first()).toBeVisible()
-  }
-  const row = page.getByRole("row", { name: /^DEMO-1 / })
-  await expect(page.getByRole("link", { name: /^Active/ })).toHaveAttribute("aria-current", "page")
+  const row = page.getByRole("row", { name: /^DEMO-1, shipment / })
+  await expect(page.getByRole("link", { name: /^All/ })).toHaveAttribute("aria-current", "page")
   await expect(row).toContainText("Demo supplier")
   await expect(row).toContainText("Amazon")
   await expect(row).toContainText("Packing")
+  // Packing waits on the supplier.
+  await expect(row).toContainText("Supplier")
 
   await openTab(page, "Received")
   await expect(page).toHaveURL(/\?view=received$/)
   await expect(row).toHaveCount(0)
-  await openTab(page, "Canceled")
-  await expect(page).toHaveURL(/\?view=cancelled$/)
-  await expect(row).toHaveCount(0)
-  await openTab(page, "All")
-  await expect(page).toHaveURL(/\?view=all$/)
+  await openTab(page, "Active")
+  await expect(page).toHaveURL(/\?view=active$/)
   await expect(row).toContainText("Packing")
-  await row.getByRole("link", { name: "DEMO-1" }).click()
+  await row.getByRole("link", { name: /^DEMO-1, shipment / }).click()
   await expect(page).toHaveURL(/\/shipments\/[0-9a-f-]{36}$/)
 
   const supplier = await pageFor("supplier")
   await supplier.goto("/shipments")
-  await expect(supplier.getByText("Waiting on buyer", { exact: true })).toBeVisible()
-  const supplierRow = supplier.getByRole("row", { name: /^DEMO-1 / })
+  const supplierRow = supplier.getByRole("row", { name: /^DEMO-1, shipment / })
   await expect(supplierRow).toContainText("E2E Buyer")
   await expect(supplierRow).toContainText("Packing")
+  // The supplier packs it, so it waits on the supplier.
+  await expect(supplierRow).toContainText("You")
   await openTab(supplier, "Received")
   await expect(supplierRow).toHaveCount(0)
 })

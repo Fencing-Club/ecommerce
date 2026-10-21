@@ -1,40 +1,10 @@
 {
   "list": {
     "title": "Sendungen",
-    "stats": {
-      "packing": "Wird gepackt",
-      "actionNeeded": "Aktion erforderlich",
-      "waitingOnBuyer": "Wartet auf Käufer",
-      "readyForPickup": "Abholbereit"
-    },
     "amazonFailed": {
       "title": "Amazon-Sendungen wurden nicht geladen",
       "description": "Laden Sie die Seite neu, um es erneut zu versuchen."
     },
-    "tabsLabel": "Sendungsstatus",
-    "tabs": {
-      "active": "Aktiv",
-      "received": "Eingegangen",
-      "cancelled": "Storniert",
-      "all": "Alle"
-    },
-    "empty": {
-      "active": "Keine aktiven Sendungen",
-      "received": "Keine eingegangenen Sendungen",
-      "cancelled": "Keine stornierten Sendungen",
-      "all": "Keine Sendungen"
-    },
-    "columns": {
-      "shipment": "Sendung",
-      "supplier": "Lieferant",
-      "customer": "Kunde",
-      "destination": "Ziel",
-      "cartons": "Kartons",
-      "readyDate": "Bereitstellungsdatum",
-      "status": "Status"
-    },
-    "shipmentNumber": "Sendung {number}",
-    "opensInSellerCentral": "(öffnet in Seller Central)",
     "none": {
       "title": "Noch keine Sendungen",
       "buyerDescription": "Starten Sie eine aus einer gesendeten Bestellung.",

@@ -1,9 +1,10 @@
 import type { Page } from "@playwright/test"
 import { expect } from "../fixtures"
 
-// Opens a purchase order from the workspace's purchase order list by its reference, as someone would.
+// Opens a purchase order from the workspace's purchase order list by its reference, as someone would. A buyer's list
+// opens on Needs you, so it opens All, where every order is.
 export async function openOrder(page: Page, reference: string) {
-  await page.goto("/orders")
+  await page.goto("/orders?view=all")
   await page.getByRole("link", { name: reference, exact: true }).click()
   await expect(page.getByRole("heading", { level: 1, name: reference })).toBeVisible()
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)

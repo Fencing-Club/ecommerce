@@ -3,6 +3,13 @@ import { expect, test } from "../fixtures"
 test.use({ role: "buyer" })
 
 test.beforeEach(async ({ page }) => {
+  // The session file carries localStorage from test to test, so a supplier or sort an earlier test (or a failed
+  // attempt of this one) chose would otherwise still be selected.
+  await page.addInitScript(() => {
+    for (const key of ["restock-channel", "restock-supplier", "restock-sort"]) {
+      localStorage.removeItem(key)
+    }
+  })
   await page.goto("/restock")
   await expect(page.getByRole("heading", { name: "Restock", level: 1 })).toBeVisible()
 })
@@ -20,7 +27,12 @@ test("filters by supplier and searches products", async ({ page }) => {
   const supplier = page.getByRole("combobox", { name: "Supplier" })
   await expect(supplier).toHaveText(/All suppliers/)
   await supplier.click()
+  // The report reloads for the supplier after a pause, replacing the search box; typing before then is lost.
+  const reloaded = page.waitForResponse(
+    (response) => response.url().endsWith("/restock/plan") && response.request().postDataJSON()?.supplier !== "all"
+  )
   await page.getByRole("option", { name: "Demo supplier" }).click()
+  await reloaded
   await expect(supplier).toHaveText(/Demo supplier/)
   await expect(page.getByRole("region", { name: "Demo supplier" })).toBeVisible()
 

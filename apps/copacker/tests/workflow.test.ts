@@ -202,8 +202,8 @@ import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { profileFor } from "../src/server/workspace-session"
+import { applySchema } from "./database"
 import { drainSales } from "./drain-sales"
-import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -260,7 +260,7 @@ const buyer = actor("buyer", buyerId),
   supplier = actor("supplier", supplierId)
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

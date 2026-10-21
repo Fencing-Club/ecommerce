@@ -19,7 +19,7 @@ import { renderShippingDocument, ShippingPdf } from "../src/documents/shipping-p
 import { httpResponse } from "../src/server/http-response"
 import { GET } from "../src/server/http/api/shipments/$id/packing-list"
 import { towelOrder, towelPacking } from "../src/stories/fixtures/packing"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -116,7 +116,7 @@ async function pdfText(data: ShippingDocumentData) {
 }
 
 beforeAll(async () => {
-  await applyMigrations(pg)
+  await applySchema(pg)
   context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Harbor Goods", kind: "buyer" },

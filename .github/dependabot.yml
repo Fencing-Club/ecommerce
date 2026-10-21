@@ -15,6 +15,10 @@ updates:
       # 2.0.0 is only published as beta snapshots; wait for the stable release.
       - dependency-name: "@cloudflare/vite-plugin"
         versions: [">=2.0.0-0 <2.0.0"]
+      # @types/node tracks the Node runtime major (.nvmrc). Bump it with the runtime, not ahead of it.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
   - package-ecosystem: github-actions
     directory: /
     schedule:

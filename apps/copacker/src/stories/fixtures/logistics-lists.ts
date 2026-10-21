@@ -1,269 +1,174 @@
-import type { StatusTone } from "@/components/common"
+import type { LogisticsRow } from "@/components/logistics-list"
 
-export type LogisticsRow = {
-  id: string
-  reference: string
-  detail: string
-  supplier: string
-  origin: string
-  destination: string
-  status: string
-  tone: StatusTone
-  view: string
-  needsYou?: boolean
-  cartons: number
-  ready: string
-  waiting: "Supplier" | "Forwarder" | "You" | "Amazon" | "Done"
-  source: "Purchase order" | "Amazon"
-  products: number
-  shipped: number
-  quantity: number
-  total: number
-}
+// Fictional rows from the approved Pen list frames awIJu and OzQcA, as the server would send them to a buyer.
 
-const base: LogisticsRow = {
+const order: LogisticsRow = {
   id: "",
+  href: "",
   reference: "",
-  detail: "",
-  supplier: "Lotus Manufacturing",
-  origin: "Bayline Freight",
-  destination: "Amazon ONT8",
-  status: "Packing",
-  tone: "info",
-  view: "Packing",
-  cartons: 9,
-  ready: "2026-10-20",
-  waiting: "Supplier",
-  source: "Purchase order",
+  partner: "Lotus Manufacturing",
+  forwarder: "Bayline Freight",
+  destination: "Amazon FBA",
+  status: "submitted",
+  stage: "active",
+  waiting: "supplier",
+  source: "order",
   products: 3,
   shipped: 0,
   quantity: 420,
-  total: 295800
+  total: "$2,958.00"
 }
 
-// Fictional review data from the approved Pen frames awIJu and OzQcA.
+function purchaseOrder(number: number, overrides: Partial<LogisticsRow> = {}): LogisticsRow {
+  return { ...order, id: `po-${number}`, href: `/orders/po-${number}`, reference: `PO-${number}`, ...overrides }
+}
+
 export const purchaseOrderListRows: LogisticsRow[] = [
-  {
-    ...base,
-    id: "1045",
-    reference: "PO-1045",
-    status: "Approve invoice",
-    tone: "warning",
-    view: "With supplier",
-    needsYou: true
-  },
-  {
-    ...base,
-    id: "1044",
-    reference: "PO-1044",
-    supplier: "Northwind Textiles",
-    status: "Changes proposed",
-    tone: "warning",
-    view: "With supplier",
-    needsYou: true,
-    products: 5,
-    quantity: 900,
-    total: 610000
-  },
-  {
-    ...base,
-    id: "1047",
-    reference: "PO-1047",
-    supplier: "Cedar Works",
-    origin: "Direct",
+  purchaseOrder(1047, {
+    partner: "Cedar Works",
+    forwarder: null,
     destination: "Oakland warehouse",
-    status: "Declined",
-    tone: "warning",
-    view: "With supplier",
-    needsYou: true,
+    status: "approval",
+    waiting: "buyer",
     products: 2,
     quantity: 100,
-    total: 111200
-  },
-  {
-    ...base,
-    id: "1046",
-    reference: "PO-1046",
-    supplier: "Cedar Works",
-    origin: "Direct",
+    total: "$1,112.00"
+  }),
+  purchaseOrder(1046, {
+    partner: "Cedar Works",
+    forwarder: null,
     destination: "Reno 3PL",
-    status: "Draft",
-    tone: "neutral",
-    view: "Drafts",
-    needsYou: true,
+    status: "draft",
+    stage: "draft",
+    waiting: "buyer",
     products: 2,
     quantity: 60,
-    total: 87000
-  },
-  ...Array.from(
-    { length: 49 },
-    (_, i): LogisticsRow => ({
-      ...base,
-      id: `po-${i}`,
-      reference: `PO-${1043 - i}`,
-      supplier: i % 2 ? "Northwind Textiles" : "Lotus Manufacturing",
-      view: i < 2 ? "With supplier" : laterOrderView(i),
-      status: i < 2 ? "Accepted" : laterOrderView(i),
-      tone: i < 4 ? "info" : "neutral",
-      shipped: i < 2 ? 0 : 420
+    total: "$870.00"
+  }),
+  purchaseOrder(1045, { status: "waiting_labels", waiting: "buyer" }),
+  purchaseOrder(1044, {
+    partner: "Northwind Textiles",
+    status: "changes_proposed",
+    waiting: "buyer",
+    products: 5,
+    quantity: 900,
+    total: "$6,100.00"
+  }),
+  ...Array.from({ length: 30 }, (_, i) =>
+    purchaseOrder(1043 - i, {
+      partner: i % 2 ? "Northwind Textiles" : "Lotus Manufacturing",
+      status: i < 4 ? "shipped" : "closed",
+      stage: i < 4 ? "active" : "closed",
+      waiting: i < 4 ? "forwarder" : "done",
+      shipped: 420
     })
   )
 ]
 
+const shipment: LogisticsRow = {
+  ...order,
+  products: undefined,
+  shipped: undefined,
+  quantity: undefined,
+  total: undefined,
+  status: "packing",
+  cartons: 9,
+  ready: "2026-10-20"
+}
+
+function poShipment(number: number, part: number, overrides: Partial<LogisticsRow> = {}): LogisticsRow {
+  return {
+    ...shipment,
+    id: `${number}-${part}`,
+    href: `/shipments/${number}-${part}`,
+    orderHref: `/orders/po-${number}`,
+    reference: `PO-${number}`,
+    number: part,
+    ...overrides
+  }
+}
+
 export const shipmentListRows: LogisticsRow[] = [
-  { ...base, id: "1045-2", reference: "PO-1045, shipment 2", destination: "Amazon FBA ONT8" },
-  {
-    ...base,
-    id: "1043-1",
-    reference: "PO-1043, shipment 1",
-    detail: "To a 3PL",
-    supplier: "Northwind Textiles",
+  poShipment(1045, 2),
+  poShipment(1043, 1, {
+    partner: "Northwind Textiles",
     destination: "Reno 3PL",
     ready: "2026-10-09",
-    status: "Ready for pickup",
-    view: "Ready for pickup",
-    tone: "success",
-    waiting: "Forwarder"
-  },
-  {
-    ...base,
-    id: "1044-1",
-    reference: "PO-1044, shipment 1",
+    status: "ready",
+    waiting: "supplier"
+  }),
+  poShipment(1044, 1, {
     detail: "Rejected by Amazon",
-    supplier: "Northwind Textiles",
-    destination: "Amazon LGB8",
+    partner: "Northwind Textiles",
     cartons: 8,
     ready: "2026-10-06",
-    status: "Needs attention",
-    tone: "destructive",
-    needsYou: true,
-    waiting: "You"
-  },
-  {
-    ...base,
-    id: "1039-2",
-    reference: "PO-1039, shipment 2",
+    status: "needs_attention",
+    waiting: "buyer"
+  }),
+  poShipment(1039, 2, {
     detail: "FBA18K3LQ7",
-    supplier: "Northwind Textiles",
-    origin: "Direct",
-    destination: "Amazon LGB8",
+    partner: "Northwind Textiles",
+    forwarder: null,
     cartons: 6,
     ready: "2026-10-04",
-    status: "Needs shipping labels",
-    tone: "warning",
-    needsYou: true,
-    waiting: "You"
-  },
-  {
-    ...base,
-    id: "1045-1",
-    reference: "PO-1045, shipment 1",
-    detail: "Amazon shipment on approval",
-    cartons: 12,
-    ready: "2026-10-02",
-    status: "Approval needed",
-    tone: "warning",
-    needsYou: true,
-    waiting: "You"
-  },
-  {
-    ...base,
-    id: "1042-1",
-    reference: "PO-1042, shipment 1",
+    status: "waiting_labels",
+    waiting: "buyer"
+  }),
+  poShipment(1045, 1, { cartons: 12, ready: "2026-10-02", status: "approval", waiting: "buyer" }),
+  poShipment(1042, 1, {
     detail: "FBA17XK2QM",
     cartons: 12,
     ready: "2026-09-22",
-    status: "In transit",
-    view: "In transit",
-    waiting: "Forwarder"
-  },
-  {
-    ...base,
-    id: "1042-2",
-    reference: "PO-1042, shipment 2",
-    detail: "In CS-1007",
+    status: "shipped",
+    waiting: "forwarder"
+  }),
+  poShipment(1042, 2, {
+    detail: "CS-1007",
     cartons: 10,
     ready: "2026-09-26",
-    status: "At the forwarder",
-    view: "In transit",
-    waiting: "Forwarder"
-  },
+    status: "forwarded",
+    waiting: "amazon"
+  }),
   {
-    ...base,
+    ...shipment,
     id: "FBA17V2P1R",
+    href: "https://sellercentral.amazon.com/fba/inbound-shipment/summary/FBA17V2P1R",
+    external: true,
     reference: "FBA17V2P1R",
     detail: "Created in Seller Central",
-    supplier: "Your Amazon account",
-    origin: "Oakland",
-    destination: "Amazon SMF3",
-    cartons: 4,
-    ready: "2026-09-18",
-    status: "In transit",
-    view: "In transit",
-    waiting: "Amazon",
-    source: "Amazon"
+    partner: null,
+    forwarder: null,
+    destination: "Amazon FBA",
+    status: "IN_TRANSIT",
+    waiting: "amazon",
+    source: "amazon",
+    cartons: undefined,
+    ready: null
   },
-  {
-    ...base,
-    id: "1040-1",
-    reference: "PO-1040, shipment 1",
-    detail: "FBA17W8M4D",
-    supplier: "Northwind Textiles",
-    destination: "Amazon LGB8",
-    cartons: 10,
-    ready: "2026-09-15",
-    status: "Receiving",
-    view: "Receiving",
-    waiting: "Amazon"
-  },
-  {
-    ...base,
-    id: "1040-2",
-    reference: "PO-1040, shipment 2",
-    detail: "Matson MATS-2291",
-    supplier: "Northwind Textiles",
+  poShipment(1040, 2, {
+    detail: "MATS-2291",
+    partner: "Northwind Textiles",
     destination: "Oakland warehouse",
     cartons: 6,
     ready: "2026-09-12",
-    status: "Receiving",
-    view: "Receiving",
-    waiting: "You"
-  },
-  {
-    ...base,
-    id: "1036-1",
-    reference: "PO-1036, shipment 1",
+    status: "forwarded",
+    waiting: "carrier"
+  }),
+  poShipment(1036, 1, {
     detail: "FBA17R5N2K",
     cartons: 14,
     ready: "2026-09-02",
-    status: "Received",
-    view: "Received",
-    tone: "neutral",
-    waiting: "Done"
-  },
-  ...Array.from(
-    { length: 45 },
-    (_, i): LogisticsRow => ({
-      ...base,
-      id: `shipment-${i}`,
-      reference: `PO-${1035 - i}, shipment 1`,
+    status: "received",
+    stage: "closed",
+    waiting: "done"
+  }),
+  ...Array.from({ length: 24 }, (_, i) =>
+    poShipment(1035 - i, 1, {
       detail: `FBA-SAMPLE-${i + 1}`,
       ready: "2026-09-01",
-      view: i === 0 ? "Ready for pickup" : laterShipmentView(i),
-      status: i === 0 ? "Ready for pickup" : laterShipmentView(i),
-      tone: i === 0 ? "success" : laterShipmentTone(i),
-      waiting: i < 3 ? "Forwarder" : "Done",
-      needsYou: i === 0
+      status: i < 3 ? "shipped" : "received",
+      stage: i < 3 ? "active" : "closed",
+      waiting: i < 3 ? "forwarder" : "done"
     })
   )
 ]
-
-function laterOrderView(index: number) {
-  return index < 4 ? "In transit" : "Closed"
-}
-function laterShipmentView(index: number) {
-  return index < 3 ? "In transit" : "Received"
-}
-function laterShipmentTone(index: number) {
-  return index < 3 ? "info" : "neutral"
-}
