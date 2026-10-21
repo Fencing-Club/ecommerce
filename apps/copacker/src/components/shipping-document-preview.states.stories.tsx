@@ -45,7 +45,9 @@ export const MissingShippingAddress = meta.story({
   }
 })
 
+// Renders a real PDF, so test runs leave it out (vitest.config.ts).
 export const RememberDownloadSettings = meta.story({
+  tags: ["documents"],
   play: async (context) => {
     await ready(context)
     const { canvas, canvasElement } = context

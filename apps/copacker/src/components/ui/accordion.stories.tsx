@@ -76,6 +76,6 @@ export const Disabled = meta.story({
   args: { disabled: true },
   play: async ({ canvas }) => {
     const first = canvas.getByRole("button", { name: "Can I invite my suppliers?" })
-    await expect(first).toHaveAttribute("aria-disabled", "true")
+    await expect(first).toBeDisabled()
   }
 })
