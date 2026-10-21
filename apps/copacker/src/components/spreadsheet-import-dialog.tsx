@@ -207,43 +207,38 @@ export function SpreadsheetImportDialog<T>({
             ))}
           </RadioGroup>
         )}
-        {!isBusy &&
-          step !== "failed" &&
-          (hasTemplateError || (step === "review" && messages.length > 0)) && (
-            // A long list scrolls inside its box, keeping the title, choice and buttons in view. Below a few rows' height
-            // the dialog scrolls instead.
-            <div
-              role="alert"
-              className={cn(
-                "flex min-h-0 flex-col overflow-hidden rounded-lg border",
-                messages.length > 3 && "min-h-48"
-              )}
+        {!isBusy && step !== "failed" && (hasTemplateError || (step === "review" && messages.length > 0)) && (
+          // A long list scrolls inside its box, keeping the title, choice and buttons in view. Below a few rows' height
+          // the dialog scrolls instead.
+          <div
+            role="alert"
+            className={cn("flex min-h-0 flex-col overflow-hidden rounded-lg border", messages.length > 3 && "min-h-48")}
+          >
+            <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-[13px] font-semibold">
+              {hasTemplateError ? t("templateMismatch") : t("issues", { count: messages.length })}
+            </h3>
+            {!hasTemplateError && checked?.hint && (
+              <p className="shrink-0 border-b px-3 py-2 text-xs">{checked.hint}</p>
+            )}
+            <ul
+              aria-labelledby={`${id}-issues`}
+              // The list scrolls and holds nothing focusable, so it takes focus for the keyboard to scroll it.
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+              tabIndex={0}
+              className={cn("min-h-0 divide-y", scrollList)}
             >
-              <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-[13px] font-semibold">
-                {hasTemplateError ? t("templateMismatch") : t("issues", { count: messages.length })}
-              </h3>
-              {!hasTemplateError && checked?.hint && (
-                <p className="shrink-0 border-b px-3 py-2 text-xs">{checked.hint}</p>
-              )}
-              <ul
-                aria-labelledby={`${id}-issues`}
-                // The list scrolls and holds nothing focusable, so it takes focus for the keyboard to scroll it.
-                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-                tabIndex={0}
-                className={cn("min-h-0 divide-y", scrollList)}
-              >
-                {messages.map((issue, index) => (
-                  <li key={`${issue.location}-${index}`} className="flex flex-col gap-1 p-3 text-xs">
-                    {issue.location && <p className="font-medium">{issue.location}</p>}
-                    <p className="flex gap-2 text-destructive">
-                      <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                      <span className="whitespace-pre-line">{issue.message}</span>
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+              {messages.map((issue, index) => (
+                <li key={`${issue.location}-${index}`} className="flex flex-col gap-1 p-3 text-xs">
+                  {issue.location && <p className="font-medium">{issue.location}</p>}
+                  <p className="flex gap-2 text-destructive">
+                    <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                    <span className="whitespace-pre-line">{issue.message}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {step === "review" && result !== null && checked?.templateMatches && !messages.length && renderReview(result)}
         <div className="mt-auto flex justify-end gap-2 pt-1">
           {step === "failed" ? (
