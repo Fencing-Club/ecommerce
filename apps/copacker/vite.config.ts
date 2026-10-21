@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url"
 import { cloudflare } from "@cloudflare/vite-plugin"
+import babel from "@rolldown/plugin-babel"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
-import react from "@vitejs/plugin-react"
+import react, { reactCompilerPreset } from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import { workerStyles } from "./scripts/vite-vanilla-extract.ts"
 
@@ -67,6 +68,7 @@ export default defineConfig(({ mode }) => ({
       remoteBindings: false
     }),
     tanstackStart({ srcDirectory: mode === "e2e" ? "../../src" : "src", importProtection: { behavior: "error" } }),
-    react({ babel: { plugins: ["babel-plugin-react-compiler"] } })
+    react(),
+    babel({ presets: [reactCompilerPreset()] })
   ]
 }))
