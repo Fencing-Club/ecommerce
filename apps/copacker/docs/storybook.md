@@ -83,6 +83,21 @@ rules.
 Each data set lives in `src/stories/simulators/data.ts`; the Every Error examples are in `carton-examples.ts` and
 `pallet-examples.ts`.
 
+- **Simulators/Supplier packet**: the packet as production builds it. A data set (cartons or pallets, to FBA, AWD or
+  the buyer's warehouse, or products with every preparation and label) and how it ships (service, handoff, collection,
+  carrier labels) go through `shippingDocumentSnapshot`, with a sample Amazon label for each carton to Amazon and a
+  carrier label for each when the carrier labels cartons. It shows whether production can export the packet (and the
+  snapshot's reason when it can't), the checklist as the packet words it in the chosen language, and every page of the
+  packet. Sample labels are bordered boxes in each provider's page size: 4 × 6 in carton labels, Letter pallet labels
+  (four a pallet) and 2 × 1 in product labels. When the snapshot refuses a shipment, the pages are built from the
+  packing list snapshot with the packet's labels and address, to show what the documents would print.
+- **Every Checklist Line**: every line the checklist can print, built from the checklist rules across the data sets and
+  ways to ship them (`packet-catalog.tsx`): each product requirement, then each carton, pallet and handoff line, when
+  it's printed, whether production's export reaches it, and a link that opens a shipment printing it in the simulator.
+
+The packet's data sets are in `packet-data.ts`. Its stories render PDFs, so they carry the `documents` tag and test
+runs skip them; Every Checklist Line builds only data and runs with the other stories.
+
 ## The toolbar
 
 - **Theme**: light or dark. It sets the `dark` class and the choice the app's ThemeProvider reads.

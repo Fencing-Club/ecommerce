@@ -16,7 +16,7 @@ import {
   type ShippingCarton,
   type ShippingDocumentData
 } from "./shipping-model"
-import { shipmentDocumentChecks, type ShippingCheck } from "./shipping-rules"
+import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "./shipping-rules"
 
 // Local assets. Node callers supply their absolute asset directory.
 function registerShippingFonts(base: string) {
@@ -607,16 +607,6 @@ export function ShippingPdf({
     handoffHeading = data.receiving.repack ? t.labelHandoff : t.preparePickup
   }
 
-  const taskDetails = {
-    polybag: "polybagText",
-    sealedPolybag: "sealedPolybagText",
-    choking: "chokingText",
-    countryOfOrigin: "countryOfOriginText",
-    fnsku: "fnskuText",
-    sku: "skuText",
-    suffocation: "suffocationText"
-  } as const
-
   return (
     <Document title={`${data.order} - ${t[kind]}`} author={data.company} language={settings.language}>
       <DocumentLayout value={layout}>
@@ -807,25 +797,8 @@ export function ShippingPdf({
                     <View style={styles.small} wrap={false} minPresenceAhead={30}>
                       <Code>{products.map((product) => product.supplierSku).join(" / ")}</Code>
                     </View>
-                    {product.piecesPerPack > 1 && (
-                      <Check title="packQuantity" detail="packQuantityText" values={{ count: product.piecesPerPack }} />
-                    )}
-                    {product.tasks.map((task) => (
-                      <Check
-                        key={task}
-                        title={task}
-                        detail={taskDetails[task]}
-                        values={
-                          task === "countryOfOrigin" && product.countryCode
-                            ? {
-                                country:
-                                  new Intl.DisplayNames([settings.language], { type: "region" }).of(
-                                    product.countryCode
-                                  ) ?? product.countryCode
-                              }
-                            : undefined
-                        }
-                      />
+                    {productChecks(product, settings.language).map((check) => (
+                      <Check key={check.title} {...check} />
                     ))}
                   </ChecklistSection>
                 )

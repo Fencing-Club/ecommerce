@@ -7,7 +7,7 @@ import {
   palletWeightLimit
 } from "@repo/copacker-packing-rules/pallet-policies"
 import type { ShippingCopyKey } from "./shipping-copy"
-import type { ShippingDocumentData } from "./shipping-model"
+import type { DocumentLanguage, ShippingDocumentData, ShippingProduct } from "./shipping-model"
 
 export type ShippingCheck = {
   title: ShippingCopyKey
@@ -49,6 +49,33 @@ export function policyChecks(policy: CartonPolicy) {
         return []
     }
   })
+}
+
+// What the supplier checks for products prepared alike: the pack size of a multi-pack, then each task the buyer asked for.
+const taskDetails = {
+  polybag: "polybagText",
+  sealedPolybag: "sealedPolybagText",
+  choking: "chokingText",
+  countryOfOrigin: "countryOfOriginText",
+  fnsku: "fnskuText",
+  sku: "skuText",
+  suffocation: "suffocationText"
+} as const satisfies Record<ShippingProduct["tasks"][number], ShippingCopyKey>
+export function productChecks(product: ShippingProduct, language: DocumentLanguage): ShippingCheck[] {
+  const pack: ShippingCheck[] =
+    product.piecesPerPack > 1
+      ? [{ title: "packQuantity", detail: "packQuantityText", values: { count: product.piecesPerPack } }]
+      : []
+  return [
+    ...pack,
+    ...product.tasks.map((task): ShippingCheck => {
+      const country =
+        task === "countryOfOrigin" && product.countryCode
+          ? (new Intl.DisplayNames([language], { type: "region" }).of(product.countryCode) ?? product.countryCode)
+          : undefined
+      return { title: task, detail: taskDetails[task], ...(country && { values: { country } }) }
+    })
+  ]
 }
 
 // Composable policies, not a template per shipping permutation. Receiving rules are independent of transport.
