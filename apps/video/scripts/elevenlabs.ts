@@ -129,7 +129,7 @@ const unheard = (said: string, heard: string) => {
     }
   }
   const matched = new Set<number>()
-  for (let i = 0, j = 0; i < a.length && j < b.length; ) {
+  for (let i = 0, j = 0; i < a.length && j < b.length;) {
     if (a[i]!.c === b[j]!.c) {
       matched.add(i)
       i++

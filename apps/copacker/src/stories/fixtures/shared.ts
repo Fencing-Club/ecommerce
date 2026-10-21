@@ -1,5 +1,6 @@
-import { delay, http, HttpResponse } from "msw"
 import type { SetupWorker } from "msw/browser"
+import { http, HttpResponse } from "msw/http"
+import { delay } from "msw/utils/delay"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
 import { daysAgo } from "./orders"

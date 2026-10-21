@@ -1,6 +1,6 @@
 import type { Address } from "@repo/aisle"
 import type { OrderInput } from "@repo/aisle"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
 import { z } from "zod"
 import type { TimelineEntry } from "@/components/po-timeline"
