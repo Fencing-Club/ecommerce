@@ -1,5 +1,5 @@
-import { http, HttpResponse } from "msw"
 import type { SetupWorker } from "msw/browser"
+import { http, HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"

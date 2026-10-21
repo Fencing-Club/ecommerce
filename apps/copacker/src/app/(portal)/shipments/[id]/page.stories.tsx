@@ -1,5 +1,5 @@
 import { type Address, type OrderInput } from "@repo/aisle"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import invariant from "tiny-invariant"

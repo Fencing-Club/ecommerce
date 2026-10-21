@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { importList } from "@/stories/fixtures/purchase-orders"
