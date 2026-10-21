@@ -151,8 +151,8 @@ Templates are React Email components. The tags in this package output Liquid; ev
 `react-email`, which is why it is a peer dependency rather than something this package wraps:
 
 ```tsx
-import { Body, Container, Head, Heading, Html, Section, Text } from "react-email"
 import { defineTemplate, For, Var } from "@repo/shopify-emails"
+import { Body, Container, Head, Heading, Html, Section, Text } from "react-email"
 ```
 
 `compileTemplate` renders the tree with react-email's own `render`, so tables, inline styles, and the client-safe markup

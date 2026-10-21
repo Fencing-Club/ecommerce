@@ -1,6 +1,6 @@
 import { money } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"

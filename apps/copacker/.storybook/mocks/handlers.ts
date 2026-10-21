@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { workspaces } from "@/stories/workspace"
 
 // What the app's API answers in every story unless the story says otherwise (with msw.use in its beforeEach): each

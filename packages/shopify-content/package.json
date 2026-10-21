@@ -12,10 +12,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@shopify/cli": "^4.6.1",
+    "@shopify/cli": "^4.9.4",
     "commander": "^15.0.0",
-    "tsx": "^4.23.0",
-    "zod": "^4.4.3"
+    "tsx": "^4.23.15",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@repo/oxlint-config": "workspace:*",

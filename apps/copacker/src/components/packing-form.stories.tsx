@@ -1,5 +1,5 @@
 import type { OrderInput, PackingDraft } from "@repo/aisle"
-import { HttpResponse } from "msw"
+import { HttpResponse } from "msw/http"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import { storyTimeZone } from "#.storybook/intl"
 import preview from "#.storybook/preview"

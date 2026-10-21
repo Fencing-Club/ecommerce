@@ -1,4 +1,5 @@
-import { delay, http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
+import { delay } from "msw/utils/delay"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
