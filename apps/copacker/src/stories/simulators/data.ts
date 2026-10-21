@@ -301,8 +301,16 @@ export const palletCartonSet = [
 ]
 const a = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, index) => `A${from + index}`)
 
-// Pallets for cartons A1–A12, for the receiver it names. `plenty` packs them against a PO with plenty of every product.
-export type PalletDataSet = { name: string; receiver: Receiver; pallets: PalletValue[]; note: string; plenty?: boolean }
+// Pallets for cartons A1–A12, or the cartons it lists, for the receiver it names. `plenty` packs them against a PO with
+// plenty of every product.
+export type PalletDataSet = {
+  name: string
+  receiver: Receiver
+  pallets: PalletValue[]
+  note: string
+  plenty?: boolean
+  cartons?: CartonGroup[]
+}
 
 export const palletDataSets = {
   withinLimits: {

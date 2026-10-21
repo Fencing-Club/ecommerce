@@ -30,6 +30,7 @@
       "unknownChange": "Invoice changes must reference unique items on the purchase order",
       "noPallets": "Add the pallets these cartons ship on, or uncheck Packed on pallets",
       "emptyPallet": "Pallet {pallet} has no cartons. Choose its cartons, or delete it.",
+      "palletMixedNetworks": "Pallet {pallet} mixes FBA and AWD US cartons. Put each network’s cartons on separate pallets.",
       "duplicatePallet": "Pallet {pallet} is listed more than once",
       "unknownPalletCarton": "Pallet {pallet} lists carton {carton}, which isn’t in this shipment",
       "palletCartonTwice": "Carton {carton} is on more than one pallet. Keep it on one.",

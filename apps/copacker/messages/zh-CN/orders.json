@@ -481,7 +481,7 @@
       "contents": "内容"
     },
     "toggleProducts": "{cartons} 中的商品",
-    "contentsDetail": "{products, plural, other {# 种商品，每箱 {perCarton, number} 件}}",
+    "contentsDetail": "{products, plural, =1 {# 种商品，每箱 {perCarton, number} 件} other {# 种商品}}",
     "contentsSummary": "{units}，{detail}",
     "emptyCarton": "尚无商品",
     "issues": "{count, plural, other {# 个问题}}",
@@ -548,6 +548,7 @@
       "stackableHeight": "高度：{height, number} 厘米对可堆叠的 {receiver} 托盘来说太高，上限为 {maxCm, number} 厘米（{maxIn, number} 英寸）。请将“堆叠”设为“不可堆叠”，或降低货物高度。",
       "palletWeight": "重量：{weight, number} 千克超过 {receiver} 含托盘 {maxKg, number} 千克（{maxLb, number} 磅）的上限。请将纸箱分到更多托盘上。",
       "emptyPallet": "纸箱：此托盘还没有纸箱。请选择其纸箱，或删除托盘。",
+      "palletMixedNetworks": "纸箱：此托盘混放了 FBA 和 AWD 的纸箱。请将各网络的纸箱分托盘放置。",
       "duplicatePallet": "托盘：有两个托盘的编号都是 {pallet}。请使用唯一编号重新导入。",
       "unknownPalletCarton": "纸箱：{carton} 不是本次发货的纸箱。请将其从此托盘移除。",
       "palletCartonTwice": "纸箱：{carton} 已在另一个托盘上。请将其从此托盘或另一个托盘移除。",

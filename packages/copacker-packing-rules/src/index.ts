@@ -73,7 +73,7 @@ export type PackingRule =
   | CartonRuleIssue
   // Cartons packed on pallets: each on exactly one pallet of this shipment.
   | { code: "noPallets" }
-  | { code: "emptyPallet" | "duplicatePallet"; values: { pallet: string } }
+  | { code: "emptyPallet" | "duplicatePallet" | "palletMixedNetworks"; values: { pallet: string } }
   | { code: "unknownPalletCarton" | "palletCartonTwice"; values: { pallet: string; carton: string } }
   | { code: "cartonsOffPallets"; values: { count: number; cartons: string } }
   | PalletRuleIssue
@@ -102,7 +102,8 @@ export const packingRuleDescriptions: Record<
   duplicatePallet: "Every pallet has its own number.",
   unknownPalletCarton: "A pallet holds only this shipment's cartons.",
   palletCartonTwice: "Each carton is on one pallet.",
-  cartonsOffPallets: "Every carton packed on pallets is on a pallet."
+  cartonsOffPallets: "Every carton packed on pallets is on a pallet.",
+  palletMixedNetworks: "A pallet to Amazon holds one network's cartons, FBA's or AWD's."
 }
 
 export const palletRules = new Set<PackingRule["code"]>([
@@ -112,6 +113,7 @@ export const palletRules = new Set<PackingRule["code"]>([
   "unknownPalletCarton",
   "palletCartonTwice",
   "cartonsOffPallets",
+  "palletMixedNetworks",
   ...palletRuleCodes
 ])
 
@@ -258,8 +260,8 @@ function cartonPolicy(order: Pick<PackingOrder, "destination">, networks: Amazon
   return cartonPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
 }
 
-// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). The buyer's own locations
-// and forwarders take any pallet.
+// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). A pallet to Amazon goes to
+// one network, so it holds one network's cartons. The buyer's own locations and forwarders take any pallet.
 export function checkPallets(
   order: Pick<PackingOrder, "destination" | "items">,
   packing: {
@@ -271,18 +273,23 @@ export function checkPallets(
     const cartons = packing.cartons.filter((carton) =>
       pallet.cartonIds.some((id) => id.toLowerCase() === carton.cartonId.toLowerCase())
     )
-    const policy = palletPolicy(
-      order,
-      cartons.flatMap((carton) => cartonNetworks(order, carton))
-    )
-    return policy
-      ? checkPallet(policy, pallet).map(({ issue, fields, source }) => ({
-          palletId: pallet.palletId,
-          ...issue,
-          fields,
-          ...(source && { source })
-        }))
-      : []
+    const networks = cartons.flatMap((carton) => cartonNetworks(order, carton))
+    const mixed: ValidationIssue[] =
+      order.destination === "amazon" && new Set(networks).size > 1
+        ? [{ palletId: pallet.palletId, code: "palletMixedNetworks", values: { pallet: pallet.palletId } }]
+        : []
+    const policy = palletPolicy(order, networks)
+    return [
+      ...mixed,
+      ...(policy
+        ? checkPallet(policy, pallet).map(({ issue, fields, source }) => ({
+            palletId: pallet.palletId,
+            ...issue,
+            fields,
+            ...(source && { source })
+          }))
+        : [])
+    ]
   })
 }
 

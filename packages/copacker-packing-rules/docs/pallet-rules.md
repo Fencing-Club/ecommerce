@@ -32,7 +32,10 @@ fails type checks.
 
 The rules every pallet follows wherever it goes are `validatePallets`': each carton on exactly one pallet, every pallet
 holding cartons of this shipment, and a unique number for each (`noPallets`, `emptyPallet`, `duplicatePallet`,
-`unknownPalletCarton`, `palletCartonTwice`, `cartonsOffPallets`).
+`unknownPalletCarton`, `palletCartonTwice`, `cartonsOffPallets`). A pallet to Amazon also goes to one network, so
+`checkPallets` refuses one holding both FBA and AWD cartons (`palletMixedNetworks`), as `validatePacking` refuses a
+carton mixing their products (`mixedNetworks`). Booking splits a shipment's cartons and pallets by network
+(`splitByNetwork` in aisle), and a mixed pallet would go to both networks at its full size and weight.
 
 ### Adding a receiver or a rule
 

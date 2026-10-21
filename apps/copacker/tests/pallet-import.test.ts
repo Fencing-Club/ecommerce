@@ -59,6 +59,16 @@ describe("pallet import", () => {
     expect(readCartonIds("A1–A2、B1，C1؛A12", known)).toEqual(["A1", "A2", "B1", "C1", "A12"])
     expect(readCartonIds("01–03", new Set())).toEqual(["01", "02", "03"])
     expect(readCartonIds("01-2, 01-3", new Set(["01-2", "01-3"]))).toEqual(["01-2", "01-3"])
+    // A run of IDs with spaces in them reads back as the export writes it.
+    expect(readCartonIds("Box 1–Box 3, A1 A3–A5", new Set(["box 1", "box 2", "box 3", ...known]))).toEqual([
+      "Box 1",
+      "Box 2",
+      "Box 3",
+      "A1",
+      "A3",
+      "A4",
+      "A5"
+    ])
     // A run backwards, across letters or of more than 1,000 cartons stays as written, so it reads as unknown.
     expect(readCartonIds("A3–A1, A1–B2, A1–A2000", known)).toEqual(["A3–A1", "A1–B2", "A1–A2000"])
     expect(readCartonIds(" ,; ", known)).toEqual([])

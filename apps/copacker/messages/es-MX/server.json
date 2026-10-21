@@ -30,6 +30,7 @@
       "unknownChange": "Los cambios de la factura deben referirse a artículos únicos de la orden de compra",
       "noPallets": "Agrega las tarimas en las que se envían estas cajas o desmarca Empacado en tarimas",
       "emptyPallet": "La tarima {pallet} no tiene cajas. Elige sus cajas o elimínala.",
+      "palletMixedNetworks": "La tarima {pallet} mezcla cajas de FBA y AWD US. Pon las cajas de cada red en tarimas separadas.",
       "duplicatePallet": "La tarima {pallet} aparece más de una vez",
       "unknownPalletCarton": "La tarima {pallet} incluye la caja {carton}, que no está en este envío",
       "palletCartonTwice": "La caja {carton} está en más de una tarima. Déjala en una sola.",

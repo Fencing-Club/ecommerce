@@ -30,6 +30,7 @@
       "unknownChange": "Le modifiche alla fattura devono riferirsi ad articoli univoci dell’ordine di acquisto",
       "noPallets": "Aggiungi i pallet su cui viaggiano questi cartoni oppure deseleziona Imballato su pallet",
       "emptyPallet": "Il pallet {pallet} non ha cartoni. Scegli i suoi cartoni oppure eliminalo.",
+      "palletMixedNetworks": "Il pallet {pallet} mescola cartoni FBA e AWD US. Metti i cartoni di ogni rete su pallet separati.",
       "duplicatePallet": "Il pallet {pallet} compare più di una volta",
       "unknownPalletCarton": "Il pallet {pallet} elenca il cartone {carton}, che non fa parte di questa spedizione",
       "palletCartonTwice": "Il cartone {carton} è su più di un pallet. Lascialo su uno solo.",

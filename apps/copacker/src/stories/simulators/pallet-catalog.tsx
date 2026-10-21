@@ -19,7 +19,7 @@ export function PalletCatalog() {
   const examples = usePalletExamples()
   const rows = examples.flatMap((example): ErrorRow[] =>
     validatePacking(dataSetOrder(example.plenty, example.receiver), {
-      cartons: expandCartonGroups(palletCartonSet),
+      cartons: expandCartonGroups(example.cartons ?? palletCartonSet),
       changes: [],
       palletized: true,
       pallets: example.pallets

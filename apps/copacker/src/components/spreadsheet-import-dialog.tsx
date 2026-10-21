@@ -113,13 +113,13 @@ export function SpreadsheetImportDialog<T>({
   async function download() {
     setDownloading(true)
     setDownloadError(false)
+    // No finally clause: the React Compiler can't compile a component with one.
     try {
       downloadSpreadsheet(await template.build(), [template.title, reference, shipmentName])
     } catch {
       setDownloadError(true)
-    } finally {
-      setDownloading(false)
     }
+    setDownloading(false)
   }
 
   async function commit() {

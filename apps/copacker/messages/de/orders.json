@@ -548,6 +548,7 @@
       "stackableHeight": "Höhe: {height, number} cm ist zu hoch für eine stapelbare {receiver}-Palette, die höchstens {maxCm, number} cm ({maxIn, number} Zoll) hoch sein darf. Setzen Sie Stapelbarkeit auf „Nicht stapelbar“ oder verringern Sie die Ladung.",
       "palletWeight": "Gewicht: {weight, number} kg liegen über der {receiver}-Obergrenze von {maxKg, number} kg ({maxLb, number} lb) einschließlich Palette. Verteilen Sie die Kartons auf mehr Paletten.",
       "emptyPallet": "Kartons: Diese Palette hat noch keine Kartons. Wählen Sie ihre Kartons aus oder löschen Sie die Palette.",
+      "palletMixedNetworks": "Kartons: Diese Palette mischt FBA- und AWD-Kartons. Stellen Sie die Kartons jedes Netzwerks auf separate Paletten.",
       "duplicatePallet": "Paletten: Zwei Paletten haben die Nummer {pallet}. Importieren Sie sie erneut mit eindeutigen Nummern.",
       "unknownPalletCarton": "Kartons: {carton} ist kein Karton dieser Sendung. Entfernen Sie ihn von dieser Palette.",
       "palletCartonTwice": "Kartons: {carton} steht bereits auf einer anderen Palette. Entfernen Sie ihn von dieser oder der anderen Palette.",

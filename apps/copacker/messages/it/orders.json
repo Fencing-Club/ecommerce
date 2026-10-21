@@ -548,6 +548,7 @@
       "stackableHeight": "Altezza: {height, number} cm è troppo per un pallet {receiver} sovrapponibile, che può arrivare a {maxCm, number} cm ({maxIn, number} in). Imposta Impilabilità su Non impilabile o abbassa il carico.",
       "palletWeight": "Peso: {weight, number} kg superano il limite {receiver} di {maxKg, number} kg ({maxLb, number} lb), pallet compreso. Distribuisci i cartoni su più pallet.",
       "emptyPallet": "Cartoni: questo pallet non ha ancora cartoni. Scegli i suoi cartoni o elimina il pallet.",
+      "palletMixedNetworks": "Cartoni: questo pallet mescola cartoni FBA e AWD. Metti i cartoni di ogni rete su pallet separati.",
       "duplicatePallet": "Pallet: due pallet hanno il numero {pallet}. Importali di nuovo con numeri univoci.",
       "unknownPalletCarton": "Cartoni: {carton} non è un cartone di questa spedizione. Toglilo da questo pallet.",
       "palletCartonTwice": "Cartoni: {carton} è già su un altro pallet. Toglilo da questo pallet o dall’altro.",

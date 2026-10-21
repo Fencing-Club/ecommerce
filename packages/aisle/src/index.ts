@@ -340,7 +340,9 @@ export function palletLabels(
   labels: ReadonlyArray<{ cartonId: string; amazonShipmentId: string }>
 ): PalletLabel[] {
   const placed = pallets.flatMap((pallet) => {
-    const label = labels.find((label) => pallet.cartonIds.includes(label.cartonId))
+    const label = labels.find((label) =>
+      pallet.cartonIds.some((id) => id.toLowerCase() === label.cartonId.toLowerCase())
+    )
     return label ? [{ palletId: pallet.palletId, amazonShipmentId: label.amazonShipmentId }] : []
   })
   return placed.map((pallet) => {
@@ -350,14 +352,14 @@ export function palletLabels(
 }
 
 // A packing's cartons for each Amazon network they go to, each a packing of its own, in network order. Every carton goes
-// to one network, as validatePacking requires; its invoice changes stay with the first, and each pallet with the
-// cartons on it.
+// to one network and every pallet holds one network's cartons, as validatePacking requires; its invoice changes stay
+// with the first, and each pallet with the cartons on it. Carton IDs match in any case, as validatePacking matches them.
 export function splitByNetwork(order: Pick<OrderInput, "items">, packing: Packing) {
   const split = amazonNetworks.flatMap((network) => {
     const cartons = packing.cartons.filter((carton) => cartonNetworks(order, carton)[0] === network)
-    const ids = new Set(cartons.map((carton) => carton.cartonId))
+    const ids = new Set(cartons.map((carton) => carton.cartonId.toLowerCase()))
     const pallets = packing.pallets?.flatMap((pallet) => {
-      const cartonIds = pallet.cartonIds.filter((id) => ids.has(id))
+      const cartonIds = pallet.cartonIds.filter((id) => ids.has(id.toLowerCase()))
       return cartonIds.length ? [{ ...pallet, cartonIds }] : []
     })
     return cartons.length ? [{ network, packing: { ...packing, cartons, ...(pallets && { pallets }) } }] : []
@@ -554,8 +556,10 @@ const palletEntry = (pallet: Pallet) => ({
 export function fbaPallets(packing: Pick<Packing, "pallets">, cartonIds: ReadonlySet<string>) {
   const entries = new Map<string, ReturnType<typeof palletEntry> & { quantity: number }>()
   const split: string[] = []
+  // Carton IDs match in any case, as validatePacking matches them.
+  const ids = new Set([...cartonIds].map((id) => id.toLowerCase()))
   for (const pallet of packing.pallets ?? []) {
-    const inside = pallet.cartonIds.filter((id) => cartonIds.has(id))
+    const inside = pallet.cartonIds.filter((id) => ids.has(id.toLowerCase()))
     if (!inside.length) {
       continue
     }

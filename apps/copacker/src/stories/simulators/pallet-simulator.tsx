@@ -29,8 +29,9 @@ export function PalletSimulator({ dataSet: initial }: { dataSet: string }) {
   const [receiver, setReceiver] = useState<Receiver>(chosen.receiver)
   const [pallets, setPallets] = useState<PalletValue[]>(chosen.pallets)
   const order = dataSetOrder(chosen.plenty, receiver)
+  const cartons = chosen.cartons ?? palletCartonSet
   const issues = validatePacking(order, {
-    cartons: expandCartonGroups(palletCartonSet),
+    cartons: expandCartonGroups(cartons),
     changes: [],
     palletized: true,
     pallets
@@ -71,7 +72,7 @@ export function PalletSimulator({ dataSet: initial }: { dataSet: string }) {
       <PolicyRules title="Pallet policy" receiver={policy?.receiver} rules={policy?.rules} />
       <PalletTable
         pallets={pallets}
-        cartons={palletCartons(palletCartonSet, order.items)}
+        cartons={palletCartons(cartons, order.items)}
         issues={issues.filter((issue) => palletRules.has(issue.code))}
         context="PO39 / Simulator"
         showErrors

@@ -30,6 +30,7 @@
       "unknownChange": "Rechnungsänderungen müssen sich auf eindeutige Positionen der Bestellung beziehen",
       "noPallets": "Fügen Sie die Paletten hinzu, auf denen diese Kartons versendet werden, oder deaktivieren Sie „Auf Paletten gepackt“",
       "emptyPallet": "Palette {pallet} hat keine Kartons. Wählen Sie ihre Kartons aus oder löschen Sie sie.",
+      "palletMixedNetworks": "Palette {pallet} mischt FBA- und AWD-US-Kartons. Stellen Sie die Kartons jedes Netzwerks auf separate Paletten.",
       "duplicatePallet": "Palette {pallet} ist mehrfach aufgeführt",
       "unknownPalletCarton": "Palette {pallet} enthält Karton {carton}, der nicht zu dieser Sendung gehört",
       "palletCartonTwice": "Karton {carton} steht auf mehr als einer Palette. Lassen Sie ihn auf einer.",

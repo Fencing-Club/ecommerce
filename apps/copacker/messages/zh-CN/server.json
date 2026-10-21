@@ -30,6 +30,7 @@
       "unknownChange": "发票更改必须对应采购订单上不重复的商品",
       "noPallets": "请添加装运这些纸箱的托盘，或取消勾选“托盘包装”",
       "emptyPallet": "托盘 {pallet} 上没有纸箱。请选择其纸箱或将其删除。",
+      "palletMixedNetworks": "托盘 {pallet} 上混放了 FBA 和 AWD US 的纸箱。请将各网络的纸箱分托盘放置。",
       "duplicatePallet": "托盘 {pallet} 重复列出",
       "unknownPalletCarton": "托盘 {pallet} 列出了纸箱 {carton}，但它不在此货件中",
       "palletCartonTwice": "纸箱 {carton} 位于多个托盘上。请只保留在一个托盘上。",

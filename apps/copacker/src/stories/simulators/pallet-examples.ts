@@ -13,7 +13,7 @@ import { shippingMessage } from "@/documents/shipping-copy"
 import { documentSettingsForLocale } from "@/documents/shipping-model"
 import { palletPolicyChecks } from "@/documents/shipping-rules"
 import { expandCartonGroups, type PalletValue } from "@/lib/carton-groups"
-import { pallet, palletCartonSet, type PalletDataSet } from "./data"
+import { cartonGroup, pallet, palletCartonSet, type PalletDataSet, type Receiver } from "./data"
 
 const allCartons = expandCartonGroups(palletCartonSet).map((carton) => carton.cartonId)
 // One pallet holding every carton, within every limit, which each example changes in one way.
@@ -49,8 +49,14 @@ type Example = PalletDataSet & { id: string; group: string; rule: string; checkl
 
 export const everyReceiver = "Every receiver"
 
-// How the cartons and pallets must match, which validatePacking checks wherever they go.
-const everywhere: { code: keyof typeof packingRuleDescriptions; pallets: PalletValue[] }[] = [
+// How the cartons and pallets must match, which validatePacking checks wherever they go. A pallet mixing networks needs
+// cartons of both, so that example adds B1, tea towels, which go to AWD while the bags go to FBA.
+const everywhere: {
+  code: keyof typeof packingRuleDescriptions
+  pallets: PalletValue[]
+  receiver?: Receiver
+  cartons?: PalletDataSet["cartons"]
+}[] = [
   { code: "noPallets", pallets: [] },
   {
     code: "emptyPallet",
@@ -74,6 +80,12 @@ const everywhere: { code: keyof typeof packingRuleDescriptions; pallets: PalletV
   {
     code: "cartonsOffPallets",
     pallets: [{ ...fine, cartonIds: allCartons.slice(2) }]
+  },
+  {
+    code: "palletMixedNetworks",
+    receiver: "mixed",
+    cartons: [...palletCartonSet, cartonGroup(["B1"], [60, 40, 40], 10, [["stripe", 40]])],
+    pallets: [{ ...fine, cartonIds: [...allCartons, "B1"] }]
   }
 ]
 
@@ -101,12 +113,13 @@ export function usePalletExamples(): Example[] {
         }))
       )
     ),
-    ...everywhere.map(({ code, pallets }) => ({
+    ...everywhere.map(({ code, pallets, receiver = "fba", cartons }) => ({
       id: `every-${code}`,
       group: everyReceiver,
       rule: packingRuleDescriptions[code],
-      receiver: "fba" as const,
-      pallets
+      receiver,
+      pallets,
+      ...(cartons && { cartons })
     }))
   ]
   return examples.map((example) => ({

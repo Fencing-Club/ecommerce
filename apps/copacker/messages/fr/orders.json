@@ -548,6 +548,7 @@
       "stackableHeight": "Hauteur : {height, number} cm est trop haut pour une palette {receiver} gerbable, limitée à {maxCm, number} cm ({maxIn, number} po). Réglez Gerbage sur Non gerbable ou réduisez la charge.",
       "palletWeight": "Poids : {weight, number} kg dépassent la limite {receiver} de {maxKg, number} kg ({maxLb, number} lb), palette comprise. Répartissez les cartons sur plus de palettes.",
       "emptyPallet": "Cartons : cette palette n’a pas encore de cartons. Choisissez ses cartons ou supprimez la palette.",
+      "palletMixedNetworks": "Cartons : cette palette mélange des cartons FBA et AWD. Placez les cartons de chaque réseau sur des palettes séparées.",
       "duplicatePallet": "Palettes : deux palettes portent le numéro {pallet}. Importez-les à nouveau avec des numéros uniques.",
       "unknownPalletCarton": "Cartons : {carton} n’est pas un carton de cet envoi. Retirez-le de cette palette.",
       "palletCartonTwice": "Cartons : {carton} est déjà sur une autre palette. Retirez-le de cette palette ou de l’autre.",

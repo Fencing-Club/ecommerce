@@ -88,9 +88,10 @@ describe("checkPallets", () => {
 
   it("follows the policy of where the pallet's cartons go, AWD's when any go there", () => {
     expect(checkPallets(order, { cartons, pallets: [tall] })[0]).toMatchObject({ values: { receiver: "FBA" } })
-    expect(checkPallets(order, { cartons, pallets: [{ ...tall, cartonIds: ["A1", "B1"] }] })[0]).toMatchObject({
-      values: { receiver: "AWD" }
-    })
+    // A pallet goes to one network, so one with both networks' cartons is refused too.
+    const mixed = checkPallets(order, { cartons, pallets: [{ ...tall, cartonIds: ["A1", "B1"] }] })
+    expect(mixed[0]).toMatchObject({ code: "palletMixedNetworks", values: { pallet: tall.palletId } })
+    expect(mixed[1]).toMatchObject({ values: { receiver: "AWD" } })
   })
 
   it("leaves pallets to the buyer's own warehouse, and pallets with no cartons yet, unchecked", () => {

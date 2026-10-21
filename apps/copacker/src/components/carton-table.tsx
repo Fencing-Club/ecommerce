@@ -153,7 +153,9 @@ function CartonRow({
     : t("emptyCarton")
   const at = (place: Place) => errors.filter((error) => error.place === place)
   const outlined = (field: string) => errors.some((error) => error.outlines.includes(field))
-  const errorId = (place: Place) => `${id}-${place}`
+  // A field names its errors only while they're on screen: a closed row hides them.
+  const errorsId = (place: Place) => `${id}-${place}`
+  const errorId = (place: Place) => (open && at(place).length > 0 ? errorsId(place) : undefined)
 
   function cartonErrors() {
     const found: CartonError[] = issueErrors(issues, value, products)
@@ -178,7 +180,7 @@ function CartonRow({
       const pack = product?.piecesPerSet ?? 1
       if (shown(field, content.pieces) && !(Number.isInteger(content.pieces) && content.pieces > 0)) {
         found.push({ place: index, outlines: [field], message: t("enterUnits") })
-      } else if (content.pieces % pack !== 0) {
+      } else if (Number.isFinite(content.pieces) && content.pieces % pack !== 0) {
         found.push({
           place: index,
           outlines: [field],
@@ -199,7 +201,7 @@ function CartonRow({
   const errorLines = (place: Place, className: string) =>
     open &&
     at(place).length > 0 && (
-      <div id={errorId(place)} aria-live="polite" className={cn("flex flex-col gap-2", className)}>
+      <div id={errorsId(place)} aria-live="polite" className={cn("flex flex-col gap-2", className)}>
         {at(place).map((error) => (
           <FieldError key={error.message} source={error.source}>
             {error.message}

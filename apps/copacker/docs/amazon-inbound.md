@@ -18,7 +18,7 @@ FNSKU and units. AWD cartons hold one SKU, at most 150 units, packed the same wa
 
 ### Link an existing AWD shipment
 
-The buyer can enter an existing `STAR-…` shipment ID on an AWD packing draft. Copacker verifies it belongs to the
+The buyer can enter an existing `STAR-â€¦` shipment ID on an AWD packing draft. Copacker verifies it belongs to the
 connected seller, is still `CREATED`, and contains only this PO's AWD products within the ordered quantities. The same
 Amazon shipment cannot be linked twice in a buyer workspace. Linking or removing a link saves any incomplete packing
 first. Suppliers cannot change the link.
@@ -43,10 +43,11 @@ runs again, reading the plan to find where it is:
 3. Send each carton as a box with its size, weight and contents.
 4. Confirm the placement with the lowest fees (then fewest shipments). A plan can split into several Amazon shipments;
    `amazonShipmentId` lists the ones its cartons travel in, comma-separated, and each carton label records its own.
-5. Book the buyer's own carrier (small parcel when offered, or less than a truckload for cartons on pallets),
-   confirming the first delivery window that starts on or after the ready date, or the latest Amazon offers. The buyer
-   can move the window in Seller Central until the shipment closes. Cartons on pallets send each Amazon shipment's
-   pallets and the goods' declared value; see [packing](packing.md#what-amazon-gets).
+5. Book the buyer's own carrier (small parcel when offered; for cartons on pallets, less than a truckload, or a full
+   truckload when Amazon offers no LTL option), confirming the first delivery window that starts on or after the ready
+   date, or the latest Amazon offers. The buyer can move the window in Seller Central until the shipment closes.
+   Cartons on pallets send each Amazon shipment's pallets and the goods' declared value; see
+   [packing](packing.md#what-amazon-gets).
 6. Download each box's label on plain paper and match boxes to cartons by contents, then size and weight.
 7. For cartons on pallets, download each Amazon shipment's pallet labels; see [packing](packing.md#pallet-labels).
 

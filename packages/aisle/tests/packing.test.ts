@@ -226,6 +226,11 @@ describe("Cartons on pallets", () => {
       split: []
     })
     expect(fbaPallets(pallets, new Set(["A1", "B1"])).split).toEqual(["1"])
+    // Carton IDs match in any case, as validatePacking matches them.
+    expect(fbaPallets({ pallets: [pallet("1", ["a1", "A2"])] }, new Set(["A1", "A2"]))).toMatchObject({
+      pallets: [{ quantity: 1 }],
+      split: []
+    })
   })
 
   it("numbers each pallet within the Amazon shipment its cartons travel in", () => {
@@ -434,6 +439,31 @@ describe("POs to Amazon with lines for several networks", () => {
     // Invoice changes stay with the first part, and the rest keep the shared details.
     expect(parts.map((part) => part.packing.changes.length)).toEqual([1, 0])
     expect(parts[1]!.packing.readyDate).toBe(split.readyDate)
+  })
+
+  it("keeps each pallet to one network's cartons", () => {
+    const pallet = (palletId: string, cartonIds: string[]) => ({
+      palletId,
+      length: 120,
+      width: 100,
+      height: 90,
+      weight: 62,
+      stackable: true,
+      cartonIds
+    })
+    const issues = (pallets: ReturnType<typeof pallet>[]) =>
+      validatePacking(both, { ...split, palletized: true, pallets })
+        .issues.filter((issue) => issue.code === "palletMixedNetworks")
+        .map((issue) => issue.palletId)
+    expect(issues([pallet("1", ["G1", "A6", "A7"])])).toEqual(["1"])
+    expect(issues([pallet("1", ["G1"]), pallet("2", ["A6", "A7"])])).toEqual([])
+    // Each network's packing keeps its own pallets, whatever case their carton IDs are in.
+    const parts = splitByNetwork(both, {
+      ...split,
+      palletized: true,
+      pallets: [pallet("1", ["g1"]), pallet("2", ["a6", "A7"])]
+    })
+    expect(parts.map((part) => part.packing.pallets?.map((each) => each.palletId))).toEqual([["1"], ["2"]])
   })
 
   it("gives each network its own carton rules and each line its network", () => {

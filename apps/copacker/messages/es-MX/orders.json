@@ -548,6 +548,7 @@
       "stackableHeight": "Altura: {height, number} cm es demasiado alta para una tarima apilable de {receiver}, que puede medir hasta {maxCm, number} cm ({maxIn, number} in). Cambia Apilado a No apilable o baja la carga.",
       "palletWeight": "Peso: {weight, number} kg supera el límite de {receiver} de {maxKg, number} kg ({maxLb, number} lb), incluida la tarima. Reparte las cajas en más tarimas.",
       "emptyPallet": "Cajas: esta tarima aún no tiene cajas. Elige sus cajas o elimina la tarima.",
+      "palletMixedNetworks": "Cajas: esta tarima mezcla cajas de FBA y AWD. Pon las cajas de cada red en tarimas separadas.",
       "duplicatePallet": "Tarimas: dos tarimas tienen el número {pallet}. Vuelve a importarlas con números únicos.",
       "unknownPalletCarton": "Cajas: {carton} no es una caja de este envío. Quítala de esta tarima.",
       "palletCartonTwice": "Cajas: {carton} ya está en otra tarima. Quítala de esta tarima o de la otra.",

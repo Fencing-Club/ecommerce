@@ -33,7 +33,8 @@ const codeSimulators = {
   duplicatePallet: "pallet",
   unknownPalletCarton: "pallet",
   palletCartonTwice: "pallet",
-  cartonsOffPallets: "pallet"
+  cartonsOffPallets: "pallet",
+  palletMixedNetworks: "pallet"
 } as const satisfies Record<PackingRule["code"], "carton" | "pallet">
 export const cartonCodes = objectKeys(codeSimulators).filter((code) => codeSimulators[code] === "carton")
 export const palletCodes = objectKeys(codeSimulators).filter((code) => codeSimulators[code] === "pallet")

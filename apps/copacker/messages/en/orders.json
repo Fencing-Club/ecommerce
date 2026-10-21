@@ -548,6 +548,7 @@
       "stackableHeight": "Height: {height, number} cm is too tall for a stackable {receiver} pallet, which may be up to {maxCm, number} cm ({maxIn, number} in). Set Stacking to Not stackable, or lower the load.",
       "palletWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb), including the pallet. Spread the cartons over more pallets.",
       "emptyPallet": "Cartons: this pallet has no cartons yet. Choose its cartons, or delete the pallet.",
+      "palletMixedNetworks": "Cartons: this pallet mixes FBA and AWD cartons. Put each network’s cartons on separate pallets.",
       "duplicatePallet": "Pallets: two pallets are numbered {pallet}. Re-import them with unique numbers.",
       "unknownPalletCarton": "Cartons: {carton} isn’t a carton in this shipment. Remove it from this pallet.",
       "palletCartonTwice": "Cartons: {carton} is already on another pallet. Remove it from this pallet or the other.",

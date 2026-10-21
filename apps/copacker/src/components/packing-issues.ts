@@ -158,6 +158,7 @@ export function usePalletIssueErrors() {
         return value ? [{ place: "weight", message: t(issue.code, { ...issue.values, weight: value.weight }) }] : []
       case "emptyPallet":
       case "duplicatePallet":
+      case "palletMixedNetworks":
       case "unknownPalletCarton":
       case "palletCartonTwice":
         return [{ place: "pallet", message: t(issue.code, issue.values) }]

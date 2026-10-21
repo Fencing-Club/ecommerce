@@ -138,6 +138,20 @@ export const AddProduct = meta.story({
   }
 })
 
+// Before Finish packing checks the form, a product just added, with no quantity yet, shows no error.
+export const AddProductBeforeChecking = meta.story({
+  args: { ...AddProduct.input.args, showErrors: false },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Add products to carton D1" }))
+    const dialog = await shownDialog("Add products to carton")
+    await userEvent.click(dialog.getByRole("checkbox", { name: `${sage!.name} ${sage!.variant}` }))
+    await userEvent.click(dialog.getByRole("button", { name: "Add to carton" }))
+    const quantity = canvas.getByRole("spinbutton", { name: "WB-2214: quantity per carton D1" })
+    await expect(quantity).not.toHaveAttribute("aria-invalid", "true")
+    await expect(canvas.queryByText(/sold in packs of/)).toBeNull()
+  }
+})
+
 export const RowMenu = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Carton B1 actions" }))

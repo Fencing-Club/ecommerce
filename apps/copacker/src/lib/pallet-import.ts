@@ -57,10 +57,16 @@ export type PalletImportResult = {
 export function readCartonIds(text: string, known: ReadonlySet<string>) {
   const ids = new Map<string, string>()
   const read = (token: string) => (known.has(token.toLowerCase()) ? [token] : expandRun(token))
+  // A run of IDs with spaces in them (Box 1–Box 3) is one run; other text with spaces is several IDs or runs.
+  const readPart = (whole: string) => {
+    if (known.has(whole.toLowerCase()) || !/\s/.test(whole)) {
+      return read(whole)
+    }
+    const run = expandRun(whole)
+    return run.length > 1 ? run : whole.split(/\s+/).flatMap(read)
+  }
   for (const part of text.replaceAll(/\s*([–—-])\s*/g, "$1").split(/[,;，；、،؛\n\r]+/)) {
-    const whole = part.trim()
-    const run = known.has(whole.toLowerCase()) || !/\s/.test(whole) ? read(whole) : whole.split(/\s+/).flatMap(read)
-    for (const id of run) {
+    for (const id of readPart(part.trim())) {
       if (id && !ids.has(id.toLowerCase())) {
         ids.set(id.toLowerCase(), id)
       }

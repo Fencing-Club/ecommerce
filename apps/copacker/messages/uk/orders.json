@@ -481,7 +481,7 @@
       "contents": "Вміст"
     },
     "toggleProducts": "Товари в {cartons}",
-    "contentsDetail": "{products, plural, one {# товар, {perCarton, number} у коробці} few {# товари} many {# товарів} other {# товару}}",
+    "contentsDetail": "{products, plural, =1 {# товар, {perCarton, number} у коробці} one {# товар} few {# товари} many {# товарів} other {# товару}}",
     "contentsSummary": "{units}, {detail}",
     "emptyCarton": "Ще немає товарів",
     "issues": "{count, plural, one {# проблема} few {# проблеми} many {# проблем} other {# проблеми}}",
@@ -548,6 +548,7 @@
       "stackableHeight": "Висота: {height, number} см завелика для штабельованої палети {receiver}, яка може бути до {maxCm, number} см ({maxIn, number} дюйм.). Встановіть «Штабелювання» на «Не штабелювати» або зменште вантаж.",
       "palletWeight": "Вага: {weight, number} кг перевищує ліміт {receiver} {maxKg, number} кг ({maxLb, number} lb) разом із палетою. Розподіліть коробки на більше палет.",
       "emptyPallet": "Коробки: на цій палеті ще немає коробок. Виберіть її коробки або видаліть палету.",
+      "palletMixedNetworks": "Коробки: на цій палеті змішано коробки FBA і AWD. Розмістіть коробки кожної мережі на окремих палетах.",
       "duplicatePallet": "Палети: дві палети мають номер {pallet}. Імпортуйте їх знову з унікальними номерами.",
       "unknownPalletCarton": "Коробки: {carton} не є коробкою цього відправлення. Приберіть її з цієї палети.",
       "palletCartonTwice": "Коробки: {carton} вже є на іншій палеті. Приберіть її з цієї палети або з іншої.",
