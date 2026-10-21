@@ -22,6 +22,7 @@ import {
   CircleCheck,
   FileUp,
   GripVertical,
+  Info,
   ListOrdered,
   LoaderCircle,
   TriangleAlert,
@@ -392,6 +393,8 @@ function CarrierLabelsForm({
   const [reading, setReading] = useState("")
   // Why a dropped file added no labels.
   const [error, setError] = useState("")
+  // Labels a dropped file had that were already here.
+  const [notice, setNotice] = useState("")
   // The label being dragged, which a carton or Not placed names when it's held over them.
   const [dragging, setDragging] = useState<string | null>(null)
   // The dragged label leaves its place a frame after the drag starts, once dnd-kit has measured it for the card that
@@ -481,6 +484,7 @@ function CarrierLabelsForm({
 
   async function add(dropped: File[]) {
     setError("")
+    setNotice("")
     const files = dropped.toSorted((a, b) => byName.compare(a.name, b.name))
     const notPdf = files.find((file) => !isPdf(file))
     if (notPdf) {
@@ -528,7 +532,7 @@ function CarrierLabelsForm({
     }
     setReading("")
     if (repeated) {
-      setError(t("alreadyAdded", { labels: repeated }))
+      setNotice(t("alreadyAdded", { labels: repeated }))
     }
     setLabels((current) => [...current, ...added])
     setPlaced((current) =>
@@ -623,6 +627,12 @@ function CarrierLabelsForm({
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           {error}
         </p>
+      )}
+      {notice && (
+        <output className="flex gap-2 rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
+          <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {notice}
+        </output>
       )}
       {shown ? (
         <LabelPreview
