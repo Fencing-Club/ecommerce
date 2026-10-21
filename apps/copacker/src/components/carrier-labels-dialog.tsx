@@ -619,21 +619,6 @@ function CarrierLabelsForm({
   return (
     <>
       <p className="text-sm text-muted-foreground">{t("intro")}</p>
-      {error && (
-        <p
-          role="alert"
-          className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-          {error}
-        </p>
-      )}
-      {notice && (
-        <output className="flex gap-2 rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
-          <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
-          {notice}
-        </output>
-      )}
       {shown ? (
         <LabelPreview
           {...row}
@@ -692,11 +677,14 @@ function CarrierLabelsForm({
           )}
         </DndContext>
       )}
-      {failure && (
-        <p role="alert" className="flex gap-2 text-sm text-destructive">
-          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-          {failure}
-        </p>
+      {/* What went wrong with a drop or a save, and labels a drop skipped, go above the buttons. */}
+      {error && <Problem>{error}</Problem>}
+      {failure && <Problem>{failure}</Problem>}
+      {notice && (
+        <output className="flex gap-2 text-sm text-muted-foreground">
+          <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {notice}
+        </output>
       )}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
@@ -712,6 +700,15 @@ function CarrierLabelsForm({
         </Button>
       </div>
     </>
+  )
+}
+
+function Problem({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="flex gap-2 text-sm text-destructive">
+      <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+      {children}
+    </p>
   )
 }
 
