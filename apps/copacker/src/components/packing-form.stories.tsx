@@ -296,7 +296,7 @@ export const MixedCarton = meta.story({
 // Amazon has set the PO's packing groups (board 06.15): the carton holds two of them, so packing can't finish until
 // each group has its own cartons.
 const packingGroups = { [tote!.buyerSku]: "pg-totes", [apron!.buyerSku]: "pg-aprons", [basket!.buyerSku]: "pg-totes" }
-const groupsError = `Products: FBA needs ${tote!.supplierSku} and ${apron!.supplierSku} in separate cartons. Move one of them to another carton.`
+const groupsError = `Products: FBA can’t take ${tote!.supplierSku} and ${apron!.supplierSku} in one carton. Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different warehouses. Move one of them to another carton.`
 export const FbaPackingGroups = meta.story({
   args: { order: fbaOrder, initial: mixedDraft, addresses: [savedAddress], packingGroups },
   play: async ({ canvas }) => {

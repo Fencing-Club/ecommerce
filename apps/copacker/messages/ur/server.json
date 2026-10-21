@@ -17,7 +17,7 @@
       "cartonSize": "{receiver} کارٹن {shape, select, cube {کی ہر طرف {lengthCm, number} cm یا اس سے کم رکھیں} other {کا سائز {lengthCm, number} × {widthCm, number} × {heightCm, number} cm یا اس سے کم رکھیں}}",
       "cartonWeight": "{receiver} کارٹن کا وزن {maxLb, number} lb ({maxKg, number} kg) یا اس سے کم رکھیں",
       "oneSku": "ہر {receiver} کارٹن میں ایک SKU پیک کریں",
-      "packingGroups": "{receiver} کو {product} اور {other} الگ الگ کارٹنوں میں چاہئیں",
+      "packingGroups": "{receiver} {product} اور {other} کو ایک کارٹن میں قبول نہیں کرتا: Amazon انہیں مختلف طریقے سے سنبھالتا ہے، مثلاً خطرناک سامان، پریپ یا لیبلز کی وجہ سے",
       "repeatedProduct": "ہر کارٹن میں ہر پروڈکٹ ایک ہی بار درج کریں",
       "unknownProduct": "ایسے پروڈکٹس ہٹائیں جو اس خریداری آرڈر میں نہیں",
       "incompletePacks": "{sku}: {pack} یونٹس کے ضعف میں مقدار رکھیں",

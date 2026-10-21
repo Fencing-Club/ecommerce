@@ -17,7 +17,7 @@
       "cartonSize": "Usa cajas de {receiver} de {shape, select, cube {{lengthCm, number} cm o menos por lado} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm o menos}}",
       "cartonWeight": "Usa cajas de {receiver} de {maxLb, number} lb ({maxKg, number} kg) o menos",
       "oneSku": "Empaca un solo SKU por caja de {receiver}",
-      "packingGroups": "{receiver} necesita {product} y {other} en cajas separadas",
+      "packingGroups": "{receiver} no acepta {product} y {other} en la misma caja: Amazon los maneja de forma distinta, por ejemplo por mercancías peligrosas, preparación o etiquetas",
       "repeatedProduct": "Incluye cada producto una sola vez por caja",
       "unknownProduct": "Quita los productos que no están en esta orden de compra",
       "incompletePacks": "{sku}: usa un múltiplo de {pack} unidades",

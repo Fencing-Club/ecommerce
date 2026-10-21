@@ -606,7 +606,7 @@ export const FbaPackingGroups = meta.story({
   play: async ({ canvas }) => {
     // The errors name each product by the supplier SKU the carton lists, or, for a bag without one, by its name.
     const error =
-      "Products: FBA needs Cotton drawstring bag and NT-CT-3100 in separate cartons. Move one of them to another carton."
+      "Products: FBA can’t take Cotton drawstring bag and NT-CT-3100 in one carton. Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different warehouses. Move one of them to another carton."
     for (const carton of ["A1", "B1", "C1"]) {
       await expect(within(canvas.getByRole("region", { name: `Carton ${carton}` })).getByText(error)).toBeVisible()
     }

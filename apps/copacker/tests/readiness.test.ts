@@ -67,13 +67,13 @@ describe("Amazon's packing groups", () => {
     // C2 holds both products.
     const issues = (rows: ReturnType<typeof shipmentRow>[]) =>
       packingReadiness(order, draft, packingFor(order), rows, draft.orderRevision)
-        .issues.filter((issue) => issue.message.includes("separate cartons"))
+        .issues.filter((issue) => issue.message.includes("in one carton"))
         .map(({ cartonId, message }) => ({ cartonId, message }))
     expect(issues([first, cancelled, draft])).toEqual([
       {
         cartonId: "C2",
         // By the supplier SKUs the carton lists, not the buyer's.
-        message: `FBA needs ${order.items[0]!.supplierSku} and ${order.items[1]!.supplierSku} in separate cartons`
+        message: `FBA can’t take ${order.items[0]!.supplierSku} and ${order.items[1]!.supplierSku} in one carton: Amazon handles them differently, for example for dangerous goods, prep or labels`
       }
     ])
     expect(issues([first, draft])).toEqual([])

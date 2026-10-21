@@ -43,8 +43,10 @@ after Amazon refused its cartons shows which ones mix groups.
 
 The copy doesn't say "packing group", and it names products as the carton lists them, by supplier SKU, or by name for a
 product without one (with the variant when two share a name), since the supplier never sees the buyer's SKUs
-(`issueValues` in `lib/packing-messages.ts`): "Products: FBA needs Cotton drawstring bag and NT-CT-3100 in separate
-cartons. Move one of them to another carton." Before
+(`issueValues` in `lib/packing-messages.ts`). Amazon doesn't say why two products are in different groups, so the error
+gives the reasons it lists in general: "Products: FBA can't take Cotton drawstring bag and NT-CT-3100 in one carton.
+Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different
+warehouses. Move one of them to another carton." Before
 Amazon has planned any of the PO's shipments, the Cartons section says "Products that can share a carton aren't checked
 yet" (06.15's as-built card, in place on 06.18). The groups aren't fetched live, so it has no Retry button.
 

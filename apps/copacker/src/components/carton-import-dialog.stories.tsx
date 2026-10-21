@@ -169,7 +169,7 @@ export const PackingGroups = meta.story({
     const dialog = await upload(
       csv([`D1,1,${tote!.supplierSku},20,60,40,40,12`, `D1,1,${apron!.supplierSku},10,60,40,40,12`])
     )
-    const message = `FBA needs ${tote!.supplierSku} and ${apron!.supplierSku} in separate cartons`
+    const message = `FBA can’t take ${tote!.supplierSku} and ${apron!.supplierSku} in one carton: Amazon handles them differently, for example for dangerous goods, prep or labels`
     await expect(dialog.getByText(message)).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
   }
