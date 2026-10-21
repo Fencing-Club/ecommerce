@@ -126,3 +126,21 @@ describe("carton import", () => {
     expect(result.issues[0]).toMatchObject({ row: 2, code: "number" })
   })
 })
+
+describe("carton totals", () => {
+  it("count a group whose count is being typed as the one carton it shows", () => {
+    const group = {
+      cartonId: "A1",
+      length: 60,
+      width: 40,
+      height: 50,
+      weight: 12,
+      items: [{ itemId: "x", pieces: 24 }]
+    }
+    for (const count of [0, Number.NaN]) {
+      const groups = [{ ...group, count }]
+      expect(cartonTotals(groups)).toEqual({ cartons: 1, pieces: 24 })
+      expect(expandCartonGroups(groups)).toHaveLength(1)
+    }
+  })
+})
