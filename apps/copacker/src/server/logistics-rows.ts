@@ -216,23 +216,21 @@ export async function shipmentListRows(input: {
   const linked = new Set(list.flatMap((shipment) => shipment.amazonShipmentId?.split(", ") ?? []))
   const amazonRows = amazon
     .filter((row) => !linked.has(row.shipmentId))
-    .map(
-      (row): LogisticsRow => ({
-        id: row.shipmentId,
-        // Made in Seller Central or elsewhere, so it opens there.
-        href: row.url,
-        external: true,
-        reference: row.shipmentId,
-        detail: row.name ?? undefined,
-        partner: null,
-        forwarder: null,
-        destination: `Amazon ${amazonNetworkNames[row.network]}`,
-        status: row.status,
-        stage: shipmentStage(row.status),
-        waiting: amazonParty(row.status),
-        source: "amazon",
-        ready: null
-      })
-    )
+    .map((row): LogisticsRow => ({
+      id: row.shipmentId,
+      // Made in Seller Central or elsewhere, so it opens there.
+      href: row.url,
+      external: true,
+      reference: row.shipmentId,
+      detail: row.name ?? undefined,
+      partner: null,
+      forwarder: null,
+      destination: `Amazon ${amazonNetworkNames[row.network]}`,
+      status: row.status,
+      stage: shipmentStage(row.status),
+      waiting: amazonParty(row.status),
+      source: "amazon",
+      ready: null
+    }))
   return [...orderRows, ...amazonRows]
 }
