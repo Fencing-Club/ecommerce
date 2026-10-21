@@ -28,7 +28,7 @@ pickup/drop-off, FBA/AWD freight, AGL, own warehouses, both supplier-to-forwarde
 Product tasks are an explicit list: absence means the recipient has no task. They are not inferred from the destination.
 The approved Pen/Storybook packing modal offers None, Polybag, or Sealed polybag, plus independent optional SKU,
 FNSKU, suffocation, and choking hazard labels. Country-of-origin labels are outside this scope. The shared
-option IDs and validation live in `@repo/aisle/packing-requirements`, with UI options in `src/lib/packing-requirements.ts`.
+option IDs and validation live in `@repo/copacker-shipments/packing-requirements`, with UI options in `src/lib/packing-requirements.ts`.
 PO items persist explicit tasks in their JSON snapshot through the packing-details modal. Existing items without
 explicit tasks must be confirmed before generating these documents; destination alone does not establish a labelling
 task. Custom packaging with reference photos remains a planned follow-up.
@@ -76,8 +76,8 @@ and creates the packing list, checklist, carton reference, and combined packet (
 the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
 supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
 
-`amazonCartonPolicies` in `@repo/aisle` supplies numeric limits to validation and these templates. Transport
-requirements stay in `@repo/aisle/transport`.
+`amazonCartonPolicies` in `@repo/copacker-shipments` supplies numeric limits to validation and these templates. Transport
+requirements stay in `@repo/copacker-shipments/transport`.
 
 ## Shipment integration
 

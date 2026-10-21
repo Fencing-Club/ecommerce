@@ -1,5 +1,5 @@
-import type { OrderInput } from "@repo/aisle"
-import { orderTotal } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
+import { orderTotal } from "@repo/copacker-shipments"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {

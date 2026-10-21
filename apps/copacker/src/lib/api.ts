@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import type { ShippingDocumentData } from "@/documents/shipping-model"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"

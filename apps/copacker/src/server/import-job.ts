@@ -1,4 +1,4 @@
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"

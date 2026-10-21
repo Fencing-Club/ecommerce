@@ -35,7 +35,7 @@ holding cartons of this shipment, and a unique number for each (`noPallets`, `em
 `unknownPalletCarton`, `palletCartonTwice`, `cartonsOffPallets`). A pallet to Amazon also goes to one network, so
 `checkPallets` refuses one holding both FBA and AWD cartons (`palletMixedNetworks`), as `validatePacking` refuses a
 carton mixing their products (`mixedNetworks`). Booking splits a shipment's cartons and pallets by network
-(`splitByNetwork` in aisle), and a mixed pallet would go to both networks at its full size and weight.
+(`splitByNetwork` in `@repo/copacker-shipments`), and a mixed pallet would go to both networks at its full size and weight.
 
 ### Adding a receiver or a rule
 

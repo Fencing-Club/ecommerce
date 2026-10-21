@@ -1,4 +1,4 @@
-import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
+import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"

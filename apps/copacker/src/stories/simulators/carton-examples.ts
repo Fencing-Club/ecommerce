@@ -1,4 +1,3 @@
-import type { AmazonNetwork } from "@repo/aisle"
 import { packingRuleDescriptions } from "@repo/copacker-packing-rules"
 import {
   type CartonPolicy,
@@ -7,6 +6,7 @@ import {
   sizeLimit,
   weightLimit
 } from "@repo/copacker-packing-rules/carton-policies"
+import type { AmazonNetwork } from "@repo/copacker-shipments"
 import { useLocale } from "use-intl"
 import { shippingMessage } from "@/documents/shipping-copy"
 import { documentSettingsForLocale } from "@/documents/shipping-model"
@@ -121,7 +121,7 @@ const everywhere: (Omit<Example, "name" | "note" | "group" | "id" | "rule"> & { 
   }
 ]
 
-// An example for every carton error: each rule of each carton policy in @repo/aisle broken on its own, by its
+// An example for every carton error: each rule of each carton policy in @repo/copacker-shipments broken on its own, by its
 // receiver, then the rules that hold everywhere. Each is a simulator data set, by an ID a link can name, such as
 // "awd_us-oneSku" or "every-duplicateCarton", so a new policy or rule adds its own.
 export function useCartonExamples(): Example[] {

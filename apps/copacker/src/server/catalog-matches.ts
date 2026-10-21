@@ -1,4 +1,4 @@
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 
 export function catalogMatches(variants: Iterable<CatalogVariant>, query: string) {
   const term = query.trim().toLowerCase()

@@ -1,4 +1,4 @@
-import { transportProfiles } from "@repo/aisle/transport"
+import { transportProfiles } from "@repo/copacker-shipments/transport"
 import { Status, StatusBadge } from "@/components/common"
 import { shipmentActionFeedback } from "@/lib/shipment-action-feedback"
 

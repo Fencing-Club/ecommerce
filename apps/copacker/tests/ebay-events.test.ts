@@ -20,8 +20,8 @@ const ebay = vi.hoisted(() => ({
     enableSubscription: vi.fn<(id: string) => Promise<void>>()
   }
 }))
-vi.mock("@repo/aisle/ebay", async (original) => ({
-  ...(await original<typeof import("@repo/aisle/ebay")>()),
+vi.mock("@repo/copacker-marketplaces/ebay", async (original) => ({
+  ...(await original<typeof import("@repo/copacker-marketplaces/ebay")>()),
   Ebay: class {
     destinations = ebay.app.destinations
     createDestination = ebay.app.createDestination

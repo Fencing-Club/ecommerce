@@ -1,5 +1,6 @@
-import type { OrderInput } from "@repo/aisle"
-import type { Packing } from "@repo/aisle"
+import { bundleSupplierComponents, piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { Packing } from "@repo/copacker-shipments"
 import {
   amazonNetworkNames,
   approveChanges,
@@ -7,8 +8,7 @@ import {
   orderInputSchema,
   packingDraftSchema,
   splitByNetwork
-} from "@repo/aisle"
-import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
+} from "@repo/copacker-shipments"
 import { ne, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"

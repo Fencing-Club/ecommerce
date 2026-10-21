@@ -1,4 +1,4 @@
-import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale, ShopifySale } from "@repo/copacker-marketplaces/sales"
 import { describe, expect, it } from "vitest"
 import { attributeAmazonSales, attributeShopifySales, summarizeDemandGaps } from "../src/server/sales-attribution"
 it("separates unfulfilled units from mapping failures and unknown quantities", () => {

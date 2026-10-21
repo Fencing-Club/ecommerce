@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/aisle/ebay"
-import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
+import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
+import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

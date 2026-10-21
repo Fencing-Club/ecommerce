@@ -1,4 +1,4 @@
-import { shopDomainSchema } from "@repo/aisle/shopify"
+import { shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

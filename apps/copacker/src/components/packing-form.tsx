@@ -1,5 +1,6 @@
 import { Toast } from "@base-ui/react/toast"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
 import {
   type Address,
   cartonInputSchema,
@@ -9,8 +10,7 @@ import {
   type PackingDraft,
   packingSchema,
   palletInputSchema
-} from "@repo/aisle"
-import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
+} from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, Clock3, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"

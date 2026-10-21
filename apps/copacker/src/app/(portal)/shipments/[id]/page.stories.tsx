@@ -1,4 +1,4 @@
-import { type Address, type AmazonNetwork, type OrderInput, type OrderItem } from "@repo/aisle"
+import { type Address, type AmazonNetwork, type OrderInput, type OrderItem } from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"

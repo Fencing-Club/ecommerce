@@ -1,4 +1,4 @@
-import { commonPaymentTerms } from "@repo/aisle"
+import { commonPaymentTerms } from "@repo/copacker-shipments"
 import { Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
 import { useState } from "react"

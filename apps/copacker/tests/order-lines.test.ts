@@ -1,4 +1,4 @@
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { describe, expect, it } from "vitest"
 import { orderLine } from "../src/lib/order-lines"
 

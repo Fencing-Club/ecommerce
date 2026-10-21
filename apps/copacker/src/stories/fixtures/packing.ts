@@ -1,4 +1,4 @@
-import type { Address, AmazonNetwork, OrderInput, Packing, PackingDraft } from "@repo/aisle"
+import type { Address, AmazonNetwork, OrderInput, Packing, PackingDraft } from "@repo/copacker-shipments"
 import type { CartonGroup } from "@/lib/carton-groups"
 import { orderData, orderItem } from "./orders"
 

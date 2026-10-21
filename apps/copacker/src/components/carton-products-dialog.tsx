@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { Plus, Search } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"

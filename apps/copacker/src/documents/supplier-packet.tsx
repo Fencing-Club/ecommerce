@@ -1,4 +1,4 @@
-import { combinePdfs } from "@repo/aisle/documents"
+import { combinePdfs } from "@repo/copacker-shipments/documents"
 import type { DocumentSettings, ShippingDocumentData } from "./shipping-model"
 import { renderShippingDocument, ShippingPdf } from "./shipping-pdf"
 

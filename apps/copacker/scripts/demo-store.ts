@@ -1,8 +1,8 @@
 // A demo Shopify store for a buyer workspace, so Inventory, purchase orders and Restock can be tried without connecting
 // real accounts. `pnpm db:seed` fills every buyer workspace with it; `pnpm db:seed:e2e` fills the Playwright suite's.
 import { randomUUID } from "node:crypto"
-import type { ShopifySale } from "@repo/aisle/sales"
-import type { Shopify } from "@repo/aisle/shopify"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { db } from "../src/db/index"
 import {

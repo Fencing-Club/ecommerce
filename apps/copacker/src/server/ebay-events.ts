@@ -1,5 +1,5 @@
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge"
-import { Ebay, ebaySignatureHeader, verifyEbaySignature } from "@repo/aisle/ebay"
+import { Ebay, ebaySignatureHeader, verifyEbaySignature } from "@repo/copacker-marketplaces/ebay"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

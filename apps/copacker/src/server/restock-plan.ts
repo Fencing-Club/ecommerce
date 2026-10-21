@@ -1,5 +1,5 @@
-import type { Amazon } from "@repo/aisle/amazon"
-import type { Shopify } from "@repo/aisle/shopify"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import type { CasePack } from "@/lib/case-packs"
 import { bundleSales } from "./bundle-sales"
 import type { LocationClassification } from "./inventory-locations"

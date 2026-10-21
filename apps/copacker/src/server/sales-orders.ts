@@ -1,15 +1,15 @@
-import type { Amazon } from "@repo/aisle/amazon"
-import { ProviderError } from "@repo/aisle/amazon"
-import type { AmazonSale } from "@repo/aisle/sales"
-import type { EbaySale } from "@repo/aisle/sales"
-import type { ShopifySale } from "@repo/aisle/sales"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import type { AmazonSale } from "@repo/copacker-marketplaces/sales"
+import type { EbaySale } from "@repo/copacker-marketplaces/sales"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 import {
   collectAmazonSales,
   collectAmazonSalesReport,
   collectEbaySales,
   collectShopifySales,
   shopifyPaymentFees
-} from "@repo/aisle/sales"
+} from "@repo/copacker-marketplaces/sales"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { z } from "zod"

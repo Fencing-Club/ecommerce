@@ -1,4 +1,4 @@
-import { ledgerDetailReportType, parseLedgerDetail } from "@repo/aisle/ledger-detail"
+import { ledgerDetailReportType, parseLedgerDetail } from "@repo/copacker-marketplaces/ledger-detail"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonMovementReports, amazonInventoryMovements } from "@/db/schema"

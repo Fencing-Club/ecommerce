@@ -1,4 +1,4 @@
-import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"
 import { useState } from "react"

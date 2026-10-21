@@ -1,4 +1,4 @@
-import { money } from "@repo/aisle"
+import { money } from "@repo/copacker-shipments"
 import { useLocale } from "use-intl"
 
 // Money in minor units, as Copacker stores it, written in the page's language: $1,234.50, 1.234,50 $.

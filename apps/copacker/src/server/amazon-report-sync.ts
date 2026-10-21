@@ -1,4 +1,4 @@
-import { type Amazon, ProviderError, ReportDeferredError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError, ReportDeferredError } from "@repo/copacker-marketplaces/amazon"
 import { and, eq } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"

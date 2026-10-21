@@ -1,5 +1,5 @@
-import type { Amazon } from "@repo/aisle/amazon"
-import { collectAmazonTransactions } from "@repo/aisle/sales"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { collectAmazonTransactions } from "@repo/copacker-marketplaces/sales"
 import { and, eq, gte, lt, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonTransactions, salesSyncs } from "@/db/schema"

@@ -50,7 +50,10 @@
       "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
-    "packages/aisle": {
+    "packages/copacker-marketplaces": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
+    "packages/copacker-shipments": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "packages/copacker-packing-rules": {

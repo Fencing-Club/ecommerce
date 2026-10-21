@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { inflateSync } from "node:zlib"
 import { PGlite } from "@electric-sql/pglite"
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"

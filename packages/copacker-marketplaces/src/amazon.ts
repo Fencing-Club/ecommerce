@@ -1,6 +1,15 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
-import type { AmazonPrep } from "./index"
+
+// How Amazon has a SKU prepared and labeled: its prep category (such as TEXTILE, or NONE), and who may prepare and
+// label it (SELLER_ONLY, AMAZON_ONLY or NONE_ONLY, and MUST_MATCH when one party does both), from Amazon's own record
+// of the SKU.
+export type AmazonPrep = {
+  prepCategory: string
+  prepOwnerConstraint?: string
+  labelOwnerConstraint?: string
+  allOwnersConstraint?: string
+}
 
 export type AmazonCredentials =
   | { clientId: string; clientSecret: string; refreshToken: string }

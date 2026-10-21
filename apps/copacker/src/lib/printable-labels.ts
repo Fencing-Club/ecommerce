@@ -1,5 +1,5 @@
-import type { OrderItem } from "@repo/aisle"
-import { needsWarningLabel } from "@repo/aisle/requirements"
+import type { OrderItem } from "@repo/copacker-shipments"
+import { needsWarningLabel } from "@repo/copacker-shipments/requirements"
 import type { LineLabel } from "@/server/product-barcodes"
 
 // The product labels a packer prints, in the order the packing details list them.

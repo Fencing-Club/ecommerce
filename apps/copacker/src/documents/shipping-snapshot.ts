@@ -1,8 +1,8 @@
-import { palletLabels, type OrderInput, type Packing, type Pallet } from "@repo/aisle"
-import type { CartonLabel } from "@repo/aisle/labels"
-import { packingTasks, type ProductTask } from "@repo/aisle/packing-requirements"
-import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/aisle/transport"
 import { validatePacking } from "@repo/copacker-packing-rules"
+import { palletLabels, type OrderInput, type Packing, type Pallet } from "@repo/copacker-shipments"
+import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import { packingTasks, type ProductTask } from "@repo/copacker-shipments/packing-requirements"
+import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/copacker-shipments/transport"
 import {
   documentIssues,
   packingRecordIssues,

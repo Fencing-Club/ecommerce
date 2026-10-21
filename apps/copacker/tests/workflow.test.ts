@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import {
   type Address,
   addressSchema,
@@ -8,9 +9,8 @@ import {
   buildAwdRequest,
   orderTotal,
   type Packing
-} from "@repo/aisle"
-import { ProviderError } from "@repo/aisle/amazon"
-import { purchaseOrderPdf } from "@repo/aisle/documents"
+} from "@repo/copacker-shipments"
+import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument, StandardFonts } from "pdf-lib"
@@ -94,8 +94,8 @@ vi.mock("../src/server/storage", async (original) => ({
   readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
 // Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
-vi.mock("@repo/aisle/documents", async (original) => {
-  const documents = await original<typeof import("@repo/aisle/documents")>()
+vi.mock("@repo/copacker-shipments/documents", async (original) => {
+  const documents = await original<typeof import("@repo/copacker-shipments/documents")>()
   return {
     ...documents,
     purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(documents.purchaseOrderPdf),

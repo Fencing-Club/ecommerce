@@ -1,6 +1,6 @@
-import type { AmazonSale } from "@repo/aisle/sales"
-import type { EbaySale } from "@repo/aisle/sales"
-import type { ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale } from "@repo/copacker-marketplaces/sales"
+import type { EbaySale } from "@repo/copacker-marketplaces/sales"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 
 export type DemandRow = {
   variantId: string | null

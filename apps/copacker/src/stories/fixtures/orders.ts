@@ -1,5 +1,5 @@
-import type { OrderInput } from "@repo/aisle"
-import type { OrderItem } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderItem } from "@repo/copacker-shipments"
 
 // Purchase orders as the database keeps them, for stories.
 

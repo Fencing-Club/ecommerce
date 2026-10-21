@@ -1,4 +1,4 @@
-import { combinePdfs } from "@repo/aisle/documents"
+import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Database, type Transaction } from "@/db"

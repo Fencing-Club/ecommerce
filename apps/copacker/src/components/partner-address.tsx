@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import type { Address } from "@repo/aisle"
-import { addressSchema, originSchema } from "@repo/aisle"
+import type { Address } from "@repo/copacker-shipments"
+import { addressSchema, originSchema } from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"

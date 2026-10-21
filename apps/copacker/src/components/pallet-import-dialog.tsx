@@ -1,5 +1,5 @@
-import { type Pallet } from "@repo/aisle"
 import { cartonList, validatePallets } from "@repo/copacker-packing-rules"
+import { type Pallet } from "@repo/copacker-shipments"
 import { arrayIncludes } from "ts-extras"
 import { useFormatter, useTranslations } from "use-intl"
 import { usePalletTemplate } from "@/hooks/use-import-templates"

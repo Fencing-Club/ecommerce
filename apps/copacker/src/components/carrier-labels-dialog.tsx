@@ -10,7 +10,7 @@ import {
   useSensor,
   useSensors
 } from "@dnd-kit/core"
-import type { Packing } from "@repo/aisle"
+import type { Packing } from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import {
   ArrowDownToLine,

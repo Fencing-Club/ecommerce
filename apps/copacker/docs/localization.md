@@ -69,7 +69,7 @@ needs room past the line too.
 - Purchase order timeline events are stored as an `orders.timeline.events` key and its values (`messageKey`,
   `messageValues`; see `src/lib/timeline-events.ts`), never as text, and read in each reader's language. Only comments
   keep text in `message`. A revision's `reason` is one of those keys too.
-- `@repo/aisle` returns what the supplier must do (`itemRequirements`, `destinationRequirements`) and packing rule
+- `@repo/copacker-shipments` returns what the supplier must do (`itemRequirements`, `destinationRequirements`) and packing rule
   failures (`validatePacking`) as codes and values, never text. The app words them from `shipments.requirements`
   (`src/server/requirements.ts`) and `server.readiness.packing`; the package's `requirementText` is the English its PDFs
   print, since documents stay in English.

@@ -1,4 +1,4 @@
-import type { Packing } from "@repo/aisle"
+import type { Packing } from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"

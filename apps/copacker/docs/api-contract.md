@@ -123,7 +123,7 @@ kept with that partner and change through the partner's commands.
 `OrderInput.items[].supplierCharges` optionally records product-specific supplier services. Each entry contains
 `description`, `amount` (a nonnegative integer rate in currency minor units), and `basis` (`piece`, `pack`, or `flat`).
 Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from product unit prices and PO-level
-`adjustments`; totals include each charge once. See [supplier service costs](../../../packages/aisle/docs/README.md).
+`adjustments`; totals include each charge once. See [supplier service costs](../../../packages/copacker-shipments/docs/README.md).
 
 ### Shipments
 
@@ -147,7 +147,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 
 ## Schemas and units
 
-Canonical schemas are exported by `@repo/aisle`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema,
+Canonical schemas are exported by `@repo/copacker-shipments`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema,
 cartonInputSchema, addressSchema. Prices are integer minor currency units **per individual piece**; weights kg;
 dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID and product names are read-only to suppliers. They propose
 supplier SKU and unit-price changes in `packing.changes`.

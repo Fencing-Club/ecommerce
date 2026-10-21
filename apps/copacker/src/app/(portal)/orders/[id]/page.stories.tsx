@@ -1,5 +1,5 @@
-import { money } from "@repo/aisle"
-import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
+import { money } from "@repo/copacker-shipments"
+import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
