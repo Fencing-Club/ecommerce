@@ -937,22 +937,22 @@ function AddTracking({ label, ...row }: RowProps & { label: CarrierLabel }) {
 // The preview's field for a tracking number that couldn't be read, checked as it's typed. A number whose carrier format
 // and check digit hold says it's recognized, and Carrier names its carrier. One that doesn't is still taken, as some
 // carriers' aren't known, but once the field is left it says to check it against the label. Empty, it says the label
-// wasn't recognized. A mistyped number is an error once the field is left, and a missing one once Save is tried.
+// wasn't recognized, and a mistyped number says how to type it once the field is left. Both warn until Save is tried,
+// when they're errors.
 function TrackingField({ label, name, fieldId, submitted, disabled, onTracking }: RowProps & { label: CarrierLabel }) {
   const t = useTranslations("shipments.carrierLabels")
   const [left, setLeft] = useState(false)
   const value = label.trackingNumber
   const carrier = carrierOf(value)
-  let error = ""
-  if (submitted && !value.trim()) {
-    error = t("trackingNotRead")
-  } else if ((left || submitted) && !valid(value)) {
-    error = t("trackingInvalid")
-  }
-  let warning = ""
+  let problem = ""
   if (!value.trim()) {
-    warning = t("trackingNotRead")
-  } else if (!carrier && (left || submitted)) {
+    problem = t("trackingNotRead")
+  } else if (!valid(value) && (left || submitted)) {
+    problem = t("trackingInvalid")
+  }
+  const error = submitted ? problem : ""
+  let warning = submitted ? "" : problem
+  if (!problem && !carrier && (left || submitted)) {
     warning = t("trackingUnknown")
   }
   const note = `${fieldId(label)}-note`

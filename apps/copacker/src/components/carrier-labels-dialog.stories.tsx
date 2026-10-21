@@ -392,11 +392,15 @@ export const AddTrackingNumber = meta.story({
     await expect(field).toHaveAccessibleDescription("Unrecognized tracking label.")
     await expect(field).not.toHaveAttribute("aria-invalid")
     await expect(carton).toBeDisabled()
+    // Before Save, leaving the field empty or mistyped warns rather than errs.
+    await userEvent.tab()
+    await expect(field).toHaveAccessibleDescription("Unrecognized tracking label.")
+    await expect(field).not.toHaveAttribute("aria-invalid")
 
     await userEvent.type(field, "12-34")
     await userEvent.tab()
     await expect(within(dialog).getByText("Enter the tracking number as it’s printed on the label.")).toBeVisible()
-    await expect(field).toHaveAttribute("aria-invalid", "true")
+    await expect(field).not.toHaveAttribute("aria-invalid")
     await expect(carton).toBeDisabled()
 
     await userEvent.clear(field)
