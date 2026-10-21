@@ -34,9 +34,9 @@
   },
   "dependencies": {
     "@repo/copacker-packing-rules": "workspace:*",
-    "zod": "^4.4.3",
+    "zod": "^4.6.7",
     "pdf-lib": "1.17.1",
-    "pdfjs-dist": "6.3.289",
+    "pdfjs-dist": "6.4.299",
     "yauzl": "3.4.0",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5"

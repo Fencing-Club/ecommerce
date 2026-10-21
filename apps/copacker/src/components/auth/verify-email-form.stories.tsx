@@ -1,4 +1,4 @@
-import { HttpResponse } from "msw"
+import { HttpResponse } from "msw/http"
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"

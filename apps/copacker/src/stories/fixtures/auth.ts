@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import type { WizardValues } from "@/components/onboarding/onboarding-wizard"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"

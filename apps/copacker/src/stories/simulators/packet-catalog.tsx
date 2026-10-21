@@ -100,15 +100,13 @@ function checklistRows(): Row[] {
   const preparation = productChecks(
     { id: "every", supplierSku: "", description: "", piecesPerPack: 3, tasks, countryCode: "CN" },
     "en"
-  ).map(
-    (check): Row => ({
-      section: t.preparation,
-      check,
-      when: check.title === "packQuantity" ? "A product sold in multi-packs" : "The buyer asks for it on a product",
-      production: "Yes",
-      href: packetHref("requirements", requirements.arrangement)
-    })
-  )
+  ).map((check): Row => ({
+    section: t.preparation,
+    check,
+    when: check.title === "packQuantity" ? "A product sold in multi-packs" : "The buyer asks for it on a product",
+    production: "Yes",
+    href: packetHref("requirements", requirements.arrangement)
+  }))
   const printed = new Map<
     string,
     { section: string; check: ShippingCheck; shipments: Shipment[]; refusals: string[] }

@@ -1,4 +1,5 @@
-import { delay, http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
+import { delay } from "msw/utils/delay"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { amazonAccount, shopifyAccount, stockSync, storeSyncHandlers } from "@/stories/fixtures/logistics"

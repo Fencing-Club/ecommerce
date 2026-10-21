@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { expect, fn, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { uploadedBarcode } from "@/stories/fixtures/catalog"

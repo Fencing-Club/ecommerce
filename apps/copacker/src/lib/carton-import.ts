@@ -230,9 +230,19 @@ export async function cartonTemplate(
 ) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
-  const references = products.map(
-    (item): TemplateRow => ["", "", item.supplierSku, "", "", "", "", "", item.name, item.variant, item.piecesPerSet]
-  )
+  const references = products.map((item): TemplateRow => [
+    "",
+    "",
+    item.supplierSku,
+    "",
+    "",
+    "",
+    "",
+    "",
+    item.name,
+    item.variant,
+    item.piecesPerSet
+  ])
   for (const [name, rows] of [
     ["Cartons", [...cartons, ...references]],
     ["Example", example]
