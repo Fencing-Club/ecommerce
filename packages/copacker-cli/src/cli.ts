@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises"
 import { createInterface } from "node:readline/promises"
 import { CopackerClient, CopackerError, apiOrigin, clientError } from "@repo/copacker-client"
 import {
+  codeUnitOrder,
   commands,
   exitCode,
   isQuery,
@@ -77,6 +78,8 @@ function localResult(data: JsonObject, workspaceId: string | null = null): Succe
   }
 }
 
+const setting = (environment: CliEnvironment, name: string) => environment.env[name] || undefined
+
 function timeout(options: Options): number {
   const seconds = Number(options.timeout ?? "300")
   if (!Number.isFinite(seconds) || seconds < 1 || seconds > 86400) {
@@ -88,18 +91,23 @@ function timeout(options: Options): number {
 async function context(options: Options, environment: CliEnvironment, account = false) {
   const profile = options.profile ?? "default"
   const saved = await environment.store.profile(profile)
-  const baseUrl = apiOrigin(options.apiUrl ?? environment.env.COPACKER_API_URL ?? saved.baseUrl)
-  if (environment.env.COPACKER_TOKEN && options.profile) {
+  // Empty variables count as unset: CI templates often export a missing secret as an empty string.
+  const envToken = setting(environment, "COPACKER_TOKEN")
+  const savedOrigin = apiOrigin(saved.baseUrl)
+  const baseUrl = apiOrigin(options.apiUrl ?? setting(environment, "COPACKER_API_URL") ?? savedOrigin)
+  if (envToken && options.profile) {
     throw clientError("invalid_input", "Use COPACKER_TOKEN or an explicit --profile, not both.")
   }
-  if (!environment.env.COPACKER_TOKEN && baseUrl !== saved.baseUrl) {
+  if (!envToken && baseUrl !== savedOrigin) {
     throw clientError(
       "invalid_input",
       "Stored credentials belong to a different API origin. Run login for this origin first."
     )
   }
   const workspaceId =
-    options.workspace ?? environment.env.COPACKER_WORKSPACE ?? (environment.interactive ? saved.workspaceId : undefined)
+    options.workspace ??
+    setting(environment, "COPACKER_WORKSPACE") ??
+    (environment.interactive ? saved.workspaceId : undefined)
   if (!account && !workspaceId) {
     throw clientError("invalid_input", "Noninteractive workspace operations require --workspace or COPACKER_WORKSPACE.")
   }
@@ -110,7 +118,7 @@ async function context(options: Options, environment: CliEnvironment, account = 
     baseUrl,
     workspaceId,
     fetch: environment.fetch,
-    token: environment.env.COPACKER_TOKEN ?? (() => profileToken(environment.store, profile, baseUrl))
+    token: envToken ?? (() => profileToken(environment.store, profile, baseUrl))
   })
   return { client, profile, baseUrl, workspaceId }
 }
@@ -235,7 +243,7 @@ async function execute(
       const requestInput: JsonObject = { ...built.input }
       if (Array.isArray(requestInput.rows)) {
         requestInput.rows = [...requestInput.rows].sort((a, b) =>
-          String(jsonObject.parse(a).rowId).localeCompare(String(jsonObject.parse(b).rowId), "en")
+          codeUnitOrder(String(jsonObject.parse(a).rowId), String(jsonObject.parse(b).rowId))
         )
       }
       if (options.expiresIn) {
@@ -363,7 +371,7 @@ export function createProgram(environment: CliEnvironment, completed: (code: num
       const result = await login(
         environment.store,
         profile,
-        options.apiUrl ?? environment.env.COPACKER_API_URL ?? saved.baseUrl,
+        apiOrigin(options.apiUrl ?? setting(environment, "COPACKER_API_URL") ?? saved.baseUrl),
         (text) => environment.stderr(`${text}\n`),
         options.browser !== false
       )

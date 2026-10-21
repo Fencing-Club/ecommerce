@@ -13,17 +13,17 @@ existing referenced domain schema imposes a smaller limit. Credential secrets ha
 | `Text<N>` | Trimmed string of at most N characters; identifiers/titles require at least one. Multiline is allowed only for notes/descriptions. |
 | `Currency` | Uppercase ISO currency code supported by the selected operation/source; PO and supplier pricing currently allow USD/CNY/EUR/GBP/CAD/AUD. |
 | `Money` | `{amountMinor: safe integer, currency: Currency}`; price inputs are nonnegative, costs/PO limits follow their domain schemas. |
-| `Quantity` | `{value: number | null, unit: "piece" | "sellable_unit" | "case", piecesPerUnit: positive integer | null}`; integer for writes, decimal source demand may remain fractional. |
-| `SourceRef` | `{provider: "shopify" | "amazon" | "ebay" | "amazon_ads", connectionId: Id, accountId: string, kind: string, externalId: string, marketplaceId?: string}`; each operation constrains kind/provider. |
+| `Quantity` | `{value: number \| null, unit: "piece" \| "sellable_unit" \| "case", piecesPerUnit: positive integer \| null}`; integer for writes, decimal source demand may remain fractional. |
+| `SourceRef` | `{provider: "shopify" \| "amazon" \| "ebay" \| "amazon_ads", connectionId: Id, accountId: string, kind: string, externalId: string, marketplaceId?: string}`; each operation constrains kind/provider. |
 | `Guard` | `{id: Id, expectedRevision: Revision}`. |
 | `PageInput` | `{limit?: integer 1..200 = 50, cursor?: string}`. Filters/sort must match the cursor's original selection. |
-| `Page<T>` | `{items: T[], page: {nextCursor: string | null, hasMore: boolean, consistency: "live" | "snapshot", snapshotId?: Id}}`. |
+| `Page<T>` | `{items: T[], page: {nextCursor: string \| null, hasMore: boolean, consistency: "live" \| "snapshot", snapshotId?: Id}}`. |
 | `ReadSelector` | `{id: Id}` or `{reference: Text<255>, connectionId?: Id}`; exactly one branch, account disambiguation required where stated. |
 | `Period` | `{from: Date, to: Date, timeZone?: string}`; inclusive from, exclusive to. Invalid/empty ranges fail. |
-| `Issue` | `{code: string, path: (string | integer)[], message: string, rowId?: string, entityId?: Id}`; codes come from the operation's published enum. |
+| `Issue` | `{code: string, path: (string \| integer)[], message: string, rowId?: string, entityId?: Id}`; codes come from the operation's published enum. |
 | `Check` | `{valid: boolean, issues: Issue[], warnings: Issue[], effects: Effect[], dependencies: Dependency[]}`. |
-| `Dependency` | `{kind: "product" | "variant" | "stock" | "location" | "link" | "source" | "supplier" | "catalog" | "relationship" | "po" | "shipment" | "snapshot", id: Id, revision?: Revision, snapshotId?: Id}`. |
-| `Effect` | `{kind: "local_write" | "provider_write" | "reservation" | "email" | "document" | "credential", entityId?: Id, targetId?: Id, description: string}`. |
+| `Dependency` | `{kind: "product" \| "variant" \| "stock" \| "location" \| "link" \| "source" \| "supplier" \| "catalog" \| "relationship" \| "po" \| "shipment" \| "snapshot", id: Id, revision?: Revision, snapshotId?: Id}`. |
+| `Effect` | `{kind: "local_write" \| "provider_write" \| "reservation" \| "email" \| "document" \| "credential", entityId?: Id, targetId?: Id, description: string}`. |
 | `Saved<T>` | `{resource: T, operation?: Operation, statusQuery?: StatusQuery}`; the latter two appear together for asynchronous work. |
 | `Removed` | `{id: Id, removed: true, previousRevision: Revision}`. Removal can mean domain archival where specified. |
 

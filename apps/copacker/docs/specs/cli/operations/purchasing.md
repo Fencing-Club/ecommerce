@@ -62,7 +62,7 @@ message:string|null,document:Artifact|null}`; kinds come from the existing event
 
 | Operation | Input | Result data | Access and effects; specific errors |
 | --- | --- | --- | --- |
-| `po.list` | `PageInput & PoFilter & {sort?:"createdAt"|"dueDate",direction?:"asc"|"desc"}` | `Page<Po>`, default createdAt descending | PORead. |
+| `po.list` | `PageInput & PoFilter & {sort?:"createdAt"\|"dueDate",direction?:"asc"\|"desc"}` | `Page<Po>`, default createdAt descending | PORead. |
 | `po.show` | `ReadSelector` | `Po` | PORead; ambiguous display references fail. |
 | `po.coverage` | `PageInput & {variantId?:Id,supplierId?:Id,destination?:PoDraft.destination}` | `Page<{poId,lineId,variantId,orderedPieces,reservedPieces,shippedPieces,receivedPieces,openPieces}>` | PORead; PO/line order; distinct stages, not additive totals. |
 | `po.history` | `PageInput & {id}` | `Page<PoHistoryEvent>` sorted at/ID ascending | PORead; immutable versions/events/comments. |
@@ -74,8 +74,8 @@ message:string|null,document:Artifact|null}`; kinds come from the existing event
 | `po.delete` | `Guard` | `Removed` | B POWrite; draft only, existing linked-import recovery semantics. |
 | `po.comment` | `{id,message:Text<4000>}` | `{event:PoHistoryEvent}` | PORead + `purchase-orders:write`; no E/P requirement, append-only, idempotent. |
 | `po.export` | `Export<{id:Id}>` pdf or `Export<PoFilter>` csv/json | `ExportResult` | PORead; PDF additionally P, collection redacts prices. |
-| `po.label.list` | `{id,lineId?:Id}` | `{poId,revision,labels:[{lineId,type:"product"|"warning",artifact:Artifact|null,issues:Issue[]}]}` | PORead; existing supplier release/access rules. |
-| `po.label.download` | `{id,lineId?:Id,type?:"product"|"warning"}` | `Artifact` | Same policy; current permitted label sheets. |
+| `po.label.list` | `{id,lineId?:Id}` | `{poId,revision,labels:[{lineId,type:"product"\|"warning",artifact:Artifact\|null,issues:Issue[]}]}` | PORead; existing supplier release/access rules. |
+| `po.label.download` | `{id,lineId?:Id,type?:"product"\|"warning"}` | `Artifact` | Same policy; current permitted label sheets. |
 
 ## Supplier proposals and PO imports
 
@@ -105,7 +105,7 @@ source evidence. Its Shopify candidate IDs stay scoped to the pinned connection 
 | `po.import.list` | `PageInput & {state?:PoImport.state}` | `Page<PoImport>` sorted creation descending | B POWrite; import review contains commercial data. |
 | `po.import.show` | `{id,operationId?:Id}` | `PoImport` | Same. |
 | `po.import.source` | `{id}` | `Artifact` | Same; source PDF only. |
-| `po.import.match` | `PageInput & {id,query:Text<500>}` | `Page<{variantId:Id,source:SourceRef,sku,title,supplierSku:string|null}>` | Same; pinned-store identity read, no provider writes. |
+| `po.import.match` | `PageInput & {id,query:Text<500>}` | `Page<{variantId:Id,source:SourceRef,sku,title,supplierSku:string\|null}>` | Same; pinned-store identity read, no provider writes. |
 | `po.import.update` | `Guard & {proposal:ImportProposal}` | `PoImport` | Same; revisioned corrections; unavailable identity lookup leaves proposal unchanged. |
 | `po.import.apply` | `Guard & {reviewed:true,supplierId,destination,deliveryId?:Id,via?:{forwarderId,addressId},reference:Text<80>,dueDate?:Date,notes?:Text<8000>,expectedDependencies:Dependency[]}` | `{import:PoImport,po:Po}` | Same; one linked draft transaction; unresolved lines/totals fail. |
 | `po.import.cancel` | `Guard` | `PoImport` | Same; cancel unsaved import, retain source. |

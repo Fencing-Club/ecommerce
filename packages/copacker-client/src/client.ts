@@ -146,10 +146,21 @@ export class CopackerClient {
     return url
   }
 
-  async transfer(value: string, init: RequestInit = {}): Promise<Response> {
+  // The deadline covers sending the request and receiving the response headers, so a large upload gets longer. Reading
+  // the body is the caller's to bound, through init.signal: a large artifact can take longer than any fixed deadline.
+  async transfer(
+    value: string,
+    init: RequestInit = {},
+    timeoutMs = init.body ? 600000 : (this.options.timeoutMs ?? 30000)
+  ): Promise<Response> {
     const headers = new Headers(init.headers)
     headers.set("Authorization", await this.authorization())
-    const signal = init.signal ?? AbortSignal.timeout(this.options.timeoutMs ?? 30000)
+    const deadline = new AbortController()
+    const timer = setTimeout(
+      () => deadline.abort(new DOMException("The transfer timed out.", "TimeoutError")),
+      timeoutMs
+    )
+    const signal = init.signal ? AbortSignal.any([init.signal, deadline.signal]) : deadline.signal
     try {
       const response = await (this.options.fetch ?? fetch)(this.transferUrl(value), {
         ...init,
@@ -171,6 +182,8 @@ export class CopackerClient {
         throw error
       }
       throw clientError("transport_error", "The protected transfer could not complete.", 503)
+    } finally {
+      clearTimeout(timer)
     }
   }
 

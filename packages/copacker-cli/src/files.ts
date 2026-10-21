@@ -122,6 +122,8 @@ export async function uploadFile(
   )
 }
 
+const artifactIdleMs = 60000
+
 export async function saveArtifact(
   client: CopackerClient,
   result: SuccessEnvelope,
@@ -150,8 +152,12 @@ export async function saveArtifact(
       }
     }
   }
-  const response = await client.transfer(artifact.download.url)
+  // A large artifact streams for as long as it keeps arriving; a minute without data abandons it.
+  const idle = new AbortController()
+  let stalled = setTimeout(() => idle.abort(), artifactIdleMs)
+  const response = await client.transfer(artifact.download.url, { signal: idle.signal })
   if (!response.body) {
+    clearTimeout(stalled)
     throw clientError("transfer_failed", "The artifact response has no body.", 502)
   }
   const file = await open(temporary, "wx", 0o600)
@@ -161,6 +167,8 @@ export async function saveArtifact(
     const reader = response.body.getReader()
     try {
       while (true) {
+        clearTimeout(stalled)
+        stalled = setTimeout(() => idle.abort(), artifactIdleMs)
         const chunk = await reader.read()
         if (chunk.done) {
           break
@@ -173,6 +181,7 @@ export async function saveArtifact(
         await file.writeFile(chunk.value)
       }
     } finally {
+      clearTimeout(stalled)
       await reader.cancel()
       reader.releaseLock()
     }
@@ -194,6 +203,9 @@ export async function saveArtifact(
   } catch (error) {
     await file.close().catch(() => undefined)
     await rm(temporary, { force: true })
+    if (idle.signal.aborted) {
+      throw clientError("transfer_failed", "The artifact download stalled. Repeat the command to try again.", 504)
+    }
     throw error
   }
 }

@@ -51,11 +51,11 @@ preview body with `rows` and additionally supports `mode:"read",batchId` through
 | --- | --- |
 | `BuyerProductChange` | `{id, expectedRevision, patch:ProductPatch}` |
 | `VariantMetadataChange` | `{variantId, expectedRevision, expectedProductRevision, patch:VariantPatch}`; supplier patches use the supplier allowlist above. |
-| `SkuChange` | `{variantId, expectedRevision, expectedProductRevision, expectedLinkRevision, expectedSku:string|null, sku:Text<255>}`; supplier-local SKU instead uses its typed supplierSku patch. |
-| `PriceChange` | `{variantId, expectedRevision, expectedLinkRevision, expectedSourceRevision, expectedSourceValue:Money|null, amountMinor, currency, targetPrices?:[{listingId,amountMinor,currency}], pricingRule?:{id,expectedRevision}}` |
-| `CostChange` | `{variantId, expectedRevision, expectedLinkRevision, expectedSourceRevision, expectedSourceValue:Money|null, amountMinor, currency}`; cost is per source sellable unit, conversion to PO per-piece cost is explicit. |
-| `SupplierAssignment` | `{id:productId, expectedRevision, supplierId:Id|null}` |
-| `StockChange` | `{variantId, locationId, quantityState:"on_hand"|"available", quantity:signed integer, expectedQuantity:signed integer, expectedRevision, expectedLocationRevision, expectedLinkRevision, reason:Text<255>}` |
+| `SkuChange` | `{variantId, expectedRevision, expectedProductRevision, expectedLinkRevision, expectedSku:string\|null, sku:Text<255>}`; supplier-local SKU instead uses its typed supplierSku patch. |
+| `PriceChange` | `{variantId, expectedRevision, expectedLinkRevision, expectedSourceRevision, expectedSourceValue:Money\|null, amountMinor, currency, targetPrices?:[{listingId,amountMinor,currency}], pricingRule?:{id,expectedRevision}}` |
+| `CostChange` | `{variantId, expectedRevision, expectedLinkRevision, expectedSourceRevision, expectedSourceValue:Money\|null, amountMinor, currency}`; cost is per source sellable unit, conversion to PO per-piece cost is explicit. |
+| `SupplierAssignment` | `{id:productId, expectedRevision, supplierId:Id\|null}` |
+| `StockChange` | `{variantId, locationId, quantityState:"on_hand"\|"available", quantity:signed integer, expectedQuantity:signed integer, expectedRevision, expectedLocationRevision, expectedLinkRevision, reason:Text<255>}` |
 | `StockAdjustment` | StockChange with `delta:nonzero signed integer` instead of `quantity`; single record only. |
 
 Preview permits guards/expected current values to be absent. Price and inventory unit/range constraints come from the
@@ -77,7 +77,7 @@ sku?:Text<255>, query?:Text<500>}`. Lists sort by title then ID; allowed sort is
 | `product.show` | `{id, operationId?:Id}` | `Product & {write?:WriteResult}` | Products; exact execution, when requested, must belong to the product. |
 | `product.create` | `{clientReference:Text<64>, data:SupplierProductInput}` | `Saved<Product>` | S ProductEdit + P; StockWrite if inventory supplied. Local product/variant creation; identity/collision validation. |
 | `product.update` | B `Write<BuyerProductChange>`; S `{id,expectedRevision,expectedVariantRevisions:[{id,revision}],data:SupplierProductInput}` | B WritePreview/WriteResult/BatchResult; S Saved<Product> | ProductEdit, P for supplier save; local edit, no hidden stock writes. `identity_unresolved`. |
-| `product.variant.update` | `Write<VariantMetadataChange | SkuChange>` or matching bulk | WritePreview/WriteResult/BatchResult | Metadata: ProductEdit; buyer SKU: ChannelEdit. Supplier pricing requires P. Local metadata or Shopify-only SKU write. `identity_unresolved`, `route_unavailable`. |
+| `product.variant.update` | `Write<VariantMetadataChange \| SkuChange>` or matching bulk | WritePreview/WriteResult/BatchResult | Metadata: ProductEdit; buyer SKU: ChannelEdit. Supplier pricing requires P. Local metadata or Shopify-only SKU write. `identity_unresolved`, `route_unavailable`. |
 | `product.price.update` | `Write<PriceChange>` or matching bulk | WritePreview/WriteResult/BatchResult | ChannelEdit + P; authority then every linked price target. `route_unavailable`, `partial_write`, `outcome_unknown`. |
 | `product.cost.update` | `Write<CostChange>` or matching bulk | WritePreview/WriteResult/BatchResult | ChannelEdit + P for external authority; ProductEdit + P for local. Cost-authority write. Same routing failures. |
 | `product.supplier.assign` | `Write<SupplierAssignment>` or matching bulk | WritePreview/WriteResult/BatchResult | B ProductEdit; local assignment, validates supplier relationship. |
@@ -147,13 +147,13 @@ Proposed row types are discriminated by kind and entity level; no upstream price
 
 | Operation | Input | Result data | Access and effects |
 | --- | --- | --- | --- |
-| `product.import` | `Transfer<{kind:"supplier_products"|"buyer_metadata",locationId?:Id}>` or `{source:"shopify",connectionId,kind:"buyer_metadata"}` | Handoff or ProductImport | ProductEdit; StockWrite for supplier count rows. Stage/preview only; Shopify branch reads source metadata. |
+| `product.import` | `Transfer<{kind:"supplier_products"\|"buyer_metadata",locationId?:Id}>` or `{source:"shopify",connectionId,kind:"buyer_metadata"}` | Handoff or ProductImport | ProductEdit; StockWrite for supplier count rows. Stage/preview only; Shopify branch reads source metadata. |
 | `product.import.show` | `{id,operationId?:Id}` | `ProductImport` | ProductEdit; includes proposed values under existing price access. |
 | `product.import.apply` | `Guard & {reviewed:true}` | `Saved<ProductImport>` | Same plus StockWrite when counts; local atomic reviewed commit. Stale dependencies/expired preview fail. |
 | `product.export` | `Export<ProductFilter>`, csv/xlsx/json | `ExportResult` | Products; redacts forbidden prices. |
-| `product.template` | `{kind:"supplier_products"|"buyer_metadata",fileFormat:"csv"|"xlsx"}` | `Artifact` | Products; schema template, no mutation. |
-| `product.label.show` | `{id:productId,variantId?:Id}` | `{productId,revision,setting:"standard"|"uploaded"|"none",labels:[{variantId,artifact:Artifact|null,issues:Issue[]}]}` | Products. |
-| `product.label.update` | `Guard & {setting:"standard"|"uploaded"|"none"}` | `Saved<Product>` | B ProductEdit; local label policy. |
+| `product.template` | `{kind:"supplier_products"\|"buyer_metadata",fileFormat:"csv"\|"xlsx"}` | `Artifact` | Products; schema template, no mutation. |
+| `product.label.show` | `{id:productId,variantId?:Id}` | `{productId,revision,setting:"standard"\|"uploaded"\|"none",labels:[{variantId,artifact:Artifact\|null,issues:Issue[]}]}` | Products. |
+| `product.label.update` | `Guard & {setting:"standard"\|"uploaded"\|"none"}` | `Saved<Product>` | B ProductEdit; local label policy. |
 | `product.label.upload` | `Transfer<{id:productId,variantId,expectedRevision}>` | Handoff or `{productId,variantId,revision,artifact:Artifact}` | B ProductEdit; authorized one-page PDF replacement. |
 | `product.label.download` | `{id:productId,variantId?:Id}` | `Artifact` | Products; selected variation or sheets for included variants, max 1000. Missing labels produce declared coverage; none yields not_found. |
 | `product.label.remove` | `Guard & {variantId}` | `{productId,variantId,revision,removed:true}` | B ProductEdit; removes uploaded barcode only. |

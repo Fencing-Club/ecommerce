@@ -83,6 +83,10 @@ export function parseInput(text: string): JsonObject {
   return jsonObject.parse(JSON.parse(text))
 }
 
+// Plain UTF-16 code-unit order: locale collation varies with the runtime's ICU data and can tie distinct keys, which would
+// change a retained request's fingerprint between runs.
+export const codeUnitOrder = (a: string, b: string) => Number(a > b) - Number(a < b)
+
 export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") {
     return JSON.stringify(value) ?? "null"
@@ -91,7 +95,7 @@ export function canonicalJson(value: unknown): string {
     return `[${value.map(canonicalJson).join(",")}]`
   }
   return `{${Object.entries(value)
-    .sort(([a], [b]) => a.localeCompare(b, "en"))
+    .sort(([a], [b]) => codeUnitOrder(a, b))
     .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
     .join(",")}}`
 }

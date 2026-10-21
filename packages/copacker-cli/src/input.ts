@@ -66,6 +66,7 @@ const fieldNames: Record<string, string> = {
   snapshot: "snapshotId",
   "expected-account": "expectedAccountId",
   "cost-preview": "costPreviewId",
+  "from-report": "reportId",
   scope: "scopes"
 }
 

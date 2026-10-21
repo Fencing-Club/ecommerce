@@ -37,7 +37,14 @@ async function readJson(path: string): Promise<unknown> {
   }
 }
 
-export function runProtected(program: string, args: string[], input = ""): Promise<string> {
+// `absent` lists exit codes that mean the item doesn't exist (secret-tool exits 1, security exits 44); those resolve to
+// empty output instead of a credential-service failure.
+export function runProtected(
+  program: string,
+  args: string[],
+  input = "",
+  absent: readonly number[] = []
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const environment = { ...process.env }
     // PowerShell 7's inherited module path can break Windows PowerShell's native security modules.
@@ -65,6 +72,8 @@ export function runProtected(program: string, args: string[], input = ""): Promi
       clearTimeout(timer)
       if (code === 0) {
         resolve(Buffer.concat(chunks).toString("utf8").trim())
+      } else if (code !== null && absent.includes(code)) {
+        resolve("")
       } else {
         reject(
           clientError("credential_store_unavailable", "The operating-system credential service rejected the request.")
@@ -124,7 +133,7 @@ export class LocalStore {
     if (process.platform === "linux") {
       try {
         return loginSecretSchema.parse(
-          JSON.parse(await runProtected("secret-tool", ["lookup", "service", "copacker", "profile", name]))
+          JSON.parse(await runProtected("secret-tool", ["lookup", "service", "copacker", "profile", name], "", [1]))
         )
       } catch (error) {
         if (error instanceof SyntaxError) {
@@ -136,7 +145,9 @@ export class LocalStore {
     if (process.platform === "darwin") {
       try {
         return loginSecretSchema.parse(
-          JSON.parse(await runProtected("security", ["find-generic-password", "-s", "copacker", "-a", name, "-w"]))
+          JSON.parse(
+            await runProtected("security", ["find-generic-password", "-s", "copacker", "-a", name, "-w"], "", [44])
+          )
         )
       } catch (error) {
         if (error instanceof SyntaxError) {
@@ -187,9 +198,9 @@ export class LocalStore {
     if (process.platform === "win32") {
       await rm(this.secretPath(name), { force: true })
     } else if (process.platform === "linux") {
-      await runProtected("secret-tool", ["clear", "service", "copacker", "profile", name])
+      await runProtected("secret-tool", ["clear", "service", "copacker", "profile", name], "", [1])
     } else if (process.platform === "darwin") {
-      await runProtected("security", ["delete-generic-password", "-s", "copacker", "-a", name])
+      await runProtected("security", ["delete-generic-password", "-s", "copacker", "-a", name], "", [44])
     }
   }
   async execution(

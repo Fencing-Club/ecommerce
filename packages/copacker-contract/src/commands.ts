@@ -329,7 +329,9 @@ export const commands: readonly CommandDefinition[] = [
     { export: true }
   ),
   command("restock.channel.list", "List eligible replenishment destinations."),
-  command("restock.plan.create", "Review allocation of a reproducible restock report.", [], { write: true }),
+  command("restock.plan.create", "Review allocation of a reproducible restock report.", ["from-report"], {
+    write: true
+  }),
   read("restock.plan.show", "Show a restock plan and its dependency revisions."),
   write("restock.plan.create-pos", "Create all reviewed purchase order drafts atomically.", guarded),
   command(

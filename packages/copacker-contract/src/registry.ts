@@ -25,7 +25,7 @@ export function defineOperation<I extends z.ZodType, O extends z.ZodType>(
   const descriptor = operationDescriptorSchema.parse({
     ...metadata,
     contractVersion,
-    mcpName: metadata.mcp === false ? null : metadata.operation.replaceAll(/[.-]/g, "_"),
+    mcpName: metadata.mcp === false ? null : `copacker_${metadata.operation.replaceAll(/[.-]/g, "_")}`,
     inputSchema: z.toJSONSchema(input, { io: "input" }),
     outputSchema: z.toJSONSchema(output),
     errorSchema: z.toJSONSchema(errorSchema)
@@ -66,57 +66,66 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
         info: { title: "Copacker operations", version: contractVersion },
         components: { securitySchemes: { bearer: { type: "http", scheme: "bearer" } } },
         paths: Object.fromEntries(
-          [...byName.values()].map(({ descriptor: d }) => [
-            `/api/operations/${d.operation}`,
-            {
-              post: {
-                operationId: d.operation,
-                security: [{ bearer: [] }],
-                requestBody: {
-                  required: true,
-                  content: {
-                    "application/json": {
-                      schema: {
-                        type: "object",
-                        additionalProperties: false,
-                        properties: {
-                          ...(d.context === "workspace" ? { workspaceId: { type: "string", format: "uuid" } } : {}),
-                          input: d.inputSchema
-                        },
-                        required: d.context === "workspace" ? ["workspaceId", "input"] : ["input"]
+          [...byName.values()].map(({ descriptor: d }) => {
+            const success = {
+              type: "object",
+              properties: { data: d.outputSchema, meta: { type: "object" } },
+              required: ["data", "meta"]
+            }
+            return [
+              `/api/operations/${d.operation}`,
+              {
+                post: {
+                  operationId: d.operation,
+                  security: [{ bearer: [] }],
+                  // A mutation takes its execution key in this header; repeating it with the same input replays the result.
+                  ...(d.execution.kind === "mutation" && {
+                    parameters: [
+                      {
+                        name: "Idempotency-Key",
+                        in: "header",
+                        required: false,
+                        schema: { type: "string", pattern: "^[\\x21-\\x7e]{1,200}$" }
                       }
-                    }
-                  }
-                },
-                responses: {
-                  "200": {
-                    description: "Operation result",
+                    ]
+                  }),
+                  requestBody: {
+                    required: true,
                     content: {
                       "application/json": {
                         schema: {
                           type: "object",
-                          properties: { data: d.outputSchema, meta: { type: "object" } },
-                          required: ["data", "meta"]
+                          additionalProperties: false,
+                          properties: {
+                            ...(d.context === "workspace" ? { workspaceId: { type: "string", format: "uuid" } } : {}),
+                            input: d.inputSchema
+                          },
+                          required: d.context === "workspace" ? ["workspaceId", "input"] : ["input"]
                         }
                       }
                     }
                   },
-                  default: {
-                    description: "Operation error",
-                    content: {
-                      "application/json": {
-                        schema: {
-                          type: "object",
-                          properties: { error: d.errorSchema, meta: { type: "object" } },
-                          required: ["error", "meta"]
+                  responses: {
+                    "200": { description: "Operation result", content: { "application/json": { schema: success } } },
+                    // Work that continues on the server returns its operation state, read again through its status query.
+                    "202": { description: "Operation accepted", content: { "application/json": { schema: success } } },
+                    default: {
+                      description: "Operation error",
+                      content: {
+                        "application/json": {
+                          schema: {
+                            type: "object",
+                            properties: { error: d.errorSchema, meta: { type: "object" } },
+                            required: ["error", "meta"]
+                          }
                         }
                       }
                     }
                   }
                 }
               }
-            }
-          ])
+            ]
+          })
         )
       }
     }

@@ -56,7 +56,7 @@ export function render(result: SuccessEnvelope, format: "table" | "json" | "csv"
   const detail = jsonObject.safeParse(result.data)
   if (detail.success && !Array.isArray(detail.data.items) && !Array.isArray(detail.data.rows)) {
     return `${Object.entries(detail.data)
-      .map(([key, value]) => `${key}: ${cell(value)}`)
+      .map(([key, value]) => `${printable(key)}: ${cell(value)}`)
       .join("\n")}\n`
   }
   if (!values.length) {
@@ -77,7 +77,7 @@ export function render(result: SuccessEnvelope, format: "table" | "json" | "csv"
   if (!chosen.length) {
     return `${printable(JSON.stringify(result.data, null, 2))}\n`
   }
-  const table = [chosen, ...values.map((row) => chosen.map((column) => cell(field(row, column))))]
+  const table = [chosen.map(printable), ...values.map((row) => chosen.map((column) => cell(field(row, column))))]
   const widths = chosen.map((_, index) => Math.min(60, Math.max(...table.map((row) => (row[index] ?? "").length))))
   return `${table
     .map((row) =>

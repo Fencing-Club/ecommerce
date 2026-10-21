@@ -96,6 +96,13 @@ describe("CLI input and output", () => {
     for (const amount of ["1.001", "1e2", "-1", "NaN", "9999999999999999"]) {
       expect(() => decimalMinor(amount, "USD")).toThrow(Error)
     }
+    // A restock plan names its report with --from-report, never also in the selection file.
+    expect(buildInput(find("restock.plan.create"), { fromReport: workspace }, []).input).toEqual({
+      reportId: workspace
+    })
+    expect(() =>
+      buildInput(find("restock.plan.create"), { fromReport: workspace }, [], { reportId: workspace })
+    ).toThrow("once")
   })
   it("rejects duplicate fields and conflicting read/apply/generate selectors", () => {
     expect(() => buildInput(find("po.update"), { revision: "3" }, [workspace], { expectedRevision: 2 })).toThrow("once")

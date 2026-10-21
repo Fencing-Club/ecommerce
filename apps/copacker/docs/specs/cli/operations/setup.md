@@ -13,13 +13,13 @@ effectiveScopes:string[],capabilities:[{operation,available:boolean,reason:strin
 | --- | --- | --- | --- |
 | `login` (local) | CLI `{profile?:string}` | `{authenticated:true,accountId,profile}` | Browser/PKCE sign-in; protected local credentials, no workspace required. |
 | `logout` (local) | CLI `{profile?:string}` | `{cleared:boolean,revoked:boolean}` | Revoke/clear selected interactive grant; report revocation failure, no automation mass-revoke. |
-| `account.show` | `{}`; account context | `{id,name,email,authentication:{kind:"interactive"|"automation",credentialId:Id|null,expiresAt:Instant|null,scopes:string[]},workspaceId:Id|null}` | Account; effective local workspace is CLI metadata, server workspaceId is credential binding or null. |
+| `account.show` | `{}`; account context | `{id,name,email,authentication:{kind:"interactive"\|"automation",credentialId:Id\|null,expiresAt:Instant\|null,scopes:string[]},workspaceId:Id\|null}` | Account; effective local workspace is CLI metadata, server workspaceId is credential binding or null. |
 | `workspace.list` | `PageInput`; account context | `Page<Workspace>` sorted name/ID | Account; automation sees only its bound workspace. |
 | `workspace.show` | `{}`; workspace context | `Workspace` | Current membership; bootstrap discovery does not require every business-data scope. |
 | `workspace.use` (local) | `{id}` | `{workspaceId}` | Validates accessible ID, then changes local default only. |
-| `status` | `{}`; workspace context | `{connections:[{id,state,issues:Issue[]}],datasets:[{connectionId,name,observedAt:Instant|null,state}],attention:[{entityId,operationId,issues:Issue[],recovery:StatusQuery}]}` | Membership; filter each entry by its resource read permission, omit sensitive diagnostics. |
-| `schema.list` | `PageInput & {prefix?:Text<100>}` | `Page<{operation,cliPath,mcpName:string|null,contractVersion:string,context,effects:Effect[]}>` | Membership; only deployed/currently discoverable capabilities. |
-| `schema.show` | `{operation:Text<100>}` | `{operation,contractVersion,context,cliPath,mcpName:string|null,inputSchema:JSONSchema,outputSchema:JSONSchema,errorSchema:JSONSchema,accessPolicy,effects:Effect[],limits,asyncStatusSchema:JSONSchema|null}` | Same; JSONSchema is the schema document, not untyped business data. |
+| `status` | `{}`; workspace context | `{connections:[{id,state,issues:Issue[]}],datasets:[{connectionId,name,observedAt:Instant\|null,state}],attention:[{entityId,operationId,issues:Issue[],recovery:StatusQuery}]}` | Membership; filter each entry by its resource read permission, omit sensitive diagnostics. |
+| `schema.list` | `PageInput & {prefix?:Text<100>}` | `Page<{operation,cliPath,mcpName:string\|null,contractVersion:string,context,effects:Effect[]}>` | Membership; only deployed/currently discoverable capabilities. |
+| `schema.show` | `{operation:Text<100>}` | `{operation,contractVersion,context,cliPath,mcpName:string\|null,inputSchema:JSONSchema,outputSchema:JSONSchema,errorSchema:JSONSchema,accessPolicy,effects:Effect[],limits,asyncStatusSchema:JSONSchema\|null}` | Same; JSONSchema is the schema document, not untyped business data. |
 
 Credential list/show/create/rotate/revoke inputs, results and errors are specified in the credential page. Their command
 paths begin `account credential`, but context is workspace, and issuing authority is interactive admin only.
@@ -48,8 +48,8 @@ address:PostalAddress,shopifyLocation:SourceRef|null}`. A Shopify location link 
 | `partners.create` | `{clientReference,data:PartnerInput}` | `Saved<Partner> & {restored:boolean}` | B PartnersWrite; create/restore relationship, no email even if email supplied. |
 | `partners.update` | `Guard & {patch:PartnerPatch}` | `Saved<Partner>` | B PartnersWrite; local fields only, `field_owned_elsewhere`. |
 | `partners.remove` | `Guard` | `Removed` | B PartnersWrite; preserve historical references, reject open-PO restrictions. |
-| `partners.invite` | `Guard & {email:email,type:"supplier"|"forwarder"}` | `{partner:Partner,invitation:{id,state:"queued"|"sent",expiresAt},operation?:Operation,statusQuery?:StatusQuery}` | B PartnersWrite; explicit recipient invitation, joined relationships reject; replay sends no second email. |
-| `partners.catalog.assign` | `Guard & {catalogId,expectedCatalogRevision,expectedPreviousCatalogId:Id|null,expectedPreviousCatalogRevision:Revision|null}` | `{partner:Partner,changedDependencies:Dependency[]}` | S PartnersWrite + CatalogWrite; active owned catalog, atomic reassignment. |
+| `partners.invite` | `Guard & {email:email,type:"supplier"\|"forwarder"}` | `{partner:Partner,invitation:{id,state:"queued"\|"sent",expiresAt},operation?:Operation,statusQuery?:StatusQuery}` | B PartnersWrite; explicit recipient invitation, joined relationships reject; replay sends no second email. |
+| `partners.catalog.assign` | `Guard & {catalogId,expectedCatalogRevision,expectedPreviousCatalogId:Id\|null,expectedPreviousCatalogRevision:Revision\|null}` | `{partner:Partner,changedDependencies:Dependency[]}` | S PartnersWrite + CatalogWrite; active owned catalog, atomic reassignment. |
 | `partners.catalog.remove` | `Guard & {expectedCatalogId,expectedCatalogRevision}` | Same | Same; clear one assignment, no sent-PO price rewrite. |
 | `address.list` | `PageInput & {owner?:Address.owner,kind?:Address.kind}` | `Page<Address>` sorted name/ID | PartnersRead for partner addresses; membership for accessible own addresses. |
 | `address.show` | `{id}` | `Address` | Same with ownership/relationship checks. |
@@ -78,8 +78,8 @@ updates until a named deployed field exists; this is not arbitrary provider conf
 | `connection.show` | `{id}` | `Connection` | Same. |
 | `connection.connect` | `{provider,expectedAccountId?:string,shopDomain?:string}` | `{authorizationId,url,expiresAt,statusQuery}` | B Admin(connections:manage); create browser consent intent; Shopify requires shopDomain, never arbitrary callback URLs. |
 | `connection.reconnect` | `Guard & {expectedAccountId:string}` | Same authorization receipt | Same; bind intent to existing connection/account, mismatch fails. |
-| `connection.disconnect` | `Guard` | `{connection:Connection,localDisconnected:boolean,providerRevocation:"confirmed"|"unsupported"|"failed"}` | B Admin(connections:manage); disconnect locally and report provider result honestly. |
-| `connection.sync` | `{id,dataset:DatasetStatus.name|"all"}` | `SyncRun` | B products V + sync:run for product/inventory/stock history, sales V + sync:run for orders; overview V + P + sync:run for finance/Ads, or admin. `all` requires all selected dataset permissions. |
+| `connection.disconnect` | `Guard` | `{connection:Connection,localDisconnected:boolean,providerRevocation:"confirmed"\|"unsupported"\|"failed"}` | B Admin(connections:manage); disconnect locally and report provider result honestly. |
+| `connection.sync` | `{id,dataset:DatasetStatus.name\|"all"}` | `SyncRun` | B products V + sync:run for product/inventory/stock history, sales V + sync:run for orders; overview V + P + sync:run for finance/Ads, or admin. `all` requires all selected dataset permissions. |
 | `connection.sync.show` | `{id,runId?:Id,operationId?:Id}` | `SyncRun` | Corresponding read permissions + connections:read; exact run or latest; never provider tokens. |
 | `connection.settings.show` | `{id}` | `{connectionId,revision,settings:ConnectionSettings}` | B Admin(connections:read). |
 | `connection.settings.update` | `Guard & {settings:{provider:"shopify",excludedOrderTags:string[]}}` | Same | B Admin(connections:manage); local ingestion settings, no upstream write. |

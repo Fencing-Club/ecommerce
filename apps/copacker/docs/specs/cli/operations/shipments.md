@@ -30,7 +30,7 @@ do not replace them with provider status strings. Lifecycle results include ever
 | --- | --- | --- | --- |
 | `shipment.list` | `PageInput & ShipmentFilter` | `Page<Shipment>` sorted observedAt/typed identity descending | ShipRead; declared provider reads for external discovery, partial coverage on outage. |
 | `shipment.show` | `{id,operationId?:Id}` | `Shipment` | ShipRead; local ID only, exact associated run when selected. |
-| `shipment.lookup` | `{provider:"amazon",connectionId,kind:"fba_shipment"|"fba_inbound_plan"|"awd_order",externalId}` | `{shipments:Shipment[]}` | ShipRead; typed provider lookup, may resolve one or several linked records. |
+| `shipment.lookup` | `{provider:"amazon",connectionId,kind:"fba_shipment"\|"fba_inbound_plan"\|"awd_order",externalId}` | `{shipments:Shipment[]}` | ShipRead; typed provider lookup, may resolve one or several linked records. |
 | `shipment.create` | `{poId,expectedPoRevision}` | `Saved<Shipment> & {resumed:boolean}` | B/S ShipWrite; create/resume permitted packing draft. |
 | `shipment.packing.show` | `{id}` | `{shipmentId,revision,poRevision,draft:PackingDraft,availablePieces:[{itemId,pieces}],issues:Issue[]}` | ShipRead. |
 | `shipment.packing.save` | `ShipmentGuard & {draft:PackingDraft}` | `{shipmentId,revision,poRevision,savedAt}` | B/S ShipWrite; full draft save only. P required to change prices; otherwise keep PO prices server-side. |

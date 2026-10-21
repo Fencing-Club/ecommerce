@@ -24,7 +24,7 @@ coverage issues when unavailable, distinguishing “not ingested” from known e
 | Operation | Input | Result data | Access and effects |
 | --- | --- | --- | --- |
 | `order.list` | `PageInput & OrderFilter & {sort?,direction?}` | `Page<CustomerOrder>` | Orders; stored read, price redaction. |
-| `order.show` | `{id}` or `{reference:Text<255>,connectionId,marketplaceId?:string}` | `CustomerOrder` | Orders; exact reference in provider account context, `ambiguous_reference` when needed. |
+| `order.show` | `{id}` or `{reference:Text<255>,connectionId?:Id,marketplaceId?:string}` | `CustomerOrder` | Orders; exact reference in provider account context, `ambiguous_reference` when needed. |
 | `order.export` | `Export<OrderFilter & {columns?:OrderColumn[]}>`, csv/json | `ExportResult` | Orders; retained export, price redaction. |
 
 `OrderColumn` is `id|provider|accountId|marketplaceId|reference|createdAt|updatedAt|paymentStatus|fulfillmentStatus|sku|
@@ -58,8 +58,8 @@ with proposed revisioned updates. Imported charges/Ads accruals have no mutation
 | `expense.list` | `PageInput & ExpenseFilter` | `Page<Expense>` sorted selected date basis descending/ID | ExpenseRead, enforced per type and related entity. |
 | `expense.show` | `{id}` | `Expense` | Same; allocation provenance retained. |
 | `expense.export` | `Export<ExpenseFilter>`, csv/json | `ExportResult` | Same; measurement/inclusion columns cannot be dropped from default CSV. |
-| `expense.create` | `{clientReference,data:LandedInput|RecurringInput}` | `Saved<Expense>` | Landed: B POWrite + `expenses:write`; recurring: B Admin(expenses:write) + P. Local cost record. |
-| `expense.update` | `Guard & {data:LandedInput|RecurringInput}` | `Saved<Expense>` | Same by type; full replacement, cannot change type/PO binding. |
+| `expense.create` | `{clientReference,data:LandedInput\|RecurringInput}` | `Saved<Expense>` | Landed: B POWrite + `expenses:write`; recurring: B Admin(expenses:write) + P. Local cost record. |
+| `expense.update` | `Guard & {data:LandedInput\|RecurringInput}` | `Saved<Expense>` | Same by type; full replacement, cannot change type/PO binding. |
 | `expense.remove` | `Guard & {expectedPoRevision?:Revision}` | `Removed` | Same; PO revision required for landed costs. |
 
 ## Demand report
