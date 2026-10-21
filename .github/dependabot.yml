@@ -11,6 +11,10 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # 2.0.0 is only published as beta snapshots; wait for the stable release.
+      - dependency-name: "@cloudflare/vite-plugin"
+        versions: [">=2.0.0-0 <2.0.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
