@@ -1,4 +1,4 @@
-import { packingSchema, palletLabels } from "@repo/copacker-shipments"
+import { packingSchema, palletLabels, orderDestination } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import type { PackingRequirements } from "@repo/copacker-shipments/packing-requirements"
 import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
@@ -172,7 +172,7 @@ export function simulatePacket(set: PacketDataSet, arrangement: Arrangement): Si
   })
   const amazonShipment = set.receiver === "awd_us" ? "STAR-SIM0001" : "FBA19SIM0001"
   const labels: CartonLabel[] =
-    order.destination === "amazon"
+    orderDestination(order) === "amazon"
       ? packing.cartons.map((carton, index) => ({
           cartonId: carton.cartonId,
           labelNumber: `${amazonShipment}U${String(index + 1).padStart(6, "0")}`,
@@ -196,7 +196,7 @@ export function simulatePacket(set: PacketDataSet, arrangement: Arrangement): Si
     supplier: "Northwind Textiles",
     destination: destinations[set.receiver],
     revision: 1,
-    shipmentId: order.destination === "amazon" ? amazonShipment : "SIM-0001",
+    shipmentId: orderDestination(order) === "amazon" ? amazonShipment : "SIM-0001",
     generatedDate: "2026-10-20"
   }
   try {

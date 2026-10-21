@@ -1,5 +1,18 @@
 import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
-import { type AmazonNetwork, amazonNetworks, cartonNetworks, validatePacking } from "@repo/copacker-packing-rules"
+import {
+  type AmazonNetwork,
+  amazonNetworks,
+  cartonReceivers,
+  groupReceivers,
+  isAmazonNetwork,
+  orderDestination,
+  receiverFor,
+  type ReceiverGroup,
+  receiverGroups,
+  receiverIds,
+  receivers,
+  validatePacking
+} from "@repo/copacker-packing-rules"
 import { z } from "zod"
 import { packingRequirementsSchema } from "./packing-requirements"
 
@@ -14,15 +27,27 @@ export const prepCategories = [
   "HANG_GARMENT"
 ] as const
 export type PrepCategory = (typeof prepCategories)[number]
-// Where a PO ships: Amazon, or one of the buyer's own locations (a saved delivery address). A PO to Amazon sends each
-// line to its own Amazon network, so one PO can become several Amazon shipments. A freight forwarder is never where a
-// PO ends, only a stop on the way.
-export const destinationSchema = z.enum(["amazon", "warehouse"])
-// Amazon's inbound networks a PO line can go to: FBA, or AWD in the US. Each has its own carton rules, and each
-// network's cartons become their own shipment.
-// Amazon's networks are the receivers the packing rules know (@repo/copacker-packing-rules).
-export { amazonNetworks, type AmazonNetwork }
-export const amazonNetworkNames: Record<AmazonNetwork, string> = { fba: "FBA", awd_us: "AWD US" }
+// Where a PO ships, as a group of receivers: Amazon, or one of the buyer's own locations (a saved delivery address). Each
+// line names its receiver (see @repo/copacker-packing-rules' receivers), and a PO's lines share one group, which
+// `orderDestination` reads. A PO to Amazon can send lines to FBA and AWD, so it can become several Amazon shipments. A
+// freight forwarder is never where a PO ends, only a stop on the way.
+export const destinationSchema = z.enum(receiverGroups)
+export type Destination = ReceiverGroup
+export {
+  amazonNetworks,
+  type AmazonNetwork,
+  groupReceivers,
+  isAmazonNetwork,
+  orderDestination,
+  receiverFor,
+  receiverIds,
+  receivers
+}
+export type { ReceiverId } from "@repo/copacker-packing-rules"
+export const amazonNetworkNames: Record<AmazonNetwork, string> = {
+  fba: receivers.fba.name,
+  awd_us: receivers.awd_us.name
+}
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),
@@ -128,8 +153,8 @@ export const itemSchema = z
     suffocationWarning: z.boolean().default(false),
     // Whether each unit gets its SKU label. Left out, the product's label setting decides; POs to Amazon always label.
     skuLabel: z.boolean().optional(),
-    // On a PO to Amazon, the network this line's cartons go to, which decides how they're packed.
-    amazonNetwork: z.enum(amazonNetworks).default("fba")
+    // Where this line's cartons go, which decides how they're packed: an Amazon network, or the buyer's location.
+    receiver: z.enum(receiverIds)
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Units must be divisible by units per pack")
 export type OrderItem = z.infer<typeof itemSchema>
@@ -164,7 +189,6 @@ export const orderInputSchema = z
   .object({
     supplierId: z.uuid(),
     reference: z.string().trim().min(1).max(80),
-    destination: destinationSchema,
     // For a PO to one of the buyer's locations, its delivery address.
     deliveryId: z.uuid().optional(),
     // A freight forwarder the goods stop at on the way to Amazon or the buyer's location, such as a consolidator in
@@ -200,7 +224,14 @@ export const orderInputSchema = z
         path: ["adjustments"]
       })
     }
-    if (order.destination === "warehouse" && !order.deliveryId) {
+    if (new Set(order.items.map((item) => receivers[item.receiver].group)).size > 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Send every product to Amazon, or every one to your location",
+        path: ["items"]
+      })
+    }
+    if (orderDestination(order) === "warehouse" && !order.deliveryId) {
       ctx.addIssue({ code: "custom", message: "Choose a delivery address", path: ["deliveryId"] })
     }
     if (
@@ -357,7 +388,7 @@ export function palletLabels(
 // with the first, and each pallet with the cartons on it. Carton IDs match in any case, as validatePacking matches them.
 export function splitByNetwork(order: Pick<OrderInput, "items">, packing: Packing) {
   const split = amazonNetworks.flatMap((network) => {
-    const cartons = packing.cartons.filter((carton) => cartonNetworks(order, carton)[0] === network)
+    const cartons = packing.cartons.filter((carton) => cartonReceivers(order, carton)[0] === network)
     const ids = new Set(cartons.map((carton) => carton.cartonId.toLowerCase()))
     const pallets = packing.pallets?.flatMap((pallet) => {
       const cartonIds = pallet.cartonIds.filter((id) => ids.has(id.toLowerCase()))

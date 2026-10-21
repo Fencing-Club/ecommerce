@@ -54,7 +54,6 @@ const supplierLinkId = randomUUID(),
 const data = orderInputSchema.parse({
   supplierId: supplierLinkId,
   reference: "PO-1",
-  destination: "amazon",
   currency: "USD",
   items: [
     {
@@ -70,7 +69,7 @@ const data = orderInputSchema.parse({
       pieces: 10,
       piecesPerSet: 1,
       unitPrice: 500,
-      amazonNetwork: "awd_us"
+      receiver: "awd_us"
     }
   ]
 })

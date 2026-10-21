@@ -127,7 +127,6 @@ export async function privateDocumentProbe(request: Request) {
           const data: OrderInput = {
             supplierId: supplierLink,
             reference: "Probe PO",
-            destination: "warehouse",
             deliveryId: randomUUID(),
             currency: "USD",
             paymentTerms: "Net 30",

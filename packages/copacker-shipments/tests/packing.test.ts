@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { validatePacking, cartonNetworks, cartonList } from "@repo/copacker-packing-rules"
+import { validatePacking, cartonReceivers, cartonList } from "@repo/copacker-packing-rules"
 import { amazonSources } from "@repo/copacker-packing-rules/carton-policies"
 import { describe, expect, it } from "vitest"
 import {
@@ -27,7 +27,6 @@ const itemId = randomUUID()
 const order = orderInputSchema.parse({
   supplierId: randomUUID(),
   reference: "PO-37",
-  destination: "amazon",
   currency: "USD",
   dueDate: "2026-10-10",
   items: [
@@ -44,9 +43,15 @@ const order = orderInputSchema.parse({
       pieces: 320,
       piecesPerSet: 2,
       unitPrice: 210,
-      amazonNetwork: "awd_us"
+      receiver: "awd_us"
     }
   ]
+})
+// The same PO to one of the buyer's own locations.
+const warehouseOrder = (deliveryId?: string) => ({
+  ...order,
+  ...(deliveryId && { deliveryId }),
+  items: order.items.map((item) => ({ ...item, receiver: "warehouse" as const }))
 })
 const packing = packingSchema.parse({
   readyDate: "2026-10-05",
@@ -88,7 +93,7 @@ describe("Supplier piece and carton contract", () => {
     const p = structuredClone(packing)
     p.cartons[0]!.length = 90
     p.cartons[0]!.weight = 30
-    const toWarehouse = { ...order, destination: "warehouse" as const, deliveryId: crypto.randomUUID() }
+    const toWarehouse = warehouseOrder(crypto.randomUUID())
     toWarehouse.items = toWarehouse.items.map((item) => ({ ...item, fnsku: "" }))
     expect(validatePacking(toWarehouse, p).valid).toBe(true)
     expect(validatePacking(order, p).valid).toBe(false)
@@ -97,17 +102,21 @@ describe("Supplier piece and carton contract", () => {
     expect(validatePacking(toWarehouse, p).issues.map((issue) => issue.code)).toContain("incompletePacks")
   })
   it("requires a delivery address for the buyer's own location", () => {
-    expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)
+    expect(orderInputSchema.safeParse(warehouseOrder()).success).toBe(false)
+  })
+  it("sends every line of a PO to one group of receivers", () => {
+    const mixed = {
+      ...warehouseOrder(randomUUID()),
+      items: [...order.items, { ...order.items[0]!, id: randomUUID(), buyerSku: "x", receiver: "warehouse" }]
+    }
+    expect(orderInputSchema.safeParse(mixed).success).toBe(false)
   })
   it("stops at a forwarder on the way to Amazon or the buyer's own location, never ends there", () => {
     const via = { forwarderId: randomUUID(), addressId: randomUUID() }
     expect(orderInputSchema.safeParse({ ...order, via }).success).toBe(true)
-    expect(
-      orderInputSchema.safeParse({ ...order, destination: "warehouse", deliveryId: randomUUID(), via }).success
-    ).toBe(true)
-    expect(orderInputSchema.safeParse({ ...order, destination: "forwarder", deliveryId: via.addressId }).success).toBe(
-      false
-    )
+    expect(orderInputSchema.safeParse({ ...warehouseOrder(randomUUID()), via }).success).toBe(true)
+    const toForwarder = { ...order, items: order.items.map((item) => ({ ...item, receiver: "forwarder" })) }
+    expect(orderInputSchema.safeParse(toForwarder).success).toBe(false)
   })
   it("holds cartons to 50 lb as shown, 22.67 kg", () => {
     // 50 lb is 22.6796185 kg, so 22.68 kg is over it.
@@ -258,10 +267,10 @@ describe("FBA shipments", () => {
   const fbaOrder = orderInputSchema.parse({
     ...order,
     items: [
-      { ...order.items[0], amazonNetwork: "fba" },
+      { ...order.items[0], receiver: "fba" },
       {
         ...order.items[0],
-        amazonNetwork: "fba",
+        receiver: "fba",
         id: gloveId,
         variantId: "gid://shopify/ProductVariant/2",
         buyerSku: "glove-6",
@@ -330,7 +339,7 @@ describe("FBA shipments", () => {
     const long = cartons([{ length: 70, items: [[itemId, 320]] }])
     expect(validatePacking(fbaOrder, long).valid).toBe(true)
     // AWD keeps its one-SKU cartons, and a carton goes to one network.
-    const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const })) }
+    const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, receiver: "awd_us" as const })) }
     expect(validatePacking(awd, long).issues.map((issue) => issue.code)).toEqual(["unitsPerCarton", "cartonSize"])
     expect(validatePacking(awd, mixed).issues.map((issue) => issue.code)).toContain("oneSku")
     const both = { ...fbaOrder, items: [awd.items[0]!, fbaOrder.items[1]!] }
@@ -415,7 +424,7 @@ describe("POs to Amazon with lines for several networks", () => {
         buyerSku: "glove-6",
         pieces: 12,
         piecesPerSet: 1,
-        amazonNetwork: "fba"
+        receiver: "fba"
       }
     ]
   })
@@ -430,7 +439,7 @@ describe("POs to Amazon with lines for several networks", () => {
 
   it("checks each carton by its own network and splits the cartons into one packing per network", () => {
     expect(validatePacking(both, split).issues).toEqual([])
-    expect(cartonNetworks(both, split.cartons[2]!)).toEqual(["fba"])
+    expect(cartonReceivers(both, split.cartons[2]!)).toEqual(["fba"])
     const parts = splitByNetwork(both, split)
     expect(parts.map((part) => [part.network, part.packing.cartons.map((carton) => carton.cartonId)])).toEqual([
       ["fba", ["G1"]],
@@ -479,7 +488,7 @@ describe("POs to Amazon with lines for several networks", () => {
       "Pack FBA and AWD US products in separate cartons."
     ])
     expect(destinationName(both)).toBe("Amazon FBA and AWD US")
-    expect(itemRequirements(both.items[0]!, "amazon")[0]).toEqual({ code: "packFor", network: "awd_us" })
+    expect(itemRequirements(both.items[0]!)[0]).toEqual({ code: "packFor", network: "awd_us" })
   })
 })
 

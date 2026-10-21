@@ -14,7 +14,7 @@ const product = orderItem({
   piecesPerSet: 2,
   fnsku: "X000000001",
   asin: "B000000001",
-  amazonNetwork: "awd_us",
+  receiver: "awd_us",
   packingRequirements: { preparation: "sealedPolybag", labels: [], countryCode: "", instructions: "" }
 })
 const input = {
@@ -89,7 +89,7 @@ describe("accepted shipment document snapshot", () => {
 
   it("gives each FBA pallet its Amazon shipment and its number there, as Amazon's pallet labels show them", () => {
     const pallet = { length: 120, width: 100, height: 90, weight: 62, stackable: true }
-    const order = { ...input.order, items: [{ ...product, amazonNetwork: "fba" as const }] }
+    const order = { ...input.order, items: [{ ...product, receiver: "fba" as const }] }
     const data = shippingDocumentSnapshot({
       ...input,
       order,
@@ -111,7 +111,7 @@ describe("accepted shipment document snapshot", () => {
     const pallet = { length: 120, width: 100, height: 90, weight: 62, stackable: false }
     const data = shippingDocumentSnapshot({
       ...input,
-      order: { ...input.order, items: [{ ...product, amazonNetwork: "fba" as const }] },
+      order: { ...input.order, items: [{ ...product, receiver: "fba" as const }] },
       packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, palletId: "1", cartonIds: ["A1", "A2"] }] },
       labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
       transport: { ...input.transport, service: "freight" }
@@ -126,7 +126,7 @@ describe("accepted shipment document snapshot", () => {
   it("asks for the bill of lading on freight loaded loose, without pallet steps", () => {
     const data = shippingDocumentSnapshot({
       ...input,
-      order: { ...input.order, items: [{ ...product, amazonNetwork: "fba" as const }] },
+      order: { ...input.order, items: [{ ...product, receiver: "fba" as const }] },
       labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
       transport: { ...input.transport, service: "freight" }
     })

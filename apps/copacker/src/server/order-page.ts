@@ -242,7 +242,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
       instructionsByItem: Object.fromEntries(
         order.data.items.map((item) => [
           item.id,
-          itemRequirements(item, order.data.destination, prep)
+          itemRequirements(item, prep)
             .filter((requirement) => !["packFor", "bundle", "fnskuLabel", "instruction"].includes(requirement.code))
             .map(text.requirement)
         ])

@@ -6,8 +6,14 @@ import {
   itemTotal,
   orderCharges,
   orderTotal,
+  type Destination,
+  destinationSchema,
   type OrderInput,
-  orderInputSchema
+  orderDestination,
+  orderInputSchema,
+  type ReceiverId,
+  receiverFor,
+  receivers
 } from "@repo/copacker-shipments"
 import { Link, useRouter } from "@tanstack/react-router"
 import {
@@ -67,6 +73,9 @@ import { QuantityDisplay } from "./quantity-display"
 
 // Where a purchase order can go, each labeled under orders.builder.destinations.
 const destinations = ["amazon", "warehouse"] as const
+// The builder asks where the PO goes before its lines, so the form holds the destination too, and each line's receiver
+// follows it (see receiverFor). The PO itself doesn't store it: its lines' receivers say where it goes.
+const builderSchema = orderInputSchema.safeExtend({ destination: destinationSchema })
 // Which of Amazon's networks a line goes to, when the PO ships to Amazon.
 const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
 // The currencies a PO can be in, each named under orders.currencies.
@@ -152,22 +161,24 @@ export function OrderBuilder({
   // The header's Save sits outside the form, which the header row must precede, and submits it by this id.
   const formId = useId()
   const { form, submit } = useActionForm({
-    schema: orderInputSchema,
+    schema: builderSchema,
     action: draft ? "order.update" : "order.create",
-    toPayload: draft ? (order) => ({ id: draft.id, revision: draft.revision, order }) : undefined,
+    toPayload: ({ destination: _, ...order }) => (draft ? { id: draft.id, revision: draft.revision, order } : order),
     // Saving an edit goes back to the PO.
     onSuccess: draft ? () => router.navigate({ href: `/orders/${draft.id}` }) : undefined,
-    defaultValues: draft?.data ?? {
-      reference: "",
-      supplierId: initialSupplierId ?? "",
-      destination: initialDestination,
-      deliveryId: initialDeliveryId,
-      paymentTerms: "Payment in advance",
-      currency: "USD",
-      notes: "",
-      adjustments: [],
-      items: initialItems
-    }
+    defaultValues: draft
+      ? { ...draft.data, destination: orderDestination(draft.data) }
+      : {
+          reference: "",
+          supplierId: initialSupplierId ?? "",
+          destination: initialDestination,
+          deliveryId: initialDeliveryId,
+          paymentTerms: "Payment in advance",
+          currency: "USD",
+          notes: "",
+          adjustments: [],
+          items: initialItems
+        }
   })
   // Line items carry their own `id`, so the field array keys rows separately.
   const lineItems = useFieldArray({ control: form.control, name: "items", keyName: "key" })
@@ -187,7 +198,7 @@ export function OrderBuilder({
       label: network === "warehouse" ? tb("destinations.warehouse") : amazonNetworkNames[network],
       lines: lineItems.fields
         .map((line, index) => ({ line, index }))
-        .filter(({ index }) => network === "warehouse" || (items[index]?.amazonNetwork ?? "fba") === network)
+        .filter(({ index }) => network === "warehouse" || (items[index]?.receiver ?? "fba") === network)
     }))
     .filter((group) => group.lines.length > 0)
   function selectLines(ids: string[], selected: boolean) {
@@ -203,14 +214,33 @@ export function OrderBuilder({
       return next
     })
   }
-  function moveSelected(network: OrderInput["items"][number]["amazonNetwork"]) {
+  function moveSelected(network: ReceiverId) {
     lineItems.fields.forEach((line, index) => {
       if (selectedLines.has(line.id)) {
-        form.setValue(`items.${index}.amazonNetwork`, network, { shouldDirty: true, shouldValidate: true })
+        form.setValue(`items.${index}.receiver`, network, { shouldDirty: true, shouldValidate: true })
       }
     })
     setSelectedLines(new Set())
   }
+  // Each line's last receiver in each group, so a line moved back to Amazon returns to FBA or AWD as it was.
+  const earlierReceivers = useRef(new Map<string, ReceiverId>())
+  for (const item of items) {
+    if (item?.id && item.receiver) {
+      earlierReceivers.current.set(`${item.id}:${receivers[item.receiver].group}`, item.receiver)
+    }
+  }
+  // Lines go where the PO goes: a new destination moves each line to a receiver there.
+  useEffect(() => {
+    if (!destination) {
+      return
+    }
+    form.getValues("items").forEach((item, index) => {
+      if (item.receiver && receivers[item.receiver].group !== destination) {
+        const earlier = earlierReceivers.current.get(`${item.id}:${destination}`)
+        form.setValue(`items.${index}.receiver`, receiverFor(destination, earlier), { shouldDirty: true })
+      }
+    })
+  }, [destination, form])
   // A delivery address is one of the buyer's locations, so another destination clears it. A stop on the way suits
   // either destination and stays.
   useEffect(() => {
@@ -330,7 +360,8 @@ export function OrderBuilder({
         product,
         crypto.randomUUID(),
         { asin: product.amazonAsin, fnsku: product.fnsku, ...product.lineDefaults },
-        form.getValues("currency")
+        form.getValues("currency"),
+        form.getValues("destination")
       )
       lastDefaultedPrice.current[line.id] = line.unitPrice
       lineItems.append(line)
@@ -745,7 +776,7 @@ export function OrderBuilder({
 // Where the PO's stock is counted for the product picker: FBA and AWD together, or the address's Shopify location. Its
 // label is the destination, which the builder names.
 function stockAtDestination(
-  destination: OrderInput["destination"],
+  destination: Destination | undefined,
   shopifyLocationId?: string | null
 ): Omit<StockAt, "label"> & { label: "amazon" | "warehouse" | "forwarder" } {
   switch (destination) {

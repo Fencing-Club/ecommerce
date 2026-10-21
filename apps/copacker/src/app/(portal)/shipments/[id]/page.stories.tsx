@@ -1,4 +1,10 @@
-import { type Address, type AmazonNetwork, type OrderInput, type OrderItem } from "@repo/copacker-shipments"
+import {
+  type Address,
+  type AmazonNetwork,
+  type OrderInput,
+  type OrderItem,
+  orderDestination
+} from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
@@ -116,7 +122,7 @@ function nextStop(order: OrderInput, shipment: ShipmentRow): { addresses: Addres
   if (data.via && !["forwarded", "received"].includes(shipment.status)) {
     return { addresses: [baylineWarehouse], pending: false }
   }
-  if (data.destination === "warehouse") {
+  if (orderDestination(data) === "warehouse") {
     const places = buyerContacts.filter((contact) => contact.id === data.deliveryId)
     return { addresses: places.map((place) => ({ ...place.address, name: place.name })), pending: false }
   }
@@ -153,10 +159,10 @@ async function ShipmentPage({
   const prices = can(s, "prices")
   const id = shipment.id
   const packingOrder = shipment.amazonNetwork
-    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    ? { ...order.data, items: order.data.items.filter((item) => item.receiver === shipment.amazonNetwork) }
     : order.data
   const packingGroups =
-    order.data.destination === "amazon" && packingOrder.items.some((item) => item.amazonNetwork === "fba")
+    orderDestination(order.data) === "amazon" && packingOrder.items.some((item) => item.receiver === "fba")
       ? (knownPackingGroups([...others, shipment], shipment) ?? null)
       : undefined
   const snapshot = shipment.snapshot ?? order.data
@@ -183,7 +189,7 @@ async function ShipmentPage({
   })
   const fba = shipment.amazonNetwork === "fba"
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
-  const amazon = order.data.destination === "amazon"
+  const amazon = orderDestination(order.data) === "amazon"
   const title = t("title", { number })
   const destination = await shipmentDestinations([order.data])
   const nextStep =
@@ -280,7 +286,7 @@ const awdOrder = {
   ...amazonOrder,
   data: {
     ...amazonOrder.data,
-    items: amazonOrder.data.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const }))
+    items: amazonOrder.data.items.map((item) => ({ ...item, receiver: "awd_us" as const }))
   }
 }
 const [firstLine, secondLine] = warehouse.data.items

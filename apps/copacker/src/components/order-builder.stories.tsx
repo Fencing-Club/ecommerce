@@ -113,7 +113,6 @@ export const CreateOrder = meta.story({
         reference: "PO-1050",
         notes: "- Seal each bag.\n- Keep **both units** together.",
         supplierId,
-        destination: "amazon",
         currency: "USD",
         paymentTerms: "Payment in advance",
         items: [
@@ -329,9 +328,9 @@ export const NoForwarders = meta.story({
 export const ShipmentGroups = meta.story({
   args: {
     initialItems: [
-      { ...tote!, amazonNetwork: "awd_us" },
-      { ...apron!, amazonNetwork: "fba" },
-      { ...basket!, amazonNetwork: "fba" }
+      { ...tote!, receiver: "awd_us" },
+      { ...apron!, receiver: "fba" },
+      { ...basket!, receiver: "fba" }
     ],
     initialSupplierId: supplierId
   },
@@ -376,9 +375,9 @@ export const ShipmentGroups = meta.story({
         action: "order.create",
         data: expect.objectContaining({
           items: [
-            expect.objectContaining({ id: tote!.id, amazonNetwork: "awd_us", pieces: tote!.pieces }),
-            expect.objectContaining({ id: apron!.id, amazonNetwork: "fba", pieces: 60, unitPrice: 1000 }),
-            expect.objectContaining({ id: basket!.id, amazonNetwork: "awd_us", pieces: basket!.pieces })
+            expect.objectContaining({ id: tote!.id, receiver: "awd_us", pieces: tote!.pieces }),
+            expect.objectContaining({ id: apron!.id, receiver: "fba", pieces: 60, unitPrice: 1000 }),
+            expect.objectContaining({ id: basket!.id, receiver: "awd_us", pieces: basket!.pieces })
           ]
         })
       })
@@ -481,7 +480,7 @@ export const PackingDetails = meta.story({
                 instructions: "Fold with the logo out",
                 labels: ["suffocation", "sku"]
               }),
-              amazonNetwork: "fba"
+              receiver: "fba"
             })
           ]
         })

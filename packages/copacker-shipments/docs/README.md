@@ -8,7 +8,8 @@ Purchase orders, packing, labels, shipping documents, supplier requirements and 
 
 The carton and pallet rules, and `validatePacking`, live in
 [`@repo/copacker-packing-rules`](../../copacker-packing-rules/docs/README.md). This package uses it to check a packing before
-building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports `amazonNetworks` from it.
+building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
+its `receiver`; `orderDestination` reads where the PO goes from them.
 
 ## Supplier service costs
 

@@ -1,5 +1,5 @@
 import { amazonSources, type CartonField, weightLimit } from "./carton-policies"
-import type { AmazonNetwork } from "./index"
+import type { AmazonNetwork } from "./receivers"
 
 // A rule a receiver sets for its pallets, as data, as carton-policies.ts keeps carton rules. A policy is the list of
 // rules one receiver's pallets follow. Rules on what the pallet editor measures have one evaluator each (checkPallet);

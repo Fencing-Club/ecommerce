@@ -1,7 +1,7 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
 import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
-import { packingSchema } from "@repo/copacker-shipments"
+import { packingSchema, orderDestination } from "@repo/copacker-shipments"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
@@ -152,7 +152,7 @@ export function packingReadiness(
     shipment.amazonNetwork &&
     packing.cartons.some((carton) =>
       carton.items.some(
-        (content) => order.items.find((item) => item.id === content.itemId)?.amazonNetwork !== shipment.amazonNetwork
+        (content) => order.items.find((item) => item.id === content.itemId)?.receiver !== shipment.amazonNetwork
       )
     )
   ) {
@@ -185,8 +185,9 @@ export function releaseIssues(
   if (!shipment.packing || !shipment.snapshot) {
     return [{ code: "missing_packing", message: t("readiness.missingPacking") }]
   }
-  const issues = shipment.snapshot.destination === "amazon" ? amazonIssues(shipment, shipment.packing, docs, t) : []
-  if (shipmentLabelRequirements(shipment.snapshot.destination, shipment.transport).needsTransport) {
+  const issues =
+    orderDestination(shipment.snapshot) === "amazon" ? amazonIssues(shipment, shipment.packing, docs, t) : []
+  if (shipmentLabelRequirements(orderDestination(shipment.snapshot), shipment.transport).needsTransport) {
     issues.push({ code: "missing_transport", message: t("readiness.missingTransport") })
   }
   const shipped = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
@@ -232,7 +233,7 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t:
       })
     }
     if (
-      shipmentLabelRequirements(shipment.snapshot!.destination, shipment.transport).carrierLabels &&
+      shipmentLabelRequirements(orderDestination(shipment.snapshot!), shipment.transport).carrierLabels &&
       !current.some((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)
     ) {
       issues.push({

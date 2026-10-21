@@ -1,5 +1,5 @@
 import type { OrderInput } from "@repo/copacker-shipments"
-import { orderTotal } from "@repo/copacker-shipments"
+import { orderTotal, orderDestination } from "@repo/copacker-shipments"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {
@@ -1014,7 +1014,7 @@ export async function overview(
       return true
     }
     if (restockKey === "amazon") {
-      return order.data.destination === "amazon"
+      return orderDestination(order.data) === "amazon"
     }
     return stockLocationId !== null && receivingLocations(order.data, deliveryLocations).includes(stockLocationId)
   })

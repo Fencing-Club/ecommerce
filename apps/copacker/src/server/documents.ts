@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { orderDestination } from "@repo/copacker-shipments"
 import type { Address } from "@repo/copacker-shipments"
 import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
@@ -100,7 +101,8 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   if (!row) {
     throw new Error("Purchase order is unavailable")
   }
-  const { destination, via } = data
+  const { via } = data
+  const destination = orderDestination(data)
   // With a stop on the way, the supplier ships to the forwarder's address there, and the forwarder sends the goods on
   // to Amazon or the buyer's location. A forwarder's address is the buyer's until the forwarder joins, then its own.
   const [forwarder] = via
@@ -246,7 +248,7 @@ async function shipmentParties(shipment: PackedShipment) {
     warehouses.length && !shipment.snapshot.via
       ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
       : parties.shipTo
-  if (shipment.snapshot.destination === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
+  if (orderDestination(shipment.snapshot) === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
     const addresses = await amazonFor(order!.buyerOrgId, order!.amazonSellerId)
       .then((api) => amazonDestinationAddresses(api, shipment))
       .catch(() => [])
@@ -269,7 +271,7 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
     return undefined
   }
   if (
-    shipment.snapshot.destination === "amazon" &&
+    orderDestination(shipment.snapshot) === "amazon" &&
     !shipment.snapshot.via &&
     shipment.amazonShipmentId &&
     shipment.labels.some((label) => label.destinationCode)

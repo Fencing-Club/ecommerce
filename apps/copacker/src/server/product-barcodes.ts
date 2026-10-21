@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/copacker-shipments"
+import { type Destination, type OrderInput, orderDestination } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/copacker-shipments/product-labels"
@@ -68,7 +68,7 @@ const needsUpload = (defaults: ReadonlyMap<string, ProductDefaults>, productId: 
 const labelFree = (
   defaults: ReadonlyMap<string, ProductDefaults>,
   productId: string | undefined,
-  destination: OrderInput["destination"]
+  destination: Destination
 ) => productId !== undefined && defaults.get(productId)?.productLabel === "none" && destination !== "amazon"
 
 // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
@@ -462,7 +462,7 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   ])
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
-  const forAmazon = order.data.destination === "amazon"
+  const forAmazon = orderDestination(order.data) === "amazon"
   return order.data.items.flatMap((item): LineLabel[] => {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
     const productId = rows.find((row) => row.variantId === item.variantId)?.productId
@@ -516,7 +516,7 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
     }
     // A line set to go without its label skips it, except to Amazon, which needs every unit labeled.
     const unlabeled =
-      item.skuLabel === undefined ? labelFree(defaults, productId, order.data.destination) : !item.skuLabel
+      item.skuLabel === undefined ? labelFree(defaults, productId, orderDestination(order.data)) : !item.skuLabel
     if (unlabeled && !forAmazon) {
       return [{ itemId: item.id, state: "none" }]
     }
@@ -642,8 +642,7 @@ export async function shipmentLabelsPdf(
   const { order } = await accessibleOrder(s, shipment.orderId)
   const data = shipment.snapshot ?? order.data
   const items = data.items.filter(
-    (item) =>
-      (!shipment.amazonNetwork || item.amazonNetwork === shipment.amazonNetwork) && (!itemId || item.id === itemId)
+    (item) => (!shipment.amazonNetwork || item.receiver === shipment.amazonNetwork) && (!itemId || item.id === itemId)
   )
   if (itemId && !items.length) {
     throw new ProductBarcodeError("lineNotOnOrder", 404)

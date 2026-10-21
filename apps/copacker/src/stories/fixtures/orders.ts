@@ -1,5 +1,4 @@
-import type { OrderInput } from "@repo/copacker-shipments"
-import type { OrderItem } from "@repo/copacker-shipments"
+import { type Destination, type OrderInput, type OrderItem, receiverFor } from "@repo/copacker-shipments"
 
 // Purchase orders as the database keeps them, for stories.
 
@@ -32,16 +31,31 @@ export function orderItem(overrides: Partial<OrderItem> = {}): OrderItem {
     instructions: "",
     prepCategory: "POLYBAGGING",
     suffocationWarning: true,
-    amazonNetwork: "fba",
+    receiver: "fba",
     ...overrides
   }
 }
 
-export function orderData(overrides: Partial<OrderInput> = {}): OrderInput {
+// A PO's lines sent where the PO goes: each line keeps its receiver when it is there, such as AWD US on a PO to Amazon,
+// and otherwise goes to that destination's first receiver.
+export function sendTo<T extends { items: OrderItem[] }>(order: T, destination: Destination): T {
+  return {
+    ...order,
+    items: order.items.map((item) => ({ ...item, receiver: receiverFor(destination, item.receiver) }))
+  }
+}
+
+// A PO, to the buyer's location unless `destination` says otherwise.
+export function orderData({
+  destination = "warehouse",
+  ...overrides
+}: Partial<OrderInput> & { destination?: Destination } = {}): OrderInput {
+  return sendTo(orderDataTo(overrides), destination)
+}
+function orderDataTo(overrides: Partial<OrderInput>): OrderInput {
   return {
     supplierId,
     reference: "PO-1042",
-    destination: "warehouse",
     deliveryId,
     currency: "USD",
     paymentTerms: "Net 30",

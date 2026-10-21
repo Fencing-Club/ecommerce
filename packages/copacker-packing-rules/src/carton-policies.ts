@@ -1,4 +1,5 @@
-import type { AmazonNetwork, PackingItem } from "./index"
+import type { PackingItem } from "./index"
+import type { AmazonNetwork } from "./receivers"
 
 // A rule a receiver sets for its cartons, as data. A policy is the list of rules one receiver's cartons follow, such as
 // FBA's or AWD's, and each rule type has one evaluator (checkCarton), so a new receiver, such as GWD or a 3PL, is a new

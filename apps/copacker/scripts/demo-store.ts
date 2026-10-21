@@ -297,7 +297,6 @@ export async function seedDemoStore(org: { id: string; name: string }) {
         data: {
           supplierId,
           reference: "DEMO-1",
-          destination: "amazon",
           currency: "USD",
           dueDate: "2026-12-01",
           paymentTerms: "30% deposit, 70% before shipment",
@@ -320,7 +319,7 @@ export async function seedDemoStore(org: { id: string; name: string }) {
               instructions: "",
               prepCategory: "POLYBAGGING",
               suffocationWarning: false,
-              amazonNetwork: "awd_us"
+              receiver: "awd_us"
             }
           ]
         }

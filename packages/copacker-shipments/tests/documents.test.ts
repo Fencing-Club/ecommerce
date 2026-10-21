@@ -23,13 +23,13 @@ const item = (index: number) => ({
   fnsku: "",
   pieces: 4,
   piecesPerSet: index % 4 ? 1 : 2,
-  unitPrice: 7850
+  unitPrice: 7850,
+  receiver: "warehouse" as const
 })
 const order = (count: number) =>
   orderInputSchema.parse({
     supplierId: "00000000-0000-4000-8000-000000000001",
     reference: "PO-1",
-    destination: "warehouse",
     deliveryId: "00000000-0000-4000-8000-000000000002",
     currency: "USD",
     dueDate: "2026-12-01",
@@ -37,6 +37,11 @@ const order = (count: number) =>
     adjustments: [{ description: "Freight", amount: 5000 }],
     items: Array.from({ length: count }, (_, index) => item(index + 1))
   })
+// The same PO to Amazon FBA.
+const toAmazon = (data: OrderInput): OrderInput => ({
+  ...data,
+  items: data.items.map((line) => ({ ...line, receiver: "fba" }))
+})
 const edition = { orderRevision: 2, shipmentRevision: 3, generated: "2026-10-16" }
 const parties = {
   issued: "2026-09-27",
@@ -244,17 +249,13 @@ describe("packing checklist PDF", () => {
   })
 
   it("keeps the Amazon network as an Amazon shipment's destination", async () => {
-    const text = await checklistText(
-      { ...order(1), destination: "amazon" },
-      { name: "Ningbo Consolidation, Dock 4", lines: [] }
-    )
+    const text = await checklistText(toAmazon(order(1)), { name: "Ningbo Consolidation, Dock 4", lines: [] })
     expect(text).toContain("Amazon FBA")
     expect(text).not.toContain("Ningbo Consolidation")
   })
 
   it("prints complete shipment and carton identities, component SKUs and the booked handoff", async () => {
-    const shipment = order(1)
-    shipment.destination = "amazon"
+    const shipment = toAmazon(order(1))
     shipment.items[0] = {
       ...shipment.items[0]!,
       piecesPerSet: 2,

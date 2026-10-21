@@ -159,14 +159,23 @@ describe("on order", () => {
     variantId: `gid://shopify/ProductVariant/${variant}`,
     pieces,
     piecesPerSet,
-    amazonNetwork: "awd_us" as const
+    receiver: "awd_us" as "awd_us" | "warehouse"
   })
   const order = (
     id: string,
     reference: string,
     items: ReturnType<typeof item>[],
     destination: "amazon" | "warehouse" = "amazon"
-  ) => ({ id, data: { reference, destination, items } })
+  ) => ({
+    id,
+    data: {
+      reference,
+      items: items.map((line) => ({
+        ...line,
+        receiver: destination === "amazon" ? line.receiver : ("warehouse" as const)
+      }))
+    }
+  })
 
   it("counts sellable units per variant and totals them per product with each PO once", () => {
     const onOrder = onOrderByVariant([
@@ -192,7 +201,7 @@ describe("on order", () => {
   it("shows POs to a delivery address at its linked Shopify location", () => {
     const toWarehouse = {
       id: "w",
-      data: { reference: "PO-W", destination: "warehouse" as const, deliveryId: "delivery-1", items: [item(1, 6)] }
+      data: { reference: "PO-W", deliveryId: "delivery-1", items: [{ ...item(1, 6), receiver: "warehouse" as const }] }
     }
     const onOrder = onOrderByVariant([toWarehouse], new Map([["delivery-1", "gid://shopify/Location/1"]]))
     expect(onOrder.get("gid://shopify/ProductVariant/1")?.[0]?.locationIds).toEqual(["gid://shopify/Location/1"])

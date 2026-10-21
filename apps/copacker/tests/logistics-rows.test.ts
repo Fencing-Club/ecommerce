@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 import type { ShipmentState } from "@/db/schema"
 import { amazonParty, orderProgress, shipmentParty, shipmentStage } from "@/server/logistics-rows"
 
+const toAmazon = [{ receiver: "fba" as const }]
+const toWarehouse = [{ receiver: "warehouse" as const }]
 const via = { forwarderId: "00000000-0000-4000-8000-000000000001", addressId: "00000000-0000-4000-8000-000000000002" }
 
 // A shipment of `pieces` in one carton.
@@ -10,7 +12,16 @@ function shipment(status: ShipmentState, pieces = 0) {
 }
 
 function order(status: "draft" | "submitted" | "closed") {
-  return { status, data: { destination: "amazon" as const, via, items: [{ pieces: 300 }, { pieces: 120 }] } }
+  return {
+    status,
+    data: {
+      via,
+      items: [
+        { pieces: 300, receiver: "fba" as const },
+        { pieces: 120, receiver: "fba" as const }
+      ]
+    }
+  }
 }
 
 describe("who a shipment waits on", () => {
@@ -21,13 +32,13 @@ describe("who a shipment waits on", () => {
     ["waiting_labels", {}, "buyer"],
     ["creating", {}, "amazon"],
     ["shipped", { via }, "forwarder"],
-    ["shipped", { destination: "amazon" }, "amazon"],
-    ["shipped", { destination: "warehouse" }, "carrier"],
-    ["forwarded", { via, destination: "amazon" }, "amazon"],
+    ["shipped", { items: toAmazon }, "amazon"],
+    ["shipped", { items: toWarehouse }, "carrier"],
+    ["forwarded", { via, items: toAmazon }, "amazon"],
     ["received", {}, "done"],
     ["cancelled", {}, "done"]
   ] as const)("%s %o waits on %s", (status, route, party) => {
-    expect(shipmentParty(status, { destination: "warehouse", ...route })).toBe(party)
+    expect(shipmentParty(status, { items: toWarehouse, ...route })).toBe(party)
   })
 
   it("files received and cancelled shipments, in the app's words and Amazon's", () => {

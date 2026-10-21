@@ -1,4 +1,4 @@
-import { destinationSchema } from "@repo/copacker-shipments"
+import { destinationSchema, orderDestination, groupReceivers } from "@repo/copacker-shipments"
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -43,7 +43,10 @@ export async function GET(request: Request) {
             eq(orders.buyerOrgId, s.org.id),
             eq(orders.status, "submitted"),
             supplierId ? eq(orders.supplierId, supplierId) : undefined,
-            destination ? sql`${orders.data}->>'destination' = ${destination}` : undefined,
+            // A PO's lines share one group of receivers, so its first line's receiver says where it goes.
+            destination
+              ? inArray(sql`${orders.data}->'items'->0->>'receiver'`, groupReceivers(destination))
+              : undefined,
             cursor ? gt(orders.id, cursor) : undefined
           )
         )
@@ -75,7 +78,7 @@ export async function GET(request: Request) {
             id: order.id,
             reference: order.data.reference,
             revision: order.revision,
-            destination: order.data.destination,
+            destination: orderDestination(order.data),
             forwarderId: order.data.via?.forwarderId ?? null,
             supplier: { id: order.supplierId, name: supplierName },
             shopifyDomain: order.shopifyDomain,

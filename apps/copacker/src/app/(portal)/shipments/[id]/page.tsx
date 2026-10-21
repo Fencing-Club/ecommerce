@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money, orderDestination } from "@repo/copacker-shipments"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import {
@@ -382,7 +382,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               </CardHeader>
               {isBuyer && editsShipments && (
                 <CardContent className="flex flex-col gap-6">
-                  {shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels && (
+                  {shipmentLabelRequirements(orderDestination(snapshot), shipment.transport).carrierLabels && (
                     <Upload
                       orderId={order.id}
                       shipmentId={id}

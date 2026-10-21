@@ -18,7 +18,7 @@ const item = (buyerSku: string, piecesPerSet = 1, ids = { asin: "B000000001", fn
   ...ids,
   pieces: 1000,
   piecesPerSet,
-  amazonNetwork: "fba"
+  receiver: "fba"
 })
 const bag = item("DB-2031")
 const towel = item("CT-3100", 2)

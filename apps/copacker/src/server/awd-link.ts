@@ -1,3 +1,4 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { and, eq, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -23,7 +24,7 @@ export async function linkExistingAwd(s: Session, id: string, revision: number, 
     throw new LocalizedError("shipmentNotFound")
   }
   const { order } = await accessibleOrder(s, initial.orderId)
-  if (order.data.destination !== "amazon" || initial.amazonNetwork !== "awd_us") {
+  if (orderDestination(order.data) !== "amazon" || initial.amazonNetwork !== "awd_us") {
     throw new LocalizedError("linkAwdOnly")
   }
   if (shipmentId) {
@@ -40,7 +41,7 @@ export async function linkExistingAwd(s: Session, id: string, revision: number, 
     if (
       !quantities.size ||
       [...quantities].some(([sku, units]) => {
-        const item = order.data.items.find((line) => line.buyerSku === sku && line.amazonNetwork === "awd_us")
+        const item = order.data.items.find((line) => line.buyerSku === sku && line.receiver === "awd_us")
         return !item || units * item.piecesPerSet > item.pieces
       })
     ) {

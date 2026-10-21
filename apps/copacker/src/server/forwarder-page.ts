@@ -1,3 +1,4 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
@@ -42,7 +43,7 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
 
   // The buyer's location the forwarder ships the goods on to, when they don't go on to Amazon.
   const onward =
-    order.data.destination === "warehouse"
+    orderDestination(order.data) === "warehouse"
       ? places.find((candidate) => candidate.id === order.data.deliveryId)
       : undefined
   // Carton, pallet and shipping labels come once the buyer releases the shipment, as for the supplier.

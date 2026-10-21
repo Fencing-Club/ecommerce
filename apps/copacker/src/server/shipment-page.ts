@@ -1,3 +1,4 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -43,12 +44,12 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const reserved = reservedPieces(rows, id)
   const snapshot = shipment.snapshot ?? order.data
   const packingOrder = shipment.amazonNetwork
-    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    ? { ...order.data, items: order.data.items.filter((item) => item.receiver === shipment.amazonNetwork) }
     : order.data
   // FBA cartons keep to Amazon's packing groups, which the packing checks know once Amazon has planned a shipment of
   // the PO. Until then they're null, and the supplier is told the groups aren't checked.
   const packingGroups =
-    order.data.destination === "amazon" && packingOrder.items.some((item) => item.amazonNetwork === "fba")
+    orderDestination(order.data) === "amazon" && packingOrder.items.some((item) => item.receiver === "fba")
       ? (knownPackingGroups(rows, shipment) ?? null)
       : undefined
   const [docs, addresses] = await Promise.all([
@@ -89,7 +90,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const fba = shipment.amazonNetwork === "fba"
   // A supplier that isn't on Copacker sends its details by email, and the buyer enters them here.
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
-  const amazon = order.data.destination === "amazon"
+  const amazon = orderDestination(order.data) === "amazon"
   // A purchase order's shipments are numbered oldest first, as on the shipments list.
   const title = t("title", { number: workflow.shipments.findIndex((row) => row.id === id) + 1 })
   const destination = await shipmentDestinations([order.data])

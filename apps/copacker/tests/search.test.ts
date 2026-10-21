@@ -32,8 +32,7 @@ async function order(
   [buyerOrgId, link] = [buyerId, supplierId]
 ) {
   const items: OrderInput["items"] = []
-  const destination: OrderInput["destination"] = "warehouse"
-  const data = { reference, supplierId: link, currency: "USD", destination, items, via } as OrderInput
+  const data = { reference, supplierId: link, currency: "USD", items, via } as OrderInput
   const [row] = await database
     .insert(tables.orders)
     .values({ buyerOrgId, supplierId: link, shopifyDomain: domain, status, data })

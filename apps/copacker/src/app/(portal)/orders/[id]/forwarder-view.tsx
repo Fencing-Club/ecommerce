@@ -1,4 +1,4 @@
-import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { amazonNetworkNames, orderDestination, receivers } from "@repo/copacker-shipments"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
@@ -48,7 +48,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
               </>
             )}
             <RoutePill icon={<MapPin />}>
-              {place(order.data.deliveryId) ?? formatDestination(order.data.destination, common)}
+              {place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)}
             </RoutePill>
           </div>
           {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
@@ -70,10 +70,10 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
                       </Badge>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {order.data.destination === "amazon"
+                      {orderDestination(order.data) === "amazon"
                         ? t("detail.skuToAmazon", {
                             sku: item.buyerSku,
-                            network: amazonNetworkNames[item.amazonNetwork]
+                            network: receivers[item.receiver].name
                           })
                         : item.buyerSku}
                     </p>

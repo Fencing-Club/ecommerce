@@ -1,6 +1,6 @@
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { bundleSupplierComponents, variantUnitCostMinor } from "@repo/copacker-marketplaces/shopify"
-import type { AmazonNetwork } from "@repo/copacker-shipments"
+import { type AmazonNetwork, type Destination, receiverFor } from "@repo/copacker-shipments"
 import type { OrderInput } from "@repo/copacker-shipments"
 import type { PrepCategory } from "@repo/copacker-shipments"
 import type { adjustmentTypes, commonPaymentTerms } from "@repo/copacker-shipments"
@@ -20,12 +20,13 @@ export type LineDefaults = {
 }
 
 // A new PO line for a Shopify variant, priced at its Shopify unit cost per piece until a supplier quote or the buyer
-// sets one.
+// sets one. It goes to the product's Amazon network on a PO to Amazon, or the buyer's location on one there.
 export function orderLine(
   variant: CatalogVariant,
   id: string,
   defaults: LineDefaults = {},
-  currency = "USD"
+  currency = "USD",
+  destination: Destination = "amazon"
 ): OrderInput["items"][number] {
   const piecesPerSet = defaults.piecesPerSet ?? 1
   return {
@@ -45,7 +46,7 @@ export function orderLine(
     instructions: defaults.description ?? "",
     prepCategory: defaults.prepCategory ?? "POLYBAGGING",
     suffocationWarning: defaults.suffocationWarning ?? false,
-    amazonNetwork: defaults.amazonNetwork ?? "fba",
+    receiver: receiverFor(destination, defaults.amazonNetwork),
     skuLabel: defaults.skuLabel ?? true
   }
 }
