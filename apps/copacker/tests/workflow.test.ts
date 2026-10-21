@@ -112,6 +112,11 @@ vi.mock("../src/server/import-trace", async (original) => ({
   ...(await original<typeof import("../src/server/import-trace")>()),
   traceImport: async () => true
 }))
+// Checking a shipment's labels can be made to fail, to show sending them is tried again.
+vi.mock("../src/server/readiness", async (original) => {
+  const actual = await original<typeof import("../src/server/readiness")>()
+  return { ...actual, releaseIssues: vi.fn<typeof actual.releaseIssues>(actual.releaseIssues) }
+})
 
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
 import { linkExistingAwd } from "../src/server/awd-link"
@@ -152,6 +157,7 @@ import { saveImportedOrder } from "../src/server/import-save"
 import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
 import { amazonJob, emailJob } from "../src/server/job-handlers"
+import { labelsJob } from "../src/server/label-release"
 import { orderLandedCosts } from "../src/server/landed-costs"
 import { resolveLocalization, withLocalization } from "../src/server/localization"
 import {
@@ -186,6 +192,7 @@ import {
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { ownProfile, saveProfile } from "../src/server/profile"
 import { nextJobDelay, runNextJob } from "../src/server/queue"
+import { releaseIssues } from "../src/server/readiness"
 import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
 import {
@@ -2679,7 +2686,8 @@ describe("transport configuration", () => {
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
     expect(events).toMatchObject([{ messageKey: "labelsReleased", actor: buyer.user.id }])
   })
-  it("sends a shipment that needs no carrier labels to its supplier as soon as Amazon's labels arrive", async () => {
+  // A shipment on AGL, which needs no carrier labels, whose Amazon labels are ready to download.
+  async function labelsReady() {
     const shipment = await queuedShipment()
     await database
       .update(tables.shipments)
@@ -2710,12 +2718,32 @@ describe("transport configuration", () => {
       "fetch",
       vi.fn<typeof fetch>(async () => new Response(Buffer.from(label)))
     )
+    return shipment
+  }
+  it("sends a shipment that needs no carrier labels to its supplier as soon as Amazon's labels arrive", async () => {
+    const shipment = await labelsReady()
     await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
     expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
     const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
     expect(emailed.map((job) => job.payload)).toEqual([
       { type: "ready", to: "supplier@example.com", orderId, shipmentId: shipment.id }
     ])
+    // Sent, the job queued in case they weren't is gone.
+    expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "labels"))).toEqual([])
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events).toContainEqual(expect.objectContaining({ messageKey: "labelsReleased", actor: "amazon" }))
+  })
+  it("tries the labels again when they fail to go as Amazon's arrive", async () => {
+    const shipment = await labelsReady()
+    vi.mocked(releaseIssues).mockImplementationOnce(() => {
+      throw new Error("Database unavailable")
+    })
+    await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+    expect(await shipmentState(shipment.id)).toMatchObject({ status: "waiting_labels" })
+    const [queued] = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "labels"))
+    expect(queued).toMatchObject({ status: "pending", payload: { shipmentId: shipment.id, actor: "amazon" } })
+    await labelsJob(queued!.payload)
+    expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
     expect(events).toContainEqual(expect.objectContaining({ messageKey: "labelsReleased", actor: "amazon" }))
   })
@@ -3025,9 +3053,13 @@ describe("document upload and packet release", () => {
     expect(rows.filter((row) => !row.outdated)).toHaveLength(1)
     expect(rows.filter((row) => row.outdated)).toHaveLength(1)
   })
-  it("refuses carrier labels from another workspace, for unknown cartons, a carton twice or a missing page", async () => {
+  it("refuses carrier labels from another workspace, for unknown cartons, a carton or label twice or a missing page", async () => {
     const prepared = await preparation()
-    await database.update(tables.shipments).set({ packing: prepared.packing, status: "waiting_labels" })
+    const [carton] = prepared.packing.cartons
+    await database.update(tables.shipments).set({
+      packing: { ...prepared.packing, cartons: [carton!, { ...carton!, cartonId: "A7" }] },
+      status: "waiting_labels"
+    })
     const label = { cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }
     const refused = async (labels: unknown[], files = [1]) => {
       const result = await uploadCarrierLabels(prepared.id, labels, files)
@@ -3039,6 +3071,12 @@ describe("document upload and packet release", () => {
     context.actor = buyer
     expect(await refused([{ ...label, cartonId: "unknown" }])).toBe("Label assignment has an unknown carton or page")
     expect(await refused([label, { ...label, page: 2 }], [2])).toBe("Assign each label page and carton only once")
+    expect(await refused([label, { ...label, cartonId: "A7", trackingNumber: printed(2) }])).toBe(
+      "Assign each label page and carton only once"
+    )
+    expect(await refused([label, { ...label, cartonId: "A7", page: 2 }], [2])).toBe(
+      "Assign each label page and carton only once"
+    )
     expect(await refused([{ ...label, page: 2 }])).toBe("Label assignment has an unknown carton or page")
     expect(storage.putFile).not.toHaveBeenCalled()
     expect(await carrierLabels()).toEqual([])

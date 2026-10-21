@@ -20,7 +20,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { PollAgain } from "./job-handlers"
-import { sendLabelsWhenComplete } from "./label-release"
+import { queueLabels, sendQueuedLabels } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
 
@@ -541,7 +541,10 @@ export async function fbaShipmentJob(
     .where(eq(shipments.id, shipment.id))
   await assertOwned()
   await assertOwned()
-  await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
+  const queued = await db().transaction(async (tx) => {
+    await tx.update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
+    return queueLabels(tx, { shipmentId: shipment.id, actor: "amazon" })
+  })
   // A shipment that needs nothing more from the buyer goes straight to its supplier.
-  await sendLabelsWhenComplete(shipment.id, "amazon")
+  await sendQueuedLabels(queued)
 }

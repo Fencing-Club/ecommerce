@@ -591,7 +591,8 @@ export const jobs = pgTable(
         "amazon-ads",
         "ebay-event",
         "ebay-subscribe",
-        "reconcile"
+        "reconcile",
+        "labels"
       ]
     }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),

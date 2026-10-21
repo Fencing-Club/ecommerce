@@ -30,7 +30,7 @@ import {
   saveForwarderAddress
 } from "@/server/forwarders"
 import { withJobWake } from "@/server/job-delivery"
-import { sendLabelsWhenComplete } from "@/server/label-release"
+import { queueLabels, sendQueuedLabels } from "@/server/label-release"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { requestLocale } from "@/server/localization"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
@@ -690,7 +690,7 @@ export async function POST(request: Request) {
       requireAccess(s, "shipments", "edit")
       const transport = transportSchema.parse(data.transport)
       const expected = transportSchema.nullable().parse(data.expected)
-      await db().transaction(async (tx) => {
+      const queued = await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
         if (!initial) {
           throw new LocalizedError("shipmentNotFound")
@@ -709,9 +709,12 @@ export async function POST(request: Request) {
           throw new LocalizedError("transportForwarderMissing")
         }
         await tx.update(shipments).set({ transport, updatedAt: new Date() }).where(eq(shipments.id, id()))
+        // Transport that needs no carrier labels can complete a shipment that waited on it.
+        return shipment.status === "waiting_labels" ? queueLabels(tx, { shipmentId: id(), actor: s.user.id }) : null
       })
-      // Transport that needs no carrier labels can complete a shipment that waited on it.
-      await sendLabelsWhenComplete(id(), s.user.id)
+      if (queued) {
+        await sendQueuedLabels(queued)
+      }
       return Response.json({ ok: true })
     }
     throw new Error("Unknown action")

@@ -9,7 +9,7 @@ import { LocalizedError, NotFoundError } from "@/i18n/errors"
 import { trackingNumberSchema } from "@/lib/tracking-numbers"
 import { accessibleOrder } from "./access"
 import { requireAccess, requireBuyer } from "./authorization"
-import { sendLabelsWhenComplete } from "./label-release"
+import { queueLabels, sendQueuedLabels, type QueuedLabels } from "./label-release"
 import { deleteFile, putFile, validatePdf } from "./storage"
 import type { Session } from "./workspace-session"
 
@@ -57,7 +57,14 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
     throw new LocalizedError("shipmentNotWaitingForLabels")
   }
   const cartons = new Set(shipment.packing.cartons.map((carton) => carton.cartonId))
-  if (new Set(labels.map((label) => label.cartonId)).size !== labels.length) {
+  // A carton has one label, and a label one carton: the same page, or the same tracking number, twice would put one
+  // label on two cartons.
+  const pagesUsed = labels.flatMap((label) => ("file" in label ? [`${label.file}:${label.page}`] : []))
+  if (
+    new Set(labels.map((label) => label.cartonId)).size !== labels.length ||
+    new Set(pagesUsed).size !== pagesUsed.length ||
+    new Set(labels.map((label) => label.trackingNumber)).size !== labels.length
+  ) {
     throw new LocalizedError("labelAssignedOnce")
   }
   if (labels.some((label) => !cartons.has(label.cartonId))) {
@@ -66,6 +73,7 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
   // Each file's pages, read once however many cartons it labels.
   const pages = new Map<number, Awaited<ReturnType<typeof splitPdfPages>>>()
   const staged: Array<typeof documents.$inferInsert> = []
+  let queued: QueuedLabels
   try {
     for (const label of labels) {
       if (!("file" in label)) {
@@ -106,7 +114,7 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
         uploadedBy: s.user.id
       })
     }
-    await db().transaction(async (tx) => {
+    queued = await db().transaction(async (tx) => {
       await accessibleOrder(s, shipment.orderId, tx, true)
       const [fresh] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
       if (fresh?.status !== "waiting_labels" || fresh.revision !== shipment.revision) {
@@ -140,10 +148,11 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
       if (staged.length) {
         await tx.insert(documents).values(staged)
       }
+      return queueLabels(tx, { shipmentId, actor: s.user.id })
     })
   } catch (error) {
     await Promise.allSettled(staged.map((document) => deleteFile(document.objectKey)))
     throw error
   }
-  return { sent: await sendLabelsWhenComplete(shipmentId, s.user.id) }
+  return { sent: await sendQueuedLabels(queued) }
 }

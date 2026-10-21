@@ -21,7 +21,7 @@ import { amazonFor, shopifyFor } from "./connections"
 import { filedPo, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
-import { sendLabelsWhenComplete } from "./label-release"
+import { queueLabels, sendQueuedLabels } from "./label-release"
 import { saveSupplierSkus } from "./product-fields"
 import { appUrl } from "./security"
 
@@ -210,9 +210,12 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
     .where(eq(shipments.id, shipmentId))
   await assertOwned()
   await assertOwned()
-  await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
+  const queued = await db().transaction(async (tx) => {
+    await tx.update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
+    return queueLabels(tx, { shipmentId, actor: "amazon" })
+  })
   // A shipment that needs nothing more from the buyer goes straight to its supplier.
-  await sendLabelsWhenComplete(shipmentId, "amazon")
+  await sendQueuedLabels(queued)
 }
 
 // The language an email is written in: the one its reader chose in Settings, found by their address. A reader with an
