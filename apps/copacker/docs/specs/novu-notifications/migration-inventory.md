@@ -64,10 +64,11 @@ and plain text. The direct-send paths below have different locale rules.
 - **Identity:** `po:{orderId}:{revision}` with conflict suppression; the separately queued Shopify job is not an alert.
 - **Novu mapping:** `purchase-order-revised`, invoice-approval reason; retain transactional publication.
 
-### Explicit shipment release
+### Shipment labels sent
 
-- **Trigger/source:** `shipment.release` in [current action handler](../../../src/app/api/action/route.ts), or
-  `src/server/http/api/action.ts` on PR 43. Requires buyer, Shipments: Edit and release-readiness checks.
+- **Trigger/source:** `sendLabelsWhenComplete` in `src/server/label-release.ts`, once a shipment waiting for labels has
+  nothing missing: after Amazon's labels arrive, the buyer saves carrier labels or transport, or uploads a product
+  barcode. There's no buyer release step.
 - **Recipient:** supplier email only when `supplierOrgId` and email exist. Otherwise the buyer shares the packet.
 - **Channel/template:** queued `ready`, Resend, `labelsReadyEmail`, `emails.labelsReady.*`, shared reader locale.
 - **Links/attachments:** `/shipments/{shipmentId}`, with carton count, destination, ready date and Amazon shipment IDs.
@@ -75,7 +76,8 @@ and plain text. The direct-send paths below have different locale rules.
 - **Identity:** `ready:{shipmentId}:{shipmentRevision}`, conflict-suppressed in the release transaction. The payload
   currently lacks the revision even though the key contains it; the handler reads shipment state at send time.
 - **Novu mapping:** `shipment-documents-released`. Capture release revision and suppress obsolete work. Packing
-  completion, generated Amazon labels and a document download are not this trigger. Preserve explicit release gates.
+  completion, generated Amazon labels and a document download are not this trigger. Preserve the completeness gate
+  in `sendLabelsWhenComplete`.
 
 ### Supplier invitation and resend
 
@@ -172,7 +174,7 @@ ingestion plumbing and do not migrate to outbound Novu workflows.
 - [ ] Preserve owner-only compliance delivery and keep sensitive payloads out of logs.
 - [ ] Keep excluded direct/WorkOS flows working; verify password-reset duplicate-sender configuration separately.
 - [ ] Add monitored failure/replay handling for all migrated job types, not just order-linked jobs.
-- [ ] Test submit, revise and explicit release end to end: action, publication, eligibility, workflow and delivery.
+- [ ] Test submit, revise and automatic label sending end to end: action, publication, eligibility, workflow and delivery.
 - [ ] Keep retries on the same delivery identity. During cutover, reconcile ambiguous sends against provider evidence;
   hold late retries outside the provider's deduplication window for review instead of automatically replaying them.
 
@@ -182,6 +184,6 @@ All test email must go to **andrew@fencing.club**, never Chen or any other real 
 providers. For an authorized live test, enforce the allowlist or recipient override at the final send boundary,
 including queued jobs and Novu workflows. A real recipient in fixture data is not authorization to send.
 
-A manual `[TEST]` PO36 packet email was sent separately. It did not exercise `submitOrder`, `shipment.release`, their
+A manual `[TEST]` PO36 packet email was sent separately. It did not exercise `submitOrder`, `sendLabelsWhenComplete`, their
 eligibility checks or Novu. Record manual template/packet checks separately from workflow-trigger acceptance. This
 documentation audit sends no emails and changes no delivery behavior.

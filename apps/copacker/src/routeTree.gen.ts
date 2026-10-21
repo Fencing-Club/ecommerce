@@ -139,6 +139,7 @@ import { Route as ApiOrdersIdLabelsRouteImport } from './routes/api.orders.$id.l
 import { Route as ApiOrdersIdPoRouteImport } from './routes/api.orders.$id.po'
 import { Route as ApiOrdersIdProposalRouteImport } from './routes/api.orders.$id.proposal'
 import { Route as ApiOrdersIdWorkflowRouteImport } from './routes/api.orders.$id.workflow'
+import { Route as ApiShipmentsIdCarrierLabelsRouteImport } from './routes/api.shipments.$id.carrier-labels'
 import { Route as ApiShipmentsIdLabelsRouteImport } from './routes/api.shipments.$id.labels'
 import { Route as ApiShipmentsIdPacketRouteImport } from './routes/api.shipments.$id.packet'
 import { Route as ApiShipmentsIdPackingListRouteImport } from './routes/api.shipments.$id.packing-list'
@@ -824,6 +825,12 @@ const ApiOrdersIdWorkflowRoute = ApiOrdersIdWorkflowRouteImport.update({
   path: '/api/orders/$id/workflow',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShipmentsIdCarrierLabelsRoute =
+  ApiShipmentsIdCarrierLabelsRouteImport.update({
+    id: '/api/shipments/$id/carrier-labels',
+    path: '/api/shipments/$id/carrier-labels',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiShipmentsIdLabelsRoute = ApiShipmentsIdLabelsRouteImport.update({
   id: '/api/shipments/$id/labels',
   path: '/api/shipments/$id/labels',
@@ -987,6 +994,7 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/carrier-labels': typeof ApiShipmentsIdCarrierLabelsRoute
   '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
   '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
@@ -1123,6 +1131,7 @@ export interface FileRoutesByTo {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/carrier-labels': typeof ApiShipmentsIdCarrierLabelsRoute
   '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
   '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
@@ -1262,6 +1271,7 @@ export interface FileRoutesById {
   '/api/orders/$id/po': typeof ApiOrdersIdPoRoute
   '/api/orders/$id/proposal': typeof ApiOrdersIdProposalRoute
   '/api/orders/$id/workflow': typeof ApiOrdersIdWorkflowRoute
+  '/api/shipments/$id/carrier-labels': typeof ApiShipmentsIdCarrierLabelsRoute
   '/api/shipments/$id/labels': typeof ApiShipmentsIdLabelsRoute
   '/api/shipments/$id/packet': typeof ApiShipmentsIdPacketRoute
   '/api/shipments/$id/packing-list': typeof ApiShipmentsIdPackingListRoute
@@ -1400,6 +1410,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/carrier-labels'
     | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
     | '/api/shipments/$id/packing-list'
@@ -1536,6 +1547,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/carrier-labels'
     | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
     | '/api/shipments/$id/packing-list'
@@ -1674,6 +1686,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id/po'
     | '/api/orders/$id/proposal'
     | '/api/orders/$id/workflow'
+    | '/api/shipments/$id/carrier-labels'
     | '/api/shipments/$id/labels'
     | '/api/shipments/$id/packet'
     | '/api/shipments/$id/packing-list'
@@ -1756,6 +1769,7 @@ export interface RootRouteChildren {
   ApiOrdersIdPoRoute: typeof ApiOrdersIdPoRoute
   ApiOrdersIdProposalRoute: typeof ApiOrdersIdProposalRoute
   ApiOrdersIdWorkflowRoute: typeof ApiOrdersIdWorkflowRoute
+  ApiShipmentsIdCarrierLabelsRoute: typeof ApiShipmentsIdCarrierLabelsRoute
   ApiShipmentsIdLabelsRoute: typeof ApiShipmentsIdLabelsRoute
   ApiShipmentsIdPacketRoute: typeof ApiShipmentsIdPacketRoute
   ApiShipmentsIdPackingListRoute: typeof ApiShipmentsIdPackingListRoute
@@ -2673,6 +2687,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOrdersIdWorkflowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/shipments/$id/carrier-labels': {
+      id: '/api/shipments/$id/carrier-labels'
+      path: '/api/shipments/$id/carrier-labels'
+      fullPath: '/api/shipments/$id/carrier-labels'
+      preLoaderRoute: typeof ApiShipmentsIdCarrierLabelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/shipments/$id/labels': {
       id: '/api/shipments/$id/labels'
       path: '/api/shipments/$id/labels'
@@ -3115,6 +3136,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOrdersIdPoRoute: ApiOrdersIdPoRoute,
   ApiOrdersIdProposalRoute: ApiOrdersIdProposalRoute,
   ApiOrdersIdWorkflowRoute: ApiOrdersIdWorkflowRoute,
+  ApiShipmentsIdCarrierLabelsRoute: ApiShipmentsIdCarrierLabelsRoute,
   ApiShipmentsIdLabelsRoute: ApiShipmentsIdLabelsRoute,
   ApiShipmentsIdPacketRoute: ApiShipmentsIdPacketRoute,
   ApiShipmentsIdPackingListRoute: ApiShipmentsIdPackingListRoute,

@@ -9,6 +9,7 @@ import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
 import { jobNeedsWorkflow, lockJobClaims, type JobExecutor } from "./job-ownership"
 import { jobConcurrency } from "./job-runner"
+import { labelsJob } from "./label-release"
 import { logLine } from "./log"
 import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
@@ -155,6 +156,8 @@ async function executeJob(job: typeof jobs.$inferSelect, runtime: JobExecutor) {
       await ebaySubscribeJob(job.payload, assertOwned)
     } else if (job.kind === "reconcile") {
       await reconcileJob(job.payload, assertOwned)
+    } else if (job.kind === "labels") {
+      await labelsJob(job.payload)
     } else {
       throw new Error("Unknown job type")
     }

@@ -71,7 +71,7 @@
     "productLabel": "प्रोडक्ट लेबल",
     "cartonLabels": "कार्टन लेबल",
     "palletLabels": "पैलेट लेबल",
-    "shippingLabels": "शिपिंग लेबल"
+    "shippingLabels": "वाहक लेबल"
   },
   "format": {
     "plusAmounts": "साथ में {amounts}",
@@ -118,27 +118,6 @@
     "remove": "{name} हटाएं",
     "replaceFile": "{name} बदलें",
     "replace": "बदलें"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "आधिकारिक कमर्शियल इनवॉइस",
-      "productLabels": "प्रोडक्ट लेबल",
-      "shippingLabels": "कैरियर शिपिंग लेबल"
-    },
-    "chooseVariationError": "प्रोडक्ट वैरिएंट चुनें",
-    "enterLabelPage": "कम से कम एक कार्टन का लेबल पेज डालें",
-    "failed": "अपलोड नहीं हो सका। फिर से कोशिश करें।",
-    "choosePdf": "PDF चुनें",
-    "variation": "प्रोडक्ट वैरिएंट",
-    "chooseVariation": "वैरिएंट चुनें",
-    "productLabelHint": "हर वैरिएंट के लिए एक लेबल शीट, 32 MB तक",
-    "uploading": "अपलोड हो रहा है",
-    "uploaded": "अपलोड हो गया",
-    "upload": "अपलोड करें",
-    "labelPages": "हर कार्टन का लेबल पेज",
-    "labelPagesDescription": "अगर किसी कार्टन का लेबल दूसरी फ़ाइल में है, तो उसे खाली छोड़ दें",
-    "carton": "कार्टन {carton}",
-    "page": "पेज"
   },
   "ui": {
     "close": "बंद करें",

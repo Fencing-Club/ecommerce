@@ -9,7 +9,7 @@
     "missingPackingList": "发放标签前，请先生成最新的装箱单",
     "missingChecklist": "发放标签前，请先生成最新的装箱核对清单",
     "missingCartonLabel": "箱 {carton} 缺少箱标",
-    "missingShippingLabel": "请为箱 {carton} 分配运输标签",
+    "missingShippingLabel": "请为箱 {carton} 添加承运商标签",
     "missingPalletLabels": "缺少托盘标签",
     "missingProductLabel": "请在“产品”页面为 {sku} 添加产品标签",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "托盘 {pallet}：{receiver} 托盘含托盘在内重量不得超过 {maxLb, number} 磅（{maxKg, number} 千克）"
     },
     "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。",
-    "missingTransport": "运输尚未确认"
+    "missingTransport": "运输尚未确认",
+    "missingTrackingNumber": "请添加箱 {carton} 承运商标签的运单号"
   },
   "workflow": {
     "arrived": "货物已到达",
@@ -50,7 +51,6 @@
     "approval": "审核供应商提出的价格和供应商 SKU",
     "processing": "Amazon 正在处理货件和箱标",
     "labels": "预订运输，并在下方补齐缺少的文件",
-    "release": "输入预订编号并发放供应商资料包",
     "ship": "打印资料包，装箱并标记为已发货",
     "forward": "货代转运货物，并添加运费、承运商和追踪信息",
     "receive": "货物到达后标记为已收货",

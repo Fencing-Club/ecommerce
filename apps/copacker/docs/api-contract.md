@@ -140,7 +140,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
-| shipment.release | id, revision, optional bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
+| shipment.transport | id, revision, transport, expected | Buyer, Shipments: Edit. Saves how the cartons travel; a shipment that was waiting only on it goes to its supplier |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
@@ -285,9 +285,6 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 - product_label: itemId; buyer, Orders: Edit; one PDF page stored with the PO line, refused once a released shipment
   carries that line. No page uploads one and label generation doesn't read it: product labels come from the Products
   page's barcodes ([Product labels](#product-labels)).
-- shipping_label: buyer; shipmentId and `assignments`, a JSON array of `{ cartonId, page }`, while the shipment waits
-  for labels. Page is 1-based in the uploaded PDF and each page maps to one carton. The server splits pages, preserves
-  their dimensions and stores each assignment. Several files can cover all cartons.
 
 PDFs are limited to 32 MB and 1,000 pages and may not carry active content. Paths and bucket keys are never supplied by
 the user. `GET /api/documents/:id` authorizes access to the order and returns a private attachment. Outdated documents
@@ -298,6 +295,28 @@ Adding `?bundle=true` to a carton or shipping label download combines the curren
 type into one PDF, in numeric carton order. Carton and carrier labels stay separate. Original page sizes are preserved;
 all source documents and workspace permissions are checked again after assembly. The PO and shipment document lists
 show one download per label type and shipment. Individual source files remain stored for carton-to-label mapping.
+
+### Carrier labels
+
+A shipment whose transport puts a carrier label on each carton (the buyer's own parcel carrier) takes them from the
+shipment page's Upload labels dialog. `POST /api/shipments/:id/carrier-labels` is multipart: `revision`, one or more
+`file` PDFs, and `labels`, a JSON array with each labelled carton once:
+
+- `{ cartonId, file, page, trackingNumber }`: page `page` (1-based) of the `file` at that index;
+- `{ cartonId, documentId, trackingNumber }`: the carton's label as saved before.
+
+Carriers give either one PDF with a page per label or, as Amazon does, a PDF for each label, so the files can be
+several. Each label keeps the name of the file it came from, and its page when the file had more than one. A carton
+left out has no label, and its saved one is outdated. The dialog reads each page's tracking number from the
+PDF's text in the browser, or the buyer types it; it's stored with the label, capitals and digits only, and the supplier
+packet lists it as the carton's carrier label number. Buyer, Shipments: Edit, while the shipment waits for labels at
+that revision. Saving some cartons is allowed. The response is `{ sent }`: whether the labels went to the supplier.
+
+Labels go to the supplier with no step of the buyer's: the shipment becomes ready, the `ready` email is queued for a
+supplier that has joined, and the PO's timeline records it. That happens once nothing is missing, after Amazon's labels
+arrive, carrier labels are saved, transport is saved or a product barcode is uploaded (`sendLabelsWhenComplete`).
+Each of those changes queues a `labels` job in its own transaction, then sends straight away and removes the job. When
+sending fails, the change still succeeds, `labels_send_failed` is logged, and the job tries again every five minutes.
 
 Sending a PO stores its PDF with the PO; a storage failure is logged as `po_document_failed` and doesn't undo sending,
 since the PDF is made again when it's emailed or downloaded.
@@ -315,9 +334,11 @@ and has no carton or shipping labels. Its packing list and checklist are made fr
 PO's delivery address as the ship-to. A packet with a shipped line whose product label can't be made yet is incomplete:
 the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
 
-Release requires current packing-list and checklist PDFs, a unique Amazon label and current carton PDF for every
-carton, a current shipping label assigned to every carton, Amazon's current pallet-label file for an FBA shipment on
-pallets, and a product label for every shipped line. It rejects stale revisions and repeated release attempts.
+A shipment's labels go to its supplier (`sendLabelsWhenComplete`), with no step of the buyer's, once it has its
+transport, a unique Amazon label and current carton PDF for every carton, a current carrier label with its tracking
+number on every carton when its transport needs them, Amazon's current pallet-label file for an FBA shipment on
+pallets, and a product label for every shipped line. They go once: a shipment no longer waiting for labels is left as
+it is.
 
 ## Shipment states
 
@@ -326,7 +347,7 @@ pallets, and a product label for every shipped line. It rejects stale revisions 
 | packing | Supplier is entering invoice, addresses, ready date and cartons | Upload invoice; submit packing |
 | approval | Commercial changes await the buyer | Buyer approves, or requests a correction |
 | queued / creating | Worker creates the AWD order or FBA inbound plan, confirms it and retrieves labels | Refresh status; never repeat the create by hand |
-| waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA), uploads shipping labels, releases the packet |
+| waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA) and adds carrier labels; the labels go to the supplier once nothing is missing |
 | ready | Packet released; for a shipment not to Amazon, packing submitted | Supplier prints and ships (`shipment.ship`) |
 | shipped | The supplier shipped the goods, to the forwarder or straight to the destination | Forwarder ships on (`shipment.forward`), or buyer records receipt |
 | forwarded | The forwarder shipped them on, with freight, carrier and tracking | Buyer records receipt (`shipment.received`) |
@@ -388,11 +409,12 @@ mean none) and `overAssignedPieces` (positive when assignments exceed the order)
 reserve nothing; submitted packing in correction or needs-attention still reserves. Each shipment includes:
 
 - `next`: responsible owner (`buyer`, `supplier`, `forwarder`, `system`, or null), step, message and applicable command.
-- `editable`, `canSubmit`, `canRelease`, structured `issues`, and the saved provider `issue` when work needs attention.
+- `editable`, `canSubmit`, structured `issues`, and the saved provider `issue` when work needs attention.
 - Shipment and PO revisions, ready date, Amazon identifiers, and `packetUrl` once released while the packet is complete.
 
-Use the server's next step and issues for progress rather than duplicating shipment rules in the UI. `canRelease` means
-documents are complete; the buyer still enters a booking reference. Document metadata never includes storage keys.
+Use the server's next step and issues for progress rather than duplicating shipment rules in the UI. There's no release
+step: a shipment waiting for labels goes to its supplier as soon as nothing in its `issues` is left (see
+[Carrier labels](#carrier-labels)). Document metadata never includes storage keys.
 
 ## Open purchase-order coverage
 

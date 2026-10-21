@@ -4,6 +4,7 @@ import babel from "@rolldown/plugin-babel"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import react, { reactCompilerPreset } from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import { tesseract } from "./scripts/vite-tesseract.ts"
 import { workerStyles } from "./scripts/vite-vanilla-extract.ts"
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url))
@@ -35,7 +36,14 @@ export default defineConfig(({ mode }) => ({
               groups: [
                 { name: "three", test: /node_modules[\\/]three[\\/]/, priority: 20 },
                 { name: "charts", test: /node_modules[\\/](recharts|d3-[^/\\]+)[\\/]/, priority: 20 },
-                { name: "vendor", test: /node_modules/, priority: 10 }
+                // Every other package goes in the vendor chunk, with Vite's helper for lazy imports, except those the
+                // app imports only when it needs them: pdf.js and zxing to read PDFs and barcodes, and Tesseract to
+                // read a picture's text. Each of those keeps a chunk of its own that loads with that import.
+                {
+                  name: "vendor",
+                  test: /node_modules[\\/](?!(?:pdfjs-dist|zxing-wasm|tesseract\.js|regenerator-runtime)[\\/])|vite[\\/]preload-helper/,
+                  priority: 10
+                }
               ]
             }
           }
@@ -58,6 +66,7 @@ export default defineConfig(({ mode }) => ({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   plugins: [
     workerStyles(),
+    tesseract(),
     cloudflare({
       viteEnvironment: { name: "ssr" },
       experimental: { newConfig: { cfBuildOutput: true } },
