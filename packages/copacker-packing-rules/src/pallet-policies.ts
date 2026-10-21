@@ -7,21 +7,22 @@ import type { AmazonNetwork } from "./index"
 // arrangement with its own limits such as AWD's West Coast palletizable region, is a new policy, and only a new kind of
 // rule needs code. Limits are in the units the receiver states them in. Each rule describes itself, as the receiver
 // states it, and `source` is the page where it does, which its errors link to.
-export type PalletRule = (
-// The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
-// four-way entry the receiver asks for, if any.
-| { type: "footprint"; sides: readonly [number, number]; unit: "cm" | "in"; gmaGrade?: string }
-  // Cartons stacked flush and stable, heaviest at the bottom, labels facing out.
-  | { type: "stacking" }
-  // The tallest pallet, including the pallet itself, and the tallest one another pallet may stand on.
-  | { type: "maxHeight"; height: number; stackable?: number; unit: "cm" | "in" }
-  // The heaviest pallet, including the pallet itself.
-  | { type: "maxWeight"; weight: number; unit: "kg" | "lb" }
-  // Clear stretch wrap, marked for the carrier not to break it.
-  | { type: "stretchWrap" }
-  // The receiver's four pallet labels, one on each side.
-  | { type: "palletLabels" }
-) & { description: string; source?: string }
+export type PalletRule =
+  // The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
+  // four-way entry the receiver asks for, if any.
+  (
+    | { type: "footprint"; sides: readonly [number, number]; unit: "cm" | "in"; gmaGrade?: string }
+    // Cartons stacked flush and stable, heaviest at the bottom, labels facing out.
+    | { type: "stacking" }
+    // The tallest pallet, including the pallet itself, and the tallest one another pallet may stand on.
+    | { type: "maxHeight"; height: number; stackable?: number; unit: "cm" | "in" }
+    // The heaviest pallet, including the pallet itself.
+    | { type: "maxWeight"; weight: number; unit: "kg" | "lb" }
+    // Clear stretch wrap, marked for the carrier not to break it.
+    | { type: "stretchWrap" }
+    // The receiver's four pallet labels, one on each side.
+    | { type: "palletLabels" }
+  ) & { description: string; source?: string }
 
 export type PalletPolicy = {
   // Who receives the pallets, as messages name it, such as "FBA pallets may be up to 182.9 cm tall".

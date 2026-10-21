@@ -4,22 +4,23 @@ import type { AmazonNetwork, PackingItem } from "./index"
 // FBA's or AWD's, and each rule type has one evaluator (checkCarton), so a new receiver, such as GWD or a 3PL, is a new
 // policy, and only a new kind of limit needs code. Limits are in the units the receiver states them in. Each rule
 // describes itself, as the receiver states it, and `source` is the page where it does, which its errors link to.
-export type CartonRule = (
-// The largest carton, as its three sides from longest to shortest. A carton may fit it in any orientation.
-| { type: "maxSize"; sides: readonly [number, number, number]; unit: "cm" | "in"; exceptOneUnit?: boolean }
-  | { type: "maxWeight"; weight: number; unit: "kg" | "lb"; exceptOneUnit?: boolean }
-  // Sellable units of one product in a carton.
-  | { type: "maxUnits"; units: number }
-  | { type: "oneSku" }
-  // Every carton of a SKU holds the same units and has the same size and weight as its first.
-  | { type: "samePacking" }
-  // Every product has its ASIN, and every product has its FNSKU: two rules, so each error names its field.
-  | { type: "asin" }
-  | { type: "fnsku" }
-  // Products of one of the packing groups Amazon sets when it plans an FBA shipment, by SKU. Checked once Amazon has set
-  // them; until then nothing breaks it.
-  | { type: "packingGroups" }
-) & { description: string; source?: string }
+export type CartonRule =
+  // The largest carton, as its three sides from longest to shortest. A carton may fit it in any orientation.
+  (
+    | { type: "maxSize"; sides: readonly [number, number, number]; unit: "cm" | "in"; exceptOneUnit?: boolean }
+    | { type: "maxWeight"; weight: number; unit: "kg" | "lb"; exceptOneUnit?: boolean }
+    // Sellable units of one product in a carton.
+    | { type: "maxUnits"; units: number }
+    | { type: "oneSku" }
+    // Every carton of a SKU holds the same units and has the same size and weight as its first.
+    | { type: "samePacking" }
+    // Every product has its ASIN, and every product has its FNSKU: two rules, so each error names its field.
+    | { type: "asin" }
+    | { type: "fnsku" }
+    // Products of one of the packing groups Amazon sets when it plans an FBA shipment, by SKU. Checked once Amazon has set
+    // them; until then nothing breaks it.
+    | { type: "packingGroups" }
+  ) & { description: string; source?: string }
 
 export type CartonPolicy = {
   // Who receives the cartons, as messages name it, such as "AWD allows up to 63.5 cm".
