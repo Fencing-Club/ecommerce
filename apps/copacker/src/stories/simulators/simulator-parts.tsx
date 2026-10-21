@@ -1,41 +1,40 @@
 import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
+import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-// Every code validatePacking can report, so the coverage strip says which a data set produces. A code that isn't listed
-// fails type checks, so a new rule shows up here.
-export const cartonCodes = [
-  "cartonSize",
-  "cartonWeight",
-  "unitsPerCarton",
-  "oneSku",
-  "samePacking",
-  "missingAsin",
-  "missingFnsku",
-  "packingGroups",
-  "incompletePacks",
-  "overQuantity",
-  "duplicateCarton",
-  "repeatedProduct",
-  "mixedNetworks",
-  "unknownProduct",
-  "unknownChange"
-] as const satisfies readonly PackingRule["code"][]
-export const palletCodes = [
-  "palletFootprint",
-  "palletHeight",
-  "stackableHeight",
-  "palletWeight",
-  "noPallets",
-  "emptyPallet",
-  "duplicatePallet",
-  "unknownPalletCarton",
-  "palletCartonTwice",
-  "cartonsOffPallets"
-] as const satisfies readonly PackingRule["code"][]
-type Unlisted = Exclude<PackingRule["code"], (typeof cartonCodes)[number] | (typeof palletCodes)[number]>
-export const unlistedCodes: Record<Unlisted, never> = {}
+// The simulator that lists each code validatePacking can report, in the order its coverage strip shows them, so the
+// strip says which a data set produces. A code missing here fails type checks, so a new rule shows up in a simulator.
+const codeSimulators = {
+  cartonSize: "carton",
+  cartonWeight: "carton",
+  unitsPerCarton: "carton",
+  oneSku: "carton",
+  samePacking: "carton",
+  missingAsin: "carton",
+  missingFnsku: "carton",
+  packingGroups: "carton",
+  incompletePacks: "carton",
+  overQuantity: "carton",
+  duplicateCarton: "carton",
+  repeatedProduct: "carton",
+  mixedNetworks: "carton",
+  unknownProduct: "carton",
+  unknownChange: "carton",
+  palletFootprint: "pallet",
+  palletHeight: "pallet",
+  stackableHeight: "pallet",
+  palletWeight: "pallet",
+  noPallets: "pallet",
+  emptyPallet: "pallet",
+  duplicatePallet: "pallet",
+  unknownPalletCarton: "pallet",
+  palletCartonTwice: "pallet",
+  cartonsOffPallets: "pallet"
+} as const satisfies Record<PackingRule["code"], "carton" | "pallet">
+export const cartonCodes = objectKeys(codeSimulators).filter((code) => codeSimulators[code] === "carton")
+export const palletCodes = objectKeys(codeSimulators).filter((code) => codeSimulators[code] === "pallet")
 
 // A labelled select for a simulator's settings.
 export function Setting<T extends string>({
