@@ -50,6 +50,15 @@
       "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
+    "packages/copacker-cli": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
+    "packages/copacker-client": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
+    "packages/copacker-contract": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
     "packages/copacker-marketplaces": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
