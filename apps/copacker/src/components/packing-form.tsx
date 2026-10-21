@@ -718,7 +718,8 @@ export function PackingDetailsFields({
   const t = useTranslations("orders.packing")
   const form = useFormContext<Values>()
   // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
-  const today = zonedDay(useNow(), useTimeZone() ?? "UTC")
+  // The clock ticks each minute, so a page left open past midnight moves on to the next day here too.
+  const today = zonedDay(useNow({ updateInterval: 60000 }), useTimeZone() ?? "UTC")
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
