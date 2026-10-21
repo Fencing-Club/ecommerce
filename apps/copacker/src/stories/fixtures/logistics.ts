@@ -88,8 +88,8 @@ export const shipmentId = "c0ffee00-1234-4abc-9def-000000000001"
 const orderId = "0b5e6d7c-8a9f-4b1c-9d2e-3f4a5b6c7d01"
 const amazonOrderId = "0b5e6d7c-8a9f-4b1c-9d2e-3f4a5b6c7d02"
 
-// One purchase order to the buyer's warehouse, and one to Amazon with a line for each network, each item made once so
-// cartons and changes can point at it.
+// One purchase order to the buyer's warehouse, and one to Amazon FBA, each item made once so cartons and changes can
+// point at it.
 const warehouseOrder: OrderInput = orderData({ reference: "PO-1045" })
 const amazonOrder: OrderInput = orderData({
   reference: "PO-1046",
