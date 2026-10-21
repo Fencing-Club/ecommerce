@@ -155,12 +155,21 @@ export async function saveArtifact(
   // A large artifact streams for as long as it keeps arriving; a minute without data abandons it.
   const idle = new AbortController()
   let stalled = setTimeout(() => idle.abort(), artifactIdleMs)
-  const response = await client.transfer(artifact.download.url, { signal: idle.signal })
-  if (!response.body) {
+  let response: Response
+  let file: Awaited<ReturnType<typeof open>>
+  try {
+    response = await client.transfer(artifact.download.url, { signal: idle.signal })
+    if (!response.body) {
+      throw clientError("transfer_failed", "The artifact response has no body.", 502)
+    }
+    file = await open(temporary, "wx", 0o600).catch(async (error: unknown) => {
+      await response.body?.cancel()
+      throw error
+    })
+  } catch (error) {
     clearTimeout(stalled)
-    throw clientError("transfer_failed", "The artifact response has no body.", 502)
+    throw error
   }
-  const file = await open(temporary, "wx", 0o600)
   let size = 0
   const digest = createHash("sha256")
   try {
