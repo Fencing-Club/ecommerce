@@ -985,10 +985,10 @@ export const WaitingForCarrierLabels = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Upload labels" }))
     const dialog = await screen.findByRole("dialog", { name: "Upload carrier labels" })
     await waitFor(() => expect(dialog).toBeVisible())
+    await expect(within(dialog).getByText("1Z4F7E210393821041")).toBeVisible()
     await expect(within(dialog).getByText("ups-labels.pdf, page 1")).toBeVisible()
-    await expect(within(dialog).getByText("Tracking 1Z4F7E210393821041")).toBeVisible()
-    await expect(within(dialog).getByRole("button", { name: "Choose a PDF for C2" })).toBeVisible()
-    await expect(within(dialog).getByText("1 of 2 cartons have a label")).toBeVisible()
+    await expect(within(dialog).getAllByText("Drag a label here")).toHaveLength(1)
+    await expect(within(dialog).getByText("1 of 2 have a label")).toBeVisible()
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }

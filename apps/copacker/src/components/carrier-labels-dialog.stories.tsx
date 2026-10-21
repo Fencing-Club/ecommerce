@@ -3,8 +3,23 @@ import { http, HttpResponse } from "msw/http"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import {
+  type ExampleLabel,
+  exampleBarcodes,
+  examplePicture,
+  exampleText,
+  fewLabels,
+  shipmentLabels
+} from "@/stories/fixtures/carrier-labels"
 import { shipmentId } from "@/stories/fixtures/logistics"
-import { CarrierLabelsDialog, type SavedCarrierLabel, UploadCarrierLabels } from "./carrier-labels-dialog"
+import {
+  type CarrierLabelInput,
+  type CarrierLabelPage,
+  CarrierLabelsDialog,
+  readLabelPages,
+  type SavedCarrierLabel,
+  UploadCarrierLabels
+} from "./carrier-labels-dialog"
 
 const itemId = "6a1c3e5f-7b9d-4f1a-8c2e-4d6f8a0b2c4e"
 const carton = (cartonId: string, height: number, weight: number, pieces: number): Packing["cartons"][number] => ({
@@ -15,40 +30,48 @@ const carton = (cartonId: string, height: number, weight: number, pieces: number
   weight,
   items: [{ itemId, pieces }]
 })
-// 10.05's shipment: four cartons of one configuration and two of another.
+const ids = (letter: string, count: number) => Array.from({ length: count }, (_, index) => `${letter}${index + 1}`)
+// A large shipment: sixteen cartons of 60 × 40 × 40 cm and 12.4 kg, and eight of 60 × 40 × 50 cm and 15.2 kg.
 const cartons = [
-  ...["A1", "A2", "A3", "A4"].map((id) => carton(id, 40, 12.4, 24)),
-  ...["B1", "B2"].map((id) => carton(id, 50, 15.2, 30))
+  ...ids("A", 16).map((id) => carton(id, 40, 12.4, 24)),
+  ...ids("B", 8).map((id) => carton(id, 50, 15.2, 30))
 ]
+// A small one: two cartons of the first configuration and one of the second.
+const fewCartons = [carton("A1", 40, 12.4, 24), carton("A2", 40, 12.4, 24), carton("B1", 50, 15.2, 30)]
 
-const pdf = (name: string) => new File(["%PDF-1.7"], name, { type: "application/pdf" })
-// What each sample file's pages say. Stories never read real PDFs: the dialog gets these through `readPages`.
-const ups = (n: number) => `UPS GROUND TRACKING #: 1Z 4F7 E21 03 9382 10${n}1 SHIP TO AMAZON ONT8`
-// A label from a carrier that gives a PDF for each one, as Amazon does: label-5.pdf to label-10.pdf.
-const single = (n: number) => `UPS GROUND TRACKING #: 1Z 4F7 E21 03 9382 2${String(n).padStart(2, "0")}1`
-const pages: Record<string, string[]> = {
-  "ups-labels.pdf": [ups(4), ups(5), ups(6)],
-  "ups-a4.pdf": [ups(7)],
-  "ups-b.pdf": [ups(8), ups(9)],
-  "scanned-label.pdf": ["SHIP TO AMAZON ONT8 24300 NANDINA AVE"],
-  "ups-8.pdf": Array.from({ length: 8 }, (_, page) => ups(page)),
-  ...Object.fromEntries([5, 6, 7, 8, 9, 10].map((n) => [`label-${n}.pdf`, [single(n)]]))
-}
-const readPages = async (file: File) => {
-  const found = pages[file.name]
+// The example labels (stories/fixtures/carrier-labels.ts). Stories never read PDFs: the dialog gets each page's text, a
+// drawing of it and its barcodes' values through `readPages`, except in Example PDFs.
+const examples: Record<string, ExampleLabel[]> = { ...shipmentLabels, ...fewLabels }
+// A UPS label scanned too faintly for its barcodes to be read, so nothing on it gives its tracking number.
+const faint = "faint-ups-label.pdf"
+const readPages = async (file: File): Promise<CarrierLabelPage[]> => {
+  const found = examples[file.name === faint ? "ups-3-day-select-1.pdf" : file.name]
   if (!found) {
     throw new Error("Unreadable PDF")
   }
-  return found
+  return found.map((label) => ({
+    text: exampleText(label),
+    image: examplePicture(label),
+    barcodes: file.name === faint ? [] : exampleBarcodes(label)
+  }))
 }
+const first = "shopify-labels-1.pdf"
+const second = "shopify-labels-2.pdf"
+// The tracking number on a page of an example file.
+const tracking = (file: string, page = 1) => examples[file]?.[page - 1]?.trackingNumber ?? ""
+const pdf = (name: string) => new File(["%PDF-1.7"], name, { type: "application/pdf" })
+// The large shipment's four PDFs, dropped in no particular order.
+const shipmentPdfs = () => Object.keys(shipmentLabels).toReversed().map(pdf)
+const fewPdfs = () => Object.keys(fewLabels).map(pdf)
 const saved = (cartonId: string, page: number): SavedCarrierLabel => ({
   cartonId,
-  documentId: `d0c0ca11-0000-4000-8000-00000000000${page}`,
-  trackingNumber: `1Z4F7E2103938210${page + 3}1`,
-  sourceName: "ups-labels.pdf",
+  documentId: `d0c0ca11-0000-4000-8000-0000000000${String(page).padStart(2, "0")}`,
+  trackingNumber: tracking(first, page),
+  sourceName: first,
   sourcePage: page
 })
 
+type Save = (labels: CarrierLabelInput[], files: File[]) => Promise<void>
 // What the page's Upload labels posted.
 const posted: unknown[] = []
 
@@ -58,12 +81,12 @@ const meta = preview.meta({
   args: {
     open: true,
     onOpenChange: fn(),
-    reference: "PO38",
+    reference: "PO42",
     shipmentName: "Shipment 1",
     cartons,
     saved: [],
     readPages,
-    onSave: fn(async () => undefined)
+    onSave: fn<Save>(async () => undefined)
   }
 })
 
@@ -73,209 +96,398 @@ async function shown() {
   await waitFor(() => expect(dialog).toBeVisible())
   return dialog
 }
-// A carton's row in the open dialog.
-function row(cartonId: string) {
-  const carton = within(screen.getByRole("dialog")).getByText(cartonId, { exact: true }).closest("li")
-  if (!carton) {
+const notPlaced = () => screen.getByRole("region", { name: "Not placed" })
+const cartonList = () => screen.getByRole("region", { name: "Cartons" })
+// A label's row in Not placed, found by its tracking number or its file and page, or a carton's row in Cartons.
+function labelRow(text: string) {
+  const row = within(notPlaced()).getByText(text, { exact: true }).closest("li")
+  if (!row) {
+    throw new Error(`No row for ${text}`)
+  }
+  return row
+}
+function cartonRow(cartonId: string) {
+  // A configuration of one carton is headed by its ID too.
+  const row = within(cartonList())
+    .getAllByText(cartonId, { exact: true })
+    .map((element) => element.closest("li"))
+    .find(Boolean)
+  if (!row) {
     throw new Error(`No row for ${cartonId}`)
   }
-  return carton
+  return row
 }
-// A carton's drop target, the element under its ID that takes the drag.
-const target = (cartonId: string) => row(cartonId).querySelector("div > div")!
-// Drags files over a carton's row as a browser does, with the files in the drag's data, and drops them or holds them
-// there.
-function drag(cartonId: string, files: File[], end: "drop" | "hold" = "drop") {
+// A carton's slot, which takes a dragged label.
+const slot = (cartonId: string) => cartonRow(cartonId).querySelector(":scope > div")!
+// Drags files from the computer over a target as a browser does, and drops them or holds them there.
+function dragFiles(target: Element, files: File[], end: "drop" | "hold" = "drop") {
   const dataTransfer = new DataTransfer()
   for (const file of files) {
     dataTransfer.items.add(file)
   }
   for (const type of ["dragenter", "dragover", ...(end === "drop" ? ["drop"] : [])]) {
-    fireEvent(target(cartonId), new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }))
+    fireEvent(target, new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }))
   }
 }
-const drop = (cartonId: string, files: File[]) => drag(cartonId, files)
-const leave = (cartonId: string) =>
-  fireEvent(target(cartonId), new DragEvent("dragleave", { bubbles: true, cancelable: true }))
+const dropFiles = (files: File[]) => dragFiles(notPlaced(), files)
+// Labels are dragged with the mouse, as dnd-kit hears it: pressed, moved far enough to lift, moved over a target and
+// released there.
+const center = (element: Element) => {
+  const rect = element.getBoundingClientRect()
+  return { clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2 }
+}
+const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
+// Where the pointer is. Events go to it and bubble up to the document, where dnd-kit listens, as a browser's do.
+let pointer: Element = document.body
+async function moveTo(target: Element) {
+  target.scrollIntoView({ block: "center" })
+  pointer = target
+  fireEvent.mouseMove(target, center(target))
+  await settle()
+}
+// Picks up the label showing this text and holds it over a target.
+async function pickUp(text: string, target: Element) {
+  const card = screen.getByText(text, { exact: true })
+  const from = center(card)
+  fireEvent.mouseDown(card, { ...from, button: 0 })
+  fireEvent.mouseMove(card, { clientX: from.clientX + 8, clientY: from.clientY + 8 })
+  await settle()
+  await moveTo(target)
+}
+async function release() {
+  fireEvent.mouseUp(pointer, center(pointer))
+  await settle()
+}
+async function dragLabel(text: string, target: Element) {
+  await pickUp(text, target)
+  await release()
+}
+// The large shipment's labels, once they're read and the ones that fit are on their cartons.
+async function dropShipment() {
+  dropFiles(shipmentPdfs())
+  await within(cartonList()).findByText("18 of 24 have a label")
+}
 
-// 10.06: one drop target per carton, grouped by carton configuration. Save waits for a label.
+// 10.11 states: before any PDF, Not placed is where they go, and each carton waits for a label.
 export const Empty = meta.story({
   play: async () => {
     const dialog = await shown()
-    await expect(within(dialog).getByText("PO38 / Shipment 1")).toBeVisible()
-    await expect(within(dialog).getByRole("heading", { name: "A1–A4 60 × 40 × 40 cm, 12.4 kg" })).toBeVisible()
-    await expect(within(dialog).getByRole("heading", { name: "B1–B2 60 × 40 × 50 cm, 15.2 kg" })).toBeVisible()
-    await expect(within(dialog).getAllByText(/Drop a PDF or/)).toHaveLength(6)
-    await expect(within(dialog).getByRole("button", { name: "Choose a PDF for B2" })).toBeVisible()
-    await expect(within(dialog).getByText("0 of 6 cartons have a label")).toBeVisible()
+    await expect(within(dialog).getByText("PO42 / Shipment 1")).toBeVisible()
+    await expect(within(notPlaced()).getByText("Drop the carrier’s PDFs here")).toBeVisible()
+    await expect(within(notPlaced()).getByText("One PDF per label, or one with a page per label")).toBeVisible()
+    await expect(within(notPlaced()).getByRole("button", { name: "Browse" })).toBeVisible()
+    await expect(within(notPlaced()).getByRole("button", { name: "Fill cartons in order" })).toBeDisabled()
+    await expect(within(cartonList()).getByRole("heading", { name: "A1–A16 60 × 40 × 40 cm, 12.4 kg" })).toBeVisible()
+    await expect(within(cartonList()).getByRole("heading", { name: "B1–B8 60 × 40 × 50 cm, 15.2 kg" })).toBeVisible()
+    await expect(within(cartonList()).getAllByText("Drag a label here")).toHaveLength(24)
+    await expect(within(cartonList()).getByText("0 of 24 have a label")).toBeVisible()
     await expect(within(dialog).getByRole("button", { name: "Save labels" })).toBeDisabled()
   }
 })
 
-// 10.07: a three-page PDF dropped on A1 fills A1 to A3, each with the tracking number read from its page. A file that
-// isn't a PDF is refused on its row. Saving keeps the three, and a file dragged over a carton says where it will go.
-export const InProgress = meta.story({
+// 10.11 states: PDFs held over Not placed say what dropping them does.
+export const DraggingPdfs = meta.story({
+  play: async () => {
+    await shown()
+    dragFiles(notPlaced(), shipmentPdfs().slice(0, 3), "hold")
+    await expect(await within(notPlaced()).findByText("Drop to add 3 PDFs")).toBeVisible()
+    await expect(within(notPlaced()).getByText("Each page becomes a label")).toBeVisible()
+  }
+})
+
+// 10.12: 24 labels in four PDFs from FedEx, USPS, DHL and UPS. The 18 whose printed weight or size fit only one carton
+// configuration go on its cartons in order of file and page. The six that give neither wait in Not placed: the UPS
+// labels, pictures whose tracking numbers come from their barcodes, and the FedEx Ground Economy label. Each label
+// shows its tracking number, and below it the weight and size it prints, written as the cartons' are, or else its file
+// and page.
+export const ManyLabels = meta.story({
+  play: async () => {
+    await shown()
+    await dropShipment()
+    await expect(within(cartonRow("A1")).getByText(tracking(first, 1))).toBeVisible()
+    await expect(within(cartonRow("A4")).getByText(tracking(first, 5))).toBeVisible()
+    await expect(within(cartonRow("A12")).getByText(tracking(first, 16))).toBeVisible()
+    await expect(within(cartonRow("B6")).getByText(tracking(second, 6))).toBeVisible()
+    await expect(within(cartonRow("A13")).getByText("Drag a label here")).toBeVisible()
+    // FedEx prints its weight and size, USPS its pounds and ounces, and DHL whole pounds.
+    await expect(within(cartonRow("A1")).getByText("61 × 41 × 41 cm, 12.4 kg")).toBeVisible()
+    await expect(within(cartonRow("A2")).getByText("12.4 kg")).toBeVisible()
+    await expect(within(cartonRow("A3")).getByText("12.7 kg")).toBeVisible()
+    await expect(within(cartonRow("B1")).getByText("61 × 51 × 41 cm, 15.2 kg")).toBeVisible()
+
+    await expect(within(notPlaced()).getAllByRole("listitem")).toHaveLength(6)
+    await expect(within(notPlaced()).getByText("4 files")).toBeVisible()
+    await expect(within(labelRow(tracking(first, 10))).getByText("shopify-labels-1.pdf, page 10")).toBeVisible()
+    await expect(within(labelRow(tracking(first, 4))).getByText("shopify-labels-1.pdf, page 4")).toBeVisible()
+    const threeDay = tracking("ups-3-day-select-2.pdf")
+    await expect(within(labelRow(threeDay)).getByText("ups-3-day-select-2.pdf")).toBeVisible()
+    await expect(within(notPlaced()).queryByRole("textbox")).toBeNull()
+  }
+})
+
+// A small shipment's labels, a PDF each from FedEx, USPS and DHL. Each fits only one carton configuration, so they go
+// straight onto the cartons, and saving sends them to the supplier.
+export const FewLabels = meta.story({
+  args: { cartons: fewCartons },
   play: async ({ args }) => {
     const dialog = await shown()
-    const labels = pdf("ups-labels.pdf")
-    drop("A1", [labels])
-    await expect(await within(dialog).findByText("ups-labels.pdf, page 3")).toBeVisible()
-    await expect(within(row("A1")).getByText("ups-labels.pdf, page 1")).toBeVisible()
-    await expect(within(row("A2")).getByText("Tracking 1Z4F7E210393821051")).toBeVisible()
-    await expect(within(row("A4")).getByText(/Drop a PDF or/)).toBeVisible()
-
-    drop("B1", [new File(["image"], "scan.jpg", { type: "image/jpeg" })])
-    await expect(await within(row("B1")).findByText(/scan\.jpg isn’t a PDF\./)).toBeVisible()
-    await expect(within(row("B1")).getByRole("button", { name: "Choose a PDF for B1" })).toBeVisible()
-
-    await expect(within(dialog).getByText("3 of 6 cartons have a label")).toBeVisible()
+    dropFiles(fewPdfs())
+    await expect(await within(cartonRow("A1")).findByText(tracking("fedex-home-delivery.pdf"))).toBeVisible()
+    await expect(within(cartonRow("A2")).getByText(tracking("usps-priority-mail.pdf"))).toBeVisible()
+    await expect(within(cartonRow("B1")).getByText(tracking("dhl-ecommerce.pdf"))).toBeVisible()
+    await expect(within(notPlaced()).getByText("Drop the carrier’s PDFs here")).toBeVisible()
     await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
     await waitFor(() =>
       expect(args.onSave).toHaveBeenCalledWith(
         [
-          { cartonId: "A1", trackingNumber: "1Z4F7E210393821041", file: 0, page: 1 },
-          { cartonId: "A2", trackingNumber: "1Z4F7E210393821051", file: 0, page: 2 },
-          { cartonId: "A3", trackingNumber: "1Z4F7E210393821061", file: 0, page: 3 }
+          { cartonId: "A1", trackingNumber: tracking("fedex-home-delivery.pdf"), file: 0, page: 1 },
+          { cartonId: "A2", trackingNumber: tracking("usps-priority-mail.pdf"), file: 1, page: 1 },
+          { cartonId: "B1", trackingNumber: tracking("dhl-ecommerce.pdf"), file: 2, page: 1 }
         ],
-        [labels]
+        ["fedex-home-delivery.pdf", "usps-priority-mail.pdf", "dhl-ecommerce.pdf"].map((name) =>
+          expect.objectContaining({ name })
+        )
       )
     )
-    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false))
-    // As in 10.07, a second file is being dragged over A4.
-    drag("A4", [pdf("ups-a4.pdf")], "hold")
-    await expect(await within(row("A4")).findByText("Drop to add A4’s label")).toBeVisible()
   }
 })
 
-// 10.08: the saved labels and two more files label every carton, so saving sends them to the supplier. Saved labels go
-// back as they are.
-export const EveryCarton = meta.story({
+// Fill cartons in order puts the six labels left in Not placed on the empty cartons: A13 to A16, then B7 and B8.
+// Every carton then has a label, and saving sends them.
+export const FillCartonsInOrder = meta.story({
+  play: async ({ args }) => {
+    const dialog = await shown()
+    await dropShipment()
+    await userEvent.click(within(notPlaced()).getByRole("button", { name: "Fill cartons in order" }))
+    const threeDay = tracking("ups-3-day-select-2.pdf")
+    await expect(within(cartonRow("A13")).getByText(tracking(first, 4))).toBeVisible()
+    await expect(within(cartonRow("A15")).getByText(tracking(first, 10))).toBeVisible()
+    await expect(within(cartonRow("B8")).getByText(threeDay)).toBeVisible()
+    await expect(within(cartonList()).getByText("24 of 24 have a label")).toBeVisible()
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
+    await waitFor(() =>
+      expect(args.onSave).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { cartonId: "A13", trackingNumber: tracking(first, 4), file: 0, page: 4 },
+          { cartonId: "B8", trackingNumber: threeDay, file: 3, page: 1 }
+        ]),
+        expect.any(Array)
+      )
+    )
+  }
+})
+
+// 10.12: a label picked up leaves Not placed, which has nothing to say about it, and moves with the pointer. Dropped
+// on a carton it goes on it, and one dropped on a carton with a label sends that label back to Not placed. A label
+// whose weight and size don't fit its carton's configuration says so. A carton is as tall with a label as without
+// one. Ends with a label held over A14.
+export const DragLabelToCarton = meta.story({
+  play: async ({ args }) => {
+    const dialog = await shown()
+    await dropShipment()
+    const economy = tracking(first, 10)
+    await pickUp(economy, notPlaced())
+    await waitFor(() => expect(labelRow(economy)).not.toBeVisible())
+    await expect(within(notPlaced()).queryByText(/Drop to take/)).toBeNull()
+    await moveTo(slot("A13"))
+    await expect(await within(cartonRow("A13")).findByText(`Drop to put ${economy} on A13`)).toBeVisible()
+    await release()
+    await expect(await within(cartonRow("A13")).findByText(economy)).toBeVisible()
+    await expect(cartonRow("A13").getBoundingClientRect().height).toBe(cartonRow("A14").getBoundingClientRect().height)
+    await expect(within(notPlaced()).queryByText(economy)).toBeNull()
+    await expect(within(cartonList()).getByText("19 of 24 have a label")).toBeVisible()
+
+    const ups = tracking(first, 4)
+    await dragLabel(ups, slot("A1"))
+    await expect(await within(cartonRow("A1")).findByText(ups)).toBeVisible()
+    await waitFor(() => expect(within(notPlaced()).getByText(tracking(first, 1))).toBeVisible())
+    await dragLabel(tracking(first, 1), slot("B7"))
+    await expect(await within(cartonRow("B7")).findByText("Weight and size don’t fit B1–B8")).toBeInTheDocument()
+
+    // Saving keeps every label on a carton.
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
+    await waitFor(() =>
+      expect(args.onSave).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { cartonId: "A1", trackingNumber: ups, file: 0, page: 4 },
+          { cartonId: "A13", trackingNumber: economy, file: 0, page: 10 },
+          { cartonId: "B7", trackingNumber: tracking(first, 1), file: 0, page: 1 }
+        ]),
+        expect.any(Array)
+      )
+    )
+    await pickUp(tracking(first, 9), slot("A14"))
+    await expect(await within(cartonRow("A14")).findByText(`Drop to put ${tracking(first, 9)} on A14`)).toBeVisible()
+  }
+})
+
+// Saved labels open on their cartons. Taking one off, with its X or by dragging it onto Not placed, sends it back there.
+// While a carton's label is dragged, the carton is empty, and a label that crosses Not placed on its way to another
+// carton leaves Not placed as it was.
+export const TakeLabelOff = meta.story({
   args: { saved: [saved("A1", 1), saved("A2", 2), saved("A3", 3)] },
-  play: async ({ args }) => {
-    const dialog = await shown()
-    await expect(within(row("A3")).getByText("ups-labels.pdf, page 3")).toBeVisible()
-    await expect(within(dialog).getByText("3 of 6 cartons have a label")).toBeVisible()
-    const a4 = pdf("ups-a4.pdf")
-    const b = pdf("ups-b.pdf")
-    drop("A4", [a4])
-    drop("B1", [b])
-    await expect(await within(row("B2")).findByText("ups-b.pdf, page 2")).toBeVisible()
-    await expect(within(dialog).getByText("Every carton has a label. Saving sends them to the supplier.")).toBeVisible()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
-    await waitFor(() =>
-      expect(args.onSave).toHaveBeenCalledWith(
-        [
-          { cartonId: "A1", trackingNumber: "1Z4F7E210393821041", documentId: saved("A1", 1).documentId },
-          { cartonId: "A2", trackingNumber: "1Z4F7E210393821051", documentId: saved("A2", 2).documentId },
-          { cartonId: "A3", trackingNumber: "1Z4F7E210393821061", documentId: saved("A3", 3).documentId },
-          { cartonId: "A4", trackingNumber: "1Z4F7E210393821071", file: 0, page: 1 },
-          { cartonId: "B1", trackingNumber: "1Z4F7E210393821081", file: 1, page: 1 },
-          { cartonId: "B2", trackingNumber: "1Z4F7E210393821091", file: 1, page: 2 }
-        ],
-        [a4, b]
-      )
-    )
+  play: async () => {
+    await shown()
+    const label = tracking(first, 2)
+    await expect(within(cartonRow("A2")).getByText(label)).toBeVisible()
+    await expect(within(cartonRow("A2")).getByText("shopify-labels-1.pdf, page 2")).toBeVisible()
+    await expect(within(cartonList()).getByText("3 of 24 have a label")).toBeVisible()
+    await userEvent.click(within(cartonList()).getByRole("button", { name: "Take the label off A1" }))
+    await expect(within(cartonRow("A1")).getByText("Drag a label here")).toBeVisible()
+    await waitFor(() => expect(within(notPlaced()).getByText(tracking(first, 1))).toBeVisible())
+
+    await pickUp(label, notPlaced())
+    await expect(await within(notPlaced()).findByText(`Drop to take ${label} off its carton`)).toBeVisible()
+    await waitFor(() => expect(within(cartonRow("A2")).getByText(label)).not.toBeVisible())
+    await expect(within(cartonRow("A2")).getByText("Drag a label here")).toBeVisible()
+    await moveTo(slot("A5"))
+    await release()
+    await expect(await within(cartonRow("A5")).findByText(label)).toBeVisible()
+    await expect(within(notPlaced()).queryByText(/Drop to take/)).toBeNull()
+
+    await dragLabel(label, notPlaced())
+    await waitFor(() => expect(within(notPlaced()).getByText(label)).toBeVisible())
+    await expect(within(notPlaced()).queryByText(/Drop to take/)).toBeNull()
+    await expect(within(cartonList()).getByText("1 of 24 have a label")).toBeVisible()
   }
 })
 
-// Carriers that give a PDF for each label, as Amazon does: dropped together, the files fill the cartons in the order of
-// their names, whatever order they come in. A file of one label shows its name alone.
-export const OneFilePerLabel = meta.story({
-  play: async ({ args }) => {
-    const dialog = await shown()
-    drop(
-      "A1",
-      [7, 10, 5, 9, 6, 8].map((n) => pdf(`label-${n}.pdf`))
-    )
-    await expect(await within(row("B2")).findByText("label-10.pdf")).toBeVisible()
-    await expect(within(row("A1")).getByText("label-5.pdf")).toBeVisible()
-    await expect(within(row("B1")).getByText("Tracking 1Z4F7E210393822091")).toBeVisible()
-    await expect(within(dialog).getByText("Every carton has a label. Saving sends them to the supplier.")).toBeVisible()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
-    await waitFor(() =>
-      expect(args.onSave).toHaveBeenCalledWith(
-        ["A1", "A2", "A3", "A4", "B1", "B2"].map((cartonId, file) => ({
-          cartonId,
-          trackingNumber: `1Z4F7E210393822${String(file + 5).padStart(2, "0")}1`,
-          file,
-          page: 1
-        })),
-        [5, 6, 7, 8, 9, 10].map((n) => expect.objectContaining({ name: `label-${n}.pdf` }))
-      )
-    )
+// 10.11: a label with nothing to read its tracking number from, such as a UPS picture scanned too faintly for its
+// barcodes, says it has no tracking number, with Add beside it. It can't go on a carton until it has one: its grip is
+// dimmed, dragging it doesn't lift it, and Fill cartons in order leaves it. Ends with it in Not placed, beside a label
+// that went on its carton.
+export const TrackingNotRead = meta.story({
+  args: { cartons: fewCartons },
+  play: async () => {
+    await shown()
+    dropFiles([pdf(faint), pdf("fedex-home-delivery.pdf")])
+    await expect(await within(cartonRow("A1")).findByText(tracking("fedex-home-delivery.pdf"))).toBeVisible()
+    const row = labelRow("No tracking number")
+    await expect(within(row).getByText(faint)).toBeVisible()
+    await expect(within(row).getByRole("button", { name: `Add the tracking number for ${faint}` })).toBeVisible()
+    await expect(within(notPlaced()).queryByRole("textbox")).toBeNull()
+    await expect(within(notPlaced()).getByRole("button", { name: "Fill cartons in order" })).toBeDisabled()
+    await dragLabel("No tracking number", slot("A2"))
+    await expect(within(cartonRow("A2")).getByText("Drag a label here")).toBeVisible()
+    await expect(labelRow("No tracking number")).toBeVisible()
   }
 })
 
-// 10.10: a page whose tracking number can't be read keeps its label and asks for the number, which Save waits for.
-export const TrackingNumberNotFound = meta.story({
+// Add opens the label's preview at its tracking number field, beside its picture, where its Carton waits for
+// a number. A mistyped number says so once the field is left. One no carrier's format matches is taken, but says to
+// check it against the label. A recognized one says so, and Carrier says whose it is. The label then goes on a carton
+// and saves.
+export const AddTrackingNumber = meta.story({
+  args: { cartons: fewCartons },
   play: async ({ args }) => {
     const dialog = await shown()
-    drop("A4", [pdf("scanned-label.pdf")])
-    const field = await within(row("A4")).findByRole("textbox", { name: "Tracking number" })
-    await expect(
-      within(row("A4")).getByText("Couldn’t read a tracking number from this page. Enter it from the label.")
-    ).toBeVisible()
-    await expect(field).toHaveAttribute("aria-invalid", "true")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
+    dropFiles([pdf(faint)])
+    await userEvent.click(
+      await within(notPlaced()).findByRole("button", { name: `Add the tracking number for ${faint}` })
+    )
+    const field = within(dialog).getByRole("textbox", { name: `Tracking number for ${faint}` })
+    const carton = within(dialog).getByRole("combobox", { name: "Carton" })
     await expect(field).toHaveFocus()
-    await expect(args.onSave).not.toHaveBeenCalled()
+    await expect(field).toHaveAttribute("placeholder", "Enter the tracking number")
+    await expect(field).toHaveAccessibleDescription("Unrecognized tracking label.")
+    await expect(field).not.toHaveAttribute("aria-invalid")
+    await expect(carton).toBeDisabled()
 
     await userEvent.type(field, "12-34")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
-    await expect(within(row("A4")).getByText("Enter the tracking number as it’s printed on the label.")).toBeVisible()
+    await userEvent.tab()
+    await expect(within(dialog).getByText("Enter the tracking number as it’s printed on the label.")).toBeVisible()
+    await expect(field).toHaveAttribute("aria-invalid", "true")
+    await expect(carton).toBeDisabled()
+
     await userEvent.clear(field)
-    await userEvent.type(field, "1z 999 aa1 01 2345 6784")
+    await userEvent.type(field, "ABC1234567")
+    await userEvent.tab()
+    await expect(within(dialog).getByText("Tracking number not recognized. Check it against the label.")).toBeVisible()
+    await expect(within(dialog).getByText("Not known")).toBeVisible()
+    await expect(carton).toBeEnabled()
+
+    // A pasted number loses the spaces it's printed with.
+    await userEvent.clear(field)
+    await userEvent.paste("1z 999 aa1 01 2345 6784")
+    await expect(field).toHaveValue("1Z999AA10123456784")
     await expect(field).not.toHaveAttribute("aria-invalid")
+    await expect(within(dialog).getByText("Tracking number recognized.")).toBeVisible()
+    await expect(within(dialog).getByText("UPS")).toBeVisible()
+
+    await userEvent.click(carton)
+    await userEvent.click(await screen.findByRole("option", { name: "A1" }))
+    await userEvent.click(within(dialog).getByRole("button", { name: "All labels" }))
+    await expect(within(cartonRow("A1")).getByText("1Z999AA10123456784")).toBeVisible()
     await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
     await waitFor(() =>
       expect(args.onSave).toHaveBeenCalledWith(
-        [{ cartonId: "A4", trackingNumber: "1Z999AA10123456784", file: 0, page: 1 }],
-        [expect.objectContaining({ name: "scanned-label.pdf" })]
+        [{ cartonId: "A1", trackingNumber: "1Z999AA10123456784", file: 0, page: 1 }],
+        [expect.objectContaining({ name: faint })]
       )
     )
   }
 })
 
-// 10.10: dropping on a carton that has a label replaces it, and Remove clears it.
-export const ReplacingALabel = meta.story({
-  args: { saved: [saved("A1", 1), saved("A2", 2)] },
+// 10.13: a label's picture opens it at the dialog's full height, with what was read from it. The arrows step through
+// the list it's in, and the Carton field puts it on a carton without dragging.
+export const Preview = meta.story({
   play: async () => {
     const dialog = await shown()
-    drag("A2", [pdf("ups-a4.pdf")], "hold")
-    await expect(await within(row("A2")).findByText("Drop to replace A2’s label")).toBeVisible()
-    leave("A2")
-    drop("A2", [pdf("ups-a4.pdf")])
-    await expect(await within(row("A2")).findByText("ups-a4.pdf")).toBeVisible()
-    await expect(within(row("A2")).getByText("Tracking 1Z4F7E210393821071")).toBeVisible()
+    await dropShipment()
+    // A UPS picture gives its tracking number through its barcode, but not the weight and size it prints.
+    await userEvent.click(within(notPlaced()).getByRole("button", { name: `Preview ${tracking(first, 4)}` }))
+    await expect(await within(dialog).findByRole("heading", { name: "shopify-labels-1.pdf, page 4" })).toHaveFocus()
+    await expect(within(dialog).getByRole("img", { name: "Label from shopify-labels-1.pdf, page 4" })).toBeVisible()
+    await expect(within(dialog).getByText("1 of 6 not placed")).toBeVisible()
+    await expect(within(dialog).getByRole("button", { name: "Previous label" })).toBeDisabled()
+    await expect(within(dialog).getByText(tracking(first, 4))).toBeVisible()
+    await expect(within(dialog).getByText("UPS")).toBeVisible()
+    await expect(within(dialog).getAllByText("Not read")).toHaveLength(2)
 
-    await userEvent.click(within(dialog).getByRole("button", { name: "Remove A1’s label" }))
-    await expect(within(row("A1")).getByText(/Drop a PDF or/)).toBeVisible()
-    await expect(within(dialog).getByText("1 of 6 cartons have a label")).toBeVisible()
+    await userEvent.click(within(dialog).getByRole("button", { name: "Next label" }))
+    await userEvent.click(within(dialog).getByRole("button", { name: "Next label" }))
+    await expect(await within(dialog).findByRole("heading", { name: "shopify-labels-1.pdf, page 10" })).toHaveFocus()
+    await expect(within(dialog).getByText("3 of 6 not placed")).toBeVisible()
+    await expect(within(dialog).getByText(tracking(first, 10))).toBeVisible()
+    await expect(within(dialog).getByText("FedEx")).toBeVisible()
+
+    const field = within(dialog).getByRole("combobox", { name: "Carton" })
+    await expect(field).toHaveTextContent("Not placed")
+    await userEvent.click(field)
+    await userEvent.click(await screen.findByRole("option", { name: "A13" }))
+    await expect(field).toHaveTextContent("A13")
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "All labels" }))
+    await expect(within(cartonRow("A13")).getByText(tracking(first, 10))).toBeVisible()
+    await expect(within(cartonList()).getByText("19 of 24 have a label")).toBeVisible()
+    await expect(within(cartonRow("A13")).getByRole("button", { name: `Preview ${tracking(first, 10)}` })).toHaveFocus()
+
+    // A label on a carton steps through the cartons' labels, and shows the weight and size it prints.
+    await userEvent.click(within(cartonRow("A1")).getByRole("button", { name: `Preview ${tracking(first, 1)}` }))
+    await expect(await within(dialog).findByText("1 of 19 on cartons")).toBeVisible()
+    await expect(within(dialog).getByText("12.4 kg")).toBeVisible()
+    await expect(within(dialog).getByText("61 × 41 × 41 cm")).toBeVisible()
+    await expect(within(dialog).getByRole("combobox", { name: "Carton" })).toHaveTextContent("A1")
   }
 })
 
-// 10.10: more labels than cartons from where they're dropped add nothing, and the dialog says why.
-export const MoreLabelsThanCartons = meta.story({
+// A dropped file that isn't a PDF adds nothing, and the dialog says why.
+export const NotAPdf = meta.story({
   play: async () => {
     const dialog = await shown()
-    drop("A1", [pdf("ups-8.pdf")])
-    await expect(await within(dialog).findByRole("alert")).toHaveTextContent(
-      "You dropped 8 labels, but there are 6 cartons from A1 on. Check that they’re this shipment’s labels."
-    )
-    await expect(within(dialog).getByText("0 of 6 cartons have a label")).toBeVisible()
-    await expect(within(row("A1")).getByText(/Drop a PDF or/)).toBeVisible()
+    dropFiles([pdf("fedex-home-delivery.pdf"), new File(["image"], "scan.jpg", { type: "image/jpeg" })])
+    await expect(await within(dialog).findByRole("alert")).toHaveTextContent("scan.jpg isn’t a PDF.")
+    await expect(within(notPlaced()).getByText("Drop the carrier’s PDFs here")).toBeVisible()
   }
 })
 
-// 10.10: while PDFs are read, their row says so and Save waits.
-export const ReadingTheLabel = meta.story({
-  args: { saved: [saved("A2", 2)], readPages: () => new Promise<string[]>(() => undefined) },
+// While PDFs are read, Not placed says so and Save waits.
+export const ReadingPdfs = meta.story({
+  args: { saved: [saved("A1", 1)], readPages: () => new Promise<CarrierLabelPage[]>(() => undefined) },
   play: async () => {
     const dialog = await shown()
-    drop("A1", [pdf("ups-labels.pdf")])
-    await expect(await within(row("A1")).findByText("Reading ups-labels.pdf")).toBeVisible()
-    drop("B1", [pdf("label-9.pdf"), pdf("label-10.pdf")])
-    await expect(await within(row("B1")).findByText("Reading 2 PDFs")).toBeVisible()
+    dropFiles(fewPdfs().slice(0, 2))
+    await expect(await within(notPlaced()).findByText("Reading 2 PDFs")).toBeVisible()
     await expect(within(dialog).getByRole("button", { name: "Save labels" })).toBeDisabled()
   }
 })
@@ -284,7 +496,7 @@ export const ReadingTheLabel = meta.story({
 export const SaveFails = meta.story({
   args: {
     saved: [saved("A1", 1)],
-    onSave: fn(async () => {
+    onSave: fn<Save>(async () => {
       throw new Error("Shipment changed during upload. Try again.")
     })
   },
@@ -305,9 +517,9 @@ export const UploadLabelsFromThePage = meta.story({
     <UploadCarrierLabels
       shipmentId={shipmentId}
       revision={3}
-      reference="PO38"
+      reference="PO42"
       shipmentName="Shipment 1"
-      cartons={cartons.slice(0, 2)}
+      cartons={fewCartons}
       saved={[]}
       readPages={readPages}
     />
@@ -330,9 +542,9 @@ export const UploadLabelsFromThePage = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Upload labels" }))
     const dialog = await shown()
-    await expect(within(dialog).getByText("0 of 2 cartons have a label")).toBeVisible()
-    drop("A1", [pdf("ups-b.pdf")])
-    await expect(await within(dialog).findByText("ups-b.pdf, page 2")).toBeVisible()
+    await expect(within(cartonList()).getByText("0 of 3 have a label")).toBeVisible()
+    dropFiles(fewPdfs())
+    await within(cartonList()).findByText("3 of 3 have a label")
     await userEvent.click(within(dialog).getByRole("button", { name: "Save labels" }))
     await expect(await screen.findByText("Carrier labels sent to the supplier")).toBeVisible()
     await expect(posted).toEqual([
@@ -340,13 +552,33 @@ export const UploadLabelsFromThePage = meta.story({
         id: shipmentId,
         revision: "3",
         labels: [
-          { cartonId: "A1", trackingNumber: "1Z4F7E210393821081", file: 0, page: 1 },
-          { cartonId: "A2", trackingNumber: "1Z4F7E210393821091", file: 0, page: 2 }
+          { cartonId: "A1", trackingNumber: tracking("fedex-home-delivery.pdf"), file: 0, page: 1 },
+          { cartonId: "A2", trackingNumber: tracking("usps-priority-mail.pdf"), file: 1, page: 1 },
+          { cartonId: "B1", trackingNumber: tracking("dhl-ecommerce.pdf"), file: 2, page: 1 }
         ],
-        files: ["ups-b.pdf"]
+        files: ["fedex-home-delivery.pdf", "usps-priority-mail.pdf", "dhl-ecommerce.pdf"]
       }
     ])
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  }
+})
+
+// The example PDFs themselves, read as the browser reads them: pdf.js gives each page's text and picture, the UPS
+// pictures' barcodes give their tracking numbers, and the labels that fit go on their cartons. Reading PDFs is slow, so
+// test runs leave this story out (vitest.config.ts); it's for trying the dialog by hand.
+export const ExamplePdfs = meta.story({
+  tags: ["documents"],
+  render: (args) => <CarrierLabelsDialog {...args} readPages={readLabelPages} />,
+  play: async () => {
+    await shown()
+    const files = await Promise.all(
+      Object.keys(shipmentLabels).map(async (name) => {
+        const response = await fetch(new URL(`../stories/fixtures/carrier-labels/${name}`, import.meta.url))
+        return new File([await response.blob()], name, { type: "application/pdf" })
+      })
+    )
+    dropFiles(files)
+    await expect(await within(cartonList()).findByText("18 of 24 have a label", {}, { timeout: 30_000 })).toBeVisible()
   }
 })

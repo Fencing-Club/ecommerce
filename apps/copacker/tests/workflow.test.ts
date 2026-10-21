@@ -3170,7 +3170,8 @@ describe("document upload and packet release", () => {
         cartonId: "A6",
         trackingNumber: trackingNumber(1),
         sourceName: "Carrier 1.pdf",
-        sourcePage: 1,
+        // A one-page file is known by its name alone.
+        sourcePage: null,
         name: "Carrier label - A6.pdf"
       }
     ])
