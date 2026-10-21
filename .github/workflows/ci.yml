@@ -210,6 +210,13 @@ jobs:
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
+      # Playwright's browsers, kept per Playwright version; the install then only adds the system packages.
+      - id: playwright
+        run: echo "version=$(pnpm --filter copacker exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-headless-shell
       - run: pnpm --filter copacker exec playwright install --with-deps chromium-headless-shell
       - run: pnpm --filter copacker exec vitest run --project 'storybook*' --shard=${{ matrix.shard }}/4
 
@@ -222,11 +229,11 @@ jobs:
       cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
-    # Split in two, each with its own Worker build, database and R2 emulator.
+    # Split in three, each with its own Worker build, database and R2 emulator. In two, the slower shard took nine minutes.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     services:
       postgres:
         image: postgres:18
@@ -270,8 +277,15 @@ jobs:
       - run: pnpm --filter copacker exec vite build --mode e2e
       - run: pnpm --filter copacker db:migrate
       - run: pnpm --filter copacker db:seed:e2e
+      # Playwright's browsers, kept per Playwright version; the install then only adds the system packages.
+      - id: playwright
+        run: echo "version=$(pnpm --filter copacker exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
-      - run: pnpm --filter copacker test:e2e --shard=${{ matrix.shard }}/2
+      - run: pnpm --filter copacker test:e2e --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
