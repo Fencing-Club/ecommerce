@@ -36,7 +36,9 @@ export default defineConfig({
       // starves the unit tests' databases and their setup times out.
       {
         extends: true,
-        plugins: [storybookTest({ configDir: `${dirname}.storybook` })],
+        // Stories tagged "simulator" are for trying the rules and documents by hand, and stories tagged "documents"
+        // render real PDFs to look at; test runs leave both out.
+        plugins: [storybookTest({ configDir: `${dirname}.storybook`, tags: { exclude: ["simulator", "documents"] } })],
         test: {
           name: "storybook",
           sequence: { groupOrder: 1 },

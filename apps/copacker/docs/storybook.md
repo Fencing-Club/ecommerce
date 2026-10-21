@@ -95,8 +95,12 @@ Each data set lives in `src/stories/simulators/data.ts`; the Every Error example
   ways to ship them (`packet-catalog.tsx`): each product requirement, then each carton, pallet and handoff line, when
   it's printed, whether production's export reaches it, and a link that opens a shipment printing it in the simulator.
 
-The packet's data sets are in `packet-data.ts`. Its stories render PDFs, so they carry the `documents` tag and test
-runs skip them; Every Checklist Line builds only data and runs with the other stories.
+The packet's data sets are in `packet-data.ts`.
+
+Simulators are for trying the rules and documents by hand, so `pnpm verify` and CI leave them out: every simulator's
+stories carry the `simulator` tag, which `vitest.config.ts` excludes, and `tests/stories.test.ts` fails on a simulator
+without it. The packet's stories also carry `documents`, since they render PDFs. The rules themselves are tested in
+`@repo/copacker-packing-rules` and the app's own tests.
 
 ## The toolbar
 

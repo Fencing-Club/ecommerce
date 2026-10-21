@@ -12,9 +12,8 @@ const select = (options: readonly { value: string }[]) => ({
 const meta = preview.meta({
   title: "Simulators/Supplier packet",
   component: PacketSimulator,
-  // The simulator renders the whole packet, so test runs skip its stories; the plays check only what it renders from
-  // the packet's data.
-  tags: ["documents"],
+  // A simulator is for trying the packet by hand, and it renders the whole packet, so test runs leave it out.
+  tags: ["simulator", "documents"],
   // A data set or arrangement from the URL loads afresh.
   render: (args) => <PacketSimulator key={JSON.stringify(args)} {...args} />,
   argTypes: {
@@ -33,7 +32,6 @@ const checklist = (canvas: ReturnType<typeof within>) => within(canvas.getByRole
 
 // Every line the checklist can print, from the checklist rules across the data sets and ways to ship them.
 export const EveryChecklistLine = meta.story({
-  tags: ["!documents"],
   render: () => <PacketCatalog />,
   play: async ({ canvas }) => {
     const table = within(canvas.getByRole("table", { name: "Every checklist line" }))

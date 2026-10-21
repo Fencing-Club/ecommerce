@@ -7,6 +7,8 @@ import { reportedCodes } from "./report"
 const meta = preview.meta({
   title: "Simulators/Carton validation",
   component: CartonSimulator,
+  // A simulator is for trying the rules by hand, so test runs leave it out.
+  tags: ["simulator"],
   // A data set from the URL loads afresh.
   render: (args) => <CartonSimulator key={args.dataSet} {...args} />,
   parameters: { layout: "fullscreen" }

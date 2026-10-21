@@ -122,6 +122,14 @@ describe("story titles", () => {
     expect(title?.startsWith("Simulators/")).toBe(file.startsWith("src/stories/simulators/"))
   })
 
+  // Simulators are for trying things by hand: each carries the "simulator" tag, which test runs leave out.
+  it.each(stories.filter(({ file }) => file.startsWith("src/stories/simulators/")))(
+    "$file is left out of test runs",
+    ({ file }) => {
+      expect(read(file).match(/\.meta\(\{[\s\S]*?\btags: \[([^\]]*)\]/)?.[1]).toContain('"simulator"')
+    }
+  )
+
   // Every story beside a route is that route's page story, except designs not yet built into it. The order and shipment
   // list designs are now the pages themselves, so none are waiting.
   const routePrototypes = new Set<string>()
