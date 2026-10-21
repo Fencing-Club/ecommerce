@@ -18,7 +18,7 @@ import { PATCH } from "../src/server/http/api/inventory/variant-fields"
 import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -104,7 +104,7 @@ const metafields = [
 ]
 
 beforeAll(async () => {
-  await applyMigrations(pg)
+  await applySchema(pg)
   context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },

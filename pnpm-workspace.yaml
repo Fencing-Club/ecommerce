@@ -15,6 +15,11 @@ overrides:
   react-is: 19.2.7
   # Copacker uses nuqs' TanStack adapter. Do not attach the optional Next peer from the email preview tools.
   "nuqs>next": "-"
+# @workos/authkit-session (0.7.1 and the latest 0.8.0) declares @workos-inc/node ^8-^10. Node SDK 11's only breaking
+# change is in Pipes, which the session toolkit does not use. Drop this once authkit-session lists ^11.
+peerDependencyRules:
+  allowedVersions:
+    "@workos/authkit-session>@workos-inc/node": "11"
 allowBuilds:
   workerd: true
   esbuild: true

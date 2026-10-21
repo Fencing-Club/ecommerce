@@ -25,7 +25,7 @@ import { POST as saveProduct } from "../src/server/http/api/supplier-catalog/pro
 import { POST as saveStock } from "../src/server/http/api/supplier-catalog/stock"
 import { GET as downloadTemplate } from "../src/server/http/api/supplier-catalog/template"
 import { appUrl } from "../src/server/security"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -147,7 +147,7 @@ function productPayload(overrides: Record<string, unknown> = {}) {
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => pg.close())
 beforeEach(async () => {

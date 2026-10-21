@@ -27,6 +27,8 @@ export default defineConfig({
           // Request fixtures use this origin, independently of the developer's local app port.
           env: { APP_URL: "http://localhost:3000", APP_ALIAS_URLS: "" },
           include: ["tests/**/*.test.ts"],
+          // The database tests' schema, built once from src/db/schema.ts.
+          globalSetup: ["tests/database-setup.ts"],
           sequence: { groupOrder: 0 }
         }
       },

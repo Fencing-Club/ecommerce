@@ -9,7 +9,7 @@ import type { Session } from "../src/server/workspace-session"
 const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 import { searchIndex } from "../src/server/search"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -43,7 +43,7 @@ async function order(
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Fencing Club", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" },

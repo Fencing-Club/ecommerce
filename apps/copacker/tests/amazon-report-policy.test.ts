@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as schema from "../src/db/schema"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import {
@@ -17,7 +17,7 @@ const now = new Date("2026-10-19T01:00:00Z")
 const response = { reportType: "AGED", status: 429, rateLimit: null, retryAfterMs: null, requestId: "request-id" }
 beforeAll(async () => {
   context.database = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()

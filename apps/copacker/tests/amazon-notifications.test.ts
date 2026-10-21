@@ -29,7 +29,7 @@ import {
 import { PollAgain } from "../src/server/job-handlers"
 import { runNextJob } from "../src/server/queue"
 import { queueArn } from "../src/server/sqs"
-import { applyMigrations } from "./migrations"
+import { applySchema } from "./database"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -87,7 +87,7 @@ const queued = (kind: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await applyMigrations(pg)
+  await applySchema(pg)
 })
 afterAll(async () => {
   await pg.close()
