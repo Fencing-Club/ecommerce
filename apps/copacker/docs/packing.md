@@ -48,7 +48,7 @@ gives the reasons it lists in general: "Products: FBA can't take Cotton drawstri
 Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different
 warehouses. Move one of them to another carton." Before
 Amazon has planned any of the PO's shipments, the Cartons section says "Products that can share a carton aren't checked
-yet" (06.15's as-built card, in place on 06.18). The groups aren't fetched live, so it has no Retry button.
+yet" (06.15, and in place on 06.18). The groups aren't fetched live, so it has no Retry button.
 
 ## Pallets
 
