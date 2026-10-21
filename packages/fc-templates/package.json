@@ -18,19 +18,19 @@
   },
   "dependencies": {
     "@repo/shopify-emails": "workspace:*",
-    "react": "^19.2.0",
-    "react-email": "^6.9.1"
+    "react": "^19.3.1",
+    "react-email": "^6.11.3"
   },
   "devDependencies": {
-    "@react-email/render": "^2.1.0",
-    "@react-email/ui": "6.9.1",
+    "@react-email/render": "^2.1.1",
+    "@react-email/ui": "6.11.3",
     "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "^19.2.0",
     "@vitest/coverage-v8": "^4.1.9",
-    "oxlint": "^1.72.0",
-    "tsx": "^4.23.0",
+    "oxlint": "^1.88.0",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "^4.1.9"
   }
