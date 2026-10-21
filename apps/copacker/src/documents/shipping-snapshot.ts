@@ -37,8 +37,10 @@ export function shippingDocumentSnapshot(input: {
   if (order.via) {
     throw new Error("Prepare the supplier and forwarder legs separately before exporting")
   }
-  if (transport.handoff !== "supplier" || transport.service === "freight") {
-    throw new Error("Confirm the forwarder or freight handoff details before exporting")
+  // The supplier hands its cartons to the carrier itself, by parcel, AGL or freight. A forwarder's handoff is the
+  // forwarder's own leg, with its own packet.
+  if (transport.handoff !== "supplier") {
+    throw new Error("Prepare the forwarder's handoff separately before exporting")
   }
   const items = packedItems(order, packing)
   const networks = new Set(items.map((item) => item.amazonNetwork))

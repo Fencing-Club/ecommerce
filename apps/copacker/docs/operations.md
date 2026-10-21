@@ -85,10 +85,13 @@ it uses, or anything every app shares, such as the workflows, the lockfile or th
 design files don't count. A pull request is compared with its target branch, and a push with the commit staging serves.
 Then, side by side:
 
-- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always; Copacker's unit
-  tests with coverage, its build, the built-Worker webhook regression and every migration on an empty Postgres 18 when Copacker is affected.
+- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always.
+- `unit`: Copacker's unit tests, in three shards, when Copacker is affected. `unit-coverage` merges the shards' results
+  and coverage into one report.
+- `worker`: Copacker's build, the built-Worker webhook and job regressions and every migration on an empty Postgres 18,
+  when Copacker is affected.
 - `stories`: the Storybook tests, in four shards, when Copacker is affected.
-- `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
+- `e2e`: the [end-to-end suite](e2e.md), in three shards, when Copacker is affected.
 
 Turbo replays tasks whose inputs have not changed. `ci-ok` is the required aggregate check. The Cloudflare release
 workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the environment's `RELEASE_CUTOVER_READY`. These gates are enabled
@@ -187,7 +190,7 @@ Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate
 copy a changed one into `tests/database-schema.ts` too. Tests never run, replay, hash or inspect migrations: suites
 that do grow without bound and slow every run. The unit project's global setup builds the schema's SQL from
 `src/db/schema.ts` once per run, and each database test creates it with `applySchema` (`tests/database.ts`). The one
-exception is CI's `verify` job, which applies every migration to an empty Postgres once per run as a release gate;
+exception is CI's `worker` job, which applies every migration to an empty Postgres once per run as a release gate;
 don't add to it.
 The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 

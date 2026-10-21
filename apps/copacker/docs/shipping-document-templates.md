@@ -101,10 +101,13 @@ layout, in the language and paper last chosen for shipping documents. A line wit
 buyer's, as the packing page shows it. When the packet page can't make its reference documents, it still offers the
 packing list beside the label files.
 
-The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
-labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton
-carrier assignments and explicit freight/forwarder handoff data before enabling them. It rejects missing information
-instead of inferring it from PDF order. Multiple Amazon destinations must be represented separately.
+The live packet covers a supplier handing its cartons to the carrier itself without separate carrier labels: by AGL,
+or by freight, on pallets (with Amazon's pallet labels for FBA) or loaded loose. A freight packet names a freight
+carrier pickup and asks the supplier to have the bill of lading ready; copacker doesn't record the carrier's name or the
+bill of lading number, which the templates print when given. The templates demonstrate more arrangements, but the live adapter still needs
+persisted carrier label numbers for each carton before a shipment with carrier labels can export, and a forwarder's
+handoff is prepared as its own leg. It rejects missing information instead of inferring it from PDF order. Multiple
+Amazon destinations must be represented separately.
 
 Transport configuration records the service, pickup/drop-off, handoff party, carrier-label requirement and instructions.
 Selecting a service proposes defaults; it does not book transport. Confirming AGL pickup does not create a new Amazon
