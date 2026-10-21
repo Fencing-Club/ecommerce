@@ -407,6 +407,7 @@
     "readyForPickup": "Abholbereit",
     "shipFrom": "Abholadresse",
     "readyDate": "Abholbereit",
+    "readyDatePassed": "Wählen Sie heute oder ein späteres Datum",
     "addCartonProduct": "Produkt zum Karton hinzufügen",
     "removeCartonProduct": "Produkt {number} aus dem Karton entfernen",
     "finishPacking": "Verpacken abschließen",

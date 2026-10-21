@@ -15,7 +15,7 @@ import { CircleCheck, Ellipsis, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
-import { useLocale, useTranslations } from "use-intl"
+import { useLocale, useNow, useTimeZone, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -26,6 +26,7 @@ import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { cartonTotals, expandCartonGroups, groupCartons, nextCartonId, packingEditorSchema } from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
+import { zonedDay } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
 import { CartonEditor } from "./carton-editor"
@@ -39,7 +40,8 @@ import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentAddress, ShipmentPackingDetails } from "./shipment-packing-details"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
-type Values = z.input<typeof packingEditorSchema>
+type EditorSchema = ReturnType<typeof packingEditorSchema>
+type Values = z.input<EditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
 // number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
@@ -136,6 +138,8 @@ export function PackingForm({
   const rules = useTranslations("server.readiness.packing")
   const errorMessage = useErrorMessage()
   const formErrorMap = useFormErrorMap()
+  // The zone the supplier's browser reports, so today is the supplier's own; UTC until it has reported one.
+  const timeZone = useTimeZone() ?? "UTC"
   const router = useRouter()
   const [run] = useActionMutation()
   const formId = useId()
@@ -154,9 +158,9 @@ export function PackingForm({
     noOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, initial?.origin ?? {})
   // The saved address the cartons leave from, or "" for one typed in.
   const [pickup, setPickup] = useState(startAddress?.id ?? "")
-  const form = useForm<Values, unknown, z.output<typeof packingEditorSchema>>({
+  const form = useForm<Values, unknown, z.output<EditorSchema>>({
     mode: "onChange",
-    resolver: zodResolver(packingEditorSchema, { error: formErrorMap }),
+    resolver: zodResolver(packingEditorSchema(timeZone), { error: formErrorMap }),
     defaultValues: {
       readyDate: initial?.readyDate ?? "",
       origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
@@ -713,6 +717,8 @@ export function PackingDetailsFields({
 }) {
   const t = useTranslations("orders.packing")
   const form = useFormContext<Values>()
+  // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
+  const today = zonedDay(useNow(), useTimeZone() ?? "UTC")
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
@@ -819,7 +825,7 @@ export function PackingDetailsFields({
       packing={
         !readOnly && (
           <div className="max-w-72">
-            <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+            <FormInput name="readyDate" required label={t("readyDate")} type="date" min={today} />
           </div>
         )
       }

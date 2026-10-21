@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "The purchase order changed. Review it and save the packing draft before submitting.",
     "shipmentLocked": "Resolve the existing shipment before editing its packing list",
+    "readyDatePassed": "Choose a ready date of today or later",
     "missingInvoice": "Upload the official commercial invoice for this shipment",
     "missingPacking": "Submit the packing list first",
     "unmatchedCartons": "Amazon carton labels don’t match the cartons",

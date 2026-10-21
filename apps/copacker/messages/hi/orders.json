@@ -407,6 +407,7 @@
     "readyForPickup": "पिकअप के लिए तैयार",
     "shipFrom": "पिकअप का पता",
     "readyDate": "पिकअप के लिए तैयार",
+    "readyDatePassed": "आज या उसके बाद की तारीख चुनें",
     "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
     "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ",
     "finishPacking": "पैकिंग पूरी करें",

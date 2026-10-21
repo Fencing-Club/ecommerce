@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "L’ordine di acquisto è cambiato. Controllalo e salva la bozza di imballaggio prima di inviare.",
     "shipmentLocked": "Risolvi la spedizione esistente prima di modificare la packing list",
+    "readyDatePassed": "Pronto per il ritiro: scegli oggi o una data successiva",
     "missingInvoice": "Carica la fattura commerciale ufficiale per questa spedizione",
     "missingPacking": "Invia prima la packing list",
     "unmatchedCartons": "Le etichette Amazon dei cartoni non corrispondono ai cartoni",

@@ -407,6 +407,7 @@
     "readyForPickup": "Listo para recolección",
     "shipFrom": "Dirección de recolección",
     "readyDate": "Listo para recolección",
+    "readyDatePassed": "Elige hoy o una fecha posterior",
     "addCartonProduct": "Agregar producto a la caja",
     "removeCartonProduct": "Quitar producto {number} de la caja",
     "finishPacking": "Terminar empaque",

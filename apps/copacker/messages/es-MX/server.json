@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "La orden de compra cambió. Revísala y guarda el borrador de empaque antes de enviarlo.",
     "shipmentLocked": "Resuelve el envío existente antes de editar su lista de empaque",
+    "readyDatePassed": "Listo para recolección: elige hoy o una fecha posterior",
     "missingInvoice": "Sube la factura comercial oficial de este envío",
     "missingPacking": "Primero envía la lista de empaque",
     "unmatchedCartons": "Las etiquetas de caja de Amazon no coinciden con las cajas",
