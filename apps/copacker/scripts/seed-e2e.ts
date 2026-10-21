@@ -124,7 +124,7 @@ const item = (variant: 1 | 2, pieces: number): OrderInput["items"][number] => ({
   instructions: "",
   prepCategory: "POLYBAGGING",
   suffocationWarning: false,
-  amazonNetwork: "fba"
+  receiver: "warehouse"
 })
 const drafts = [
   { reference: "E2E-DRAFT", supplierId: demoSupplier!.id },
@@ -138,7 +138,6 @@ for (const draft of drafts) {
   const data: OrderInput = {
     supplierId: draft.supplierId,
     reference: draft.reference,
-    destination: "warehouse",
     deliveryId: buyer.addressId,
     ...(draft.via && { via: { forwarderId: joinedForwarder!.id, addressId: forwarder.addressId } }),
     currency: "USD",

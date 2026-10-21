@@ -228,7 +228,6 @@ const readyDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
 const orderData = orderInputSchema.parse({
   supplierId: supplierLinkId,
   reference: "PO-TEST",
-  destination: "amazon",
   currency: "USD",
   dueDate: "2026-10-20",
   items: [
@@ -245,10 +244,13 @@ const orderData = orderInputSchema.parse({
       pieces: 160,
       piecesPerSet: 2,
       unitPrice: 210,
-      amazonNetwork: "awd_us"
+      receiver: "awd_us"
     }
   ]
 })
+// A PO's lines sent to the buyer's own location instead.
+const warehouseLines = <T extends { receiver: string }>(items: T[]) =>
+  items.map((item) => ({ ...item, receiver: "warehouse" as const }))
 function actor(kind: Session["org"]["kind"], id: string): Session {
   return {
     user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true, name: "Tess Tester" },
@@ -655,7 +657,10 @@ describe("reviewed import save", () => {
     const via = { forwarderId: forwarder!.id, addressId: contact!.id }
     const saved = await saveImportedOrder(buyer, imported.id, { ...imported.input, via })
     const [order] = await database.select().from(tables.orders).where(eq(tables.orders.id, saved.id))
-    expect(order).toMatchObject({ status: "draft", data: { destination: "amazon", via } })
+    expect(order).toMatchObject({
+      status: "draft",
+      data: { items: [expect.objectContaining({ receiver: "fba" })], via }
+    })
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
     expect(
       (await database.select().from(tables.shipments)).filter((shipment) => shipment.orderId === saved.id)
@@ -1544,7 +1549,7 @@ describe("Postgres workflow and authorization", () => {
       shopifyDomain: "test.myshopify.com",
       amazonSellerId: "A123456789",
       status: "submitted",
-      data: { ...orderData, supplierId: otherSupplier, destination: "warehouse" }
+      data: { ...orderData, supplierId: otherSupplier, items: warehouseLines(orderData.items) }
     })
     const matching = await getCoverage(
       new Request(`http://localhost/api/orders/summary?supplierId=${supplierLinkId}&destination=amazon`)
@@ -1863,9 +1868,8 @@ describe("Postgres workflow and authorization", () => {
     // Two SKUs in one oversized carton and no FNSKU: fine for the buyer's own location, not for AWD.
     const toWarehouse = {
       ...orderData,
-      destination: "warehouse" as const,
       deliveryId,
-      items: orderData.items.map((item) => ({ ...item, fnsku: "", asin: "" }))
+      items: warehouseLines(orderData.items).map((item) => ({ ...item, fnsku: "", asin: "" }))
     }
     await database.update(tables.orders).set({ data: toWarehouse }).where(eq(tables.orders.id, orderId))
     await database.update(tables.shipments).set({ snapshot: toWarehouse }).where(eq(tables.shipments.orderId, orderId))
@@ -3682,9 +3686,8 @@ describe("PO to the buyer's own location", () => {
   // the line asks for suffocation warning labels.
   const data = orderInputSchema.parse({
     ...orderData,
-    destination: "warehouse",
     deliveryId,
-    items: orderData.items.map((item) => ({ ...item, asin: "", fnsku: "", suffocationWarning: true }))
+    items: warehouseLines(orderData.items).map((item) => ({ ...item, asin: "", fnsku: "", suffocationWarning: true }))
   })
   const stored = new Map<string, Uint8Array>()
   const packet = (id: string) =>
@@ -3846,9 +3849,9 @@ const gloveId = randomUUID()
 const fbaOrder = orderInputSchema.parse({
   ...orderData,
   items: [
-    { ...orderData.items[0], amazonNetwork: "fba" },
+    { ...orderData.items[0], receiver: "fba" },
     {
-      amazonNetwork: "fba",
+      receiver: "fba",
       id: gloveId,
       variantId: "gid://shopify/ProductVariant/2",
       inventoryItemId: "gid://shopify/InventoryItem/2",
@@ -4330,7 +4333,7 @@ describe("PO to a released FBA shipment", () => {
     // Cords go to AWD US in bulk; gloves go to FBA.
     const data = {
       ...fbaOrder,
-      items: [{ ...fbaOrder.items[0]!, amazonNetwork: "awd_us" as const }, fbaOrder.items[1]!]
+      items: [{ ...fbaOrder.items[0]!, receiver: "awd_us" as const }, fbaOrder.items[1]!]
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
@@ -4415,7 +4418,7 @@ describe("PO to a released FBA shipment", () => {
   it("keeps one PO invoice when shipments split or are corrected", async () => {
     const data = {
       ...fbaOrder,
-      items: [{ ...fbaOrder.items[0]!, amazonNetwork: "awd_us" as const }, fbaOrder.items[1]!]
+      items: [{ ...fbaOrder.items[0]!, receiver: "awd_us" as const }, fbaOrder.items[1]!]
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
@@ -4563,7 +4566,7 @@ describe("fluid packing handoff", () => {
     }
   })
   it("starts independent AWD and FBA drafts and prevents packing a product into the wrong network", async () => {
-    const fbaItem = { ...orderData.items[0]!, id: randomUUID(), buyerSku: "foil-fba", amazonNetwork: "fba" as const }
+    const fbaItem = { ...orderData.items[0]!, id: randomUUID(), buyerSku: "foil-fba", receiver: "fba" as const }
     const data = { ...orderData, items: [...orderData.items, fbaItem] }
     await database.update(tables.orders).set({ status: "draft", data })
     await submitOrder(buyer, orderId, 1)
@@ -6192,8 +6195,17 @@ describe("draft PO edits", () => {
       .values({ orgId: buyerId, kind: "delivery", name: "Woodinville", address: { ...address, countryCode: "US" } })
       .returning()
     const via = { forwarderId: forwarder.id, addressId: stop!.addressId }
-    const created = await createOrder(buyer, { ...orderData, destination: "warehouse", deliveryId: location!.id, via })
-    expect(created.data).toMatchObject({ destination: "warehouse", deliveryId: location!.id, via })
+    const created = await createOrder(buyer, {
+      ...orderData,
+      items: warehouseLines(orderData.items),
+      deliveryId: location!.id,
+      via
+    })
+    expect(created.data).toMatchObject({
+      items: [expect.objectContaining({ receiver: "warehouse" })],
+      deliveryId: location!.id,
+      via
+    })
     await generatePo(created.id)
     expect(vi.mocked(purchaseOrderPdf).mock.lastCall![0].shipTo).toEqual({
       name: "Yiwu Logistics, Yiwu warehouse",
@@ -6303,7 +6315,7 @@ describe("freight forwarders", () => {
     const [saved] = await forwarderAddresses(buyerId)
     const via = { forwarderId: forwarder.id, addressId: saved!.addressId }
     const [cord, glove] = fbaOrder.items
-    const awd = { ...cord!, amazonNetwork: "awd_us" as const }
+    const awd = { ...cord!, receiver: "awd_us" as const }
     // The ship-to the purchase order prints for these lines.
     async function poShipTo(items: typeof fbaOrder.items) {
       const data = { ...fbaOrder, via, items }

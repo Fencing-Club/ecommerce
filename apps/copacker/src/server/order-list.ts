@@ -1,5 +1,5 @@
 import type { OrderInput } from "@repo/copacker-shipments"
-import { money, orderTotal } from "@repo/copacker-shipments"
+import { money, orderTotal, orderDestination } from "@repo/copacker-shipments"
 import { orderNetworks } from "@repo/copacker-shipments/requirements"
 import { inArray } from "drizzle-orm"
 import type { LogisticsRow } from "@/components/logistics-list"
@@ -12,14 +12,16 @@ import { forwarderNames, orderProgress, pendingProposals } from "./logistics-row
 
 async function destinations(list: OrderInput[]) {
   const addressIds = [
-    ...new Set(list.flatMap((data) => (data.destination !== "amazon" && data.deliveryId ? [data.deliveryId] : [])))
+    ...new Set(
+      list.flatMap((data) => (orderDestination(data) !== "amazon" && data.deliveryId ? [data.deliveryId] : []))
+    )
   ]
   const text = await requirementTranslator()
   const addresses = addressIds.length
     ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
     : []
   return (data: OrderInput) =>
-    data.destination === "amazon"
+    orderDestination(data) === "amazon"
       ? text.amazon(orderNetworks(data))
       : (addresses.find((row) => row.id === data.deliveryId)?.name ?? "—")
 }

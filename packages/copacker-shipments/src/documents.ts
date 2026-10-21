@@ -1,5 +1,13 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import { money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput, type Packing } from "./index"
+import {
+  money,
+  orderCharges,
+  orderDestination,
+  orderTotal,
+  supplierChargeTotal,
+  type OrderInput,
+  type Packing
+} from "./index"
 import type { CartonLabel } from "./labels"
 import { markdownBlocks } from "./markdown"
 import {
@@ -525,7 +533,7 @@ async function orderPdf(input: {
         (charge) =>
           `${charge.description}: ${price(charge.amount)}${charge.basis === "flat" ? " flat" : ` per ${charge.basis}`} (${price(supplierChargeTotal(item, charge))})`
       ),
-      ...itemRequirements(item, order.destination, prep)
+      ...itemRequirements(item, prep)
         .filter((requirement) => requirement.code !== "instruction")
         .map(requirementText)
     ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
@@ -771,7 +779,7 @@ export async function checklistPdf(input: {
   edition: ShipmentEdition
 }) {
   const { order, packing } = input
-  const amazon = order.destination === "amazon"
+  const amazon = orderDestination(order) === "amazon"
   const kit = await documentKit(
     "Packing checklist",
     order.reference,
@@ -783,7 +791,7 @@ export async function checklistPdf(input: {
   const items = order.items.filter((item) => included.has(item.id))
   kit.facts([
     ["Purchase order", order.reference],
-    ["Destination", (!amazon && input.shipTo?.name) || destinationName({ destination: order.destination, items })],
+    ["Destination", (!amazon && input.shipTo?.name) || destinationName({ items })],
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", String(packing.cartons.length)]
   ])
@@ -792,7 +800,7 @@ export async function checklistPdf(input: {
     kit.paragraphs([input.shipmentId])
   }
   const prep = sharedPrep({ items })
-  const rules = destinationRequirements({ destination: order.destination, items })
+  const rules = destinationRequirements({ items })
   // Each block: its label in the rail, a heading for a product's own steps, and the steps to tick.
   const blocks: Array<{ rail: string; heading?: string; steps: string[]; instructions?: string }> = [
     {
@@ -826,7 +834,7 @@ export async function checklistPdf(input: {
           " product labels. One per " +
           (item.piecesPerSet > 1 ? "complete pack" : "unit") +
           ".",
-        ...itemRequirements(item, order.destination, prep)
+        ...itemRequirements(item, prep)
           .filter((requirement) => requirement.code !== "packFor" && requirement.code !== "instruction")
           .map(requirementText)
           .map((step) => (step.endsWith(".") ? step : step + "."))

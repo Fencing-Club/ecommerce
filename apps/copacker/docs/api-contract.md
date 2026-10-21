@@ -152,12 +152,15 @@ cartonInputSchema, addressSchema. Prices are integer minor currency units **per 
 dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID and product names are read-only to suppliers. They propose
 supplier SKU and unit-price changes in `packing.changes`.
 
-An order has one destination (`amazon` or `warehouse`) and one supplier. A freight forwarder is never a destination,
+An order has one supplier, and each line names its `receiver`: `fba` or `awd_us` for Amazon, or `warehouse` for the
+buyer's own location. A PO's lines share one group of receivers, Amazon or the buyer's location, which is the PO's
+destination (`orderDestination`); a PO to the buyer's location needs its `deliveryId`. A freight forwarder is never a destination,
 only a stop on the way: `via` is `{forwarderId, addressId}`, one of the addresses the buyer saved for the forwarder or,
 once it has joined, one of its own. Joining copies the saved addresses POs stop at into the forwarder's workspace and
-moves those POs, their revisions and their shipments to the copies. On a PO to Amazon each line has `amazonNetwork`,
-`fba` (default) or `awd_us`, defaulted from the product's `amazonNetwork` setting. A submission splits into one shipment
-per network; see [Amazon inbound shipments](amazon-inbound.md).
+moves those POs, their revisions and their shipments to the copies. A new line on a PO to Amazon starts at the
+product's `amazonNetwork` setting, `fba` by default. A submission splits into one shipment per Amazon network; see
+[Amazon inbound shipments](amazon-inbound.md). Receivers and their packing rules are in
+[`@repo/copacker-packing-rules`](../../../packages/copacker-packing-rules/docs/README.md#receivers).
 
 PO data may include `adjustments: [{description, amount}]`, signed integer minor-unit amounts included in totals and the
 PO PDF. A line's `skuLabel` overrides whether each unit gets its SKU label; left out, the product's label setting
@@ -424,7 +427,7 @@ POs only; drafts and closed POs are excluded. It never calls Shopify or Amazon o
 | Parameter | Meaning |
 | --- | --- |
 | `supplierId` | A buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
-| `destination` | `amazon` or `warehouse`. |
+| `destination` | `amazon` or `warehouse`: the group the PO's line receivers are in. |
 | `limit` | Orders per page, 1â€“50, default 20. |
 | `cursor` | The previous page's `nextCursor`; omit on the first page. |
 

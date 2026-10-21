@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money, orderDestination } from "@repo/copacker-shipments"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"
@@ -98,7 +98,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     shipment.transport?.collection === "pickup" &&
       t(shipment.transport.service === "agl" ? "legs.amazonPickup" : "legs.carrierPickup", { place: handoff })
   ].filter((leg) => typeof leg === "string")
-  const carrierLabels = shipmentLabelRequirements(snapshot.destination, shipment.transport).carrierLabels
+  const carrierLabels = shipmentLabelRequirements(orderDestination(snapshot), shipment.transport).carrierLabels
   // What still holds the labels back from the supplier, besides what the page asks for elsewhere.
   const heldBack = step.issues.filter(
     (issue) => !["missing_shipping_label", "missing_tracking_number", "missing_transport"].includes(issue.code)

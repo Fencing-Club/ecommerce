@@ -2,30 +2,21 @@ import {
   type CartonField,
   type CartonPolicy,
   type CartonRuleIssue,
-  cartonPolicies,
   checkCarton,
   type PolicyCarton
 } from "./carton-policies"
-import {
-  checkPallet,
-  type PalletPolicy,
-  type PalletRuleIssue,
-  palletPolicies,
-  palletRuleCodes,
-  type PolicyPallet
-} from "./pallet-policies"
+import { checkPallet, type PalletRuleIssue, palletRuleCodes, type PolicyPallet } from "./pallet-policies"
+import { type Receiver, type ReceiverId, receiverIds, receivers } from "./receivers"
 
 // The packing rules: what cartons and pallets may be, by where they go. Each receiver's own rules are data, in its
 // carton and pallet policies (carton-policies.ts, pallet-policies.ts); validatePacking checks them with the rules that
 // hold wherever cartons go. The package reads purchase orders and packings by the fields below, so the app, the server,
 // documents and any CLI check packing the same way.
 
-// Amazon's networks, the receivers with policies of their own.
-export const amazonNetworks = ["fba", "awd_us"] as const
-export type AmazonNetwork = (typeof amazonNetworks)[number]
+export * from "./receivers"
 
 // A purchase order line as the rules read it: its product, the pieces it orders, how many make a sellable unit, its
-// Amazon identifiers and the network it goes to.
+// Amazon identifiers and the receiver it goes to.
 export type PackingItem = {
   id: string
   buyerSku: string
@@ -33,11 +24,11 @@ export type PackingItem = {
   piecesPerSet: number
   asin?: string
   fnsku?: string
-  amazonNetwork: AmazonNetwork
+  receiver: ReceiverId
 }
 
-// A purchase order as the rules read it: where it goes, and its lines.
-export type PackingOrder = { destination: "amazon" | "warehouse"; items: readonly PackingItem[] }
+// A purchase order as the rules read it: its lines, each with the receiver it goes to.
+export type PackingOrder = { items: readonly PackingItem[] }
 
 // A carton as the rules read it: its number, size in cm, weight in kg, and each product's pieces.
 export type PackingCarton = {
@@ -200,8 +191,8 @@ export function validatePacking(order: PackingOrder, packing: PackingInput, rese
       add({ code: "duplicateCarton" })
     }
     cartonIds.add(carton.cartonId.toLowerCase())
-    const networks = cartonNetworks(order, carton)
-    if (order.destination === "amazon" && networks.length > 1) {
+    const networks = cartonReceivers(order, carton)
+    if (networks.length > 1) {
       add({ code: "mixedNetworks" })
     }
     if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
@@ -221,7 +212,7 @@ export function validatePacking(order: PackingOrder, packing: PackingInput, rese
       }
       contents.push({ item, pieces: content.pieces, units })
     }
-    const policy = cartonPolicy(order, networks)
+    const policy = strictest(networks, (receiver) => receiver.cartonPolicy)
     if (policy) {
       const earlier = checked.get(policy) ?? []
       const current = { ...carton, contents }
@@ -251,19 +242,21 @@ export function validatePacking(order: PackingOrder, packing: PackingInput, rese
   return { issues, totals, valid: issues.length === 0 }
 }
 
-// The carton rules a carton follows, by where it goes. A carton to Amazon follows its network's, or AWD's, the stricter,
-// when it wrongly mixes networks; the buyer's own locations take any carton.
-function cartonPolicy(order: Pick<PackingOrder, "destination">, networks: AmazonNetwork[]) {
-  if (order.destination !== "amazon") {
-    return null
-  }
-  return cartonPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
+// The policy of a carton's or pallet's receivers: its receiver's, or, when it wrongly mixes receivers, the strictest of
+// theirs. A receiver without one, such as the buyer's own locations, takes any carton or pallet.
+function strictest<P>(ids: readonly ReceiverId[], policyOf: (receiver: Receiver) => P | undefined) {
+  const registry: Record<ReceiverId, Receiver> = receivers
+  const policies = ids.flatMap((id) => {
+    const policy = policyOf(registry[id])
+    return policy ? [policy] : []
+  })
+  return policies.at(-1) ?? null
 }
 
-// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). A pallet to Amazon goes to
-// one network, so it holds one network's cartons. The buyer's own locations and forwarders take any pallet.
+// The rules each pallet breaks of the policy of where its cartons go (see pallet-policies.ts). A pallet goes to one
+// receiver, so it holds one receiver's cartons. The buyer's own locations and forwarders take any pallet.
 export function checkPallets(
-  order: Pick<PackingOrder, "destination" | "items">,
+  order: Pick<PackingOrder, "items">,
   packing: {
     cartons: readonly Pick<PackingCarton, "cartonId" | "items">[]
     pallets?: readonly PackingPallet[]
@@ -273,12 +266,12 @@ export function checkPallets(
     const cartons = packing.cartons.filter((carton) =>
       pallet.cartonIds.some((id) => id.toLowerCase() === carton.cartonId.toLowerCase())
     )
-    const networks = cartons.flatMap((carton) => cartonNetworks(order, carton))
+    const networks = receiverIds.filter((id) => cartons.some((carton) => cartonReceivers(order, carton).includes(id)))
     const mixed: ValidationIssue[] =
-      order.destination === "amazon" && new Set(networks).size > 1
+      networks.length > 1
         ? [{ palletId: pallet.palletId, code: "palletMixedNetworks", values: { pallet: pallet.palletId } }]
         : []
-    const policy = palletPolicy(order, networks)
+    const policy = strictest(networks, (receiver) => receiver.palletPolicy)
     return [
       ...mixed,
       ...(policy
@@ -293,21 +286,13 @@ export function checkPallets(
   })
 }
 
-// The pallet rules a pallet follows, by where its cartons go: AWD's when any go there, as with cartons, otherwise FBA's.
-function palletPolicy(order: Pick<PackingOrder, "destination">, networks: AmazonNetwork[]): PalletPolicy | null {
-  if (order.destination !== "amazon" || !networks.length) {
-    return null
-  }
-  return palletPolicies[networks.includes("awd_us") ? "awd_us" : "fba"]
-}
-
-// The Amazon networks a carton's products go to, in network order. A carton to Amazon should have exactly one.
-export function cartonNetworks(order: Pick<PackingOrder, "items">, carton: Pick<PackingCarton, "items">) {
-  const networks = new Set(
+// The receivers a carton's products go to, in registry order. A carton should have exactly one.
+export function cartonReceivers(order: Pick<PackingOrder, "items">, carton: Pick<PackingCarton, "items">) {
+  const ids = new Set(
     carton.items.flatMap((content) => {
       const item = order.items.find((row) => row.id === content.itemId)
-      return item ? [item.amazonNetwork] : []
+      return item ? [item.receiver] : []
     })
   )
-  return amazonNetworks.filter((network) => networks.has(network))
+  return receiverIds.filter((id) => ids.has(id))
 }

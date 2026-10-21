@@ -1,5 +1,5 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
-import { palletLabels, type OrderInput, type Packing, type Pallet } from "@repo/copacker-shipments"
+import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import { packingTasks, type ProductTask } from "@repo/copacker-shipments/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/copacker-shipments/transport"
@@ -43,11 +43,11 @@ export function shippingDocumentSnapshot(input: {
     throw new Error("Prepare the forwarder's handoff separately before exporting")
   }
   const items = packedItems(order, packing)
-  const networks = new Set(items.map((item) => item.amazonNetwork))
-  if (order.destination === "amazon" && networks.size !== 1) {
+  const networks = new Set(items.map((item) => item.receiver))
+  if (orderDestination(order) === "amazon" && networks.size !== 1) {
     throw new Error("Export one Amazon network at a time")
   }
-  const requirements = shipmentLabelRequirements(order.destination, transport)
+  const requirements = shipmentLabelRequirements(orderDestination(order), transport)
   for (const [name, assignments, required] of [
     ["Amazon", labels, requirements.amazonCartonLabels],
     ["Carrier", input.carrierLabels ?? [], requirements.carrierLabels]
@@ -148,7 +148,7 @@ export function packingListSnapshot(input: {
     transport: {
       service: transport?.service ?? "supplier",
       collection: transport?.collection ?? "delivery",
-      carrierLabels: shipmentLabelRequirements(order.destination, transport).carrierLabels,
+      carrierLabels: shipmentLabelRequirements(orderDestination(order), transport).carrierLabels,
       palletized: Boolean(packing.palletized)
     },
     ...(packing.palletized && { pallets: (packing.pallets ?? []).map(documentPallet) }),
@@ -194,10 +194,10 @@ function documentPallet(pallet: Pallet) {
 }
 
 function packedNetwork(order: OrderInput, items: Item[]): ShippingDocumentData["network"] {
-  if (order.destination !== "amazon") {
+  if (orderDestination(order) !== "amazon") {
     return "warehouse"
   }
-  return items[0]?.amazonNetwork === "awd_us" ? "awd" : "fba"
+  return items[0]?.receiver === "awd_us" ? "awd" : "fba"
 }
 
 function originParty(supplier: string, origin: Packing["origin"]): DocumentParty {

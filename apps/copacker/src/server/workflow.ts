@@ -1,3 +1,4 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"
@@ -39,7 +40,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
         reference: order.data.reference,
         revision: order.revision,
         status: order.status,
-        destination: order.data.destination
+        destination: orderDestination(order.data)
       },
       supplier: { name: supplier.name },
       items: orderCoverage(order.data, rows),

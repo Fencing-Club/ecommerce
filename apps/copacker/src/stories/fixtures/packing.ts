@@ -38,7 +38,7 @@ const towel = (variant: string, sku: string, pieces: number) =>
     unitPrice: 640,
     asin: `B0WB${sku}00`,
     fnsku: `X0WB${sku}00`,
-    amazonNetwork: "awd_us",
+    receiver: "awd_us",
     packingRequirements: { preparation: "polybag", labels: ["fnsku", "suffocation"], countryCode: "", instructions: "" }
   })
 
@@ -60,7 +60,7 @@ export const towelOrder: OrderInput = orderData({
       unitPrice: 310,
       asin: "B0CT310000",
       fnsku: "X0CT310000",
-      amazonNetwork: "awd_us",
+      receiver: "awd_us",
       suffocationWarning: false,
       packingRequirements: {
         preparation: "none",
@@ -85,7 +85,7 @@ const bag = (variant: string, sku: string, pieces: number, amazonNetwork: Amazon
     unitPrice: 180,
     asin: `B0DB${sku}00`,
     fnsku: `X0DB${sku}00`,
-    amazonNetwork,
+    receiver: amazonNetwork,
     packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
   })
 const cottonTeaTowel = (
@@ -104,7 +104,7 @@ const cottonTeaTowel = (
     unitPrice: 155,
     asin: `B0CT${sku}01`,
     fnsku: `X0CT${sku}01`,
-    amazonNetwork,
+    receiver: amazonNetwork,
     packingRequirements: { ...fbaLabels, labels: [...fbaLabels.labels] }
   })
 

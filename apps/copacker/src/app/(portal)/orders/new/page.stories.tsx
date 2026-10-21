@@ -122,7 +122,12 @@ export const FromRestock = meta.story({
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.create",
-      data: expect.objectContaining({ reference: "PO-1047", supplierId, destination: "warehouse", deliveryId })
+      data: expect.objectContaining({
+        reference: "PO-1047",
+        supplierId,
+        deliveryId,
+        items: expect.arrayContaining([expect.objectContaining({ receiver: "warehouse" })])
+      })
     })
   }
 })

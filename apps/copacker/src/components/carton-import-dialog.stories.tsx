@@ -3,6 +3,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { cartonTotals, groupCartons, type CartonGroup } from "@/lib/carton-groups"
 import { cartonColumns } from "@/lib/carton-import"
+import { sendTo } from "@/stories/fixtures/orders"
 import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
@@ -162,7 +163,7 @@ export const MultipleCartons = meta.story({
 const [tote, apron] = order.items
 export const PackingGroups = meta.story({
   args: {
-    order: { ...order, destination: "amazon" },
+    order: sendTo(order, "amazon"),
     packingGroups: { [tote!.buyerSku]: "pg-totes", [apron!.buyerSku]: "pg-aprons" }
   },
   play: async () => {

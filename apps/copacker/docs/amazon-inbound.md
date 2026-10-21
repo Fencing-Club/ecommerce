@@ -1,6 +1,6 @@
 # Amazon inbound shipments
 
-A PO's destination is `amazon`, and each line names its Amazon network (`amazonNetwork`): FBA (the default) or AWD US.
+A PO to Amazon sends each line to an Amazon network, its `receiver`: `fba` (the default) or `awd_us`.
 A line starts with its product's Amazon warehouse setting (Products, Edit) and can be changed on the PO. The network
 decides how the supplier packs the line's cartons, so the PO and checklist give each network's carton rules and say on
 each line which network it's packed for. AWD China is left out until it's clear how it's booked.

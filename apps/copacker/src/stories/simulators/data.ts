@@ -112,7 +112,7 @@ export function simulatorOrder(receiver: Receiver): OrderInput {
     reference: "PO39",
     destination: receiver === "warehouse" ? "warehouse" : "amazon",
     deliveryId: receiver === "warehouse" ? towelOrder.deliveryId : undefined,
-    items: (Object.keys(products) as ProductKey[]).map((key) => ({ ...products[key], amazonNetwork: network(key) }))
+    items: (Object.keys(products) as ProductKey[]).map((key) => ({ ...products[key], receiver: network(key) }))
   })
 }
 

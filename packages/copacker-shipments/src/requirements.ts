@@ -3,6 +3,7 @@ import {
   type AmazonNetwork,
   amazonNetworkNames,
   amazonNetworks,
+  isAmazonNetwork,
   type OrderInput,
   type OrderItem,
   type PrepCategory
@@ -109,18 +110,15 @@ export const isCartonRule = (requirement: Requirement) =>
   requirement.code === "cartons" || requirement.code === "separateCartons"
 
 // The Amazon networks the given lines go to, in network order, or none for a PO that doesn't go to Amazon.
-export function orderNetworks(order: Pick<OrderInput, "destination" | "items">): AmazonNetwork[] {
-  if (order.destination !== "amazon") {
-    return []
-  }
-  const used = new Set(order.items.map((item) => item.amazonNetwork))
+export function orderNetworks(order: Pick<OrderInput, "items">): AmazonNetwork[] {
+  const used = new Set(order.items.map((item) => item.receiver))
   return amazonNetworks.filter((network) => used.has(network))
 }
 
 // Rules the cartons and units follow because of where they go: for a PO to Amazon, each network's carton rules and
 // Amazon's unit labeling. Amazon checks them on arrival and charges for, or refuses, what doesn't comply; the buyer's own
 // locations have none of their own.
-export function destinationRequirements(order: Pick<OrderInput, "destination" | "items">): Requirement[] {
+export function destinationRequirements(order: Pick<OrderInput, "items">): Requirement[] {
   const networks = orderNetworks(order)
   if (!networks.length) {
     return []
@@ -135,7 +133,7 @@ export function destinationRequirements(order: Pick<OrderInput, "destination" | 
 }
 
 // Where a PO or shipment goes, as documents name it, such as "Amazon FBA and AWD US".
-export function destinationName(order: Pick<OrderInput, "destination" | "items">) {
+export function destinationName(order: Pick<OrderInput, "items">) {
   const networks = orderNetworks(order)
   if (networks.length) {
     return `Amazon ${networkList(networks)}`
@@ -154,15 +152,12 @@ export function sharedPrep(order: Pick<OrderInput, "items">) {
 
 // What the supplier does for one line: which Amazon network it's packed for, its preparation (unless the whole PO
 // shares it), multi-pack assembly, Amazon label and the product's own instructions.
-export function itemRequirements(
-  item: OrderItem,
-  destination: OrderInput["destination"],
-  shared: OrderItem["prepCategory"] | null = null
-): Requirement[] {
-  const amazon = destination === "amazon"
+export function itemRequirements(item: OrderItem, shared: OrderItem["prepCategory"] | null = null): Requirement[] {
+  const network = isAmazonNetwork(item.receiver) ? item.receiver : null
+  const packFor = network ? [{ code: "packFor" as const, network }] : []
   if (item.packingRequirements) {
     return [
-      ...(amazon ? [{ code: "packFor" as const, network: item.amazonNetwork }] : []),
+      ...packFor,
       ...(item.piecesPerSet > 1 ? [{ code: "bundle" as const, units: item.piecesPerSet }] : []),
       ...packingTasks(item.packingRequirements).map((task) => ({
         code: "productTask" as const,
@@ -175,10 +170,10 @@ export function itemRequirements(
     ]
   }
   return [
-    ...(amazon ? [{ code: "packFor" as const, network: item.amazonNetwork }] : []),
+    ...packFor,
     ...(item.prepCategory === shared ? [] : [{ code: "prep" as const, prep: item.prepCategory }]),
     ...(item.piecesPerSet > 1 ? [{ code: "bundle" as const, units: item.piecesPerSet }] : []),
-    ...(amazon && item.fnsku ? [{ code: "fnskuLabel" as const, fnsku: item.fnsku }] : []),
+    ...(network && item.fnsku ? [{ code: "fnskuLabel" as const, fnsku: item.fnsku }] : []),
     ...(item.suffocationWarning ? [{ code: "suffocationLabel" as const }] : []),
     ...(item.instructions.trim() ? [{ code: "instruction" as const, text: item.instructions }] : [])
   ]

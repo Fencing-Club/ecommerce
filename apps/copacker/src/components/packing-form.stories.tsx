@@ -251,8 +251,7 @@ const mixedDraft: PackingDraft = {
 }
 const fbaOrder: OrderInput = {
   ...order,
-  destination: "amazon",
-  items: order.items.map((item) => ({ ...item, amazonNetwork: "fba" }))
+  items: order.items.map((item) => ({ ...item, receiver: "fba" }))
 }
 
 // Reopening and saving a mixed carton must preserve every size, including when its carton is copied or removed.
@@ -345,7 +344,7 @@ export const FbaPackingGroupsUncheckedMobile = meta.story({
 
 export const AwdCartons = meta.story({
   args: {
-    order: { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" })) },
+    order: { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, receiver: "awd_us" })) },
     initial: draft,
     addresses: [savedAddress]
   },
@@ -480,7 +479,7 @@ const awdOrder: OrderInput = {
   ...fbaOrder,
   items: fbaOrder.items.map((item) => ({
     ...item,
-    amazonNetwork: "awd_us",
+    receiver: "awd_us",
     piecesPerSet: 1,
     fnsku: "X001EXAMPLE",
     asin: "B000000001"

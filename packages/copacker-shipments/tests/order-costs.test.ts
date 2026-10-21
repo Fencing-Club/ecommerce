@@ -6,12 +6,11 @@ const order = () =>
   orderInputSchema.parse({
     supplierId: randomUUID(),
     reference: "PO-PACKING",
-    destination: "amazon",
     currency: "USD",
     items: [
-      { pieces: 800, unitPrice: 408, amazonNetwork: "awd_us" },
-      { pieces: 1120, unitPrice: 423, amazonNetwork: "awd_us" },
-      { pieces: 1200, unitPrice: 113, amazonNetwork: "fba" }
+      { pieces: 800, unitPrice: 408, receiver: "awd_us" },
+      { pieces: 1120, unitPrice: 423, receiver: "awd_us" },
+      { pieces: 1200, unitPrice: 113, receiver: "fba" }
     ].map((item, index) => ({
       ...item,
       id: randomUUID(),
@@ -46,7 +45,7 @@ describe("product supplier costs", () => {
     const first = data.items[0]!
     expect(itemTotal({ ...first, pieces: 802 }) - itemTotal(first)).toBe(842)
     const moved = { ...first }
-    moved.amazonNetwork = "fba"
+    moved.receiver = "fba"
     expect(itemTotal(moved)).toBe(itemTotal(first))
     expect(orderTotal({ ...data, items: data.items.slice(1) })).toBe(623920)
   })

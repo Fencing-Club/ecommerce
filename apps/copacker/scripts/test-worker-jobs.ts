@@ -214,7 +214,6 @@ try {
   const order = orderInputSchema.parse({
     supplierId,
     reference: "PO-WORKFLOW",
-    destination: "amazon",
     currency: "USD",
     items: [
       {
@@ -230,7 +229,7 @@ try {
         pieces: 10,
         piecesPerSet: 1,
         unitPrice: 100,
-        amazonNetwork: "awd_us"
+        receiver: "awd_us"
       }
     ]
   })

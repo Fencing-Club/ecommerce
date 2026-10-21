@@ -72,14 +72,14 @@ describe("pallet policies", () => {
 })
 
 describe("checkPallets", () => {
-  const item = (id: string, amazonNetwork: PackingItem["amazonNetwork"]): PackingItem => ({
+  const item = (id: string, receiver: PackingItem["receiver"]): PackingItem => ({
     id,
     buyerSku: id,
     pieces: 100,
     piecesPerSet: 1,
-    amazonNetwork
+    receiver
   })
-  const order: PackingOrder = { destination: "amazon", items: [item("bag", "fba"), item("towel", "awd_us")] }
+  const order: PackingOrder = { items: [item("bag", "fba"), item("towel", "awd_us")] }
   const cartons = [
     { cartonId: "A1", items: [{ itemId: "bag", pieces: 10 }] },
     { cartonId: "B1", items: [{ itemId: "towel", pieces: 10 }] }
@@ -95,7 +95,8 @@ describe("checkPallets", () => {
   })
 
   it("leaves pallets to the buyer's own warehouse, and pallets with no cartons yet, unchecked", () => {
-    expect(checkPallets({ ...order, destination: "warehouse" }, { cartons, pallets: [tall] })).toEqual([])
+    const warehouse = { items: [item("bag", "warehouse"), item("towel", "warehouse")] }
+    expect(checkPallets(warehouse, { cartons, pallets: [tall] })).toEqual([])
     expect(checkPallets(order, { cartons, pallets: [{ ...tall, cartonIds: [] }] })).toEqual([])
   })
 })

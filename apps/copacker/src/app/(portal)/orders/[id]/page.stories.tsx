@@ -233,7 +233,7 @@ async function OrderPage(args: Args) {
           instructionsByItem: Object.fromEntries(
             order.data.items.map((item) => [
               item.id,
-              itemRequirements(item, order.data.destination, prep)
+              itemRequirements(item, prep)
                 .filter((requirement) => requirement.code !== "packFor")
                 .map(text.requirement)
             ])
@@ -478,11 +478,10 @@ export const AmazonShipmentGroups = meta.story({
       status: "draft",
       data: {
         ...orderData,
-        destination: "amazon",
         deliveryId: undefined,
         items: orderData.items.map((item, index) => ({
           ...item,
-          amazonNetwork: index === 0 ? "awd_us" : "fba",
+          receiver: index === 0 ? "awd_us" : "fba",
           piecesPerSet: index === 0 ? 2 : item.piecesPerSet
         }))
       }

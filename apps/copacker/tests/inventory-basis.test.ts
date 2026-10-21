@@ -248,7 +248,6 @@ it("supports immutable PO revision snapshots without treating ordered quantities
   const data = orderInputSchema.parse({
     supplierId,
     reference: "PO1",
-    destination: "amazon",
     currency: "USD",
     items: [
       {
@@ -263,6 +262,7 @@ it("supports immutable PO revision snapshots without treating ordered quantities
         pieces: 20,
         piecesPerSet: 2,
         unitPrice: 123,
+        receiver: "fba",
         supplierCharges: [{ description: "Prep", amount: 50, basis: "piece" }]
       }
     ],
@@ -374,7 +374,6 @@ it("isolates draft and foreign purchase order sources", async () => {
   const data = orderInputSchema.parse({
     supplierId,
     reference: "draft",
-    destination: "amazon",
     currency: "USD",
     items: [
       {
@@ -388,7 +387,8 @@ it("isolates draft and foreign purchase order sources", async () => {
         fnsku: "",
         pieces: 10,
         piecesPerSet: 1,
-        unitPrice: 100
+        unitPrice: 100,
+        receiver: "fba"
       }
     ]
   })

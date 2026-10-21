@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/copacker-shipments"
-import { orderInputSchema, orderTotal } from "@repo/copacker-shipments"
+import { orderDestination, orderInputSchema, orderTotal, receiverFor } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -335,7 +335,9 @@ export async function approveProposal(s: Session, proposalId: string) {
       piecesPerSet: 1,
       unitPrice: line.unitPrice,
       asin: "",
-      fnsku: ""
+      fnsku: "",
+      // An added product goes where the PO goes.
+      receiver: receiverFor(orderDestination(order.data))
     }
   })
   const next = applied(order.data, proposal.data)

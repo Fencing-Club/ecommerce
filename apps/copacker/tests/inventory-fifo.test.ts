@@ -367,7 +367,6 @@ it("snapshots existing PO landed bills, verifies their values and rejects duplic
   const data = orderInputSchema.parse({
     supplierId,
     reference: "PO1",
-    destination: "amazon",
     currency: "USD",
     items: [
       {
@@ -381,7 +380,8 @@ it("snapshots existing PO landed bills, verifies their values and rejects duplic
         fnsku: "",
         pieces: 10,
         piecesPerSet: 1,
-        unitPrice: 100
+        unitPrice: 100,
+        receiver: "fba"
       }
     ]
   })

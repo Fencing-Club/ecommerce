@@ -1106,10 +1106,9 @@ export function PurchaseOrderFlow({
           order={{
             ...order,
             reference: "PO38",
-            destination: "amazon",
             items: packing.items.map((item) => ({
               ...item,
-              amazonNetwork: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
+              receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
             }))
           }}
           availablePieces={Object.fromEntries(packing.items.map((item) => [item.id, item.pieces]))}

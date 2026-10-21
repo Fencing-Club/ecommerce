@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { orderDestination } from "@repo/copacker-shipments"
 import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { and, eq } from "drizzle-orm"
@@ -52,7 +53,7 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
   }
   if (
     !shipment.packing ||
-    !shipmentLabelRequirements((shipment.snapshot ?? order.data).destination, shipment.transport).carrierLabels
+    !shipmentLabelRequirements(orderDestination(shipment.snapshot ?? order.data), shipment.transport).carrierLabels
   ) {
     throw new LocalizedError("shipmentNotWaitingForLabels")
   }
