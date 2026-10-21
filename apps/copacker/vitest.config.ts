@@ -36,7 +36,9 @@ export default defineConfig({
       // starves the unit tests' databases and their setup times out.
       {
         extends: true,
-        plugins: [storybookTest({ configDir: `${dirname}.storybook` })],
+        // Stories tagged "documents" render real PDFs to look at in Storybook; rendering them is slow and tests the PDF
+        // library, so test runs leave them out.
+        plugins: [storybookTest({ configDir: `${dirname}.storybook`, tags: { exclude: ["documents"] } })],
         test: {
           name: "storybook",
           sequence: { groupOrder: 1 },

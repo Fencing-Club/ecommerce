@@ -2,7 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { connections, organizations, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
-import { visibleOrders } from "@/server/access"
+import { forwarderOrders, visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
@@ -29,7 +29,8 @@ export async function shipmentsPage(input: { query: Record<string, string | stri
   const s = await session()
   requirePage(s, "shipments")
   const isBuyer = s.org.kind === "buyer"
-  const rows = await visibleOrders(s)
+  // A forwarder sees the orders routed through it, as on its purchase order list.
+  const rows = s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)
   const ids = rows.map((r) => r.order.id)
   const list = ids.length
     ? await db().select().from(shipments).where(inArray(shipments.orderId, ids)).orderBy(desc(shipments.createdAt))

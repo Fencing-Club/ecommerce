@@ -35,6 +35,13 @@ pnpm --filter copacker storybook
 pnpm --filter copacker exec vitest run --project storybook
 ```
 
+Stories that render a real PDF, such as the shipping document previews, the supplier packet page and the packing list
+download, carry the `documents` tag: they're there to look at, and Vitest leaves them out (`tags: { exclude:
+["documents"] }` in `vitest.config.ts`), so neither `pnpm verify` nor CI renders a document. Write the tag in the
+story file itself, on the meta or the story; the test plugin reads tags from the source, so one spread in from a shared
+object doesn't count. `tags: ["!documents"]` keeps a story under a tagged meta that renders nothing, such as one blocked
+before its PDF.
+
 `tests/stories.test.ts` fails when a page or component has no stories. Components with nothing to show (providers,
 contexts, effects that render nothing) are listed there instead.
 
