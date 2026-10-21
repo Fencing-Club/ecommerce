@@ -251,11 +251,11 @@ importers:
         specifier: ^1.7.1
         version: 1.7.1(@vanilla-extract/css@1.21.2)
       '@workos-inc/node':
-        specifier: ^10.0.0
-        version: 10.13.0
+        specifier: ^11.0.0
+        version: 11.0.0
       '@workos/authkit-session':
         specifier: 0.7.1
-        version: 0.7.1(@workos-inc/node@10.13.0)(typescript@7.0.1-rc)
+        version: 0.7.1(@workos-inc/node@11.0.0)(typescript@7.0.1-rc)
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -5142,8 +5142,8 @@ packages:
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
 
-  '@workos-inc/node@10.13.0':
-    resolution: {integrity: sha512-xPtcziTjN1irPiZ4niTaulYvRMs6D+Fz5E54GGHVOxNi0PV2/Ws1g/cx3q9oMvMhnINkva5iZ2T5aS6yLzdCWA==}
+  '@workos-inc/node@11.0.0':
+    resolution: {integrity: sha512-swUT6CbkuVQXMOtUpI70LZ8usjSg8OXcKMjKdoYLeqCApRI0Oo97l+nZ0lKzZ5GxjxgcVZGGVK025h7z9WyCJg==}
     engines: {node: '>=22.11.0'}
 
   '@workos/authkit-session@0.7.1':
@@ -13190,11 +13190,11 @@ snapshots:
 
   '@webcontainer/env@1.1.1': {}
 
-  '@workos-inc/node@10.13.0': {}
+  '@workos-inc/node@11.0.0': {}
 
-  '@workos/authkit-session@0.7.1(@workos-inc/node@10.13.0)(typescript@7.0.1-rc)':
+  '@workos/authkit-session@0.7.1(@workos-inc/node@11.0.0)(typescript@7.0.1-rc)':
     dependencies:
-      '@workos-inc/node': 10.13.0
+      '@workos-inc/node': 11.0.0
       iron-webcrypto: 2.0.0
       jose: 6.2.12
       valibot: 1.5.0(typescript@7.0.1-rc)
