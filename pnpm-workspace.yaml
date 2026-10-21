@@ -29,6 +29,8 @@ allowBuilds:
   "@swc/core": true
   "@parcel/watcher": false
   msw: false
+  # Its install script only asks for donations.
+  tesseract.js: false
 minimumReleaseAgeExclude:
   - "@tanstack/react-start-rsc@0.1.63"
   - "@tanstack/react-start-server@1.167.50"

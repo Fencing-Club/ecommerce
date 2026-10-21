@@ -15,6 +15,7 @@ import { amazonFor, shopifyFor } from "./connections"
 import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { isCollective } from "./inventory-products"
+import { queueLabels, type QueuedLabels } from "./label-release"
 import type { ProductDefaults } from "./product-defaults"
 import { readProductDefaults } from "./product-defaults"
 import { describeError } from "./stock"
@@ -179,9 +180,9 @@ export async function saveProductBarcode(s: Session, form: FormData) {
     uploadedBy: s.user.id,
     createdAt: new Date()
   }
-  let replaced: string | null
+  let saved: { replaced: string | null; labels: QueuedLabels }
   try {
-    replaced = await db().transaction(async (tx) => {
+    saved = await db().transaction(async (tx) => {
       const [previous] = await tx
         .select({ objectKey: productBarcodes.objectKey })
         .from(productBarcodes)
@@ -194,12 +195,17 @@ export async function saveProductBarcode(s: Session, form: FormData) {
           target: [productBarcodes.orgId, productBarcodes.shopifyDomain, productBarcodes.variantId],
           set: value
         })
-      return previous?.objectKey ?? null
+      // A product's barcode can complete the packets of the buyer's shipments that waited on it.
+      return {
+        replaced: previous?.objectKey ?? null,
+        labels: await queueLabels(tx, { buyerOrgId: s.org.id, actor: s.user.id })
+      }
     })
   } catch (error) {
     await discardFile(objectKey)
     throw error
   }
+  const { replaced, labels } = saved
   if (replaced) {
     await discardFile(replaced)
   }
@@ -213,7 +219,9 @@ export async function saveProductBarcode(s: Session, form: FormData) {
       sku: row.buyerSku,
       product: row.productTitle,
       variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
-    } satisfies BarcodeTarget
+    } satisfies BarcodeTarget,
+    // The job that sends any packets the barcode completed, for the caller to send straight away.
+    labels
   }
 }
 

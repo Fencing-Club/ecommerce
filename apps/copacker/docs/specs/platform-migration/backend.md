@@ -96,6 +96,7 @@ remove existing job behavior. Each kind needs a parity fixture and recovery dril
 | `amazon` | Workflow | Shipment/report create, poll, download, revision checks and ambiguous-create reconciliation |
 | `import` | Workflow plus measured processing executor | PDF validation, AI timeout, progress, cancellation and result persistence |
 | `reconcile` | Cron creates durable job; Workflow for bounded batches | One daily identity at 07:00 UTC, missed-trigger recovery and idempotent repairs |
+| `labels` | Queue consumer | Queued with the change that can complete a packet; sends once, checked under the shipment's row lock |
 
 Persist outputs needed by later steps. Use deterministic step identities, provider idempotency keys when supported and
 durable sleeps for `PollAgain` behavior; keep its delay/progress semantics. Store large outputs in R2 and checkpoint

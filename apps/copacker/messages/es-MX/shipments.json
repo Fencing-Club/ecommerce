@@ -51,8 +51,7 @@
       "waitingForBuyer": "Esperando la aprobación del comprador"
     },
     "labels": {
-      "title": "Etiquetas",
-      "waiting": "Esperando etiquetas"
+      "heldBack": "Antes de que las etiquetas lleguen al proveedor"
     },
     "creating": {
       "title": "Creando el envío de Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Paquete de documentos listo",
-      "description": "Imprime las etiquetas a tamaño real.",
-      "downloadLabel": "Descargar paquete de documentos del proveedor",
-      "download": "Descargar paquete de documentos",
+      "downloadLabel": "Descargar paquete del envío",
       "incompleteTitle": "Paquete de documentos incompleto",
       "waitingForLabels": "Esperando las etiquetas del comprador",
       "cartonLabels": "Etiquetas de cajas",
       "unitLabels": "Etiquetas de productos",
       "carrierLabels": "Etiquetas del transportista",
       "palletLabels": "Etiquetas de tarima",
-      "backToShipment": "Volver al envío"
+      "backToShipment": "Volver al envío",
+      "document": "Paquete del envío",
+      "documentDescription": "Todos los documentos del envío"
     },
     "cartons": {
       "title": "Cajas",
@@ -111,10 +110,6 @@
       "updateCost": "Actualizar también los costos unitarios en Shopify",
       "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra.",
       "submit": "Aprobar cambios"
-    },
-    "release": {
-      "submit": "Liberar etiquetas al proveedor",
-      "bookingReference": "Referencia de reserva del transporte de Amazon"
     },
     "correction": {
       "trigger": "Solicitar una corrección",
@@ -233,5 +228,63 @@
     "suffocation": "Etiquetas de advertencia de asfixia",
     "choking": "Etiquetas de peligro de asfixia por piezas pequeñas",
     "notProvided": "Etiqueta no proporcionada"
+  },
+  "carrierLabels": {
+    "title": "Subir etiquetas del transportista",
+    "upload": "Subir etiquetas",
+    "intro": "Agrega los PDF de etiquetas del transportista. Las etiquetas se asignan a las cajas por peso y tamaño.",
+    "reading": "{files, plural, =1 {Leyendo {name}} other {Leyendo # PDF}}",
+    "source": "{name}, página {page}",
+    "savedLabel": "Etiqueta guardada",
+    "trackingNumber": "Número de rastreo",
+    "enterTracking": "Ingresa el número de rastreo",
+    "noTracking": "Sin número de rastreo",
+    "addTracking": "Agregar",
+    "addTrackingFor": "Agregar el número de rastreo de {name}",
+    "trackingNotRead": "Etiqueta de rastreo no reconocida.",
+    "trackingRecognized": "Número de rastreo reconocido.",
+    "trackingUnknown": "Número de rastreo no reconocido. Compáralo con la etiqueta.",
+    "trackingInvalid": "Escribe el número de rastreo tal como aparece en la etiqueta.",
+    "notPdf": "{name} no es un PDF.",
+    "unreadable": "No se pudo leer {name}.",
+    "alreadyAdded": "{labels, plural, =1 {1 etiqueta ya estaba agregada, así que se omitió.} other {# etiquetas ya estaban agregadas, así que se omitieron.}}",
+    "cancel": "Cancelar",
+    "save": "Guardar etiquetas",
+    "failed": "No se guardaron las etiquetas. Inténtalo de nuevo.",
+    "saved": "Etiquetas del transportista guardadas",
+    "sent": "Etiquetas del transportista enviadas al proveedor",
+    "notPlaced": "Sin asignar",
+    "fill": "Llenar cajas en orden",
+    "dropTitle": "Suelta aquí los PDF del transportista",
+    "dropNote": "Un PDF por etiqueta, o uno con una página por etiqueta",
+    "browse": "Buscar",
+    "dropMore": "Suelta más PDF aquí o <browse>busca</browse>",
+    "files": "{count, plural, one {# archivo} other {# archivos}}",
+    "dropFiles": "{count, plural, one {Suelta para agregar # PDF} other {Suelta para agregar # PDF}}",
+    "dropFilesNote": "Cada página se vuelve una etiqueta",
+    "dropToTakeOff": "Suelta para quitar {name} de su caja",
+    "cartons": "Cajas",
+    "cartonsLabelled": "{count} de {total} tienen etiqueta",
+    "dragHere": "Arrastra una etiqueta aquí",
+    "dropOnCarton": "Suelta para poner {name} en {carton}",
+    "takeOff": "Quitar la etiqueta de {carton}",
+    "preview": "Ver {name}",
+    "pictureOf": "Etiqueta de {name}",
+    "noPicture": "No hay imagen de esta etiqueta",
+    "readingText": "Leyendo el texto de la etiqueta",
+    "trackingFor": "Número de rastreo de {name}",
+    "carrier": "Transportista",
+    "unknownCarrier": "Desconocido",
+    "allLabels": "Todas las etiquetas",
+    "previousLabel": "Etiqueta anterior",
+    "nextLabel": "Etiqueta siguiente",
+    "positionNotPlaced": "{position} de {count} sin asignar",
+    "positionPlaced": "{position} de {count} en cajas",
+    "carton": "Caja",
+    "cartonTaken": "{carton}, tiene etiqueta",
+    "notRead": "No se leyó",
+    "doesNotFit": "El peso y el tamaño no coinciden con {cartons}",
+    "weight": "Peso",
+    "dimensions": "Dimensiones"
   }
 }

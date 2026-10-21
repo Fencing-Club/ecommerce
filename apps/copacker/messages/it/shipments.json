@@ -51,8 +51,7 @@
       "waitingForBuyer": "In attesa dell’approvazione dell’acquirente"
     },
     "labels": {
-      "title": "Etichette",
-      "waiting": "In attesa delle etichette"
+      "heldBack": "Prima che le etichette arrivino al fornitore"
     },
     "creating": {
       "title": "Creazione della spedizione Amazon",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Pacchetto fornitore pronto",
-      "description": "Stampa le etichette a dimensione reale.",
-      "downloadLabel": "Scarica il pacchetto fornitore",
-      "download": "Scarica pacchetto",
+      "downloadLabel": "Scarica il pacchetto della spedizione",
       "incompleteTitle": "Pacchetto fornitore incompleto",
       "waitingForLabels": "In attesa delle etichette dell’acquirente",
       "cartonLabels": "Etichette cartoni",
       "unitLabels": "Etichette prodotti",
       "carrierLabels": "Etichette del corriere",
       "palletLabels": "Etichette dei pallet",
-      "backToShipment": "Torna alla spedizione"
+      "backToShipment": "Torna alla spedizione",
+      "document": "Pacchetto della spedizione",
+      "documentDescription": "Tutti i documenti della spedizione"
     },
     "cartons": {
       "title": "Cartoni",
@@ -111,10 +110,6 @@
       "updateCost": "Aggiorna anche i costi unitari su Shopify",
       "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto.",
       "submit": "Approva modifiche"
-    },
-    "release": {
-      "submit": "Rilascia etichette al fornitore",
-      "bookingReference": "Riferimento della prenotazione del trasporto Amazon"
     },
     "correction": {
       "trigger": "Richiedi una correzione",
@@ -233,5 +228,63 @@
     "suffocation": "Etichette di avvertenza soffocamento",
     "choking": "Etichette di pericolo di soffocamento",
     "notProvided": "Etichetta non fornita"
+  },
+  "carrierLabels": {
+    "title": "Carica le etichette del corriere",
+    "upload": "Carica etichette",
+    "intro": "Aggiungi i PDF delle etichette del corriere. Le etichette vengono abbinate ai cartoni in base a peso e dimensioni.",
+    "reading": "{files, plural, =1 {Lettura di {name}} other {Lettura di # PDF}}",
+    "source": "{name}, pagina {page}",
+    "savedLabel": "Etichetta salvata",
+    "trackingNumber": "Numero di tracking",
+    "enterTracking": "Inserisci il numero di tracking",
+    "noTracking": "Nessun numero di tracking",
+    "addTracking": "Aggiungi",
+    "addTrackingFor": "Aggiungi il numero di tracking per {name}",
+    "trackingNotRead": "Etichetta di tracking non riconosciuta.",
+    "trackingRecognized": "Numero di tracking riconosciuto.",
+    "trackingUnknown": "Numero di tracking non riconosciuto. Controllalo sull’etichetta.",
+    "trackingInvalid": "Inserisci il numero di tracking come è stampato sull’etichetta.",
+    "notPdf": "{name} non è un PDF.",
+    "unreadable": "Impossibile leggere {name}.",
+    "alreadyAdded": "{labels, plural, =1 {1 etichetta era già stata aggiunta, quindi è stata saltata.} other {# etichette erano già state aggiunte, quindi sono state saltate.}}",
+    "cancel": "Annulla",
+    "save": "Salva etichette",
+    "failed": "Le etichette non sono state salvate. Riprova.",
+    "saved": "Etichette del corriere salvate",
+    "sent": "Etichette del corriere inviate al fornitore",
+    "notPlaced": "Da assegnare",
+    "fill": "Riempi i cartoni in ordine",
+    "dropTitle": "Trascina qui i PDF del corriere",
+    "dropNote": "Un PDF per etichetta, o uno con una pagina per etichetta",
+    "browse": "Sfoglia",
+    "dropMore": "Trascina qui altri PDF o <browse>sfoglia</browse>",
+    "files": "{count, plural, one {# file} other {# file}}",
+    "dropFiles": "{count, plural, one {Rilascia per aggiungere # PDF} other {Rilascia per aggiungere # PDF}}",
+    "dropFilesNote": "Ogni pagina diventa un’etichetta",
+    "dropToTakeOff": "Rilascia per togliere {name} dal suo cartone",
+    "cartons": "Cartoni",
+    "cartonsLabelled": "{count} su {total} hanno un’etichetta",
+    "dragHere": "Trascina qui un’etichetta",
+    "dropOnCarton": "Rilascia per mettere {name} su {carton}",
+    "takeOff": "Togli l’etichetta da {carton}",
+    "preview": "Anteprima di {name}",
+    "pictureOf": "Etichetta da {name}",
+    "noPicture": "Nessuna immagine di questa etichetta",
+    "readingText": "Lettura del testo dell’etichetta",
+    "trackingFor": "Numero di tracking di {name}",
+    "carrier": "Corriere",
+    "unknownCarrier": "Non noto",
+    "allLabels": "Tutte le etichette",
+    "previousLabel": "Etichetta precedente",
+    "nextLabel": "Etichetta successiva",
+    "positionNotPlaced": "{position} di {count} da assegnare",
+    "positionPlaced": "{position} di {count} sui cartoni",
+    "carton": "Cartone",
+    "cartonTaken": "{carton}, ha un’etichetta",
+    "notRead": "Non letto",
+    "doesNotFit": "Peso e dimensioni non corrispondono a {cartons}",
+    "weight": "Peso",
+    "dimensions": "Dimensioni"
   }
 }

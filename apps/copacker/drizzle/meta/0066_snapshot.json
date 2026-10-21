@@ -1,5 +1,5 @@
 {
-  "id": "883993d0-171b-4229-a284-02c6bb47a0c0",
+  "id": "c4c137fa-f380-4e68-9386-814a3f9fdc10",
   "prevId": "4cb6a837-7966-4883-9dd6-ff6ec9c315b6",
   "version": "7",
   "dialect": "postgresql",
@@ -52,11 +52,11 @@
         "amazon_ads_connections_orgId_organizations_id_fk": {
           "name": "amazon_ads_connections_orgId_organizations_id_fk",
           "tableFrom": "amazon_ads_connections",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -123,11 +123,11 @@
         "amazon_ads_days_orgId_organizations_id_fk": {
           "name": "amazon_ads_days_orgId_organizations_id_fk",
           "tableFrom": "amazon_ads_days",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -255,20 +255,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_fulfillment_shipments_orgId_organizations_id_fk": {
           "name": "amazon_fulfillment_shipments_orgId_organizations_id_fk",
           "tableFrom": "amazon_fulfillment_shipments",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -328,11 +328,11 @@
         "amazon_inbound_shipments_orgId_organizations_id_fk": {
           "name": "amazon_inbound_shipments_orgId_organizations_id_fk",
           "tableFrom": "amazon_inbound_shipments",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -503,9 +503,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_movements_reference": {
           "name": "amazon_movements_reference",
@@ -530,9 +530,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_movements_product": {
           "name": "amazon_movements_product",
@@ -563,20 +563,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_inventory_movements_orgId_organizations_id_fk": {
           "name": "amazon_inventory_movements_orgId_organizations_id_fk",
           "tableFrom": "amazon_inventory_movements",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -662,11 +662,11 @@
         "amazon_movement_reports_orgId_organizations_id_fk": {
           "name": "amazon_movement_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_movement_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -825,20 +825,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_product_mappings_orgId_organizations_id_fk": {
           "name": "amazon_product_mappings_orgId_organizations_id_fk",
           "tableFrom": "amazon_product_mappings",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -929,11 +929,11 @@
         "amazon_reimbursement_reports_orgId_organizations_id_fk": {
           "name": "amazon_reimbursement_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_reimbursement_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1116,9 +1116,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_reimbursements_reference": {
           "name": "amazon_reimbursements_reference",
@@ -1143,9 +1143,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_reimbursements_original": {
           "name": "amazon_reimbursements_original",
@@ -1170,9 +1170,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_reimbursements_order": {
           "name": "amazon_reimbursements_order",
@@ -1197,20 +1197,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_reimbursements_orgId_organizations_id_fk": {
           "name": "amazon_reimbursements_orgId_organizations_id_fk",
           "tableFrom": "amazon_reimbursements",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1302,11 +1302,11 @@
         "amazon_removal_reports_orgId_organizations_id_fk": {
           "name": "amazon_removal_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_removal_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1519,9 +1519,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_removals_shipments": {
           "name": "amazon_removals_shipments",
@@ -1558,9 +1558,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_removals_orders": {
           "name": "amazon_removals_orders",
@@ -1585,20 +1585,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_removals_orgId_organizations_id_fk": {
           "name": "amazon_removals_orgId_organizations_id_fk",
           "tableFrom": "amazon_removals",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1742,11 +1742,11 @@
         "amazon_return_reports_orgId_organizations_id_fk": {
           "name": "amazon_return_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_return_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1893,9 +1893,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_returns_order": {
           "name": "amazon_returns_order",
@@ -1920,20 +1920,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_returns_orgId_organizations_id_fk": {
           "name": "amazon_returns_orgId_organizations_id_fk",
           "tableFrom": "amazon_returns",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2019,11 +2019,11 @@
         "amazon_shipment_reports_orgId_organizations_id_fk": {
           "name": "amazon_shipment_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_shipment_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2092,20 +2092,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_shipment_requests_orgId_organizations_id_fk": {
           "name": "amazon_shipment_requests_orgId_organizations_id_fk",
           "tableFrom": "amazon_shipment_requests",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2197,11 +2197,11 @@
         "amazon_storage_fee_reports_orgId_organizations_id_fk": {
           "name": "amazon_storage_fee_reports_orgId_organizations_id_fk",
           "tableFrom": "amazon_storage_fee_reports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2384,9 +2384,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_storage_fees_product": {
           "name": "amazon_storage_fees_product",
@@ -2417,20 +2417,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_storage_fees_orgId_organizations_id_fk": {
           "name": "amazon_storage_fees_orgId_organizations_id_fk",
           "tableFrom": "amazon_storage_fees",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2522,9 +2522,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_transaction_posted": {
           "name": "amazon_transaction_posted",
@@ -2549,35 +2549,35 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "amazon_transaction_identifiers": {
           "name": "amazon_transaction_identifiers",
           "columns": [
             {
               "expression": "(\"data\"->'relatedIdentifiers') jsonb_path_ops",
-              "isExpression": true,
               "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "gin",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "amazon_transactions_orgId_organizations_id_fk": {
           "name": "amazon_transactions_orgId_organizations_id_fk",
           "tableFrom": "amazon_transactions",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2638,11 +2638,11 @@
         "analytics_cost_imports_orgId_organizations_id_fk": {
           "name": "analytics_cost_imports_orgId_organizations_id_fk",
           "tableFrom": "analytics_cost_imports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2704,11 +2704,11 @@
         "analytics_evidence_orgId_organizations_id_fk": {
           "name": "analytics_evidence_orgId_organizations_id_fk",
           "tableFrom": "analytics_evidence",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2769,11 +2769,11 @@
         "analytics_feeds_orgId_organizations_id_fk": {
           "name": "analytics_feeds_orgId_organizations_id_fk",
           "tableFrom": "analytics_feeds",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2834,29 +2834,29 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "catalog_products_catalogId_catalogs_id_fk": {
           "name": "catalog_products_catalogId_catalogs_id_fk",
           "tableFrom": "catalog_products",
-          "columnsFrom": ["catalogId"],
           "tableTo": "catalogs",
+          "columnsFrom": ["catalogId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "catalog_products_productId_supplier_products_id_fk": {
           "name": "catalog_products_productId_supplier_products_id_fk",
           "tableFrom": "catalog_products",
-          "columnsFrom": ["productId"],
           "tableTo": "supplier_products",
+          "columnsFrom": ["productId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2954,20 +2954,20 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "catalogs_supplierOrgId_organizations_id_fk": {
           "name": "catalogs_supplierOrgId_organizations_id_fk",
           "tableFrom": "catalogs",
-          "columnsFrom": ["supplierOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["supplierOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3044,20 +3044,20 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "connections_orgId_organizations_id_fk": {
           "name": "connections_orgId_organizations_id_fk",
           "tableFrom": "connections",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3132,29 +3132,29 @@
         "contacts_orgId_organizations_id_fk": {
           "name": "contacts_orgId_organizations_id_fk",
           "tableFrom": "contacts",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "contacts_forwarderId_forwarders_id_fk": {
           "name": "contacts_forwarderId_forwarders_id_fk",
           "tableFrom": "contacts",
-          "columnsFrom": ["forwarderId"],
           "tableTo": "forwarders",
+          "columnsFrom": ["forwarderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "contacts_supplierId_suppliers_id_fk": {
           "name": "contacts_supplierId_suppliers_id_fk",
           "tableFrom": "contacts",
-          "columnsFrom": ["supplierId"],
           "tableTo": "suppliers",
+          "columnsFrom": ["supplierId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3201,6 +3201,24 @@
         "cartonId": {
           "name": "cartonId",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trackingNumber": {
+          "name": "trackingNumber",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sourceName": {
+          "name": "sourceName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sourcePage": {
+          "name": "sourcePage",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -3267,37 +3285,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "documents_orderId_orders_id_fk": {
           "name": "documents_orderId_orders_id_fk",
           "tableFrom": "documents",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "documents_shipmentId_shipments_id_fk": {
           "name": "documents_shipmentId_shipments_id_fk",
           "tableFrom": "documents",
-          "columnsFrom": ["shipmentId"],
           "tableTo": "shipments",
+          "columnsFrom": ["shipmentId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "documents_objectKey_unique": {
           "name": "documents_objectKey_unique",
-          "columns": ["objectKey"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["objectKey"]
         }
       },
       "policies": {},
@@ -3383,20 +3401,20 @@
         "events_orderId_orders_id_fk": {
           "name": "events_orderId_orders_id_fk",
           "tableFrom": "events",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "events_internalOrgId_organizations_id_fk": {
           "name": "events_internalOrgId_organizations_id_fk",
           "tableFrom": "events",
-          "columnsFrom": ["internalOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["internalOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3525,37 +3543,37 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "forwarders_buyerOrgId_organizations_id_fk": {
           "name": "forwarders_buyerOrgId_organizations_id_fk",
           "tableFrom": "forwarders",
-          "columnsFrom": ["buyerOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["buyerOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "forwarders_forwarderOrgId_organizations_id_fk": {
           "name": "forwarders_forwarderOrgId_organizations_id_fk",
           "tableFrom": "forwarders",
-          "columnsFrom": ["forwarderOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["forwarderOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "forwarders_invitationHash_unique": {
           "name": "forwarders_invitationHash_unique",
-          "columns": ["invitationHash"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["invitationHash"]
         }
       },
       "policies": {},
@@ -3713,9 +3731,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "inventory_basis_purchase": {
           "name": "inventory_basis_purchase",
@@ -3734,9 +3752,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "inventory_basis_active_source": {
           "name": "inventory_basis_active_source",
@@ -3761,10 +3779,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"inventory_basis_records\".\"retiredAt\" is null",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "inventory_basis_opening": {
           "name": "inventory_basis_opening",
@@ -3795,21 +3813,21 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"inventory_basis_records\".\"retiredAt\" is null and \"inventory_basis_records\".\"kind\" = 'opening'",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "inventory_basis_records_orgId_organizations_id_fk": {
           "name": "inventory_basis_records_orgId_organizations_id_fk",
           "tableFrom": "inventory_basis_records",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3868,11 +3886,11 @@
         "inventory_import_cursors_orgId_organizations_id_fk": {
           "name": "inventory_import_cursors_orgId_organizations_id_fk",
           "tableFrom": "inventory_import_cursors",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3976,20 +3994,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "inventory_import_results_orgId_organizations_id_fk": {
           "name": "inventory_import_results_orgId_organizations_id_fk",
           "tableFrom": "inventory_import_results",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4093,9 +4111,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "inventory_landed_source": {
           "name": "inventory_landed_source",
@@ -4114,21 +4132,21 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"inventory_landed_charges\".\"retiredAt\" is null",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "inventory_landed_charges_orgId_organizations_id_fk": {
           "name": "inventory_landed_charges_orgId_organizations_id_fk",
           "tableFrom": "inventory_landed_charges",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4178,11 +4196,11 @@
         "inventory_location_mappings_orgId_organizations_id_fk": {
           "name": "inventory_location_mappings_orgId_organizations_id_fk",
           "tableFrom": "inventory_location_mappings",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4340,20 +4358,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "inventory_unit_mappings_orgId_organizations_id_fk": {
           "name": "inventory_unit_mappings_orgId_organizations_id_fk",
           "tableFrom": "inventory_unit_mappings",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4450,9 +4468,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -4460,8 +4478,8 @@
       "uniqueConstraints": {
         "jobs_key_unique": {
           "name": "jobs_key_unique",
-          "columns": ["key"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -4529,20 +4547,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "landed_costs_orderId_orders_id_fk": {
           "name": "landed_costs_orderId_orders_id_fk",
           "tableFrom": "landed_costs",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4593,11 +4611,11 @@
         "memberships_orgId_organizations_id_fk": {
           "name": "memberships_orgId_organizations_id_fk",
           "tableFrom": "memberships",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4690,20 +4708,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "monthly_costs_orgId_organizations_id_fk": {
           "name": "monthly_costs_orgId_organizations_id_fk",
           "tableFrom": "monthly_costs",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4758,11 +4776,11 @@
         "oauth_states_orgId_organizations_id_fk": {
           "name": "oauth_states_orgId_organizations_id_fk",
           "tableFrom": "oauth_states",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4855,20 +4873,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "operating_costs_orgId_organizations_id_fk": {
           "name": "operating_costs_orgId_organizations_id_fk",
           "tableFrom": "operating_costs",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4957,20 +4975,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "order_proposals_orderId_orders_id_fk": {
           "name": "order_proposals_orderId_orders_id_fk",
           "tableFrom": "order_proposals",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5046,20 +5064,20 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "order_revisions_orderId_orders_id_fk": {
           "name": "order_revisions_orderId_orders_id_fk",
           "tableFrom": "order_revisions",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5150,9 +5168,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "orders_supplier": {
           "name": "orders_supplier",
@@ -5165,29 +5183,29 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "orders_buyerOrgId_organizations_id_fk": {
           "name": "orders_buyerOrgId_organizations_id_fk",
           "tableFrom": "orders",
-          "columnsFrom": ["buyerOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["buyerOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "orders_supplierId_suppliers_id_fk": {
           "name": "orders_supplierId_suppliers_id_fk",
           "tableFrom": "orders",
-          "columnsFrom": ["supplierId"],
           "tableTo": "suppliers",
+          "columnsFrom": ["supplierId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5264,8 +5282,8 @@
       "uniqueConstraints": {
         "organizations_workosId_unique": {
           "name": "organizations_workosId_unique",
-          "columns": ["workosId"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["workosId"]
         }
       },
       "policies": {},
@@ -5389,28 +5407,28 @@
         "po_imports_orgId_organizations_id_fk": {
           "name": "po_imports_orgId_organizations_id_fk",
           "tableFrom": "po_imports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "po_imports_orderId_orders_id_fk": {
           "name": "po_imports_orderId_orders_id_fk",
           "tableFrom": "po_imports",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "po_imports_objectKey_unique": {
           "name": "po_imports_objectKey_unique",
-          "columns": ["objectKey"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["objectKey"]
         }
       },
       "policies": {},
@@ -5482,11 +5500,11 @@
         "product_barcodes_orgId_organizations_id_fk": {
           "name": "product_barcodes_orgId_organizations_id_fk",
           "tableFrom": "product_barcodes",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -5498,8 +5516,8 @@
       "uniqueConstraints": {
         "product_barcodes_objectKey_unique": {
           "name": "product_barcodes_objectKey_unique",
-          "columns": ["objectKey"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["objectKey"]
         }
       },
       "policies": {},
@@ -5607,20 +5625,20 @@
         "product_defaults_orgId_organizations_id_fk": {
           "name": "product_defaults_orgId_organizations_id_fk",
           "tableFrom": "product_defaults",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "product_defaults_supplierId_suppliers_id_fk": {
           "name": "product_defaults_supplierId_suppliers_id_fk",
           "tableFrom": "product_defaults",
-          "columnsFrom": ["supplierId"],
           "tableTo": "suppliers",
+          "columnsFrom": ["supplierId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -5777,9 +5795,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "sales_order_period": {
           "name": "sales_order_period",
@@ -5804,20 +5822,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "sales_orders_orgId_organizations_id_fk": {
           "name": "sales_orders_orgId_organizations_id_fk",
           "tableFrom": "sales_orders",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5948,11 +5966,11 @@
         "sales_syncs_orgId_organizations_id_fk": {
           "name": "sales_syncs_orgId_organizations_id_fk",
           "tableFrom": "sales_syncs",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -6128,20 +6146,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "shipments_orderId_orders_id_fk": {
           "name": "shipments_orderId_orders_id_fk",
           "tableFrom": "shipments",
-          "columnsFrom": ["orderId"],
           "tableTo": "orders",
+          "columnsFrom": ["orderId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6245,20 +6263,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "shopify_balance_transactions_orgId_organizations_id_fk": {
           "name": "shopify_balance_transactions_orgId_organizations_id_fk",
           "tableFrom": "shopify_balance_transactions",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -6301,11 +6319,11 @@
         "shopify_field_imports_orgId_organizations_id_fk": {
           "name": "shopify_field_imports_orgId_organizations_id_fk",
           "tableFrom": "shopify_field_imports",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -6377,11 +6395,11 @@
         "stock_days_orgId_organizations_id_fk": {
           "name": "stock_days_orgId_organizations_id_fk",
           "tableFrom": "stock_days",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -6517,20 +6535,20 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "stock_snapshots_orgId_organizations_id_fk": {
           "name": "stock_snapshots_orgId_organizations_id_fk",
           "tableFrom": "stock_snapshots",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6593,19 +6611,19 @@
         "supplier_catalog_imports_supplierOrgId_organizations_id_fk": {
           "name": "supplier_catalog_imports_supplierOrgId_organizations_id_fk",
           "tableFrom": "supplier_catalog_imports",
-          "columnsFrom": ["supplierOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["supplierOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "supplier_catalog_imports_objectKey_unique": {
           "name": "supplier_catalog_imports_objectKey_unique",
-          "columns": ["objectKey"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["objectKey"]
         }
       },
       "policies": {},
@@ -6707,20 +6725,20 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "supplier_product_groups_supplierOrgId_organizations_id_fk": {
           "name": "supplier_product_groups_supplierOrgId_organizations_id_fk",
           "tableFrom": "supplier_product_groups",
-          "columnsFrom": ["supplierOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["supplierOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6898,9 +6916,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "supplier_product_group": {
           "name": "supplier_product_group",
@@ -6913,29 +6931,29 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "supplier_products_supplierOrgId_organizations_id_fk": {
           "name": "supplier_products_supplierOrgId_organizations_id_fk",
           "tableFrom": "supplier_products",
-          "columnsFrom": ["supplierOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["supplierOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "supplier_products_groupId_supplier_product_groups_id_fk": {
           "name": "supplier_products_groupId_supplier_product_groups_id_fk",
           "tableFrom": "supplier_products",
-          "columnsFrom": ["groupId"],
           "tableTo": "supplier_product_groups",
+          "columnsFrom": ["groupId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6991,11 +7009,11 @@
         "supplier_profiles_orgId_organizations_id_fk": {
           "name": "supplier_profiles_orgId_organizations_id_fk",
           "tableFrom": "supplier_profiles",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -7132,46 +7150,46 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "suppliers_buyerOrgId_organizations_id_fk": {
           "name": "suppliers_buyerOrgId_organizations_id_fk",
           "tableFrom": "suppliers",
-          "columnsFrom": ["buyerOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["buyerOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "suppliers_supplierOrgId_organizations_id_fk": {
           "name": "suppliers_supplierOrgId_organizations_id_fk",
           "tableFrom": "suppliers",
-          "columnsFrom": ["supplierOrgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["supplierOrgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "suppliers_catalogId_catalogs_id_fk": {
           "name": "suppliers_catalogId_catalogs_id_fk",
           "tableFrom": "suppliers",
-          "columnsFrom": ["catalogId"],
           "tableTo": "catalogs",
+          "columnsFrom": ["catalogId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "suppliers_invitationHash_unique": {
           "name": "suppliers_invitationHash_unique",
-          "columns": ["invitationHash"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["invitationHash"]
         }
       },
       "policies": {},
@@ -7240,19 +7258,19 @@
         "team_invitations_orgId_organizations_id_fk": {
           "name": "team_invitations_orgId_organizations_id_fk",
           "tableFrom": "team_invitations",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "team_invitations_hash_unique": {
           "name": "team_invitations_hash_unique",
-          "columns": ["hash"],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["hash"]
         }
       },
       "policies": {},
@@ -7318,11 +7336,11 @@
         "variant_fields_orgId_organizations_id_fk": {
           "name": "variant_fields_orgId_organizations_id_fk",
           "tableFrom": "variant_fields",
-          "columnsFrom": ["orgId"],
           "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -7339,10 +7357,10 @@
   },
   "enums": {},
   "schemas": {},
-  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

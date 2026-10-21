@@ -83,12 +83,14 @@ vi.mock("../src/server/product-fields", async (original) => ({
 }))
 const storage = vi.hoisted(() => ({
   putFile: vi.fn<(...args: never[]) => Promise<void>>(),
-  getFile: vi.fn<(key: string) => Promise<Uint8Array>>()
+  getFile: vi.fn<(key: string) => Promise<Uint8Array>>(),
+  deleteFile: vi.fn<(key: string) => Promise<void>>()
 }))
 vi.mock("../src/server/storage", async (original) => ({
   ...(await original<typeof import("../src/server/storage")>()),
   putFile: storage.putFile,
   getFile: storage.getFile,
+  deleteFile: storage.deleteFile,
   readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
 // Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
@@ -110,6 +112,11 @@ vi.mock("../src/server/import-trace", async (original) => ({
   ...(await original<typeof import("../src/server/import-trace")>()),
   traceImport: async () => true
 }))
+// Checking a shipment's labels can be made to fail, to show sending them is tried again.
+vi.mock("../src/server/readiness", async (original) => {
+  const actual = await original<typeof import("../src/server/readiness")>()
+  return { ...actual, releaseIssues: vi.fn<typeof actual.releaseIssues>(actual.releaseIssues) }
+})
 
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
 import { linkExistingAwd } from "../src/server/awd-link"
@@ -142,6 +149,7 @@ import { POST as refreshInventory } from "../src/server/http/api/inventory/refre
 import { GET as downloadOrderLabels } from "../src/server/http/api/orders/$id/labels"
 import { GET as downloadPo } from "../src/server/http/api/orders/$id/po"
 import { GET as getCoverage } from "../src/server/http/api/orders/summary"
+import { POST as postCarrierLabels } from "../src/server/http/api/shipments/$id/carrier-labels"
 import { GET as downloadPacket } from "../src/server/http/api/shipments/$id/packet"
 import { importJob } from "../src/server/import-job"
 import { importProposalSchema } from "../src/server/import-proposal"
@@ -149,6 +157,7 @@ import { saveImportedOrder } from "../src/server/import-save"
 import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
 import { amazonJob, emailJob } from "../src/server/job-handlers"
+import { labelsJob } from "../src/server/label-release"
 import { orderLandedCosts } from "../src/server/landed-costs"
 import { resolveLocalization, withLocalization } from "../src/server/localization"
 import {
@@ -183,6 +192,7 @@ import {
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { ownProfile, saveProfile } from "../src/server/profile"
 import { nextJobDelay, runNextJob } from "../src/server/queue"
+import { releaseIssues } from "../src/server/readiness"
 import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
 import {
@@ -2520,23 +2530,21 @@ async function orderConnectionsAmazonOnly() {
     .values({ orgId: buyerId, provider: "amazon", externalId: "A123456789", encryptedToken: "test-only" })
 }
 
-async function uploadPdf(kind: string, shipmentId?: string, pages = 1, assignments?: unknown) {
+// A PDF of blank label-sized pages.
+async function blankPdf(pages: number, name = "Labels.pdf") {
   const pdf = await PDFDocument.create()
   for (let i = 0; i < pages; i++) {
     pdf.addPage([288, 432])
   }
+  return new File([Buffer.from(await pdf.save())], name, { type: "application/pdf" })
+}
+async function uploadPdf(kind: "invoice" | "product_label", pages = 1) {
   const form = new FormData()
   form.set("orderId", orderId)
   form.set("kind", kind)
-  form.set("file", new File([Buffer.from(await pdf.save())], "Labels.pdf", { type: "application/pdf" }))
-  if (shipmentId) {
-    form.set("shipmentId", shipmentId)
-  }
+  form.set("file", await blankPdf(pages))
   if (kind === "product_label") {
     form.set("itemId", itemId)
-  }
-  if (assignments) {
-    form.set("assignments", JSON.stringify(assignments))
   }
   return upload(
     new Request("http://localhost:3000/api/documents", {
@@ -2546,14 +2554,38 @@ async function uploadPdf(kind: string, shipmentId?: string, pages = 1, assignmen
     })
   )
 }
-async function release(id: string, revision = 1) {
-  return action(
-    new Request("http://localhost:3000/api/action", {
+// A UPS tracking number as its label prints it, in groups, and as it's stored, without the spaces.
+const printed = (n: number) => `1Z 999 AA1 01 2345 678${n}`
+const trackingNumber = (n: number) => `1Z999AA1012345678${n}`
+// Saves a shipment's carrier labels as the Upload carrier labels dialog does: carrier PDFs of the given page counts,
+// and each carton's label, either a page of one of them or the label the carton already has.
+async function uploadCarrierLabels(shipmentId: string, labels: unknown[], files: number[] = [], revision = 1) {
+  const form = new FormData()
+  form.set("revision", String(revision))
+  form.set("labels", JSON.stringify(labels))
+  for (const [index, pages] of files.entries()) {
+    form.append("file", await blankPdf(pages, `Carrier ${index + 1}.pdf`))
+  }
+  return postCarrierLabels(
+    new Request(`http://localhost:3000/api/shipments/${shipmentId}/carrier-labels`, {
       method: "POST",
-      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({ action: "shipment.release", data: { id, revision } })
-    })
+      headers: { origin: "http://localhost:3000" },
+      body: form
+    }),
+    { params: { id: shipmentId } }
   )
+}
+// The current carrier labels of every shipment.
+async function carrierLabels() {
+  return database
+    .select()
+    .from(tables.documents)
+    .where(and(eq(tables.documents.kind, "shipping_label"), eq(tables.documents.outdated, 0)))
+}
+// The shipment's status and what its packet still lacks, as the buyer sees them.
+async function shipmentState(id: string) {
+  const shipment = (await orderWorkflow(buyer, orderId)).shipments.find((row) => row.id === id)!
+  return { status: shipment.status, issues: shipment.issues.map((issue) => issue.code) }
 }
 describe("transport configuration", () => {
   const agl = {
@@ -2593,7 +2625,7 @@ describe("transport configuration", () => {
       expect(saved).toMatchObject({ status, transport: agl, revision: 1 })
     }
   )
-  it("releases AGL without carrier labels, but still blocks missing Amazon labels and parcel labels", async () => {
+  it("sends AGL labels to the supplier once transport is saved, but still waits for Amazon labels and parcel labels", async () => {
     const prepared = await preparation()
     await database
       .update(tables.shipments)
@@ -2620,18 +2652,30 @@ describe("transport configuration", () => {
         uploadedBy: "system"
       })
     }
-    expect((await release(prepared.id)).status).toBe(400)
+    // Amazon's carton label is replaced, and its new one hasn't arrived.
+    await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "carton_label"))
+    expect(await shipmentState(prepared.id)).toEqual({
+      status: "waiting_labels",
+      issues: ["missing_carton_label", "missing_transport"]
+    })
+    expect(
+      (await post("shipment.transport", { id: prepared.id, revision: 1, expected: null, transport: agl })).status
+    ).toBe(200)
+    expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_carton_label"] })
+    // With its carton label back, AGL that wants carrier labels still waits for them.
     expect(
       (
         await post("shipment.transport", {
           id: prepared.id,
           revision: 1,
-          expected: null,
+          expected: agl,
           transport: { ...agl, carrierLabels: "per_carton" }
         })
       ).status
     ).toBe(200)
-    expect((await release(prepared.id)).status).toBe(400)
+    await database.update(tables.documents).set({ outdated: 0 }).where(eq(tables.documents.kind, "carton_label"))
+    expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_shipping_label"] })
+    // AGL without them completes the packet, and the labels go to the supplier.
     expect(
       (
         await post("shipment.transport", {
@@ -2642,10 +2686,70 @@ describe("transport configuration", () => {
         })
       ).status
     ).toBe(200)
-    await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "carton_label"))
-    expect((await release(prepared.id)).status).toBe(400)
-    await database.update(tables.documents).set({ outdated: 0 }).where(eq(tables.documents.kind, "carton_label"))
-    expect((await release(prepared.id)).status).toBe(200)
+    expect(await shipmentState(prepared.id)).toEqual({ status: "ready", issues: [] })
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events).toMatchObject([{ messageKey: "labelsReleased", actor: buyer.user.id }])
+  })
+  // A shipment on AGL, which needs no carrier labels, whose Amazon labels are ready to download.
+  async function labelsReady() {
+    const shipment = await queuedShipment()
+    await database
+      .update(tables.shipments)
+      .set({ transport: agl, amazonOrderId: shipment.remote.orderId, operation: "created" })
+      .where(eq(tables.shipments.id, shipment.id))
+    provider.api.order.mockResolvedValue({
+      ...shipment.remote,
+      orderStatus: "CONFIRMED",
+      destinationDetails: { shipmentId: "STAR-SHIPMENT" }
+    })
+    provider.api.labels.mockResolvedValue({
+      labelStatus: "GENERATED",
+      labelDownloadURL: "https://awd-labels.s3.amazonaws.com/STAR-SHIPMENT.pdf"
+    })
+    const label = await amazonCartonLabels([
+      [
+        "FNSKU#:",
+        "MSKU#:",
+        "QTY: 80",
+        "X000000001",
+        "foil-2",
+        "DC: IUSP",
+        "Serial Shipping Container Code (SSCC)",
+        "201952611540373988"
+      ]
+    ])
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response(Buffer.from(label)))
+    )
+    return shipment
+  }
+  it("sends a shipment that needs no carrier labels to its supplier as soon as Amazon's labels arrive", async () => {
+    const shipment = await labelsReady()
+    await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+    expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
+    const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    expect(emailed.map((job) => job.payload)).toEqual([
+      { type: "ready", to: "supplier@example.com", orderId, shipmentId: shipment.id }
+    ])
+    // Sent, the job queued in case they weren't is gone.
+    expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "labels"))).toEqual([])
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events).toContainEqual(expect.objectContaining({ messageKey: "labelsReleased", actor: "amazon" }))
+  })
+  it("tries the labels again when they fail to go as Amazon's arrive", async () => {
+    const shipment = await labelsReady()
+    vi.mocked(releaseIssues).mockImplementationOnce(() => {
+      throw new Error("Database unavailable")
+    })
+    await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+    expect(await shipmentState(shipment.id)).toMatchObject({ status: "waiting_labels" })
+    const [queued] = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "labels"))
+    expect(queued).toMatchObject({ status: "pending", payload: { shipmentId: shipment.id, actor: "amazon" } })
+    await labelsJob(queued!.payload)
+    expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events).toContainEqual(expect.objectContaining({ messageKey: "labelsReleased", actor: "amazon" }))
   })
 })
 
@@ -2739,7 +2843,7 @@ describe("document upload and packet release", () => {
     storage.putFile.mockImplementation(async () => {
       await database.update(tables.orders).set({ revision: 2 }).where(eq(tables.orders.id, orderId))
     })
-    const result = await uploadPdf("invoice", prepared.id)
+    const result = await uploadPdf("invoice")
     expect(result.status).toBe(400)
     expect(await result.json()).toMatchObject({ error: "The purchase order changed during upload. Try again." })
     const docs = await database.select().from(tables.documents)
@@ -2752,13 +2856,22 @@ describe("document upload and packet release", () => {
       .update(tables.shipments)
       .set({ status: "waiting_labels", packing: prepared.packing })
       .where(eq(tables.shipments.id, prepared.id))
-    storage.putFile.mockImplementation(async () => {
+    const keys: string[] = []
+    storage.putFile.mockImplementation(async (key: string) => {
+      keys.push(key)
       await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, prepared.id))
     })
-    const result = await uploadPdf("shipping_label", prepared.id, 1, [{ cartonId: "A6", page: 1 }])
+    const result = await uploadCarrierLabels(
+      prepared.id,
+      [{ cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }],
+      [1]
+    )
     expect(result.status).toBe(400)
     expect(await result.json()).toMatchObject({ error: "Shipment changed during upload. Try again." })
-    expect((await database.select().from(tables.documents)).some((doc) => doc.kind === "shipping_label")).toBe(false)
+    expect(await carrierLabels()).toEqual([])
+    // The page it stored is removed again.
+    expect(keys).toHaveLength(1)
+    expect(storage.deleteFile.mock.calls).toEqual(keys.map((key) => [key]))
   })
   it("rejects product labels when the PO changes during upload", async () => {
     storage.putFile.mockImplementation(async () => {
@@ -2930,27 +3043,47 @@ describe("document upload and packet release", () => {
     expect(storage.getFile).not.toHaveBeenCalled()
   })
   it("accepts one label sheet per variation and rejects a multipage product label", async () => {
-    expect((await uploadPdf("product_label", undefined, 2)).status).toBe(400)
+    expect((await uploadPdf("product_label", 2)).status).toBe(400)
     expect(storage.putFile).not.toHaveBeenCalled()
     expect((await uploadPdf("product_label")).status).toBe(200)
     expect(storage.putFile).toHaveBeenCalledOnce()
   })
   it("replaces draft invoices without leaving the previous invoice current", async () => {
-    const prepared = await preparation()
+    // The shipment brings the current invoice.
+    await preparation()
     context.actor = supplier
-    expect((await uploadPdf("invoice", prepared.id)).status).toBe(200)
+    expect((await uploadPdf("invoice")).status).toBe(200)
     const rows = await database.select().from(tables.documents)
     expect(rows.filter((row) => !row.outdated)).toHaveLength(1)
     expect(rows.filter((row) => row.outdated)).toHaveLength(1)
   })
-  it("rejects unauthorized and unknown carton assignments before storing files", async () => {
+  it("refuses carrier labels from another workspace, for unknown cartons, a carton or label twice or a missing page", async () => {
     const prepared = await preparation()
-    await database.update(tables.shipments).set({ packing: prepared.packing, status: "waiting_labels" })
+    const [carton] = prepared.packing.cartons
+    await database.update(tables.shipments).set({
+      packing: { ...prepared.packing, cartons: [carton!, { ...carton!, cartonId: "A7" }] },
+      status: "waiting_labels"
+    })
+    const label = { cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }
+    const refused = async (labels: unknown[], files = [1]) => {
+      const result = await uploadCarrierLabels(prepared.id, labels, files)
+      expect(result.status).not.toBe(200)
+      return (await result.json()).error
+    }
     context.actor = actor("buyer", otherId)
-    expect((await uploadPdf("shipping_label", prepared.id, 1, [{ cartonId: "A6", page: 1 }])).status).toBe(400)
+    expect(await refused([label])).toContain("not found")
     context.actor = buyer
-    expect((await uploadPdf("shipping_label", prepared.id, 1, [{ cartonId: "unknown", page: 1 }])).status).toBe(400)
+    expect(await refused([{ ...label, cartonId: "unknown" }])).toBe("Label assignment has an unknown carton or page")
+    expect(await refused([label, { ...label, page: 2 }], [2])).toBe("Assign each label page and carton only once")
+    expect(await refused([label, { ...label, cartonId: "A7", trackingNumber: printed(2) }])).toBe(
+      "Assign each label page and carton only once"
+    )
+    expect(await refused([label, { ...label, cartonId: "A7", page: 2 }], [2])).toBe(
+      "Assign each label page and carton only once"
+    )
+    expect(await refused([{ ...label, page: 2 }])).toBe("Label assignment has an unknown carton or page")
     expect(storage.putFile).not.toHaveBeenCalled()
+    expect(await carrierLabels()).toEqual([])
   })
   it("builds the supplier's AGL packet from the released snapshot and verified destination", async () => {
     const prepared = await preparation()
@@ -3049,7 +3182,7 @@ describe("document upload and packet release", () => {
       .where(eq(tables.shipments.id, prepared.id))
     await expect(releasedPacket(supplier, prepared.id, page.version)).rejects.toMatchObject({ key: "packetChanged" })
   })
-  it("requires complete current documents, assigns carrier pages and releases exactly once", async () => {
+  it("waits for complete current documents, assigns carrier pages and sends the labels exactly once", async () => {
     const prepared = await preparation()
     await database.update(tables.shipments).set({
       packing: prepared.packing,
@@ -3063,7 +3196,28 @@ describe("document upload and packet release", () => {
         }
       ]
     })
-    expect((await release(prepared.id)).status).toBe(400)
+    expect((await uploadPdf("product_label")).status).toBe(200)
+    const label = { cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }
+    // Only the buyer adds carrier labels, to the shipment as it last saw it.
+    context.actor = supplier
+    expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(400)
+    context.actor = buyer
+    expect((await uploadCarrierLabels(prepared.id, [label], [1], 2)).status).toBe(400)
+    // Amazon's carton label hasn't arrived, so the carrier label alone doesn't complete the packet.
+    const saved = await uploadCarrierLabels(prepared.id, [label], [1])
+    expect(await saved.json()).toEqual({ sent: false })
+    expect(await carrierLabels()).toMatchObject([
+      {
+        shipmentId: prepared.id,
+        cartonId: "A6",
+        trackingNumber: trackingNumber(1),
+        sourceName: "Carrier 1.pdf",
+        // A one-page file is known by its name alone.
+        sourcePage: null,
+        name: "Carrier label - A6.pdf"
+      }
+    ])
+    expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_carton_label"] })
     for (const kind of ["packing_list", "checklist", "carton_label"] as const) {
       await database.insert(tables.documents).values({
         orderId,
@@ -3078,15 +3232,11 @@ describe("document upload and packet release", () => {
         uploadedBy: "amazon"
       })
     }
-    expect((await release(prepared.id)).status).toBe(400)
-    expect((await uploadPdf("product_label")).status).toBe(200)
-    expect((await uploadPdf("shipping_label", prepared.id, 1, [{ cartonId: "A6", page: 1 }])).status).toBe(200)
-    context.actor = supplier
-    expect((await release(prepared.id)).status).toBe(400)
-    context.actor = buyer
-    expect((await release(prepared.id, 2)).status).toBe(400)
-    expect((await release(prepared.id)).status).toBe(200)
-    expect((await release(prepared.id)).status).toBe(400)
+    // Saved again with its carrier label kept, the packet is complete and goes to the supplier, once.
+    const [kept] = await carrierLabels()
+    const keep = [{ cartonId: "A6", documentId: kept!.id, trackingNumber: printed(1) }]
+    expect(await (await uploadCarrierLabels(prepared.id, keep)).json()).toEqual({ sent: true })
+    expect((await uploadCarrierLabels(prepared.id, keep)).status).toBe(400)
     expect((await database.select().from(tables.shipments))[0]?.status).toBe("ready")
     expect((await database.select().from(tables.jobs)).filter((job) => job.key.startsWith("ready:"))).toHaveLength(1)
     expect((await uploadPdf("product_label")).status).toBe(400)
@@ -3150,7 +3300,7 @@ describe("document upload and packet release", () => {
     expect(await withdrawn.text()).toContain("packet changed")
   })
   it("emails the labels only to a supplier that has joined", async () => {
-    // A shipment waiting for labels, with every document its packet needs.
+    // A shipment waiting for its carrier label, with every other document its packet needs.
     const releasable = async () => {
       const prepared = await preparation()
       await database
@@ -3163,12 +3313,12 @@ describe("document upload and packet release", () => {
           ]
         })
         .where(eq(tables.shipments.id, prepared.id))
-      for (const kind of ["packing_list", "checklist", "carton_label", "shipping_label"] as const) {
+      for (const kind of ["packing_list", "checklist", "carton_label"] as const) {
         await database.insert(tables.documents).values({
           orderId,
           shipmentId: prepared.id,
           kind,
-          cartonId: kind.endsWith("_label") ? "A6" : null,
+          cartonId: kind === "carton_label" ? "A6" : null,
           objectKey: `test/${randomUUID()}`,
           name: `${kind}.pdf`,
           bytes: 10,
@@ -3179,8 +3329,11 @@ describe("document upload and packet release", () => {
       }
       return prepared.id
     }
+    // The buyer's carrier label completes the packet, which goes to the supplier.
+    const complete = async (id: string) =>
+      (await uploadCarrierLabels(id, [{ cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }], [1])).json()
     const joined = await releasable()
-    expect((await release(joined)).status).toBe(200)
+    expect(await complete(joined)).toEqual({ sent: true })
     // A supplier that hasn't joined can't open the shipment the email links to, and may have no email address at all.
     // Its shipment is released all the same, and the buyer shares the packet.
     for (const email of ["supplier@example.com", null]) {
@@ -3188,7 +3341,7 @@ describe("document upload and packet release", () => {
         .update(tables.suppliers)
         .set({ supplierOrgId: null, email })
         .where(eq(tables.suppliers.id, supplierLinkId))
-      expect((await release(await releasable())).status).toBe(200)
+      expect(await complete(await releasable())).toEqual({ sent: true })
     }
     // The timeline says who passes the packet on.
     const released = await database.select().from(tables.events).orderBy(tables.events.createdAt)
@@ -3209,6 +3362,150 @@ describe("document upload and packet release", () => {
     vi.stubGlobal("fetch", send)
     await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
     expect(JSON.parse(String(send.mock.calls[0]![1]!.body))).toMatchObject({ to: ["supplier@example.com"] })
+  })
+  it("keeps carrier labels saved for some cartons, and sends them once every carton has one", async () => {
+    const prepared = await preparation(80)
+    // Two cartons of the PO's cords, each with Amazon's carton label.
+    const packing = {
+      ...prepared.packing,
+      cartons: ["A1", "A2"].map((cartonId) => ({ ...prepared.packing.cartons[0]!, cartonId }))
+    }
+    await database
+      .update(tables.shipments)
+      .set({
+        status: "waiting_labels",
+        packing,
+        labels: packing.cartons.map((carton, index) => ({
+          cartonId: carton.cartonId,
+          labelNumber: `20195261154037398${index}`,
+          destinationCode: "IUSP",
+          amazonShipmentId: "STAR-1"
+        }))
+      })
+      .where(eq(tables.shipments.id, prepared.id))
+    for (const carton of packing.cartons) {
+      await database.insert(tables.documents).values({
+        orderId,
+        shipmentId: prepared.id,
+        kind: "carton_label",
+        cartonId: carton.cartonId,
+        objectKey: `test/${randomUUID()}`,
+        name: "carton_label.pdf",
+        bytes: 10,
+        orderRevision: 1,
+        shipmentRevision: 1,
+        uploadedBy: "amazon"
+      })
+    }
+    // The buyer has A1's label so far, and saves it for now.
+    const first = await uploadCarrierLabels(
+      prepared.id,
+      [{ cartonId: "A1", file: 0, page: 1, trackingNumber: printed(1) }],
+      [1]
+    )
+    expect(await first.json()).toEqual({ sent: false })
+    expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_shipping_label"] })
+    expect(await database.select().from(tables.jobs)).toEqual([])
+    // A2's comes in another file, and A1 keeps the label it has.
+    const [a1] = await carrierLabels()
+    const rest = await uploadCarrierLabels(
+      prepared.id,
+      [
+        { cartonId: "A1", documentId: a1!.id, trackingNumber: printed(1) },
+        { cartonId: "A2", file: 0, page: 2, trackingNumber: printed(2) }
+      ],
+      [2]
+    )
+    expect(await rest.json()).toEqual({ sent: true })
+    expect((await carrierLabels()).toSorted((a, b) => a.name.localeCompare(b.name))).toMatchObject([
+      // A1's file held only its label, so there's no page to name.
+      { id: a1!.id, cartonId: "A1", trackingNumber: trackingNumber(1), sourceName: "Carrier 1.pdf", sourcePage: null },
+      { cartonId: "A2", trackingNumber: trackingNumber(2), sourceName: "Carrier 1.pdf", sourcePage: 2 }
+    ])
+    expect(await shipmentState(prepared.id)).toEqual({ status: "ready", issues: [] })
+    const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    expect(emailed).toMatchObject([
+      {
+        key: `ready:${prepared.id}:1`,
+        payload: { type: "ready", to: "supplier@example.com", orderId, shipmentId: prepared.id }
+      }
+    ])
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events).toMatchObject([{ messageKey: "labelsReleased", actor: buyer.user.id }])
+  })
+  it("outdates the carrier label of a carton left out of a later save", async () => {
+    const prepared = await preparation()
+    await database
+      .update(tables.shipments)
+      .set({ status: "waiting_labels", packing: prepared.packing })
+      .where(eq(tables.shipments.id, prepared.id))
+    await uploadCarrierLabels(prepared.id, [{ cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }], [1])
+    const [label] = await carrierLabels()
+    expect(await (await uploadCarrierLabels(prepared.id, [])).json()).toEqual({ sent: false })
+    expect(await carrierLabels()).toEqual([])
+    const [dropped] = await database.select().from(tables.documents).where(eq(tables.documents.id, label!.id))
+    expect(dropped?.outdated).toBe(1)
+    expect((await shipmentState(prepared.id)).issues).toContain("missing_shipping_label")
+  })
+  it("builds the supplier's parcel packet with each carton's tracking number", async () => {
+    const prepared = await preparation()
+    const snapshot = {
+      ...orderData,
+      items: orderData.items.map((item) => ({
+        ...item,
+        packingRequirements: { preparation: "sealedPolybag" as const, labels: [], countryCode: "", instructions: "" }
+      }))
+    }
+    await database
+      .update(tables.shipments)
+      .set({
+        packing: prepared.packing,
+        snapshot,
+        status: "waiting_labels",
+        amazonNetwork: "awd_us",
+        amazonShipmentId: "STAR-EXAMPLE",
+        labels: [
+          {
+            cartonId: "A6",
+            labelNumber: "201952611540373988",
+            destinationCode: "IUSP",
+            amazonShipmentId: "STAR-EXAMPLE"
+          }
+        ]
+      })
+      .where(eq(tables.shipments.id, prepared.id))
+    await database.insert(tables.documents).values({
+      orderId,
+      shipmentId: prepared.id,
+      kind: "carton_label",
+      cartonId: "A6",
+      objectKey: "test/parcel-label",
+      name: "Label.pdf",
+      bytes: 10,
+      orderRevision: 1,
+      shipmentRevision: 1,
+      uploadedBy: "amazon"
+    })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view" }
+    })
+    provider.api.awdInboundShipment.mockResolvedValue({
+      shipmentId: "STAR-EXAMPLE",
+      destinationAddress: { ...prepared.packing.origin, name: "Amazon IUSP", countryCode: "US" }
+    })
+    const saved = await uploadCarrierLabels(
+      prepared.id,
+      [{ cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }],
+      [1]
+    )
+    expect(await saved.json()).toEqual({ sent: true })
+    const page = await shipmentPacketPage(supplier, prepared.id)
+    expect(page.data.transport).toMatchObject({ service: "parcel", carrierLabels: true })
+    expect(page.data.cartons.map((carton) => [carton.id, carton.carrierLabel])).toEqual([["A6", trackingNumber(1)]])
   })
 })
 
@@ -3339,15 +3636,21 @@ describe("PO to a released Amazon shipment", () => {
       ).status
     ).toBe(200)
     // The buyer books parcel transport; all that's left is its carrier labels.
-    const waiting = (await orderWorkflow(buyer, orderId)).shipments[0]!
-    expect(waiting.issues.map((issue) => issue.code)).toEqual(["missing_shipping_label", "missing_shipping_label"])
-    const shipping = await uploadPdf("shipping_label", shipmentId, 2, [
-      { cartonId: "A1", page: 1 },
-      { cartonId: "A2", page: 2 }
-    ])
-    expect(shipping.status).toBe(200)
-    expect((await orderWorkflow(buyer, orderId)).shipments[0]).toMatchObject({ canRelease: true, issues: [] })
-    expect((await release(shipmentId)).status).toBe(200)
+    expect(await shipmentState(shipmentId)).toEqual({
+      status: "waiting_labels",
+      issues: ["missing_shipping_label", "missing_shipping_label"]
+    })
+    // They complete the packet, which goes to the supplier.
+    const shipping = await uploadCarrierLabels(
+      shipmentId,
+      [
+        { cartonId: "A1", file: 0, page: 1, trackingNumber: printed(1) },
+        { cartonId: "A2", file: 0, page: 2, trackingNumber: printed(2) }
+      ],
+      [2]
+    )
+    expect(await shipping.json()).toEqual({ sent: true })
+    expect(await shipmentState(shipmentId)).toEqual({ status: "ready", issues: [] })
 
     // Every document is kept with the PO, and the supplier can download the labels once they're released.
     expect((await kinds()).toSorted()).toEqual(
@@ -3885,17 +4188,22 @@ describe("PO to a released FBA shipment", () => {
         })
       ).status
     ).toBe(200)
-    // Parcel transport needs a carrier label on each carton.
-    const waiting = (await orderWorkflow(buyer, orderId)).shipments[0]!
-    expect(waiting.issues.map((issue) => issue.code)).toEqual(Array(4).fill("missing_shipping_label"))
-    const shipping = await uploadPdf("shipping_label", shipmentId, 4, [
-      { cartonId: "C1", page: 1 },
-      { cartonId: "C2", page: 2 },
-      { cartonId: "G1", page: 3 },
-      { cartonId: "G2", page: 4 }
-    ])
-    expect(shipping.status).toBe(200)
-    expect((await release(shipmentId)).status).toBe(200)
+    // Parcel transport needs a carrier label on each carton, and the four complete the packet.
+    expect(await shipmentState(shipmentId)).toEqual({
+      status: "waiting_labels",
+      issues: Array(4).fill("missing_shipping_label")
+    })
+    const shipping = await uploadCarrierLabels(
+      shipmentId,
+      ["C1", "C2", "G1", "G2"].map((cartonId, index) => ({
+        cartonId,
+        file: 0,
+        page: index + 1,
+        trackingNumber: printed(index + 1)
+      })),
+      [4]
+    )
+    expect(await shipping.json()).toEqual({ sent: true })
     await database
       .insert(tables.memberships)
       .values({ orgId: buyerId, userId: buyer.user.id, email: buyer.user.email, role: "owner" })

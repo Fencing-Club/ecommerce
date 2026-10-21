@@ -51,8 +51,7 @@
       "waitingForBuyer": "खरीदार की मंज़ूरी का इंतज़ार"
     },
     "labels": {
-      "title": "लेबल",
-      "waiting": "लेबल की प्रतीक्षा"
+      "heldBack": "लेबल सप्लायर को भेजे जाने से पहले"
     },
     "creating": {
       "title": "Amazon शिपमेंट बनाया जा रहा है",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "सप्लायर पैकेट तैयार",
-      "description": "लेबल असली साइज़ में प्रिंट करें।",
-      "downloadLabel": "सप्लायर पैकेट डाउनलोड करें",
-      "download": "पैकेट डाउनलोड करें",
+      "downloadLabel": "शिपमेंट पैकेट डाउनलोड करें",
       "incompleteTitle": "सप्लायर पैकेट अधूरा है",
       "waitingForLabels": "खरीदार के लेबल का इंतज़ार है",
       "cartonLabels": "कार्टन लेबल",
       "unitLabels": "उत्पाद लेबल",
       "carrierLabels": "वाहक लेबल",
       "palletLabels": "पैलेट लेबल",
-      "backToShipment": "शिपमेंट पर वापस जाएँ"
+      "backToShipment": "शिपमेंट पर वापस जाएँ",
+      "document": "शिपमेंट पैकेट",
+      "documentDescription": "शिपमेंट के सभी दस्तावेज़"
     },
     "cartons": {
       "title": "कार्टन",
@@ -111,10 +110,6 @@
       "updateCost": "Shopify यूनिट लागत भी अपडेट करें",
       "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए।",
       "submit": "बदलाव मंज़ूर करें"
-    },
-    "release": {
-      "submit": "लेबल सप्लायर को जारी करें",
-      "bookingReference": "Amazon ट्रांसपोर्ट बुकिंग रेफ़रेंस"
     },
     "correction": {
       "trigger": "सुधार का अनुरोध करें",
@@ -233,5 +228,63 @@
     "suffocation": "दम घुटने की चेतावनी वाले लेबल",
     "choking": "छोटे हिस्सों से दम घुटने के खतरे के लेबल",
     "notProvided": "लेबल नहीं दिया गया"
+  },
+  "carrierLabels": {
+    "title": "वाहक लेबल अपलोड करें",
+    "upload": "लेबल अपलोड करें",
+    "intro": "वाहक की लेबल PDF फ़ाइलें जोड़ें। लेबल वज़न और आकार के अनुसार कार्टन से मिलाए जाते हैं।",
+    "reading": "{files, plural, =1 {{name} पढ़ा जा रहा है} other {# PDF पढ़ी जा रही हैं}}",
+    "source": "{name}, पेज {page}",
+    "savedLabel": "सहेजा गया लेबल",
+    "trackingNumber": "ट्रैकिंग नंबर",
+    "enterTracking": "ट्रैकिंग नंबर दर्ज करें",
+    "noTracking": "ट्रैकिंग नंबर नहीं है",
+    "addTracking": "जोड़ें",
+    "addTrackingFor": "{name} का ट्रैकिंग नंबर जोड़ें",
+    "trackingNotRead": "ट्रैकिंग लेबल पहचाना नहीं गया।",
+    "trackingRecognized": "ट्रैकिंग नंबर पहचाना गया।",
+    "trackingUnknown": "ट्रैकिंग नंबर पहचाना नहीं गया। इसे लेबल से मिलाएं।",
+    "trackingInvalid": "ट्रैकिंग नंबर वैसे ही दर्ज करें जैसे लेबल पर छपा है।",
+    "notPdf": "{name} PDF नहीं है।",
+    "unreadable": "{name} पढ़ा नहीं जा सका।",
+    "alreadyAdded": "{labels, plural, =1 {1 लेबल पहले से जोड़ा गया था, इसलिए उसे छोड़ दिया गया।} other {# लेबल पहले से जोड़े गए थे, इसलिए उन्हें छोड़ दिया गया।}}",
+    "cancel": "रद्द करें",
+    "save": "लेबल सहेजें",
+    "failed": "लेबल सहेजे नहीं गए। फिर से कोशिश करें।",
+    "saved": "वाहक लेबल सहेजे गए",
+    "sent": "वाहक लेबल सप्लायर को भेजे गए",
+    "notPlaced": "नहीं लगाए गए",
+    "fill": "कार्टन क्रम से भरें",
+    "dropTitle": "वाहक की PDF फ़ाइलें यहाँ छोड़ें",
+    "dropNote": "हर लेबल के लिए एक PDF, या हर लेबल के लिए एक पेज वाली एक PDF",
+    "browse": "ब्राउज़ करें",
+    "dropMore": "और PDF फ़ाइलें यहाँ छोड़ें या <browse>ब्राउज़ करें</browse>",
+    "files": "{count, plural, one {# फ़ाइल} other {# फ़ाइलें}}",
+    "dropFiles": "{count, plural, one {# PDF जोड़ने के लिए छोड़ें} other {# PDF जोड़ने के लिए छोड़ें}}",
+    "dropFilesNote": "हर पेज एक लेबल बन जाता है",
+    "dropToTakeOff": "{name} को उसके कार्टन से हटाने के लिए छोड़ें",
+    "cartons": "कार्टन",
+    "cartonsLabelled": "{total} में से {count} पर लेबल है",
+    "dragHere": "लेबल यहाँ खींचें",
+    "dropOnCarton": "{name} को {carton} पर लगाने के लिए छोड़ें",
+    "takeOff": "{carton} से लेबल हटाएँ",
+    "preview": "{name} देखें",
+    "pictureOf": "{name} का लेबल",
+    "noPicture": "इस लेबल की कोई तस्वीर नहीं है",
+    "readingText": "लेबल का टेक्स्ट पढ़ा जा रहा है",
+    "trackingFor": "{name} का ट्रैकिंग नंबर",
+    "carrier": "वाहक",
+    "unknownCarrier": "पता नहीं",
+    "allLabels": "सभी लेबल",
+    "previousLabel": "पिछला लेबल",
+    "nextLabel": "अगला लेबल",
+    "positionNotPlaced": "{count} में से {position}, नहीं लगाए गए",
+    "positionPlaced": "{count} में से {position}, कार्टन पर",
+    "carton": "कार्टन",
+    "cartonTaken": "{carton}, लेबल लगा है",
+    "notRead": "नहीं पढ़ा गया",
+    "doesNotFit": "वज़न और आकार {cartons} से मेल नहीं खाते",
+    "weight": "वज़न",
+    "dimensions": "आयाम"
   }
 }

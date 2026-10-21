@@ -60,6 +60,10 @@ export const api = createApi({
     uploadDocument: build.mutation<ActionResult, FormData>({
       query: (body) => ({ url: "documents", method: "POST", body })
     }),
+    // A shipment's carrier labels, from the Upload carrier labels dialog. `sent` says whether they went to the supplier.
+    saveCarrierLabels: build.mutation<{ sent: boolean }, { id: string; body: FormData }>({
+      query: ({ id, body }) => ({ url: `shipments/${id}/carrier-labels`, method: "POST", body })
+    }),
     // What the header's search looks through, and the sales orders it finds as the Orders page's search does.
     search: build.query<SearchIndex, void>({ query: () => "search" }),
     salesSearch: build.query<{ orders: SalesOrderSummary[] }, string>({
@@ -81,6 +85,7 @@ export const {
   useLazyPackingListQuery,
   useMaintenanceQuery,
   useSalesSearchQuery,
+  useSaveCarrierLabelsMutation,
   useSearchQuery,
   useSuppliersQuery,
   useUploadDocumentMutation

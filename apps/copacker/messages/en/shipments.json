@@ -51,8 +51,7 @@
       "waitingForBuyer": "Waiting for the buyer’s approval"
     },
     "labels": {
-      "title": "Labels",
-      "waiting": "Waiting for labels"
+      "heldBack": "Before the labels go to the supplier"
     },
     "creating": {
       "title": "Creating the Amazon shipment",
@@ -60,16 +59,16 @@
     },
     "packet": {
       "title": "Supplier packet ready",
-      "description": "Print labels at actual size.",
-      "downloadLabel": "Download supplier packet",
-      "download": "Download packet",
+      "downloadLabel": "Download shipment packet",
       "incompleteTitle": "Supplier packet incomplete",
       "waitingForLabels": "Waiting for the buyer’s labels",
       "cartonLabels": "Carton labels",
       "unitLabels": "Product labels",
       "carrierLabels": "Carrier labels",
       "palletLabels": "Pallet labels",
-      "backToShipment": "Back to shipment"
+      "backToShipment": "Back to shipment",
+      "document": "Shipment packet",
+      "documentDescription": "All shipment documents"
     },
     "cartons": {
       "title": "Cartons",
@@ -111,10 +110,6 @@
       "updateCost": "Also update Shopify unit costs",
       "updateCostDescription": "Shopify costs must be in the purchase order’s currency.",
       "submit": "Approve changes"
-    },
-    "release": {
-      "submit": "Release labels to supplier",
-      "bookingReference": "Amazon transport booking reference"
     },
     "correction": {
       "trigger": "Request a correction",
@@ -233,5 +228,63 @@
     "suffocation": "Suffocation warning labels",
     "choking": "Choking hazard labels",
     "notProvided": "Label not provided"
+  },
+  "carrierLabels": {
+    "title": "Upload carrier labels",
+    "upload": "Upload labels",
+    "intro": "Add the carrier’s label PDFs. Labels are matched to cartons by weight and size.",
+    "reading": "{files, plural, =1 {Reading {name}} other {Reading # PDFs}}",
+    "source": "{name}, page {page}",
+    "savedLabel": "Saved label",
+    "trackingNumber": "Tracking number",
+    "enterTracking": "Enter the tracking number",
+    "noTracking": "No tracking number",
+    "addTracking": "Add",
+    "addTrackingFor": "Add the tracking number for {name}",
+    "trackingNotRead": "Unrecognized tracking label.",
+    "trackingRecognized": "Tracking number recognized.",
+    "trackingUnknown": "Tracking number not recognized. Check it against the label.",
+    "trackingInvalid": "Enter the tracking number as it’s printed on the label.",
+    "notPdf": "{name} isn’t a PDF.",
+    "unreadable": "{name} couldn’t be read.",
+    "alreadyAdded": "{labels, plural, =1 {1 label was already added, so it was skipped.} other {# labels were already added, so they were skipped.}}",
+    "cancel": "Cancel",
+    "save": "Save labels",
+    "failed": "The labels weren’t saved. Try again.",
+    "saved": "Carrier labels saved",
+    "sent": "Carrier labels sent to the supplier",
+    "notPlaced": "Not placed",
+    "fill": "Fill cartons in order",
+    "dropTitle": "Drop the carrier’s PDFs here",
+    "dropNote": "One PDF per label, or one with a page per label",
+    "browse": "Browse",
+    "dropMore": "Drop more PDFs here or <browse>browse</browse>",
+    "files": "{count, plural, one {# file} other {# files}}",
+    "dropFiles": "{count, plural, one {Drop to add # PDF} other {Drop to add # PDFs}}",
+    "dropFilesNote": "Each page becomes a label",
+    "dropToTakeOff": "Drop to take {name} off its carton",
+    "cartons": "Cartons",
+    "cartonsLabelled": "{count} of {total} have a label",
+    "dragHere": "Drag a label here",
+    "dropOnCarton": "Drop to put {name} on {carton}",
+    "takeOff": "Take the label off {carton}",
+    "preview": "Preview {name}",
+    "pictureOf": "Label from {name}",
+    "noPicture": "No picture of this label",
+    "readingText": "Reading the label’s text",
+    "trackingFor": "Tracking number for {name}",
+    "carrier": "Carrier",
+    "unknownCarrier": "Not known",
+    "allLabels": "All labels",
+    "previousLabel": "Previous label",
+    "nextLabel": "Next label",
+    "positionNotPlaced": "{position} of {count} not placed",
+    "positionPlaced": "{position} of {count} on cartons",
+    "carton": "Carton",
+    "cartonTaken": "{carton}, has a label",
+    "notRead": "Not read",
+    "doesNotFit": "Weight and size don’t fit {cartons}",
+    "weight": "Weight",
+    "dimensions": "Dimensions"
   }
 }

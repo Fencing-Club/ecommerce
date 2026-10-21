@@ -9,7 +9,7 @@
     "missingPackingList": "Generate the current packing list before releasing labels",
     "missingChecklist": "Generate the current checklist before releasing labels",
     "missingCartonLabel": "Carton label is missing for carton {carton}",
-    "missingShippingLabel": "Assign a shipping label to carton {carton}",
+    "missingShippingLabel": "Add a carrier label for carton {carton}",
     "missingPalletLabels": "Pallet labels are missing",
     "missingProductLabel": "Add a product label for {sku} on the Products page",
     "packing": {
@@ -41,7 +41,8 @@
       "palletWeight": "Pallet {pallet}: keep {receiver} pallets to {maxLb, number} lb ({maxKg, number} kg) or less, including the pallet"
     },
     "networkMismatch": "Pack only products assigned to this shipment’s Amazon network.",
-    "missingTransport": "Transport not confirmed"
+    "missingTransport": "Transport not confirmed",
+    "missingTrackingNumber": "Add the tracking number of carton {carton}’s carrier label"
   },
   "workflow": {
     "arrived": "The goods have arrived",
@@ -50,7 +51,6 @@
     "approval": "Review the supplier’s proposed prices and supplier SKUs",
     "processing": "Amazon is processing the shipment and carton labels",
     "labels": "Book shipping and add the missing documents below",
-    "release": "Enter the booking reference and release the supplier packet",
     "ship": "Print the packet, pack the cartons, and mark them shipped",
     "forward": "The forwarder ships the goods on and adds the freight cost, carrier, and tracking",
     "receive": "Mark the goods received when they arrive",

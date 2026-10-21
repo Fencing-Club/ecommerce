@@ -516,6 +516,11 @@ export const documents = pgTable(
     }).notNull(),
     itemId: uuid(),
     cartonId: text(),
+    // A carrier label's tracking number, which the supplier packet lists for its carton, and the file and page the
+    // buyer added it from.
+    trackingNumber: text(),
+    sourceName: text(),
+    sourcePage: integer(),
     objectKey: text().notNull().unique(),
     name: text().notNull(),
     bytes: integer().notNull(),
@@ -586,7 +591,8 @@ export const jobs = pgTable(
         "amazon-ads",
         "ebay-event",
         "ebay-subscribe",
-        "reconcile"
+        "reconcile",
+        "labels"
       ]
     }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),

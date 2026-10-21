@@ -16,7 +16,7 @@ import { knownPackingGroups, releasedLabelKinds, releasedStates, reservedPieces 
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
-import { hasProductLabels, lineLabels } from "./product-barcodes"
+import { lineLabels } from "./product-barcodes"
 export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
   const s = await session()
   requirePage(s, "shipments")
@@ -101,11 +101,6 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
-    hasProductLabels: hasProductLabels(
-      snapshot.items,
-      labels,
-      new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
-    ),
     // The label types each line being packed prints, and why a barcode label can't be made yet.
     lineLabels: packingOrder.items.map((item) => ({
       itemId: item.id,
@@ -144,10 +139,25 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     },
     step: {
       next: { step: step.next.step, message: step.next.message },
-      issues: step.issues.map(({ message }) => ({ message })),
-      packetUrl: step.packetUrl,
-      canRelease: step.canRelease
+      issues: step.issues.map(({ code, message }) => ({ code, message })),
+      packetUrl: step.packetUrl
     },
+    // The buyer's carrier label for each carton so far, which the Upload carrier labels dialog opens with.
+    carrierLabels: isBuyer
+      ? docs.flatMap((doc) =>
+          doc.kind === "shipping_label" && doc.cartonId
+            ? [
+                {
+                  cartonId: doc.cartonId,
+                  documentId: doc.id,
+                  trackingNumber: doc.trackingNumber,
+                  sourceName: doc.sourceName,
+                  sourcePage: doc.sourcePage
+                }
+              ]
+            : []
+        )
+      : [],
     reserved,
     packingGroups,
     snapshot: prices ? snapshot : unpricedOrder(snapshot),
