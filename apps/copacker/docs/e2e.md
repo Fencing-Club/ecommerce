@@ -13,7 +13,7 @@ documents, labels, catalog and product exports).
 | Cloudflare release workflow (`deploy-staging`) | Staging | Signed-out smoke checks; full deployed qualification is a separate release gate |
 | After promoting to production | Production | Only specs tagged `@smoke`: signed out and read-only |
 
-Staging's deploy only runs once `verify`, `stories` and `e2e` pass. Local and CI runs have no background executor or
+Staging's deploy only runs once `verify`, `unit`, `worker`, `stories` and `e2e` pass. Local and CI runs have no background executor or
 merchant credentials. The explicit demo Shopify provider serves catalog, variant, stock and cost operations from its
 workspace snapshot; saving an edited draft is covered end to end. Other provider calls need separate live qualification.
 On staging background jobs run; specs that only make sense locally skip themselves with `test.skip(deployed, …)`.
