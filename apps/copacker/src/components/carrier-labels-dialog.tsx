@@ -707,7 +707,7 @@ function CarrierLabelsForm({
           disabled={saving || !!reading || (!onCartons.length && !kept.length)}
           onClick={() => void save()}
         >
-          {saving && <LoaderCircle aria-hidden className="animate-spin" />}
+          {saving && <LoaderCircle aria-hidden className="motion-safe:animate-spin" />}
           {t("save")}
         </Button>
       </div>
@@ -824,7 +824,7 @@ function NotPlaced({
         <div className="flex items-center gap-2 border-b px-3 py-2 text-xs text-muted-foreground">
           {reading ? (
             <output className="flex flex-1 items-center gap-2">
-              <LoaderCircle aria-hidden className="size-3.5 animate-spin" />
+              <LoaderCircle aria-hidden className="size-3.5 motion-safe:animate-spin" />
               {reading}
             </output>
           ) : (
@@ -1327,7 +1327,7 @@ function LabelPreview({
               <PrintedText lines={label.lines} />
               {label.picture === "reading" && (
                 <output className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-md bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
-                  <LoaderCircle aria-hidden className="size-3.5 animate-spin" />
+                  <LoaderCircle aria-hidden className="size-3.5 motion-safe:animate-spin" />
                   {t("readingText")}
                 </output>
               )}

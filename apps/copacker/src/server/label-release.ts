@@ -44,11 +44,13 @@ export async function sendQueuedLabels({ key, payload }: QueuedLabels) {
     console.error(JSON.stringify({ event: "labels_send_failed", key, error: describeError(error) }))
     return withJobWake(Promise.resolve(false))
   }
-  // A job the queue has started finds nothing left to send.
+  // A job the queue has started, or one a failed cleanup leaves, finds nothing left to send.
   await db()
     .delete(jobs)
     .where(and(eq(jobs.key, key), eq(jobs.status, "pending")))
-    .catch(() => undefined)
+    .catch((error: unknown) =>
+      console.error(JSON.stringify({ event: "labels_job_cleanup_failed", key, error: describeError(error) }))
+    )
   return sent
 }
 
