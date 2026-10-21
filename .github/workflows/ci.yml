@@ -103,8 +103,10 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
-          name: unit-blob-${{ matrix.shard }}-${{ github.run_attempt }}
+          # One name per shard, so a rerun shard replaces its own blob and the merge still sees all three.
+          name: unit-blob-${{ matrix.shard }}
           path: apps/copacker/.vitest/blob
+          overwrite: true
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -133,7 +135,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v8
         with:
-          pattern: unit-blob-*-${{ github.run_attempt }}
+          pattern: unit-blob-*
           path: apps/copacker/.vitest/blob
           merge-multiple: true
       - run: pnpm --filter copacker exec vitest run --project unit --merge-reports --coverage
