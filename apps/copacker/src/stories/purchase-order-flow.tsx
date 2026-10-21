@@ -64,7 +64,7 @@ import { useMoney } from "@/hooks/use-money"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
-import { orderItem } from "./fixtures/orders"
+import { daysAgo, orderItem } from "./fixtures/orders"
 import { order, orderId, pickupAddress, pickupLocations } from "./fixtures/purchase-orders"
 const pageLayout = "@container/po flex min-w-0 flex-col gap-6 text-sm"
 type Item = OrderInput["items"][number] & { taxRate?: number }
@@ -231,6 +231,8 @@ const products = [
     piecesPerSet: 2
   })
 ]
+// Cartons are ready in two weeks, so packing can finish.
+const readyDate = daysAgo(-14).toISOString().slice(0, 10)
 const packingCharge = { id: "packing", name: "Packing", amount: 12000 }
 const handlingCharge = { id: "handling", name: "Handling", amount: 2500 }
 const lineTotal = (items: Item[]) => items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
@@ -781,7 +783,7 @@ export function PurchaseOrderFlow({
             shipment: packing,
             packing: packingSchema.parse({
               origin: pickupAddress,
-              readyDate: "2026-10-20",
+              readyDate,
               cartons: packingCartons(),
               changes: []
             })
@@ -1113,7 +1115,7 @@ export function PurchaseOrderFlow({
           initial={
             packingRecords[packing.id]?.packing ?? {
               origin: pickupAddress,
-              readyDate: "2026-10-20",
+              readyDate,
               cartons: packingCartons()
             }
           }

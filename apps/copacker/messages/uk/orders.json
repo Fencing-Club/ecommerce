@@ -407,6 +407,7 @@
     "readyForPickup": "Готово до забору",
     "shipFrom": "Адреса забору",
     "readyDate": "Готово до забору",
+    "readyDatePassed": "Виберіть сьогоднішню або пізнішу дату",
     "addCartonProduct": "Додати товар до коробки",
     "removeCartonProduct": "Видалити товар {number} з коробки",
     "finishPacking": "Завершити пакування",

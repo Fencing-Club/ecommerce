@@ -38,9 +38,9 @@ A supplier can work for several buyers.
 
 ## Shipments
 
-The supplier submits cartons, measurements and a ready date, Copacker creates the Amazon shipment and matches its labels
-to the cartons, and a correction outdates the shipment’s documents and replaces an Amazon shipment rather than updating
-it ([Amazon inbound shipments](amazon-inbound.md)).
+The supplier submits cartons, measurements and a ready date of today or later ([Packing lists](packing.md)), Copacker
+creates the Amazon shipment and matches its labels to the cartons, and a correction outdates the shipment’s documents
+and replaces an Amazon shipment rather than updating it ([Amazon inbound shipments](amazon-inbound.md)).
 
 ## Architecture
 

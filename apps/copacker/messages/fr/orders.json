@@ -407,6 +407,7 @@
     "readyForPickup": "Prêt pour l’enlèvement",
     "shipFrom": "Adresse d’enlèvement",
     "readyDate": "Prêt pour l’enlèvement",
+    "readyDatePassed": "Choisissez aujourd’hui ou une date ultérieure",
     "addCartonProduct": "Ajouter un produit au carton",
     "removeCartonProduct": "Retirer le produit {number} du carton",
     "finishPacking": "Terminer l’emballage",

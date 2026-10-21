@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "采购订单已更改。请检查后保存装箱草稿，再提交。",
     "shipmentLocked": "编辑装箱单前，请先处理现有货件",
+    "readyDatePassed": "可提货日期：请选择今天或之后的日期",
     "missingInvoice": "请上传此货件的正式商业发票",
     "missingPacking": "请先提交装箱单",
     "unmatchedCartons": "箱标与箱子不匹配",

@@ -2,6 +2,7 @@
   "readiness": {
     "orderChanged": "Die Bestellung hat sich geändert. Prüfen Sie sie und speichern Sie den Packlistenentwurf vor dem Senden.",
     "shipmentLocked": "Klären Sie die bestehende Sendung, bevor Sie ihre Packliste bearbeiten",
+    "readyDatePassed": "Abholbereit: Wählen Sie heute oder ein späteres Datum",
     "missingInvoice": "Laden Sie die offizielle Handelsrechnung für diese Sendung hoch",
     "missingPacking": "Senden Sie zuerst die Packliste",
     "unmatchedCartons": "Die Kartonetiketten stimmen nicht mit den Kartons überein",

@@ -16,7 +16,7 @@ import { CircleAlert, CircleCheck, Clock3, Download, Ellipsis, Info, Plus, Uploa
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
-import { useLocale, useTranslations } from "use-intl"
+import { useLocale, useNow, useTimeZone, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -40,6 +40,7 @@ import {
 } from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
+import { zonedDay } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
 import { CartonImportDialog } from "./carton-import-dialog"
@@ -59,7 +60,8 @@ import { Checkbox } from "./ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Label } from "./ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
-type Values = z.input<typeof packingEditorSchema>
+type EditorSchema = ReturnType<typeof packingEditorSchema>
+type Values = z.input<EditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
 // number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
@@ -174,6 +176,8 @@ export function PackingForm({
   const palletIssueErrors = usePalletIssueErrors()
   const errorMessage = useErrorMessage()
   const formErrorMap = useFormErrorMap()
+  // The zone the supplier's browser reports, so today is the supplier's own; UTC until it has reported one.
+  const timeZone = useTimeZone() ?? "UTC"
   const router = useRouter()
   const [run] = useActionMutation()
   const formId = useId()
@@ -195,9 +199,9 @@ export function PackingForm({
     noOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, initial?.origin ?? {})
   // The saved address the cartons leave from, or "" for one typed in.
   const [pickup, setPickup] = useState(startAddress?.id ?? "")
-  const form = useForm<Values, unknown, z.output<typeof packingEditorSchema>>({
+  const form = useForm<Values, unknown, z.output<EditorSchema>>({
     mode: "onChange",
-    resolver: zodResolver(packingEditorSchema, { error: formErrorMap }),
+    resolver: zodResolver(packingEditorSchema(timeZone), { error: formErrorMap }),
     defaultValues: {
       readyDate: initial?.readyDate ?? "",
       origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
@@ -351,12 +355,12 @@ export function PackingForm({
       setWorking(null)
     }
   }
+  // Each invalid field shows its own error, and the first one takes focus, so nothing else is added; an earlier
+  // attempt's message no longer applies.
   const validated = () =>
     form.handleSubmit(
       () => perform("submit", form.getValues()),
-      () => {
-        setServerError(t("fixFields"))
-      }
+      () => setServerError("")
     )
   function setPallets(next: PalletValue[]) {
     form.setValue("pallets", next, { shouldDirty: true, shouldValidate: form.formState.submitCount > 0 })
@@ -870,6 +874,9 @@ export function PackingDetailsFields({
   const t = useTranslations("orders.packing")
   const palletText = useTranslations("orders.pallets")
   const form = useFormContext<Values>()
+  // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
+  // The clock ticks each minute, so a page left open past midnight moves on to the next day here too.
+  const today = zonedDay(useNow({ updateInterval: 60000 }), useTimeZone() ?? "UTC")
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
   const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
   const palletizedId = useId()
@@ -979,7 +986,7 @@ export function PackingDetailsFields({
         !readOnly && (
           <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
             <div className="w-full max-w-72">
-              <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+              <FormInput name="readyDate" required label={t("readyDate")} type="date" min={today} />
             </div>
             <div className="flex min-h-9 items-center gap-2.5">
               <Checkbox

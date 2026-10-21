@@ -213,6 +213,8 @@ const buyerId = randomUUID(),
   supplierLinkId = randomUUID(),
   orderId = randomUUID(),
   itemId = randomUUID()
+// A week from now: finishing packing needs a ready date of today or later.
+const readyDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
 const orderData = orderInputSchema.parse({
   supplierId: supplierLinkId,
   reference: "PO-TEST",
@@ -357,7 +359,7 @@ async function preparation(pieces = 160) {
     uploadedBy: supplier.user.id
   })
   const packing = packingSchema.parse({
-    readyDate: "2026-10-15",
+    readyDate,
     origin: {
       name: "Supplier",
       addressLine1: "Road 1",
@@ -3251,7 +3253,7 @@ describe("PO to a released Amazon shipment", () => {
     const uploadedInvoice = await uploadPdf("invoice")
     expect(uploadedInvoice.status).toBe(200)
     const packing = packingSchema.parse({
-      readyDate: "2026-10-15",
+      readyDate,
       origin: {
         name: "Supplier",
         addressLine1: "Road 1",
@@ -3425,7 +3427,7 @@ describe("PO to the buyer's own location", () => {
     context.actor = supplier
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
-      readyDate: "2026-10-15",
+      readyDate,
       origin: {
         name: "Supplier",
         addressLine1: "Road 1",
@@ -3791,7 +3793,7 @@ describe("PO to a released FBA shipment", () => {
     const { shipmentId } = await submitOrder(buyer, orderId, 1)
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
-      readyDate: "2026-10-15",
+      readyDate,
       origin: {
         name: "Supplier",
         addressLine1: "Road 1",
@@ -4033,7 +4035,7 @@ describe("PO to a released FBA shipment", () => {
     const shipmentId = draft!.id
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
-      readyDate: "2026-10-15",
+      readyDate,
       origin: {
         name: "Supplier",
         addressLine1: "Road 1",
@@ -4118,7 +4120,7 @@ describe("PO to a released FBA shipment", () => {
     const shipmentId = draft!.id
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
-      readyDate: "2026-10-15",
+      readyDate,
       origin: {
         name: "Supplier",
         addressLine1: "Road 1",
@@ -4441,6 +4443,23 @@ describe("fluid packing handoff", () => {
     await savePacking(supplier, prepared.id, prepared.packing, 2, 2)
     await submitPacking(supplier, prepared.id, undefined, 3)
     expect((await database.select().from(tables.shipments))[0]).toMatchObject({ status: "packed", orderRevision: 2 })
+  })
+  it("saves a ready date that has passed in a draft, but doesn't finish packing with it", async () => {
+    const prepared = await preparation()
+    const passed = { ...prepared.packing, readyDate: "2026-10-05" }
+    await savePacking(supplier, prepared.id, passed, 1, 1)
+    const checked = await checkPacking(supplier, prepared.id)
+    expect(checked.canSubmit).toBe(false)
+    expect(checked.issues).toEqual([
+      { code: "ready_date_passed", field: "readyDate", message: "Choose a ready date of today or later" }
+    ])
+    await expect(submitPacking(supplier, prepared.id, undefined, 2)).rejects.toThrow(
+      "Choose a ready date of today or later"
+    )
+    expect((await database.select().from(tables.shipments))[0]).toMatchObject({
+      status: "packing",
+      packingDraft: { readyDate: "2026-10-05" }
+    })
   })
   it("reopens finished packing until the buyer starts the Amazon shipment", async () => {
     const prepared = await preparation()
@@ -4832,7 +4851,8 @@ describe("tenant sales demand reads", () => {
 })
 
 describe("stored sales orders", () => {
-  const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString()
+  // On a whole minute, so a timestamp ends in "00.000Z" and a search such as "10.00" never matches the clock.
+  const daysAgo = (days: number) => new Date(Math.floor(Date.now() / 60000) * 60000 - days * 86400000).toISOString()
   const amazonOrder = (orderId: string, createdTime: string, quantity: number) => ({
     orderId,
     createdTime,

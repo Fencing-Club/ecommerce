@@ -1,5 +1,6 @@
 import { cartonInputSchema, type PackingDraft, packingSchema, palletInputSchema } from "@repo/aisle"
 import { z } from "zod"
+import { zonedDay } from "./time-zone"
 
 // Counts are an editor convenience. The saved packing list still identifies every physical carton.
 export const cartonGroupSchema = cartonInputSchema.extend({
@@ -14,22 +15,30 @@ const palletEditorSchema = palletInputSchema.extend({
   height: z.number().or(z.nan()),
   weight: z.number().or(z.nan())
 })
-export const packingEditorSchema = packingSchema
-  .extend({
-    cartons: z.array(cartonGroupSchema).min(1).max(1000),
-    palletized: z.boolean(),
-    pallets: z.array(palletEditorSchema).max(1000)
-  })
-  .superRefine((packing, ctx) => {
-    if (!packing.palletized) {
-      return
-    }
-    for (const [index, pallet] of packing.pallets.entries()) {
-      for (const issue of palletInputSchema.safeParse(pallet).error?.issues ?? []) {
-        ctx.addIssue({ code: "custom", message: issue.message, path: ["pallets", index, ...issue.path] })
+// Finishing packing also needs a ready date of today or later in the supplier's time zone. Today is read when the form
+// checks, so a form left open past midnight moves on to the next day.
+export function packingEditorSchema(timeZone: string) {
+  return packingSchema
+    .extend({
+      readyDate: packingSchema.shape.readyDate.refine(
+        (date) => date >= zonedDay(Date.now(), timeZone),
+        "orders.packing.readyDatePassed"
+      ),
+      cartons: z.array(cartonGroupSchema).min(1).max(1000),
+      palletized: z.boolean(),
+      pallets: z.array(palletEditorSchema).max(1000)
+    })
+    .superRefine((packing, ctx) => {
+      if (!packing.palletized) {
+        return
       }
-    }
-  })
+      for (const [index, pallet] of packing.pallets.entries()) {
+        for (const issue of palletInputSchema.safeParse(pallet).error?.issues ?? []) {
+          ctx.addIssue({ code: "custom", message: issue.message, path: ["pallets", index, ...issue.path] })
+        }
+      }
+    })
+}
 export type CartonGroup = z.input<typeof cartonGroupSchema>
 export type PalletValue = z.input<typeof palletEditorSchema>
 type DraftCarton = NonNullable<PackingDraft["cartons"]>[number]

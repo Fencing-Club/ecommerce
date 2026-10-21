@@ -75,8 +75,9 @@ describe("carton configuration letters", () => {
 })
 
 describe("packing editor", () => {
+  const schema = packingEditorSchema("UTC")
   const values = (palletized: boolean, weight: number) => ({
-    readyDate: "2026-10-20",
+    readyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     origin: pickupAddress,
     cartons: [group("A1", 1)],
     palletized,
@@ -85,9 +86,9 @@ describe("packing editor", () => {
   })
 
   it("checks pallets only when the cartons are packed on them", () => {
-    expect(packingEditorSchema.safeParse(values(true, 62)).success).toBe(true)
-    expect(packingEditorSchema.safeParse(values(false, Number.NaN)).success).toBe(true)
-    const result = packingEditorSchema.safeParse(values(true, Number.NaN))
+    expect(schema.safeParse(values(true, 62)).success).toBe(true)
+    expect(schema.safeParse(values(false, Number.NaN)).success).toBe(true)
+    const result = schema.safeParse(values(true, Number.NaN))
     expect(result.error?.issues.map((issue) => issue.path)).toEqual([["pallets", 0, "weight"]])
   })
 })

@@ -44,6 +44,12 @@ export function receivedPieces(rows: Shipment[]) {
 
 export type ReadinessIssue = { code: string; message: string; field?: string; cartonId?: string; itemId?: string }
 
+// The earliest date that is still today somewhere on Earth: the date at UTC−12. The packing form asks for a ready date
+// of the supplier's own today or later, which is never before this, whatever the supplier's time zone.
+function earliestToday(now: Date | number) {
+  return new Date(new Date(now).getTime() - 12 * 3600000).toISOString().slice(0, 10)
+}
+
 function* reservations(rows: Shipment[], excludeId?: string) {
   for (const row of rows) {
     if (row.id === excludeId || ["packing", "cancelled"].includes(row.status) || !row.packing) {
@@ -108,7 +114,8 @@ export function packingReadiness(
   raw: unknown,
   rows: Shipment[],
   orderRevision: number,
-  t: ServerText = serverTextInEnglish
+  t: ServerText = serverTextInEnglish,
+  now: Date | number = Date.now()
 ) {
   const issues: ReadinessIssue[] = []
   if (shipment.orderRevision !== orderRevision) {
@@ -136,6 +143,11 @@ export function packingReadiness(
     return { packing: null, issues }
   }
   const packing = parsed.data
+  // Finishing packing needs a ready date that hasn't passed. Once packed, the date stays as the supplier gave it: the
+  // FBA booking starts its ready-to-ship window no sooner than now.
+  if (["packing", "correction"].includes(shipment.status) && packing.readyDate < earliestToday(now)) {
+    issues.push({ code: "ready_date_passed", field: "readyDate", message: t("readiness.readyDatePassed") })
+  }
   if (
     shipment.amazonNetwork &&
     packing.cartons.some((carton) =>
