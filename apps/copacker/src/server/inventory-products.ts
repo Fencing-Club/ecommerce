@@ -1,7 +1,7 @@
-import type { AmazonNetwork } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
-import type { Shopify } from "@repo/aisle/shopify"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
+import type { AmazonNetwork } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-shipments"
 import type { LocationClassification } from "./inventory-locations"
 
 type OrderItem = OrderInput["items"][number]

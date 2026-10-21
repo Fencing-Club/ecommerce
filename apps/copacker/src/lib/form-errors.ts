@@ -7,7 +7,7 @@ import validation from "../../messages/en/validation.json"
 // getTranslations("validation") are both one.
 export type ValidationTranslator = (key: keyof typeof validation, values?: Record<string, number>) => string
 
-// The shared @repo/aisle schemas carry developer-facing defaults; this maps them to customer-facing field messages in
+// The shared @repo/copacker-shipments schemas carry developer-facing defaults; this maps them to customer-facing field messages in
 // the translator's language. Messages written on a schema (for example "orders.builder.chooseForwarder") still take
 // precedence, and form fields translate them.
 export function formErrorMapFor(t: ValidationTranslator): z.core.$ZodErrorMap {

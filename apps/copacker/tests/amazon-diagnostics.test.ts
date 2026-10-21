@@ -1,5 +1,5 @@
-import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/aisle/amazon"
-import { parseFbmReturns } from "@repo/aisle/fbm-returns"
+import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/copacker-marketplaces/amazon"
+import { parseFbmReturns } from "@repo/copacker-marketplaces/fbm-returns"
 import { expect, it } from "vitest"
 import { z } from "zod"
 import { amazonFailureDetails } from "../src/server/amazon-diagnostics"

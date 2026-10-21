@@ -489,7 +489,7 @@ export const PackingDetails = meta.story({
     )
   }
 })
-import { money } from "@repo/aisle"
+import { money } from "@repo/copacker-shipments"
 
 export const WarehouseSkuLabel = meta.story({
   args: {

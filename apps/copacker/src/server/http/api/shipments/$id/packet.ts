@@ -1,4 +1,4 @@
-import { combinePdfs } from "@repo/aisle/documents"
+import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { shipmentDocumentFilename } from "@/server/document-filenames"

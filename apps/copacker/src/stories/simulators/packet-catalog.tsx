@@ -1,4 +1,4 @@
-import { packingRequirementsSchema } from "@repo/aisle/packing-requirements"
+import { packingRequirementsSchema } from "@repo/copacker-shipments/packing-requirements"
 import { Fragment } from "react"
 import { shippingCopy, shippingMessage } from "@/documents/shipping-copy"
 import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "@/documents/shipping-rules"

@@ -1,5 +1,5 @@
-import { money } from "@repo/aisle"
-import { canConfigureTransport, shipmentLabelRequirements } from "@repo/aisle/transport"
+import { money } from "@repo/copacker-shipments"
+import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import {
   AlertTriangle,

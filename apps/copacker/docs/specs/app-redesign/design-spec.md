@@ -272,7 +272,7 @@ missing units), the card names it and its secondary action opens Seller Central.
 ### Packing requirements
 
 The rules a supplier must follow for where the goods go, shown before packing starts and checked while packing. They
-come from `packages/aisle/src/requirements.ts` (`destinationRequirements`, `itemRequirements`), which today states each
+come from `packages/copacker-shipments/src/requirements.ts` (`destinationRequirements`, `itemRequirements`), which today states each
 network's carton rule as one line; the redesign groups them per destination into **Cartons** (mixing, size, weight,
 units per carton, trucks), **Each unit** (labels, preparation), and **Each carton** (carton labels), following the
 [purchase order flow spec's rules](../purchase-order-flow/README.md#one-order-several-destinations).

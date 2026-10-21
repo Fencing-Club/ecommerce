@@ -1,0 +1,38 @@
+{
+  "name": "@repo/copacker-marketplaces",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./amazon": "./src/amazon.ts",
+    "./shopify": "./src/shopify.ts",
+    "./sales": "./src/sales.ts",
+    "./shopify-economics": "./src/shopify-economics.ts",
+    "./ledger": "./src/ledger.ts",
+    "./ledger-detail": "./src/ledger-detail.ts",
+    "./storage-fees": "./src/storage-fees.ts",
+    "./fbm-returns": "./src/fbm-returns.ts",
+    "./returns": "./src/returns.ts",
+    "./reimbursements": "./src/reimbursements.ts",
+    "./ebay": "./src/ebay.ts",
+    "./removals": "./src/removals.ts",
+    "./fulfillment-shipments": "./src/fulfillment-shipments.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "oxlint --max-warnings=0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "5.0.5",
+    "@vitest/coverage-v8": "5.0.5"
+  }
+}

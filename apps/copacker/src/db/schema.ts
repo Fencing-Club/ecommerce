@@ -1,3 +1,6 @@
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import {
   type Address,
   amazonNetworks,
@@ -5,12 +8,9 @@ import {
   type Packing,
   type PackingDraft,
   prepCategories
-} from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
-import type { CartonLabel } from "@repo/aisle/labels"
-import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
-import type { Shopify } from "@repo/aisle/shopify"
-import type { ShipmentTransport } from "@repo/aisle/transport"
+} from "@repo/copacker-shipments"
+import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
 import { sql } from "drizzle-orm"
 import {
   pgTable,

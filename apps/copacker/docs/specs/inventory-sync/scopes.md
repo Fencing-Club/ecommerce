@@ -2,7 +2,7 @@
 
 Part of the [inventory sync spec](README.md). Every Shopify scope, Amazon role and eBay scope the two-way sync needs, by
 feature and phase. "Have" means the app requests it today (`src/app/api/connections/[provider]/route.ts`,
-`shopify.app.toml`, `packages/aisle/src/ebay.ts`).
+`shopify.app.toml`, `packages/copacker-marketplaces/src/ebay.ts`).
 
 Adding a scope or role means every connected account has to approve it again:
 

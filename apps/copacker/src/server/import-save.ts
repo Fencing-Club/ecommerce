@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { orderInputSchema, orderTotal, destinationSchema } from "@repo/aisle"
+import { orderInputSchema, orderTotal, destinationSchema } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

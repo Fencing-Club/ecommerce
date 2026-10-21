@@ -1,4 +1,4 @@
-import { money } from "@repo/aisle"
+import { money } from "@repo/copacker-shipments"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"

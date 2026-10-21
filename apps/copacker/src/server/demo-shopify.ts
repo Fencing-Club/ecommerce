@@ -1,4 +1,4 @@
-import { Shopify, type ShopifyVariant } from "@repo/aisle/shopify"
+import { Shopify, type ShopifyVariant } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { db, type Transaction } from "@/db"

@@ -1,6 +1,3 @@
-import { buildAwdRequest, money, orderTotal } from "@repo/aisle"
-import { downloadAmazonLabels } from "@repo/aisle/amazon"
-import { matchLabels, splitPdfPages, unpackLabels } from "@repo/aisle/labels"
 import type { Email } from "@repo/copacker-emails"
 import {
   customerDataRequestEmail,
@@ -9,6 +6,9 @@ import {
   purchaseOrderEmail,
   shownLines
 } from "@repo/copacker-emails"
+import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
+import { buildAwdRequest, money, orderTotal } from "@repo/copacker-shipments"
+import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"

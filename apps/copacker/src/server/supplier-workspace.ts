@@ -1,4 +1,4 @@
-import { orderTotal } from "@repo/aisle"
+import { orderTotal } from "@repo/copacker-shipments"
 import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"

@@ -1,4 +1,4 @@
-import { itemTotal, orderTotal, type OrderInput } from "@repo/aisle"
+import { itemTotal, orderTotal, type OrderInput } from "@repo/copacker-shipments"
 import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

@@ -1,4 +1,4 @@
-import { amazonNetworkNames } from "@repo/aisle"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"

@@ -1,4 +1,4 @@
-import type { Address } from "@repo/aisle"
+import type { Address } from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus } from "lucide-react"
 import { useState } from "react"

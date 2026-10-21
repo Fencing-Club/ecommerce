@@ -1,5 +1,5 @@
-import { ProviderError } from "@repo/aisle/amazon"
-import { ShopifyPermissionError, ShopifyRequestError } from "@repo/aisle/shopify"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { ShopifyPermissionError, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { describe, expect, it } from "vitest"
 import { ReconnectRequiredError } from "../src/server/errors"
 import { describeError, stockErrorCode } from "../src/server/stock"

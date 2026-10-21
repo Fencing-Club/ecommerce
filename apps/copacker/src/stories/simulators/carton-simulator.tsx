@@ -7,7 +7,7 @@ import { useCartonExamples } from "./carton-examples"
 import { type CartonDataSet, cartonDataSets, dataSetOrder, type Receiver, receiverNames, receivers } from "./data"
 import { cartonCodes, IssueReport, PolicyRules, Setting } from "./simulator-parts"
 
-// The carton table as the packing page runs it: every edit goes through validatePacking from @repo/aisle, and its issues
+// The carton table as the packing page runs it: every edit goes through validatePacking from @repo/copacker-shipments, and its issues
 // show in the table and in full below it. Its data sets are the ones here and an example of every error, which Every
 // carton error links to by ID.
 export function CartonSimulator({ dataSet: initial }: { dataSet: string }) {

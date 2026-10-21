@@ -1,5 +1,5 @@
-import type { AmazonConnectionHealth } from "@repo/aisle/amazon"
-import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
+import type { AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
+import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"

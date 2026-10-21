@@ -8,7 +8,7 @@ import {
   orderTotal,
   type OrderInput,
   orderInputSchema
-} from "@repo/aisle"
+} from "@repo/copacker-shipments"
 import { Link, useRouter } from "@tanstack/react-router"
 import {
   ArrowRight,

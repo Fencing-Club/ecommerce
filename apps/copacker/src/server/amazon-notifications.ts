@@ -1,5 +1,5 @@
-import { ProviderError } from "@repo/aisle/amazon"
-import { collectUpdatedAmazonSales } from "@repo/aisle/sales"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { collectUpdatedAmazonSales } from "@repo/copacker-marketplaces/sales"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

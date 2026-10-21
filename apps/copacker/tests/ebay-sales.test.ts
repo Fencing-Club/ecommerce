@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import type { EbaySale } from "@repo/aisle/sales"
+import type { EbaySale } from "@repo/copacker-marketplaces/sales"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"

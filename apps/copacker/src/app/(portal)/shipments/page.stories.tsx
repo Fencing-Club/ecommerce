@@ -1,4 +1,4 @@
-import { type OrderInput } from "@repo/aisle"
+import { type OrderInput } from "@repo/copacker-shipments"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { can, type Permissions } from "@/lib/access"

@@ -1,5 +1,5 @@
-import type { Address } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
+import type { Address } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
 import { z } from "zod"

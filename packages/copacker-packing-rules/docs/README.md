@@ -12,7 +12,7 @@ way, and another receiver (GWD, a 3PL, a special arrangement) is a new policy ra
 
 Every rule describes itself (`description`) and names the page that states it (`source`), and each issue carries the
 source, so an error can link to the receiver's own rule. The package reads purchase orders and packings by the few
-fields it needs (`PackingOrder`, `PackingInput`) and depends on no other package; `@repo/aisle` uses it to check a
+fields it needs (`PackingOrder`, `PackingInput`) and depends on no other package; `@repo/copacker-shipments` uses it to check a
 packing before building Amazon's inbound plans.
 
 Copacker's Storybook runs the real rules on sample data in its Simulators section: every error each rule produces, and

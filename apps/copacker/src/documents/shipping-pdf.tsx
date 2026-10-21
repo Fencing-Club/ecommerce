@@ -1,5 +1,5 @@
 import { Document, Font, G, Page, Path, StyleSheet, Svg, Text, View, pdf } from "@react-pdf/renderer"
-import { markdownBlocks } from "@repo/aisle/markdown"
+import { markdownBlocks } from "@repo/copacker-shipments/markdown"
 import { createContext, useContext, type ReactNode } from "react"
 import invariant from "tiny-invariant"
 import { cartonGroupLabel } from "@/lib/carton-groups"

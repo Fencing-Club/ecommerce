@@ -1,10 +1,10 @@
-import type { AmazonNetwork, OrderInput, OrderItem, Packing } from "@repo/aisle"
+import type { AmazonNetwork, OrderInput, OrderItem, Packing } from "@repo/copacker-shipments"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
 import { northwindFactory, towelOrder } from "@/stories/fixtures/packing"
 
 // Sample data for the simulators: one PO's products, sent wherever the simulator says, and the carton and pallet sets
-// that put the real rules to work. The rules themselves come from @repo/aisle; nothing here restates a limit.
+// that put the real rules to work. The rules themselves come from @repo/copacker-shipments; nothing here restates a limit.
 
 // Where the cartons go: an Amazon network, both networks at once (which a carton may not mix), or the buyer's own
 // warehouse, which takes any carton.

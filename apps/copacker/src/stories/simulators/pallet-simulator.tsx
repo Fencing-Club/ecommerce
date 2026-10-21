@@ -16,7 +16,7 @@ import { usePalletExamples } from "./pallet-examples"
 import { IssueReport, palletCodes, PolicyRules, Setting } from "./simulator-parts"
 
 // The pallet table as the packing page runs it: twelve cartons packed on pallets, and every edit goes through
-// validatePacking from @repo/aisle, with its pallet issues in the table and in full below it. Its data sets are the ones
+// validatePacking from @repo/copacker-shipments, with its pallet issues in the table and in full below it. Its data sets are the ones
 // here and an example of every error, which Every pallet error links to by ID.
 export function PalletSimulator({ dataSet: initial }: { dataSet: string }) {
   const examples = usePalletExamples()

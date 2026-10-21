@@ -1,4 +1,3 @@
-import type { AmazonNetwork } from "@repo/aisle"
 import { packingRuleDescriptions } from "@repo/copacker-packing-rules"
 import {
   footprintLimit,
@@ -8,6 +7,7 @@ import {
   palletPolicies,
   palletWeightLimit
 } from "@repo/copacker-packing-rules/pallet-policies"
+import type { AmazonNetwork } from "@repo/copacker-shipments"
 import { useLocale } from "use-intl"
 import { shippingMessage } from "@/documents/shipping-copy"
 import { documentSettingsForLocale } from "@/documents/shipping-model"
@@ -89,7 +89,7 @@ const everywhere: {
   }
 ]
 
-// An example for every pallet error: each rule of each pallet policy in @repo/aisle broken on its own, by its
+// An example for every pallet error: each rule of each pallet policy in @repo/copacker-shipments broken on its own, by its
 // receiver, then how cartons and pallets must match. Each is a simulator data set, by an ID a link can name, such as
 // "fba-maxHeight-2", so a new policy or rule adds its own.
 export function usePalletExamples(): Example[] {

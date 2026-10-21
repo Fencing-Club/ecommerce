@@ -14,7 +14,7 @@ transaction across a Workflow sleep/checkpoint. Retained Node processes keep the
 Source: [Hyperdrive connection lifecycle](https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/).
 
 Pass database access through a typed server context or another explicitly scoped server abstraction. Audit every caller
-of the current globally cached DB export, including `@repo/aisle` consumers, authentication, email jobs and event
+of the current globally cached DB export, including `@repo/copacker-shipments` consumers, authentication, email jobs and event
 handlers. Shared schema/type imports must not instantiate a connection. Each transaction uses one connection and releases
 it on success, validation error, provider failure and cancellation.
 

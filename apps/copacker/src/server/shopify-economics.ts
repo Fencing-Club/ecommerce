@@ -1,4 +1,4 @@
-import { collectShopifyEconomics, economicsQueries } from "@repo/aisle/shopify-economics"
+import { collectShopifyEconomics, economicsQueries } from "@repo/copacker-marketplaces/shopify-economics"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

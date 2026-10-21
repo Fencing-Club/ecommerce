@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { splitPdfPages } from "@repo/aisle/labels"
+import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

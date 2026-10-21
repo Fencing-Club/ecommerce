@@ -1,5 +1,5 @@
-import { ProviderError } from "@repo/aisle/amazon"
-import type { ShopifySale } from "@repo/aisle/sales"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 import { describe, expect, it, vi } from "vitest"
 import { orderSales, summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
 import { ledgerChunks } from "../src/server/stock-days"

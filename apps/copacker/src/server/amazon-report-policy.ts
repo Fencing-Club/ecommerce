@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { ReportDeferredError, type ReportRequestPolicy } from "@repo/aisle/amazon"
+import { ReportDeferredError, type ReportRequestPolicy } from "@repo/copacker-marketplaces/amazon"
 import { and, eq } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { db, type Transaction } from "@/db"

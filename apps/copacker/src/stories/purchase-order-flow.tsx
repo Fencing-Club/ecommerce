@@ -1,7 +1,7 @@
 import { Toast } from "@base-ui/react/toast"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing, type OrderInput } from "@repo/aisle"
-import { packingTasks } from "@repo/aisle/packing-requirements"
+import { packingSchema, type Packing, type OrderInput } from "@repo/copacker-shipments"
+import { packingTasks } from "@repo/copacker-shipments/packing-requirements"
 import {
   ArrowLeft,
   ArrowRight,
@@ -857,8 +857,9 @@ export function PurchaseOrderFlow({
       }))
   }
   async function productLabelPdf(id: string, items: Item[]) {
-    const { standardProductLabels, suffocationWarningLabels, labelTitle } = await import("@repo/aisle/product-labels")
-    const { combinePdfs } = await import("@repo/aisle/documents")
+    const { standardProductLabels, suffocationWarningLabels, labelTitle } =
+      await import("@repo/copacker-shipments/product-labels")
+    const { combinePdfs } = await import("@repo/copacker-shipments/documents")
     if (id === "suffocation") {
       return suffocationWarningLabels()
     }
@@ -898,7 +899,7 @@ export function PurchaseOrderFlow({
   async function downloadProductLabels(items: Item[], ids: string[], scope: string) {
     setDownloadingPacking(true)
     try {
-      const { combinePdfs } = await import("@repo/aisle/documents")
+      const { combinePdfs } = await import("@repo/copacker-shipments/documents")
       const files = await Promise.all(
         ids.map((id) =>
           productLabelPdf(
@@ -964,7 +965,7 @@ export function PurchaseOrderFlow({
   async function downloadSupplierPack(shipmentId?: string) {
     setDownloadingPacking(true)
     try {
-      const { combinePdfs } = await import("@repo/aisle/documents")
+      const { combinePdfs } = await import("@repo/copacker-shipments/documents")
       const { renderSupplierPacket } = await import("@/documents/supplier-packet")
       const productLabels = (items: Item[]) =>
         Promise.all(

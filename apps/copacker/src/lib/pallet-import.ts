@@ -1,5 +1,5 @@
-import { type Pallet, palletInputSchema } from "@repo/aisle"
 import { cartonList } from "@repo/copacker-packing-rules"
+import { type Pallet, palletInputSchema } from "@repo/copacker-shipments"
 import type { PalletValue } from "./carton-groups"
 import {
   addGuide,

@@ -1,4 +1,4 @@
-import { cartonInputSchema, type PackingDraft, packingSchema, palletInputSchema } from "@repo/aisle"
+import { cartonInputSchema, type PackingDraft, packingSchema, palletInputSchema } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { zonedDay } from "./time-zone"
 

@@ -1,4 +1,4 @@
-import { fbaShipmentsReportType, parseFbaShipments } from "@repo/aisle/fulfillment-shipments"
+import { fbaShipmentsReportType, parseFbaShipments } from "@repo/copacker-marketplaces/fulfillment-shipments"
 import { and, eq, gte, lt, inArray, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonShipmentReports, amazonFulfillmentShipments, amazonShipmentRequests, connections } from "@/db/schema"

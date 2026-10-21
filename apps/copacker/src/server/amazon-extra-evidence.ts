@@ -1,4 +1,4 @@
-import { parseFbmReturns } from "@repo/aisle/fbm-returns"
+import { parseFbmReturns } from "@repo/copacker-marketplaces/fbm-returns"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsFeeds, amazonTransactions } from "@/db/schema"

@@ -1,5 +1,5 @@
-import { money } from "@repo/aisle"
-import { drawableText } from "@repo/aisle/documents"
+import { money } from "@repo/copacker-shipments"
+import { drawableText } from "@repo/copacker-shipments/documents"
 import ExcelJS from "exceljs"
 import type { PDFFont } from "pdf-lib"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"

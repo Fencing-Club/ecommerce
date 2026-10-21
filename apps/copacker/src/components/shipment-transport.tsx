@@ -1,4 +1,9 @@
-import { transportProfiles, transportSchema, transportServices, type ShipmentTransport } from "@repo/aisle/transport"
+import {
+  transportProfiles,
+  transportSchema,
+  transportServices,
+  type ShipmentTransport
+} from "@repo/copacker-shipments/transport"
 import { useId } from "react"
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"

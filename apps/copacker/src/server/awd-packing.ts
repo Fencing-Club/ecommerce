@@ -1,5 +1,5 @@
-import { buildAwdRequest, type OrderInput, type Packing } from "@repo/aisle"
-import type { awdInboundShipmentSchema } from "@repo/aisle/amazon"
+import type { awdInboundShipmentSchema } from "@repo/copacker-marketplaces/amazon"
+import { buildAwdRequest, type OrderInput, type Packing } from "@repo/copacker-shipments"
 import type { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
 

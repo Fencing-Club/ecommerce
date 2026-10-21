@@ -1,5 +1,5 @@
-import type { OrderInput } from "@repo/aisle"
 import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"

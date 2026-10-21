@@ -1,3 +1,4 @@
+import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
 import { type AmazonNetwork, amazonNetworks, cartonNetworks, validatePacking } from "@repo/copacker-packing-rules"
 import { z } from "zod"
 import { packingRequirementsSchema } from "./packing-requirements"
@@ -450,16 +451,6 @@ export function buildAwdRequest(
   }
   const { email: _email, ...originAddress } = packing.origin
   return { originAddress, packagesToInbound: [...groups.values()], externalReferenceId: reference }
-}
-
-// How Amazon has a SKU prepared and labeled: its prep category (such as TEXTILE, or NONE), and who may prepare and
-// label it (SELLER_ONLY, AMAZON_ONLY or NONE_ONLY, and MUST_MATCH when one party does both), from Amazon's own record
-// of the SKU.
-export type AmazonPrep = {
-  prepCategory: string
-  prepOwnerConstraint?: string
-  labelOwnerConstraint?: string
-  allOwnersConstraint?: string
 }
 
 // The owner an Amazon constraint such as SELLER_ONLY requires, or the fallback when it leaves the choice open.

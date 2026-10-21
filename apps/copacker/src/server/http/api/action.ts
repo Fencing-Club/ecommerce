@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { addressSchema } from "@repo/aisle"
-import { canConfigureTransport, transportSchema } from "@repo/aisle/transport"
+import { addressSchema } from "@repo/copacker-shipments"
+import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

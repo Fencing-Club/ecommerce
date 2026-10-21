@@ -1,4 +1,4 @@
-import type { OrderInput, PackingDraft } from "@repo/aisle"
+import type { OrderInput, PackingDraft } from "@repo/copacker-shipments"
 import { HttpResponse } from "msw/http"
 import { expect, fireEvent, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import { storyTimeZone } from "#.storybook/intl"

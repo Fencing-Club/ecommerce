@@ -1,4 +1,4 @@
-import { packingSchema } from "@repo/aisle"
+import { packingSchema } from "@repo/copacker-shipments"
 import { PDFDocument } from "pdf-lib"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { chooseTransportationOption, fbaPalletLabelFile, palletConfiguration } from "../src/server/fba-shipments"

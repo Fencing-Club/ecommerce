@@ -1,6 +1,6 @@
-import type { OrderItem } from "@repo/aisle"
-import { amazonNetworkNames, itemTotal, money, orderCharges, orderTotal } from "@repo/aisle"
-import { packingInstructions } from "@repo/aisle/requirements"
+import type { OrderItem } from "@repo/copacker-shipments"
+import { amazonNetworkNames, itemTotal, money, orderCharges, orderTotal } from "@repo/copacker-shipments"
+import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowRight,

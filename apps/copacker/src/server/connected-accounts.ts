@@ -1,4 +1,4 @@
-import { AmazonAuthorizationError, type AmazonConnectionHealth } from "@repo/aisle/amazon"
+import { AmazonAuthorizationError, type AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
 import { z } from "zod"
 import { amazonFor, ebayFor, shopifyFor } from "./connections"
 import { amazonMarketplaces } from "./overview-sales"
