@@ -43,8 +43,18 @@ function breakRule(rule: CartonRule): CartonGroup[] {
       return [cartonGroup(["I1"], [40, 30, 30], 5, [["napkin", 10]])]
     case "fnsku":
       return [cartonGroup(["I2"], [40, 30, 30], 5, [["runner", 10]])]
+    case "packingGroups":
+      return [
+        cartonGroup(["N1"], [40, 30, 30], 5, [
+          ["sage", 10],
+          ["stripe", 10]
+        ])
+      ]
   }
 }
+
+// Amazon's packing groups for the examples, by SKU: the Sage bags apart from the Stripe tea towels.
+const packingGroups = { "DB-2030": "PG-1", "CT-3100": "PG-2" }
 
 // An example: whose rule it breaks, the rule as @repo/copacker-packing-rules describes it, and the supplier's checklist line for
 // it, when there is one.
@@ -131,7 +141,8 @@ export function useCartonExamples(): Example[] {
         checklist: checklist(policy, rule),
         receiver: network,
         plenty: true,
-        cartons: breakRule(rule)
+        cartons: breakRule(rule),
+        ...(rule.type === "packingGroups" && { packingGroups })
       }))
     ),
     ...everywhere.map(({ code, ...example }) => ({

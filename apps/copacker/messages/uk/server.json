@@ -17,6 +17,7 @@
       "cartonSize": "Коробки {receiver} мають бути не більше {shape, select, cube {{lengthCm, number} см з кожного боку} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} см}}",
       "cartonWeight": "Коробки {receiver} мають важити не більше {maxLb, number} lb ({maxKg, number} кг)",
       "oneSku": "Пакуйте один SKU в коробку {receiver}",
+      "packingGroups": "Пакуйте {sku} і {other} в окремі коробки: {receiver} відніс їх до різних груп пакування",
       "repeatedProduct": "Указуйте кожен товар лише один раз у коробці",
       "unknownProduct": "Приберіть товари, яких немає в цьому замовленні на закупівлю",
       "incompletePacks": "{sku}: використайте кількість одиниць, кратну {pack}",

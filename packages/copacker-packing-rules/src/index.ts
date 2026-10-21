@@ -52,12 +52,14 @@ export type PackingCarton = {
 // A pallet as the rules read it: its size and weight, whether another may stand on it, and its cartons.
 export type PackingPallet = PolicyPallet & { cartonIds: readonly string[] }
 
-// A shipment's packing: its cartons, the invoice changes that come with them, and its pallets when packed on them.
+// A shipment's packing: its cartons, the invoice changes that come with them, and its pallets when packed on them, with
+// Amazon's packing groups by SKU once Amazon has planned the shipment.
 export type PackingInput = {
   cartons: readonly PackingCarton[]
   changes: readonly { itemId: string }[]
   palletized?: boolean
   pallets?: readonly PackingPallet[]
+  packingGroups?: Readonly<Record<string, string>>
 }
 
 // A packing rule a carton or the whole packing breaks, as a code and the values it names, so the app can say it in each
@@ -221,7 +223,7 @@ export function validatePacking(order: PackingOrder, packing: PackingInput, rese
     if (policy) {
       const earlier = checked.get(policy) ?? []
       const current = { ...carton, contents }
-      for (const { issue, fields, source } of checkCarton(policy, current, earlier)) {
+      for (const { issue, fields, source } of checkCarton(policy, current, earlier, packing.packingGroups)) {
         add(issue, fields, source)
       }
       checked.set(policy, [...earlier, current])

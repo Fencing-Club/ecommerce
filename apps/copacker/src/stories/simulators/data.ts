@@ -148,8 +148,9 @@ export function cartonGroup(
   }
 }
 
-// A set of cartons for the receiver it names. `plenty` packs them against a PO with plenty of every product, and
-// `changes` are the invoice changes they come with.
+// A set of cartons for the receiver it names. `plenty` packs them against a PO with plenty of every product,
+// `changes` are the invoice changes they come with, and `packingGroups` Amazon's packing groups by SKU, once Amazon has
+// set them.
 export type CartonDataSet = {
   name: string
   receiver: Receiver
@@ -157,6 +158,7 @@ export type CartonDataSet = {
   note: string
   plenty?: boolean
   changes?: Packing["changes"]
+  packingGroups?: Record<string, string>
 }
 
 // Each set shows a rule at work, or holds within it, for the receiver it names.

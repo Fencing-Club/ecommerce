@@ -21,7 +21,11 @@ export function CartonSimulator({ dataSet: initial }: { dataSet: string }) {
   const [receiver, setReceiver] = useState<Receiver>(chosen.receiver)
   const [cartons, setCartons] = useState<CartonGroup[]>(chosen.cartons)
   const order = dataSetOrder(chosen.plenty, receiver)
-  const issues = validatePacking(order, { cartons: expandCartonGroups(cartons), changes: chosen.changes ?? [] }).issues
+  const issues = validatePacking(order, {
+    cartons: expandCartonGroups(cartons),
+    changes: chosen.changes ?? [],
+    ...(chosen.packingGroups && { packingGroups: chosen.packingGroups })
+  }).issues
   const policy = receiver === "fba" || receiver === "awd_us" ? cartonPolicies[receiver] : undefined
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 sm:p-6">

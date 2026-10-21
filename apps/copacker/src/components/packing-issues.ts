@@ -57,6 +57,8 @@ export function useCartonIssueErrors() {
         }
       case "oneSku":
         return { place: "carton", outlines: [], message: t("rules.oneSku", issue.values) }
+      case "packingGroups":
+        return { place: "carton", outlines: [], message: t("rules.packingGroups", issue.values) }
       case "samePacking": {
         // Says how the SKU's other cartons are packed: their units when those differ, otherwise their size and weight.
         const sellable = content && item ? content.pieces / item.piecesPerSet : issue.values.units

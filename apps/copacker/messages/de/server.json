@@ -17,6 +17,7 @@
       "cartonSize": "Begrenzen Sie {receiver}-Kartons auf höchstens {shape, select, cube {{lengthCm, number} cm pro Seite} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm}}",
       "cartonWeight": "Begrenzen Sie {receiver}-Kartons auf höchstens {maxLb, number} lb ({maxKg, number} kg)",
       "oneSku": "Packen Sie eine SKU pro {receiver}-Karton",
+      "packingGroups": "Packen Sie {sku} und {other} in getrennte Kartons: {receiver} hat sie verschiedenen Packgruppen zugeordnet",
       "repeatedProduct": "Führen Sie jedes Produkt nur einmal pro Karton auf",
       "unknownProduct": "Entfernen Sie Produkte, die nicht in dieser Bestellung stehen",
       "incompletePacks": "{sku}: Verwenden Sie ein Vielfaches von {pack} Einheiten",

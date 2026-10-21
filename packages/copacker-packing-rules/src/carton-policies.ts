@@ -16,6 +16,9 @@ export type CartonRule = (
   // Every product has its ASIN, and every product has its FNSKU: two rules, so each error names its field.
   | { type: "asin" }
   | { type: "fnsku" }
+  // Products of one of the packing groups Amazon sets when it plans an FBA shipment, by SKU. Checked once Amazon has set
+  // them; until then nothing breaks it.
+  | { type: "packingGroups" }
 ) & { description: string; source?: string }
 
 export type CartonPolicy = {
@@ -35,7 +38,9 @@ export const amazonSources = {
   // Send shipments to AWD, Choose inventory to send: one SKU a box, 150 units, one packing template a SKU.
   awdInventory: amazonHelp("GZLL7RYU2FJRN9BU"),
   // Seller requirements for LTL, FTL and FCL deliveries: pallets, for FBA and AWD.
-  freight: amazonHelp("G200978400")
+  freight: amazonHelp("G200978400"),
+  // Fulfillment Inbound API, Create an inbound shipment: packing groups, the SKUs that can share a box.
+  packingGroups: "https://developer-docs.amazon.com/sp-api/docs/create-an-inbound-shipment"
 }
 
 const asin = { type: "asin", description: "Every product has its ASIN, which Amazon receives it by." } as const
@@ -67,6 +72,12 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         exceptOneUnit: true,
         description: "A box may weigh up to 50 lb. Only a box of one unit over 50 lb may weigh more.",
         source: amazonSources.fbaShipping
+      },
+      {
+        type: "packingGroups",
+        description:
+          "A box holds products of one packing group. Amazon sets the groups when it plans the shipment, keeping apart products it receives separately, such as dangerous goods.",
+        source: amazonSources.packingGroups
       },
       asin,
       fnsku
@@ -186,6 +197,8 @@ export type CartonRuleIssue =
       }
     }
   | { code: "missingAsin" | "missingFnsku"; values: { receiver: string; sku: string } }
+  // Two of the carton's products the receiver put in different packing groups.
+  | { code: "packingGroups"; values: { receiver: string; sku: string; other: string } }
 
 export type CartonField = "length" | "width" | "height" | "weight"
 
@@ -201,8 +214,14 @@ export type PolicyCarton = {
 type Finding = { issue: CartonRuleIssue; fields?: CartonField[]; source?: string }
 
 // The rules of a policy a carton breaks, with the fields each names and the page that states the rule. `earlier` are
-// the cartons checked under the same policy before this one, for rules across cartons.
-export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier: readonly PolicyCarton[]): Finding[] {
+// the cartons checked under the same policy before this one, for rules across cartons, and `groups` the receiver's
+// packing groups by SKU, once it has set them.
+export function checkCarton(
+  policy: CartonPolicy,
+  carton: PolicyCarton,
+  earlier: readonly PolicyCarton[],
+  groups?: Readonly<Record<string, string>>
+): Finding[] {
   // A carton holding one unit is excepted from limits that allow for a single oversize unit.
   const oneUnit = carton.contents.length === 1 && carton.contents[0]!.units === 1
   const { receiver } = policy
@@ -288,6 +307,18 @@ export function checkCarton(policy: CartonPolicy, carton: PolicyCarton, earlier:
         return carton.contents
           .filter((content) => !content.item.fnsku)
           .map((content) => ({ issue: { code: "missingFnsku", values: { receiver, sku: content.item.buyerSku } } }))
+      case "packingGroups": {
+        // The carton's first product with a group, and the first in another group.
+        const grouped = carton.contents.flatMap(({ item }) => {
+          const group = groups?.[item.buyerSku]
+          return group ? [{ sku: item.buyerSku, group }] : []
+        })
+        const [first] = grouped
+        const other = grouped.find((entry) => entry.group !== first?.group)
+        return first && other
+          ? [{ issue: { code: "packingGroups", values: { receiver, sku: first.sku, other: other.sku } } }]
+          : []
+      }
     }
   }
   return policy.rules.flatMap((rule) =>

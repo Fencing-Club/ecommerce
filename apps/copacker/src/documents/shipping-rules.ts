@@ -16,7 +16,7 @@ export type ShippingCheck = {
 }
 
 // What the supplier checks for each of a policy's carton rules, in the policy's order. Amazon's product identifiers
-// are the buyer's to add, so they have no check.
+// are the buyer's to add, and Amazon confirms its packing groups before it labels the cartons, so neither has a check.
 export function policyChecks(policy: CartonPolicy) {
   return policy.rules.flatMap((rule): ShippingCheck[] => {
     switch (rule.type) {
@@ -46,6 +46,7 @@ export function policyChecks(policy: CartonPolicy) {
       }
       case "asin":
       case "fnsku":
+      case "packingGroups":
         return []
     }
   })

@@ -20,7 +20,11 @@ export function CartonCatalog() {
   const examples = useCartonExamples()
   const rows = examples.flatMap((example): ErrorRow[] => {
     const order = dataSetOrder(example.plenty, example.receiver)
-    const packing = { cartons: expandCartonGroups(example.cartons), changes: example.changes ?? [] }
+    const packing = {
+      cartons: expandCartonGroups(example.cartons),
+      changes: example.changes ?? [],
+      ...(example.packingGroups && { packingGroups: example.packingGroups })
+    }
     return validatePacking(order, packing).issues.map((issue) => {
       const row = example.cartons.find(
         (carton) => issue.cartonId && (carton.cartonIds ?? [carton.cartonId]).includes(issue.cartonId)

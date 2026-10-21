@@ -17,6 +17,7 @@
       "cartonSize": "请将 {receiver} 箱{shape, select, cube {每边控制在 {lengthCm, number} 厘米以内} other {尺寸控制在 {lengthCm, number} × {widthCm, number} × {heightCm, number} 厘米以内}}",
       "cartonWeight": "请将 {receiver} 箱重量控制在 {maxLb, number} 磅（{maxKg, number} 千克）以内",
       "oneSku": "每个 {receiver} 箱只装一个 SKU",
+      "packingGroups": "请将 {sku} 和 {other} 分开装箱：{receiver} 将它们分在不同的包装组",
       "repeatedProduct": "每个产品在每箱中只能列出一次",
       "unknownProduct": "请移除不在此采购订单上的产品",
       "incompletePacks": "{sku}：请使用 {pack} 件的倍数",

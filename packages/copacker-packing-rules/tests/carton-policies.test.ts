@@ -120,6 +120,22 @@ describe("carton policies", () => {
     ])
   })
 
+  it("keeps an FBA carton to one of Amazon's packing groups, once Amazon has set them", () => {
+    const mixed = carton([40, 30, 30], 5, [
+      [bag, 10],
+      [towel, 10]
+    ])
+    // Before Amazon plans the shipment, there are no groups to break.
+    expect(codes(cartonPolicies.fba, mixed)).toEqual([])
+    expect(checkCarton(cartonPolicies.fba, mixed, [], { "DB-2031": "PG-1", "CT-3100": "PG-1" })).toEqual([])
+    expect(checkCarton(cartonPolicies.fba, mixed, [], { "DB-2031": "PG-1", "CT-3100": "PG-2" })).toEqual([
+      {
+        issue: { code: "packingGroups", values: { receiver: "FBA", sku: "DB-2031", other: "CT-3100" } },
+        source: amazonSources.packingGroups
+      }
+    ])
+  })
+
   it("checks a new receiver's cartons from its rules alone", () => {
     // A 3PL that states its limits in metric units and takes no Amazon identifiers.
     const warehouse: CartonPolicy = {

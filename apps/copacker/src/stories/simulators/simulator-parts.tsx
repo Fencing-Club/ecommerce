@@ -13,6 +13,7 @@ export const cartonCodes = [
   "samePacking",
   "missingAsin",
   "missingFnsku",
+  "packingGroups",
   "incompletePacks",
   "overQuantity",
   "duplicateCarton",
