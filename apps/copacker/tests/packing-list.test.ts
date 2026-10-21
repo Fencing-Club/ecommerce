@@ -12,8 +12,13 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 
-import { defaultDocumentSettings, type ShippingDocumentData } from "../src/documents/shipping-model"
+import {
+  defaultDocumentSettings,
+  groupShippingCartons,
+  type ShippingDocumentData
+} from "../src/documents/shipping-model"
 import { ShippingPdf } from "../src/documents/shipping-pdf"
+import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { httpResponse } from "../src/server/http-response"
 import { GET } from "../src/server/http/api/shipments/$id/packing-list"
 import { towelOrder, towelPacking } from "../src/stories/fixtures/packing"
@@ -143,6 +148,18 @@ describe("packing list", () => {
     expect(data.cartons).toHaveLength(18)
     expect(data.cartons.every((carton) => !carton.amazonLabel && !carton.carrierLabel)).toBe(true)
     expect(data.cartons.at(-1)).toMatchObject({ id: "18", contents: [{ packs: 30 }] })
+    // The carton groups it prints: each group's cartons, product and packs. The tea towels come in packs of 2.
+    const [natural, sage, teaTowel] = towelOrder.items
+    expect(
+      groupShippingCartons(data.cartons).map((group) => ({
+        cartons: cartonGroupLabel(group),
+        contents: group[0]!.contents
+      }))
+    ).toEqual([
+      { cartons: "1–10", contents: [{ productId: natural!.id, packs: 24 }] },
+      { cartons: "11–16", contents: [{ productId: sage!.id, packs: 30 }] },
+      { cartons: "17–18", contents: [{ productId: teaTowel!.id, packs: 30 }] }
+    ])
 
     // The browser prints it as it comes, without label assignments.
     expect(() =>
