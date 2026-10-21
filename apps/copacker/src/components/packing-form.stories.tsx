@@ -393,7 +393,9 @@ export const PassedReadyDate = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     await expect(await canvas.findByText("Choose today or a later date")).toBeVisible()
     await expect(readyDate).toHaveAttribute("aria-invalid", "true")
-    await expect(canvas.getByText("Fix the highlighted fields")).toBeVisible()
+    // The field's own error is the only one, and the field takes focus.
+    await expect(readyDate).toHaveFocus()
+    await expect(canvas.queryByText("Fix the highlighted fields")).toBeNull()
     await expect(actions).not.toHaveBeenCalled()
     // The field checks each date as it's chosen.
     fireEvent.change(readyDate, { target: { value: today } })

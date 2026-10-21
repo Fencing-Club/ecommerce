@@ -15,8 +15,9 @@ What "today" means depends on where the check runs:
 - **The packing form** uses the supplier's own today: the date in the time zone the browser reports (the `tz` cookie,
   see [Localization](localization.md)). The date field's `min` is that day, so the browser's picker offers nothing
   earlier, and the field shows "Choose today or a later date" as soon as an earlier one is chosen, or when Finish
-  packing finds one in a saved draft. The form reads the clock each time it checks, so a page left open past midnight
-  moves on to the next day.
+  packing finds one in a saved draft and moves focus to it. That error is the only one: Finish packing adds no summary
+  of invalid fields, since each shows its own. The form reads the clock each time it checks, so a page left open past
+  midnight moves on to the next day.
 - **The server** doesn't know the supplier's time zone, so it accepts any date that is still today somewhere on Earth:
   the date at UTC−12 or later. A supplier's own today is never earlier than that, so the form and the server agree for
   every supplier, ahead of UTC or behind it. A date that has ended everywhere is refused with "Choose a ready date of

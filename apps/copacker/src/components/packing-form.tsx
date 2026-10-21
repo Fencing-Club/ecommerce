@@ -264,12 +264,12 @@ export function PackingForm({
       setWorking(null)
     }
   }
+  // Each invalid field shows its own error, and the first one takes focus, so nothing else is added; an earlier
+  // attempt's message no longer applies.
   const validated = () =>
     form.handleSubmit(
       () => perform("submit", form.getValues()),
-      () => {
-        setServerError(t("fixFields"))
-      }
+      () => setServerError("")
     )
   function addCarton() {
     cartons.append({
