@@ -39,22 +39,14 @@ jobs:
       - id: affected
         run: node .github/scripts/affected.mjs "${{ steps.base.outputs.sha }}" "$GITHUB_SHA"
 
+  # pnpm verify, split across machines: these checks, Copacker's unit tests (unit), its Worker (worker) and its stories
+  # (stories) run side by side.
   verify:
     needs: changes
     concurrency:
       group: verify-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_PASSWORD: copacker_test
-          POSTGRES_DB: copacker_test
-        ports: ["5432:5432"]
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    env:
-      TEST_DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_test
     steps:
       - uses: actions/checkout@v7
         with:
@@ -73,25 +65,119 @@ jobs:
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
-      # pnpm verify, less Copacker's stories, which the stories job runs side by side.
       - run: pnpm check:format
       - run: pnpm check:lint
       - run: pnpm check:types
       - run: pnpm check:unused
       - run: pnpm turbo run test:coverage --filter=!copacker
-      # Copacker's own checks, when the change affects it.
-      - if: needs.changes.outputs.copacker == 'true'
-        run: pnpm --filter copacker exec vitest run --project unit --coverage
+
+  # Copacker's unit tests took seven minutes on one machine, so they're split across three. Each shard keeps its results
+  # and coverage as a blob, and unit-coverage merges them into one report.
+  unit:
+    needs: changes
+    concurrency:
+      group: unit-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
+      cancel-in-progress: true
+    if: needs.changes.outputs.copacker == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run:
+          pnpm --filter copacker exec vitest run --project unit --coverage --reporter=blob --shard=${{ matrix.shard }}/3
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          # One name per shard, so a rerun shard replaces its own blob and the merge still sees all three.
+          name: unit-blob-${{ matrix.shard }}
+          path: apps/copacker/.vitest/blob
+          overwrite: true
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # The unit shards' results and coverage as one report.
+  unit-coverage:
+    needs: [changes, unit]
+    if: ${{ !cancelled() && needs.changes.outputs.copacker == 'true' }}
+    concurrency:
+      group: unit-coverage-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: unit-blob-*
+          path: apps/copacker/.vitest/blob
+          merge-multiple: true
+      - run: pnpm --filter copacker exec vitest run --project unit --merge-reports --coverage
+
+  # The built Worker against a real Postgres, and every migration applied to an empty one.
+  worker:
+    needs: changes
+    concurrency:
+      group: worker-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+    if: needs.changes.outputs.copacker == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: copacker_test
+          POSTGRES_DB: copacker_test
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
       # Build the Worker artifact for pull requests; releases rebuild with their environment configuration.
-      - if: needs.changes.outputs.copacker == 'true'
-        run: pnpm turbo run build --filter=copacker
-      - if: needs.changes.outputs.copacker == 'true'
-        run: pnpm --filter copacker test:worker-webhooks
-      - if: needs.changes.outputs.copacker == 'true'
-        run: pnpm --filter copacker test:worker-jobs
+      - run: pnpm turbo run build --filter=copacker
+      - run: pnpm --filter copacker test:worker-webhooks
+      - run: pnpm --filter copacker test:worker-jobs
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
-      - if: needs.changes.outputs.copacker == 'true'
-        run: |
+      - run: |
           psql "$TEST_DATABASE_URL" -c "CREATE DATABASE copacker_migrate"
           pnpm --filter copacker db:migrate
         env:
@@ -296,7 +382,7 @@ jobs:
           retention-days: 30
 
   deploy-staging:
-    needs: [changes, verify, stories, e2e, storybook-build]
+    needs: [changes, verify, unit, unit-coverage, worker, stories, e2e, storybook-build]
     if:
       github.event_name == 'push' && needs.changes.outputs.copacker == 'true' && vars.CLOUDFLARE_RELEASE_ENABLED ==
       'true'
@@ -310,7 +396,7 @@ jobs:
   # affect it counts as passed. It's the check to require in branch protection.
   ci-ok:
     if: always()
-    needs: [changes, verify, stories, e2e, storybook-build, preview, deploy-staging]
+    needs: [changes, verify, unit, unit-coverage, worker, stories, e2e, storybook-build, preview, deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - run: |
