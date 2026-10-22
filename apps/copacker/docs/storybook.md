@@ -42,8 +42,8 @@ story file itself, on the meta or the story; the test plugin reads tags from the
 object doesn't count. `tags: ["!documents"]` keeps a story under a tagged meta that renders nothing, such as one blocked
 before its PDF.
 
-`tests/stories.test.ts` fails when a page or component has no stories. Components with nothing to show (providers,
-contexts, effects that render nothing) are listed there instead.
+`tests/stories.test.ts` fails when a page or component has no stories. Components with nothing to show (providers and
+contexts) are listed there instead. An effect that renders nothing is a hook in `src/hooks`, not a component.
 
 ## The sidebar
 

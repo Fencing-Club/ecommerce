@@ -23,7 +23,10 @@ Local worktrees and trusted data-backed app previews can use the already registe
 `AMAZON_ADS_RELAY_SECRET` to the same separately generated 32-byte base64 secret on staging and participating apps.
 Set `AMAZON_ADS_RELAY_ORIGINS` on those apps and staging to a comma-separated list of permitted HTTPS origins.
 The originating app and relay must use the same Amazon Ads client. Production leaves these settings blank and keeps
-its existing direct callback. Partial or invalid relay configuration fails closed.
+its existing direct callback. Partial or invalid relay configuration fails closed: it's logged as
+`amazon_ads_relay_misconfigured`, and connecting answers that Amazon Ads is unavailable (503). A relayed state that's
+forged, expired or meant for another app is refused without throwing, logged as `amazon_ads_relay_refused` with the
+reason, and the person sees that the connection expired (400).
 
 Register `https://local.copacker.ai` explicitly for the primary checkout.
 The two supported patterns are `https://*.local.copacker.ai` (normalized worktree folder labels; excludes the reserved

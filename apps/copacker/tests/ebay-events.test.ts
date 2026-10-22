@@ -100,6 +100,9 @@ describe("eBay order notifications", () => {
     expect(await receiveEbayNotification(orderConfirmation(seller, "12-00000-00001"))).toBe(2)
     const jobs = await queued("ebay-event")
     expect(jobs).toHaveLength(2)
+    expect(jobs.map((job) => job.key).toSorted()).toEqual(
+      [buyerId, otherBuyerId].map((orgId) => `ebay-event:${orgId}:${Math.floor(Date.now() / 300000)}`).toSorted()
+    )
     expect(jobs.map((job) => job.payload.orgId).toSorted()).toEqual([buyerId, otherBuyerId].toSorted())
     expect(jobs[0]).toMatchObject({ payload: { userId: seller }, runAt: new Date("2026-09-28T12:08:00Z") })
   })

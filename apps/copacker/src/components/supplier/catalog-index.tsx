@@ -2,14 +2,13 @@ import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { EmptyState } from "@/components/common"
+import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { adjustmentLabel } from "@/lib/catalog-pricing"
-import { StatusBadge } from "./shared"
 
 type CatalogRow = {
   id: string
@@ -95,7 +94,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={catalog.status} />
+                  <Status status={catalog.status} labels="supplier" />
                 </TableCell>
                 <TableCell className="hidden max-w-64 truncate @2xl:table-cell">
                   <Assigned customers={catalog.customers} />

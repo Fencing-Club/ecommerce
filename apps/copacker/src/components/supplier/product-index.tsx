@@ -4,7 +4,7 @@ import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { EmptyState, WarningNote } from "@/components/common"
+import { EmptyState, Status, WarningNote } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
@@ -21,7 +21,6 @@ import { useMoney } from "@/hooks/use-money"
 import { useSetProductsActiveMutation } from "@/lib/supplier-api"
 import { imageUrl, type ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { StatusBadge } from "./shared"
 
 export type ProductRow = {
   id: string
@@ -264,14 +263,14 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                         </span>
                         {product.status === "archived" && (
                           <span className="mt-1 @md:hidden">
-                            <StatusBadge status="archived" />
+                            <Status status="archived" labels="supplier" />
                           </span>
                         )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className={columns.status}>
-                    <StatusBadge status={product.status} />
+                    <Status status={product.status} labels="supplier" />
                   </TableCell>
                   <TableCell className={columns.inventory}>
                     <Inventory variants={product.variants} />

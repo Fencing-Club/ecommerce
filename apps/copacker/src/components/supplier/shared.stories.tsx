@@ -1,27 +1,13 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Amounts, StatusBadge } from "./shared"
+import { Amounts } from "./shared"
 
-// The pieces the supplier pages share: status badges and amounts.
+// The pieces the supplier pages share: amounts in each currency. Product and catalog statuses are the app's `Status`,
+// and a product's photo is `ProductThumb`.
 const meta = preview.meta({
   title: "Components/Supplier workspace/Shared",
-  component: StatusBadge,
-  args: { status: "active" }
-})
-
-export const Statuses = meta.story({
-  render: () => (
-    <div className="flex gap-2">
-      <StatusBadge status="active" />
-      <StatusBadge status="draft" />
-      <StatusBadge status="archived" />
-    </div>
-  ),
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Active")).toBeVisible()
-    await expect(canvas.getByText("Draft")).toBeVisible()
-    await expect(canvas.getByText("Archived")).toBeVisible()
-  }
+  component: Amounts,
+  args: { amounts: [] }
 })
 
 export const AmountsInCurrencies = meta.story({

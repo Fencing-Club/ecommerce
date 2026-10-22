@@ -2,7 +2,7 @@ import { useRouter } from "@tanstack/react-router"
 import { Download, Ellipsis, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
-import { PageHeader } from "@/components/common"
+import { PageHeader, Status } from "@/components/common"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { SaveBar } from "@/components/list/save-bar"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import { useDeleteCatalogMutation, useSaveCatalogMutation } from "@/lib/supplier
 import type { CatalogEditorData } from "@/server/catalogs"
 import { CatalogProducts, emptyEntry } from "./catalog-products"
 import { basisPoints, CatalogSettings, initialSettings } from "./catalog-settings"
-import { StatusBadge } from "./shared"
 
 // A catalog's form, laid out like Shopify's: its title, status and customers; its pricing; and its products, where
 // each variant can have a fixed price, volume pricing and quantity rules of its own.
@@ -95,7 +94,7 @@ export function CatalogEditor({
       <PageHeader
         parents={[{ label: t("catalogs"), href: "/catalogs" }]}
         title={catalog ? saved.title : t("newCatalog")}
-        badge={catalog ? <StatusBadge status={saved.status} /> : undefined}
+        badge={catalog ? <Status status={saved.status} labels="supplier" /> : undefined}
       >
         {catalog && (
           <DropdownMenu>

@@ -57,7 +57,8 @@
     "declined": "Rifiutato",
     "atForwarder": "Presso lo spedizioniere",
     "packed": "Imballato",
-    "changesProposed": "Modifiche proposte"
+    "changesProposed": "Modifiche proposte",
+    "unknown": "Sconosciuto"
   },
   "destinations": {
     "amazon": "Amazon",

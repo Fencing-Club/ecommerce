@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { announceWorkspace } from "@/components/workspace-watch"
 import { useAction } from "@/hooks/use-action"
+import { announceWorkspace } from "@/hooks/use-workspace-watch"
 
 // Opens another workspace: saves the choice, tells this browser's other tabs, and loads a fresh document, since the
 // portal's layout and caches belong to the workspace it leaves. `switching` is the workspace on its way, and a failure's

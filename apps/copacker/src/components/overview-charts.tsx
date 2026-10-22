@@ -6,6 +6,8 @@ import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts"
 import { isPresent } from "ts-extras"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import type { Comparison } from "@/lib/date-range"
+import type { SeriesStep } from "@/lib/series"
+import { buckets, seriesStep } from "@/lib/series"
 import { cn } from "@/lib/utils"
 import type { DailySales } from "@/server/overview-sales"
 import type { SourceDay } from "@/server/overview-sales"
@@ -20,13 +22,37 @@ export const sourceSeries: Record<SalesSource, { label: string; color: string }>
 }
 const sourceOrder: SalesSource[] = ["amazon", "shopify", "ebay"]
 
-// Recessive axes: no rules or tick marks, small muted labels.
-const axis = {
+// Every chart's axes, recessive: no rules or tick marks, small muted labels.
+export const chartAxis = {
   axisLine: false,
   tickLine: false,
   tick: { fill: vars.color.mutedForeground, fontSize: 11 },
   tickMargin: 8
 } as const
+
+// Every chart's tooltip: the point's title over a row for each series it shows.
+export function ChartTooltipFrame({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-40 flex-col gap-1.5 rounded-lg bg-popover px-2.5 py-2 text-xs text-popover-foreground shadow-menu ring-1 ring-foreground/10">
+      <span className="font-medium">{title}</span>
+      {children}
+    </div>
+  )
+}
+
+// One series in a chart's tooltip: its mark as the chart draws it (a line, a dashed line or a bar's square), its name
+// and its value. A row without a mark lines up with the others.
+export function ChartTooltipRow({ mark, label, value }: { mark?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span aria-hidden className="flex w-3 shrink-0 items-center justify-center">
+        {mark}
+      </span>
+      <span className="flex-1 text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
+    </div>
+  )
+}
 
 // The shown sources' total, and their total in the compared period.
 type Point = { key: string; label: string; title: string; value: number | null; previous?: number | null }
@@ -50,22 +76,21 @@ function ChartTooltip({
     return null
   }
   return (
-    <div className="flex min-w-40 flex-col gap-1.5 rounded-lg bg-popover px-2.5 py-2 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10">
-      <span className="font-medium">{point.title}</span>
+    <ChartTooltipFrame title={point.title}>
       {payload.map((entry) => (
-        <div key={String(entry.dataKey)} className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={cn("w-3 shrink-0 border-t-2", entry.dataKey === "previous" && "border-dashed opacity-50")}
-            style={{ borderColor: entry.color }}
-          />
-          <span className="flex-1 text-muted-foreground">{String(entry.name)}</span>
-          <span className="font-medium tabular-nums">
-            {typeof entry.value === "number" ? format(entry.value) : "—"}
-          </span>
-        </div>
+        <ChartTooltipRow
+          key={String(entry.dataKey)}
+          mark={
+            <span
+              className={cn("w-3 border-t-2", entry.dataKey === "previous" && "border-dashed opacity-50")}
+              style={{ borderColor: entry.color }}
+            />
+          }
+          label={String(entry.name)}
+          value={typeof entry.value === "number" ? format(entry.value) : "—"}
+        />
       ))}
-    </div>
+    </ChartTooltipFrame>
   )
 }
 
@@ -76,34 +101,7 @@ function measure(cell: SourceDay, metric: Metric) {
   return metric === "units" ? cell.units : cell.orders
 }
 
-// How a period is drawn: by day up to about three months, by week up to about a year, and by month beyond.
-type Step = "day" | "week" | "month"
-function stepFor(days: number): Step {
-  if (days <= 92) {
-    return "day"
-  }
-  return days <= 400 ? "week" : "month"
-}
-
-// The rows each point sums: one day, seven days, or a calendar month.
-function groups(rows: DailySales[], step: Step) {
-  const result: { start: number; end: number }[] = []
-  for (let index = 0; index < rows.length;) {
-    let end = index + 1
-    if (step === "week") {
-      end = Math.min(rows.length, index + 7)
-    } else if (step === "month") {
-      while (end < rows.length && rows[end]!.date.slice(0, 7) === rows[index]!.date.slice(0, 7)) {
-        end++
-      }
-    }
-    result.push({ start: index, end })
-    index = end
-  }
-  return result
-}
-
-const pointTitle = (first: string, step: Step, dates: Dates, weekOf: (date: string) => string) => {
+const pointTitle = (first: string, step: SeriesStep, dates: Dates, weekOf: (date: string) => string) => {
   if (step === "day") {
     return dates.day(first)
   }
@@ -116,7 +114,7 @@ function points(
   previous: DailySales[] | null,
   sources: SalesSource[],
   metric: Metric,
-  step: Step,
+  step: SeriesStep,
   dates: Dates,
   weekOf: (date: string) => string
 ): Point[] {
@@ -124,7 +122,7 @@ function points(
     cells.every((cell) => cell === null)
       ? null
       : cells.reduce((total, cell) => total + (cell ? measure(cell, metric) : 0), 0)
-  return groups(daily, step).map(({ start, end }) => {
+  return buckets(daily, step, (row) => row.date).map(({ start, end }) => {
     const first = daily[start]!.date
     const cells = (rows: DailySales[]) => rows.flatMap((row) => sources.map((source) => row[source]))
     const before = previous?.slice(start, end)
@@ -216,7 +214,7 @@ export function SalesTrend({
   // Sales first when orders have prices; orders otherwise.
   const [chosen, setMetric] = useState<Metric>(currency ? "sales" : "orders")
   const metric: Metric = currency || chosen !== "sales" ? chosen : "orders"
-  const step = stepFor(daily.length)
+  const step = seriesStep(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
   // One source keeps its name and color; several read as all channels together.
   const single = shown.length === 1 ? sourceSeries[shown[0]!] : null
@@ -276,9 +274,9 @@ export function SalesTrend({
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke={vars.color.border} />
-          <XAxis dataKey="label" {...axis} minTickGap={40} />
+          <XAxis dataKey="label" {...chartAxis} minTickGap={40} />
           <YAxis
-            {...axis}
+            {...chartAxis}
             width={metric === "sales" ? 44 : 36}
             tickCount={4}
             allowDecimals={false}

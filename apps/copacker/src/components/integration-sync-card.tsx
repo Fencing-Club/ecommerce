@@ -1,9 +1,9 @@
 import { CircleAlert, CircleCheck, Clock3, RefreshCw } from "lucide-react"
 import { useId } from "react"
 import { useFormatter, useTranslations } from "use-intl"
+import type { StatusTone } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import type { StatusTone } from "./common"
 import { StatusBadge } from "./common"
 
 export type IntegrationSyncState =

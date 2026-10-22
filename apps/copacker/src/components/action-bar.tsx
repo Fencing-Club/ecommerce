@@ -1,18 +1,21 @@
 import type { LucideIcon } from "lucide-react"
 import { CircleAlert, CircleDot, GitPullRequest, SquareCheck, X } from "lucide-react"
 import { useTranslations } from "use-intl"
+import type { StatusTone } from "@/components/ui/badge"
+import { toneSurface } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-type ActionBarTone = "warning" | "neutral" | "info" | "destructive"
+type ActionBarTone = Exclude<StatusTone, "success">
 
-// The lead tile's fill and icon color, and its usual icon: unsaved changes, a flow's summary or a selection, a proposal
-// to review, and a submit that's blocked. A flow passes its own icon (a package for packing, a truck for receiving).
+// The lead tile, on its tone's surface, and its usual icon: unsaved changes, a flow's summary or a selection, a
+// proposal to review, and a submit that's blocked. A flow passes its own icon (a package for packing, a truck for
+// receiving). A neutral tile's icon is in the text's own color, as the design draws it: a selection isn't a status.
 const leads = {
-  warning: { icon: CircleDot, className: "bg-warning-soft text-warning-foreground" },
-  neutral: { icon: SquareCheck, className: "bg-muted text-foreground" },
-  info: { icon: GitPullRequest, className: "bg-info-soft text-info" },
-  destructive: { icon: CircleAlert, className: "bg-destructive-soft text-destructive" }
+  warning: { icon: CircleDot, className: toneSurface.warning },
+  neutral: { icon: SquareCheck, className: cn(toneSurface.neutral, "text-foreground") },
+  info: { icon: GitPullRequest, className: toneSurface.info },
+  destructive: { icon: CircleAlert, className: toneSurface.destructive }
 } satisfies Record<ActionBarTone, { icon: LucideIcon; className: string }>
 
 // The one bar for committing or acting on a page: unsaved changes, a task flow's summary and submit, a proposal to
@@ -79,7 +82,10 @@ export function ActionBar({
         <button
           type="button"
           onClick={onProblems}
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-destructive-soft px-2.5 py-1 text-xs font-semibold text-destructive outline-none hover:bg-destructive/15 focus-visible:ring-3 focus-visible:ring-destructive/30 md:self-center"
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs font-semibold outline-none hover:bg-destructive/15 focus-visible:ring-3 focus-visible:ring-destructive/30 md:self-center",
+            toneSurface.destructive
+          )}
         >
           <CircleAlert className="size-3.5" aria-hidden />
           {t("problems", { count: problems })}

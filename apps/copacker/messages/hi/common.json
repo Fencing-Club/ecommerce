@@ -57,7 +57,8 @@
     "declined": "अस्वीकृत",
     "atForwarder": "फ़ॉरवर्डर के पास",
     "packed": "पैक हो गया",
-    "changesProposed": "बदलाव प्रस्तावित"
+    "changesProposed": "बदलाव प्रस्तावित",
+    "unknown": "अज्ञात"
   },
   "destinations": {
     "amazon": "Amazon",

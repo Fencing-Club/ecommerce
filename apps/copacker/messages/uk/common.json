@@ -57,7 +57,8 @@
     "declined": "Відхилено",
     "atForwarder": "В експедитора",
     "packed": "Упаковано",
-    "changesProposed": "Запропоновано зміни"
+    "changesProposed": "Запропоновано зміни",
+    "unknown": "Невідомо"
   },
   "destinations": {
     "amazon": "Amazon",

@@ -57,7 +57,8 @@
     "declined": "Rechazado",
     "atForwarder": "Con el agente de carga",
     "packed": "Empacado",
-    "changesProposed": "Cambios propuestos"
+    "changesProposed": "Cambios propuestos",
+    "unknown": "Desconocido"
   },
   "destinations": {
     "amazon": "Amazon",

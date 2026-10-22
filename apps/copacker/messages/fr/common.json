@@ -57,7 +57,8 @@
     "declined": "Refusé",
     "atForwarder": "Chez le transitaire",
     "packed": "Emballé",
-    "changesProposed": "Modifications proposées"
+    "changesProposed": "Modifications proposées",
+    "unknown": "Inconnu"
   },
   "destinations": {
     "amazon": "Amazon",

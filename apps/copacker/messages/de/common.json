@@ -57,7 +57,8 @@
     "declined": "Abgelehnt",
     "atForwarder": "Beim Spediteur",
     "packed": "Verpackt",
-    "changesProposed": "Änderungen vorgeschlagen"
+    "changesProposed": "Änderungen vorgeschlagen",
+    "unknown": "Unbekannt"
   },
   "destinations": {
     "amazon": "Amazon",

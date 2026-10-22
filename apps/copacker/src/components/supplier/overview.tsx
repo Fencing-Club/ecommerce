@@ -3,8 +3,9 @@ import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
-import { Attention, CardLink, DeltaPill } from "@/components/overview-sections"
+import { Attention, CardLink } from "@/components/overview-sections"
 import { ProductThumb } from "@/components/product-thumb"
+import { DeltaNote, StatCard, StatGrid } from "@/components/stat-card"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -79,8 +80,8 @@ function tasks(counts: Data["attention"], t: TaskText) {
   return items
 }
 
-// The change against the comparison period as the buyer Overview's pill, such as +12% vs previous period. The comparison
-// shows beside the pill when the tile has room for it, and is always read out.
+// The change against the comparison period, as on the buyer Overview, such as +12% vs previous period. `comparison` is
+// the comparison period's key, such as previousPeriod, or null for none.
 function Delta({ change, comparison }: { change: number | null; comparison: string | null }) {
   const t = useTranslations("supplier.overview")
   if (change === null || !comparison) {
@@ -90,47 +91,7 @@ function Delta({ change, comparison }: { change: number | null; comparison: stri
       </span>
     )
   }
-  const versus = t("versus", { comparison })
-  return (
-    <>
-      <DeltaPill value={change} title={versus} />
-      <span className="sr-only @min-[15rem]:not-sr-only">
-        <span className="whitespace-nowrap">{versus}</span>
-      </span>
-    </>
-  )
-}
-
-// A KPI tile as on the buyer Overview: the label, the figure, and its change.
-function Kpi({
-  label,
-  value,
-  change,
-  comparison
-}: {
-  label: string
-  value: string
-  change: number | null
-  // The comparison period's key, such as previousPeriod, or null for none.
-  comparison: string | null
-}) {
-  return (
-    // Two tiles a row on a phone pad less, so each label still fits.
-    <Card className="@container gap-3 @max-sm/kpis:[--card-spacing:--spacing(3)]">
-      <CardHeader className="grid-cols-1 gap-1">
-        <CardDescription className="truncate" title={label}>
-          {label}
-        </CardDescription>
-        {/* Proportional figures, as on the buyer Overview: a hero number reads on its own. */}
-        <CardTitle className="text-2xl leading-8 font-semibold tracking-tight">{value}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col justify-end">
-        <div className="flex h-5 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-          <Delta change={change} comparison={comparison} />
-        </div>
-      </CardContent>
-    </Card>
-  )
+  return <DeltaNote value={change} versus={t("versus", { comparison })} />
 }
 
 // A ranked list with a bar for each row's share of the largest, like Shopify's analytics cards.
@@ -206,32 +167,28 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
     <div className="@container flex flex-col gap-6">
       <Attention items={todo} />
 
-      <div className="@container/kpis grid grid-cols-2 gap-4 @4xl:grid-cols-4">
-        <Kpi
+      <StatGrid>
+        <StatCard
           label={t("ordersReceived")}
           value={data.kpis.orders.value.toLocaleString(locale)}
-          change={data.kpis.orders.change}
-          comparison={comparison}
+          note={<Delta change={data.kpis.orders.change} comparison={comparison} />}
         />
-        <Kpi
+        <StatCard
           label={t("orderValue")}
           value={price(data.kpis.value.value)}
-          change={data.kpis.value.change}
-          comparison={comparison}
+          note={<Delta change={data.kpis.value.change} comparison={comparison} />}
         />
-        <Kpi
+        <StatCard
           label={t("piecesOrdered")}
           value={data.kpis.pieces.value.toLocaleString(locale)}
-          change={data.kpis.pieces.change}
-          comparison={comparison}
+          note={<Delta change={data.kpis.pieces.change} comparison={comparison} />}
         />
-        <Kpi
+        <StatCard
           label={t("piecesShipped")}
           value={data.kpis.shipped.value.toLocaleString(locale)}
-          change={data.kpis.shipped.change}
-          comparison={comparison}
+          note={<Delta change={data.kpis.shipped.change} comparison={comparison} />}
         />
-      </div>
+      </StatGrid>
 
       <div className="grid items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card>

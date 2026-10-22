@@ -125,7 +125,8 @@ function PartnerRow({
   )
 }
 
-// A status badge: joined is done, a live invitation is in progress, anything else is neutral.
+// A status badge: joined is done, a live invitation is in progress, an expired one is the viewer's to send again, and
+// no invitation is neutral.
 function StandingBadge({ standing }: { standing: Standing }) {
   const t = useTranslations("partners.row.standing")
   if (standing.joined) {
@@ -135,8 +136,12 @@ function StandingBadge({ standing }: { standing: Standing }) {
       </StatusBadge>
     )
   }
-  if (standing.invited && !standing.expired) {
-    return (
+  if (standing.invited) {
+    return standing.expired ? (
+      <StatusBadge tone="warning" icon={<CircleDashed aria-hidden />}>
+        {t("expired")}
+      </StatusBadge>
+    ) : (
       <StatusBadge tone="info" icon={<Clock aria-hidden />}>
         {t("invited")}
       </StatusBadge>
@@ -144,7 +149,7 @@ function StandingBadge({ standing }: { standing: Standing }) {
   }
   return (
     <StatusBadge tone="neutral" icon={<CircleDashed aria-hidden />}>
-      {standing.invited ? t("expired") : t("notInvited")}
+      {t("notInvited")}
     </StatusBadge>
   )
 }
