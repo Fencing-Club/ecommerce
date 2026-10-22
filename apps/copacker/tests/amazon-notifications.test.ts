@@ -25,7 +25,7 @@ import {
   pollAmazonNotifications,
   receiveAmazonNotification
 } from "../src/server/amazon-notifications"
-import { PollAgain } from "../src/server/job-handlers"
+import { PollAgain } from "../src/server/job-runtime"
 import { runNextJob } from "../src/server/queue"
 import { queueArn } from "../src/server/sqs"
 import { database, pg, setUpTestDatabase } from "./test-db"
@@ -184,7 +184,7 @@ describe("Amazon order updates", () => {
         amazonOrder("110-9", "2025-01-01T00:00:00Z", 1)
       ]
     })
-    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
+    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
     const query = new URL(String(amazon.request.mock.calls[0]?.[1]), "https://amazon.test").searchParams
     expect(query.get("lastUpdatedAfter")).toBe("2026-09-25T06:55:00.000Z")
     expect(query.get("marketplaceIds")).toBe("ATVPDKIKX0DER,A2EUQ1WTGCTBG2")
@@ -202,19 +202,19 @@ describe("Amazon order updates", () => {
   })
 
   it("runs a full sync when nothing current is stored, and waits for one that is running", async () => {
-    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
+    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "queued" })
     expect(amazon.request).not.toHaveBeenCalled()
     await pg.exec(`UPDATE sales_syncs SET status = 'running'`)
-    await expect(amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)).rejects.toBeInstanceOf(
-      PollAgain
-    )
+    await expect(
+      amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
+    ).rejects.toBeInstanceOf(PollAgain)
   })
 
   it("reads everything again when the stored coverage is stale", async () => {
     await storedSync({ coveredTo: new Date(now - 31 * 86400000) })
-    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
+    await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
     expect((await database.select().from(tables.salesSyncs))[0]).toMatchObject({ status: "queued", revision: 2 })
     expect(amazon.request).not.toHaveBeenCalled()
   })
@@ -222,7 +222,7 @@ describe("Amazon order updates", () => {
   it("comes back after Amazon's interval when order reads are throttled, instead of waiting in the worker", async () => {
     await storedSync()
     amazon.request.mockRejectedValue(new ProviderError(429, null, "Amazon request failed (429)", 5000))
-    const attempt = amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
+    const attempt = amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
     await expect(attempt).rejects.toBeInstanceOf(PollAgain)
     await expect(attempt).rejects.toMatchObject({ options: { delayMs: 180000 } })
     expect(amazon.request).toHaveBeenCalledTimes(1)
@@ -231,17 +231,17 @@ describe("Amazon order updates", () => {
 
   it("waits for a queued full sync instead of writing beside it", async () => {
     await storedSync({ status: "queued" })
-    await expect(amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)).rejects.toBeInstanceOf(
-      PollAgain
-    )
+    await expect(
+      amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, { assertOwned: owned }, now)
+    ).rejects.toBeInstanceOf(PollAgain)
   })
 
   it("refreshes FBA stock, and ignores a seller the workspace no longer uses", async () => {
-    await amazonEventJob({ orgId: buyerId, sellerId, target: "stock" }, owned, now)
+    await amazonEventJob({ orgId: buyerId, sellerId, target: "stock" }, { assertOwned: owned }, now)
     expect(await database.select().from(tables.stockSnapshots)).toMatchObject([
       { source: "fba", scopeKey: "ATVPDKIKX0DER", status: "queued" }
     ])
-    await amazonEventJob({ orgId: buyerId, sellerId: "B000000000", target: "sales" }, owned, now)
+    await amazonEventJob({ orgId: buyerId, sellerId: "B000000000", target: "sales" }, { assertOwned: owned }, now)
     expect(await database.select().from(tables.salesSyncs)).toEqual([])
   })
 })
@@ -255,7 +255,7 @@ describe("Amazon notification subscriptions", () => {
   it("subscribes the seller to each notification at the queue's destination", async () => {
     vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", queueUrl)
     amazon.notificationDestination.mockResolvedValue("dest")
-    await amazonSubscribeJob({ orgId: buyerId }, owned)
+    await amazonSubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(amazon.notificationDestination).toHaveBeenCalledWith(queueArn(queueUrl), "copacker")
     expect(amazon.subscribeNotifications.mock.calls).toEqual([
       [
@@ -270,7 +270,7 @@ describe("Amazon notification subscriptions", () => {
       ],
       ["FBA_INVENTORY_AVAILABILITY_CHANGES", "dest", undefined]
     ])
-    await amazonSubscribeJob({ orgId: otherBuyerId }, owned)
+    await amazonSubscribeJob({ orgId: otherBuyerId }, { assertOwned: owned })
     expect(amazon.subscribeNotifications).toHaveBeenCalledTimes(amazonNotificationTypes.length)
   })
 
@@ -300,14 +300,14 @@ describe("Amazon notification subscriptions", () => {
     amazon.subscribeNotifications
       .mockResolvedValueOnce(true)
       .mockRejectedValueOnce(new Error("Amazon request failed (400)"))
-    await expect(amazonSubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow(
+    await expect(amazonSubscribeJob({ orgId: buyerId }, { assertOwned: owned })).rejects.toThrow(
       "Amazon FBA_INVENTORY_AVAILABILITY_CHANGES subscription failed: Amazon request failed (400)"
     )
   })
 
   it("skips subscribing when no queue is configured", async () => {
     vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", "")
-    await amazonSubscribeJob({ orgId: buyerId }, owned)
+    await amazonSubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(amazon.notificationDestination).not.toHaveBeenCalled()
   })
 })

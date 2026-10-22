@@ -7,8 +7,9 @@ import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/
 import { withJobWake } from "@/server/job-delivery"
 import { ebayApp, ebayFor } from "./connections"
 import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
-import { PollAgain } from "./job-handlers"
-import { logLine } from "./log"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
+import { logEvent } from "./log"
 import { rateLimit } from "./rate-limit"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
@@ -168,7 +169,7 @@ async function sendToEventBridge(bus: string, notification: EbayNotification) {
 export async function receiveEbayNotification(notification: EbayNotification, now = Date.now()) {
   const { topic } = notification.metadata
   const seller = sellerOf.safeParse(notification.notification.data)
-  logLine(`eBay ${topic} notification ${notification.notification.notificationId}`)
+  logEvent("info", "ebay_notification", { topic, notificationId: notification.notification.notificationId })
   if (!seller.success) {
     return 0
   }
@@ -190,12 +191,14 @@ export async function receiveEbayNotification(notification: EbayNotification, no
     db()
       .insert(jobs)
       .values(
-        accounts.map(({ orgId }) => ({
-          key: `ebay-event:${orgId}:${batch}`,
-          kind: "ebay-event" as const,
-          payload: { orgId, userId: seller.data },
-          runAt: new Date((batch + 1) * batchMs + settleMs)
-        }))
+        accounts.map(({ orgId }) =>
+          jobRow(
+            "ebay-event",
+            `ebay-event:${orgId}:${batch}`,
+            { orgId, userId: seller.data },
+            { runAt: new Date((batch + 1) * batchMs + settleMs) }
+          )
+        )
       )
       .onConflictDoNothing()
   )
@@ -217,8 +220,7 @@ async function eraseEbayAccount(userId: string) {
 }
 
 // Worker job: starts the order sync a period's notifications call for.
-export async function ebayEventJob(payload: Record<string, unknown>) {
-  const { orgId, userId } = z.object({ orgId: z.uuid(), userId: z.string().min(1) }).parse(payload)
+export async function ebayEventJob({ orgId, userId }: JobInput<"ebay-event">) {
   const [account] = await db()
     .select({ externalId: connections.externalId, kind: organizations.kind })
     .from(connections)
@@ -249,15 +251,17 @@ export async function queueEbaySubscription(orgId: string, key: string) {
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `ebay-subscribe:${orgId}:${key}`, kind: "ebay-subscribe", payload: { orgId } })
+      .values(jobRow("ebay-subscribe", `ebay-subscribe:${orgId}:${key}`, { orgId }))
       .onConflictDoNothing()
   )
 }
 
 // Worker job: makes sure the app's notification destination points at the webhook, then subscribes the seller to each
 // order topic.
-export async function ebaySubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
+export async function ebaySubscribeJob(
+  { orgId }: JobInput<"ebay-subscribe">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
   const app = ebayAppClient()
   const verificationToken = ebayVerificationToken()
   const endpoint = ebayEndpoint()

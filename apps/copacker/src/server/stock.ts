@@ -11,7 +11,9 @@ import { withJobWake } from "@/server/job-delivery"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
+import { describeError } from "./log"
 import { copyShopifyFields, fillStockRows } from "./product-fields"
 import { connectedAccount } from "./provider-accounts"
 import { recordStockDays } from "./stock-days"
@@ -43,19 +45,6 @@ export function stockErrorCode(error: unknown): StockErrorCode {
     return "provider_unavailable"
   }
   return "refresh_failed"
-}
-
-// A loggable account of an error and its causes. Messages never carry tokens; response bodies are not included.
-export function describeError(error: unknown, depth = 0): Record<string, unknown> {
-  if (!(error instanceof Error)) {
-    return { value: String(error).slice(0, 200) }
-  }
-  return {
-    name: error.name,
-    message: error.message.slice(0, 1000),
-    ...(error instanceof ShopifyRequestError || error instanceof ProviderError ? { status: error.status } : {}),
-    ...(error.cause !== undefined && depth < 3 ? { cause: describeError(error.cause, depth + 1) } : {})
-  }
 }
 
 export const stockSelection = z
@@ -117,9 +106,7 @@ export async function refreshStock(
           errorCode: null
         })
         .where(eq(stockSnapshots.id, current.id))
-      await tx
-        .insert(jobs)
-        .values({ key: `stock:${current.id}:${revision}`, kind: "stock", payload: { id: current.id, revision } })
+      await tx.insert(jobs).values(jobRow("stock", `stock:${current.id}:${revision}`, { id: current.id, revision }))
       return { id: current.id, revision, status: "queued" }
     })
   )
@@ -129,14 +116,11 @@ const retryDelayMs = 5 * 60000
 const retryAttempts = 12
 
 export async function stockJob(
-  payload: Record<string, unknown>,
-  assertOwned: () => Promise<void>,
-  attempt: { id: string; attempts: number }
+  { id, revision }: JobInput<"stock">,
+  { assertOwned, attempt, owned: jobOwned }: Pick<JobContext, "assertOwned" | "attempt" | "owned">
 ) {
-  const { id, revision } = z.object({ id: z.uuid(), revision: z.number().int().positive() }).parse(payload)
   await assertOwned()
   const workerToken = randomUUID()
-  const jobOwned = and(eq(jobs.id, attempt.id), eq(jobs.attempts, attempt.attempts), eq(jobs.status, "running"))
   const claimed = await db().transaction(async (tx) => {
     const [job] = await tx.select({ id: jobs.id }).from(jobs).where(jobOwned).for("update")
     if (!job) {
@@ -228,7 +212,7 @@ export async function stockJob(
     const errorCode = stockErrorCode(error)
     // A busy or briefly unavailable provider (such as Shopify throttling while orders sync) is tried again in a few
     // minutes, for up to an hour, rather than marking the refresh failed.
-    if (errorCode === "provider_unavailable" && attempt.attempts < retryAttempts) {
+    if (errorCode === "provider_unavailable" && attempt < retryAttempts) {
       await db().update(stockSnapshots).set({ status: "queued", workerToken: null }).where(owned)
       throw new PollAgain(`${claimed.source} is busy; retrying the stock refresh in 5 minutes`, {
         delayMs: retryDelayMs

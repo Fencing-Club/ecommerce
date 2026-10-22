@@ -1,6 +1,7 @@
 import { SQSClient } from "@aws-sdk/client-sqs"
 import { pollAmazonNotifications } from "./amazon-notifications"
 import { pollEbayEvents } from "./ebay-events"
+import { awsNotificationConfig } from "./integration-config"
 import { pollShopifyEvents } from "./shopify-webhooks"
 import { sqsQueue } from "./sqs"
 
@@ -17,16 +18,11 @@ export async function readNotifications(provider: NotificationProvider) {
   if (!reader.url) {
     return 0
   }
-  const {
-    AWS_REGION: region,
-    AWS_NOTIFICATION_ACCESS_KEY_ID: accessKeyId,
-    AWS_NOTIFICATION_SECRET_ACCESS_KEY: secretAccessKey,
-    AWS_NOTIFICATION_SESSION_TOKEN: sessionToken
-  } = process.env
-  if (!region || !accessKeyId || !secretAccessKey) {
+  const aws = awsNotificationConfig()
+  if (!aws) {
     throw new Error("AWS notification credentials are not configured")
   }
-  const client = new SQSClient({ region, credentials: { accessKeyId, secretAccessKey, sessionToken } })
+  const client = new SQSClient(aws)
   try {
     return await reader.poll(sqsQueue(client, reader.url, 0))
   } finally {

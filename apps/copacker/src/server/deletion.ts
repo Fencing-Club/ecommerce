@@ -6,6 +6,7 @@ import { connections, memberships, oauthStates, organizations, profiles } from "
 import { LocalizedError } from "@/i18n/errors"
 import { clearAuthentication } from "./auth-session"
 import { disconnect } from "./connections"
+import { describeError, logEvent } from "./log"
 import { deleteFile } from "./storage"
 import { workos } from "./workos"
 import { deleteWorkspaceRecords, unlinkPartners, withdrawInvitations } from "./workspace-records"
@@ -89,12 +90,17 @@ export async function deleteWorkspace(org: Pick<Session["org"], "id" | "name" | 
   const files = await db().transaction((tx) => deleteWorkspaceRecords(tx, org.id))
   // Files and the WorkOS organization go once the records have; one that can't be deleted now is only logged.
   for (const key of files) {
-    await deleteFile(key).catch((error: unknown) => console.error(`Couldn’t delete stored file ${key}`, error))
+    await deleteFile(key).catch((error: unknown) =>
+      logEvent("error", "stored_file_delete_failed", { objectKey: key, error: describeError(error) })
+    )
   }
   if (org.workosId) {
+    const workosId = org.workosId
     await workos()
-      .organizations.deleteOrganization(org.workosId)
-      .catch((error: unknown) => console.error(`Couldn’t delete WorkOS organization ${org.workosId}`, error))
+      .organizations.deleteOrganization(workosId)
+      .catch((error: unknown) =>
+        logEvent("error", "workos_organization_delete_failed", { workosId, error: describeError(error) })
+      )
   }
   return { redirect: "/" }
 }
@@ -108,7 +114,7 @@ async function disconnectStores(orgId: string) {
   for (const { provider } of linked) {
     if (provider === "shopify" || provider === "amazon" || provider === "ebay") {
       await disconnect(orgId, provider).catch((error: unknown) =>
-        console.error(`Couldn’t disconnect ${provider} for ${orgId}`, error)
+        logEvent("error", "store_disconnect_failed", { orgId, provider, error: describeError(error) })
       )
     }
   }

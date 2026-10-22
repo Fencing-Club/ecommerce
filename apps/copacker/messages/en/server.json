@@ -54,7 +54,6 @@
     "ship": "Print the packet, pack the cartons, and mark them shipped",
     "forward": "The forwarder ships the goods on and adds the freight cost, carrier, and tracking",
     "receive": "Mark the goods received when they arrive",
-    "complete": "Shipment complete",
     "cancellation": "Cancel the existing Amazon shipment before creating a replacement",
     "reconcile": "Find and link the Amazon order before continuing",
     "retry": "Resolve the reported problem, then retry the shipment",

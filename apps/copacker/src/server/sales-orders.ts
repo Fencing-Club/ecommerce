@@ -19,7 +19,6 @@ import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { objectValues } from "ts-extras"
-import { z } from "zod"
 import { db } from "@/db"
 import { chunked, excluded } from "@/db/helpers"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
@@ -42,8 +41,9 @@ import { errorText, ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
 import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
-import { PollAgain } from "./job-handlers"
-import { logLine } from "./log"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
+import { describeError, logEvent } from "./log"
 import { orderUnits } from "./overview-sales"
 import { connectedAccount, shopifyStoreSnapshot } from "./provider-accounts"
 import type { DemandGap } from "./sales-attribution"
@@ -53,7 +53,7 @@ import { summarizeDemandGaps } from "./sales-attribution"
 import { extendCoverage, lockSyncScope, salesSyncScope } from "./sales-sync-coverage"
 import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
-import { describeError, stockErrorCode } from "./stock"
+import { stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
@@ -73,8 +73,6 @@ const chunkDays = 14
 const day = 86400000
 
 export class SalesSyncError extends LocalizedError {}
-
-const sourceNames: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
 // The marketplaces each seller's orders are read from, kept for a few hours: they rarely change, and Amazon allows few
 // requests for them.
@@ -168,11 +166,7 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
         .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
       await tx
         .insert(jobs)
-        .values({
-          key: `sales:${org.id}:${source}:${revision}`,
-          kind: "sales",
-          payload: { orgId: org.id, source, revision }
-        })
+        .values(jobRow("sales", `sales:${org.id}:${source}:${revision}`, { orgId: org.id, source, revision }))
         .onConflictDoNothing()
       return { status: "queued" }
     })
@@ -231,22 +225,6 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const period = z.object({ from: z.iso.datetime(), to: z.iso.datetime() })
-const payloadSchema = z.object({
-  orgId: z.uuid(),
-  source: z.enum(salesSources),
-  revision: z.number().int().positive(),
-  // Where a paused sync picks up: the periods still to read, and the unbroken period stored so far in this sync.
-  resume: z
-    .object({
-      remaining: z.array(period),
-      covered: period.nullable(),
-      customersIncluded: z.boolean().optional(),
-      after: z.number().int().min(0).max(32).optional()
-    })
-    .optional()
-})
-
 // How long Amazon's order report can take to include a new order.
 const reportLagMs = 2 * day
 // Amazon's order search allows about one request every three minutes once its burst of 20 is spent.
@@ -257,8 +235,10 @@ type AfterOrders = { run: () => Promise<unknown>; onFailure: "fail" | { log: str
 
 // Worker job: copies one source's orders into sales_orders, a chunk at a time. Each chunk replaces the stored orders
 // in its period, so cancelled or test orders that disappear from the source disappear here too.
-export async function salesJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId, source, revision, resume: savedResume } = payloadSchema.parse(payload)
+export async function salesJob(
+  { orgId, source, revision, resume: savedResume }: JobInput<"sales">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
   const scope = salesSyncScope({ orgId, source, revision })
   const [sync] = await db().select().from(salesSyncs).where(scope)
   if (!sync || !["queued", "running"].includes(sync.status)) {
@@ -417,9 +397,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         orders = await throttled(() => read(window), assertOwned)
       }
       await assertOwned()
-      logLine(
-        `Copied ${orders.length} ${sourceNames[source]} orders, ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)} (period ${index + 1} of ${chunks.length})`
-      )
+      logEvent("info", "sales_orders_copied", {
+        source,
+        orders: orders.length,
+        from: window.from,
+        to: window.to,
+        period: index + 1,
+        periods: chunks.length
+      })
       covered = extendCoverage(covered, chunk)
       const range = covered
       await db().transaction(async (tx) => {

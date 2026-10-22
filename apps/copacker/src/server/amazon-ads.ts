@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "@/db"
 import { excluded } from "@/db/helpers"
 import { amazonAdsConnections, amazonAdsDays, jobs, analyticsEvidence } from "@/db/schema"
@@ -9,7 +8,8 @@ import { addDays, zonedDay } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonAdsApp } from "./connections"
 import { syncExchangeRates } from "./exchange-rates"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
 import { connectedAccount } from "./provider-accounts"
 import { decrypt, encrypt } from "./security"
 
@@ -76,11 +76,15 @@ export async function queueAdsSync(orgId: string, now = new Date()) {
         const end = zonedDay(now, profile.timezone)
         // A single small daily-spend report stays below the 120-day range limit and avoids concurrent reports per advertiser.
         const from = addDays(end, -89)
-        work.push({
-          key: `amazon-ads:${run}:${profile.profileId}:${from}`,
-          kind: "amazon-ads",
-          payload: { orgId, generation: grant.generation, profileId: profile.profileId, from, to: end }
-        })
+        work.push(
+          jobRow("amazon-ads", `amazon-ads:${run}:${profile.profileId}:${from}`, {
+            orgId,
+            generation: grant.generation,
+            profileId: profile.profileId,
+            from,
+            to: end
+          })
+        )
       }
       if (work.length) {
         await tx.insert(jobs).values(work)
@@ -88,18 +92,7 @@ export async function queueAdsSync(orgId: string, now = new Date()) {
     })
   )
 }
-const jobInput = z.object({
-  orgId: z.uuid(),
-  generation: z.uuid(),
-  profileId: z.string(),
-  from: z.iso.date(),
-  to: z.iso.date(),
-  reportId: z.string().optional(),
-  productDetail: z.boolean().optional()
-})
-
-export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const input = jobInput.parse(payload)
+export async function amazonAdsJob(input: JobInput<"amazon-ads">, { assertOwned }: Pick<JobContext, "assertOwned">) {
   const { orgId, generation, profileId, from, to } = input
   await assertOwned()
   const scope = and(connectionScope(orgId), eq(amazonAdsConnections.generation, generation))

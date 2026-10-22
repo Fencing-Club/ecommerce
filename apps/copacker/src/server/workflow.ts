@@ -1,27 +1,23 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { eq } from "drizzle-orm"
+import { match, P } from "ts-pattern"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"
 import { documents, shipments } from "@/db/schema"
-import type { ServerKey } from "@/i18n/server-text"
 import { type AccessibleOrder, accessibleOrder } from "./access"
 import { linesMissingLabels } from "./product-barcodes"
 import type { ReadinessIssue } from "./readiness"
-import {
-  finishedStates,
-  orderCoverage,
-  packingReadiness,
-  releasedLabelKinds,
-  releasedStates,
-  releaseIssues
-} from "./readiness"
+import { orderCoverage, packingReadiness, releasedLabelKinds, releasedStates, releaseIssues } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
 
-const finishedMessages: Partial<Record<ShipmentState, ServerKey>> = {
-  received: "workflow.arrived",
-  cancelled: "workflow.cancelled"
+// What a shipment waits on next, who does it, and the action that does it.
+type NextStep = {
+  owner: "buyer" | "supplier" | "forwarder" | "system" | null
+  step: string
+  action?: string
+  message: string
 }
 
 // Where a PO and each of its shipments stand, and who acts next. `po` is the PO's id, or the PO the caller has already
@@ -60,88 +56,69 @@ export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
           t
         )
         const release = releaseIssues(shipment, docs, missingLabels, t)
-        let next: {
-          owner: "buyer" | "supplier" | "forwarder" | "system" | null
-          step: string
-          action?: string
-          message: string
-        }
-        if (editable) {
-          next = {
+        const next = match<{ status: ShipmentState; editable: boolean; leg: boolean }, NextStep>({
+          status: shipment.status,
+          editable,
+          leg
+        })
+          .with({ editable: true }, () => ({
             owner: "supplier",
             step: "packing",
             action: "shipment.submit",
             message: t("workflow.packing")
-          }
-        } else if (shipment.status === "packed") {
-          next = {
+          }))
+          .with({ status: "packed" }, () => ({
             owner: "buyer",
             step: "prepareAmazon",
             action: "shipment.prepareAmazon",
             message: t("workflow.packed")
-          }
-        } else if (shipment.status === "approval") {
-          next = {
+          }))
+          .with({ status: "approval" }, () => ({
             owner: "buyer",
             step: "approval",
             action: "shipment.approve",
             message: t("workflow.approval")
-          }
-        } else if (["queued", "creating"].includes(shipment.status)) {
-          next = { owner: "system", step: "processing", message: t("workflow.processing") }
-        } else if (shipment.status === "waiting_labels") {
+          }))
+          .with({ status: P.union("queued", "creating") }, () => ({
+            owner: "system",
+            step: "processing",
+            message: t("workflow.processing")
+          }))
           // The labels go to the supplier by themselves once nothing in release is left.
-          next = { owner: "buyer", step: "labels", message: t("workflow.labels") }
-        } else if (shipment.status === "ready") {
-          next = {
+          .with({ status: "waiting_labels" }, () => ({ owner: "buyer", step: "labels", message: t("workflow.labels") }))
+          .with({ status: "ready" }, () => ({
             owner: "supplier",
             step: "ship",
             action: "shipment.ship",
             message: t("workflow.ship")
-          }
-        } else if (shipment.status === "shipped" && leg) {
-          next = {
+          }))
+          .with({ status: "shipped", leg: true }, () => ({
             owner: "forwarder",
             step: "forward",
             action: "shipment.forward",
             message: t("workflow.forward")
-          }
-        } else if (["shipped", "forwarded"].includes(shipment.status)) {
-          next = {
+          }))
+          .with({ status: P.union("shipped", "forwarded") }, () => ({
             owner: "buyer",
             step: "receive",
             action: "shipment.received",
             message: t("workflow.receive")
-          }
-        } else if (finishedStates.includes(shipment.status)) {
-          next = {
-            owner: null,
-            step: "complete",
-            message: t(finishedMessages[shipment.status] ?? "workflow.complete")
-          }
-        } else if (shipment.status === "correction") {
-          next = {
+          }))
+          .with({ status: "received" }, () => ({ owner: null, step: "complete", message: t("workflow.arrived") }))
+          .with({ status: "cancelled" }, () => ({ owner: null, step: "complete", message: t("workflow.cancelled") }))
+          .with({ status: "correction" }, () => ({
             owner: "buyer",
             step: "cancellation",
             action: "shipment.cancelAmazon",
             message: t("workflow.cancellation")
-          }
-        } else {
-          next =
+          }))
+          // Packing an Amazon order already holds, and shipments Amazon couldn't create.
+          .with({ status: P.union("packing", "needs_attention") }, () =>
             shipment.operation === "sending" && !shipment.amazonOrderId
-              ? {
-                  owner: "buyer",
-                  step: "reconcile",
-                  action: "shipment.reconcile",
-                  message: t("workflow.reconcile")
-                }
-              : {
-                  owner: "buyer",
-                  step: "retry",
-                  action: "shipment.retry",
-                  message: t("workflow.retry")
-                }
-        }
+              ? { owner: "buyer", step: "reconcile", action: "shipment.reconcile", message: t("workflow.reconcile") }
+              : { owner: "buyer", step: "retry", action: "shipment.retry", message: t("workflow.retry") }
+          )
+          .exhaustive()
         // Released shipments report what their packet lacks, such as a product label the buyer hasn't added yet.
         let issues: ReadinessIssue[] = []
         if (editable) {

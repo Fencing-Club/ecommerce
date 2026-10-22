@@ -8,7 +8,8 @@ import { connections, jobs, organizations } from "@/db/schema"
 import { withJobWake } from "@/server/job-delivery"
 import { disconnect, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-compliance"
 import type { NotificationQueue } from "./sqs"
@@ -85,27 +86,22 @@ export async function receiveShopifyWebhook(topic: string, shop: string, now = D
     db()
       .insert(jobs)
       .values(
-        accounts.map(({ orgId }) => ({
-          key: `shopify-event:${orgId}:${target}:${batch}`,
-          kind: "shopify-event" as const,
-          payload: { orgId, shop, target },
-          runAt: new Date(target === "uninstalled" ? now : (batch + 1) * batchMs + settleMs)
-        }))
+        accounts.map(({ orgId }) =>
+          jobRow(
+            "shopify-event",
+            `shopify-event:${orgId}:${target}:${batch}`,
+            { orgId, shop, target },
+            { runAt: new Date(target === "uninstalled" ? now : (batch + 1) * batchMs + settleMs) }
+          )
+        )
       )
       .onConflictDoNothing()
   )
   return accounts.length
 }
 
-const eventPayload = z.object({
-  orgId: z.uuid(),
-  shop: shopDomainSchema,
-  target: z.enum(["sales", "stock", "uninstalled"])
-})
-
 // Worker job: starts the sync an event calls for, or removes the connection when the store uninstalled the app.
-export async function shopifyEventJob(payload: Record<string, unknown>) {
-  const { orgId, shop, target } = eventPayload.parse(payload)
+export async function shopifyEventJob({ orgId, shop, target }: JobInput<"shopify-event">) {
   const [account] = await db()
     .select({ externalId: connections.externalId, kind: organizations.kind })
     .from(connections)
@@ -162,14 +158,16 @@ export async function queueShopifySubscription(orgId: string, key: string) {
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `shopify-subscribe:${orgId}:${key}`, kind: "shopify-subscribe", payload: { orgId } })
+      .values(jobRow("shopify-subscribe", `shopify-subscribe:${orgId}:${key}`, { orgId }))
       .onConflictDoNothing()
   )
 }
 
 // Worker job: subscribes the connected store to each topic it isn't subscribed to yet, at the EventBridge source.
-export async function shopifySubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
+export async function shopifySubscribeJob(
+  { orgId }: JobInput<"shopify-subscribe">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
   const configured = process.env.SHOPIFY_EVENTBRIDGE_SOURCE_ARN
   // An app without its own EventBridge source (such as local development) can't subscribe; syncs still copy orders.
   if (!configured) {

@@ -54,7 +54,6 @@
     "ship": "Drucken Sie die Unterlagen, packen Sie die Kartons und markieren Sie sie als versendet",
     "forward": "Der Spediteur versendet die Waren weiter und ergänzt Frachtkosten, Transporteur und Sendungsverfolgung",
     "receive": "Markieren Sie die Waren bei Ankunft als eingegangen",
-    "complete": "Sendung abgeschlossen",
     "cancellation": "Stornieren Sie die bestehende Amazon-Sendung, bevor Sie einen Ersatz erstellen",
     "reconcile": "Suchen und verknüpfen Sie den Amazon-Auftrag, bevor Sie fortfahren",
     "retry": "Beheben Sie das gemeldete Problem und wiederholen Sie dann die Sendung",
