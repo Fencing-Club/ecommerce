@@ -8,8 +8,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json-summary"],
       include: ["src/**/*.ts"],
-      // Low: tests never draw PDFs, and the shipping documents' model is still tested in the app, with its fixtures.
-      thresholds: { lines: 42, statements: 44, functions: 52, branches: 38 }
+      // Low: tests never draw or read PDFs, which most of documents and labels do, and shipment-artifacts has no tests yet.
+      thresholds: { lines: 60, statements: 61, functions: 73, branches: 64 }
     }
   }
 })
