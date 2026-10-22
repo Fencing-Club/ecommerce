@@ -1,5 +1,6 @@
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
+import invariant from "tiny-invariant"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
@@ -7,11 +8,21 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
+import { downloadBlob, fileOrError } from "@/lib/download"
 import type { ProductLabel } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
 import type { ProductBarcode } from "@/server/product-barcodes"
 import { fileName, WarningNote } from "./common"
+
+// A variation's label as a PDF: its uploaded barcode, or else the standard FNSKU sheet. It's fetched before it shows,
+// so a label that can't be made, such as one whose FNSKU Amazon doesn't list, explains why in the row. The PDF never
+// goes into the store, which keeps only plain data: a preview gets an object URL, and a download saves the file.
+const labelQuery = (variantId: string) => ({
+  url: "inventory/barcodes",
+  params: { variantId },
+  responseHandler: fileOrError
+})
 
 const barcodesApi = api.injectEndpoints({
   overrideExisting: true,
@@ -21,6 +32,30 @@ const barcodesApi = api.injectEndpoints({
     }),
     removeBarcode: build.mutation<{ ok: true }, string>({
       query: (variantId) => ({ url: "inventory/barcodes", method: "DELETE", params: { variantId } })
+    }),
+    // The label's object URL, which the caller revokes once the preview closes.
+    previewLabel: build.mutation<string, string>({
+      queryFn: async (variantId, _api, _extraOptions, baseQuery) => {
+        const result = await baseQuery(labelQuery(variantId))
+        if (result.error) {
+          return { error: result.error }
+        }
+        invariant(result.data instanceof Blob, "A label PDF arrives as a Blob")
+        return { data: URL.createObjectURL(result.data) }
+      }
+    }),
+    // Saves the label under the name the server gives it, or `filename` when it gives none.
+    downloadLabel: build.mutation<null, { variantId: string; filename: string }>({
+      queryFn: async ({ variantId, filename }, _api, _extraOptions, baseQuery) => {
+        const result = await baseQuery(labelQuery(variantId))
+        if (result.error) {
+          return { error: result.error }
+        }
+        invariant(result.data instanceof Blob, "A label PDF arrives as a Blob")
+        const disposition = result.meta?.response?.headers.get("content-disposition") ?? ""
+        downloadBlob(result.data, decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1] ?? filename))
+        return { data: null }
+      }
     })
   })
 })
@@ -33,24 +68,6 @@ export type BarcodeVariation = {
   barcode: ProductBarcode | null
   // Amazon's FNSKU for the standard label; null until the FBA sync reports one.
   fnsku: string | null
-}
-
-// The variation's label as a PDF: its uploaded barcode, or else the standard FNSKU sheet. It's fetched first so a label
-// that can't be made, such as one whose FNSKU Amazon doesn't list, explains why in the row. `fallback` is the failure
-// and file name to show when the server gives neither.
-async function fetchLabel(variantId: string, fallback: { error: string; name: string }) {
-  const response = await fetch(`/api/inventory/barcodes?${new URLSearchParams({ variantId })}`)
-  if (!response.ok) {
-    const body: unknown = await response.json().catch(() => null)
-    throw new Error(
-      typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
-        ? body.error
-        : fallback.error
-    )
-  }
-  const disposition = response.headers.get("content-disposition") ?? ""
-  const name = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1] ?? fallback.name)
-  return { blob: await response.blob(), name }
 }
 
 // What a PO line for this variation gets as its product label. Without an FNSKU, the standard label shows the SKU.
@@ -127,6 +144,8 @@ function BarcodeRow({
   const input = useRef<HTMLInputElement>(null)
   const [upload, { isLoading: uploading }] = barcodesApi.useUploadBarcodeMutation()
   const [remove, { isLoading: removing }] = barcodesApi.useRemoveBarcodeMutation()
+  const [previewLabel] = barcodesApi.usePreviewLabelMutation()
+  const [downloadLabel] = barcodesApi.useDownloadLabelMutation()
   // Someone who can only view products previews and downloads labels without changing them.
   const editable = useCan("products", "edit")
   const [error, setError] = useState("")
@@ -134,7 +153,6 @@ function BarcodeRow({
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState<"preview" | "download" | null>(null)
   const { barcode } = variation
-  const fallback = { error: t("loadFailed"), name: t("fileName") }
   // There's a label to show when one was uploaded, or the standard label applies. Its FNSKU is looked up if needed.
   const viewable = barcode !== null || productLabel !== "uploaded"
 
@@ -153,8 +171,7 @@ function BarcodeRow({
     setError("")
     setLoading("preview")
     try {
-      const { blob } = await fetchLabel(variation.variantId, fallback)
-      setPreview(URL.createObjectURL(blob))
+      setPreview(await previewLabel(variation.variantId).unwrap())
     } catch (e) {
       setError(errorMessage(e, t("loadFailed")))
     } finally {
@@ -166,13 +183,7 @@ function BarcodeRow({
     setError("")
     setLoading("download")
     try {
-      const { blob, name } = await fetchLabel(variation.variantId, fallback)
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = name
-      link.click()
-      URL.revokeObjectURL(url)
+      await downloadLabel({ variantId: variation.variantId, filename: t("fileName") }).unwrap()
     } catch (e) {
       setError(errorMessage(e, t("downloadFailed")))
     } finally {

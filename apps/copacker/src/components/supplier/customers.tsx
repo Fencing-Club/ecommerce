@@ -6,8 +6,9 @@ import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { formatDate } from "@/lib/format"
-import { responseError } from "@/lib/response-data"
+import { useAssignCatalogMutation } from "@/lib/supplier-api"
 import { Amounts, IndexToolbar, matches } from "./shared"
 
 type CatalogOption = { id: string; title: string; status: "active" | "draft" | "archived" }
@@ -35,7 +36,8 @@ export function CatalogPicker({
   const shared = useTranslations("supplier.shared")
   const [current, setCurrent] = useState(value ?? none)
   const [error, setError] = useState("")
-  const [pending, setPending] = useState(false)
+  const [assign, { isLoading: pending }] = useAssignCatalogMutation()
+  const errorMessage = useErrorMessage()
   // Someone who can only view customers sees each one's catalog without changing it.
   const editable = useCan("customers", "edit")
   const options = [
@@ -52,23 +54,13 @@ export function CatalogPicker({
   async function choose(next: string) {
     const previous = current
     setCurrent(next)
-    setPending(true)
     setError("")
     try {
-      const response = await fetch(`/api/customers/${customerId}/catalog`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catalogId: next === none ? null : next })
-      })
-      if (!response.ok) {
-        throw new Error(responseError(await response.json(), shared("couldNotSave")))
-      }
+      await assign({ customerId, catalogId: next === none ? null : next }).unwrap()
       router.invalidate()
     } catch (caught) {
       setCurrent(previous)
-      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
-    } finally {
-      setPending(false)
+      setError(errorMessage(caught, shared("couldNotSave")))
     }
   }
 
