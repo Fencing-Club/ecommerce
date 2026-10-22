@@ -78,6 +78,19 @@ export class AdsRequestError extends Error {
     super(`Amazon Ads ${stage} ${failure} failure (${status})`)
   }
 }
+export class AdsProfileError extends Error {
+  constructor(
+    readonly reason:
+      | "no_profiles"
+      | "seller_mismatch"
+      | "unsupported_region"
+      | "account_mapping_missing"
+      | "account_mapping_ambiguous",
+    readonly received: number
+  ) {
+    super("No matching Amazon Ads seller profiles")
+  }
+}
 // Normalize transport failures so the durable worker retries without logging request credentials.
 async function adsTransport<T>(stage: "token" | "report" | "download", read: () => Promise<T>) {
   try {
@@ -147,17 +160,17 @@ export class AmazonAds {
     return JSON.parse(await adsTransport("report", () => response.text()))
   }
   async profiles(sellerId: string): Promise<AdsProfile[]> {
-    const profiles = z
-      .array(profileSchema)
-      .parse(await this.request("/v2/profiles?accessLevel=view"))
-      .filter(
-        (p) =>
-          p.accountInfo.type === "seller" &&
-          p.accountInfo.id === sellerId &&
-          amazonMarketplaceSchema.safeParse(p.countryCode).success
-      )
+    const received = z.array(profileSchema).parse(await this.request("/v2/profiles?accessLevel=view"))
+    if (!received.length) {
+      throw new AdsProfileError("no_profiles", 0)
+    }
+    const sellers = received.filter((p) => p.accountInfo.type === "seller" && p.accountInfo.id === sellerId)
+    if (!sellers.length) {
+      throw new AdsProfileError("seller_mismatch", received.length)
+    }
+    const profiles = sellers.filter((p) => amazonMarketplaceSchema.safeParse(p.countryCode).success)
     if (!profiles.length) {
-      return []
+      throw new AdsProfileError("unsupported_region", received.length)
     }
     const accountSchema = z.object({
       adsAccountId: z.string().min(1),
@@ -192,7 +205,10 @@ export class AmazonAds {
         account.alternateIds.some((id) => id.profileId === profile.profileId && id.countryCode === profile.countryCode)
       )
       if (matches.length !== 1) {
-        throw new Error("Amazon Ads account mapping is unavailable")
+        throw new AdsProfileError(
+          matches.length ? "account_mapping_ambiguous" : "account_mapping_missing",
+          received.length
+        )
       }
       return { ...profile, adsAccountId: matches[0]!.adsAccountId }
     })
