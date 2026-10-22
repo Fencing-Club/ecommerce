@@ -1,5 +1,6 @@
 import { z } from "zod"
 import type { Amazon } from "./amazon"
+import { amazonMarketplaces, usMarketplaceId } from "./amazon-marketplaces"
 import type { Ebay } from "./ebay"
 import type { Shopify } from "./shopify"
 
@@ -410,7 +411,6 @@ export async function collectShopifySalesBulk(
   return kept
 }
 
-const usMarketplace = "ATVPDKIKX0DER"
 const amazonMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
 const amazonItem = z.object({
   orderItemId: id,
@@ -460,7 +460,7 @@ export async function collectAmazonSales(
   client: Pick<Amazon, "request">,
   input: SalesWindow,
   assertActive?: () => Promise<void>,
-  marketplaceIds: readonly string[] = [usMarketplace]
+  marketplaceIds: readonly string[] = [usMarketplaceId]
 ) {
   const window = salesWindowSchema.parse(input)
   const query = new URLSearchParams({ createdAfter: window.from, createdBefore: window.to })
@@ -480,7 +480,7 @@ export async function collectUpdatedAmazonSales(
   client: Pick<Amazon, "request">,
   updatedAfter: string,
   assertActive?: () => Promise<void>,
-  marketplaceIds: readonly string[] = [usMarketplace]
+  marketplaceIds: readonly string[] = [usMarketplaceId]
 ) {
   const query = new URLSearchParams({ lastUpdatedAfter: z.iso.datetime({ offset: true }).parse(updatedAfter) })
   return searchAmazonSales(client, query, marketplaceIds, assertActive, () => true)
@@ -631,12 +631,9 @@ export async function collectEbaySales(
 // backfilling history faster than the order search allows: one report per period instead of a request every few
 // minutes. Only what the order search gives is kept; the report's shipping city, state and postcode are dropped.
 // Orders from other channels (multi-channel fulfillment) and marketplaces not asked for are left out.
-const marketplaceNames: Record<string, string> = {
-  "Amazon.com": "ATVPDKIKX0DER",
-  "Amazon.ca": "A2EUQ1WTGCTBG2",
-  "Amazon.com.mx": "A1AM78C64UM0Y8",
-  "Amazon.com.br": "A2Q3Y263D00KWC"
-}
+const marketplaceNames: Record<string, string> = Object.fromEntries(
+  amazonMarketplaces.map((marketplace) => [marketplace.salesChannel, marketplace.id])
+)
 const reportStatuses: Record<string, string> = {
   Pending: "PENDING",
   Unshipped: "UNSHIPPED",
@@ -791,11 +788,11 @@ const transaction = z
   })
   .loose()
 
-// An Amazon amount in minor units.
+// An amount in minor units (hundredths), as Amazon, Shopify and eBay amounts are stored.
 export function minorUnits(amount: number | string) {
   const value = Math.round(Number(amount) * 100)
   if (!Number.isSafeInteger(value)) {
-    throw new Error("Amazon returned an invalid amount")
+    throw new Error("Invalid amount")
   }
   return value
 }
@@ -961,4 +958,88 @@ export async function collectShopifyBalanceTransactions(
     after = nextCursor(account.balanceTransactions.pageInfo, cursors)
   } while (after !== null)
   return result
+}
+
+// Shopify Payments' fees on an order, in its sales currency when it was paid another way (so the list shows zero).
+export function shopifyOrderFees(data: ShopifySale) {
+  const fees = shopifyPaymentFees(data)
+  const currency = fees?.currency ?? orderSales(data)?.currency
+  return fees && currency ? { minor: fees.minor, currency } : null
+}
+
+// An eBay line as it counts: its price less the seller's promotions and what was refunded on it, and its units unless
+// it was refunded in full. As with Shopify's removed and refunded units, a refunded sale is gone; eBay marks an order
+// refunded in full as FULLY_REFUNDED, even when the refund was made on the order rather than its lines.
+export function ebayLineSales(order: Pick<EbaySale, "orderPaymentStatus">, line: EbaySale["lineItems"][number]) {
+  const amount = (value: string | undefined) => Math.abs(Number(value ?? 0))
+  const price =
+    Number(line.lineItemCost.value) -
+    (line.appliedPromotions ?? []).reduce((sum, promotion) => sum + amount(promotion.discountAmount?.value), 0)
+  const refunded = (line.refunds ?? []).reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  const whole = order.orderPaymentStatus === "FULLY_REFUNDED" || (price > 0 && refunded >= price)
+  return { units: whole ? 0 : line.quantity, sales: whole ? 0 : Math.max(0, price - refunded) }
+}
+
+// What eBay refunded on an order beyond the refunds it lists on its lines, such as a partial refund of the whole order.
+export function ebayOrderRefund(order: Pick<EbaySale, "paymentSummary" | "lineItems">) {
+  const amount = (value: string | undefined) => Math.abs(Number(value ?? 0))
+  const refunded = (order.paymentSummary?.refunds ?? [])
+    .filter((refund) => refund.refundStatus === "REFUNDED")
+    .reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  const onLines = order.lineItems
+    .flatMap((line) => line.refunds ?? [])
+    .reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  return Math.max(0, refunded - onLines)
+}
+
+// An order's net product sales, counted as the Overview counts them: Shopify lines at their current quantity less
+// their share of discounts; Amazon items' ITEM proceeds less any DISCOUNT. Null when any line has no price.
+export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: number; currency: string } | null {
+  let total = 0,
+    currency: string | null = null
+  if ("lineItems" in data) {
+    for (const line of data.lineItems) {
+      currency ??= line.lineItemCost.currency
+      total += ebayLineSales(data, line).sales
+    }
+    // A refund of the order as a whole comes off its sales too, but never below nothing. It may include shipping or
+    // tax refunded, which eBay doesn't separate.
+    total = Math.max(0, total - ebayOrderRefund(data))
+  } else if ("lines" in data) {
+    for (const line of data.lines) {
+      const price = line.originalUnitPriceSet.shopMoney
+      currency ??= price.currencyCode
+      const discount = line.discountAllocations.reduce(
+        (sum, allocation) => sum + Number(allocation.allocatedAmountSet.shopMoney.amount),
+        0
+      )
+      total +=
+        Number(price.amount) * line.currentQuantity -
+        (line.quantity > 0 ? (discount * line.currentQuantity) / line.quantity : 0)
+    }
+  } else {
+    for (const item of data.orderItems) {
+      const breakdowns = item.proceeds?.breakdowns
+      // A line with nothing ordered has no price to add.
+      if (!breakdowns && item.quantityOrdered === 0) {
+        continue
+      }
+      if (!breakdowns) {
+        return null
+      }
+      for (const entry of breakdowns) {
+        currency ??= entry.subtotal.currencyCode
+        if (entry.type === "ITEM") {
+          total += Number(entry.subtotal.amount)
+        } else if (entry.type === "DISCOUNT") {
+          // Free shipping isn't taken off product sales.
+          const shipping = (entry.detailedBreakdowns ?? [])
+            .filter((part) => part.subtype === "SHIPPING")
+            .reduce((sum, part) => sum + Math.abs(Number(part.value.amount)), 0)
+          total -= Math.abs(Number(entry.subtotal.amount)) - shipping
+        }
+      }
+    }
+  }
+  return currency ? { minor: minorUnits(total), currency } : null
 }

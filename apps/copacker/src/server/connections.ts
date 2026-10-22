@@ -1,6 +1,8 @@
 import { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { amazonMarketplace } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Ebay } from "@repo/copacker-marketplaces/ebay"
-import { Shopify } from "@repo/copacker-marketplaces/shopify"
+import { Shopify, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
+import { refreshShopifyToken, revokeShopifyToken } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -13,20 +15,9 @@ import { DemoShopify, demoShopConnection } from "./demo-shopify"
 import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
-export const shopifyTokenResponse = z.object({
-  access_token: z.string(),
-  refresh_token: z.string(),
-  expires_in: z.number().positive(),
-  refresh_token_expires_in: z.number().positive(),
-  scope: z.string().optional()
-})
-export function storedShopifyToken(response: z.infer<typeof shopifyTokenResponse>) {
-  return {
-    token: response.access_token,
-    refreshToken: response.refresh_token,
-    expiresAt: Date.now() + response.expires_in * 1000,
-    refreshExpiresAt: Date.now() + response.refresh_token_expires_in * 1000
-  }
+// Copacker's Shopify app's keys.
+export function shopifyApp() {
+  return { clientId: process.env.SHOPIFY_CLIENT_ID ?? "", clientSecret: process.env.SHOPIFY_CLIENT_SECRET ?? "" }
 }
 const savedToken = z.object({
   token: z.string(),
@@ -53,22 +44,14 @@ export async function connection(orgId: string, provider: Provider) {
       if (!stored.refreshToken || !stored.refreshExpiresAt || stored.refreshExpiresAt < Date.now()) {
         throw new ReconnectRequiredError("Reconnect Shopify to renew merchant authorization")
       }
-      const response = await fetch(`https://${row.externalId}/admin/oauth/access_token`, {
-        method: "POST",
-        // Shopify only accepts the refresh grant form-encoded; a JSON body is rejected as invalid_request.
-        headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
-        body: new URLSearchParams({
-          grant_type: "refresh_token",
-          refresh_token: stored.refreshToken,
-          client_id: process.env.SHOPIFY_CLIENT_ID ?? "",
-          client_secret: process.env.SHOPIFY_CLIENT_SECRET ?? ""
-        }),
-        signal: AbortSignal.timeout(30000)
-      })
-      if (!response.ok) {
-        throw new ReconnectRequiredError(`Shopify token renewal failed (${response.status}). Reconnect in Settings`)
+      try {
+        stored = await refreshShopifyToken(shopifyApp(), row.externalId, stored.refreshToken)
+      } catch (error) {
+        if (error instanceof ShopifyRequestError) {
+          throw new ReconnectRequiredError(`Shopify token renewal failed (${error.status}). Reconnect in Settings`)
+        }
+        throw error
       }
-      stored = storedShopifyToken(shopifyTokenResponse.parse(await response.json()))
       await tx
         .update(connections)
         .set({ encryptedToken: encrypt(JSON.stringify(stored), `${orgId}:${provider}`) })
@@ -106,6 +89,13 @@ export async function amazonFor(orgId: string, expectedSellerId?: string | null)
     amazonReportPolicy(c.externalId, process.env.AMAZON_CLIENT_ID)
   )
 }
+// Copacker's Amazon Ads app, separate from its SP-API app. Null when not configured.
+export function amazonAdsApp() {
+  const { AMAZON_ADS_CLIENT_ID, AMAZON_ADS_CLIENT_SECRET } = process.env
+  return AMAZON_ADS_CLIENT_ID && AMAZON_ADS_CLIENT_SECRET
+    ? { clientId: AMAZON_ADS_CLIENT_ID, clientSecret: AMAZON_ADS_CLIENT_SECRET }
+    : null
+}
 // Copacker's eBay app: its keys and the redirect URL name (RuName) sign-in returns through. Null when not configured.
 export function ebayApp() {
   const { EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, EBAY_RU_NAME } = process.env
@@ -142,12 +132,7 @@ export async function disconnect(orgId: string, provider: Provider) {
     try {
       const c = await connection(orgId, "shopify")
       if (!demoShopConnection(c.externalId, c.token)) {
-        const response = await fetch(`https://${c.externalId}/admin/api_permissions/current.json`, {
-          method: "DELETE",
-          headers: { "X-Shopify-Access-Token": c.token },
-          signal: AbortSignal.timeout(30000)
-        })
-        revoked = response.ok
+        revoked = await revokeShopifyToken(c.externalId, c.token)
       }
     } catch {
       revoked = false
@@ -199,10 +184,9 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
   const account = z
     .object({ payload: z.array(z.object({ marketplace: z.object({ id: z.string() }) })) })
     .safeParse(participations)
-  const marketplaceIds = { US: "ATVPDKIKX0DER", CA: "A2EUQ1WTGCTBG2", MX: "A1AM78C64UM0Y8", BR: "A2Q3Y263D00KWC" }
   if (
     !account.success ||
-    !account.data.payload.some((entry) => entry.marketplace.id === marketplaceIds[input.marketplace])
+    !account.data.payload.some((entry) => entry.marketplace.id === amazonMarketplace(input.marketplace).id)
   ) {
     throw new LocalizedError("amazonTokenRejected")
   }

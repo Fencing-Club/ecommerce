@@ -11,6 +11,16 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
 its `receiver`; `orderDestination` reads where the PO goes from them.
 
+## Amazon inbound shipments
+
+`@repo/copacker-shipments/amazon-inbound` holds what Copacker decides about an Amazon inbound shipment without a
+database or a web framework: the names it gives AWD orders and FBA plans (`amazonReference`, `fbaPlanName`), each
+network's Seller Central page, the FBA plan's choices (packing, placement, the buyer's own carrier, delivery window,
+pallets and box matching), and spreading inbound freight over the SKUs each shipment carried (`freightShipment`,
+`freightPerSku`). A choice that stops the plan throws `FbaInboundError` with a `code` and `values`; the app turns it
+into its translated error. The app's FBA job (`apps/copacker/src/server/fba-shipments.ts`) calls Amazon and stores
+the results.
+
 ## Supplier service costs
 
 `OrderItem.supplierCharges` stores supplier services assigned to that product. Each charge has a description,

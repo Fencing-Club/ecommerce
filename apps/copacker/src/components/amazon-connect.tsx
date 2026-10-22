@@ -1,3 +1,4 @@
+import { amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,6 @@ import {
 import { Field } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
 import { selfAuthorizationSchema } from "@/lib/amazon"
-import { amazonMarketplaces } from "@/lib/amazon-marketplaces"
 import { countriesIn } from "@/lib/countries"
 import { ActionForm } from "./action-form"
 import { FormInput, FormLabel } from "./form-controls"
@@ -47,7 +47,7 @@ export function AmazonConnect({
   const id = useId()
   const [marketplace, setMarketplace] = useState("US")
   const countries = countriesIn(useLocale())
-  const options = amazonMarketplaces.map((value) => ({
+  const options = amazonMarketplaceSchema.options.map((value) => ({
     value,
     label: countries.find((country) => country.value === value)?.label ?? value
   }))

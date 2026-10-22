@@ -1,15 +1,20 @@
-import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
-import type { FbaBox } from "@repo/copacker-marketplaces/amazon"
-import type { FbaDeliveryWindow } from "@repo/copacker-marketplaces/amazon"
 import type { FbaPackingOption } from "@repo/copacker-marketplaces/amazon"
-import type { FbaPlacementOption } from "@repo/copacker-marketplaces/amazon"
-import type { FbaTransportationOption } from "@repo/copacker-marketplaces/amazon"
 import { downloadAmazonLabels, ProviderError } from "@repo/copacker-marketplaces/amazon"
 import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
 import type { Pallet } from "@repo/copacker-shipments"
-import { buildFbaPlan, cartonsValue, fbaBoxes, fbaPallets, originSchema, palletLabels } from "@repo/copacker-shipments"
+import { buildFbaPlan, fbaBoxes, originSchema, palletLabels } from "@repo/copacker-shipments"
+import {
+  chooseDeliveryWindow,
+  choosePackingOption,
+  choosePlacementOption,
+  chooseTransportationOption,
+  FbaInboundError,
+  fbaPlanName,
+  matchBoxes,
+  palletConfiguration
+} from "@repo/copacker-shipments/amazon-inbound"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import { splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
@@ -23,11 +28,6 @@ import { PollAgain } from "./job-handlers"
 import { queueLabels, sendQueuedLabels } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
-
-// The reference an AWD order is created with, and the name of an FBA inbound plan (at most 40 characters), so one found
-// in Amazon can be matched to its shipment revision.
-export const amazonReference = (shipmentId: string, revision: number) => `copacker-${shipmentId}-${revision}`
-export const fbaPlanName = (shipmentId: string, revision: number) => `cp-${shipmentId.replaceAll("-", "")}-${revision}`
 
 // The cartons as Amazon collects them. A PO with a forwarder stop on the way ships to Amazon from the forwarder's
 // address, so the shipment's origin is that address rather than the supplier's pickup.
@@ -96,137 +96,6 @@ export async function cancelAmazonShipment(
   return false
 }
 
-// What an FBA plan costs: its fees less its discounts, in the plan's currency.
-const netFees = (option: Pick<FbaPackingOption, "fees" | "discounts">) =>
-  option.fees.reduce((sum, fee) => sum + fee.value.amount, 0) -
-  option.discounts.reduce((sum, discount) => sum + discount.value.amount, 0)
-
-// The packing option whose groups keep each carton's products together, with the fewest groups and then the lowest fees,
-// and each SKU's group in it. Amazon puts products that must ship separately in different packing groups, and a carton
-// can't span two. When no option keeps every carton to one group, the one with the fewest groups and lowest fees comes
-// back with `fits` false, so its groups can show the supplier which cartons to repack.
-export async function choosePackingOption(
-  api: Pick<Amazon, "fbaPackingGroupItems">,
-  planId: string,
-  options: FbaPackingOption[],
-  order: OrderInput,
-  packing: Packing
-) {
-  const offered: Array<{ option: FbaPackingOption; groups: Map<string, string>; fits: boolean }> = []
-  for (const option of options.filter((row) => row.status === "OFFERED")) {
-    // Each SKU's packing group in this option.
-    const groups = new Map<string, string>()
-    for (const group of option.packingGroups) {
-      for (const item of await api.fbaPackingGroupItems(planId, group)) {
-        groups.set(item.msku, group)
-      }
-    }
-    const skus = (carton: Packing["cartons"][number]) =>
-      carton.items.map((content) => order.items.find((item) => item.id === content.itemId)!.buyerSku)
-    const fits = packing.cartons.every((carton) => new Set(skus(carton).map((sku) => groups.get(sku))).size === 1)
-    offered.push({ option, groups, fits })
-  }
-  const [best] = offered.toSorted(
-    (a, b) =>
-      Number(b.fits) - Number(a.fits) ||
-      a.option.packingGroups.length - b.option.packingGroups.length ||
-      netFees(a.option) - netFees(b.option)
-  )
-  if (!best) {
-    throw new LocalizedError("amazonPackSeparately")
-  }
-  return best
-}
-
-// The placement Amazon offers with the lowest fees, and then the fewest shipments.
-export function choosePlacementOption(options: FbaPlacementOption[]) {
-  const [best] = options
-    .filter((option) => option.status === "OFFERED")
-    .toSorted((a, b) => netFees(a) - netFees(b) || a.shipmentIds.length - b.shipmentIds.length)
-  return best ?? null
-}
-
-// The buyer's own carrier or forwarder takes FBA shipments: as small parcels when Amazon allows it, or as less than a
-// truckload when the cartons are on pallets.
-export function chooseTransportationOption(options: FbaTransportationOption[], palletized = false) {
-  const own = options.filter((option) => option.shippingSolution === "USE_YOUR_OWN_CARRIER")
-  const modes = palletized ? ["FREIGHT_LTL", "FREIGHT_FTL_PALLET"] : ["GROUND_SMALL_PARCEL"]
-  const preferred = modes.map((mode) => own.find((option) => option.shippingMode === mode)).find(Boolean)
-  // Pallets go as freight or not at all: Amazon prints pallet labels only for a confirmed LTL or FTL shipment.
-  return preferred ?? (palletized ? null : (own.at(0) ?? null))
-}
-
-// What Amazon is told about each shipment's pallets, when the cartons are on pallets: its whole pallets, identical ones
-// counted together, and the declared value of its goods, which Amazon needs to quote freight. A pallet whose cartons
-// Amazon sends to two warehouses can't be booked.
-export function palletConfiguration(
-  order: OrderInput,
-  packing: Packing,
-  cartons: Array<{ cartonId: string; shipmentId: string }>,
-  shipmentId: string
-) {
-  if (!packing.palletized) {
-    return {}
-  }
-  const ids = new Set(cartons.filter((carton) => carton.shipmentId === shipmentId).map((carton) => carton.cartonId))
-  const { pallets, split } = fbaPallets(packing, ids)
-  if (split.length) {
-    throw new LocalizedError("amazonPalletSplit", { pallets: split.join(", ") })
-  }
-  const value = cartonsValue(
-    order,
-    packing.cartons.filter((carton) => ids.has(carton.cartonId))
-  )
-  return {
-    pallets,
-    freightInformation: { declaredValue: { amount: value / 100, code: order.currency }, freightClass: "NONE" }
-  }
-}
-
-// The week the cartons are expected at Amazon: the first delivery window starting once they're ready, or the latest
-// Amazon offers when all start sooner. The buyer can move it in Seller Central until the shipment closes.
-export function chooseDeliveryWindow(options: FbaDeliveryWindow[], readyDate: string) {
-  const open = options
-    .filter((option) => option.availabilityType === "AVAILABLE")
-    .toSorted((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate))
-  return open.find((option) => option.startDate.slice(0, 10) >= readyDate) ?? open.at(-1) ?? null
-}
-
-// Matches each supplier carton to one of Amazon's boxes by its contents, then by size and weight, so each carton gets
-// its own box label. Cartons packed the same way can take any of their boxes.
-export function matchBoxes(
-  order: OrderInput,
-  packing: Packing,
-  prep: ReadonlyMap<string, AmazonPrep>,
-  boxes: Array<{ box: FbaBox; shipmentId: string }>
-) {
-  const contents = (items: Array<{ msku: string; quantity: number }>) =>
-    JSON.stringify(items.map((item) => [item.msku, item.quantity]).toSorted())
-  const size = (values: number[]) => JSON.stringify(values.map((value) => Math.round(value * 10) / 10))
-  const remaining = [...boxes]
-  return fbaBoxes(order, packing, prep).map(({ cartonId, box }) => {
-    const wanted = contents(box.items)
-    const dims = size([box.dimensions.length, box.dimensions.width, box.dimensions.height, box.weight.value])
-    const candidates = remaining.filter((row) => row.box.boxId && contents(row.box.items ?? []) === wanted)
-    const exact = candidates.find(
-      (row) =>
-        row.box.dimensions &&
-        row.box.weight &&
-        size([row.box.dimensions.length, row.box.dimensions.width, row.box.dimensions.height, row.box.weight.value]) ===
-          dims
-    )
-    const match = exact ?? candidates[0]
-    if (!match) {
-      throw new LocalizedError("amazonNoBox", { carton: cartonId })
-    }
-    remaining.splice(remaining.indexOf(match), 1)
-    return { cartonId, boxId: match.box.boxId!, shipmentId: match.shipmentId }
-  })
-}
-
-// Moves a shipment's FBA inbound plan on as far as it can go: creating the plan, choosing packing, sending carton
-// contents, choosing warehouses and the buyer's own carrier with a delivery window, then fetching each carton's box
-// label. Amazon does most steps in the background, so the job waits on each one's operation and runs again.
 // A palletized shipment's pallet labels as one file. Amazon prints four for each pallet, one for each side, for each
 // Amazon shipment's pallets in order; the file keeps each pallet's labels together, the pallets in packing order.
 // Amazon prints four labels for each pallet, one for each side, a page each on plain paper.
@@ -260,7 +129,22 @@ export async function fbaPalletLabelFile(
   return combinePdfs(placed.flatMap((pallet) => sheets.get(pallet.palletId)!))
 }
 
-export async function fbaShipmentJob(
+// Moves a shipment's FBA inbound plan on as far as it can go: creating the plan, choosing packing, sending carton
+// contents, choosing warehouses and the buyer's own carrier with a delivery window, then fetching each carton's box
+// label. Amazon does most steps in the background, so the job waits on each one's operation and runs again.
+// An FBA decision that stops the plan says why in the buyer's language.
+export async function fbaShipmentJob(...args: Parameters<typeof advanceFbaPlan>) {
+  try {
+    return await advanceFbaPlan(...args)
+  } catch (error) {
+    if (error instanceof FbaInboundError) {
+      throw new LocalizedError(error.code, error.values)
+    }
+    throw error
+  }
+}
+
+async function advanceFbaPlan(
   api: Amazon,
   shipment: Shipment,
   payload: { shipmentId: string; revision: number; operationId?: string },

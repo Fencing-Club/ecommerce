@@ -1,13 +1,9 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { removalReportTypes, parseRemovalReport } from "@repo/copacker-marketplaces/removals"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonRemovalReports, amazonRemovals } from "@/db/schema"
-import {
-  type AmazonReportInput,
-  fbaReportMarketplace,
-  monthlyReportStatus,
-  syncMonthlyAmazonReport
-} from "./amazon-report-sync"
+import { type AmazonReportInput, monthlyReportStatus, syncMonthlyAmazonReport } from "./amazon-report-sync"
 
 export async function syncAmazonRemovals(
   input: AmazonReportInput,
@@ -16,7 +12,7 @@ export async function syncAmazonRemovals(
   now = new Date()
 ) {
   const { orgId, externalAccountId } = input
-  const marketplaceId = fbaReportMarketplace
+  const marketplaceId = usMarketplaceId
   const reports = await db()
     .select()
     .from(amazonRemovalReports)
@@ -92,7 +88,7 @@ export async function amazonRemovalsStatus(
         eq(amazonRemovalReports.orgId, orgId),
         eq(amazonRemovalReports.kind, kind),
         eq(amazonRemovalReports.externalAccountId, externalAccountId),
-        eq(amazonRemovalReports.marketplaceId, fbaReportMarketplace)
+        eq(amazonRemovalReports.marketplaceId, usMarketplaceId)
       )
     )
   return {

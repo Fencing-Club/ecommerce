@@ -1,5 +1,6 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
+import { amazonMarketplaces, usMarketplaceId } from "./amazon-marketplaces"
 
 // How Amazon has a SKU prepared and labeled: its prep category (such as TEXTILE, or NONE), and who may prepare and
 // label it (SELLER_ONLY, AMAZON_ONLY or NONE_ONLY, and MUST_MATCH when one party does both), from Amazon's own record
@@ -230,10 +231,9 @@ export type FbaTransportationOption = z.infer<typeof fbaTransportationOptionSche
 export type FbaBox = z.infer<typeof fbaBoxSchema>
 export type FbaDeliveryWindow = z.infer<typeof fbaDeliveryWindowSchema>
 
-// The North American marketplaces orders are read from: the US, Canada, Mexico and Brazil. They share one seller
-// account and one endpoint; orders from the others are fulfilled from US stock (FBA remote fulfillment) or shipped by
-// the seller.
-export const salesMarketplaceIds = ["ATVPDKIKX0DER", "A2EUQ1WTGCTBG2", "A1AM78C64UM0Y8", "A2Q3Y263D00KWC"]
+// The marketplaces orders are read from. Orders outside the US are fulfilled from US stock (FBA remote fulfillment) or
+// shipped by the seller.
+export const salesMarketplaceIds: string[] = amazonMarketplaces.map((marketplace) => marketplace.id)
 const fbaShipmentItemsPage = z.object({
   payload: z
     .object({
@@ -421,6 +421,29 @@ function stockReader(deadline: number, assertActive?: () => Promise<void>, throt
     }
   }
 }
+// Trades the code Seller Central returns after a seller authorizes the app for their refresh token.
+export async function exchangeAmazonCode(
+  credentials: { clientId: string; clientSecret: string },
+  code: string,
+  redirectUri: string,
+  transport: typeof fetch = fetch
+) {
+  const response = await transport("https://api.amazon.com/auth/o2/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      redirect_uri: redirectUri
+    }),
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  })
+  if (!response.ok) {
+    throw new ProviderError(response.status, null, `Amazon authorization failed (${response.status})`)
+  }
+  return z.object({ refresh_token: z.string() }).parse(await response.json()).refresh_token
+}
 export class Amazon {
   private access?: { token: string; expires: number }
   private reportLookups = new Map<string, Promise<unknown[]>>()
@@ -500,7 +523,7 @@ export class Amazon {
   }
   /** One complete API page, not a publishable stock snapshot. US routing only. */
   async fbaStockPage(marketplaceId: string, nextToken?: string) {
-    z.literal("ATVPDKIKX0DER").parse(marketplaceId)
+    z.literal(usMarketplaceId).parse(marketplaceId)
     z.string().min(1).max(16384).optional().parse(nextToken)
     const query = new URLSearchParams({
       details: "true",
@@ -522,7 +545,7 @@ export class Amazon {
     }
   }
   async fbaStock(marketplaceId: string, assertActive?: () => Promise<void>) {
-    z.literal("ATVPDKIKX0DER").parse(marketplaceId)
+    z.literal(usMarketplaceId).parse(marketplaceId)
     const startedAt = new Date().toISOString()
     const deadline = Date.now() + 5 * 60 * 1000
     const read = stockReader(deadline, assertActive)
@@ -712,7 +735,7 @@ export class Amazon {
     for (let start = 0; start < unique.length; start += 100) {
       // Amazon reads only the first of repeated mskus parameters, so they're sent as one comma-separated list.
       const query = new URLSearchParams({
-        marketplaceId: "ATVPDKIKX0DER",
+        marketplaceId: usMarketplaceId,
         mskus: unique.slice(start, start + 100).join(",")
       })
       const body = z
@@ -937,7 +960,7 @@ export class Amazon {
     const tokens = new Set<string>()
     // The first page comes from the shipment; later pages from Amazon's list of shipment items, by the page token.
     let path = `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentId)}/items?${new URLSearchParams({
-      MarketplaceId: "ATVPDKIKX0DER"
+      MarketplaceId: usMarketplaceId
     })}`
     for (let pageNumber = 0; pageNumber < 50; pageNumber++) {
       let response: unknown
@@ -966,7 +989,7 @@ export class Amazon {
       }
       tokens.add(next)
       path = `/fba/inbound/v0/shipmentItems?${new URLSearchParams({
-        MarketplaceId: "ATVPDKIKX0DER",
+        MarketplaceId: usMarketplaceId,
         QueryType: "NEXT_TOKEN",
         NextToken: next
       })}`
@@ -977,7 +1000,7 @@ export class Amazon {
   async fbaReceiptItems(shipmentId: string) {
     const rows: { sku: string; sent: number | null; received: number | null; unit: string }[] = []
     const seen = new Set<string>()
-    let path = `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentId)}/items?MarketplaceId=ATVPDKIKX0DER`
+    let path = `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentId)}/items?MarketplaceId=${usMarketplaceId}`
     for (let n = 0; n < 50; n++) {
       const page = fbaShipmentItemsPage.parse(await this.request("GET", path)).payload
       if (!page?.ItemData) {
@@ -1001,7 +1024,7 @@ export class Amazon {
         throw new Error("FBA receipt cursor stalled")
       }
       seen.add(page.NextToken)
-      path = `/fba/inbound/v0/shipmentItems?${new URLSearchParams({ MarketplaceId: "ATVPDKIKX0DER", QueryType: "NEXT_TOKEN", NextToken: page.NextToken })}`
+      path = `/fba/inbound/v0/shipmentItems?${new URLSearchParams({ MarketplaceId: usMarketplaceId, QueryType: "NEXT_TOKEN", NextToken: page.NextToken })}`
     }
     throw new Error("FBA receipt page limit")
   }
@@ -1031,7 +1054,7 @@ export class Amazon {
     const tokens = new Set<string>()
     let query = new URLSearchParams({
       QueryType: "SHIPMENT",
-      MarketplaceId: "ATVPDKIKX0DER",
+      MarketplaceId: usMarketplaceId,
       ShipmentStatusList: fbaShipmentStatuses.join(",")
     })
     for (let pageNumber = 0; pageNumber < 50; pageNumber++) {
@@ -1047,7 +1070,7 @@ export class Amazon {
         throw new Error("FBA shipments repeated a page token")
       }
       tokens.add(next)
-      query = new URLSearchParams({ QueryType: "NEXT_TOKEN", MarketplaceId: "ATVPDKIKX0DER", NextToken: next })
+      query = new URLSearchParams({ QueryType: "NEXT_TOKEN", MarketplaceId: usMarketplaceId, NextToken: next })
     }
     throw new Error("FBA shipments exceed the supported page limit")
   }
@@ -1331,7 +1354,7 @@ export class Amazon {
     }
   }
   async listings(sellerId: string, skus: string[]) {
-    const marketplaceId = "ATVPDKIKX0DER"
+    const marketplaceId = usMarketplaceId
     const listing = z.object({
       sku: z.string(),
       summaries: z

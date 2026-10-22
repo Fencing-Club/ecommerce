@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import {
   storageFeeReportTypes,
   parseMonthlyStorageFees,
@@ -6,12 +7,7 @@ import {
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonStorageFeeReports, amazonStorageFees } from "@/db/schema"
-import {
-  type AmazonReportInput,
-  fbaReportMarketplace,
-  monthlyReportStatus,
-  syncMonthlyAmazonReport
-} from "./amazon-report-sync"
+import { type AmazonReportInput, monthlyReportStatus, syncMonthlyAmazonReport } from "./amazon-report-sync"
 
 export async function syncAmazonStorageFees(
   input: AmazonReportInput,
@@ -20,7 +16,7 @@ export async function syncAmazonStorageFees(
   now = new Date()
 ) {
   const { orgId, externalAccountId } = input
-  const marketplaceId = fbaReportMarketplace
+  const marketplaceId = usMarketplaceId
   const reports = await db()
     .select()
     .from(amazonStorageFeeReports)
@@ -98,7 +94,7 @@ export async function amazonStorageFeesStatus(
         eq(amazonStorageFeeReports.orgId, orgId),
         eq(amazonStorageFeeReports.kind, kind),
         eq(amazonStorageFeeReports.externalAccountId, externalAccountId),
-        eq(amazonStorageFeeReports.marketplaceId, fbaReportMarketplace)
+        eq(amazonStorageFeeReports.marketplaceId, usMarketplaceId)
       )
     )
   return {

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./amazon-inbound": "./src/amazon-inbound.ts",
     "./labels": "./src/labels.ts",
     "./documents": "./src/documents.ts",
     "./product-labels": "./src/product-labels.ts",

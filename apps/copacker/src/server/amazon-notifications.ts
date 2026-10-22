@@ -1,4 +1,5 @@
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { collectUpdatedAmazonSales } from "@repo/copacker-marketplaces/sales"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -119,7 +120,7 @@ export async function amazonEventJob(
   }
   const org = { id: orgId, kind: account.kind }
   if (target === "stock") {
-    const started = await refreshStock(org, { source: "fba", marketplaceId: "ATVPDKIKX0DER" })
+    const started = await refreshStock(org, { source: "fba", marketplaceId: usMarketplaceId })
     // A running refresh started before this change; refresh again once it finishes.
     if (started?.status === "running") {
       throw new PollAgain("Waiting for the running FBA stock refresh to finish")
