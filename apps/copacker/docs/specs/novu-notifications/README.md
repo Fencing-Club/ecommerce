@@ -131,7 +131,7 @@ preferences persist, revoked access is handled and a failure is diagnosable with
 - [ ] Connect each proposal difference type, withdrawal, approval and rejection from the event catalog.
 - [ ] Connect immediate ready-date changes and date removal with accurate copy.
 - [ ] Connect invoice uploads, comments and generated packing-list availability.
-- [ ] Connect packing submitted, commercial approval required, correction requested and labels required.
+- [ ] Connect packing submitted, commercial approval required, packing edited after booking and labels required.
 - [ ] Connect released shipment documents and migrate labels-ready email delivery.
 - [ ] Keep `sendLabelsWhenComplete` (labels sent once the packet is complete) as the ready-email trigger; packing
   completion alone does not send it.

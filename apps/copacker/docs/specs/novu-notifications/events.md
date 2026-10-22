@@ -71,7 +71,7 @@ not an existing notification hook. A date embedded in a commercial proposal foll
 | Commercial changes require approval | Buyer | Existing | 2: shipment enters approval. |
 | Shipping labels required | Buyer | Existing | 2: enters waiting-labels state. |
 | Shipment documents ready | Supplier | Existing | 2: existing release/email path. |
-| Packing correction requested | Supplier | Existing | 2: `correctShipment` and reason. |
+| Supplier edits packing after booking | Buyer | New | 2: Copacker cancels the Amazon shipment and the buyer books shipping again; replaces `correctShipment`. |
 | Supplier marks goods shipped | Buyer | Existing | 2: `shipShipment`. |
 | Supplier ships toward forwarder | Assigned forwarder | Existing | 2: shipped event on a routed order. |
 | Forwarder marks goods forwarded | Buyer | Existing | 2: `forwardShipment`, carrier/reference. |

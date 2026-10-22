@@ -25,7 +25,7 @@ Never include restricted prices in an email to a user without access. Comments a
 | 2 | Document available | Add invoice and packing-list variants. |
 | 2 | Order comment | Add author, organization, excerpt and reply link. |
 | 2 | Shipment update | Add supplier-shipped, forwarder-forwarded and buyer-received variants. |
-| 2 | Action required | Add packing corrections, labels required and processing exceptions. |
+| 2 | Action required | Add packing edited after booking, labels required and processing exceptions. |
 | 2 | Connection attention | Add deliberate disconnect, revoked access, uninstall, reconnect-required, missing-permission and unresolved-reminder variants. |
 | 2 | Connection restored | Add validated reconnection, without implying data sync has completed. |
 | 3 | Stock warning | Add item, location, available stock, risk and action. |
