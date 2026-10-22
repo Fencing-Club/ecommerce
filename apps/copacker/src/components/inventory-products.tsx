@@ -20,69 +20,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import { api } from "@/lib/api"
+import {
+  type DuplicateSku,
+  type InventoryProductsPage,
+  type ListedProduct,
+  type ListedVariant,
+  useInventoryProductsQuery
+} from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { AmazonOnlyStock } from "@/server/inventory-products"
 import type { PurchaseOrderLink } from "@/server/inventory-products"
 import { type InventoryProduct, type InventoryVariant, pageSizes } from "@/server/inventory-products"
-import type { ProductBarcode } from "@/server/product-barcodes"
-import type { ProductDefaults } from "@/server/product-defaults"
-
-type ProductsPage = {
-  observedAt: string | null
-  page: number
-  pageSize: number
-  totalPages: number
-  totalProducts: number
-  totalVariants: number
-  missingBarcodes: number
-  missingCountries: number
-  duplicateSkus: DuplicateSku[]
-  products: ListedProduct[]
-  amazonOnly: AmazonOnlyStock[]
-}
-// A product on the page with the details and labels Copacker keeps for it.
-type ListedVariant = InventoryVariant & {
-  barcode: ProductBarcode | null
-  fnsku: string | null
-  supplierSku: string | null
-  asin: string | null
-  storeStockTarget: number | null
-  // ISO code from Shopify; null when none is recorded, left out before a sync collects it.
-  countryOfOrigin?: string | null
-}
-// A SKU more than one Shopify variation uses.
-type DuplicateSku = { sku: string; variants: { variantId: string; product: string; variant: string | null }[] }
-type ListedProduct = Omit<InventoryProduct, "variants"> & { defaults: ProductDefaults; variants: ListedVariant[] }
-
-type ProductsQuery = {
-  page: number
-  pageSize: number
-  q: string
-  missingBarcode: boolean
-  missingCountry: boolean
-  // Part of the cache key so a finished sync of any source loads fresh results.
-  syncKey: string
-}
-
-const productsApi = api.injectEndpoints({
-  overrideExisting: true,
-  endpoints: (build) => ({
-    inventoryProducts: build.query<ProductsPage, ProductsQuery>({
-      query: ({ page, pageSize, q, missingBarcode, missingCountry }) => ({
-        url: "inventory/products",
-        params: {
-          page,
-          pageSize,
-          ...(q && { q }),
-          ...(missingBarcode && { barcode: "missing" }),
-          ...(missingCountry && { country: "missing" })
-        }
-      }),
-      keepUnusedDataFor: 60
-    })
-  })
-})
 
 // Cells at the edges of a table that runs edge to edge in its card line up with the card's padding.
 const firstCell = "ps-4"
@@ -496,7 +444,7 @@ function ListFooter({
   onPageSize,
   onPage
 }: {
-  data: ProductsPage
+  data: InventoryProductsPage
   filtered: boolean
   pageSize: number
   onPageSize: (size: number) => void
@@ -585,7 +533,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
     isError,
     error,
     refetch
-  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, missingBarcode, missingCountry, syncKey })
+  } = useInventoryProductsQuery({ page, pageSize, q, missingBarcode, missingCountry, syncKey })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
   const refresh = () => void refetch()

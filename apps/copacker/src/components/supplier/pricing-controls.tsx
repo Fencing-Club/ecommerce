@@ -2,6 +2,7 @@ import type { PriceBasis } from "@repo/copacker-orders"
 import { Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
+import { moneyText, parseMoney } from "@/components/money-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,83 +18,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/
 import { useMoney } from "@/hooks/use-money"
 import { countOf, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
-
-// Typed money as minor units: null for blank, undefined for something that isn't an amount.
-export function parseMoney(text: string) {
-  const value = text.trim().replace(/,/g, "")
-  if (!value) {
-    return null
-  }
-  if (!/^\d{1,8}(?:\.\d{0,2})?$/.test(value)) {
-    return undefined
-  }
-  const [whole, fraction = ""] = value.split(".")
-  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"))
-}
-
-export function moneyText(minor: number | null | undefined) {
-  return minor === null || minor === undefined ? "" : (minor / 100).toFixed(2)
-}
-
-// A price field with its currency's symbol in front, which keeps what's typed and reports the amount on blur.
-export function MoneyInput({
-  value,
-  onValueChange,
-  currency,
-  placeholder,
-  label,
-  disabled,
-  className
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  currency: string
-  placeholder?: string
-  label: string
-  disabled?: boolean
-  className?: string
-}) {
-  const [text, setText] = useState(moneyText(value))
-  const [invalid, setInvalid] = useState(false)
-  const [synced, setSynced] = useState(value)
-  const locale = useLocale()
-  // A new value from outside, such as Discard, replaces what's typed.
-  if (synced !== value) {
-    setSynced(value)
-    setText(moneyText(value))
-    setInvalid(false)
-  }
-  return (
-    <InputGroup className={className} data-disabled={disabled || undefined}>
-      <InputGroupAddon>
-        <InputGroupText>{currencySymbol(currency, locale)}</InputGroupText>
-      </InputGroupAddon>
-      <InputGroupInput
-        inputMode="decimal"
-        value={text}
-        placeholder={placeholder}
-        aria-label={label}
-        aria-invalid={invalid || undefined}
-        disabled={disabled}
-        className="text-end tabular-nums"
-        onChange={(event) => setText(event.target.value)}
-        onBlur={() => {
-          const parsed = parseMoney(text)
-          if (parsed === undefined) {
-            setInvalid(true)
-            return
-          }
-          setInvalid(false)
-          setText(moneyText(parsed))
-          if (parsed !== value) {
-            setSynced(parsed)
-            onValueChange(parsed)
-          }
-        }}
-      />
-    </InputGroup>
-  )
-}
 
 // A short description of volume pricing and quantity rules, such as "3 price breaks, minimum 10 cases".
 export function useRulesSummary() {

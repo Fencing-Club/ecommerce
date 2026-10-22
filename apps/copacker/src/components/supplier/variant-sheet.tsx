@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { RequiredMark } from "@/components/form-controls"
+import { MoneyInput } from "@/components/money-input"
 import { OptionSelect } from "@/components/option-select"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -14,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useDraft } from "@/hooks/use-draft"
 import type { PriceBreak, QuantityRules } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
-import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
+import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 
 // One variant as the product form holds it. `key` tells new variants apart until they're saved and have an id.
 export type EditorVariant = {

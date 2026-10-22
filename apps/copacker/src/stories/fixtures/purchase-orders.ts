@@ -372,7 +372,8 @@ type Quote = {
 const matchBody = z.object({ supplierId: z.string(), currency: z.string(), supplierSkus: z.array(z.string()) })
 
 // The supplier's catalog as the purchase order editor looks up its lines: each supplier SKU's quote from `quotes`, or
-// none when the supplier keeps no catalog. Each lookup is reported.
+// none when the supplier keeps no catalog, without volume prices or rules unless the quote has them, as the server
+// answers. Each lookup is reported.
 export function catalogMatches(
   quotes: Record<string, Quote> = {},
   seen: (body: z.infer<typeof matchBody>) => void = () => undefined
@@ -384,6 +385,8 @@ export function catalogMatches(
       body.supplierSkus.map((sku) => ({
         sku,
         product: null,
+        tiers: [],
+        rules: null,
         ...(quotes[sku] ?? { status: "supplier_catalog_unavailable", unitPriceMinor: null, available: null })
       }))
     )

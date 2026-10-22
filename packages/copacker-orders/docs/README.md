@@ -22,6 +22,11 @@ them, and `orderInputSchema` keeps a PO's lines to one group of receivers.
 The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
 (`orderCurrencies`) and a PO line's field limits (`itemSchema.shape`).
 
+A line's product goes by `lineName(name, variant)`, such as "Canvas tote bag / Natural", which leaves out Shopify's
+"Default Title" for a product's only variant. `shipmentGroups(lines)` splits a PO's lines into the shipments they
+become, one per receiver, Amazon's networks in `amazonNetworks`' order and then the buyer's location; the PO editor and
+the PO's page both show them that way.
+
 ## Supplier changes
 
 A supplier sends its SKU and unit price for each line with a packing (`itemChangeSchema`, in `Packing.changes`).
@@ -37,6 +42,8 @@ Pack quantities come from Shopify bundle components (`pieces / piecesPerSet`).
 
 `supplierChargeTotal` calculates one service, `itemTotal` includes a product's services, and `orderTotal` adds
 all product totals and PO-level adjustments. `orderCharges` supplies consistent summary rows for the app and PDFs.
+`orderSubtotal` is the products at their unit prices alone and `orderUnits` their pieces, as the cost summary's first
+row shows them.
 Product unit prices remain separate from service rates. Removing or moving a product removes or moves its costs;
 changing its quantity recalculates per-piece and per-pack charges. Flat charges remain fixed.
 

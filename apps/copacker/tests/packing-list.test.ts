@@ -13,9 +13,9 @@ import {
   type ShippingDocumentData
 } from "@repo/copacker-shipments/shipping-model"
 import { ShippingPdf } from "../src/documents/shipping-pdf"
-import { httpResponse } from "../src/server/http-response"
 import { GET } from "../src/server/http/api/shipments/$id/packing-list"
 import { towelOrder, towelPacking } from "../src/stories/fixtures/packing"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
 
@@ -70,11 +70,7 @@ async function shipment(values: Partial<typeof tables.shipments.$inferInsert> = 
 }
 
 const download = (id: string) =>
-  httpResponse(() =>
-    GET(new Request(`http://localhost/api/shipments/${id}/packing-list`), {
-      params: { id }
-    })
-  )
+  served(GET)(new Request(`http://localhost/api/shipments/${id}/packing-list`), { params: { id } })
 
 setUpTestDatabase()
 beforeAll(async () => {

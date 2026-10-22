@@ -45,3 +45,11 @@ exports what it shows. Columns other than the reference can be hidden. Lists sho
 
 Below 640 px of width the column chooser goes away and each row keeps its reference and status, with the supplier,
 route and totals beneath them. A view with no rows says so inside the table.
+
+## Code
+
+`src/lib/logistics-list.ts` holds the rows' type and the pure parts, with unit tests: `filterRows` (search, filters
+and the ready-date range), `sortRows`, `routeText`, the views each viewer has, and `listReducer`, the list's state,
+where searching, filtering, sorting or another view goes back to the first page. Mantine's `usePagination` does the
+page math. `LogisticsList` puts together `LogisticsToolbar` (search, filters, sort and columns), `AppliedFilterChips`,
+`LogisticsTable` and `LogisticsPagination`, which word rows through `useLogisticsText`.

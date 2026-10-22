@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useAction } from "@/hooks/use-action"
+import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
 import { isRowClick } from "./link-row"
@@ -24,16 +25,6 @@ import { EditSupplier, InviteSupplierByEmail } from "./supplier-actions"
 type Standing = { joined: boolean; invited: boolean; expired: boolean }
 
 type Notice = { failed: boolean; text: string }
-
-// "Shenzhen Tongzhi Logistics" as "ST".
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .flatMap((word) => Array.from(word.replace(/[^\p{L}\p{N}]/gu, "")).slice(0, 1))
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
-}
 
 // Sends a partner's invitation again, to the email it went to before.
 function useResend(action: "supplier.resend" | "forwarder.invite", id: string, email: string | null) {

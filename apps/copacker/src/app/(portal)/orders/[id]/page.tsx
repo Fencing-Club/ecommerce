@@ -1,23 +1,13 @@
-import { variantName } from "@repo/copacker-marketplaces/shopify"
-import type { OrderItem } from "@repo/copacker-orders"
-import { itemTotal, money, orderCharges, orderTotal } from "@repo/copacker-orders"
-import { orderDestination } from "@repo/copacker-packing-rules"
+import { itemTotal, orderCharges, orderTotal, orderUnits, lineName, shipmentGroups } from "@repo/copacker-orders"
+import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
-import {
-  ArrowRight,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  Info as InfoIcon,
-  MapPin,
-  Package,
-  Warehouse
-} from "lucide-react"
-import { useTranslations, useFormatter, useLocale } from "use-intl"
+import { Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
+import { useFormatter, useTranslations } from "use-intl"
 import { ActionButton } from "@/components/actions"
-import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
+import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
+import { CostSummaryCard } from "@/components/cost-summary-card"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { LandedCosts } from "@/components/landed-costs"
 import { Markdown } from "@/components/markdown"
@@ -26,21 +16,23 @@ import { PoTimeline } from "@/components/po-timeline"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
 import { RoutePill } from "@/components/route-pill"
+import { RouteStops } from "@/components/route-stops"
+import { ShipmentGroupCard } from "@/components/shipment-group-card"
+import { SupplierSkuCell } from "@/components/supplier-sku-cell"
 import { ProposalPanel } from "@/components/supplier/proposal-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { adjustmentKeys, knownName, paymentTermKeys } from "@/lib/order-lines"
+import { useMoney } from "@/hooks/use-money"
+import { knownName, paymentTermKeys } from "@/lib/order-lines"
 import type { orderPage } from "@/server/order-page"
 import { ForwarderView } from "./forwarder-view"
 export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof orderPage>> }) {
   const t = useTranslations("orders"),
     common = useTranslations("common"),
     format = useFormatter(),
-    locale = useLocale()
+    money = useMoney()
   if (page.view === "forwarder") {
     return <ForwarderView page={page.data} />
   }
@@ -82,22 +74,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
   const remainingFor = (id: string) => remainingItems.find((row) => row.itemId === id)?.remainingPieces
   const labelFor = (id: string) => labels.find((row) => row.itemId === id)
   const place = (id: string | undefined) => places.find((row) => row.id === id)?.name
-  const itemGroups =
-    orderDestination(order.data) === "amazon"
-      ? (["awd_us", "fba"] as const)
-          .map((network) => ({
-            key: network,
-            label: amazonNetworkNames[network],
-            items: order.data.items.filter((item) => item.receiver === network)
-          }))
-          .filter((group) => group.items.length > 0)
-      : [
-          {
-            key: "warehouse",
-            label: place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common),
-            items: order.data.items
-          }
-        ]
+  const destination = place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)
   const day = (value: string) =>
     format.dateTime(new Date(value + "T00:00:00Z"), {
       month: "short",
@@ -171,19 +148,12 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
 
       <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Card className="gap-0 overflow-hidden py-0">
-            <div className="flex flex-wrap items-center gap-1.5 p-3">
-              <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
-              <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-              {stop && (
-                <>
-                  <RoutePill icon={<Warehouse />}>{stop}</RoutePill>
-                  <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-                </>
-              )}
-              <RoutePill icon={<MapPin />}>
-                {place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)}
-              </RoutePill>
+          <Card flush>
+            <RouteStops
+              supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
+              stop={stop && <RoutePill icon={<Warehouse />}>{stop}</RoutePill>}
+              destination={<RoutePill icon={<MapPin />}>{destination}</RoutePill>}
+            >
               {order.status === "draft" && buyer && editsOrder && (
                 <Button
                   variant="outline"
@@ -195,108 +165,85 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                   {t("builder.edit")}
                 </Button>
               )}
-            </div>
+            </RouteStops>
           </Card>
-          {itemGroups.map((group) => (
-            <Collapsible key={group.key} defaultOpen render={<Card className="gap-0 overflow-hidden py-0" />}>
-              <CollapsibleTrigger className="group flex min-h-14 items-center gap-2 px-3 py-2 text-start focus-visible:outline-ring">
-                <Package className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <h2 className="font-semibold">{t("builder.shipmentTo", { destination: group.label })}</h2>
-                <span className="ms-auto flex flex-col items-end gap-1 text-end text-sm sm:flex-row sm:items-center sm:gap-4">
-                  <span className="text-muted-foreground">
-                    {t("builder.shipmentCounts", {
-                      count: group.items.length,
-                      pieces: group.items.reduce((sum, item) => sum + item.pieces, 0)
-                    })}
-                  </span>
-                  {prices && (
-                    <span className="font-semibold whitespace-nowrap tabular-nums">
-                      <span className="sr-only">{t("builder.shipmentTotal")} </span>
-                      {money(
-                        group.items.reduce((sum, item) => sum + itemTotal(item), 0),
-                        currency,
-                        locale
+          {shipmentGroups(order.data.items).map((group) => (
+            <ShipmentGroupCard
+              key={group.receiver}
+              title={isAmazonNetwork(group.receiver) ? amazonNetworkNames[group.receiver] : destination}
+              lines={group.lines.length}
+              pieces={orderUnits(group.lines)}
+              total={prices ? orderTotal({ items: group.lines }) : undefined}
+              currency={currency}
+            >
+              <Table framed={false} className="@max-2xl:block">
+                <TableHeader className="@max-2xl:hidden">
+                  <TableRow>
+                    <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
+                    <TableHead className="w-36">{t("detail.columns.supplierSku")}</TableHead>
+                    <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
+                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.cost")}</TableHead>}
+                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.total")}</TableHead>}
+                    <TableHead className="w-12 pe-3">
+                      <span className="sr-only">{t("detail.columns.actions")}</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="@max-2xl:block">
+                  {group.lines.map((item) => (
+                    <TableRow
+                      key={item.id}
+                      className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
+                    >
+                      <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
+                        <ProductIdentity item={item} />
+                        {packingInstructions(item) && (
+                          <Markdown className="text-xs text-muted-foreground">{packingInstructions(item)}</Markdown>
+                        )}
+                        {(instructionsByItem[item.id] ?? []).map((line) => (
+                          <p key={line} className="text-xs text-muted-foreground">
+                            {line}
+                          </p>
+                        ))}
+                      </TableCell>
+                      <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
+                        <SupplierSkuCell item={item} />
+                      </TableCell>
+                      <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
+                        <QuantityDisplay pieces={item.pieces} packSize={item.piecesPerSet}>
+                          {item.pieces}
+                        </QuantityDisplay>
+                        {remainingFor(item.id) !== item.pieces && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
+                          </p>
+                        )}
+                      </TableCell>
+                      {prices && (
+                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0 @max-2xl:before:content-['×_']">
+                          {money(item.unitPrice, currency)}
+                        </TableCell>
                       )}
-                    </span>
-                  )}
-                </span>
-                <ChevronDown
-                  className="size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-180"
-                  aria-hidden
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent keepMounted>
-                <div className="@container border-t">
-                  <Table framed={false} className="@max-2xl:block">
-                    <TableHeader className="@max-2xl:hidden">
-                      <TableRow>
-                        <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
-                        <TableHead className="w-36">{t("detail.columns.supplierSku")}</TableHead>
-                        <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
-                        {prices && <TableHead className="w-28 text-end">{t("detail.columns.cost")}</TableHead>}
-                        {prices && <TableHead className="w-28 text-end">{t("detail.columns.total")}</TableHead>}
-                        <TableHead className="w-12 pe-3">
-                          <span className="sr-only">{t("detail.columns.actions")}</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="@max-2xl:block">
-                      {group.items.map((item) => (
-                        <TableRow
-                          key={item.id}
-                          className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
-                        >
-                          <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
-                            <ProductIdentity item={item} />
-                            {packingInstructions(item) && (
-                              <Markdown className="text-xs text-muted-foreground">{packingInstructions(item)}</Markdown>
-                            )}
-                            {(instructionsByItem[item.id] ?? []).map((line) => (
-                              <p key={line} className="text-xs text-muted-foreground">
-                                {line}
-                              </p>
-                            ))}
-                          </TableCell>
-                          <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
-                            <SupplierSku item={item} notSet={t("detail.notSet")} />
-                          </TableCell>
-                          <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
-                            <QuantityDisplay pieces={item.pieces} packSize={item.piecesPerSet}>
-                              {item.pieces}
-                            </QuantityDisplay>
-                            {remainingFor(item.id) !== item.pieces && (
-                              <p className="text-xs text-muted-foreground">
-                                {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
-                              </p>
-                            )}
-                          </TableCell>
-                          {prices && (
-                            <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0 @max-2xl:before:content-['×_']">
-                              {money(item.unitPrice, currency, locale)}
-                            </TableCell>
-                          )}
-                          {prices && (
-                            <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
-                              {money(itemTotal(item), currency, locale)}
-                            </TableCell>
-                          )}
-                          <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">
-                            <LineMenu
-                              orderId={id}
-                              itemId={item.id}
-                              name={[item.name, variantName(item.variant)].filter(Boolean).join(" / ")}
-                              label={labelFor(item.id)}
-                              warning={item.suffocationWarning}
-                              editable={order.status === "draft" && buyer && editsOrder}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                      {prices && (
+                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
+                          {money(itemTotal(item), currency)}
+                        </TableCell>
+                      )}
+                      <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">
+                        <LineMenu
+                          orderId={id}
+                          itemId={item.id}
+                          name={lineName(item.name, item.variant)}
+                          label={labelFor(item.id)}
+                          warning={item.suffocationWarning}
+                          editable={order.status === "draft" && buyer && editsOrder}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ShipmentGroupCard>
           ))}
 
           {instructions.length > 0 && (
@@ -404,29 +351,14 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
 
         <aside className="flex flex-col gap-4">
           {prices && (
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{t("detail.costSummary")}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <p className="font-medium">{t("detail.orderDetails")}</p>
-                <div className="flex justify-between gap-3">
-                  <span>{t("detail.variantsAndItems", { variants: order.data.items.length, items: units })}</span>
-                  <span className="tabular-nums">{money(subtotal, currency, locale)}</span>
-                </div>
-                {orderCharges(order.data).map((adjustment, index) => (
-                  <div key={index} className="flex justify-between gap-3">
-                    <span>{knownName(adjustmentKeys, adjustment.description, t)}</span>
-                    <span className="tabular-nums">{money(adjustment.amount, currency, locale)}</span>
-                  </div>
-                ))}
-                <Separator />
-                <div className="flex justify-between font-semibold">
-                  <span>{t("detail.columns.total")}</span>
-                  <span className="tabular-nums">{money(orderTotal(order.data), currency, locale)}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <CostSummaryCard
+              lines={order.data.items.length}
+              units={units}
+              subtotal={subtotal}
+              charges={orderCharges(order.data)}
+              total={orderTotal(order.data)}
+              currency={currency}
+            />
           )}
 
           <Card size="sm">
@@ -464,18 +396,6 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
       </div>
     </div>
   )
-}
-
-// A line's supplier SKU, or each component's for a bundle, so the supplier knows what to make.
-function SupplierSku({ item, notSet }: { item: OrderItem; notSet: string }) {
-  if (item.components?.length) {
-    return item.components.map((component) => (
-      <p key={component.variantId}>
-        {component.quantity} × {component.supplierSku || component.buyerSku || notSet}
-      </p>
-    ))
-  }
-  return item.supplierSku || <WarningNote>{notSet}</WarningNote>
 }
 
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {

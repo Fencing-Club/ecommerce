@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest"
 import {
   type CartonGroup,
+  cartonGroupSchema,
+  cartonMeasures,
+  checkCartons,
   expandCartonGroups,
   groupCartonIds,
+  maxCartons,
   nextCartonId,
   nextPalletId,
+  packedPallets,
+  packedPieces,
+  packingDraft,
   packingEditorSchema,
-  palletCartons
+  palletCartons,
+  physicalCartons,
+  piecesLeft,
+  totalPiecesLeft
 } from "@/lib/carton-groups"
 import { towelOrder } from "@/stories/fixtures/packing"
 import { pickupAddress } from "@/stories/fixtures/purchase-orders"
@@ -71,6 +81,71 @@ describe("carton configuration letters", () => {
         { ...pallet, palletId: "3" }
       ])
     ).toBe("4")
+  })
+})
+
+describe("carton rules", () => {
+  const pallet = (palletId: string, cartonIds: string[], weight = 62) => ({
+    palletId,
+    length: 120,
+    width: 100,
+    height: 90,
+    weight,
+    stackable: true,
+    cartonIds
+  })
+
+  it("holds at most maxCartons, and past it no physical carton is listed", () => {
+    expect(physicalCartons([group("A1", maxCartons)])).toHaveLength(maxCartons)
+    expect(physicalCartons([group("A1", maxCartons), group("B1", 1)])).toEqual([])
+    expect(cartonGroupSchema.shape.count.safeParse(maxCartons + 1).success).toBe(false)
+  })
+
+  it("checks complete cartons against what the purchase order has left after its other shipments", () => {
+    const tooMany = { ...group("A1", 11), items: [{ itemId: natural!.id, pieces: 24 }] }
+    expect(checkCartons(towelOrder, [tooMany], {}).map((issue) => issue.code)).toEqual(["overQuantity"])
+    expect(checkCartons(towelOrder, [group("A1", 10)], {})).toEqual([])
+    expect(checkCartons(towelOrder, [group("A1", 10)], { [natural!.id]: 1 }).map((issue) => issue.code)).toEqual([
+      "overQuantity"
+    ])
+    // An incomplete carton shows its own fields' errors instead.
+    expect(checkCartons(towelOrder, [{ ...tooMany, weight: Number.NaN }], {})).toEqual([])
+  })
+
+  it("counts the pieces of each line packed and left to pack", () => {
+    expect(packedPieces(physicalCartons([group("A1", 3)]))).toEqual({ [natural!.id]: 72 })
+    expect(piecesLeft(natural!, { [natural!.id]: 200 })).toBe(40)
+    expect(piecesLeft(natural!, { [natural!.id]: 300 })).toBe(0)
+    expect(totalPiecesLeft(towelOrder.items, { [natural!.id]: 40 })).toBe(500)
+  })
+
+  it("sums the cartons' weight and volume, or the pallets' when packed on them, once each is complete", () => {
+    expect(cartonMeasures([group("A1", 2)])).toEqual({ cartons: 2, units: 48, weight: 24.8, volume: 0.192 })
+    expect(cartonMeasures([group("A1", 2), { ...group("B1", 1), weight: Number.NaN }])).toMatchObject({
+      cartons: 3,
+      weight: null,
+      volume: null
+    })
+    expect(cartonMeasures([group("A1", 2)], [pallet("1", ["A1", "A2"])])).toMatchObject({ weight: 62, volume: 1.08 })
+    expect(cartonMeasures([group("A1", 2)], [])).toMatchObject({ weight: null, volume: null })
+  })
+
+  it("saves each physical carton, and the pallets only when packed on them, holding cartons the packing has", () => {
+    const values = (palletized: boolean) => ({
+      readyDate: "",
+      origin: pickupAddress,
+      cartons: [{ ...group("A1", 2), weight: Number.NaN }],
+      palletized,
+      pallets: [pallet("1", ["A1", "Z9"])],
+      changes: []
+    })
+    const draft = packingDraft(values(true))
+    expect(draft.cartons?.map((carton) => carton.cartonId)).toEqual(["A1", "A2"])
+    // Blank fields are left out.
+    expect(draft.cartons?.[0]).not.toHaveProperty("weight")
+    expect(draft.pallets).toEqual([pallet("1", ["A1"])])
+    expect(packingDraft(values(false))).not.toHaveProperty("pallets")
+    expect(packedPallets([pallet("1", ["A1", "Z9"])], [{ cartonId: "A1" }])).toEqual([pallet("1", ["A1"])])
   })
 })
 

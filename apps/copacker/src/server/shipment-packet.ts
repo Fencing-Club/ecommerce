@@ -2,7 +2,6 @@ import { createHash } from "node:crypto"
 import { packedItemIds } from "@repo/copacker-shipments"
 import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
@@ -11,6 +10,7 @@ import { addressLines } from "@/lib/address"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError, errorText } from "./errors"
+import { pageId } from "./page-id"
 import { hasProductLabels, lineLabels } from "./product-barcodes"
 import { releasedStates, releaseIssues } from "./readiness"
 import { requireMembership, type Session } from "./workspace-session"
@@ -18,7 +18,7 @@ import { requireMembership, type Session } from "./workspace-session"
 // Read a released revision, never the live PO's editable values. No price or storage credential leaves this module.
 export async function releasedPacket(s: Session, rawId: string, expected?: string) {
   requireAccess(s, "shipments")
-  const id = z.uuid().parse(rawId)
+  const id = pageId(rawId)
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!shipment) {
     throw new NotFoundError()

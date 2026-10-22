@@ -172,7 +172,8 @@ test("editing a draft validates and saves through the demo Shopify provider", as
   await expect(quantities).toHaveCount(2)
   await expect(quantities.first()).toHaveValue("100")
   await expect(quantities.last()).toHaveValue("50")
-  await expect(page.getByRole("spinbutton", { name: "Cost of Pro-grip glove" }).first()).toHaveValue("8.50")
+  // A cost is typed as text with a decimal keypad, like every money field, so it's a textbox rather than a spinbutton.
+  await expect(page.getByRole("textbox", { name: "Cost of Pro-grip glove" }).first()).toHaveValue("8.50")
   await expect(page.getByText("2 variants (150 units)")).toBeVisible()
 
   // Saving waits for a change, and a draft without its reference doesn't save.

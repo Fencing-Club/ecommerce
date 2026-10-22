@@ -19,7 +19,7 @@ export async function editOrderPage(params: { id: string }): Promise<React.Compo
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   requirePage(s, "prices")
-  const { id } = await params
+  const { id } = params
   const { order } = await accessibleOrder(s, id)
   if (order.status !== "draft") {
     throw redirect({ href: `/orders/${id}` })

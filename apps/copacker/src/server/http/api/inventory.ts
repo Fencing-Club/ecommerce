@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
 import { stockSource, stockScopes, stockSelection } from "@/server/stock"
 
@@ -37,10 +38,8 @@ const moneyFields = new Set(["unitCostMinor", "costCurrency", "priceMinor", "pri
 
 export async function GET(request: Request) {
   const s = await session()
+  requireBuyer(s)
   const headers = { "Cache-Control": "private, no-store" }
-  if (s.org.kind !== "buyer") {
-    return errorResponse("buyerWorkspaceRequired", 403, headers)
-  }
   requirePage(s, "products")
   const search = new URL(request.url).searchParams
   const query = querySchema.safeParse(Object.fromEntries(search))

@@ -1,5 +1,5 @@
 import { requirePage, session } from "@/server/auth"
-import { errorResponse } from "@/server/errors"
+import { errorResponse, InvalidRequestError, requestJson } from "@/server/errors"
 import { fallbackResponse } from "@/server/http-response"
 import { saveVariantFields } from "@/server/product-fields"
 
@@ -8,9 +8,9 @@ export async function PATCH(request: Request) {
   const s = await session()
   requirePage(s, "products", "edit")
   try {
-    return Response.json(await saveVariantFields(s, await request.json()))
+    return Response.json(await saveVariantFields(s, await requestJson(request)))
   } catch (error) {
-    if (error instanceof SyntaxError) {
+    if (error instanceof InvalidRequestError) {
       return errorResponse("checkValues", 400)
     }
     return fallbackResponse(error, "variantFieldsNotSaved")

@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
-import { itemSchema, orderInputSchema, orderSubtotal, orderTotal } from "@repo/copacker-orders"
+import { itemSchema, orderInputSchema, orderSubtotal, orderTotal, lineName } from "@repo/copacker-orders"
 import { orderDestination, receiverFor } from "@repo/copacker-packing-rules"
 import { packingSchema } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
@@ -86,7 +85,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     const item = order.items.find((candidate) => candidate.id === line.itemId)
     return {
       key: line.itemId ?? line.supplierSku,
-      name: item ? [item.name, variantName(item.variant)].filter(Boolean).join(" / ") : line.title,
+      name: item ? lineName(item.name, item.variant) : line.title,
       supplierSku: line.supplierSku,
       change: lineChange(item, line),
       before: item ? { pieces: item.pieces, unitPrice: item.unitPrice } : null,
@@ -97,7 +96,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     .filter((item) => !proposal.lines.some((line) => line.itemId === item.id))
     .map((item) => ({
       key: item.id,
-      name: [item.name, variantName(item.variant)].filter(Boolean).join(" / "),
+      name: lineName(item.name, item.variant),
       supplierSku: item.supplierSku,
       change: "removed" as const,
       before: { pieces: item.pieces, unitPrice: item.unitPrice },

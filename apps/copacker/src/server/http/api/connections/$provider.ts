@@ -13,7 +13,7 @@ import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
 import { ebayApp, shopifyApp } from "@/server/connections"
 import { queueEbaySubscription } from "@/server/ebay-events"
-import { errorResponse } from "@/server/errors"
+import { errorResponse, requestInput } from "@/server/errors"
 import { startFirstSync } from "@/server/first-sync"
 import { siteUrlFor, token, hash, encrypt } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
@@ -22,7 +22,7 @@ export async function GET(request: Request, context: { params: { provider: strin
   const s = await session()
   requireAdmin(s)
   requireBuyer(s)
-  const provider = z.enum(["shopify", "amazon", "ebay"]).parse((await context.params).provider)
+  const provider = requestInput(z.enum(["shopify", "amazon", "ebay"]), context.params.provider)
   const url = new URL(request.url),
     isCallback = url.searchParams.has("state")
   const site = siteUrlFor(request.headers)
@@ -30,7 +30,9 @@ export async function GET(request: Request, context: { params: { provider: strin
   if (!isCallback) {
     const state = token(),
       shop =
-        provider === "shopify" ? shopDomainSchema.parse(normalizeShopDomain(url.searchParams.get("shop") ?? "")) : null
+        provider === "shopify"
+          ? requestInput(shopDomainSchema, normalizeShopDomain(url.searchParams.get("shop") ?? ""))
+          : null
     let target: URL
     if (provider === "shopify") {
       if (!process.env.SHOPIFY_CLIENT_ID || !process.env.SHOPIFY_CLIENT_SECRET) {
@@ -116,7 +118,7 @@ export async function GET(request: Request, context: { params: { provider: strin
       result = await exchangeShopifyCode(
         shopifyApp(),
         externalId,
-        z.string().min(1).parse(url.searchParams.get("code"))
+        requestInput(z.string().min(1), url.searchParams.get("code"))
       )
     } catch (error) {
       if (error instanceof ShopifyRequestError) {
@@ -133,7 +135,7 @@ export async function GET(request: Request, context: { params: { provider: strin
     }
     let token: Awaited<ReturnType<typeof exchangeEbayCode>>
     try {
-      token = await exchangeEbayCode(app, app.ruName, z.string().min(1).parse(url.searchParams.get("code")))
+      token = await exchangeEbayCode(app, app.ruName, requestInput(z.string().min(1), url.searchParams.get("code")))
       // The seller's immutable user ID identifies the account; their username can change.
       externalId = (await new Ebay({ ...app, refreshToken: token.refreshToken }).user()).userId
     } catch {
@@ -144,8 +146,8 @@ export async function GET(request: Request, context: { params: { provider: strin
       ...(token.refreshTokenExpiresAt ? { refreshExpiresAt: token.refreshTokenExpiresAt.getTime() } : {})
     }
   } else {
-    externalId = sellerIdSchema.parse(url.searchParams.get("selling_partner_id"))
-    const code = z.string().min(1).parse(url.searchParams.get("spapi_oauth_code"))
+    externalId = requestInput(sellerIdSchema, url.searchParams.get("selling_partner_id"))
+    const code = requestInput(z.string().min(1), url.searchParams.get("spapi_oauth_code"))
     let refreshToken: string
     try {
       refreshToken = await exchangeAmazonCode(

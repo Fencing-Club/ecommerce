@@ -7,6 +7,7 @@ import { connections } from "@/db/schema"
 import { can, type Permissions } from "@/lib/access"
 import { requireAccess, requireBuyer, requireSupplier } from "./authorization"
 import { catalogEditor, catalogList } from "./catalogs"
+import { pageId } from "./page-id"
 import { restockSettings } from "./restock-report"
 import { productDetail, productList } from "./supplier-products"
 import { customerDetail, customerList, inventoryRows } from "./supplier-workspace"
@@ -39,11 +40,7 @@ export async function catalogPageData(s: Workspace, rawId: string | null) {
   requireSupplier(s)
   requireAccess(s, "catalogs", rawId === null ? "edit" : "view")
   requireAccess(s, "prices")
-  const id = z.uuid().nullable().safeParse(rawId)
-  if (!id.success) {
-    return null
-  }
-  const data = await catalogEditor(s.org.id, id.data)
+  const data = await catalogEditor(s.org.id, rawId === null ? null : pageId(rawId))
   if (!data) {
     return null
   }
@@ -91,11 +88,7 @@ export async function customersPageData(s: Workspace) {
 export async function customerPageData(s: Workspace, rawId: string) {
   requireSupplier(s)
   requireAccess(s, "customers")
-  const id = z.uuid().safeParse(rawId)
-  if (!id.success) {
-    return null
-  }
-  const detail = await customerDetail(s.org.id, id.data)
+  const detail = await customerDetail(s.org.id, pageId(rawId))
   if (!detail) {
     return null
   }
@@ -155,11 +148,7 @@ export async function productsPageData(s: Workspace, rawSearch: unknown) {
 export async function productPageData(s: Workspace, rawId: string) {
   requireSupplier(s)
   requireAccess(s, "products")
-  const id = z.uuid().safeParse(rawId)
-  if (!id.success) {
-    return null
-  }
-  const detail = await productDetail(s.org.id, id.data)
+  const detail = await productDetail(s.org.id, pageId(rawId))
   if (!detail) {
     return null
   }

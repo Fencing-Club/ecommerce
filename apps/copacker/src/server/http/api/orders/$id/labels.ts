@@ -6,7 +6,7 @@ import { orderLabelsPdf } from "@/server/product-barcodes"
 
 // All of a PO's current product labels as one PDF, in line order.
 export async function GET(_request: Request, context: { params: { id: string } }) {
-  const id = z.uuid().safeParse((await context.params).id)
+  const id = z.uuid().safeParse(context.params.id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404)
   }

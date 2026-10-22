@@ -1,8 +1,11 @@
-import { inventoryItemIdSchema, variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import { inventoryItemIdSchema, variantIdSchema, variantName } from "@repo/copacker-marketplaces/shopify"
 import {
+  amazonNetworks,
+  groupReceivers,
   orderDestination,
   type ReceiverGroup,
   receiverGroups,
+  type ReceiverId,
   receiverIds,
   receivers
 } from "@repo/copacker-packing-rules"
@@ -300,6 +303,25 @@ export function orderCharges(order: OrderCosts) {
 // What a PO's products cost at their unit prices, before supplier services and adjustments.
 export function orderSubtotal(items: readonly Pick<OrderItem, "pieces" | "unitPrice">[]) {
   return items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+}
+
+// How many pieces a PO's lines order in all.
+export function orderUnits(items: readonly Pick<OrderItem, "pieces">[]) {
+  return items.reduce((sum, item) => sum + item.pieces, 0)
+}
+
+// A PO's lines as the shipments they become: one for each receiver they go to, Amazon's networks in amazonNetworks'
+// order, then the buyer's location. Each keeps its lines in the PO's order.
+export function shipmentGroups<Line extends { receiver: ReceiverId }>(lines: readonly Line[]) {
+  return [...amazonNetworks, ...groupReceivers("warehouse")].flatMap((receiver) => {
+    const grouped = lines.filter((line) => line.receiver === receiver)
+    return grouped.length ? [{ receiver, lines: grouped }] : []
+  })
+}
+
+// A product as a PO line names it: with its variant, such as "Canvas tote bag / Natural", or alone when it has only one.
+export function lineName(name: string, variant: string | null | undefined) {
+  return [name, variantName(variant)].filter(Boolean).join(" / ")
 }
 
 export function orderTotal(order: OrderCosts) {

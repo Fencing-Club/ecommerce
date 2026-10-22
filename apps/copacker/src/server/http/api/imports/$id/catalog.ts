@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
-  const { id } = await params
+  const { id } = params
   const search = new URL(request.url).searchParams
   const input = z
     .object({ id: z.uuid(), query: z.string().trim().min(1).max(255), cursor: z.string().max(2000).nullable() })

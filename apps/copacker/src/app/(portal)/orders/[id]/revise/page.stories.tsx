@@ -1,5 +1,5 @@
-import { orderSubtotal } from "@repo/copacker-orders"
-import type { OrderInput } from "@repo/copacker-orders"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { type OrderInput, orderSubtotal } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
@@ -46,7 +46,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
     return {
       itemId: line.itemId,
       name: item?.name ?? line.title,
-      variant: item?.variant && item.variant !== "Default Title" ? item.variant : "",
+      variant: variantName(item?.variant) ?? "",
       supplierSku: line.supplierSku,
       piecesPerSet: item?.piecesPerSet ?? 1,
       pieces: line.pieces,
@@ -61,7 +61,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
         .map((item) => ({
           itemId: item.id,
           name: item.name,
-          variant: item.variant !== "Default Title" ? item.variant : "",
+          variant: variantName(item.variant) ?? "",
           supplierSku: item.supplierSku,
           piecesPerSet: item.piecesPerSet,
           pieces: item.pieces,

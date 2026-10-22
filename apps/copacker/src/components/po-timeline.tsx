@@ -5,6 +5,7 @@ import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { initials } from "@/lib/initials"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { cn } from "@/lib/utils"
 import { TimelineComment, type PostedComment } from "./timeline-comment"
@@ -24,14 +25,6 @@ export type TimelineEntry = {
   revisionNumber: number | null
   details?: ReactNode
 }
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("")
 
 // A comment's author. The avatar is positioned, so it paints over the timeline's line.
 function AuthorAvatar({ name }: { name: string }) {

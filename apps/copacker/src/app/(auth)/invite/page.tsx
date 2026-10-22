@@ -6,21 +6,12 @@ import { SignInForm } from "@/components/auth/sign-in-form"
 import { SignUpForm } from "@/components/auth/sign-up-form"
 import { SocialSignIn } from "@/components/auth/social-sign-in"
 import { Button } from "@/components/ui/button"
+import { initials } from "@/lib/initials"
 import type { invitationPage } from "@/server/invitation-page"
 
 // Bold text inside a translated sentence, such as an email address.
 function strong(chunks: React.ReactNode) {
   return <span className="font-medium text-foreground">{chunks}</span>
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 // The link in an invitation email. It says who sent it before anyone signs in, then signs up or signs in with the

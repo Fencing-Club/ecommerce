@@ -10,7 +10,7 @@ export async function POST(request: Request, context: { params: { id: string } }
     if (Number(request.headers.get("content-length") ?? 0) > maxCarrierLabelBytes + 1024 * 1024) {
       throw new LocalizedError("fileTooLarge")
     }
-    return Response.json(await saveCarrierLabels(s, (await context.params).id, await request.formData()))
+    return Response.json(await saveCarrierLabels(s, context.params.id, await request.formData()))
   } catch (error) {
     return Response.json(
       { error: await failureMessage(error, "documentUploadFailed") },

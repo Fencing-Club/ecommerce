@@ -1,6 +1,7 @@
 import { Pencil } from "lucide-react"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
+import { moneyText, parseMoney } from "@/components/money-input"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
@@ -9,7 +10,6 @@ import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
 import type { CatalogEditorData } from "@/server/catalogs"
-import { moneyText, parseMoney } from "./pricing-controls"
 
 export type CatalogVariant = CatalogEditorData["products"][number]["variants"][number]
 

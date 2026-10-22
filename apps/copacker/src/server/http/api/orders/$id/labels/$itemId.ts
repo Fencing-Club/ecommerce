@@ -6,7 +6,7 @@ import { orderLineLabel } from "@/server/product-barcodes"
 
 // One PO line's product label, made from its product's current label.
 export async function GET(_request: Request, context: { params: { id: string; itemId: string } }) {
-  const params = z.object({ id: z.uuid(), itemId: z.uuid() }).safeParse(await context.params)
+  const params = z.object({ id: z.uuid(), itemId: z.uuid() }).safeParse(context.params)
   if (!params.success) {
     return errorResponse("labelNotFound", 404)
   }

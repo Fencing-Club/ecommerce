@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { AccessError, LocalizedError } from "../src/i18n/errors"
+import { AccessError, LocalizedError, NotFoundError } from "../src/i18n/errors"
 import type { Access } from "../src/lib/access"
 import { POST as saveCatalog } from "../src/server/http/api/catalogs"
 import { DELETE as deleteCatalog } from "../src/server/http/api/catalogs/$id"
@@ -154,7 +154,7 @@ describe("page data authorization and serialization", () => {
     expect(page?.data.catalog).not.toHaveProperty("supplierOrgId")
     expect(page?.data.catalog).not.toHaveProperty("createdAt")
     expect(await catalogPageData(owner, id(16))).toBeNull()
-    expect(await catalogPageData(owner, "invalid")).toBeNull()
+    await expect(catalogPageData(owner, "invalid")).rejects.toThrow(NotFoundError)
     expect((await catalogPageData(owner, null))?.data.catalog).toBeNull()
   })
 
@@ -175,7 +175,7 @@ describe("page data authorization and serialization", () => {
       expect(serialized).not.toContain(privateValue)
     }
     expect(await customerPageData(s, id(17))).toBeNull()
-    expect(await customerPageData(s, "invalid")).toBeNull()
+    await expect(customerPageData(s, "invalid")).rejects.toThrow(NotFoundError)
   })
 
   it("returns authorized orders without totals and restores amounts only with price access", async () => {
@@ -210,7 +210,7 @@ describe("page data authorization and serialization", () => {
     })
     expect(allowed?.readOnly).toBe(false)
     expect(await productPageData(owner, id(14))).toBeNull()
-    expect(await productPageData(owner, "invalid")).toBeNull()
+    await expect(productPageData(owner, "invalid")).rejects.toThrow(NotFoundError)
   })
 
   it("returns only provider names and a bounded search to the buyer", async () => {
