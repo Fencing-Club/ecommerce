@@ -6,6 +6,8 @@ import {
   orderCharges,
   orderCurrencies,
   type OrderInput,
+  type OrderItem,
+  orderLine,
   orderSubtotal,
   orderTotal,
   orderUnits,
@@ -40,13 +42,13 @@ import { useActionForm } from "@/hooks/use-action-form"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { type CatalogProduct, type SupplierCatalogMatch, useSupplierCatalogMatchQuery } from "@/lib/api"
 import { orderFormSchema } from "@/lib/order-form"
-import { knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
+import { knownName, paymentTermKeys } from "@/lib/order-lines"
 import { type LineQuote, lineQuotes, lineSkus, quotedPrice } from "@/lib/order-quotes"
 import { AddProductsDialog, type StockAt } from "./add-products-dialog"
 import { DateInput, FormField, FormInput, FormTextarea, useFormField } from "./form-controls"
 import { FormSelect } from "./form-select"
 
-type Line = ReturnType<typeof orderLine>
+type Line = OrderItem
 
 // Which of Amazon's networks a line goes to, when the PO ships to Amazon.
 const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
