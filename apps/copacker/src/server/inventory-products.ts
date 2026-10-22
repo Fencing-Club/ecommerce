@@ -111,7 +111,12 @@ export function onOrderByVariant(
       const locationIds = receivingLocations({ ...order.data, items: [item] }, deliveryLocations)
       const pending = byVariant.get(item.variantId) ?? []
       const units = Math.floor(Math.max(0, item.pieces - (order.received?.[item.id] ?? 0)) / item.piecesPerSet)
-      const existing = pending.find((entry) => entry.id === order.id)
+      const existing = pending.find(
+        (entry) =>
+          entry.id === order.id &&
+          entry.locationIds.length === locationIds.length &&
+          entry.locationIds.every((locationId) => locationIds.includes(locationId))
+      )
       if (existing) {
         existing.units += units
       } else {
@@ -134,7 +139,7 @@ function onOrderAt(pending: PendingOrder[], locationId: string | null | undefine
   const orders = locationId ? pending.filter((entry) => entry.locationIds.includes(locationId)) : pending
   return {
     units: orders.reduce((sum, entry) => sum + entry.units, 0),
-    orders: orders.map(({ id, reference }) => ({ id, reference }))
+    orders: [...new Map(orders.map(({ id, reference }) => [id, { id, reference }])).values()]
   }
 }
 
