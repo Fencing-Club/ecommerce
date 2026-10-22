@@ -5,7 +5,7 @@ import { localizedPage } from "@/server/page-result"
 import { shipmentPacketResult } from "@/server/shipment-packet"
 
 export const readShipmentPacket = createServerFn()
-  .validator(z.object({ id: z.uuid() }))
+  .validator(z.object({ id: z.string() }))
   .handler(({ data }) =>
     localizedPage(async () => shipmentPacketResult(await session(), data.id), "shipments.detail.packet.title")
   )

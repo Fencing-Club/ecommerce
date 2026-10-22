@@ -1,7 +1,6 @@
-import { ZodError } from "zod"
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
-import { errorResponse } from "@/server/errors"
+import { errorResponse, InvalidRequestError, requestJson } from "@/server/errors"
 import { fallbackResponse } from "@/server/http-response"
 import { readLocationMappings, saveLocationMapping } from "@/server/inventory-location-settings"
 
@@ -19,9 +18,9 @@ export async function PATCH(request: Request) {
   // Which locations count is one of the store's settings.
   requireAdmin(s)
   try {
-    return Response.json(await saveLocationMapping(s, await request.json()))
+    return Response.json(await saveLocationMapping(s, await requestJson(request)))
   } catch (error) {
-    if (error instanceof ZodError || error instanceof SyntaxError) {
+    if (error instanceof InvalidRequestError) {
       return errorResponse("invalidLocationSettings", 400)
     }
     return fallbackResponse(error, "locationSettingsUnavailable")

@@ -55,13 +55,12 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
 }
 
 export async function newOrderPage(
-  searchParams: Record<string, string | string[]>
+  params: Record<string, string | string[]>
 ): Promise<React.ComponentProps<typeof OrderBuilder>> {
   const [s, t] = await Promise.all([session(), serverTranslator("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   requirePage(s, "prices")
-  const params = await searchParams
   const [rows, deliveries, initialItems, needsBarcode, forwarding] = await Promise.all([
     db()
       .select()

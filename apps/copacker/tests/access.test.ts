@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from "vitest"
-import { httpResponse } from "../src/server/http-response"
-
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("@/db", () => ({ db: () => null }))
 
@@ -9,6 +7,7 @@ import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
 import { POST as action } from "../src/server/http/api/action"
 import { GET as purchaseOrderPdf } from "../src/server/http/api/orders/$id/po"
 import { GET as salesOrders } from "../src/server/http/api/sales/orders"
+import { served } from "./served"
 import { signedIn, testSession } from "./test-session"
 
 const actor = (kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}) =>
@@ -98,13 +97,10 @@ describe("the server's checks", () => {
     const approval = await send("shipment.approve", { id: "00000000-0000-4000-8000-000000000002", revision: 1 })
     expect(approval.status).toBe(403)
     expect(await approval.json()).toEqual({ error: "Ask an admin for access to prices and costs" })
-    await expect(
-      httpResponse(() =>
-        purchaseOrderPdf(new Request("http://localhost:3000/api/orders/x/po"), {
-          params: { id: "00000000-0000-4000-8000-000000000003" }
-        })
-      ).then((response) => response.status)
-    ).resolves.toBe(403)
+    const po = await served(purchaseOrderPdf)(new Request("http://localhost:3000/api/orders/x/po"), {
+      params: { id: "00000000-0000-4000-8000-000000000003" }
+    })
+    expect(po.status).toBe(403)
   })
 
   it("keeps handing over and deleting the workspace to its owner", async () => {
@@ -121,8 +117,6 @@ describe("the server's checks", () => {
 
   it("answers a read of a page the member doesn't have with 403", async () => {
     signedIn.actor = actor("buyer", "member", { orders: "edit" })
-    expect((await httpResponse(() => salesOrders(new Request("http://localhost:3000/api/sales/orders")))).status).toBe(
-      403
-    )
+    expect((await served(salesOrders)(new Request("http://localhost:3000/api/sales/orders"))).status).toBe(403)
   })
 })
