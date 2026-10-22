@@ -139,8 +139,9 @@ export default definePreview({
     router: {},
     viewport: { options: INITIAL_VIEWPORTS },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
-    // Accessibility checks report in the panel and in tests without failing them.
-    a11y: { test: "todo" }
+    // Accessibility checks report in the panel only. In test runs they failed nothing and took a third of the time, so
+    // tests skip them until the stories pass them and they can fail instead.
+    a11y: { test: "off" }
   },
   // The story's database rows and language, ready before it renders, for client components and the mocked server alike.
   // Each story gets only the rows its `db` parameter gives, none without one, so one story's rows never leak into the
