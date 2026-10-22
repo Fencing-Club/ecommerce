@@ -17,6 +17,9 @@ import { ShipmentTransportSettings } from "./shipment-transport"
 const actions = fn()
 const shipment = shipmentRecord()
 const [tote, apron, basket] = order.items
+// The PO's other shipments hold all but these pieces of each line, which this shipment packs.
+const leaving = (left: Record<string, number>) =>
+  Object.fromEntries(order.items.map((item) => [item.id, item.pieces - (left[item.id] ?? 0)]))
 const savedAddress = { id: "5d6e7f80-1a2b-4c3d-8e9f-000000000001", name: "Ningbo factory", address: pickupAddress }
 // Today where the stories are set, which packing can finish on at the earliest.
 const today = zonedDay(Date.now(), storyTimeZone)
@@ -135,7 +138,7 @@ const meta = preview.meta({
     shipmentId: shipment.id,
     revision: 1,
     orderRevision: 1,
-    availablePieces: { [tote!.id]: 240, [apron!.id]: 120, [basket!.id]: 60 },
+    reserved: {},
     order,
     initial: null,
     addresses: []
@@ -276,7 +279,7 @@ export const FixFields = meta.story({
 
 // A complete draft from the only saved address: the check finds what Amazon won't take, by carton.
 export const CheckFindsIssues = meta.story({
-  args: { initial: draft, addresses: [savedAddress], availablePieces: { [tote!.id]: 80 } },
+  args: { initial: draft, addresses: [savedAddress], reserved: leaving({ [tote!.id]: 80 }) },
   beforeEach: ({ msw }) => {
     msw.use(
       packingActions({
@@ -327,7 +330,7 @@ export const Cartons = meta.story({
   args: {
     initial: { ...draft, cartons: draft.cartons!.map((carton, index) => ({ ...carton, weight: 12 + index })) },
     addresses: [savedAddress],
-    availablePieces: { [tote!.id]: 100 }
+    reserved: leaving({ [tote!.id]: 100 })
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
@@ -707,12 +710,21 @@ export const AwdConfigurationMismatch = meta.story({
   }
 })
 
+// A title beside the form's actions, as the shipment page has.
+function TitledHeader({ title, actions }: { title: string; actions: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      {actions}
+    </div>
+  )
+}
 export const GermanPackingErrors = meta.story({
   args: {
     order: awdOrder,
     initial: awdErrors,
     addresses: [savedAddress],
-    heading: <h1 className="text-2xl font-semibold">Sendung 1</h1>
+    renderHeader: (actions) => <TitledHeader title="Sendung 1" actions={actions} />
   },
   globals: { locale: "de", viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
@@ -724,7 +736,7 @@ export const AwdPackingErrorsMobile = meta.story({
     order: awdOrder,
     initial: awdErrors,
     addresses: [savedAddress],
-    heading: <h1 className="text-2xl font-semibold">Shipment 1</h1>
+    renderHeader: (actions) => <TitledHeader title="Shipment 1" actions={actions} />
   },
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ canvas }) => {
