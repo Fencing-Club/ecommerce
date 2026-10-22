@@ -133,6 +133,10 @@ async function executePreview(mode: "deploy" | "remove" | "discover", timings: P
         return
       }
       await remove(settings.PR_NUMBER, branch)
+      // Tells the cleanup workflow to mark the PR's preview comment removed.
+      if (process.env.GITHUB_OUTPUT) {
+        appendFileSync(process.env.GITHUB_OUTPUT, "removed=true\n")
+      }
     } else {
       if (hosting) {
         const pr = await pullRequest(settings.PR_NUMBER)
