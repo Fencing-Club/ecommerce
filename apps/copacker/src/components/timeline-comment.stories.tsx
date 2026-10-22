@@ -90,15 +90,23 @@ export const Posting = meta.story({
   }
 })
 
+// A failure shows inside the box, between what was written and the Post button.
 export const Fails = meta.story({
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ error: "This purchase order is closed" }, { status: 409 }))
-    const box = canvas.getByRole("textbox", { name: "Comment" })
-    await userEvent.type(box, "Cartons ship Friday")
+    recordActions(msw, () => new HttpResponse(null, { status: 500 }))
+    const textbox = canvas.getByRole("textbox", { name: "Comment" })
+    await userEvent.type(textbox, "Cartons ship Friday")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("This purchase order is closed")
+    const alert = await canvas.findByRole("alert")
+    await expect(alert).toHaveTextContent("Something went wrong. Try again.")
+    const box = within(textbox.parentElement!)
+    await expect(box.getByRole("alert")).toBe(alert)
+    await expect(textbox).toHaveAccessibleDescription(
+      "Only your team can see this comment. Something went wrong. Try again."
+    )
     // The comment stays to post again.
-    await expect(box).toHaveValue("Cartons ship Friday")
+    await expect(textbox).toHaveValue("Cartons ship Friday")
+    await expect(box.getByRole("button", { name: "Post" })).toBeEnabled()
   }
 })
 

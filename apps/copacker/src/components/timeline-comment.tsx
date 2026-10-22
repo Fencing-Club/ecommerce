@@ -1,12 +1,15 @@
-import { Lock, Users } from "lucide-react"
+import { CircleAlert, Lock, Users } from "lucide-react"
 import { useId, useRef } from "react"
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { SubmitButton } from "@/components/form-feedback"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useMessageText } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
+import { cn } from "@/lib/utils"
 
 export type PostedComment = { message: string; visibility: "internal" | "shared" }
 
@@ -15,7 +18,8 @@ const schema = z.object({
   visibility: z.enum(["internal", "shared"])
 })
 
-// The comment box at the top of a PO's timeline, like Shopify's.
+// The comment box at the top of a PO's timeline, like Shopify's. It's opaque, so the timeline's line can start behind
+// it, and a failure shows inside it, between what was written and the Post button.
 export function TimelineComment({
   orderId,
   counterparty = "supplier",
@@ -25,7 +29,9 @@ export function TimelineComment({
   counterparty?: "supplier" | "customer"
   onPosted?: (comment: PostedComment) => void
 }) {
-  const hintId = useId()
+  const hintId = useId(),
+    errorId = useId()
+  const messageText = useMessageText()
   const posted = useRef<PostedComment | null>(null)
   const t = useTranslations("orders.timeline.comment")
   const { form, submit } = useActionForm<typeof schema>({
@@ -45,13 +51,19 @@ export function TimelineComment({
   const { field } = useController({ control: form.control, name: "message" })
   const { field: visibility } = useController({ control: form.control, name: "visibility" })
   const sharedHint = counterparty === "supplier" ? "supplierHint" : "customerHint"
+  const error = form.formState.errors.root?.server?.message ?? form.formState.errors.message?.message
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-2">
-      <div className="overflow-hidden rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-lg border bg-background focus-within:ring-3 focus-within:ring-ring/50",
+          error ? "border-destructive-border" : "border-input focus-within:border-ring"
+        )}
+      >
         <Textarea
           {...field}
           aria-label={t("label")}
-          aria-describedby={hintId}
+          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
           placeholder={t("placeholder")}
           className="min-h-18 resize-none rounded-none border-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
           onKeyDown={(event) => {
@@ -63,6 +75,16 @@ export function TimelineComment({
             }
           }}
         />
+        {error && (
+          <Alert
+            id={errorId}
+            variant="destructive"
+            className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint"
+          >
+            <CircleAlert aria-hidden />
+            <AlertDescription className="text-[13px]/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
+          </Alert>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/50 px-2 py-1.5">
           <Select
             value={visibility.value}
@@ -102,10 +124,9 @@ export function TimelineComment({
           </SubmitButton>
         </div>
       </div>
-      <p id={hintId} className="text-xs text-muted-foreground">
+      <p id={hintId} className="text-end text-xs text-muted-foreground">
         {t(visibility.value === "internal" ? "internalHint" : sharedHint)}
       </p>
-      <FormError message={form.formState.errors.root?.server?.message ?? form.formState.errors.message?.message} />
     </form>
   )
 }

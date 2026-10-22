@@ -3,8 +3,10 @@ import { money } from "@repo/aisle"
 import { ChevronDown, Lock, Users } from "lucide-react"
 import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { TimelineEvent } from "@/lib/timeline-events"
+import { cn } from "@/lib/utils"
 import { TimelineComment, type PostedComment } from "./timeline-comment"
 
 export type TimelineEntry = {
@@ -31,22 +33,25 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("")
 
-function Avatar({ name }: { name: string }) {
+// A comment's author. The avatar is positioned, so it paints over the timeline's line.
+function AuthorAvatar({ name }: { name: string }) {
   return (
-    <span
-      aria-hidden
-      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary"
-    >
-      {initials(name)}
-    </span>
+    <Avatar aria-hidden className="size-7">
+      <AvatarFallback className="bg-primary-soft text-xs font-semibold text-primary">{initials(name)}</AvatarFallback>
+    </Avatar>
   )
 }
 
+// Hides the timeline's line below the last stop. It comes before the stop's dot or avatar, which paint over it.
+function LineEnd({ className }: { className: string }) {
+  return <span aria-hidden className={cn("absolute bottom-0 -start-7 w-1 bg-background", className)} />
+}
+
 // A PO's timeline, like Shopify's: a comment box, then what happened, newest first and grouped by day. Comments show
-// who wrote them, with their workspace when it's another company's.
+// who wrote them, with their workspace when it's another company's. One line runs from the box's bottom edge through
+// every stop to the last one: it's drawn behind the opaque box and hidden below the last stop.
 export function PoTimeline({
   orderId,
-  viewer,
   viewerOrg,
   timeZone,
   entries,
@@ -55,7 +60,6 @@ export function PoTimeline({
   onCommentPosted
 }: {
   orderId: string
-  viewer: string
   viewerOrg: string
   timeZone?: string
   entries: TimelineEntry[]
@@ -81,101 +85,110 @@ export function PoTimeline({
     }
     return groups
   }, [])
+  const lastEntry = entries.at(-1)
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-4 text-sm">
       <h2 id={titleId} className="font-semibold">
         {t("title")}
       </h2>
-      <div className="flex gap-3">
-        <Avatar name={viewer} />
-        <div className="min-w-0 flex-1">
-          <TimelineComment orderId={orderId} counterparty={counterparty} onPosted={onCommentPosted} />
-        </div>
-      </div>
-      <div className="relative flex flex-col gap-5 ps-10">
-        {days.map((group) => (
-          <div key={group.day} className="flex flex-col gap-3">
-            <h3 className="text-xs font-medium text-muted-foreground">{group.day}</h3>
-            <ol className="relative flex flex-col gap-3 before:absolute before:top-3 before:bottom-1 before:-start-[1.6875rem] before:w-0.5 before:bg-border">
-              {group.entries.map((entry) => (
-                <li key={entry.key} className="relative">
-                  {entry.comment ? (
-                    <div className="-ms-10 flex gap-3">
-                      <Avatar name={entry.author ?? "?"} />
-                      <div className="min-w-0 flex-1 rounded-lg bg-muted/60 px-3 py-2">
-                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                          <p className="font-medium">
-                            {entry.author}
-                            {entry.authorOrg && entry.authorOrg !== viewerOrg && (
-                              <span className="font-normal text-muted-foreground">
-                                {" "}
-                                {t("atOrg", { org: entry.authorOrg })}
-                              </span>
-                            )}
-                          </p>
-                          <time className="shrink-0 text-xs text-muted-foreground" dateTime={entry.at.toISOString()}>
-                            {time(entry.at)}
-                          </time>
+      <div className="relative flex flex-col gap-4">
+        {entries.length > 0 && <span aria-hidden className="absolute inset-y-0 start-3.25 w-0.5 bg-border" />}
+        <TimelineComment orderId={orderId} counterparty={counterparty} onPosted={onCommentPosted} />
+        {days.length > 0 && (
+          <div className="flex flex-col gap-5">
+            {days.map((group) => (
+              <div key={group.day} className="flex flex-col gap-3 ps-10">
+                <h3 className="text-xs font-medium text-muted-foreground">{group.day}</h3>
+                <ol className="flex flex-col gap-3">
+                  {group.entries.map((entry) => (
+                    <li key={entry.key} className="relative">
+                      {/* The line stops at the last stop's centre: its avatar's, or its dot's. */}
+                      {entry === lastEntry && <LineEnd className={entry.comment ? "top-3.5" : "top-2.75"} />}
+                      {entry.comment ? (
+                        <div className="-ms-10 flex gap-3">
+                          <AuthorAvatar name={entry.author ?? "?"} />
+                          <div className="min-w-0 flex-1 rounded-lg bg-muted/60 px-3 py-2">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                              <p className="font-medium">
+                                {entry.author}
+                                {entry.authorOrg && entry.authorOrg !== viewerOrg && (
+                                  <span className="font-normal text-muted-foreground">
+                                    {" "}
+                                    {t("atOrg", { org: entry.authorOrg })}
+                                  </span>
+                                )}
+                              </p>
+                              <time
+                                className="shrink-0 text-xs text-muted-foreground"
+                                dateTime={entry.at.toISOString()}
+                              >
+                                {time(entry.at)}
+                              </time>
+                            </div>
+                            <p className="mt-1 whitespace-pre-wrap wrap-anywhere">{eventText(entry.content)}</p>
+                            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              {entry.visibility === "internal" ? (
+                                <Lock className="size-3.5" />
+                              ) : (
+                                <Users className="size-3.5" />
+                              )}
+                              {t(entry.visibility === "internal" ? "comment.internal" : sharedLabel)}
+                            </p>
+                          </div>
                         </div>
-                        <p className="mt-1 whitespace-pre-wrap wrap-anywhere">{eventText(entry.content)}</p>
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          {entry.visibility === "internal" ? (
-                            <Lock className="size-3.5" />
-                          ) : (
-                            <Users className="size-3.5" />
-                          )}
-                          {t(entry.visibility === "internal" ? "comment.internal" : sharedLabel)}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span
-                        aria-hidden
-                        className="absolute top-1.5 -start-[1.9375rem] size-2.5 rounded-full border-2 border-background bg-muted-foreground"
-                      />
-                      <div className="flex items-start justify-between gap-3">
-                        <EventText
-                          text={
-                            entry.revisionNumber && entry.revisionNumber > 1
-                              ? t("revision", { number: entry.revisionNumber, reason: eventText(entry.content) })
-                              : eventText(entry.content)
-                          }
-                          details={entry.details}
-                          lines={entry.revision?.items.map((item) => {
-                            const values = { sku: item.buyerSku, count: item.pieces }
-                            const supplierSku = item.supplierSku
-                            if (!prices) {
-                              return {
-                                key: item.id,
-                                text: supplierSku
-                                  ? t("revisionLineNoPriceWithSupplierSku", { ...values, supplierSku })
-                                  : t("revisionLineNoPrice", values)
+                      ) : (
+                        <>
+                          <span
+                            aria-hidden
+                            className="absolute top-1.5 -start-[1.9375rem] size-2.5 rounded-full border-2 border-background bg-muted-foreground"
+                          />
+                          <div className="flex items-start justify-between gap-3">
+                            <EventText
+                              text={
+                                entry.revisionNumber && entry.revisionNumber > 1
+                                  ? t("revision", { number: entry.revisionNumber, reason: eventText(entry.content) })
+                                  : eventText(entry.content)
                               }
-                            }
-                            const priced = { ...values, price: money(item.unitPrice, entry.revision!.currency, locale) }
-                            return {
-                              key: item.id,
-                              text: supplierSku
-                                ? t("revisionLineWithSupplierSku", { ...priced, supplierSku })
-                                : t("revisionLine", priced)
-                            }
-                          })}
-                        />
-                        <time
-                          className="shrink-0 pt-0.5 text-xs text-muted-foreground"
-                          dateTime={entry.at.toISOString()}
-                        >
-                          {time(entry.at)}
-                        </time>
-                      </div>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ol>
+                              details={entry.details}
+                              lines={entry.revision?.items.map((item) => {
+                                const values = { sku: item.buyerSku, count: item.pieces }
+                                const supplierSku = item.supplierSku
+                                if (!prices) {
+                                  return {
+                                    key: item.id,
+                                    text: supplierSku
+                                      ? t("revisionLineNoPriceWithSupplierSku", { ...values, supplierSku })
+                                      : t("revisionLineNoPrice", values)
+                                  }
+                                }
+                                const priced = {
+                                  ...values,
+                                  price: money(item.unitPrice, entry.revision!.currency, locale)
+                                }
+                                return {
+                                  key: item.id,
+                                  text: supplierSku
+                                    ? t("revisionLineWithSupplierSku", { ...priced, supplierSku })
+                                    : t("revisionLine", priced)
+                                }
+                              })}
+                            />
+                            <time
+                              className="shrink-0 pt-0.5 text-xs text-muted-foreground"
+                              dateTime={entry.at.toISOString()}
+                            >
+                              {time(entry.at)}
+                            </time>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </section>
   )
