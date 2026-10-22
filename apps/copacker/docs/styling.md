@@ -45,7 +45,18 @@ The design has no dark values, so the dark theme mixes each tint from its tone a
 Controls follow the kit's sizes: buttons, icon buttons and a list's filter controls are 34px, form inputs 36px, touch
 controls on phones and packing 44px, all with an 8px radius (`rounded-md`); cards take 10px (`rounded-lg`).
 
-Dark mode is the `.dark` class on `<html>`, set by the theme menu; use Tailwind's `dark:` variant.
+Dark mode is the `.dark` class on `<html>`; use Tailwind's `dark:` variant. The account menu's Theme chooses it:
+
+- **The store:** `themeStore` in `src/lib/theme.ts`, from `@buildkitgg/shadcn-theme`. It keeps a light or dark choice
+  in localStorage under `theme` (as `{"theme":"dark"}`), follows the computer without one, and sets `.dark` and
+  `color-scheme` on `<html>`. Choosing System calls `reset()`, so nothing is kept.
+- **Starting it:** `Providers` starts it in the browser. Starting is counted, so the store keeps running while one
+  layout replaces another.
+- **First paint:** `ThemeScript` in the root layout runs the store's init script before the page paints. It first
+  rewrites a choice saved before the store, as the bare word `light` or `dark`, in the store's format.
+- **Reading it:** components call `useTheme(themeStore)` from `@buildkitgg/react-theme`; there's no provider. On the
+  server and while hydrating, it reports System.
+- **Storybook:** the toolbar's theme calls `themeStore.setTheme`.
 
 ## Page patterns
 

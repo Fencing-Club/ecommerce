@@ -1,7 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router"
 import { IntlProvider } from "use-intl"
-import { ThemeScript } from "@/components/theme-provider"
+import { ThemeScript } from "@/components/theme-script"
 import { direction } from "@/i18n/locales"
 import { documentFonts } from "@/styles/document-fonts"
 import { readDocument } from "../document.functions"
