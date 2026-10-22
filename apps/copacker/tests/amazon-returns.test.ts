@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { database, setUpTestDatabase } from "./test-db"
 vi.mock("@/db", () => import("./test-db"))
+import { amazonMonthlyReports } from "../src/server/amazon-monthly-reports"
 import { monthlyReportWindows } from "../src/server/amazon-report-sync"
-import { amazonReturnsStatus, syncAmazonReturns } from "../src/server/amazon-returns"
 
 const orgId = randomUUID(),
   otherId = randomUUID()
@@ -37,32 +37,32 @@ beforeEach(async () => {
 
 describe("Amazon returns ingestion", () => {
   it("backfills twelve completed months and the current partial month, then refreshes without multiplying rows", async () => {
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(13)
     expect(await database.select().from(tables.amazonReturns)).toHaveLength(2)
     const windows = await database.select().from(tables.amazonReturnReports)
     expect(windows).toHaveLength(13)
     expect(windows.every((window) => window.status === "imported" && window.coveredTo)).toBe(true)
     report.mockClear()
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(2)
     expect(await database.select().from(tables.amazonReturns)).toHaveLength(2)
     report.mockImplementation(async (request) =>
       request.dataStartTime.startsWith("2026-10") ? `${header}\n${row.replace("SELLABLE", "CUSTOMER_DAMAGED")}` : header
     )
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(await database.select().from(tables.amazonReturns)).toMatchObject([
       { quantity: 1, disposition: "CUSTOMER_DAMAGED" }
     ])
     report.mockResolvedValue(header)
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(await database.select().from(tables.amazonReturns)).toEqual([])
   })
 
   it("keeps previous data on cancellation or malformed reports and continues other months", async () => {
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     report.mockImplementation(async (request) => (request.dataStartTime.startsWith("2026-10") ? null : "broken"))
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(await database.select().from(tables.amazonReturns)).toHaveLength(2)
     const windows = await database.select().from(tables.amazonReturnReports)
     expect(
@@ -86,7 +86,7 @@ describe("Amazon returns ingestion", () => {
       }
       return `${header}\n${row}`
     })
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(13)
     expect(await database.select().from(tables.amazonReturns)).toEqual([])
     expect(
@@ -104,32 +104,34 @@ describe("Amazon returns ingestion", () => {
         .where(eq(tables.connections.orgId, orgId))
       return `${header}\n${row}`
     })
-    await expect(syncAmazonReturns(input, owned, now)).rejects.toThrow("superseded")
+    await expect(amazonMonthlyReports.returns.sync(input, owned, now)).rejects.toThrow("superseded")
     expect(await database.select().from(tables.amazonReturnReports)).toEqual([])
     await database.update(tables.connections).set({ externalId: "SELLER1" }).where(eq(tables.connections.orgId, orgId))
     owned.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("Lease lost"))
-    await expect(syncAmazonReturns(input, owned, now)).rejects.toThrow("Lease lost")
+    await expect(amazonMonthlyReports.returns.sync(input, owned, now)).rejects.toThrow("Lease lost")
     expect(await database.select().from(tables.amazonReturns)).toEqual([])
   })
 
   it("isolates coverage by workspace and seller and stops superseded work before requesting reports", async () => {
-    await syncAmazonReturns(input, owned, now)
-    const status = await amazonReturnsStatus(otherId, "SELLER1")
+    await amazonMonthlyReports.returns.sync(input, owned, now)
+    const status = await amazonMonthlyReports.returns.status(otherId, "SELLER1")
     expect(status.windows.every((window) => window.status === "not_imported" && window.rows === null)).toBe(true)
-    expect((await amazonReturnsStatus(orgId, "SELLER2")).windows.every((window) => window.rows === null)).toBe(true)
+    expect(
+      (await amazonMonthlyReports.returns.status(orgId, "SELLER2")).windows.every((window) => window.rows === null)
+    ).toBe(true)
     report.mockClear()
-    await syncAmazonReturns({ ...input, revision: 2 }, owned, now)
+    await amazonMonthlyReports.returns.sync({ ...input, revision: 2 }, owned, now)
     expect(report).not.toHaveBeenCalled()
   })
 
   it("revisits older successful months for corrections", async () => {
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     await database
       .update(tables.amazonReturnReports)
       .set({ checkedAt: new Date("2026-08-01") })
       .where(eq(tables.amazonReturnReports.from, new Date("2026-05-01")))
     report.mockClear()
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(3)
   })
 
@@ -142,17 +144,17 @@ describe("Amazon returns ingestion", () => {
 
   it("exposes incomplete coverage after the day advances and recovers cancelled months", async () => {
     report.mockImplementation(async (request) => (request.dataStartTime.startsWith("2026-09") ? null : header))
-    await syncAmazonReturns(input, owned, now)
-    const before = await amazonReturnsStatus(orgId, "SELLER1", now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
+    const before = await amazonMonthlyReports.returns.status(orgId, "SELLER1", now)
     expect(before.windows[0]).toMatchObject({ complete: true, rows: 0 })
     expect(before.windows[1]).toMatchObject({ complete: false, status: "unavailable", rows: null })
     const tomorrow = new Date("2026-10-17T12:00:00Z")
-    expect((await amazonReturnsStatus(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(false)
+    expect((await amazonMonthlyReports.returns.status(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(false)
     report.mockResolvedValue(header)
-    await syncAmazonReturns(input, owned, tomorrow)
-    expect((await amazonReturnsStatus(orgId, "SELLER1", tomorrow)).windows.every((window) => window.complete)).toBe(
-      true
-    )
+    await amazonMonthlyReports.returns.sync(input, owned, tomorrow)
+    expect(
+      (await amazonMonthlyReports.returns.status(orgId, "SELLER1", tomorrow)).windows.every((window) => window.complete)
+    ).toBe(true)
   })
 
   it("preserves other sellers and workspaces when replacing a month", async () => {
@@ -167,9 +169,9 @@ describe("Amazon returns ingestion", () => {
       { ...other, orgId: otherId, externalAccountId: "SELLER1" },
       { ...other, orgId, externalAccountId: "SELLER2" }
     ])
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     report.mockResolvedValue(header)
-    await syncAmazonReturns(input, owned, now)
+    await amazonMonthlyReports.returns.sync(input, owned, now)
     const remaining = await database.select().from(tables.amazonReturns)
     expect(remaining).toHaveLength(2)
     expect(remaining.every((row) => row.quantity === 7)).toBe(true)

@@ -6,7 +6,7 @@ import * as tables from "../src/db/schema"
 import { removalReport } from "./fixtures/amazon-removals"
 import { database, setUpTestDatabase } from "./test-db"
 vi.mock("@/db", () => import("./test-db"))
-import { amazonRemovalsStatus, syncAmazonRemovals } from "../src/server/amazon-removals"
+import { amazonMonthlyReports } from "../src/server/amazon-monthly-reports"
 
 const orgId = randomUUID(),
   otherId = randomUUID()
@@ -35,8 +35,10 @@ beforeEach(async () => {
     ])
   })
 })
-const sync = (kind: "orders" | "shipments", date = now) => syncAmazonRemovals(input, kind, owned, date)
-const status = (kind: "orders" | "shipments", date = now) => amazonRemovalsStatus(orgId, "SELLER1", kind, date)
+const family = (kind: "orders" | "shipments") =>
+  kind === "orders" ? amazonMonthlyReports.removalOrders : amazonMonthlyReports.removalShipments
+const sync = (kind: "orders" | "shipments", date = now) => family(kind).sync(input, owned, date)
+const status = (kind: "orders" | "shipments", date = now) => family(kind).status(orgId, "SELLER1", date)
 describe("Amazon removal evidence", () => {
   it("backfills each source independently and keeps overlapping quantities out of stock/profit", async () => {
     await sync("orders")
@@ -107,7 +109,7 @@ describe("Amazon removal evidence", () => {
     expect((await status("orders")).windows[0]).toMatchObject({ complete: true, rows: 0 })
     expect((await status("shipments")).windows[0]).toMatchObject({ complete: true, rows: 2 })
     expect(
-      (await amazonRemovalsStatus(otherId, "SELLER1", "orders", now)).windows.every((window) => window.rows === null)
+      (await family("orders").status(otherId, "SELLER1", now)).windows.every((window) => window.rows === null)
     ).toBe(true)
   })
   it("keeps prior evidence after cancellation, malformed values and out-of-window dates", async () => {

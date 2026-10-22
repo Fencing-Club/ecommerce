@@ -1,46 +1,25 @@
-import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { analyticsEvidence, analyticsFeeds, connections, salesSyncs } from "@/db/schema"
+import { analyticsEvidence, analyticsFeeds } from "@/db/schema"
+import { lockSyncScope } from "./sales-sync-coverage"
+
+// Saves a page of provider evidence and its feed's state together. Only the sales sync revision that collected them
+// may publish, and only while its account is still connected.
 export async function publishAnalyticsFeed(
-  input: { orgId: string; externalAccountId: string; revision: number },
+  input: { orgId: string; source: "amazon" | "shopify"; externalAccountId: string; revision: number },
   dataset: string,
   rows: { id: string; data: Record<string, unknown> }[],
   state: typeof analyticsFeeds.$inferInsert.state,
-  assertOwned: () => Promise<void>
+  assertOwned: () => Promise<void>,
+  observedAt = new Date()
 ) {
   await assertOwned()
-  const { orgId, externalAccountId, revision } = input
+  const { orgId, source, externalAccountId, revision } = input
   await db().transaction(async (tx) => {
-    const [account] = await tx
-      .select({ id: connections.externalId })
-      .from(connections)
-      .where(
-        and(
-          eq(connections.orgId, orgId),
-          eq(connections.provider, "amazon"),
-          eq(connections.externalId, externalAccountId)
-        )
-      )
-      .for("share")
-    const [sync] = await tx
-      .select({ revision: salesSyncs.revision })
-      .from(salesSyncs)
-      .where(
-        and(
-          eq(salesSyncs.orgId, orgId),
-          eq(salesSyncs.source, "amazon"),
-          eq(salesSyncs.externalAccountId, externalAccountId),
-          eq(salesSyncs.revision, revision)
-        )
-      )
-      .for("share")
-    if (!account || !sync) {
-      throw new Error("Analytics account changed")
-    }
+    await lockSyncScope(tx, { orgId, source, revision, externalAccountId }, "share")
     for (const row of rows) {
       await tx
         .insert(analyticsEvidence)
-        .values({ orgId, source: "amazon", externalAccountId, dataset, sourceId: row.id, data: row.data })
+        .values({ orgId, source, externalAccountId, dataset, sourceId: row.id, data: row.data, observedAt })
         .onConflictDoUpdate({
           target: [
             analyticsEvidence.orgId,
@@ -49,15 +28,15 @@ export async function publishAnalyticsFeed(
             analyticsEvidence.dataset,
             analyticsEvidence.sourceId
           ],
-          set: { data: row.data, observedAt: new Date() }
+          set: { data: row.data, observedAt }
         })
     }
     await tx
       .insert(analyticsFeeds)
-      .values({ orgId, source: "amazon", externalAccountId, dataset, state })
+      .values({ orgId, source, externalAccountId, dataset, state, checkedAt: observedAt })
       .onConflictDoUpdate({
         target: [analyticsFeeds.orgId, analyticsFeeds.source, analyticsFeeds.externalAccountId, analyticsFeeds.dataset],
-        set: { state, checkedAt: new Date() }
+        set: { state, checkedAt: observedAt }
       })
   })
 }

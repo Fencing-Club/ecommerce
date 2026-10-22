@@ -1,13 +1,12 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, desc, sql, inArray, or } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
+import type { Executor } from "@/db"
 import {
   amazonTransactions,
   amazonReimbursements,
   amazonReimbursementReports,
   amazonProductMappings,
-  connections,
   salesSyncs,
   stockSnapshots
 } from "@/db/schema"
@@ -16,7 +15,8 @@ import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconcil
 import { reimbursementAccounting } from "./amazon-reimbursement-accounting"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog, importedProductMatch } from "./analytics-product-evidence"
-import { analyticsSnapshot } from "./analytics-snapshot"
+import { analyticsPage } from "./analytics-snapshot"
+import { connectedAccount } from "./provider-accounts"
 
 export const reconciliationInput = z
   .object({
@@ -66,18 +66,12 @@ const postingLimit = 5000
 
 // Derived on demand from a consistent local snapshot. No external calls, writes or stale persisted row links.
 export async function amazonReconciliation(orgId: string, input: z.infer<typeof reconciliationInput>) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(
-        tx,
-        orgId,
-        { ...input, page: Math.max(input.page, input.postingPage ?? 0, input.candidatePage ?? 0) },
-        JSON.stringify(["reconciliation", input.from, input.to, input.source])
-      )
-      const [account] = await tx
-        .select({ externalId: connections.externalId })
-        .from(connections)
-        .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  return analyticsPage(
+    orgId,
+    { ...input, page: Math.max(input.page, input.postingPage ?? 0, input.candidatePage ?? 0) },
+    JSON.stringify(["reconciliation", input.from, input.to, input.source]),
+    async (tx, snapshot) => {
+      const account = await connectedAccount(orgId, "amazon", { executor: tx })
       if (!account) {
         return { snapshot, connected: false, rows: [], hasMore: false }
       }
@@ -274,13 +268,12 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
           "Breakdown and item checks are independent views of the same transaction total, never additive."
         ]
       }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
+    }
   )
 }
 
 async function reimbursementFamily(
-  tx: Pick<ReturnType<typeof db>, "select">,
+  tx: Executor,
   orgId: string,
   externalAccountId: string,
   marketplaceId: string,
