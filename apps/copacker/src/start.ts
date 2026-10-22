@@ -1,5 +1,6 @@
-import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start"
+import { createCsrfMiddleware, createMiddleware, createServerOnlyFn, createStart } from "@tanstack/react-start"
 import { deleteCookie, getCookie } from "@tanstack/react-start/server"
+import { appOriginPolicy } from "@/server/http-response"
 import { resumeCookie, returnPath, siteUrlFor } from "@/server/security"
 
 const resumeSignOut = createMiddleware().server(async ({ request, next }) => {
@@ -10,6 +11,13 @@ const resumeSignOut = createMiddleware().server(async ({ request, next }) => {
   }
   return next()
 })
+// Only the server checks origins. The policy reads server settings and messages, so the browser's build of this file
+// leaves it out.
+const appOrigin = createCsrfMiddleware({
+  filter: createServerOnlyFn(appOriginPolicy.filter),
+  origin: createServerOnlyFn(appOriginPolicy.origin),
+  failureResponse: createServerOnlyFn(appOriginPolicy.failureResponse)
+})
 export const startInstance = createStart(() => ({
-  requestMiddleware: [resumeSignOut, createCsrfMiddleware({ filter: ({ handlerType }) => handlerType === "serverFn" })]
+  requestMiddleware: [resumeSignOut, appOrigin]
 }))

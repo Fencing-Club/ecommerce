@@ -94,6 +94,9 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
   A page's title goes through the same check (`titleFor`), so No access keeps its own tab title.
 - Every request checks too: `requireAccess`, `requireAdmin` and `requireOwner` throw an `AccessError`, which routes
   answer with 403 and its message, and read-only routes call `requirePage`.
+- A route or page for one kind of workspace calls `requireBuyer` or `requireSupplier` (both `requireKind` in
+  `server/authorization.ts`). Another kind throws an `AccessError` too: 403 with "Switch to a buyer workspace" or its
+  supplier twin from a route, No access on a page. Switching workspace in another tab is the usual way to get there.
 - Catalog pages, downloads and mutations explicitly require price access as well as their catalog grant. This also
   protects existing memberships whose saved grants no longer match the team editor's constraints.
 - `server/workspace-pages.ts` prepares products, catalogs, customers, inventory, sales and restock data before rendering.

@@ -10,7 +10,7 @@ import { db } from "@/db"
 import { connections, productBarcodes, shipments, stockSnapshots } from "@/db/schema"
 import { LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
-import { requireAccess } from "./authorization"
+import { requireAccess, requireBuyer } from "./authorization"
 import { amazonFor, shopifyFor } from "./connections"
 import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
@@ -25,20 +25,16 @@ import type { Session } from "./workspace-session"
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
 
-export class ProductBarcodeError extends StatusError {}
-
 const maxBytes = 32 * 1024 * 1024
 
 async function shopifyDomain(s: Session) {
-  if (s.org.kind !== "buyer") {
-    throw new ProductBarcodeError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const [account] = await db()
     .select({ domain: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
   if (!account) {
-    throw new ProductBarcodeError("connectShopifyBeforeEditing", 409)
+    throw new StatusError("connectShopifyBeforeEditing", 409)
   }
   return account.domain
 }
@@ -115,19 +111,19 @@ function resolveVariant(rows: StockRow[], variantId: string | null, sku: string)
   if (variantId) {
     const row = rows.find((item) => item.variantId === variantId)
     if (!row?.productId) {
-      throw new ProductBarcodeError("productNotSynced", 404)
+      throw new StatusError("productNotSynced", 404)
     }
     return row
   }
   if (!sku) {
-    throw new ProductBarcodeError("enterVariationSku", 400)
+    throw new StatusError("enterVariationSku", 400)
   }
   const matches = rows.filter((item) => item.buyerSku?.trim().toLowerCase() === sku.toLowerCase())
   if (matches.length > 1) {
-    throw new ProductBarcodeError("skuShared", 409, { count: matches.length, sku })
+    throw new StatusError("skuShared", 409, { count: matches.length, sku })
   }
   if (!matches[0]?.productId) {
-    throw new ProductBarcodeError("noVariationWithSku", 404, { sku })
+    throw new StatusError("noVariationWithSku", 404, { sku })
   }
   return matches[0]
 }
@@ -148,11 +144,11 @@ export async function saveProductBarcode(s: Session, form: FormData) {
   const rawVariant = form.get("variantId")
   const variantId = rawVariant === null ? null : variantIdSchema.safeParse(rawVariant)
   if (variantId && !variantId.success) {
-    throw new ProductBarcodeError("chooseVariation", 400)
+    throw new StatusError("chooseVariation", 400)
   }
   const file = form.get("file")
   if (!(file instanceof File) || file.size > maxBytes) {
-    throw new ProductBarcodeError("choosePdfUnder32", 400)
+    throw new StatusError("choosePdfUnder32", 400)
   }
   const rawSku = form.get("sku")
   const sku = typeof rawSku === "string" && rawSku.trim() ? rawSku.trim() : skuFromFileName(file.name)
@@ -162,11 +158,11 @@ export async function saveProductBarcode(s: Session, form: FormData) {
     await validatePdf(bytes)
   } catch (error) {
     throw error instanceof LocalizedError
-      ? new ProductBarcodeError(error.key, 400, error.values)
-      : new ProductBarcodeError("uploadPdfUnder32", 400)
+      ? new StatusError(error.key, 400, error.values)
+      : new StatusError("uploadPdfUnder32", 400)
   }
   if ((await splitPdfPages(bytes)).length !== 1) {
-    throw new ProductBarcodeError("barcodeOnePage", 400)
+    throw new StatusError("barcodeOnePage", 400)
   }
   const objectKey = `barcodes/${s.org.id}/${randomUUID()}.pdf`
   await putFile(objectKey, bytes)
@@ -319,7 +315,7 @@ export async function productLabelFiles(s: Session, variantIds: string[]): Promi
 export async function productLabelFile(s: Session, variantId: string) {
   const [file] = await productLabelFiles(s, [variantId])
   if (!file || "problem" in file) {
-    throw new ProductBarcodeError(file?.problem ?? "variationNoLabel", 404)
+    throw new StatusError(file?.problem ?? "variationNoLabel", 404)
   }
   return file
 }
@@ -363,7 +359,7 @@ async function labelCodes(orgId: string, fbaRows: { sellerSku: string; fnSku?: s
       }
     } catch (error) {
       console.error(JSON.stringify({ event: "label_fnsku_lookup_failed", orgId, error: describeError(error) }))
-      throw new ProductBarcodeError("amazonFnskuUnreachable", 409)
+      throw new StatusError("amazonFnskuUnreachable", 409)
     }
   }
   for (const sku of unsynced) {
@@ -408,7 +404,7 @@ async function countriesOfOrigin(orgId: string, domain: string, variantIds: stri
     })
   } catch (error) {
     console.error(JSON.stringify({ event: "label_origin_lookup_failed", orgId, error: describeError(error) }))
-    throw new ProductBarcodeError("shopifyOriginUnreachable", 409)
+    throw new StatusError("shopifyOriginUnreachable", 409)
   }
 }
 
@@ -617,13 +613,13 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   const labels = (await lineLabels(order)).filter((row) => row.itemId === itemId)
   const label = labels.find((row) => row.state === "missing") ?? labels[0]
   if (!label) {
-    throw new ProductBarcodeError("lineNotOnOrder", 404)
+    throw new StatusError("lineNotOnOrder", 404)
   }
   if (label.state === "none") {
-    throw new ProductBarcodeError("productNeedsNoLabel", 404)
+    throw new StatusError("productNeedsNoLabel", 404)
   }
   if (label.state === "missing") {
-    throw new ProductBarcodeError(label.problemKey, 404)
+    throw new StatusError(label.problemKey, 404)
   }
   const files = await lineLabelFiles(order, labels)
   return {
@@ -650,7 +646,7 @@ export async function shipmentLabelsPdf(
     (item) => (!shipment.amazonNetwork || item.receiver === shipment.amazonNetwork) && (!itemId || item.id === itemId)
   )
   if (itemId && !items.length) {
-    throw new ProductBarcodeError("lineNotOnOrder", 404)
+    throw new StatusError("lineNotOnOrder", 404)
   }
   const labels =
     kind === "suffocation"
@@ -662,7 +658,7 @@ export async function shipmentLabelsPdf(
         )
   const missing = labels.find((label) => label.state === "missing")
   if (itemId && kind !== "all" && missing?.state === "missing") {
-    throw new ProductBarcodeError(missing.problemKey, 404)
+    throw new StatusError(missing.problemKey, 404)
   }
   const files = await lineLabelFiles({ ...order, data }, labels)
   const warnings = kind === "all" || kind === "suffocation" ? await warningLabelFile(items) : null
@@ -672,9 +668,9 @@ export async function shipmentLabelsPdf(
   if (!files.length) {
     // One line with nothing to print says why its label can't be made yet, rather than that it needs none.
     if (itemId && missing?.state === "missing") {
-      throw new ProductBarcodeError(missing.problemKey, 404)
+      throw new StatusError(missing.problemKey, 404)
     }
-    throw new ProductBarcodeError(itemId ? "productNeedsNoLabel" : "shipmentHasNoLabels", 404)
+    throw new StatusError(itemId ? "productNeedsNoLabel" : "shipmentHasNoLabels", 404)
   }
   return {
     name: files.length === 1 ? files[0]!.name : labelFileName(`${data.reference} product labels`),
@@ -692,7 +688,7 @@ export async function orderLabelsPdf(s: Session, orderId: string) {
     files.push({ itemId: "", ...warnings })
   }
   if (!files.length) {
-    throw new ProductBarcodeError("orderHasNoLabels", 404)
+    throw new StatusError("orderHasNoLabels", 404)
   }
   return {
     name: labelFileName(`${order.data.reference} product labels`),
@@ -709,12 +705,12 @@ export async function productsLabelsPdf(s: Session, productIds: string[]) {
     rows.filter((row) => row.productId === productId).map((row) => row.variantId)
   )
   if (variantIds.length > 1000) {
-    throw new ProductBarcodeError("tooManyLabelVariations", 400)
+    throw new StatusError("tooManyLabelVariations", 400)
   }
   const files = await productLabelFiles(s, variantIds)
   const sheets = files.flatMap((file) => ("bytes" in file ? [file.bytes] : []))
   if (!sheets.length) {
-    throw new ProductBarcodeError("noVariationLabels", 404)
+    throw new StatusError("noVariationLabels", 404)
   }
   return { bytes: await combinePdfs(sheets), skipped: files.length - sheets.length }
 }

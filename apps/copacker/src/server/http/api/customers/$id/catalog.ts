@@ -2,16 +2,12 @@ import { z } from "zod"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { assignCatalog } from "@/server/catalogs"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
+import { failureMessage, failureStatus } from "@/server/errors"
 
 const input = z.strictObject({ catalogId: z.uuid().nullable() })
 
 // Gives a customer a catalog, or takes it away so the customer sees every active product at its own price.
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const { catalogId } = input.parse(await request.json())
     const s = await session()
