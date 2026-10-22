@@ -43,7 +43,7 @@ export function RouteCard({
   const via = useWatch({ control, name: "via" })
   const [addingStop, setAddingStop] = useState(false)
   return (
-    <Card className="gap-0 py-0">
+    <Card flush>
       <RouteStops
         supplier={
           <RoutePicker

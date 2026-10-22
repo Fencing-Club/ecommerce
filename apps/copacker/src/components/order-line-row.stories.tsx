@@ -107,7 +107,11 @@ export const Menu = meta.story({
       "href",
       `/api/orders/${orderId}/labels/${order.items[0]!.id}`
     )
-    await expect(screen.getByRole("menuitem", { name: "Download hazard label" })).toBeVisible()
+    // The menu fades in, so its items are checked by where they lead rather than by being visible yet.
+    await expect(screen.getByRole("menuitem", { name: "Download hazard label" })).toHaveAttribute(
+      "href",
+      `/api/orders/${orderId}/labels/warning`
+    )
     await userEvent.click(screen.getByRole("menuitem", { name: "Edit packing details" }))
     const dialog = await shownDialog("Packing details")
     await expect(dialog.getByRole("checkbox", { name: "FNSKU label" })).toBeChecked()

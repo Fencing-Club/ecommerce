@@ -30,7 +30,7 @@ export function ShipmentGroupCard({
   const t = useTranslations("orders.builder")
   const money = useMoney()
   return (
-    <Collapsible defaultOpen render={<Card className="gap-0 overflow-hidden py-0" />}>
+    <Collapsible defaultOpen render={<Card flush />}>
       <div className="flex items-center gap-3 px-3 py-2">
         {select}
         <CollapsibleTrigger className="group flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-sm text-start focus-visible:outline-ring">

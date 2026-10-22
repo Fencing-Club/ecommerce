@@ -148,7 +148,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
 
       <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Card className="gap-0 overflow-hidden py-0">
+          <Card flush>
             <RouteStops
               supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
               stop={stop && <RoutePill icon={<Warehouse />}>{stop}</RoutePill>}

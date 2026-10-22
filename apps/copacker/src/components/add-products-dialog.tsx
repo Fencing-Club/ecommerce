@@ -117,7 +117,7 @@ export function AddProductsDialog({
           <button
             type="button"
             aria-label={title ?? t("trigger")}
-            className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-start text-sm text-muted-foreground transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            className="focus-ring flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-start text-sm text-muted-foreground transition-colors hover:bg-muted/50 focus-visible:border-ring dark:bg-input/30"
           />
         }
       >

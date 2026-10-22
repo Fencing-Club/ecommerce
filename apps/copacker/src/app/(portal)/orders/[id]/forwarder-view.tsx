@@ -34,7 +34,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
       />
 
       <div className="flex max-w-4xl flex-col gap-4">
-        <Card className="gap-0 overflow-hidden py-0">
+        <Card flush>
           <RouteStops
             className="border-b"
             supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}

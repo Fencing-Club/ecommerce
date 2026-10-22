@@ -14,7 +14,7 @@ import { SupplierSkuCell } from "@/components/supplier-sku-cell"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+import { Input, NumberInput } from "@/components/ui/input"
 import { useMoney } from "@/hooks/use-money"
 import { quantityProblem } from "@/lib/catalog-pricing"
 import type { OrderForm } from "@/lib/order-form"
@@ -175,9 +175,8 @@ function CellPieces({
     fieldState
   } = useController<OrderForm, `items.${number}.pieces`>({ name: `items.${index}.pieces` })
   return (
-    <Input
+    <NumberInput
       ref={ref}
-      type="number"
       inputMode="numeric"
       min={packSize}
       step={packSize}
@@ -189,7 +188,7 @@ function CellPieces({
       }}
       onBlur={onBlur}
       aria-invalid={fieldState.invalid}
-      className="text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      className="text-end"
     />
   )
 }
