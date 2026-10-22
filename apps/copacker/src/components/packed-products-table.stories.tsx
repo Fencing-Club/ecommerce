@@ -67,6 +67,18 @@ export const AllPacked = meta.story({
   }
 })
 
+// A line packed past what's left keeps the summary from saying all packed.
+export const Overpacked = meta.story({
+  args: {
+    progress: true,
+    cartons: [carton("A1", 5, tote!.id, 60), carton("B1", 2, apron!.id, 60), carton("C1", 1, basket!.id, 60)]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("3 products")).not.toHaveClass("text-success")
+    await expect(canvas.queryByText("3 products, all packed")).toBeNull()
+  }
+})
+
 // What the PO's other shipments hold isn't this shipment's to pack.
 export const OtherShipments = meta.story({
   args: { reserved: { [tote!.id]: 200 } },

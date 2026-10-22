@@ -39,17 +39,17 @@ export function PackedProductsTable({
     (sum, item) => sum + Math.max(piecesLeft(item, reserved) - (packed[item.id] ?? 0), 0),
     0
   )
+  // A line packed past what's left isn't finished either, even when nothing else is left.
+  const overpacked = order.items.some((item) => (packed[item.id] ?? 0) > piecesLeft(item, reserved))
+  const done = !!progress && left === 0 && !overpacked
   let summary = t("productCount", { products })
-  if (progress) {
-    summary = left > 0 ? t("productsLeft", { products, count: left }) : t("productsPacked", { products })
+  if (progress && left > 0) {
+    summary = t("productsLeft", { products, count: left })
+  } else if (done) {
+    summary = t("productsPacked", { products })
   }
   return (
-    <PackingSection
-      title={detail("columns.products")}
-      summary={summary}
-      done={progress && left === 0}
-      defaultOpen={false}
-    >
+    <PackingSection title={detail("columns.products")} summary={summary} done={done} defaultOpen={false}>
       <div className="@container/packing">
         <Table inset className="table-fixed narrow:block">
           <TableHeader className="bg-muted/60 narrow:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
