@@ -298,6 +298,16 @@ describe("Amazon transactions", () => {
 
   it("counts only the named fee types, so a type merely named like a fee is not a fee", () => {
     expect(transactionFees([{ breakdownType: "StorageFee", breakdownAmount: money(-4) }])).toBe(0)
+    // A fee category without its own amount still counts its parts.
+    expect(
+      transactionFees([
+        {
+          breakdownType: "AmazonFees",
+          breakdownAmount: null,
+          breakdowns: [{ breakdownType: "StorageFee", breakdownAmount: money(-4) }]
+        }
+      ])
+    ).toBe(400)
     expect(isAmazonFee(["Expenses", "AmazonFees", "StorageFee"])).toBe(true)
     expect(isAmazonFee(["Expenses", "Commission"])).toBe(true)
     expect(isAmazonFee(["Expenses", "ShippingFee"])).toBe(false)

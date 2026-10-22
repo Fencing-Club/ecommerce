@@ -805,17 +805,22 @@ export const amazonFeeTypes: ReadonlySet<string> = new Set(["AmazonFees", "Commi
 // Whether a breakdown is a fee, given the breakdown types on its path from the root.
 export const isAmazonFee = (path: readonly string[]) => path.some((type) => amazonFeeTypes.has(type))
 
-// Amazon's fees in a transaction, positive when charged. A fee category is counted whole, not again through its parts.
+// Amazon's fees in a transaction, positive when charged. A fee category is counted whole, not again through its parts;
+// one without an amount is counted through its parts.
 export function transactionFees(breakdowns: readonly Breakdown[] | null | undefined): number {
-  let total = 0
-  for (const entry of breakdowns ?? []) {
-    if (amazonFeeTypes.has(entry.breakdownType) && entry.breakdownAmount) {
-      total -= minorUnits(entry.breakdownAmount.currencyAmount)
-    } else {
-      total += transactionFees(entry.breakdowns)
+  const sum = (entries: readonly Breakdown[] | null | undefined, path: readonly string[]): number => {
+    let total = 0
+    for (const entry of entries ?? []) {
+      const next = [...path, entry.breakdownType]
+      if (isAmazonFee(next) && entry.breakdownAmount) {
+        total -= minorUnits(entry.breakdownAmount.currencyAmount)
+      } else {
+        total += sum(entry.breakdowns, next)
+      }
     }
+    return total
   }
-  return total
+  return sum(breakdowns, [])
 }
 
 export type AmazonTransaction = {
