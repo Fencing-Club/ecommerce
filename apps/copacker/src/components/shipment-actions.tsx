@@ -1,3 +1,4 @@
+import { awdShipmentIdPattern, fbaInboundPlanIdPattern } from "@repo/copacker-shipments/amazon-inbound"
 import { ChevronDown } from "lucide-react"
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
@@ -10,7 +11,6 @@ import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./action-form"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
-import * as styles from "./shipment-actions.css"
 
 const approveSchema = z.object({ updateCost: z.boolean() })
 
@@ -53,9 +53,12 @@ export function CorrectionForm({ id }: { id: string }) {
   return (
     <Collapsible render={<Card />}>
       <CardHeader>
-        <CollapsibleTrigger render={<Button variant="ghost" className={styles.trigger} />}>
+        <CollapsibleTrigger render={<Button variant="ghost" className="-mx-2.5 w-fit" />}>
           {t("trigger")}
-          <ChevronDown data-icon="inline-end" className={styles.chevron} />
+          <ChevronDown
+            data-icon="inline-end"
+            className="transition-transform group-data-panel-open/button:rotate-180"
+          />
         </CollapsibleTrigger>
       </CardHeader>
       <CollapsibleContent>
@@ -70,18 +73,14 @@ export function CorrectionForm({ id }: { id: string }) {
 }
 
 const awdReconcileSchema = z.object({
-  amazonOrderId: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.reconcile.awdInvalid")
+  amazonOrderId: z.string().trim().toUpperCase().regex(awdShipmentIdPattern, "shipments.actions.reconcile.awdInvalid")
 })
 const fbaReconcileSchema = z.object({
   amazonOrderId: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^wf[0-9a-f-]{36}$/, "shipments.actions.reconcile.fbaInvalid")
+    .regex(fbaInboundPlanIdPattern, "shipments.actions.reconcile.fbaInvalid")
 })
 
 export function LinkExistingShipment({
@@ -95,11 +94,7 @@ export function LinkExistingShipment({
   const schema = z.object({
     amazonShipmentId: linkedId
       ? z.string()
-      : z
-          .string()
-          .trim()
-          .toUpperCase()
-          .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
+      : z.string().trim().toUpperCase().regex(awdShipmentIdPattern, "shipments.actions.linkExisting.invalid")
   })
   const { form, submit } = useActionForm({
     schema,

@@ -10,6 +10,9 @@ import { useNow, useTimeZone, useTranslations } from "use-intl"
 import type { z } from "zod"
 import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useFormErrorMap } from "@/hooks/use-error-text"
 import { useCartonTemplate, usePalletTemplate } from "@/hooks/use-import-templates"
 import { usePackingDraft } from "@/hooks/use-packing-draft"
@@ -50,9 +53,6 @@ import { PickupAddressSelect } from "./pickup-address-select"
 import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentLayout } from "./shipment-layout"
 import { savedAddress, ShipmentPackingDetails, startingAddress } from "./shipment-packing-details"
-import { Checkbox } from "./ui/checkbox"
-import { Label } from "./ui/label"
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
 
 type EditorSchema = ReturnType<typeof packingEditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
@@ -390,7 +390,7 @@ export function PackingForm({
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
             {renderSidebar && (
-              <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+              <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-meta tabular-nums sm:hidden">
                 <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
                 <span className="text-muted-foreground">
                   {t("packedUnits", { count: totals.pieces, available: totalPiecesLeft(order.items, reserved) })}

@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
-import { itemTotal, money, orderCharges, orderInputSchema, orderTotal, supplierChargeTotal } from "../src/index"
+import {
+  itemTotal,
+  money,
+  orderCharges,
+  orderInputSchema,
+  orderSubtotal,
+  orderTotal,
+  supplierChargeTotal
+} from "../src/index"
 
 const order = () =>
   orderInputSchema.parse({
@@ -26,6 +34,13 @@ const order = () =>
       supplierCharges: index < 2 ? [{ description: "Packing", amount: 26, basis: "pack" }] : []
     }))
   })
+
+describe("product subtotal", () => {
+  it("adds each line's pieces at its unit price, without services or adjustments", () => {
+    expect(orderSubtotal(order().items)).toBe(800 * 408 + 1120 * 423 + 1200 * 113)
+    expect(orderSubtotal([])).toBe(0)
+  })
+})
 
 describe("product supplier costs", () => {
   it("charges once per assembled pack and keeps PO charges separate", () => {

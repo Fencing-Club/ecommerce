@@ -10,16 +10,17 @@ import {
   type DocumentSettings,
   type ShippingDocumentData
 } from "@repo/copacker-shipments/shipping-model"
-import { ChevronDown, Download, LoaderCircle, ZoomIn, ZoomOut } from "lucide-react"
+import { ChevronDown, Download, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group"
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
 import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
 import { localeNames } from "@/i18n/locales"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"
-import { Button } from "./ui/button"
-import { ButtonGroup, ButtonGroupSeparator } from "./ui/button-group"
-import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "./ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 type Props = {
   data: ShippingDocumentData
@@ -267,7 +268,7 @@ function DocumentRender({
       {downloadError && <p role="alert">{t("changed")}</p>}
       {result.status === "loading" && (
         <div className="flex min-h-80 items-center justify-center gap-2 text-muted-foreground">
-          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+          <Spinner />
           {t("previewLoading")}
         </div>
       )}

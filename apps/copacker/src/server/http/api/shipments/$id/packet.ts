@@ -1,3 +1,4 @@
+import { packedItemIds } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { z } from "zod"
 import { session } from "@/server/auth"
@@ -34,7 +35,7 @@ async function packet(request: Request, context: { params: { id: string } }) {
   if (section.data === "verify") {
     return new Response(null, { status: 204 })
   }
-  const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(shipment.packing)
   const files: Uint8Array[] = []
   if (section.data === "product_labels") {
     files.push(

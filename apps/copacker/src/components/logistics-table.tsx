@@ -71,7 +71,11 @@ export function LogisticsTable({
                 <span className="sr-only"> {t("opensInSellerCentral")}</span>
               </a>
             ) : (
-              <Link to="." href={row.href} className="font-medium underline-offset-4 hover:underline">
+              <Link
+                to="."
+                href={row.href}
+                className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
+              >
                 {text.reference(row)}
               </Link>
             )}
@@ -86,7 +90,7 @@ export function LogisticsTable({
         return row.partner ?? "—"
       case "route":
         return (
-          <span className="flex items-center gap-1.5 text-[13px]">
+          <span className="flex items-center gap-1.5 text-meta">
             {row.forwarder && (
               <>
                 <span className="text-muted-foreground">{row.forwarder}</span>
@@ -119,7 +123,7 @@ export function LogisticsTable({
       case "waiting": {
         const Icon = waitingIcons[row.waiting]
         return (
-          <span className="flex items-center gap-1.5 text-[13px]">
+          <span className="flex items-center gap-1.5 text-meta">
             <Icon aria-hidden className="size-3.5 text-muted-foreground" />
             {text.waitingLabel(row.waiting)}
           </span>

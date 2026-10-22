@@ -1,7 +1,7 @@
 import { contractVersion, defineOperation, type JsonObject, type SuccessEnvelope } from "@repo/copacker-contract"
 import { describe, expect, it, vi } from "vitest"
 import { z } from "zod"
-import { apiOrigin, clientError, CopackerClient, delay } from "./client.ts"
+import { apiOrigin, clientError, CopackerClient, delay } from "../src/client.ts"
 
 const workspace = "10000000-0000-4000-8000-000000000001"
 const envelope = (

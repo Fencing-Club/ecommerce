@@ -1,28 +1,24 @@
 import { randomUUID } from "node:crypto"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { documents, events, jobs, orders, shipments, suppliers } from "@/db/schema"
 import { eventMessage } from "@/lib/timeline-events"
 import { withJobWake } from "./job-delivery"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain } from "./job-runtime"
+import { describeError, logEvent } from "./log"
 import { lineLabels } from "./product-barcodes"
 import { releaseIssues } from "./readiness"
-import { describeError } from "./stock"
 
 // A labels job sends a shipment's labels once they're complete, or those of every shipment of a buyer's that waits on
 // them. It's queued in the transaction of the change that can complete them, so they still go when sending them right
 // after that change fails: the queue tries the job again until they do.
-const labelsPayload = z.union([
-  z.object({ shipmentId: z.uuid(), actor: z.string() }),
-  z.object({ buyerOrgId: z.uuid(), actor: z.string() })
-])
-type LabelsPayload = z.infer<typeof labelsPayload>
+type LabelsPayload = JobInput<"labels">
 export type QueuedLabels = { key: string; payload: LabelsPayload }
 
 export async function queueLabels(tx: Transaction, payload: LabelsPayload): Promise<QueuedLabels> {
   const key = `labels:${"shipmentId" in payload ? payload.shipmentId : payload.buyerOrgId}:${randomUUID()}`
-  await tx.insert(jobs).values({ key, kind: "labels", payload })
+  await tx.insert(jobs).values(jobRow("labels", key, payload))
   return { key, payload }
 }
 
@@ -41,21 +37,18 @@ export async function sendQueuedLabels({ key, payload }: QueuedLabels) {
   try {
     sent = await sendLabels(payload)
   } catch (error) {
-    console.error(JSON.stringify({ event: "labels_send_failed", key, error: describeError(error) }))
+    logEvent("error", "labels_send_failed", { key, error: describeError(error) })
     return withJobWake(Promise.resolve(false))
   }
   // A job the queue has started, or one a failed cleanup leaves, finds nothing left to send.
   await db()
     .delete(jobs)
     .where(and(eq(jobs.key, key), eq(jobs.status, "pending")))
-    .catch((error: unknown) =>
-      console.error(JSON.stringify({ event: "labels_job_cleanup_failed", key, error: describeError(error) }))
-    )
+    .catch((error: unknown) => logEvent("error", "labels_job_cleanup_failed", { key, error: describeError(error) }))
   return sent
 }
 
-export async function labelsJob(payload: Record<string, unknown>) {
-  const input = labelsPayload.parse(payload)
+export async function labelsJob(input: JobInput<"labels">) {
   try {
     await sendLabels(input)
   } catch (error) {
@@ -107,11 +100,14 @@ export async function sendLabelsWhenComplete(shipmentId: string, actor: string) 
       if (supplier?.supplierOrgId && supplier.email) {
         await tx
           .insert(jobs)
-          .values({
-            key: `ready:${shipment.id}:${shipment.revision}`,
-            kind: "email",
-            payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
-          })
+          .values(
+            jobRow("email", `ready:${shipment.id}:${shipment.revision}`, {
+              type: "ready",
+              to: supplier.email,
+              orderId: shipment.orderId,
+              shipmentId: shipment.id
+            })
+          )
           .onConflictDoNothing()
       }
       await tx.insert(events).values({

@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, stockSnapshots } from "@/db/schema"
 import { withJobWake } from "@/server/job-delivery"
@@ -7,6 +6,8 @@ import { queueAdsSync } from "./amazon-ads"
 import { queueAmazonSubscription } from "./amazon-notifications"
 import { demoShopDomain } from "./demo-shopify"
 import { queueEbaySubscription } from "./ebay-events"
+import { jobRow, type JobInput } from "./job-payloads"
+import type { JobContext } from "./job-runtime"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { queueShopifySubscription } from "./shopify-webhooks"
 import { refreshStock, stockScopes, stockSelection } from "./stock"
@@ -18,7 +19,7 @@ export async function queueReconciliation(now = new Date()) {
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `reconcile:${date}`, kind: "reconcile", payload: { date }, runAt: new Date(`${date}T07:00:00Z`) })
+      .values(jobRow("reconcile", `reconcile:${date}`, { date }, { runAt: new Date(`${date}T07:00:00Z`) }))
       .onConflictDoNothing()
   )
 }
@@ -26,8 +27,7 @@ export async function queueReconciliation(now = new Date()) {
 // Worker job: starts a sales sync and a refresh of each stock scope already in use for every buyer connection, and
 // renews Shopify webhook, Amazon notification and eBay notification subscriptions. Work already waiting or running is
 // left as it is.
-export async function reconcileJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { date } = z.object({ date: z.iso.date() }).parse(payload)
+export async function reconcileJob({ date }: JobInput<"reconcile">, { assertOwned }: Pick<JobContext, "assertOwned">) {
   const accounts = await db()
     .select({
       orgId: connections.orgId,

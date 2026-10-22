@@ -41,9 +41,6 @@ export function ChangeBadge({ change }: { change: LineChange }) {
   return <StatusBadge tone={lineChanges[change]}>{t(change)}</StatusBadge>
 }
 
-// A table that runs edge to edge inside the card: the first and last columns line up with the card's padding.
-const edgeTable = "[&_td:first-child]:ps-3 [&_td:last-child]:pe-3 [&_th:first-child]:ps-3 [&_th:last-child]:pe-3"
-
 // A value before and after the change: the old one struck through, then the new one.
 function FromTo({ before, after }: { before: React.ReactNode; after: React.ReactNode }) {
   const t = useTranslations("supplier.proposal")
@@ -148,8 +145,8 @@ export function ProposalPanel({
   const status = proposalStatus(proposal.status, viewer)
   return (
     // Small, like the purchase order page's other cards.
-    <Card size="sm" className="@container gap-0 py-0">
-      <CardHeader className="border-b pt-3">
+    <Card size="sm" flush className="@container">
+      <CardHeader>
         <CardTitle>{viewer === "buyer" ? t("theirChanges", { supplier: supplierName }) : t("yourChanges")}</CardTitle>
         {declined && proposal.reason && (
           <CardDescription className="whitespace-pre-line">{t("reason", { reason: proposal.reason })}</CardDescription>
@@ -167,7 +164,7 @@ export function ProposalPanel({
           </div>
         )}
         {shown.length > 0 && (
-          <Table framed={false} className={edgeTable}>
+          <Table framed={false} inset>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("columns.product")}</TableHead>

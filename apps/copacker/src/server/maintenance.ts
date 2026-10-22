@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { z } from "zod"
 import { negotiateLocale } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
+import { logEvent } from "./log"
 
 const flag = z.object({ enabled: z.boolean(), default_value: z.boolean() })
 const refreshMs = 10_000
@@ -48,7 +49,7 @@ export function maintenanceReader(apiKey: string) {
       if (attempt > snapshot.sequence) {
         snapshot = { ...snapshot, checkedAt: Date.now(), sequence: attempt }
       }
-      console.warn("Could not refresh the maintenance flag; retaining its last known value")
+      logEvent("warn", "maintenance_flag_unavailable", { retained: snapshot.active })
     } finally {
       clearTimeout(timer)
     }

@@ -1,6 +1,13 @@
 import { z } from "zod"
-// A Shopify product variant's ID, such as gid://shopify/ProductVariant/1.
+// Shopify's IDs for a product variant, product, location and inventory item, such as gid://shopify/ProductVariant/1.
 export const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
+export const productIdSchema = z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/)
+export const locationIdSchema = z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/)
+export const inventoryItemIdSchema = z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/)
+// A variant's name, or null for a product's only variant, which Shopify names "Default Title".
+export function variantName(title: string | null | undefined) {
+  return title && title !== "Default Title" ? title : null
+}
 export const shopDomainSchema = z.string().regex(/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/)
 // Accepts what merchants paste: an admin URL, a storefront .myshopify.com URL, or the bare store handle.
 export function normalizeShopDomain(input: string) {
@@ -95,7 +102,7 @@ export function bundleSupplierComponents(
 const stockLevel = z.object({
   id: z.string().min(1),
   location: z.object({
-    id: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/),
+    id: locationIdSchema,
     name: z.string(),
     isFulfillmentService: z.boolean(),
     fulfillmentService: z.object({ callbackUrl: z.string().nullable() }).nullable()
@@ -305,7 +312,7 @@ export class Shopify {
                   .regex(/^\d+(\.\d+)?$/)
                   .optional(),
                 product: z.object({
-                  id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+                  id: productIdSchema,
                   title: z.string(),
                   featuredMedia: stockMedia.nullable()
                 }),
@@ -314,7 +321,7 @@ export class Shopify {
                 inventoryQuantity: z.number().int().safe().nullable(),
                 productVariantComponents: bundleComponents,
                 inventoryItem: z.object({
-                  id: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
+                  id: inventoryItemIdSchema,
                   tracked: z.boolean(),
                   unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable().optional(),
                   countryCodeOfOrigin: z.string().nullable().optional(),
@@ -338,9 +345,7 @@ export class Shopify {
     return { ...parsed.data.productVariants, currency: parsed.data.shop.currencyCode ?? null }
   }
   async stockLevelsPage(inventoryItemId: string, after: string | null = null) {
-    z.string()
-      .regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/)
-      .parse(inventoryItemId)
+    inventoryItemIdSchema.parse(inventoryItemId)
     const parsed = z
       .object({
         shop: z.object({ myshopifyDomain: z.literal(this.domain) }),
@@ -547,7 +552,7 @@ export class Shopify {
       amazonTarget: field,
       storeTarget: field,
       product: z.object({
-        id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+        id: productIdSchema,
         caseQuantity: field,
         supplier: field
       })

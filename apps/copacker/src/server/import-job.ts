@@ -11,11 +11,20 @@ import type { ImportUsage } from "./import-agent"
 import { runImportAgent } from "./import-agent"
 import type { ImportObservation } from "./import-trace"
 import { traceImport } from "./import-trace"
+import { langfuseConfig } from "./integration-config"
+import type { JobInput } from "./job-payloads"
+import type { JobContext } from "./job-runtime"
+import { logEvent } from "./log"
 import { withVariantFields } from "./product-fields"
+import { providerRequest } from "./provider-request"
 import { getFile } from "./storage"
 
-export async function importJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { id, revision } = z.object({ id: z.uuid(), revision: z.number().int().positive() }).parse(payload)
+// Worker job: reads an uploaded purchase order with the import model, matching its lines to the buyer's catalog, and
+// leaves a proposal for the buyer to review.
+export async function importJob(
+  { id, revision }: JobInput<"import">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
   const [record] = await db()
     .select()
     .from(poImports)
@@ -43,25 +52,18 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
   try {
     await assertActive()
     await db().update(poImports).set({ status: "running", error: null }).where(active)
-    const { LANGFUSE_BASE_URL, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } = process.env
-    if (!LANGFUSE_BASE_URL || !LANGFUSE_PUBLIC_KEY || !LANGFUSE_SECRET_KEY) {
+    // Langfuse is configured only with an HTTPS address, so its keys never go over plain HTTP.
+    const langfuse = langfuseConfig()
+    if (!langfuse) {
       throw new Error("Langfuse is not configured")
     }
-    const base = new URL(LANGFUSE_BASE_URL)
-    if (base.protocol !== "https:") {
-      throw new Error("Langfuse requires HTTPS")
-    }
     const version = record.promptVersion ? `version=${record.promptVersion}` : "label=production"
-    const response = await fetch(`${base.origin}/api/public/v2/prompts/purchase-order-import?${version}`, {
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}`).toString("base64")}`
-      },
-      signal: AbortSignal.timeout(15000)
-    })
-    if (!response.ok) {
-      throw new Error(`Import prompt unavailable (${response.status})`)
-    }
-    const prompt = z.object({ prompt: z.string(), version: z.number().int().positive() }).parse(await response.json())
+    const prompt = await providerRequest(
+      "Langfuse",
+      `${langfuse.origin}/api/public/v2/prompts/purchase-order-import?${version}`,
+      { headers: { Authorization: langfuse.authorization }, timeoutMs: 15000 },
+      z.object({ prompt: z.string(), version: z.number().int().positive() })
+    )
     promptVersion = prompt.version
     await assertActive()
     await db().update(poImports).set({ promptVersion: prompt.version }).where(active)
@@ -196,7 +198,7 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
       ...usage
     })
     if (!recorded) {
-      console.warn("Import trace delivery unavailable")
+      logEvent("warn", "import_trace_unavailable", { importId: id, revision })
     }
   }
 }

@@ -9,9 +9,6 @@ import { type CartonGroup, packedPieces, physicalCartons, piecesLeft } from "@/l
 import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
 
-// The product table's first and last columns line up with the card's header.
-const edgeCells = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-
 // The shipment's products, closed until opened: the purchase order's lines as the carton cards show products (name and
 // variation, supplier SKU), then how many the cartons hold of what's left to ship, and the price for someone who sees
 // prices. Below 32rem each line stacks, with its column names above the values.
@@ -42,7 +39,7 @@ export function PackedProductsTable({
         </AccordionTrigger>
         <AccordionContent className="pb-0 [&_p:not(:last-child)]:mb-0">
           <div className="@container/products border-t">
-            <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
+            <Table framed={false} inset className="table-fixed @max-lg/products:block">
               <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
                 <TableRow className="hover:bg-transparent">
                   <TableHead>{t("product")}</TableHead>

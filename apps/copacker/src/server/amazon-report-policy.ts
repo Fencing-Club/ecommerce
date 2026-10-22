@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { db, type Transaction } from "@/db"
 import { amazonReportQuotas } from "@/db/schema"
-import { logLine } from "./log"
+import { logEvent } from "./log"
 
 const spacing = 120000
 const hour = 3600000
@@ -88,18 +88,15 @@ export async function observeAmazonReportRequest(
     }
   })
   // Request timing and quota headers only: no credentials, URLs, date scopes, response bodies or seller records.
-  logLine(
-    JSON.stringify({
-      event: "amazon_report_request",
-      scope,
-      at: observedAt.toISOString(),
-      reportType: /^[A-Z0-9_]{1,128}$/.test(result.reportType) ? result.reportType : "other",
-      status: result.status,
-      rateLimit: result.rateLimit,
-      retryAfterMs: result.retryAfterMs,
-      requestId: result.requestId && /^[a-zA-Z0-9-]{1,128}$/.test(result.requestId) ? result.requestId : undefined
-    })
-  )
+  logEvent("info", "amazon_report_request", {
+    scope,
+    at: observedAt.toISOString(),
+    reportType: /^[A-Z0-9_]{1,128}$/.test(result.reportType) ? result.reportType : "other",
+    status: result.status,
+    rateLimit: result.rateLimit,
+    retryAfterMs: result.retryAfterMs,
+    requestId: result.requestId && /^[a-zA-Z0-9-]{1,128}$/.test(result.requestId) ? result.requestId : undefined
+  })
 }
 
 export function amazonReportPolicy(sellerId: string, clientId: string): ReportRequestPolicy {

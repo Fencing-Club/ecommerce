@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto"
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { addressSchema } from "@repo/copacker-orders"
-import { amazonReference, fbaPlanName } from "@repo/copacker-shipments/amazon-inbound"
+import {
+  amazonReference,
+  awdShipmentIdPattern,
+  fbaInboundPlanIdPattern,
+  fbaPlanName
+} from "@repo/copacker-shipments/amazon-inbound"
 import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
@@ -31,6 +37,7 @@ import {
   saveForwarderAddress
 } from "@/server/forwarders"
 import { withJobWake } from "@/server/job-delivery"
+import { jobRow } from "@/server/job-payloads"
 import { queueLabels, sendQueuedLabels } from "@/server/label-release"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { requestLocale } from "@/server/localization"
@@ -173,11 +180,15 @@ export async function POST(request: Request) {
         await withJobWake(
           db()
             .insert(jobs)
-            .values({
-              key: `invite:${supplier!.id}:${randomUUID()}`,
-              kind: "email",
-              payload: { type: "invite", to: input.email, name: s.org.name, invitation, locale: await requestLocale() }
-            })
+            .values(
+              jobRow("email", `invite:${supplier!.id}:${randomUUID()}`, {
+                type: "invite",
+                to: input.email,
+                name: s.org.name,
+                invitation,
+                locale: await requestLocale()
+              })
+            )
         )
       }
       return Response.json({ id: supplier!.id })
@@ -219,11 +230,15 @@ export async function POST(request: Request) {
           }
           // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
           // reused key carrying a different invitation.
-          await tx.insert(jobs).values({
-            key: `invite:${supplier.id}:${randomUUID()}`,
-            kind: "email",
-            payload: { type: "invite", to: supplier.email, name: s.org.name, invitation, locale: await requestLocale() }
-          })
+          await tx.insert(jobs).values(
+            jobRow("email", `invite:${supplier.id}:${randomUUID()}`, {
+              type: "invite",
+              to: supplier.email,
+              name: s.org.name,
+              invitation,
+              locale: await requestLocale()
+            })
+          )
         })
       )
       return Response.json({ ok: true })
@@ -283,11 +298,7 @@ export async function POST(request: Request) {
           name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
-          shopifyLocationId: z
-            .string()
-            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
-            .nullable()
-            .default(null)
+          shopifyLocationId: locationIdSchema.nullable().default(null)
         })
         .transform((contact) => ({
           ...contact,
@@ -365,11 +376,7 @@ export async function POST(request: Request) {
           name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
-          shopifyLocationId: z
-            .string()
-            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
-            .nullable()
-            .default(null)
+          shopifyLocationId: locationIdSchema.nullable().default(null)
         })
         .transform((contact) => ({
           ...contact,
@@ -514,11 +521,12 @@ export async function POST(request: Request) {
           await tx.update(shipments).set({ status: "queued", issue: null }).where(eq(shipments.id, shipment.id))
           await tx
             .insert(jobs)
-            .values({
-              key: `amazon:${shipment.id}:${shipment.revision}`,
-              kind: "amazon",
-              payload: { shipmentId: shipment.id, revision: shipment.revision }
-            })
+            .values(
+              jobRow("amazon", `amazon:${shipment.id}:${shipment.revision}`, {
+                shipmentId: shipment.id,
+                revision: shipment.revision
+              })
+            )
             .onConflictDoUpdate({
               target: jobs.key,
               set: { id: randomUUID(), status: "pending", attempts: 0, error: null, runAt: new Date() }
@@ -539,7 +547,7 @@ export async function POST(request: Request) {
       const amazonOrderId = z
         .string()
         .trim()
-        .regex(fba ? /^wf[0-9a-f-]{36}$/ : /^STAR-[A-Z0-9]+$/)
+        .regex(fba ? fbaInboundPlanIdPattern : awdShipmentIdPattern)
         .parse(data.amazonOrderId)
       if (shipment.amazonOrderId && shipment.amazonOrderId !== amazonOrderId) {
         throw new LocalizedError("shipmentLinkedToOtherAmazonOrder")
@@ -565,11 +573,12 @@ export async function POST(request: Request) {
             .where(eq(shipments.id, shipment.id))
           await tx
             .insert(jobs)
-            .values({
-              key: `amazon:${shipment.id}:${shipment.revision}`,
-              kind: "amazon",
-              payload: { shipmentId: shipment.id, revision: shipment.revision }
-            })
+            .values(
+              jobRow("amazon", `amazon:${shipment.id}:${shipment.revision}`, {
+                shipmentId: shipment.id,
+                revision: shipment.revision
+              })
+            )
             .onConflictDoUpdate({
               target: jobs.key,
               set: { id: randomUUID(), status: "pending", attempts: 0, runAt: new Date(), error: null }

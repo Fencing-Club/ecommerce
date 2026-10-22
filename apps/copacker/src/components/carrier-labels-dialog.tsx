@@ -11,7 +11,18 @@ import {
   useSensors
 } from "@dnd-kit/core"
 import type { Packing } from "@repo/copacker-shipments"
+import {
+  fitsConfiguration,
+  type LabelMeasurements,
+  readLabelMeasurements
+} from "@repo/copacker-shipments/label-measurements"
 import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
+import {
+  readTrackingFromBarcodes,
+  readTrackingNumber,
+  trackingCarrier,
+  trackingNumberSchema
+} from "@repo/copacker-shipments/tracking-numbers"
 import { useRouter } from "@tanstack/react-router"
 import {
   ArrowDownToLine,
@@ -25,30 +36,27 @@ import {
   GripVertical,
   Info,
   ListOrdered,
-  LoaderCircle,
   TriangleAlert,
   Upload,
   X
 } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
-import { getTracking } from "ts-tracking-number"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
 import { type CartonGroup, groupCartons } from "@/lib/carton-groups"
-import { fitsConfiguration, type LabelMeasurements, readLabelMeasurements } from "@/lib/label-measurements"
 import { readPictureText } from "@/lib/label-text"
 import { preloadPdfReading, readPdfPages, type TextLine } from "@/lib/pdf-preview"
-import { readTrackingFromBarcodes, readTrackingNumber, trackingNumberSchema } from "@/lib/tracking-numbers"
 import { cn } from "@/lib/utils"
 import { SelectControl } from "./form-select"
 import { FieldError, useMeasure } from "./packing-fields"
 import { scrollList } from "./spreadsheet-import-dialog"
-import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
 
 // A carton's carrier label as it's saved: the label document, its tracking number, and the file and page it came from.
 export type SavedCarrierLabel = {
@@ -122,15 +130,6 @@ const isPdf = (file: File) => file.type === "application/pdf" || file.name.toLow
 const valid = (value: string) => trackingNumberSchema.safeParse(value).success
 // A label whose tracking number couldn't be read and hasn't been typed yet stands out until it has one.
 const needsTracking = (label: CarrierLabel) => !label.read && !valid(label.trackingNumber)
-
-// The carrier a tracking number belongs to, known from its format and check digit.
-function carrierOf(trackingNumber: string) {
-  const found = trackingNumber ? getTracking(trackingNumber.replace(/\s+/g, "").toUpperCase()) : undefined
-  if (!found || found.courier.code === "s10") {
-    return null
-  }
-  return found.courier.code === "usps" ? "USPS" : found.courier.name
-}
 
 // A drop target for PDFs dragged in from the computer, lit with how many there are. It stays lit while the drag
 // crosses its children, and goes out when the drag leaves it, or ends or drops anywhere else.
@@ -696,7 +695,7 @@ function CarrierLabelsForm({
           disabled={saving || !!reading || (!onCartons.length && !kept.length)}
           onClick={() => void save()}
         >
-          {saving && <LoaderCircle aria-hidden className="motion-safe:animate-spin" />}
+          {saving && <Spinner />}
           {t("save")}
         </Button>
       </div>
@@ -768,7 +767,7 @@ function NotPlaced({
       type="button"
       disabled={row.disabled}
       onClick={() => input.current?.click()}
-      className="rounded-sm font-medium text-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="focus-ring rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
     >
       {chunks}
     </button>
@@ -822,7 +821,7 @@ function NotPlaced({
         <div className="flex items-center gap-2 border-b px-3 py-2 text-xs text-muted-foreground">
           {reading ? (
             <output className="flex flex-1 items-center gap-2">
-              <LoaderCircle aria-hidden className="size-3.5 motion-safe:animate-spin" />
+              <Spinner className="size-3.5" />
               {reading}
             </output>
           ) : (
@@ -926,7 +925,7 @@ function LabelRow({ label, returning, ...row }: RowProps & { label: CarrierLabel
 // The label under the pointer while it's dragged, at the size of the row or carton it came from.
 function DragCard({ label, ...row }: RowProps & { label: CarrierLabel }) {
   return (
-    <div className="flex size-full cursor-grabbing items-center gap-3 rounded-md border bg-background px-3 py-2 text-foreground shadow-lg">
+    <div className="flex size-full cursor-grabbing items-center gap-3 rounded-md border bg-background px-3 py-2 text-foreground shadow-menu">
       <GripVertical aria-hidden className="size-4 shrink-0 text-muted-foreground" />
       <Thumbnail image={label.image} className="h-9 w-6" />
       <LabelText {...row} label={label} />
@@ -942,7 +941,7 @@ function PreviewButton({ label, title, previewId, onPreview }: RowProps & { labe
       type="button"
       aria-label={t("preview", { name: title(label) })}
       onClick={() => onPreview(label.id)}
-      className="shrink-0 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="focus-ring shrink-0 rounded-sm"
     >
       <Thumbnail image={label.image} className="h-9 w-6" />
     </button>
@@ -1011,7 +1010,7 @@ function TrackingField({ label, name, fieldId, submitted, disabled, onTracking }
   const t = useTranslations("shipments.carrierLabels")
   const [left, setLeft] = useState(false)
   const value = label.trackingNumber
-  const carrier = carrierOf(value)
+  const carrier = trackingCarrier(value)
   let problem = ""
   if (!value.trim()) {
     problem = t("trackingNotRead")
@@ -1160,7 +1159,7 @@ function CartonRow({
           />
         )}
         {coming ? (
-          <div className={cn(slot, "border-primary bg-primary/5 font-medium text-primary")}>
+          <div className={cn(slot, "border-primary bg-primary-tint font-medium text-primary")}>
             <CartonId cartonId={cartonId} />
             <ArrowDownToLine aria-hidden className="size-3.5 shrink-0" />
             <span className="truncate">{t("dropOnCarton", { name: row.title(coming), carton: cartonId })}</span>
@@ -1275,7 +1274,7 @@ function LabelPreview({
   useEffect(() => heading.current?.focus(), [label.id])
   const index = list.indexOf(label.id)
   // The carrier of the number read from the label, or of the one typed once it's recognized.
-  const carrier = carrierOf(label.trackingNumber)
+  const carrier = trackingCarrier(label.trackingNumber)
   return (
     <section aria-labelledby={`${id}-name`} className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1325,7 +1324,7 @@ function LabelPreview({
               <PrintedText lines={label.lines} />
               {label.picture === "reading" && (
                 <output className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-md bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
-                  <LoaderCircle aria-hidden className="size-3.5 motion-safe:animate-spin" />
+                  <Spinner className="size-3.5" />
                   {t("readingText")}
                 </output>
               )}

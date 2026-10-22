@@ -22,7 +22,7 @@ export default function PartnersPage({ page }: { page: Awaited<ReturnType<typeof
   return (
     <>
       <PageHeader title={t("title")}>{editable && <PartnerCreation />}</PageHeader>
-      <Card className="gap-0 overflow-hidden py-0">
+      <Card flush>
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks
             label={t("tabsLabel")}

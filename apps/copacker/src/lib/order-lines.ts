@@ -4,7 +4,7 @@ import { type Destination } from "@repo/copacker-orders"
 import type { OrderInput } from "@repo/copacker-orders"
 import type { PrepCategory } from "@repo/copacker-orders"
 import type { adjustmentTypes, commonPaymentTerms } from "@repo/copacker-orders"
-import { type AmazonNetwork, receiverFor } from "@repo/copacker-shipments"
+import { type AmazonNetwork, receiverFor } from "@repo/copacker-packing-rules"
 
 export type LineDefaults = {
   // Looked up on the server when the PO is saved or sent, so often empty here.

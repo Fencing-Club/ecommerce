@@ -1,6 +1,7 @@
 import { Menu } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"
+import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
 import { CreateMenu } from "./create-menu"
 import { NotificationsMenu } from "./notifications-menu"
@@ -23,17 +24,18 @@ export function TopBar({ kind, navigate }: TopBarProps) {
   return (
     <header className="sticky top-0 z-50 flex h-(--header-height) w-full shrink-0 items-center gap-0.5 border-b bg-background ps-1 pe-1.5 md:grid md:grid-cols-[minmax(max-content,1fr)_minmax(0,30rem)_minmax(max-content,1fr)] md:gap-4 md:px-4">
       <div className="flex min-w-0 flex-1 items-center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-touch"
           onClick={toggleSidebar}
           aria-label={t("toggleSidebar")}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-md outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+          className="md:hidden"
         >
           <Menu className="size-5" aria-hidden />
-        </button>
+        </Button>
         <a
           href="/"
-          className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-[15px] font-semibold tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:gap-2.5 md:px-2 md:text-sm"
+          className="focus-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-[15px] font-semibold tracking-tight md:gap-2.5 md:px-2 md:text-sm"
         >
           <CopackerMark className="size-6 rounded-[6px] md:size-7 md:rounded-[7px] [&>svg]:size-3.5 md:[&>svg]:size-4" />
           Copacker

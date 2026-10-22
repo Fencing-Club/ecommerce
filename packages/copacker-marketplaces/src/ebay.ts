@@ -1,6 +1,6 @@
 import { createPublicKey, createVerify } from "node:crypto"
 import { z } from "zod"
-import { ProviderError } from "./amazon"
+import { ProviderError, retryAfterMs } from "./amazon"
 
 // What Copacker asks a seller to allow: reading their orders, their account's ID and name, and subscribing to their
 // order notifications. api_scope is the base scope every token needs.
@@ -151,12 +151,11 @@ export class Ebay {
             .map((error) => [error.errorId, error.longMessage ?? error.message].filter(Boolean).join(" ").slice(0, 300))
             .join("; ")}`
         : ""
-      const retryAfter = Number(response.headers.get("retry-after"))
       throw new ProviderError(
         response.status,
         response.headers.get("x-ebay-c-request-id"),
         `eBay request failed (${response.status})${reason}`,
-        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : null
+        retryAfterMs(response)
       )
     }
     if (response.status === 204 || response.status === 201) {

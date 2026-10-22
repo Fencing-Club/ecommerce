@@ -1,9 +1,9 @@
 import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
 import { groupCartons } from "@/lib/carton-groups"
 import { towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
 import { CartonList } from "./carton-list"
-import { Button } from "./ui/button"
 
 const packed = groupCartons(towelPacking().cartons)
 

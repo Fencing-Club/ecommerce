@@ -15,7 +15,6 @@ import {
 import { useActionForm } from "@/hooks/useActionForm"
 import { contactDetailsSchema } from "@/lib/contact-details"
 import { FormInput, FormNumber } from "./form-controls"
-import { sx } from "@/styles/sprinkles.css"
 
 const supplierSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -108,7 +107,7 @@ function EditSupplierForm({
   })
   return (
     <FormProvider {...form}>
-      <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>{t("title", { name })}</DialogTitle>
         </DialogHeader>
@@ -181,7 +180,7 @@ function InviteSupplierForm({ id, name, email, onSent }: Invitee & { onSent: () 
   })
   return (
     <FormProvider {...form}>
-      <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>{t("title", { name })}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>

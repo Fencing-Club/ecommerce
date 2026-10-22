@@ -4,10 +4,10 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { ConfirmDialog } from "./confirm-dialog"
-import { AlertDialogTrigger } from "./ui/alert-dialog"
-import { Button } from "./ui/button"
 
 const sent: ActionRequest[] = []
 const done = fn()

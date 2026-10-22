@@ -24,7 +24,7 @@ import { shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
-import { PollAgain } from "./job-handlers"
+import { PollAgain } from "./job-runtime"
 import { queueLabels, sendQueuedLabels } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }

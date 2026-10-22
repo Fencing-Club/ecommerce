@@ -1,10 +1,10 @@
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
 import { expect, fn, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
 import { groupCartons, type PalletValue } from "@/lib/carton-groups"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
 import { PalletList } from "./pallet-list"
-import { Button } from "./ui/button"
 
 const cartons = groupCartons(towelPacking().cartons)
 const pallet = (palletId: string, cartonIds: string[], stackable = true): PalletValue => ({

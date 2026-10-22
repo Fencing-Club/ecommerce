@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { inflateSync } from "node:zlib"
 import { type Destination, type OrderInput } from "@repo/copacker-orders"
-import { receiverFor } from "@repo/copacker-shipments"
+import { receiverFor } from "@repo/copacker-packing-rules"
 import { and, eq } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"

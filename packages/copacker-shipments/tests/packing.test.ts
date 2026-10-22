@@ -11,6 +11,7 @@ import {
   splitByNetwork,
   cartonsValue,
   fbaPallets,
+  packedItemIds,
   palletLabels
 } from "../src/index"
 import {
@@ -71,6 +72,14 @@ const packing = packingSchema.parse({
     items: [{ itemId, pieces: 160 }]
   }))
 })
+describe("packedItemIds", () => {
+  it("lists the PO lines a packing's cartons hold, once each", () => {
+    const cartons = [{ items: [{ itemId: "a" }, { itemId: "b" }] }, { items: [{ itemId: "a" }] }]
+    expect([...packedItemIds({ cartons })]).toEqual(["a", "b"])
+    expect(packedItemIds(null).size).toBe(0)
+  })
+})
+
 describe("Supplier piece and carton contract", () => {
   it("groups identical physical cartons and converts pieces to sellable packs", () => {
     expect(validatePacking(order, packing).valid).toBe(true)

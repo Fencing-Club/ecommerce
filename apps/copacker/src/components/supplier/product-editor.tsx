@@ -1,4 +1,4 @@
-import { orderCurrencies, type OrderCurrency } from "@repo/copacker-orders"
+import { orderCurrencies, type OrderCurrency, priceBases, type PriceBasis } from "@repo/copacker-orders"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import { useRef, useState } from "react"
@@ -25,15 +25,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import type { PriceBreak } from "@/lib/catalog-pricing"
 import type { QuantityRules } from "@/lib/catalog-pricing"
-import { defaultQuantityRules, type PriceBasis } from "@/lib/catalog-pricing"
+import { defaultQuantityRules } from "@/lib/catalog-pricing"
 import { useSaveProductMutation, useUploadProductImageMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
 import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
-
-const bases = ["piece", "sellable_pack", "case"] as const satisfies readonly PriceBasis[]
 
 export type EditorVariant = {
   key: string
@@ -208,7 +206,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
             onClick={() => input.current?.click()}
             disabled={uploading > 0}
             className={cn(
-              "flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+              "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
               !images.length && "col-span-3 aspect-auto py-8 sm:col-span-5"
             )}
           >
@@ -337,7 +335,7 @@ function VariantSheet({
                 <Field>
                   <FieldLabel htmlFor="variant-basis">{t("pricePer")}</FieldLabel>
                   <Select
-                    items={bases.map((value) => ({ value, label: t(`basis.${value}`) }))}
+                    items={priceBases.map((value) => ({ value, label: t(`basis.${value}`) }))}
                     value={draft.priceBasis}
                     onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
                   >
@@ -345,7 +343,7 @@ function VariantSheet({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {bases.map((value) => (
+                      {priceBases.map((value) => (
                         <SelectItem key={value} value={value}>
                           {t(`basis.${value}`)}
                         </SelectItem>
@@ -608,7 +606,7 @@ export function ProductEditor({
 
             <Media images={product.images} onChange={(images) => change({ images })} />
 
-            <Card className="gap-0 overflow-hidden py-0">
+            <Card flush>
               <div className="flex flex-col gap-3 border-b p-4">
                 <CardHeader className="px-0">
                   <CardTitle>{t("variants")}</CardTitle>

@@ -69,7 +69,7 @@ export function PalletList({
         <EmptyState title={t("noPallets")} description={t("noPalletsDescription")} />
       )}
       {listed.length > 0 && (
-        <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
+        <ul aria-live="polite" className="flex flex-col gap-2 text-meta text-destructive">
           {palletIssueErrors(listed).map((error) => (
             <li key={error.message} className="flex items-start gap-2">
               <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />

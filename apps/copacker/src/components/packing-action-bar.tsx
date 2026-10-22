@@ -1,9 +1,9 @@
 import { Ellipsis } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { SubmitButton } from "@/components/form-feedback"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { PackingWork } from "@/hooks/use-packing-draft"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 // Packing's actions: Finish packing, or Save draft while units are left to pack, which submits the packing form, and
 // Save draft under the Actions menu. They sit in the page header beside the title; on a phone the button moves below

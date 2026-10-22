@@ -64,7 +64,7 @@ export function CartonList({
         <Alert role="note" className="p-4 has-[>svg]:gap-x-3 *:[svg]:text-muted-foreground">
           <Clock3 aria-hidden className="size-4.5" />
           <AlertTitle>{t("groupsUnchecked.title")}</AlertTitle>
-          <AlertDescription className="text-[13px]">{t("groupsUnchecked.description")}</AlertDescription>
+          <AlertDescription className="text-meta">{t("groupsUnchecked.description")}</AlertDescription>
         </Alert>
       )}
       {cartons.length > 0 ? (

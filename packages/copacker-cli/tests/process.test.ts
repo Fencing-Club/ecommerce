@@ -2,7 +2,7 @@ import { spawn } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 
-const bin = fileURLToPath(new URL("./bin.ts", import.meta.url))
+const bin = fileURLToPath(new URL("../src/bin.ts", import.meta.url))
 function execute(args: string[]) {
   return new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
     const child = spawn(process.execPath, [bin, ...args], {

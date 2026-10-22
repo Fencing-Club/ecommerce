@@ -77,7 +77,8 @@ For building command-line tools.
 - **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
   architecture, with shadcn's own components on Base UI added through the shadcn CLI.
 - **cmdk** — command menus, through shadcn's `Command`.
-- **@vanilla-extract/css** + **sprinkles** — typed, zero-runtime CSS where Tailwind doesn't fit.
+- **@vanilla-extract/css** — typed, zero-runtime CSS where Tailwind doesn't fit, such as theme tokens shared with
+  TypeScript.
 
 Select Fluent UI or shadcn/ui at the app or product-surface boundary. Neither is a monorepo-wide requirement, and an
 existing surface should keep its established system unless its architecture is deliberately changed.

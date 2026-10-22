@@ -219,7 +219,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
             disabled={running}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+              "focus-ring flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors hover:bg-muted/50 focus-visible:border-ring",
               isDragActive && "border-ring bg-muted/50",
               running && "cursor-default opacity-50"
             )}

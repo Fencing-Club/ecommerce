@@ -157,7 +157,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                   <Link
                     to="/customers/$id"
                     params={{ id: customer.id }}
-                    className="font-medium underline-offset-4 hover:underline"
+                    className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
                   >
                     {customer.name}
                   </Link>

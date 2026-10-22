@@ -42,7 +42,7 @@ function OnHand({
           <span
             className={cn(
               "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
-              delta > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+              delta > 0 ? "bg-success-soft text-success" : "bg-destructive-soft text-destructive"
             )}
           >
             {delta > 0 ? "+" : "−"}
@@ -214,7 +214,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                       <div className="min-w-0">
                         <PageLink
                           href={`/products/${row.groupId}`}
-                          className="line-clamp-2 font-medium underline-offset-4 hover:underline"
+                          className="focus-ring line-clamp-2 rounded-sm font-medium underline-offset-4 hover:underline"
                         >
                           {row.title}
                         </PageLink>

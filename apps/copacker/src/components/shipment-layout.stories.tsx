@@ -1,7 +1,7 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
 import { ShipmentLayout } from "./shipment-layout"
-import { Button } from "./ui/button"
 
 // A stand-in for what the page puts in each place, named for the play tests.
 function Slot({ name, children }: { name: string; children?: React.ReactNode }) {

@@ -2,11 +2,11 @@ import { Link } from "@tanstack/react-router"
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
+import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { WorkspaceWatch } from "@/components/workspace-watch"
-// Outside the app's layouts, so it brings the app's stylesheet itself; the reset comes first.
-import "@/styles/global.css"
+// Outside the app's layouts, so it brings the app's stylesheet itself: the theme's colors, then Tailwind.
+import "@/styles/theme.css"
 import "./globals.css"
 
 // A page outside the portal that failed, or the portal's own layout: Copacker's name along the top, as the not-found
@@ -18,37 +18,31 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
     <div className="flex min-h-svh flex-col">
       <WorkspaceWatch />
       <header className="flex h-14 shrink-0 items-center border-b px-4">
-        <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link to="/" className="focus-ring rounded-md">
           <BrandMark flat />
         </Link>
       </header>
       <main id="main-content" className="flex flex-1 items-center justify-center p-6">
-        <Empty className="gap-4 py-10">
-          <EmptyHeader className="gap-1">
-            <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
-              <CircleAlert aria-hidden className="size-5" />
-            </EmptyMedia>
-            <EmptyTitle>
-              <h1>{t("didntLoad")}</h1>
-            </EmptyTitle>
-            <EmptyDescription>{t("dataUnchanged")}</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={retry}>{t("tryAgain")}</Button>
-              <Button variant="outline" nativeButton={false} render={<Link to="/overview" />}>
-                {t("goToOverview")}
-              </Button>
-            </div>
-            <Button
-              variant="ghost"
-              nativeButton={false}
-              render={<a href="/workspaces" aria-label={t("switchWorkspace")} />}
-            >
-              {t("switchWorkspace")}
+        <EmptyState
+          titleAs="h1"
+          title={t("didntLoad")}
+          description={t("dataUnchanged")}
+          icon={<CircleAlert aria-hidden />}
+        >
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={retry}>{t("tryAgain")}</Button>
+            <Button variant="outline" nativeButton={false} render={<Link to="/overview" />}>
+              {t("goToOverview")}
             </Button>
-          </EmptyContent>
-        </Empty>
+          </div>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<a href="/workspaces" aria-label={t("switchWorkspace")} />}
+          >
+            {t("switchWorkspace")}
+          </Button>
+        </EmptyState>
       </main>
     </div>
   )

@@ -1,14 +1,14 @@
 import { ChevronDown, Download, MoreHorizontal } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Attachment, AttachmentContent, attachmentClassName } from "./attachment"
-import { Button } from "./ui/button"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "./ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
+import { Attachment, AttachmentContent, attachmentClassName } from "./attachment"
 
 // A label type to download: a file at href, or one the onDownload callback makes.
 export type ProductDownload = { id: string; label: string; href?: string; unavailable?: string }

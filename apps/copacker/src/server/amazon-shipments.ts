@@ -1,6 +1,6 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import { addressSchema } from "@repo/copacker-orders"
-import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-shipments"
+import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-packing-rules"
 import { freightShipment, sellerCentralShipment } from "@repo/copacker-shipments/amazon-inbound"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
