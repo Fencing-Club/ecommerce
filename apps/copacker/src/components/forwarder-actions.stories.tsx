@@ -98,6 +98,24 @@ export const Rename = meta.story({
   }
 })
 
+// Cancelling drops the edit and its error: the next opening shows the saved name.
+export const RenameCancelled = meta.story({
+  render: () => <RenameForwarder id={forwarderRecordId} name="Bayline Freight" />,
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Edit Bayline Freight" }))
+    await screen.findByRole("dialog", { name: "Edit forwarder" })
+    await userEvent.clear(screen.getByRole("textbox", { name: "Company" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    await screen.findByText("Fill in this field")
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Edit Bayline Freight" }))
+    await screen.findByRole("dialog", { name: "Edit forwarder" })
+    await expect(screen.getByRole("textbox", { name: "Company" })).toHaveValue("Bayline Freight")
+    await expect(screen.queryByText("Fill in this field")).toBeNull()
+    await expect(sent).toHaveLength(0)
+  }
+})
+
 export const Remove = meta.story({
   render: () => <RemoveForwarder id={forwarderRecordId} name="Bayline Freight" />,
   play: async ({ canvas }) => {

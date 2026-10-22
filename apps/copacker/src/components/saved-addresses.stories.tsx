@@ -181,6 +181,42 @@ export const Supplier = meta.story({
   }
 })
 
+// A supplier's pickup has no Shopify location, and stays a pickup when it's saved.
+export const SupplierEditPickup = meta.story({
+  args: { contacts: supplierContacts, supplier: true, locations: [] },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "More for Factory" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
+    const dialog = await screen.findByRole("dialog", { name: "Edit address" })
+    await expect(within(dialog).queryByRole("combobox", { name: "Shopify location" })).toBeNull()
+    await expect(within(dialog).getByRole("combobox", { name: "Country" })).toHaveTextContent("China")
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]).toMatchObject({
+      action: "contact.update",
+      data: { id: supplierContacts[0]!.id, kind: "pickup", shopifyLocationId: null }
+    })
+  }
+})
+
+// Cancelling an edit drops it: the next opening starts from the address as saved.
+export const EditCancelled = meta.story({
+  args: { contacts: [warehouse!] },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
+    let dialog = await screen.findByRole("dialog", { name: "Edit address" })
+    await userEvent.clear(within(dialog).getByRole("textbox", { name: "City" }))
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
+    dialog = await screen.findByRole("dialog", { name: "Edit address" })
+    await expect(within(dialog).getByRole("textbox", { name: "City" })).toHaveValue("Portland")
+    await expect(sent).toHaveLength(0)
+  }
+})
+
 export const SupplierEmpty = meta.story({
   args: { contacts: [], supplier: true, locations: [] },
   play: async ({ canvas }) => {

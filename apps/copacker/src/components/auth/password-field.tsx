@@ -1,8 +1,8 @@
 import { Check, Eye, EyeOff } from "lucide-react"
 import { useId, useState } from "react"
-import { useController, useWatch } from "react-hook-form"
+import { useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { FormField, fieldControl, useFormField } from "@/components/form-controls"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
 import { passwordMinimum } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
@@ -23,23 +23,22 @@ export function PasswordField({
   isNew?: boolean
 }) {
   const t = useTranslations("auth.fields")
-  const id = useId()
+  const ruleId = useId()
   const [visible, setVisible] = useState(false)
   const {
     field: { ref, value, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    error,
+    fieldProps
+  } = useFormField(name)
   const typed = useWatch({ name })
   const long = typeof typed === "string" && typed.length >= passwordMinimum
+  // The rule, until the error that restates it takes its place.
+  const showsRule = isNew && !error
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <div className="flex items-center justify-between gap-2">
-        <FieldLabel htmlFor={id}>{label}</FieldLabel>
-        {action}
-      </div>
+    <FormField {...fieldProps} label={label} labelAction={action}>
       <InputGroup className="h-10">
         <InputGroupInput
-          id={id}
+          {...fieldControl(fieldProps.id, { error, describedBy: showsRule ? ruleId : undefined })}
           ref={ref}
           name={fieldName}
           type={visible ? "text" : "password"}
@@ -47,8 +46,6 @@ export function PasswordField({
           value={value ?? ""}
           onChange={onChange}
           onBlur={onBlur}
-          aria-invalid={fieldState.invalid}
-          aria-describedby={isNew ? `${id}-rule` : undefined}
           spellCheck={false}
         />
         <InputGroupAddon align="inline-end">
@@ -62,10 +59,9 @@ export function PasswordField({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      {/* The rule, until the error that restates it takes its place. */}
-      {isNew && !fieldState.invalid && (
+      {showsRule && (
         <p
-          id={`${id}-rule`}
+          id={ruleId}
           className={cn(
             "flex items-center gap-1.5 text-xs transition-colors",
             long ? "text-success" : "text-muted-foreground"
@@ -75,7 +71,6 @@ export function PasswordField({
           {t("passwordRule", { count: passwordMinimum })}
         </p>
       )}
-      <FieldError errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }

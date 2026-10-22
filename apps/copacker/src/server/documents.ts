@@ -3,7 +3,6 @@ import type { OrderInput } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames, packedItemIds } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
-import { addressLines } from "@repo/copacker-shipments/documents"
 import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"
 import { destinationName } from "@repo/copacker-shipments/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
@@ -20,6 +19,7 @@ import {
   suppliers,
   orderRevisions
 } from "@/db/schema"
+import { addressLines } from "@/lib/address"
 import { amazonDestinationAddresses } from "./amazon-shipments"
 import { amazonFor } from "./connections"
 import { getFile, putFile } from "./storage"

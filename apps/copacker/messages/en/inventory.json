@@ -40,9 +40,7 @@
     "none": "None",
     "edit": "Edit",
     "editLabel": "Edit inventory locations",
-    "cancel": "Cancel",
     "save": "Save",
-    "saving": "Saving…",
     "saveFailed": "Couldn’t save the locations. Try again."
   },
   "list": {

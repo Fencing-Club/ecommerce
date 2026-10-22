@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "Spediteur hinzufügen",
       "title": "Spediteur hinzufügen",
       "description": "Holt bei Ihrem Lieferanten ab und versendet weiter an Amazon oder Ihr Lager.",
       "submit": "Spediteur hinzufügen",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "Lieferant hinzufügen",
       "title": "Lieferant hinzufügen",
       "description": "Für einen Lieferanten, der noch nicht in Shopify ist."
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} verwaltet die Kontaktdaten im eigenen Workspace.",
       "leadTime": "Lieferzeit (Tage)",
       "leadTimeDescription": "Von der Bestellung bis zum verkaufsfähigen Lagerbestand. Leer bedeutet {days}.",
-      "cancel": "Abbrechen",
       "save": "Speichern",
-      "saving": "Wird gespeichert…",
       "failed": "Lieferant konnte nicht gespeichert werden. Versuchen Sie es erneut."
     },
     "invite": {
       "title": "{name} einladen",
       "description": "Der Lieferant sieht die Bestellungen, die Sie teilen, und erhält eine E-Mail, wenn eine Dokumente braucht.",
       "email": "E-Mail des Lieferanten",
-      "cancel": "Abbrechen",
       "submit": "Einladung senden",
-      "sending": "Wird gesendet…",
       "failed": "{name} konnte nicht eingeladen werden. Versuchen Sie es erneut."
     }
   },
@@ -131,7 +125,6 @@
     "add": "Adresse für {name} hinzufügen",
     "saveChanges": "Änderungen speichern",
     "save": "Adresse speichern",
-    "name": "Name der Adresse",
     "pickupPlaceholder": "Fabrik",
     "placeholder": "Lager Yiwu",
     "sheet": {

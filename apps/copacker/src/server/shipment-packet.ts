@@ -7,6 +7,7 @@ import { shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
+import { addressLines } from "@/lib/address"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError, errorText } from "./errors"
@@ -98,12 +99,7 @@ export async function shipmentPacketPage(s: Session, id: string) {
       generatedDate: new Date().toISOString().slice(0, 10),
       destination: {
         name: destination.name,
-        address: [
-          destination.addressLine1,
-          destination.addressLine2,
-          [destination.city, destination.stateOrRegion, destination.postalCode].filter(Boolean).join(", "),
-          destination.countryCode
-        ].filter(Boolean)
+        address: addressLines(destination)
       }
     })
   } catch {

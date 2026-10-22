@@ -5,7 +5,7 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { held, recordActions } from "@/stories/fixtures/shared"
 import { ActionForm } from "./action-form"
 import { ActionButton } from "./actions"
@@ -101,7 +101,13 @@ function SupplierForm({ dialog = false, onSuccess }: { dialog?: boolean; onSucce
     onSuccess
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Save" dialog={dialog}>
+    <ActionForm
+      form={form}
+      onSubmit={submit}
+      label="Save"
+      layout={dialog ? "dialog" : "inline"}
+      requireChange={!dialog}
+    >
       <FormInput name="name" label="Supplier name" required />
     </ActionForm>
   )

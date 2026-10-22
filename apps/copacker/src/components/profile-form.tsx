@@ -1,10 +1,10 @@
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { isPosition, personSchema, positionKeys, positions, websiteSchema } from "@/lib/onboarding"
+import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 import { FormSelect } from "./form-select"
-import { SettingsForm } from "./settings-forms"
 
 const schema = personSchema.extend({
   company: z.string().trim().min(1, "settings.profile.enterCompany").max(120),
@@ -35,7 +35,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     keepSaved: (saved) => saved
   })
   return (
-    <SettingsForm form={form} onSubmit={submit}>
+    <ActionForm form={form} onSubmit={submit} layout="card" requireChange>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput name="firstName" required label={t("firstName")} autoComplete="given-name" />
         <FormInput name="lastName" required label={t("lastName")} autoComplete="family-name" />
@@ -53,6 +53,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           />
         )}
       </div>
-    </SettingsForm>
+    </ActionForm>
   )
 }

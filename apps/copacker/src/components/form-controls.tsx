@@ -6,6 +6,7 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 // What every field bound to a form by `name` takes.
 export type FormFieldProps = { name: string; label: string; description?: React.ReactNode; className?: string }
@@ -19,15 +20,122 @@ export function RequiredMark() {
   )
 }
 
-export function FormLabel({ htmlFor, label, required }: { htmlFor?: string; label: string; required?: boolean }) {
+export function FormLabel({
+  htmlFor,
+  label,
+  required,
+  className
+}: {
+  htmlFor?: string
+  label: string
+  required?: boolean
+  className?: string
+}) {
   return (
-    <FieldLabel htmlFor={htmlFor}>
+    <FieldLabel htmlFor={htmlFor} className={className}>
       {/* One span, so the star sits by the text rather than a label gap away. */}
       <span>
         {label}
         {required && <RequiredMark />}
       </span>
     </FieldLabel>
+  )
+}
+
+// What a field's control takes from its FormField: its id, whether it's invalid, and the ids of what describes it.
+// Only a description or error that shows is listed, so every id it names is on the page. `describedBy` adds others
+// first, such as an amount's currency.
+export function fieldControl(
+  id: string,
+  { description, error, describedBy }: { description?: React.ReactNode; error?: string; describedBy?: string }
+) {
+  const ids = [describedBy, description ? `${id}-description` : undefined, error ? `${id}-error` : undefined]
+  return {
+    id,
+    "aria-invalid": Boolean(error),
+    "aria-describedby": ids.filter(Boolean).join(" ") || undefined
+  }
+}
+
+// Binds a field to the surrounding React Hook Form by `name`. `fieldProps` go to its FormField and `controlProps` to
+// its control, which links the two.
+export function useFormField(
+  name: string,
+  { description, describedBy }: { description?: React.ReactNode; describedBy?: string } = {}
+) {
+  const id = useId()
+  const { field, fieldState } = useController({ name })
+  const error = fieldState.error?.message
+  return {
+    field,
+    error,
+    fieldProps: { id, description, error },
+    controlProps: fieldControl(id, { description, error, describedBy })
+  }
+}
+
+// A field's label, its control, then its description and error, which the control's `fieldControl` props point at.
+// A horizontal field, such as a checkbox, puts the control first.
+export function FormField({
+  id,
+  label,
+  required,
+  description,
+  error,
+  orientation = "vertical",
+  labelAction,
+  hideLabel = false,
+  className,
+  children
+}: {
+  // The control's.
+  id: string
+  label: string
+  required?: boolean
+  description?: React.ReactNode
+  // The field's message when it fails its check, as text or a full message key.
+  error?: string
+  orientation?: "vertical" | "horizontal"
+  // Sits across from the label, such as "Forgot password?".
+  labelAction?: React.ReactNode
+  // Names the control for screen readers only, when what it's for shows another way.
+  hideLabel?: boolean
+  className?: string
+  children: React.ReactNode
+}) {
+  const labelElement = (
+    <FormLabel htmlFor={id} label={label} required={required} className={cn(hideLabel && "sr-only")} />
+  )
+  const notes = (
+    <>
+      {description && <FieldDescription id={`${id}-description`}>{description}</FieldDescription>}
+      <FieldError id={`${id}-error`}>{error}</FieldError>
+    </>
+  )
+  if (orientation === "horizontal") {
+    return (
+      <Field orientation="horizontal" data-invalid={Boolean(error)} className={className}>
+        {children}
+        <FieldContent>
+          {labelElement}
+          {notes}
+        </FieldContent>
+      </Field>
+    )
+  }
+  return (
+    <Field data-invalid={Boolean(error)} className={className}>
+      {labelAction ? (
+        <div className="flex items-center justify-between gap-2">
+          {labelElement}
+          {labelAction}
+        </div>
+      ) : (
+        labelElement
+      )}
+      {children}
+      {notes}
+    </Field>
   )
 }
 
@@ -57,7 +165,7 @@ export function DateInput({ className, onClick, ...props }: Omit<React.Component
   )
 }
 
-// Fields bound to the surrounding React Hook Form by `name`, with shadcn Field layout and per-field errors.
+// Fields bound to the surrounding React Hook Form by `name`, each in a FormField.
 
 export function FormInput({
   name,
@@ -72,15 +180,15 @@ export function FormInput({
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange"
   >) {
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description })
   const scheme = typeof fieldValue === "string" && /^http:\/\//i.test(fieldValue) ? "http://" : "https://"
   const control = {
     ...props,
-    id,
+    ...controlProps,
     name: fieldName,
     ref,
     value: fieldValue ?? "",
@@ -91,13 +199,10 @@ export function FormInput({
       }
       onBlur()
       props.onBlur?.(event)
-    },
-    "aria-invalid": fieldState.invalid,
-    "aria-describedby": fieldState.invalid ? `${id}-error` : undefined
+    }
   }
   return (
-    <Field data-invalid={fieldState.invalid} className={className}>
-      <FormLabel htmlFor={id} label={label} required={props.required} />
+    <FormField {...fieldProps} label={label} required={props.required} className={className}>
       {urlPrefix && (
         <InputGroup dir="ltr">
           <InputGroupAddon>
@@ -123,9 +228,7 @@ export function FormInput({
         </InputGroup>
       )}
       {!urlPrefix && (type === "date" ? <DateInput {...control} /> : <Input {...control} type={type} />)}
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 
@@ -143,18 +246,17 @@ export function FormNumber({
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange" | "type"
   >) {
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description })
   const value = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue : ""
   return (
-    <Field data-invalid={fieldState.invalid} className={className}>
-      <FormLabel htmlFor={id} label={label} required={props.required} />
+    <FormField {...fieldProps} label={label} required={props.required} className={className}>
       <Input
         {...props}
-        id={id}
+        {...controlProps}
         type="number"
         inputMode={Number.isInteger(Number(props.step)) ? "numeric" : "decimal"}
         name={fieldName}
@@ -166,12 +268,8 @@ export function FormNumber({
           onValueChange?.(next)
         }}
         onBlur={onBlur}
-        aria-invalid={fieldState.invalid}
-        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
       />
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 
@@ -202,22 +300,22 @@ export function FormMoney({
     React.ComponentProps<typeof InputGroupInput>,
     "name" | "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "type"
   >) {
-  const id = useId()
+  const currencyId = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description, describedBy: currencyId })
   // The text as typed, with the value it was read as. A value set another way, such as by a reset, replaces it.
   const [typed, setTyped] = useState<{ text: string; value: unknown } | null>(null)
   const formatted = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? (fieldValue / 100).toFixed(2) : ""
   const shown = typed && Object.is(typed.value, fieldValue) ? typed.text : formatted
   return (
-    <Field data-invalid={fieldState.invalid} className={className}>
-      <FormLabel htmlFor={id} label={label} required={props.required} />
+    <FormField {...fieldProps} label={label} required={props.required} className={className}>
       <InputGroup>
         <InputGroupInput
           {...props}
-          id={id}
+          {...controlProps}
           name={fieldName}
           ref={ref}
           inputMode="decimal"
@@ -233,17 +331,13 @@ export function FormMoney({
             setTyped((current) => (current && Number.isNaN(current.value) ? current : null))
             onBlur()
           }}
-          aria-invalid={fieldState.invalid}
-          aria-describedby={fieldState.invalid ? `${id}-currency ${id}-error` : `${id}-currency`}
           className="text-end tabular-nums"
         />
         <InputGroupAddon align="inline-end">
-          <InputGroupText id={`${id}-currency`}>{currency}</InputGroupText>
+          <InputGroupText id={currencyId}>{currency}</InputGroupText>
         </InputGroupAddon>
       </InputGroup>
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 
@@ -254,62 +348,42 @@ export function FormTextarea({
   className,
   ...props
 }: FormFieldProps & Omit<React.ComponentProps<typeof Textarea>, "name" | "value" | "defaultValue" | "onChange">) {
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description, describedBy: props["aria-describedby"] })
   return (
-    <Field data-invalid={fieldState.invalid} className={className}>
-      <FormLabel htmlFor={id} label={label} required={props.required} />
+    <FormField {...fieldProps} label={label} required={props.required} className={className}>
       <Textarea
         {...props}
-        id={id}
+        {...controlProps}
         name={fieldName}
         ref={ref}
         value={fieldValue ?? ""}
         onChange={onChange}
         onBlur={onBlur}
-        aria-invalid={fieldState.invalid}
-        aria-describedby={
-          [
-            props["aria-describedby"],
-            description ? `${id}-description` : undefined,
-            fieldState.invalid ? `${id}-error` : undefined
-          ]
-            .filter(Boolean)
-            .join(" ") || undefined
-        }
       />
-      {description && <FieldDescription id={`${id}-description`}>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 
 export function FormCheckbox({ name, label, description, className }: FormFieldProps) {
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description })
   return (
-    <Field orientation="horizontal" data-invalid={fieldState.invalid} className={className}>
+    <FormField {...fieldProps} label={label} orientation="horizontal" className={className}>
       <Checkbox
-        id={id}
+        {...controlProps}
         ref={ref}
         name={fieldName}
         checked={Boolean(fieldValue)}
         onCheckedChange={onChange}
         onBlur={onBlur}
-        aria-invalid={fieldState.invalid}
-        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
       />
-      <FieldContent>
-        <FieldLabel htmlFor={id}>{label}</FieldLabel>
-        {description && <FieldDescription>{description}</FieldDescription>}
-        <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-      </FieldContent>
-    </Field>
+    </FormField>
   )
 }
