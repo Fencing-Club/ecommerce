@@ -11,7 +11,8 @@ organization-selection, reset and OAuth logic to the app and the protected compa
 Only the pending email address is returned to the verification page; its authentication token and redirect stay in the
 encrypted cookie. Start takes the client address from Cloudflare's `CF-Connecting-IP`, not a supplied forwarding chain.
 The five password/verification/recovery screens share `AuthScreen` and `loadAuthPage` with the protected
-Start fixture. Successful authentication opens a fresh document to discard the old
+Start fixture; their routes are each `authRoute(kind)` (`src/routes/-page-route.tsx`), which renders `AuthScreen`
+directly. Successful authentication opens a fresh document to discard the old
 session's route and API caches, including when WorkOS returns an external SSO URL. Recovery confirmation stays on the
 page. The Start routes preserve `/api/action` for the six auth operations, validate server input and enforce CSRF before
 executing an operation. Start serves the main application in this branch. See the

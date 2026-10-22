@@ -1,9 +1,9 @@
-import { createRouter, useRouter } from "@tanstack/react-router"
+import { createRouter } from "@tanstack/react-router"
 import { createIsomorphicFn } from "@tanstack/react-start"
-import { PortalError } from "@/components/portal-error"
 import { maintenanceRewrite } from "@/lib/maintenance"
 import { parseUrlSearch, stringifyUrlSearch } from "@/lib/url-search"
 import { maintenanceActive } from "@/server/maintenance"
+import { RouteError } from "./routes/-page-route"
 import { routeTree } from "./routeTree.gen"
 
 const maintenanceDocument = createIsomorphicFn()
@@ -13,16 +13,9 @@ const maintenanceDocument = createIsomorphicFn()
 export function getRouter() {
   return createRouter({
     routeTree,
-    defaultErrorComponent: function PortalRouteError({ reset }) {
-      const router = useRouter()
-      return (
-        <PortalError
-          retry={() => {
-            void router.invalidate().then(reset)
-          }}
-        />
-      )
-    },
+    // A page outside the portal, or the portal's shell, fails on its own page. Portal pages and the sign-in pages name
+    // the error page that fits inside their layout.
+    defaultErrorComponent: RouteError,
     parseSearch: parseUrlSearch,
     stringifySearch: stringifyUrlSearch,
     scrollRestoration: true,

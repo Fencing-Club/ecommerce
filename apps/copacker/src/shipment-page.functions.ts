@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
-import { urlQuery } from "@/lib/url-query"
-import { localizedPage } from "@/server/page-result"
+import { pageResult } from "@/server/page-result"
 import { shipmentPage } from "@/server/shipment-page"
 export const readShipment = createServerFn()
-  .validator(z.object({ query: urlQuery, id: z.string() }))
-  .handler(({ data }) => localizedPage(() => shipmentPage(data), "shipments.detail.metaTitle"))
+  .validator(z.object({ id: z.string() }))
+  .handler(({ data }) => pageResult(() => shipmentPage(data), "shipments.detail.metaTitle"))

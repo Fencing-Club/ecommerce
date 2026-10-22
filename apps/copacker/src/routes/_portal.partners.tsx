@@ -1,27 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/partners/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { partnersSearch } from "@/lib/page-search"
 import { readPartners } from "@/partners-page.functions"
+import { PortalPage, PortalRouteError, pageHead, reloadOnEnter } from "./-page-route"
+
+// The server lists the partners of the URL's type that match its search. ?add= only opens a dialog.
 export const Route = createFileRoute("/_portal/partners")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => readPartners({ data: { query: deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: partnersSearch,
+  loaderDeps: ({ search: { type, q } }) => ({ type, q }),
+  loader: ({ deps }) => readPartners({ data: deps }),
+  shouldReload: reloadOnEnter,
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} />}</PortalPage>
 }

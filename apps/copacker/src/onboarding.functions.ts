@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 import { readNewWorkspaceData } from "@/server/new-workspace-page"
 import { readOnboardingData } from "@/server/onboarding-page"
+import { titleFor } from "@/server/page-result"
 
 export const onboardingSearch = z.object({
   next: z.string().max(4096).optional().catch(undefined),
@@ -10,5 +11,8 @@ export const onboardingSearch = z.object({
 })
 export const readOnboarding = createServerFn()
   .validator(onboardingSearch)
-  .handler(({ data }) => readOnboardingData(data))
-export const readNewWorkspace = createServerFn().handler(() => readNewWorkspaceData())
+  .handler(async ({ data }) => ({ page: await readOnboardingData(data), title: await titleFor("onboarding.title") }))
+export const readNewWorkspace = createServerFn().handler(async () => ({
+  page: await readNewWorkspaceData(),
+  title: await titleFor("onboarding.newWorkspaceTitle")
+}))

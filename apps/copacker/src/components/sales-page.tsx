@@ -1,9 +1,9 @@
 import { useTranslations } from "use-intl"
-import type { salesPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
 import { SalesOrders } from "./sales-orders"
 
-export function SalesPageView({ search }: ReturnType<typeof salesPageData>) {
+// `search` is the one the URL starts the list with, such as the header search's ?q=#1041.
+export function SalesPageView({ search }: { search: string }) {
   const t = useTranslations("sales")
   return (
     <>
