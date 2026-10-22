@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { httpResponse } from "@/server/http-response"
-import { GET } from "@/server/http/api/restock/suppliers"
+import { apiHandlers } from "@/server/http-response"
+import * as handlers from "@/server/http/api/restock/suppliers"
 
 export const Route = createFileRoute("/api/restock/suppliers")({
-  server: {
-    handlers: {
-      GET: () => httpResponse(() => GET())
-    }
-  }
+  server: { handlers: apiHandlers(handlers) }
 })

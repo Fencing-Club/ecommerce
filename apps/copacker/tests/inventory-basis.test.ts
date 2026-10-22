@@ -10,13 +10,14 @@ vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { multiplyInventoryCost } from "../src/lib/inventory-basis"
 import { POST as costPreviews } from "../src/server/http/api/analytics/cost-import-previews"
-import { POST as openingRoute } from "../src/server/http/api/analytics/opening-balances"
-import { GET as listPurchases, POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
-import { GET as purchaseGet, DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
-import { POST as receiptRoute } from "../src/server/http/api/analytics/receipts"
-import { DELETE as receiptDelete } from "../src/server/http/api/analytics/receipts/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
+import { inventoryBasisCollection, inventoryBasisResource } from "../src/server/inventory-basis-http"
 import { appUrl } from "../src/server/security"
+const { POST: openingRoute } = inventoryBasisCollection("opening")
+const { GET: listPurchases, POST: purchaseRoute } = inventoryBasisCollection("purchase")
+const { GET: purchaseGet, DELETE: purchaseDelete } = inventoryBasisResource("purchase")
+const { POST: receiptRoute } = inventoryBasisCollection("receipt")
+const { DELETE: receiptDelete } = inventoryBasisResource("receipt")
 const previewCosts = served(costPreviews)
 const orgId = randomUUID(),
   otherId = randomUUID()

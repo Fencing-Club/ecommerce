@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const { catalogId } = input.parse(await request.json())
     const s = await session()
     requireAccess(s, "customers", "edit")
-    await assignCatalog(s, z.uuid().parse((await params).id), catalogId)
+    await assignCatalog(s, z.uuid().parse(params.id), catalogId)
     return Response.json({ ok: true })
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "saveFailedShort") }, { status: failureStatus(error) })

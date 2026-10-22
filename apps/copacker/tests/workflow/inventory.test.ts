@@ -3,7 +3,7 @@ import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { and, eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
-import { GET as readInventory } from "../../src/server/http/api/inventory"
+import { GET as inventoryRoute } from "../../src/server/http/api/inventory"
 import { GET as locationsRoute, PATCH as patchLocationRoute } from "../../src/server/http/api/inventory/locations"
 import { POST as refreshRoute } from "../../src/server/http/api/inventory/refresh"
 import { saveLocationMapping } from "../../src/server/inventory-location-settings"
@@ -51,6 +51,7 @@ vi.mock("../../src/server/readiness", async (original) =>
 )
 
 setUpWorkflowTests()
+const readInventory = served(inventoryRoute)
 const readLocations = served(locationsRoute)
 const patchLocation = served(patchLocationRoute)
 const refreshInventory = served(refreshRoute)

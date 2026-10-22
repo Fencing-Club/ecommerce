@@ -11,7 +11,7 @@ import { casePackSchema } from "@/lib/case-packs"
 import type { ProductLabel } from "@/lib/product-label"
 import { productLabels } from "@/lib/product-label"
 import { requireBuyer } from "./authorization"
-import { StatusError } from "./errors"
+import { requestInput, StatusError } from "./errors"
 import { refreshStoredStockFields } from "./product-fields"
 import type { Session } from "./workspace-session"
 
@@ -94,7 +94,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
 
 export async function saveProductDefaults(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = productDefaultsInputSchema.parse(raw)
+  const input = requestInput(productDefaultsInputSchema, raw)
   let domain = ""
   const saved = await db().transaction(async (tx) => {
     const [account] = await tx
@@ -189,7 +189,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
 // details are kept.
 export async function assignProductSupplier(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = assignSupplierInputSchema.parse(raw)
+  const input = requestInput(assignSupplierInputSchema, raw)
   let domain = ""
   const result = await db().transaction(async (tx) => {
     const [account] = await tx
@@ -238,7 +238,7 @@ export const assignProductLabelInputSchema = z.strictObject({
 // product details are kept.
 export async function assignProductLabel(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = assignProductLabelInputSchema.parse(raw)
+  const input = requestInput(assignProductLabelInputSchema, raw)
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })

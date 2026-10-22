@@ -10,7 +10,7 @@ const input = z.object({ revision: z.number().int().positive(), proposal: z.unkn
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const { revision, proposal } = input.parse(await request.json())
-    const id = z.uuid().parse((await params).id)
+    const id = z.uuid().parse(params.id)
     const s = await session()
     requireAccess(s, "orders", "edit")
     return Response.json(await proposeChanges(s, id, proposal, revision))

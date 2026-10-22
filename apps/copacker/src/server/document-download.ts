@@ -7,7 +7,7 @@ import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder, forwarderOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { shipmentDocumentFilename } from "./document-filenames"
-import { errorTextResponse } from "./errors"
+import { errorTextResponse, requestInput } from "./errors"
 import { fileResponse } from "./http-response"
 import { releasedLabelKinds, releasedStates } from "./readiness"
 import { readFile } from "./storage"
@@ -52,7 +52,7 @@ export async function downloadDocument(
   executor: Executor = db(),
   bundle = false
 ): Promise<Response> {
-  const id = z.uuid().parse(rawId)
+  const id = requestInput(z.uuid(), rawId)
   const [doc] = await executor
     .select()
     .from(documents)

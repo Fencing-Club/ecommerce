@@ -8,8 +8,8 @@ import { adsOAuthCallback, relayAdsOAuth, startAdsOAuth } from "@/server/amazon-
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
 import { amazonAdsApp } from "@/server/connections"
-import { errorResponse } from "@/server/errors"
-import { hash, isAppOrigin, siteUrlFor } from "@/server/security"
+import { errorResponse, requestInput, requestJson } from "@/server/errors"
+import { hash, siteUrlFor } from "@/server/security"
 
 export async function GET(request: Request) {
   const site = siteUrlFor(request.headers)
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
   try {
     const result = await adsToken(app, {
       grant_type: "authorization_code",
-      code: z.string().min(1).parse(url.searchParams.get("code")),
+      code: requestInput(z.string().min(1), url.searchParams.get("code")),
       redirect_uri: callback
     })
     if (!result.refresh_token) {
@@ -116,10 +116,7 @@ export async function POST(request: Request) {
   const s = await session()
   requireBuyer(s)
   requireAdmin(s)
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return new Response(null, { status: 403 })
-  }
-  const { action } = z.object({ action: z.enum(["sync", "disconnect"]) }).parse(await request.json())
+  const { action } = requestInput(z.object({ action: z.enum(["sync", "disconnect"]) }), await requestJson(request))
   if (action === "disconnect") {
     await disconnectAds(s.org.id)
   } else {

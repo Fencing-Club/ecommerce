@@ -1,12 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { httpResponse } from "@/server/http-response"
-import { GET, POST } from "@/server/http/api/analytics/purchase-costs"
+import { apiHandlers } from "@/server/http-response"
+import { inventoryBasisCollection } from "@/server/inventory-basis-http"
 
 export const Route = createFileRoute("/api/analytics/purchase-costs")({
-  server: {
-    handlers: {
-      GET: ({ request }) => httpResponse(() => GET(request)),
-      POST: ({ request }) => httpResponse(() => POST(request))
-    }
-  }
+  server: { handlers: apiHandlers(inventoryBasisCollection("purchase")) }
 })

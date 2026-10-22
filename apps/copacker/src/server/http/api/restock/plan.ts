@@ -1,8 +1,7 @@
-import { ZodError } from "zod"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
-import { errorResponse, failureMessage } from "@/server/errors"
+import { errorResponse, failureMessage, InvalidRequestError, requestJson } from "@/server/errors"
 import { RestockInputError, restockReport } from "@/server/restock-page"
 import type { RestockLine } from "@/server/restock-plan"
 
@@ -27,13 +26,13 @@ export async function POST(request: Request) {
   requireBuyer(s)
   requirePage(s, "restock")
   try {
-    const report = await restockReport(s, await request.json())
+    const report = await restockReport(s, await requestJson(request))
     return Response.json(can(s, "prices") ? report : { ...report, lines: report.lines.map(withoutPrices) })
   } catch (error) {
     if (error instanceof RestockInputError) {
       return Response.json({ error: await failureMessage(error) }, { status: 409 })
     }
-    if (error instanceof ZodError || error instanceof SyntaxError) {
+    if (error instanceof InvalidRequestError) {
       return errorResponse("enterRestockPeriod", 400)
     }
     throw error
