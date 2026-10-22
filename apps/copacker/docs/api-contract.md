@@ -7,6 +7,14 @@ The pages call these routes through RTK Query (`src/lib/api.ts`), mounted with `
 `components/providers.tsx` and with no Redux store of its own. Forms submit `/api/action` commands through
 `useActionForm` (`src/hooks/useActionForm.ts`), which pairs React Hook Form with the command's Zod schema.
 
+A feature adds its routes with `api.injectEndpoints`, such as the supplier workspace's in `src/lib/supplier-api.ts`,
+rather than calling `fetch` itself. Every request then gets the API's session handling: a redirect, such as to sign in,
+becomes a full-page recovery navigation instead of being followed in the background. Failures show through
+`useErrorMessage`: the route's `{ error }` text, the translated offline message, or the caller's fallback. Endpoints are
+typed from the server function's return type, or checked with a Zod `responseSchema` where the page validates what
+arrives. A file the API sends, such as a label PDF, is read with `fileOrError` (`src/lib/download.ts`) in a `queryFn`,
+then saved with `downloadBlob` or previewed from an object URL, so its bytes never enter the store.
+
 ## Authentication and responses
 
 Business routes use the WorkOS session ([Sign-in and getting started](auth.md)). The active workspace is selected with a

@@ -106,8 +106,7 @@
     "shopifyEffect": "Copacker، {account} کے ساتھ پروڈکٹس، اسٹاک، سیلز اور لاگت کی سنکنگ بند کر دے گا۔ خریداری آرڈرز جوں کے توں رہیں گے۔",
     "amazonEffect": "Copacker، {account} سے سیلز اور اسٹاک پڑھنا بند کر دے گا اور FBA یا AWD شپمنٹس نہیں بنا سکے گا۔ خریداری آرڈرز جوں کے توں رہیں گے۔",
     "ebayEffect": "Copacker، {account} سے سیلز پڑھنا بند کر دے گا۔ خریداری آرڈرز جوں کے توں رہیں گے۔",
-    "failed": "{name} منقطع نہیں ہو سکا",
-    "cancel": "منسوخ کریں"
+    "failed": "{name} منقطع نہیں ہو سکا"
   },
   "fileDropzone": {
     "wrongType": "{type, select, pdf {PDF منتخب کریں} csv {CSV منتخب کریں} other {معاون فائل منتخب کریں}}",

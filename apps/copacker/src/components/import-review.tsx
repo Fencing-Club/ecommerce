@@ -937,12 +937,7 @@ export function ImportReview({
         </fieldset>
       </form>
       {canAddSupplier && (
-        <InviteSupplier
-          onCreated={router.invalidate}
-          open={addingSupplier}
-          onOpenChange={setAddingSupplier}
-          finalFocus={supplierButton}
-        />
+        <InviteSupplier open={addingSupplier} onOpenChange={setAddingSupplier} finalFocus={supplierButton} />
       )}
       <Dialog
         open={sourceDetails !== null}

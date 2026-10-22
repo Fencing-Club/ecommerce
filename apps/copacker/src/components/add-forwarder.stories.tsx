@@ -1,19 +1,19 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { AddForwarder } from "./add-forwarder"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
   title: "Components/Partners/Add forwarder",
   component: AddForwarder,
-  args: { onCreated: fn() },
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))
   }
 })
 export const Add = meta.story({
-  play: async ({ canvas, args }) => {
+  play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add forwarder" }))
     const dialog = await screen.findByRole("dialog", { name: "Add a forwarder" })
     await expect(dialog).toHaveTextContent("Picks up from your supplier and ships on to Amazon or your warehouse.")
@@ -26,7 +26,8 @@ export const Add = meta.story({
       ])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await waitFor(() => expect(args.onCreated).toHaveBeenCalled())
+    // The page shows the new forwarder before the dialog closes.
+    await expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true })
   }
 })
 

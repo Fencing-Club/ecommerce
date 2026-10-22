@@ -4,22 +4,13 @@ import { useTranslations } from "use-intl"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"
+import { ConfirmDialog } from "./confirm-dialog"
 import { IntegrationCard } from "./integration-card"
 import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
 import type { IntegrationSyncState } from "./integration-sync-card"
 import { IntegrationSyncCard } from "./integration-sync-card"
 import { SyncProgress } from "./sync-status"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "./ui/alert-dialog"
+import { AlertDialogTrigger } from "./ui/alert-dialog"
 import { Button, buttonVariants } from "./ui/button"
 import { Dialog, DialogTrigger } from "./ui/dialog"
 
@@ -153,10 +144,9 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
   } else if (status.data?.failed) {
     syncState = "failed"
   }
-  async function change(value: "sync" | "disconnect") {
+  async function sync() {
     try {
-      await run(value).unwrap()
-      setConfirmOpen(false)
+      await run("sync").unwrap()
       await status.refetch()
     } catch {
       /* The mutation error is shown below. */
@@ -185,7 +175,7 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
                       icon={<Wallet />}
                       status={syncState}
                       detail={status.data.failed ? t("failed") : t("description")}
-                      onSync={() => void change("sync")}
+                      onSync={() => void sync()}
                       disabled={action.isLoading || status.data.active}
                       actionLabel={t("sync")}
                     />
@@ -214,42 +204,36 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
           >
             {syncCopy("reconnect")}
           </a>
-          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  className="h-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:h-[34px]"
-                  disabled={action.isLoading}
-                  aria-label={t("disconnect")}
-                />
-              }
-            >
-              <Unplug className="size-4" aria-hidden />
-              {common("disconnect")}
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("disconnectTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>{t("disconnectDescription")}</AlertDialogDescription>
-              </AlertDialogHeader>
-              {action.isError && (
-                <p role="alert" className="text-sm text-destructive">
-                  {t("error")}
-                </p>
-              )}
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={action.isLoading}>{common("cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  disabled={action.isLoading}
-                  onClick={() => void change("disconnect")}
-                >
-                  {t("disconnect")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            trigger={
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    className="h-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:h-[34px]"
+                    disabled={action.isLoading}
+                    aria-label={t("disconnect")}
+                  />
+                }
+              >
+                <Unplug className="size-4" aria-hidden />
+                {common("disconnect")}
+              </AlertDialogTrigger>
+            }
+            title={t("disconnectTitle")}
+            description={t("disconnectDescription")}
+            confirmLabel={t("disconnect")}
+            tone="destructive"
+            // Amazon Ads has its own endpoint, and the panel shows the status it reports.
+            action={async () => {
+              await run("disconnect").unwrap()
+              await status.refetch()
+            }}
+            data={{}}
+            fallback={t("error")}
+          />
         </IntegrationPanelFooter>
       )}
     </section>

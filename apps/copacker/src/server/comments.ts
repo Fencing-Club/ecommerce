@@ -2,7 +2,7 @@ import { and, desc, eq, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { events } from "@/db/schema"
-import { accessibleOrder } from "./access"
+import { type AccessibleOrder, accessibleOrder } from "./access"
 import { ownProfile } from "./profile"
 import type { Session } from "./workspace-session"
 
@@ -12,12 +12,14 @@ export const commentInputSchema = z.object({
   visibility: z.enum(["internal", "shared"])
 })
 
-export async function orderEvents(s: Session, orderId: string) {
-  await accessibleOrder(s, orderId)
+// A PO's events and the comments the workspace can read, newest first. `po` is the PO's id, or the PO the caller has
+// already opened with accessibleOrder.
+export async function orderEvents(s: Session, po: string | AccessibleOrder) {
+  const { order } = typeof po === "string" ? await accessibleOrder(s, po) : po
   return db()
     .select()
     .from(events)
-    .where(and(eq(events.orderId, orderId), or(isNull(events.internalOrgId), eq(events.internalOrgId, s.org.id))))
+    .where(and(eq(events.orderId, order.id), or(isNull(events.internalOrgId), eq(events.internalOrgId, s.org.id))))
     .orderBy(desc(events.createdAt))
 }
 

@@ -2,6 +2,7 @@ import { Toast } from "@base-ui/react/toast"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
 import { packingSchema, type Packing, type OrderInput } from "@repo/copacker-shipments"
 import { packingTasks } from "@repo/copacker-shipments/packing-requirements"
+import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
   ArrowRight,
@@ -59,7 +60,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { documentSettingsForLocale, type ShippingDocumentData } from "@/documents/shipping-model"
 import { useMoney } from "@/hooks/use-money"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"

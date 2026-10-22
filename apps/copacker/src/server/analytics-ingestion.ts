@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -81,7 +82,7 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
               and(
                 eq(amazonInventoryMovements.orgId, orgId),
                 eq(amazonInventoryMovements.externalAccountId, input.externalAccountId),
-                eq(amazonInventoryMovements.marketplaceId, "ATVPDKIKX0DER"),
+                eq(amazonInventoryMovements.marketplaceId, usMarketplaceId),
                 inArray(amazonInventoryMovements.referenceId, shipmentIds),
                 eq(amazonInventoryMovements.eventType, "Receipts")
               )

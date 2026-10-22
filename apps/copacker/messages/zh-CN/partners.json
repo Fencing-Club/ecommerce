@@ -86,7 +86,6 @@
       "trigger": "移除",
       "title": "移除 {name}？",
       "description": "新的采购订单将无法发往该货代。已发送的采购订单保留原地址。",
-      "cancel": "取消",
       "confirm": "移除",
       "failed": "无法移除 {name}。请重试。"
     }

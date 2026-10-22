@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest"
 import {
+  ebayLineSales,
+  ebayOrderRefund,
+  minorUnits,
+  orderSales,
+  shopifyOrderFees,
   collectAmazonTransactions,
   collectShopifyBalanceTransactions,
   shopifyPaymentFees,
@@ -625,5 +630,105 @@ describe("backfill readers", () => {
       .mockResolvedValueOnce({ bulkOperationRunQuery: { bulkOperation: { id: "bulk1" }, userErrors: [] } })
       .mockResolvedValueOnce({ bulkOperation: { status: "FAILED", errorCode: "TIMEOUT" } })
     await expect(collectShopifySalesBulk({ graphql: failed }, window)).rejects.toThrow("TIMEOUT")
+  })
+})
+
+describe("order sales", () => {
+  it("counts an order's sales as the Overview does", () => {
+    const money = (amount: string) => ({ shopMoney: { amount, currencyCode: "USD" } })
+    const line = {
+      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
+      discountAllocations: [],
+      id: "l1",
+      quantity: 3,
+      currentQuantity: 2,
+      sku: "A",
+      variant: { id: "va" }
+    }
+    const shopify = {
+      tags: [],
+      transactions: [],
+      id: "o1",
+      name: "#1",
+      createdAt: "2026-09-24T10:00:00Z",
+      cancelledAt: null,
+      test: false,
+      sourceName: "web",
+      fulfillments: [],
+      lines: [
+        { ...line, originalUnitPriceSet: money("10.00"), discountAllocations: [{ allocatedAmountSet: money("3.00") }] },
+        { ...line, id: "l2", quantity: 2, currentQuantity: 2, originalUnitPriceSet: money("5.00") }
+      ]
+    }
+    // $20 less 2/3 of $3, plus $10.
+    expect(orderSales(shopify)).toEqual({ minor: 2800, currency: "USD" })
+    expect(orderSales({ ...shopify, lines: [line] })).toEqual({ minor: 0, currency: "USD" })
+    // Paid another way: no fees, in the order's currency.
+    expect(shopifyOrderFees(shopify)).toEqual({ minor: 0, currency: "USD" })
+    const fee = (amount: string) => ({ amount, currencyCode: "USD" })
+    const payment = (status: string) => ({
+      id: status,
+      kind: "SALE",
+      status,
+      fees: [{ amount: fee("0.91"), taxAmount: fee("0.09") }]
+    })
+    expect(shopifyOrderFees({ ...shopify, transactions: [payment("SUCCESS"), payment("FAILURE")] })).toEqual({
+      minor: 100,
+      currency: "USD"
+    })
+    const item = (breakdowns?: { type: string; subtotal: { amount: string; currencyCode: string } }[]) => ({
+      orderItemId: "i1",
+      quantityOrdered: 3,
+      product: { sellerSku: "A" },
+      ...(breakdowns && { proceeds: { breakdowns } })
+    })
+    const usd = (amount: string) => ({ amount, currencyCode: "USD" })
+    const amazon = {
+      orderId: "111-1",
+      createdTime: "2026-09-23T05:00:00Z",
+      salesChannel: { channelName: "Amazon.com", marketplaceId: "ATVPDKIKX0DER" },
+      orderItems: [
+        item([
+          { type: "ITEM", subtotal: usd("30.00") },
+          { type: "DISCOUNT", subtotal: usd("-3.00") },
+          { type: "TAX", subtotal: usd("2.40") }
+        ])
+      ]
+    }
+    expect(orderSales(amazon)).toEqual({ minor: 2700, currency: "USD" })
+    expect(orderSales({ ...amazon, orderItems: [item()] })).toBeNull()
+  })
+
+  it("counts eBay lines less promotions and refunds, and what was refunded on the order beyond them", () => {
+    const usd = (value: string) => ({ value, currency: "USD" })
+    const line = {
+      lineItemId: "1",
+      quantity: 2,
+      lineItemCost: usd("20.00"),
+      appliedPromotions: [{ discountAmount: usd("-2.00") }],
+      refunds: [{ amount: usd("3.00") }]
+    }
+    expect(ebayLineSales({}, line)).toEqual({ units: 2, sales: 15 })
+    // Refunded in full, on the line or on the order.
+    expect(ebayLineSales({}, { ...line, refunds: [{ amount: usd("18.00") }] })).toEqual({ units: 0, sales: 0 })
+    expect(ebayLineSales({ orderPaymentStatus: "FULLY_REFUNDED" }, line)).toEqual({ units: 0, sales: 0 })
+    const order = {
+      lineItems: [line],
+      paymentSummary: {
+        refunds: [
+          { amount: usd("5.00"), refundStatus: "REFUNDED" },
+          { amount: usd("4.00"), refundStatus: "PENDING" }
+        ]
+      }
+    }
+    // $5 refunded, $3 of it on the line.
+    expect(ebayOrderRefund(order)).toBe(2)
+    expect(ebayOrderRefund({ lineItems: [line] })).toBe(0)
+  })
+
+  it("writes amounts in minor units and rejects what isn't one", () => {
+    expect(minorUnits("12.34")).toBe(1234)
+    expect(minorUnits(-0.5)).toBe(-50)
+    expect(() => minorUnits("abc")).toThrow("Invalid amount")
   })
 })

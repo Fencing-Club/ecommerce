@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Link } from "@tanstack/react-router"
 import { CircleAlert, Package } from "lucide-react"
 import { useTranslations } from "use-intl"
@@ -40,7 +41,7 @@ const sources = [
   {
     title: "Amazon",
     provider: "amazon",
-    selections: [{ source: "fba", marketplaceId: "ATVPDKIKX0DER" }, { source: "awd" }]
+    selections: [{ source: "fba", marketplaceId: usMarketplaceId }, { source: "awd" }]
   }
 ] as const satisfies { title: string; provider: string; selections: Selection[] }[]
 type Source = (typeof sources)[number]

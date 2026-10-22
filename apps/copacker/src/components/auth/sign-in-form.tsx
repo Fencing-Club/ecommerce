@@ -3,7 +3,7 @@ import { useTranslations } from "use-intl"
 import { FormInput } from "@/components/form-controls"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldGroup } from "@/components/ui/field"
-import { useAuthForm } from "@/hooks/use-auth-form"
+import { useActionForm } from "@/hooks/useActionForm"
 import { signInSchema } from "@/lib/sign-in"
 import { PasswordField } from "./password-field"
 
@@ -20,9 +20,10 @@ export function leaving(state: { isSubmitting: boolean; isSubmitSuccessful: bool
 // Email and password. `email` fills in the address, such as an invitation's; `locked` keeps it to that address.
 export function SignInForm({ next, email = "", locked = false }: { next: string; email?: string; locked?: boolean }) {
   const t = useTranslations("auth")
-  const { form, submit } = useAuthForm({
+  const { form, submit } = useActionForm({
     schema: signInSchema,
     action: "auth.signIn",
+    navigation: "document",
     defaultValues: { email, password: "" },
     toPayload: (values) => ({ ...values, next })
   })

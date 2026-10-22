@@ -132,7 +132,21 @@ export const DownloadFailed = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Download label for Natural" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t load the label. Try again.")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t download the label. Try again.")
+  }
+})
+
+// A label that never arrives says the connection failed, in the person's language.
+export const PreviewOffline = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(http.get("/api/inventory/barcodes", () => HttpResponse.error()))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Preview label for Natural" }))
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "Couldn’t reach Copacker. Check your connection and try again."
+    )
+    await expect(canvas.getByRole("button", { name: "Preview label for Natural" })).toBeEnabled()
   }
 })
 

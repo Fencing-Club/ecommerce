@@ -1,11 +1,11 @@
 import { type Amazon, ProviderError, ReportDeferredError } from "@repo/copacker-marketplaces/amazon"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { connections, salesSyncs } from "@/db/schema"
 import { amazonFailureDetails } from "./amazon-diagnostics"
 
 // Request scope, not proof of a row's sales marketplace. Matches the app's US FBA inventory scope.
-export const fbaReportMarketplace = "ATVPDKIKX0DER"
 const day = 86400000
 export function amazonReportFailure(error: unknown, stage: "request" | "parse" | "period") {
   if (error instanceof ReportDeferredError) {
@@ -62,7 +62,7 @@ export function monthlyReportWindows(now: Date, wholeMonths = false) {
 
 export function monthlyReportStatus(reports: ReportState[], now: Date, wholeMonths = false) {
   return {
-    marketplaceId: fbaReportMarketplace,
+    marketplaceId: usMarketplaceId,
     windows: monthlyReportWindows(now, wholeMonths).map((window) => {
       const report = reports.find((row) => row.from.getTime() === window.from.getTime())
       return {
@@ -212,7 +212,7 @@ export async function syncMonthlyAmazonReport<Row>(
       const text = await input.amazon.report(
         {
           reportType: source.reportType,
-          marketplaceIds: [fbaReportMarketplace],
+          marketplaceIds: [usMarketplaceId],
           dataStartTime: window.from.toISOString(),
           dataEndTime: new Date(window.to.getTime() - (source.wholeMonths ? 0 : 1000)).toISOString()
         },

@@ -1,10 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod"
 import type { Address } from "@repo/copacker-shipments"
 import { addressSchema, originSchema } from "@repo/copacker-shipments"
-import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"
-import { useForm } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -12,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
-import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
+import { useActionForm } from "@/hooks/useActionForm"
 import { formatPhone } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./action-form"
@@ -129,36 +126,24 @@ function AddressForm({
   onSaved: (saved: Saved) => void
 }) {
   const t = useTranslations("partners.address")
-  const errorMessage = useErrorMessage()
-  const formErrorMap = useFormErrorMap()
-  const router = useRouter()
-  const [run] = useActionMutation()
   const pickup = !partner || partner.kind === "supplier"
-  const form = useForm<z.input<typeof addressForm>, unknown, z.output<typeof addressForm>>({
-    resolver: zodResolver(pickup ? pickupForm : addressForm, { error: formErrorMap }),
+  const { form, submit } = useActionForm({
+    schema: pickup ? pickupForm : addressForm,
     defaultValues: contact
       ? { name: contact.name, address: contact.address }
-      : { name: "", address: { ...emptyAddress, ...draft } }
-  })
-  const submit = form.handleSubmit(async (values) => {
-    try {
-      if (!partner) {
-        onSaved({ id: crypto.randomUUID(), ...values })
-        return
-      }
-      const result = await run({
-        action: pickup ? "supplier.address" : "forwarder.address",
-        data: {
-          ...values,
-          ...(pickup ? { supplierId: partner.id } : { forwarderId: partner.id }),
-          ...(contact && { id: contact.id })
+      : { name: "", address: { ...emptyAddress, ...draft } },
+    // Without a partner, the address stays with what's being edited, such as a shipment's pickup, until it's saved.
+    ...(partner
+      ? {
+          action: pickup ? "supplier.address" : "forwarder.address",
+          toPayload: (values) => ({
+            ...values,
+            ...(pickup ? { supplierId: partner.id } : { forwarderId: partner.id }),
+            ...(contact && { id: contact.id })
+          })
         }
-      }).unwrap()
-      onSaved({ id: result.id ?? contact?.id, name: values.name, address: values.address })
-      router.invalidate()
-    } catch (error) {
-      form.setError("root.server", { message: errorMessage(error) })
-    }
+      : { run: async () => ({ id: crypto.randomUUID() }) }),
+    onSuccess: (result, values) => onSaved({ id: result.id ?? contact?.id, name: values.name, address: values.address })
   })
   return (
     <ActionForm
@@ -254,29 +239,11 @@ function AddressItem({
   editable: boolean
 }) {
   const t = useTranslations("partners.address")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
-  const [removing, setRemoving] = useState(false)
-  const [error, setError] = useState("")
+  const remove = useAction("supplier.address", { fallback: t("removeFailed", { name: contact.name }) })
+  const { pending: removing, error } = remove
   // Purchase orders ship to a forwarder's addresses by id, so only a supplier's pickup addresses are removed here.
   const removable = partner.kind === "supplier"
-
-  async function remove() {
-    setRemoving(true)
-    setError("")
-    try {
-      await run({
-        action: "supplier.address",
-        data: { supplierId: partner.id, id: contact.id, remove: true }
-      }).unwrap()
-      router.invalidate()
-    } catch (e) {
-      setError(errorMessage(e, t("removeFailed", { name: contact.name })))
-      setRemoving(false)
-    }
-  }
 
   return (
     <li className="flex items-start gap-3 p-3">
@@ -303,7 +270,10 @@ function AddressItem({
           <DropdownMenuContent align="end" className="w-36">
             <DropdownMenuItem onClick={() => setEditing(true)}>{t("menuEdit")}</DropdownMenuItem>
             {removable && (
-              <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => void remove.run({ supplierId: partner.id, id: contact.id, remove: true })}
+              >
                 {t("menuRemove")}
               </DropdownMenuItem>
             )}

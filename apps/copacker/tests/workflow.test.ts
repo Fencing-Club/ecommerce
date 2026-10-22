@@ -93,13 +93,15 @@ vi.mock("../src/server/storage", async (original) => ({
   deleteFile: storage.deleteFile,
   readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
-// Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
+// Tests never draw documents: the purchase order and invoice are stand-in bytes, and tests read what the purchase order
+// was given, such as its ship-to.
 vi.mock("@repo/copacker-shipments/documents", async (original) => {
   const documents = await original<typeof import("@repo/copacker-shipments/documents")>()
+  const pdf = async () => new TextEncoder().encode("%PDF-1.7 test document")
   return {
     ...documents,
-    purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(documents.purchaseOrderPdf),
-    packingListPdf: vi.fn<typeof documents.packingListPdf>(documents.packingListPdf)
+    purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(pdf),
+    commercialInvoicePdf: vi.fn<typeof documents.commercialInvoicePdf>(pdf)
   }
 })
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))

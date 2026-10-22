@@ -49,7 +49,7 @@ function QueryControls() {
   } else if (surface === "products") {
     control = <ProductActions onImported={refresh} />
   } else if (editable) {
-    control = <AddPartner onCreated={refresh} />
+    control = <AddPartner />
   }
   return (
     <Providers>

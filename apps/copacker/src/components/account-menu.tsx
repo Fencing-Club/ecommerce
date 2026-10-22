@@ -1,7 +1,7 @@
+import { useTheme } from "@buildkitgg/react-theme"
 import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
 import { useId } from "react"
 import { useTranslations } from "use-intl"
-import { useTheme } from "@/components/theme-provider"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
+import { themeStore } from "@/lib/theme"
 import { initials } from "./workspace-menu"
 
 // Each labelled by its key under the "navigation" messages' `accountMenu.themes`.
@@ -29,7 +30,7 @@ const themeOptions = [
 // sidebar it's a row with their initials, name and email, just the initials when the sidebar is collapsed.
 export function AccountMenu({ name, email }: { name: string; email: string }) {
   const t = useTranslations("navigation.accountMenu")
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, reset } = useTheme(themeStore)
   const signOut = useId()
   return (
     <>
@@ -72,7 +73,10 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
                 value={theme}
                 onValueChange={(value) => {
                   const option = themeOptions.find((candidate) => candidate.value === value)
-                  if (option) {
+                  // System keeps no choice, so the page follows the computer.
+                  if (option?.value === "system") {
+                    reset()
+                  } else if (option) {
                     setTheme(option.value)
                   }
                 }}

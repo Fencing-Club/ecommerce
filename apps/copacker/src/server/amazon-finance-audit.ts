@@ -1,3 +1,4 @@
+import { minorUnits } from "@repo/copacker-marketplaces/sales"
 import { z } from "zod"
 
 const record = z.record(z.string(), z.unknown())
@@ -30,8 +31,11 @@ function money(value: unknown) {
   if (typeof raw === "string" && !/^-?\d+(\.\d+)?$/.test(raw)) {
     return null
   }
-  const minor = Math.round(Number(raw) * 100)
-  return Number.isSafeInteger(minor) ? { currency: parsed.data.currencyCode, minor } : null
+  try {
+    return { currency: parsed.data.currencyCode, minor: minorUnits(raw) }
+  } catch {
+    return null
+  }
 }
 
 function sum(left: number, right: number) {

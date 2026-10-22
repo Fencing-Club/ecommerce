@@ -1,14 +1,10 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { parseFbmReturns } from "@repo/copacker-marketplaces/fbm-returns"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsFeeds, amazonTransactions } from "@/db/schema"
 import { amazonFailureDetails } from "./amazon-diagnostics"
-import {
-  amazonReportFailure,
-  monthlyReportWindows,
-  type AmazonReportInput,
-  fbaReportMarketplace
-} from "./amazon-report-sync"
+import { amazonReportFailure, monthlyReportWindows, type AmazonReportInput } from "./amazon-report-sync"
 import { publishAnalyticsFeed } from "./analytics-feed-store"
 export async function syncAmazonExtraEvidence(
   input: AmazonReportInput,
@@ -47,7 +43,7 @@ export async function syncAmazonExtraEvidence(
       const text = await input.amazon.report(
         {
           reportType: "GET_FLAT_FILE_RETURNS_DATA_BY_RETURN_DATE",
-          marketplaceIds: [fbaReportMarketplace],
+          marketplaceIds: [usMarketplaceId],
           dataStartTime: window.from.toISOString(),
           dataEndTime: new Date(window.to.getTime() - 1000).toISOString()
         },

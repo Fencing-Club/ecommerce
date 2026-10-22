@@ -21,7 +21,6 @@
       "closing": "你将退出登录，并被移出所有工作区。{count, plural, other {{workspaces} 将随你的账号一起关闭。}}",
       "handOver": "请先转让 {workspaces} 的所有权。"
     },
-    "cancel": "取消",
     "close": "关闭"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "转让所有权",
     "transferTitle": "将所有权转让给 {name}？",
     "transferDescription": "对方将成为 {workspace} 的所有者，你仍为管理员。",
-    "cancel": "取消",
     "invitationExpired": "邀请已过期",
     "invited": "已邀请，{expires}过期",
     "invitationSent": "邀请已发送，{expires}过期",

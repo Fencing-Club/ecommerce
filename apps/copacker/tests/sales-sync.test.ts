@@ -1,7 +1,7 @@
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 import { describe, expect, it, vi } from "vitest"
-import { orderSales, summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
+import { summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
 import { ledgerChunks } from "../src/server/stock-days"
 
 const day = 86400000
@@ -41,58 +41,6 @@ describe("order and stock history syncs", () => {
     const later = ledgerChunks(now, { from: new Date(today - 365 * day), to: new Date(today - day) })
     expect(later).toEqual({ fresh: false, chunks: [{ from: new Date(today - 8 * day), to: new Date(today) }] })
     expect(ledgerChunks(now, { from: new Date(0), to: new Date(today - 60 * day) }).fresh).toBe(true)
-  })
-
-  it("counts an order's sales as the Overview does", () => {
-    const money = (amount: string) => ({ shopMoney: { amount, currencyCode: "USD" } })
-    const line = {
-      originalUnitPriceSet: { shopMoney: { amount: "0.00", currencyCode: "USD" } },
-      discountAllocations: [],
-      id: "l1",
-      quantity: 3,
-      currentQuantity: 2,
-      sku: "A",
-      variant: { id: "va" }
-    }
-    const shopify = {
-      tags: [],
-      transactions: [],
-      id: "o1",
-      name: "#1",
-      createdAt: "2026-09-24T10:00:00Z",
-      cancelledAt: null,
-      test: false,
-      sourceName: "web",
-      fulfillments: [],
-      lines: [
-        { ...line, originalUnitPriceSet: money("10.00"), discountAllocations: [{ allocatedAmountSet: money("3.00") }] },
-        { ...line, id: "l2", quantity: 2, currentQuantity: 2, originalUnitPriceSet: money("5.00") }
-      ]
-    }
-    // $20 less 2/3 of $3, plus $10.
-    expect(orderSales(shopify)).toEqual({ minor: 2800, currency: "USD" })
-    expect(orderSales({ ...shopify, lines: [line] })).toEqual({ minor: 0, currency: "USD" })
-    const item = (breakdowns?: { type: string; subtotal: { amount: string; currencyCode: string } }[]) => ({
-      orderItemId: "i1",
-      quantityOrdered: 3,
-      product: { sellerSku: "A" },
-      ...(breakdowns && { proceeds: { breakdowns } })
-    })
-    const usd = (amount: string) => ({ amount, currencyCode: "USD" })
-    const amazon = {
-      orderId: "111-1",
-      createdTime: "2026-09-23T05:00:00Z",
-      salesChannel: { channelName: "Amazon.com", marketplaceId: "ATVPDKIKX0DER" },
-      orderItems: [
-        item([
-          { type: "ITEM", subtotal: usd("30.00") },
-          { type: "DISCOUNT", subtotal: usd("-3.00") },
-          { type: "TAX", subtotal: usd("2.40") }
-        ])
-      ]
-    }
-    expect(orderSales(amazon)).toEqual({ minor: 2700, currency: "USD" })
-    expect(orderSales({ ...amazon, orderItems: [item()] })).toBeNull()
   })
 
   it("lists an order Shopify cancelled as Cancelled, whatever shipped", () => {

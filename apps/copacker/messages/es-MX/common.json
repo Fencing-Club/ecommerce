@@ -106,8 +106,7 @@
     "shopifyEffect": "Copacker deja de sincronizar productos, existencias, ventas y costos con {account}. Las órdenes de compra se quedan como están.",
     "amazonEffect": "Copacker deja de leer ventas y existencias de {account} y no puede crear envíos de FBA ni de AWD. Las órdenes de compra se quedan como están.",
     "ebayEffect": "Copacker deja de leer ventas de {account}. Las órdenes de compra se quedan como están.",
-    "failed": "No se pudo desconectar {name}",
-    "cancel": "Cancelar"
+    "failed": "No se pudo desconectar {name}"
   },
   "fileDropzone": {
     "wrongType": "{type, select, pdf {Elige un PDF} csv {Elige un CSV} other {Elige un archivo compatible}}",

@@ -1,6 +1,6 @@
+import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { shippingSettingsKey } from "@/documents/shipping-model"
 import { ready, scenario, shippingDocumentStory } from "@/stories/shipping-documents"
 
 const meta = preview.meta({

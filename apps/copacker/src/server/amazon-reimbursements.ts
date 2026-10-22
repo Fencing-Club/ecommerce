@@ -1,13 +1,9 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { fbaReimbursementsReportType, parseFbaReimbursements } from "@repo/copacker-marketplaces/reimbursements"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonReimbursementReports, amazonReimbursements } from "@/db/schema"
-import {
-  type AmazonReportInput,
-  fbaReportMarketplace,
-  monthlyReportStatus,
-  syncMonthlyAmazonReport
-} from "./amazon-report-sync"
+import { type AmazonReportInput, monthlyReportStatus, syncMonthlyAmazonReport } from "./amazon-report-sync"
 
 export async function syncAmazonReimbursements(
   input: AmazonReportInput,
@@ -15,7 +11,7 @@ export async function syncAmazonReimbursements(
   now = new Date()
 ) {
   const { orgId, externalAccountId } = input
-  const marketplaceId = fbaReportMarketplace
+  const marketplaceId = usMarketplaceId
   const reports = await db()
     .select()
     .from(amazonReimbursementReports)
@@ -80,7 +76,7 @@ export async function amazonReimbursementsStatus(orgId: string, externalAccountI
       and(
         eq(amazonReimbursementReports.orgId, orgId),
         eq(amazonReimbursementReports.externalAccountId, externalAccountId),
-        eq(amazonReimbursementReports.marketplaceId, fbaReportMarketplace)
+        eq(amazonReimbursementReports.marketplaceId, usMarketplaceId)
       )
     )
   return monthlyReportStatus(reports, now)

@@ -4,6 +4,21 @@ Amazon, Shopify and eBay clients, sales collectors and Amazon report parsers for
 `@repo/copacker-marketplaces/<module>`. Orders, packing and documents live in
 [`@repo/copacker-shipments`](../../copacker-shipments/docs/README.md).
 
+Connecting accounts: `./shopify-auth` exchanges and refreshes Shopify's OAuth tokens, uninstalls the app and checks
+Shopify's callback signature (`verifyShopifyHmac`); `exchangeAmazonCode` in `./amazon` and `exchangeEbayCode` in
+`./ebay` trade a seller's authorization code for a refresh token. `./shopify` stays free of Node APIs, as the browser
+loads it for the shop-domain schema.
+
+`./amazon-marketplaces` is the one table of the North American Amazon marketplaces Copacker reads (ID, country,
+channel code, label, Seller Central host and order-report name), with `usMarketplaceId` for the US marketplace that
+holds FBA and AWD stock, and `amazonConsentUrl` for Seller Central's authorization page. It has no Node dependencies,
+so the browser can load it. `./amazon-ads` is the Amazon Ads API client: tokens, seller profiles, ad-spend reports and
+their downloads, with the Ads app's credentials passed in.
+
+`./sales` also counts an order's net product sales (`orderSales`), eBay's line and order refunds (`ebayLineSales`,
+`ebayOrderRefund`) and Shopify Payments' fees on an order (`shopifyOrderFees`). Copacker's Overview repeats this math
+in SQL (`apps/copacker/src/server/overview-sales.ts`); change both together.
+
 Identifiers the app checks against are defined once here: a Shopify variant's ID (`variantIdSchema` in `/shopify`) and
 an Amazon seller ID (`sellerIdSchema` in `/amazon`).
 

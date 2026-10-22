@@ -36,11 +36,13 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   const editsShipments = can(s, "shipments", "edit")
   // Someone who doesn't see prices gets the PO without its costs, totals, landed costs and priced documents.
   const prices = can(s, "prices")
-  const { order, supplier } = await accessibleOrder(s, id)
+  // The events and workflow below take the PO as opened here, rather than opening it again.
+  const opened = await accessibleOrder(s, id)
+  const { order, supplier } = opened
   const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
     db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
-    orderEvents(s, id),
+    orderEvents(s, opened),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision)),
     // The supplier reads the buyer's note as from the buyer, by its workspace's name.
     s.org.kind === "supplier"
@@ -57,7 +59,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
     s.org.kind === "supplier" && order.status !== "closed"
       ? (shipmentRows.at(-1)?.status ?? order.status)
       : order.status
-  const [workflow, proposals] = await Promise.all([orderWorkflow(s, id), proposalState(id)])
+  const [workflow, proposals] = await Promise.all([orderWorkflow(s, opened), proposalState(id)])
   // The supplier's latest changes: pending for both sides, or declined for the supplier to see why.
   const proposal =
     proposals.latest &&

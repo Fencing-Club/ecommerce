@@ -1,4 +1,3 @@
-import { useRouter } from "@tanstack/react-router"
 import { Tags } from "lucide-react"
 import { useId, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
@@ -16,8 +15,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
 import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
 
@@ -43,32 +41,21 @@ export function ExcludedOrderTags({ tags, suggestions }: { tags: string[]; sugge
 
 function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[] }) {
   const t = useTranslations("settings.excludedTags")
-  const errorMessage = useErrorMessage()
   const id = useId()
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string[]>([])
   const input = useRef<HTMLInputElement>(null)
-  const [error, setError] = useState<string>()
-  const [run, saving] = useActionMutation()
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setError(undefined)
-    try {
-      await run({ action: "workspace.excludedShopifyTags", data: { tags: value } }).unwrap()
-      setOpen(false)
-      router.invalidate()
-    } catch (saveError) {
-      setError(errorMessage(saveError, t("saveFailed")))
-    }
-  }
+  const save = useAction("workspace.excludedShopifyTags", {
+    fallback: t("saveFailed"),
+    onSuccess: () => setOpen(false)
+  })
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         if (next) {
           setValue(tags)
-          setError(undefined)
+          save.reset()
         }
         setOpen(next)
       }}
@@ -80,7 +67,13 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
       </DialogTrigger>
       {/* Typing goes straight into the tags, not to the first chip's remove button. */}
       <DialogContent initialFocus={input}>
-        <form onSubmit={submit} className="flex flex-col gap-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save.run({ tags: value })
+          }}
+          className="flex flex-col gap-4"
+        >
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>{t("description")}</DialogDescription>
@@ -97,11 +90,11 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
             />
             <FieldDescription>{t("wildcard")}</FieldDescription>
           </Field>
-          <FormError message={error} />
+          <FormError message={save.error} />
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
-            <Button type="submit" disabled={saving.isLoading}>
-              {saving.isLoading ? t("saving") : t("save")}
+            <Button type="submit" disabled={save.pending}>
+              {save.pending ? t("saving") : t("save")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,4 +1,4 @@
-import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { amazonNetworkNames } from "./index"
 import type { DocumentLanguage } from "./shipping-model"
 
 const en = {

@@ -1,8 +1,7 @@
+import { cartonRunLabel, cartonRuns } from "@repo/copacker-packing-rules"
 import { z } from "zod"
-import { direction } from "../i18n/locales"
-import { cartonGroupLabel } from "../lib/carton-groups"
-import { countries } from "../lib/countries"
-import type { ProductTask } from "../lib/packing-requirements"
+import { countries } from "./countries"
+import type { ProductTask } from "./packing-requirements"
 
 export const documentSettingsSchema = z.object({
   language: z.enum(["en", "de", "zh-CN", "ur"]).default("en"),
@@ -77,7 +76,8 @@ export type ShippingDocumentData = {
 }
 
 export function documentDirection(settings: DocumentSettings): "rtl" | "ltr" {
-  return direction(settings.language)
+  // Urdu reads right to left.
+  return settings.language === "ur" ? "rtl" : "ltr"
 }
 
 // Group only identical physical cartons. Assignments remain explicit, never inferred from page order.
@@ -270,4 +270,11 @@ export function shippingPdfFilename(data: ShippingDocumentData, kind: DocumentKi
     documentDirection(settings)
   ]
   return `${parts.join("-").replace(/[<>:"/\\|?*\p{Cc}]/gu, "-")}.pdf`
+}
+
+// A group's carton IDs: one run of a sequence as a range (A1–A6), any other IDs listed in full.
+export function cartonGroupLabel(cartons: { id: string }[]) {
+  const ids = cartons.map((carton) => carton.id)
+  const runs = cartonRuns(ids)
+  return runs.length === 1 ? cartonRunLabel(runs[0]!) : ids.join(", ")
 }

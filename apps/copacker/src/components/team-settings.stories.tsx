@@ -223,6 +223,11 @@ export const RemoveFails = meta.story({
     // Cancel closes it with nothing removed.
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
+    // The error was the removal's own: transferring to them starts without it.
+    await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Transfer ownership" }))
+    const transfer = await screen.findByRole("alertdialog", { name: "Transfer ownership to Sam Okafor?" })
+    await expect(within(transfer).queryByText("Sam Okafor already left Harbor Goods.")).toBeNull()
   }
 })
 

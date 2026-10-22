@@ -21,7 +21,6 @@
       "closing": "Sie werden abgemeldet und aus allen Workspaces entfernt. {count, plural, one {{workspaces} wird mit Ihrem Konto geschlossen.} other {{workspaces} werden mit Ihrem Konto geschlossen.}}",
       "handOver": "Übertragen Sie zuerst die Inhaberschaft von {workspaces}."
     },
-    "cancel": "Abbrechen",
     "close": "Schließen"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "Inhaberschaft übertragen",
     "transferTitle": "Inhaberschaft an {name} übertragen?",
     "transferDescription": "Die Person wird Inhaber von {workspace}, und Sie bleiben Admin.",
-    "cancel": "Abbrechen",
     "invitationExpired": "Einladung abgelaufen",
     "invited": "Eingeladen, läuft ab {expires}",
     "invitationSent": "Einladung gesendet, läuft ab {expires}",

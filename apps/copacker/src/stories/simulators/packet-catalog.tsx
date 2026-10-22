@@ -1,7 +1,7 @@
 import { packingRequirementsSchema } from "@repo/copacker-shipments/packing-requirements"
+import { shippingCopy, shippingMessage } from "@repo/copacker-shipments/shipping-copy"
+import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "@repo/copacker-shipments/shipping-rules"
 import { Fragment } from "react"
-import { shippingCopy, shippingMessage } from "@/documents/shipping-copy"
-import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "@/documents/shipping-rules"
 import { receiverNames } from "./data"
 import { simulatorHref } from "./error-table"
 import {

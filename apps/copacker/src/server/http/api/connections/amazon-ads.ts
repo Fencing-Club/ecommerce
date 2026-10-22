@@ -1,12 +1,13 @@
+import { adsScope, adsToken, AmazonAds } from "@repo/copacker-marketplaces/amazon-ads"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
 import { adsStatus, disconnectAds, queueAdsSync, saveAdsConnection } from "@/server/amazon-ads"
-import { adsScope, adsToken, amazonAdsApp, AmazonAds } from "@/server/amazon-ads-client"
 import { adsOAuthCallback, relayAdsOAuth, startAdsOAuth } from "@/server/amazon-ads-oauth"
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
+import { amazonAdsApp } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
 import { hash, isAppOrigin, siteUrlFor } from "@/server/security"
 
@@ -96,7 +97,7 @@ export async function GET(request: Request) {
     return Response.redirect(settings)
   }
   try {
-    const result = await adsToken({
+    const result = await adsToken(app, {
       grant_type: "authorization_code",
       code: z.string().min(1).parse(url.searchParams.get("code")),
       redirect_uri: callback
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
     if (!result.refresh_token) {
       return errorResponse("amazonConnectionFailed", 400)
     }
-    await saveAdsConnection(s.org.id, seller.externalId, result.refresh_token, new AmazonAds(result.access_token))
+    await saveAdsConnection(s.org.id, seller.externalId, result.refresh_token, new AmazonAds(app, result.access_token))
     await queueAdsSync(s.org.id)
   } catch {
     return errorResponse("amazonConnectionFailed", 400)
