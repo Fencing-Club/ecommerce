@@ -128,6 +128,7 @@ describe("CLI authorization", () => {
         body: form
       })
     expect((await consentResponse(post("https://foreign.example"))).status).toBe(403)
+    expect((await consentResponse(post("null"))).status).toBe(403)
     const approved = await consentResponse(post("http://localhost:3000"))
     expect(approved.status).toBe(303)
     const callback = new URL(approved.headers.get("location") ?? "")
