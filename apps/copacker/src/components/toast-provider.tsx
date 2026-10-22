@@ -1,13 +1,13 @@
 import { Toast } from "@base-ui/react/toast"
 import { CircleAlert, CircleCheck } from "lucide-react"
 import type { ReactNode } from "react"
-import { Button } from "./ui/button"
+import { Button } from "@/components/ui/button"
 
 export function ToastItem({ toast }: { toast: Toast.Root.ToastObject }) {
   return (
     <Toast.Root
       toast={toast}
-      className="flex items-center gap-3 rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg data-[ending]:hidden data-[limited]:hidden"
+      className="flex items-center gap-3 rounded-lg border bg-popover p-4 text-popover-foreground shadow-menu data-[ending]:hidden data-[limited]:hidden"
     >
       {toast.type === "error" ? (
         <CircleAlert aria-hidden className="size-4 shrink-0 text-destructive" />

@@ -155,9 +155,6 @@
       "contact": "Kontakt aufnehmen"
     }
   },
-  "banner": {
-    "dismiss": "Ausblenden"
-  },
   "actionBar": {
     "label": "Aktionen",
     "discard": "Verwerfen",

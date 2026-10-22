@@ -1,5 +1,6 @@
 import { PanelLeft } from "lucide-react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -31,14 +32,15 @@ export function SidebarToggle() {
   const t = useTranslations("common.ui")
   const { toggleSidebar } = useSidebar()
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={toggleSidebar}
       aria-label={t("toggleSidebar")}
-      className="-ms-1.5 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="-ms-1.5 text-muted-foreground"
     >
       <PanelLeft className="size-4 rtl:-scale-x-100" aria-hidden />
-    </button>
+    </Button>
   )
 }
 

@@ -27,7 +27,7 @@ const productSuppliersApi = api.injectEndpoints({
 
 function partnersLink(chunks: React.ReactNode) {
   return (
-    <PageLink href="/partners" className="text-foreground underline underline-offset-4">
+    <PageLink href="/partners" className="text-link text-foreground">
       {chunks}
     </PageLink>
   )

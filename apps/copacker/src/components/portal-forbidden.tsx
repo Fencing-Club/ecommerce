@@ -1,21 +1,14 @@
 import { Lock } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { PageHeader } from "./common"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "./ui/empty"
+import { EmptyState, PageHeader } from "@/components/common"
 
+// Shown in the shell when the person's role can't open the page. The header says so; the empty state says who can help.
 export function PortalForbidden() {
   const t = useTranslations("common.pages.forbidden")
   return (
     <>
       <PageHeader title={t("title")} />
-      <Empty className="gap-4 py-10">
-        <EmptyHeader className="gap-1">
-          <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
-            <Lock aria-hidden className="size-5" />
-          </EmptyMedia>
-          <EmptyDescription>{t("askAdmin")}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <EmptyState description={t("askAdmin")} icon={<Lock aria-hidden />} />
     </>
   )
 }

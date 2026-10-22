@@ -113,12 +113,46 @@ export const Default = meta.story({
 export const Unframed = meta.story({
   args: { framed: false },
   render: ({ framed }) => (
-    <Card className="py-0">
+    <Card flush>
       <Lines framed={framed} />
     </Card>
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("table").parentElement).not.toHaveClass("border")
+  }
+})
+
+// Inset, the first and last columns line up with the card's padding: 16px, or 12px in a small card.
+export const Inset = meta.story({
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(["default", "sm"] as const).map((size) => (
+        <Card key={size} size={size} flush>
+          <Table framed={false} inset aria-label={`In a ${size} card`}>
+            <TableBody>
+              {lines.map((line) => (
+                <TableRow key={line.sku}>
+                  <TableCell>{line.name}</TableCell>
+                  <TableCell className="text-end">{line.units}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    for (const [size, inset] of [
+      ["default", "16px"],
+      ["sm", "12px"]
+    ] as const) {
+      const table = canvas.getByRole("table", { name: `In a ${size} card` })
+      await expect(table).toHaveAttribute("data-inset", "true")
+      const [first, last] = within(table).getAllByRole("cell").slice(0, 2)
+      await expect(first && getComputedStyle(first).paddingInlineStart).toBe(inset)
+      await expect(last && getComputedStyle(last).paddingInlineEnd).toBe(inset)
+    }
   }
 })
 

@@ -117,8 +117,8 @@ export function Dash({ reason }: { reason?: string }) {
 }
 
 const deltaTones = {
-  up: { icon: ArrowUpRight, className: "bg-success/10 text-success" },
-  down: { icon: ArrowDownRight, className: "bg-destructive/10 text-destructive" },
+  up: { icon: ArrowUpRight, className: "bg-success-soft text-success" },
+  down: { icon: ArrowDownRight, className: "bg-destructive-soft text-destructive" },
   flat: { icon: Minus, className: "bg-muted text-muted-foreground" }
 }
 
@@ -190,7 +190,7 @@ function Product({
         <PageLink
           href={href}
           title={name}
-          className="truncate rounded-sm text-sm font-medium outline-none hover:underline hover:underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="focus-ring truncate rounded-sm text-sm font-medium underline-offset-4 hover:underline"
         >
           {name}
         </PageLink>
@@ -238,12 +238,6 @@ function combine(values: Money[]): Money {
   return [...totals].map(([currency, minor]) => ({ currency, minor })).toSorted((a, b) => b.minor - a.minor)
 }
 
-// A table that runs edge to edge inside its card: the first and last columns line up with the card's padding.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-// A card holding an edge-to-edge table or list, under a header with a rule.
-const tableCard = "@container gap-0 py-0"
-const tableCardHeader = "border-b pt-4"
-
 export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh: () => void }) {
   const t = useTranslations("overview.setup")
   const tSync = useTranslations("common.sync")
@@ -277,7 +271,7 @@ export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh
               ) : (
                 <PageLink
                   href={step.href}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+                  className="focus-ring flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60"
                 >
                   {step.syncing ? (
                     <Spinner className="size-4 shrink-0 text-muted-foreground" />
@@ -320,8 +314,8 @@ export function Attention({ items }: { items: AttentionItem[] }) {
   const t = useTranslations("overview.attention")
   const figures = useFigures()
   return (
-    <Card className={tableCard}>
-      <CardHeader className={tableCardHeader}>
+    <Card flush className="@container">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {t("title")}
           {items.length > 0 && (
@@ -339,7 +333,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
               <li key={item.key}>
                 <PageLink
                   href={item.href}
-                  className="group flex items-center gap-3 px-4 py-2.5 transition-colors outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+                  className="focus-ring group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-inset"
                 >
                   <Icon className={cn("size-4 shrink-0", className)} aria-hidden />
                   <span className="flex min-w-0 flex-1 flex-col">
@@ -549,7 +543,7 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
             <li key={row.key}>
               <PageLink
                 href={row.href}
-                className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="focus-ring flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/60"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{row.label}</span>
@@ -649,8 +643,8 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
     ? t("summaryAtCost", { items: slow.items, units: slow.units, amount: figures.money(slow.value) })
     : t("summary", { items: slow.items, units: slow.units })
   return (
-    <Card className={tableCard}>
-      <CardHeader className={tableCardHeader}>
+    <Card flush className="@container">
+      <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           {t("title")}
           <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
@@ -658,7 +652,7 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
         {slow.items > 0 && <CardDescription>{summary}</CardDescription>}
       </CardHeader>
       {slow.items ? (
-        <Table framed={false} className={edgeTable}>
+        <Table framed={false} inset>
           <TableHeader>
             <TableRow>
               <TableHead>{t("product")}</TableHead>
@@ -712,15 +706,15 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
   const t = useTranslations("overview.bestSellers")
   const figures = useFigures()
   return (
-    <Card className={tableCard}>
-      <CardHeader className={tableCardHeader}>
+    <Card flush className="@container">
+      <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction>
           <CardLink href="/restock">{t("restock")}</CardLink>
         </CardAction>
       </CardHeader>
       {restock.bestSellers.length ? (
-        <Table framed={false} className={edgeTable}>
+        <Table framed={false} inset>
           <TableHeader>
             <TableRow>
               <TableHead>{t("product")}</TableHead>
@@ -768,15 +762,15 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
   const shown = purchasing.bySupplier.slice(0, 5)
   const rest = purchasing.bySupplier.slice(5)
   return (
-    <Card className={tableCard}>
-      <CardHeader className={tableCardHeader}>
+    <Card flush className="@container">
+      <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction>
           <CardLink href="/orders">{t("link")}</CardLink>
         </CardAction>
       </CardHeader>
       {shown.length ? (
-        <Table framed={false} className={edgeTable}>
+        <Table framed={false} inset>
           <TableHeader>
             <TableRow>
               <TableHead>{t("supplier")}</TableHead>
@@ -944,7 +938,7 @@ export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
                   <Tooltip>
                     <TooltipTrigger
                       aria-label={t("whatsIn", { line: line.label })}
-                      className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                      className="focus-ring rounded-full text-muted-foreground hover:text-foreground"
                     >
                       <Info className="size-3.5" aria-hidden />
                     </TooltipTrigger>
@@ -980,7 +974,7 @@ export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
 }
 
 const settingsLink = (chunks: React.ReactNode) => (
-  <PageLink href="/settings#integrations" className="font-medium text-foreground underline underline-offset-2">
+  <PageLink href="/settings#integrations" className="text-link font-medium text-foreground">
     {chunks}
   </PageLink>
 )

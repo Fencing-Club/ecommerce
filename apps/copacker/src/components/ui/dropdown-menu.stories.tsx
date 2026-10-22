@@ -130,6 +130,9 @@ export const SubmenuRadioItems = meta.story({
     await waitFor(() => expect(sort).toHaveAttribute("aria-expanded", "true"))
 
     const units = await screen.findByRole("menuitemradio", { name: "Units" })
+    // The submenu floats like the menu it came from.
+    const submenu = screen.getAllByRole("menu").find((element) => element !== menu)
+    await expect(submenu && getComputedStyle(submenu).boxShadow).toBe(getComputedStyle(menu).boxShadow)
     await expect(screen.getByRole("menuitemradio", { name: "SKU" })).toHaveAttribute("aria-checked", "true")
     await userEvent.click(units)
     await expect(args.onSortChange).toHaveBeenLastCalledWith("units")

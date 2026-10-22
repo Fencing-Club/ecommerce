@@ -601,7 +601,7 @@ export function Journey() {
                 onClick={() => go(i)}
                 aria-current={i === chapter ? "step" : undefined}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "focus-ring rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   i === chapter
                     ? "bg-foreground text-background"
                     : cn(quiet, "hover:bg-foreground/5 hover:text-foreground")

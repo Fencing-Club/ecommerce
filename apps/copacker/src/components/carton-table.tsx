@@ -5,13 +5,13 @@ import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { type CartonGroup, groupCartonIds } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { CartonProductsDialog } from "./carton-products-dialog"
 import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
 import { useCartonIssueErrors } from "./packing-issues"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 type Place = "carton" | "count" | "dimensions" | "weight" | number
 // A problem with a carton configuration: where it shows (under the row, a field or a product, by its index), and the
@@ -65,7 +65,7 @@ export function CartonTable({
       <div className="flex flex-col gap-3 wide:gap-0 wide:overflow-hidden wide:rounded-lg wide:border wide:bg-card">
         <div
           aria-hidden
-          className={cn("hidden bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
+          className={cn("hidden bg-muted/60 px-4 py-2.5 text-meta text-muted-foreground wide:grid", columns)}
         >
           <span className="col-start-2">{t("columns.cartons")}</span>
           <span className={readOnly ? undefined : "text-end"}>{t("columns.count")}</span>
@@ -346,7 +346,7 @@ function CartonRow({
       <div className="hidden wide:col-start-6 wide:row-start-1 wide:flex wide:flex-wrap wide:items-center wide:justify-between wide:gap-x-3 wide:gap-y-1 wide:self-center wide:py-3.5">
         <div>
           <p className="tabular-nums">{units}</p>
-          <p className="text-[13px] text-muted-foreground">{detail}</p>
+          <p className="text-meta text-muted-foreground">{detail}</p>
         </div>
         {!open && errors.length > 0 && <IssueBadge count={errors.length} />}
       </div>
@@ -381,7 +381,7 @@ function CartonRow({
                   {first && <p className={cn(caption, "mb-2 hidden wide:block")}>{packing("product")}</p>}
                   <p className="font-medium">{item.name}</p>
                   {variantName(item.variant) && (
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">{item.variant}</p>
+                    <p className="mt-0.5 text-meta text-muted-foreground">{item.variant}</p>
                   )}
                 </div>
                 <div className="min-w-0">

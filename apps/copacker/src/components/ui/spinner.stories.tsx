@@ -13,7 +13,9 @@ export const Default = meta.story({
     const spinner = canvasElement.querySelector("[data-slot=spinner]")
     // It's decoration: whatever it sits in says what's loading.
     await expect(spinner).toHaveAttribute("aria-hidden", "true")
-    await expect(spinner).toHaveClass("animate-spin")
+    // It turns, unless the person asks for reduced motion.
+    await expect(spinner).toHaveClass("motion-safe:animate-spin")
+    await expect(spinner && getComputedStyle(spinner).animationName).toBe("spin")
   }
 })
 

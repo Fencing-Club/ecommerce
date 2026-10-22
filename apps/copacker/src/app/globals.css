@@ -124,6 +124,11 @@
   }
 }
 
+/* Small print beside a value or row: breadcrumbs, a record's meta, a field's problem. 13px, on its parent's lines. */
+@theme {
+  --text-meta: 0.8125rem;
+}
+
 /* The sign-in panel's cards drift, and its shipment's current leg runs. */
 @theme {
   --animate-float: float 9s ease-in-out infinite;
@@ -152,14 +157,32 @@
   --radius: 0.625rem;
 }
 
+/* The ring a control shows when the keyboard reaches it. Controls drop the browser's outline for it. */
+@utility focus-ring {
+  @apply outline-none focus-visible:ring-3 focus-visible:ring-ring/50;
+}
+
+/* A link inside a sentence: underlined in the text's own color, with the focus ring. */
+@utility text-link {
+  @apply focus-ring rounded-sm underline underline-offset-4;
+}
+
+/* Tailwind's preflight is the reset. These are the few base rules it leaves out. */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-svh bg-background text-foreground antialiased;
   }
   html {
     @apply font-sans;
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  :disabled {
+    cursor: default;
   }
 }
