@@ -1,17 +1,14 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 const context = vi.hoisted(() => ({
-  database: null as unknown,
   read: vi.fn<() => Promise<never[]>>().mockResolvedValue([]),
   balance: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   economics: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   depletions: vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/connections", async (original) => ({
   ...(await original<typeof import("../src/server/connections")>()),
   connection: async () => ({ scopes: "read_orders,read_all_orders" }),
@@ -29,17 +26,8 @@ vi.mock("../src/server/analytics-jobs", async (original) => ({
 vi.mock("../src/server/inventory-auto-import", () => ({ syncAutomaticDepletions: context.depletions }))
 import { PollAgain } from "../src/server/job-handlers"
 import { salesJob } from "../src/server/sales-orders"
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   vi.clearAllMocks()
 })
 it("commits each sales period and resumes each follow-up exactly once", async () => {

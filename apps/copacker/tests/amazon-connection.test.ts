@@ -1,11 +1,9 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown, role: "owner", orgId: "" }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+const context = vi.hoisted(() => ({ role: "owner", orgId: "" }))
+vi.mock("@/db", () => import("./test-db"))
 
 vi.mock("@/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
@@ -22,20 +20,14 @@ vi.mock("@/server/amazon-notifications", () => ({
 vi.mock("@/server/first-sync", () => ({ startFirstSync: vi.fn<() => Promise<void>>().mockResolvedValue(undefined) }))
 import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
 const params = { params: { provider: "amazon" } }
 const fetchMock = vi.fn<typeof fetch>()
-beforeAll(async () => {
-  context.current = database
+setUpTestDatabase({ truncate: true })
+beforeAll(() => {
   context.orgId = orgId
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
 })
 beforeEach(async () => {
   context.role = "owner"
@@ -47,7 +39,6 @@ beforeEach(async () => {
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
   vi.stubGlobal("fetch", fetchMock)
   fetchMock.mockReset()
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values({ id: orgId, name: "Contoso", kind: "buyer" })
 })
 afterEach(() => {

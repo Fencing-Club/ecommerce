@@ -1,19 +1,14 @@
-import { PGlite } from "@electric-sql/pglite"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { AccessError, LocalizedError } from "../src/i18n/errors"
 import { requireAccess, requireAdmin } from "../src/server/authorization"
 import { overviewDestination, portalSession, portalShell } from "../src/server/portal-session"
 import { profileFor, requireMembership, workspaceSession } from "../src/server/workspace-session"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const context: { current: unknown } = vi.hoisted(() => ({ current: null }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const first = "00000000-0000-4000-8000-000000000001"
 const second = "00000000-0000-4000-8000-000000000002"
 const foreign = "00000000-0000-4000-8000-000000000003"
@@ -25,15 +20,8 @@ const user = {
   lastName: "Member"
 }
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles] })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations, profiles CASCADE")
   await database.insert(tables.organizations).values([
     { id: second, name: "Supplier", kind: "supplier", createdAt: new Date("2026-01-02"), workosId: "org_private" },
     { id: first, name: "Buyer", kind: "buyer", createdAt: new Date("2026-01-01"), restockLeadTimeDays: 30 },

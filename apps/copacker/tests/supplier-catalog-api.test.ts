@@ -1,19 +1,12 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { type SheetRow, sheetColumns, sheetCsv } from "../src/server/product-sheet"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 const storage = vi.hoisted(() => ({ putFile: vi.fn<() => Promise<void>>(async () => undefined) }))
-vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("../src/server/storage", () => ({ putFile: storage.putFile }))
 
 import { POST as saveCatalogRoute } from "../src/server/http/api/catalogs"
@@ -25,35 +18,14 @@ import { POST as saveProduct } from "../src/server/http/api/supplier-catalog/pro
 import { POST as saveStock } from "../src/server/http/api/supplier-catalog/stock"
 import { GET as downloadTemplate } from "../src/server/http/api/supplier-catalog/template"
 import { appUrl } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID()
 const supplierA = randomUUID()
 const supplierB = randomUUID()
 const linkA = randomUUID()
 const linkB = randomUUID()
-
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const post = (url: string, body: unknown) =>
   new Request(`${appUrl()}${url}`, {
@@ -145,13 +117,8 @@ function productPayload(overrides: Record<string, unknown> = {}) {
   }
 }
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => pg.close())
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   storage.putFile.mockClear()
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
@@ -162,7 +129,7 @@ beforeEach(async () => {
     { id: linkA, buyerOrgId: buyerId, supplierOrgId: supplierA, name: "Supplier A", email: "owner@example.com" },
     { id: linkB, buyerOrgId: buyerId, supplierOrgId: supplierB, name: "Supplier B", email: "owner@example.com" }
   ])
-  context.actor = actor(supplierA, "supplier")
+  signedIn.actor = testSession({ orgId: supplierA, kind: "supplier" })
 })
 
 describe("product template", () => {
@@ -179,9 +146,9 @@ describe("product template", () => {
 
   it("keeps identical SKUs isolated per supplier and buyer lookups scoped to the chosen supplier", async () => {
     expect(await importFile(sheetCsv([cord]))).toEqual({ imported: true })
-    context.actor = actor(supplierB, "supplier")
+    signedIn.actor = testSession({ orgId: supplierB, kind: "supplier" })
     expect(await importFile(sheetCsv([{ ...cord, price: "2.50" }]))).toEqual({ imported: true })
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 190 })
     expect((await (await match(linkB, "SAME")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 250 })
     expect((await (await match(linkA, "same")).json())[0]).toMatchObject({ status: "not_in_supplier_catalog" })
@@ -207,9 +174,9 @@ describe("product template", () => {
   })
 
   it("rejects a stale preview without changing products", async () => {
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     expect((await upload(sheetCsv([cord]), "preview")).status).toBe(403)
-    context.actor = actor(supplierA, "supplier")
+    signedIn.actor = testSession({ orgId: supplierA, kind: "supplier" })
     const stale = await (await upload(sheetCsv([cord]), "preview")).json()
     await insertProduct(supplierA, { supplierSku: "SAME", title: "Manual edit", priceMinor: 100 })
     expect((await upload(sheetCsv([cord]), "commit", stale)).status).toBe(400)
@@ -268,16 +235,16 @@ describe("products", () => {
   it("saves a product with variants, keeps edits tenant-scoped and rejects stale revisions", async () => {
     const created = await (await saveProduct(post("/api/supplier-catalog/products", productPayload()))).json()
     expect(created).toEqual({ id: expect.any(String), revision: 1 })
-    context.actor = actor(supplierB, "supplier")
+    signedIn.actor = testSession({ orgId: supplierB, kind: "supplier" })
     expect(
       (await saveProduct(post("/api/supplier-catalog/products", productPayload({ id: created.id, revision: 1 }))))
         .status
     ).toBe(409)
-    context.actor = actor(supplierA, "supplier")
+    signedIn.actor = testSession({ orgId: supplierA, kind: "supplier" })
     const archived = productPayload({ id: created.id, revision: 1, status: "archived" })
     expect((await saveProduct(post("/api/supplier-catalog/products", archived))).status).toBe(200)
     expect((await saveProduct(post("/api/supplier-catalog/products", archived))).status).toBe(409)
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "archived_supplier_product" })
   })
 
@@ -314,14 +281,14 @@ describe("products", () => {
       .update(tables.supplierProducts)
       .set({ trackInventory: true })
       .where(eq(tables.supplierProducts.id, product.id))
-    context.actor = actor(supplierB, "supplier")
+    signedIn.actor = testSession({ orgId: supplierB, kind: "supplier" })
     expect((await stock(12)).status).toBe(404)
-    context.actor = actor(supplierA, "supplier")
+    signedIn.actor = testSession({ orgId: supplierA, kind: "supplier" })
     expect(await (await saveStock(post("/api/supplier-catalog/stock", both))).json()).toEqual({ saved: 2 })
     expect(
       (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, other.id)))[0]
     ).toMatchObject({ onHand: 9 })
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     expect((await stock(12)).status).toBe(403)
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", available: 12 })
   })
@@ -357,7 +324,7 @@ describe("catalogs", () => {
       ]
     })
     expect(saved).toEqual({ id: expect.any(String), revision: 1 })
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     // 10% off, with the product's volume pricing adjusted too, and the catalog's own quantity rules.
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({
       status: "matched",
@@ -375,7 +342,7 @@ describe("catalogs", () => {
     expect((await (await match(linkA, "LEFT")).json())[0]).toMatchObject({ status: "not_in_supplier_catalog" })
 
     // A draft catalog doesn't apply, and a customer without one sees every product at its own price.
-    context.actor = actor(supplierA, "supplier")
+    signedIn.actor = testSession({ orgId: supplierA, kind: "supplier" })
     await saveCatalog({
       id: saved.id,
       revision: 1,
@@ -386,7 +353,7 @@ describe("catalogs", () => {
       customerIds: [linkA],
       products: []
     })
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
     expect((await (await match(linkA, "LEFT")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 900 })
   })
 

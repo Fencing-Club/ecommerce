@@ -1,28 +1,14 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const context = vi.hoisted(() => ({ database: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@/db", () => import("./test-db"))
 import { consumeJobSignal } from "../src/server/cloudflare-jobs"
 import { runNextJob, runClaimedJob, type JobClaim } from "../src/server/queue"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
-beforeEach(async () => {
-  await pg.exec("TRUNCATE jobs")
-})
+setUpTestDatabase({ truncate: [tables.jobs] })
 const eventJob = () => ({
   key: randomUUID(),
   kind: "ebay-event" as const,

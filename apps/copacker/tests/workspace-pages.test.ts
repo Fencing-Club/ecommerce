@@ -1,6 +1,4 @@
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { AccessError, LocalizedError } from "../src/i18n/errors"
 import type { Access } from "../src/lib/access"
@@ -18,13 +16,11 @@ import {
   salesPageData
 } from "../src/server/workspace-pages"
 import { orderData } from "../src/stories/fixtures/orders"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const context: { current: unknown; actor: unknown } = vi.hoisted(() => ({ current: null, actor: null }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+const context: { actor: unknown } = vi.hoisted(() => ({ actor: null }))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", () => ({ session: async () => context.actor }))
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`
 const supplier = id(1),
   foreign = id(2),
@@ -40,15 +36,8 @@ const session = (access: Access, kind: "supplier" | "buyer" | "forwarder" = "sup
 })
 const owner = { ...session({}), role: "owner" as const }
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: supplier, name: "Supplier", kind: "supplier", workosId: "private-workos-id" },
     { id: foreign, name: "Foreign supplier", kind: "supplier" },
