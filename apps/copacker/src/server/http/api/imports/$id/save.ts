@@ -1,13 +1,9 @@
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { failureMessage, failureStatus } from "@/server/errors"
 import { saveImportedOrder } from "@/server/import-save"
-import { isAppOrigin } from "@/server/security"
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   const s = await session()
   try {
     requireAccess(s, "orders", "edit")

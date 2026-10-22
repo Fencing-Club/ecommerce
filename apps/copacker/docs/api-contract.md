@@ -19,11 +19,23 @@ then saved with `downloadBlob` or previewed from an object URL, so its bytes nev
 
 Business routes use the WorkOS session ([Sign-in and getting started](auth.md)). The active workspace is selected with a
 server-set HttpOnly cookie and checked against live database membership on every request. No client-supplied
-organization grants access. Every mutation requires an Origin equal to APP_URL; other origins get 403.
+organization grants access.
+
+Every request other than GET or HEAD must come from the app: the browser's `Sec-Fetch-Site: same-origin`, or an Origin
+(without one, a Referer) on APP_URL or one of its aliases. The request middleware in `src/start.ts`, with its policy in
+`server/http-response.ts`, refuses anything else with 403 `{ error }` before a route runs. Provider webhooks (`/api/webhooks/*`) and the mailing list's unsubscribe link are
+cross-site on purpose and skip it; they check their own signatures or tokens.
+
+Every route answers through `httpResponse` in `server/http-response.ts`. A response is `private, no-store` unless the
+route set its own `Cache-Control` (product photos are immutable), and always `nosniff`. Failures a route throws are
+answered there too, with `{ error }` in the person's language: an `AccessError` is 403, a missing record 404, a
+`StatusError` its own status, and a request body or query that doesn't parse 400. Anything else is unexpected and goes
+on to Start. Downloads use `fileResponse`, which names the file with `filename*` (RFC 5987) and adds
+`Content-Security-Policy: sandbox`.
 
 `POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`,
-`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role or
-page access doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
+`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role, page
+access or kind of workspace doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
 form. Refresh server data after successful mutations. Unexpected errors never show raw database queries or tokens.
 
 Send the last displayed numeric revision with every PO or shipment mutation. A revision conflict requires a refresh,
@@ -202,8 +214,8 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   environment's RuName ([eBay](notifications.md#ebay)). A new connection starts its first order sync and subscribes the
   seller to notifications.
 - `GET, POST /api/webhooks/ebay`: eBay's endpoint check (`challenge_code`) and its signed notifications, checked and
-  sent on to the worker; 412 for a bad signature, 503 when one can't be checked yet
-  ([eBay notifications](notifications.md#notifications)).
+  sent on to the worker; 412 for a bad signature, 503 when one can't be checked yet, 429 for an address that looks up
+  more than ten unknown signing keys in ten minutes ([eBay notifications](notifications.md#notifications)).
 
 ### Purchase orders
 

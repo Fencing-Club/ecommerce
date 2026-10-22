@@ -11,6 +11,7 @@ import type { CasePack } from "@/lib/case-packs"
 import { casePackSchema } from "@/lib/case-packs"
 import type { ProductLabel } from "@/lib/product-label"
 import { productLabels } from "@/lib/product-label"
+import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
 import { refreshStoredStockFields } from "./product-fields"
 import type { Session } from "./workspace-session"
@@ -71,8 +72,6 @@ export const assignSupplierInputSchema = z.strictObject({
   supplierId: z.uuid().nullable()
 })
 
-export class ProductDefaultsError extends StatusError {}
-
 export async function readProductDefaults(orgId: string, shopifyDomain: string) {
   const rows = await db()
     .select()
@@ -98,9 +97,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
 }
 
 export async function saveProductDefaults(s: Session, raw: unknown) {
-  if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const input = productDefaultsInputSchema.parse(raw)
   let domain = ""
   const saved = await db().transaction(async (tx) => {
@@ -110,7 +107,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
+      throw new StatusError("connectShopifyBeforeEditing", 409)
     }
     const [stock] = await tx
       .select({ data: stockSnapshots.data })
@@ -125,7 +122,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       )
     const known = stock?.data?.source === "shopify" && stock.data.rows.some((row) => row.productId === input.productId)
     if (!known) {
-      throw new ProductDefaultsError("productNotSynced", 404)
+      throw new StatusError("productNotSynced", 404)
     }
     domain = account.domain
     const scope = and(
@@ -135,7 +132,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     )
     const [previous] = await tx.select().from(productDefaults).where(scope).for("update")
     if ((previous?.revision ?? 0) !== input.expectedRevision) {
-      throw new ProductDefaultsError("productChangedReload", 409)
+      throw new StatusError("productChangedReload", 409)
     }
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
     if (supplierId && supplierId !== previous?.supplierId) {
@@ -187,7 +184,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
     .from(suppliers)
     .where(and(eq(suppliers.id, supplierId), eq(suppliers.buyerOrgId, orgId), isNull(suppliers.removedAt)))
   if (!supplier) {
-    throw new ProductDefaultsError("chooseCurrentSupplier", 409)
+    throw new StatusError("chooseCurrentSupplier", 409)
   }
   return supplier
 }
@@ -195,9 +192,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
 // Sets the supplier for several products at once, such as from restock's "No supplier yet" group. Other product
 // details are kept.
 export async function assignProductSupplier(s: Session, raw: unknown) {
-  if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const input = assignSupplierInputSchema.parse(raw)
   let domain = ""
   const result = await db().transaction(async (tx) => {
@@ -207,7 +202,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
+      throw new StatusError("connectShopifyBeforeEditing", 409)
     }
     domain = account.domain
     const productIds = [...new Set(input.productIds)]
@@ -249,9 +244,7 @@ export const assignProductLabelInputSchema = z.strictObject({
 // Sets the label type for several products at once, such as marking uniforms as needing uploaded labels. Other
 // product details are kept.
 export async function assignProductLabel(s: Session, raw: unknown) {
-  if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const input = assignProductLabelInputSchema.parse(raw)
   return db().transaction(async (tx) => {
     const [account] = await tx
@@ -260,7 +253,7 @@ export async function assignProductLabel(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
+      throw new StatusError("connectShopifyBeforeEditing", 409)
     }
     const productIds = [...new Set(input.productIds)]
     await tx

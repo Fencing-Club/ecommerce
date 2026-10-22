@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
 import { applySchema } from "./database"
+import { served } from "./served"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -12,7 +13,8 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
-import { GET } from "../src/server/http/api/analytics/amazon/reconciliation"
+import { GET as reconciliation } from "../src/server/http/api/analytics/amazon/reconciliation"
+const GET = served(reconciliation)
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),

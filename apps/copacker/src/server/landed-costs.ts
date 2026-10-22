@@ -3,16 +3,17 @@ import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { landedCosts, orders } from "@/db/schema"
-import { LocalizedError } from "@/i18n/errors"
+import { AccessError, LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import { sentDates } from "./sent-dates"
 import type { Session } from "./workspace-session"
 
-// Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
+// Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module;
+// otherwise this is authorization.ts's requireBuyer.
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new LocalizedError("buyerWorkspaceRequired")
+    throw new AccessError("buyerWorkspaceRequired")
   }
 }
 

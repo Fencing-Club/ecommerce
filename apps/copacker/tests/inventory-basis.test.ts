@@ -7,6 +7,7 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
 import { applySchema } from "./database"
+import { served } from "./served"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -20,7 +21,7 @@ vi.mock("../src/server/auth", async (original) => ({
 }))
 import { multiplyInventoryCost } from "../src/lib/inventory-basis"
 import { ApiSessionError } from "../src/server/auth"
-import { POST as previewCosts } from "../src/server/http/api/analytics/cost-import-previews"
+import { POST as costPreviews } from "../src/server/http/api/analytics/cost-import-previews"
 import { POST as openingRoute } from "../src/server/http/api/analytics/opening-balances"
 import { GET as listPurchases, POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
 import { GET as purchaseGet, DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
@@ -28,6 +29,7 @@ import { POST as receiptRoute } from "../src/server/http/api/analytics/receipts"
 import { DELETE as receiptDelete } from "../src/server/http/api/analytics/receipts/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
+const previewCosts = served(costPreviews)
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
@@ -95,10 +97,10 @@ const receipt = (purchaseId: string, quantity = 4, sourceLine = "1") => ({
   location: "warehouse:A",
   condition: "sellable"
 })
-const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
+const request = (body: unknown, key = randomUUID()) =>
   new Request(`${appUrl()}/api/analytics/purchase-costs`, {
     method: "POST",
-    headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": key },
+    headers: { Origin: appUrl(), "Content-Type": "application/json", "Idempotency-Key": key },
     body: JSON.stringify(body)
   })
 const resource = (id: string) => ({ params: { id } })
@@ -217,7 +219,8 @@ it("preserves corrections and blocks purchase changes while active receipts depe
   const prior = await purchaseGet(request(null), resource(record.id))
   expect((await prior.json()).record.retiredBy).toBe(`user-${orgId}`)
 })
-it("protects other workspaces and requires correct permissions, origin and request shape", async () => {
+// The HTTP boundary checks the origin (http-response.test.ts).
+it("protects other workspaces and requires correct permissions and request shape", async () => {
   const { record } = await save()
   context.actor = actor(otherId, "buyer")
   expect((await purchaseGet(request(null), resource(record.id))).status).toBe(404)
@@ -231,7 +234,6 @@ it("protects other workspaces and requires correct permissions, origin and reque
       )
     ).status
   ).toBe(422)
-  expect((await purchaseRoute(request(purchase, randomUUID(), "https://evil.test"))).status).toBe(403)
   expect((await receiptRoute(request(purchase))).status).toBe(400)
   context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
   expect((await purchaseRoute(request(purchase))).status).toBe(403)
@@ -414,12 +416,12 @@ it("isolates draft and foreign purchase order sources", async () => {
   expect((await purchaseRoute(request({ ...body, source: { ...body.source, revision: 99 } }))).status).toBe(404)
 })
 
-it("protects cost previews with edit access and origin checks without requiring an import key", async () => {
+it("protects cost previews with edit access without requiring an import key", async () => {
   const body = { rows: [{ id: randomUUID(), kind: "inventory", data: purchase }] }
-  const makeRequest = (origin = appUrl(), contentType = "application/json", value = JSON.stringify(body)) =>
+  const makeRequest = (contentType = "application/json", value = JSON.stringify(body)) =>
     new Request(`${appUrl()}/api/analytics/cost-import-previews`, {
       method: "POST",
-      headers: { Origin: origin, "Content-Type": contentType },
+      headers: { Origin: appUrl(), "Content-Type": contentType },
       body: value
     })
   const response = await previewCosts(makeRequest())
@@ -428,9 +430,8 @@ it("protects cost previews with edit access and origin checks without requiring 
   expect(response.headers.get("location")).toBeNull()
   expect(await response.json()).toMatchObject({ preview: { count: 1 } })
   expect(await database.select().from(tables.inventoryBasisRecords)).toHaveLength(0)
-  expect((await previewCosts(makeRequest("https://evil.test"))).status).toBe(403)
-  expect((await previewCosts(makeRequest(appUrl(), "text/plain"))).status).toBe(415)
-  expect((await previewCosts(makeRequest(appUrl(), "application/json", "{"))).status).toBe(400)
+  expect((await previewCosts(makeRequest("text/plain"))).status).toBe(415)
+  expect((await previewCosts(makeRequest("application/json", "{"))).status).toBe(400)
   context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
   expect((await previewCosts(makeRequest())).status).toBe(403)
   context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "edit" } }

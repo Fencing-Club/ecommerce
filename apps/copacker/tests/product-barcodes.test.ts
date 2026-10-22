@@ -69,16 +69,27 @@ vi.mock("../src/server/connections", async (original) => ({
   amazonFor: async () => amazon
 }))
 
-import { DELETE, GET, POST } from "../src/server/http/api/inventory/barcodes"
-import { POST as downloadLabels } from "../src/server/http/api/inventory/labels"
-import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/server/http/api/inventory/product-labels"
-import { GET as orderLabels } from "../src/server/http/api/orders/$id/labels"
-import { GET as lineLabel } from "../src/server/http/api/orders/$id/labels/$itemId"
-import { GET as shipmentLabels } from "../src/server/http/api/shipments/$id/labels"
+import * as barcodes from "../src/server/http/api/inventory/barcodes"
+import { POST as labelsRoute } from "../src/server/http/api/inventory/labels"
+import * as labelTypes from "../src/server/http/api/inventory/product-labels"
+import { GET as orderLabelsRoute } from "../src/server/http/api/orders/$id/labels"
+import { GET as lineLabelRoute } from "../src/server/http/api/orders/$id/labels/$itemId"
+import { GET as shipmentLabelsRoute } from "../src/server/http/api/shipments/$id/labels"
 import { deleteDraftOrder } from "../src/server/orders"
 import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
 import { applySchema } from "./database"
+import { served } from "./served"
+
+const POST = served(barcodes.POST)
+const GET = served(barcodes.GET)
+const DELETE = served(barcodes.DELETE)
+const downloadLabels = served(labelsRoute)
+const listLabelTypes = served(labelTypes.GET)
+const setLabelTypes = served(labelTypes.PATCH)
+const orderLabels = served(orderLabelsRoute)
+const lineLabel = served(lineLabelRoute)
+const shipmentLabels = served(shipmentLabelsRoute)
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })

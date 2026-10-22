@@ -7,7 +7,6 @@ import { session } from "@/server/auth"
 import { requireAccess, requireBuyer } from "@/server/authorization"
 import { customerProducts } from "@/server/catalogs"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
 
@@ -19,9 +18,6 @@ const inputSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const s = await session()
     requireBuyer(s)

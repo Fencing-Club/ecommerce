@@ -5,9 +5,8 @@ import { suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import type { ProductImage } from "@/lib/supplier-product"
 import { session } from "@/server/auth"
-import { requireAccess } from "@/server/authorization"
-import { errorResponse, errorTextResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
+import { requireAccess, requireSupplier } from "@/server/authorization"
+import { errorTextResponse, failureMessage, failureStatus } from "@/server/errors"
 import { getFile, putFile } from "@/server/storage"
 
 const maxBytes = 10 * 1024 * 1024
@@ -26,14 +25,9 @@ const keyPattern = /^supplier-images\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|g
 
 // Stores a product photo a supplier uploads. The product keeps it once the product is saved.
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const s = await session()
-    if (s.org.kind !== "supplier") {
-      return errorResponse("supplierWorkspaceRequired", 403)
-    }
+    requireSupplier(s)
     requireAccess(s, "products", "edit")
     const file = (await request.formData()).get("file")
     if (!(file instanceof File)) {

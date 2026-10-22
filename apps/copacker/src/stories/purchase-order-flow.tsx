@@ -2233,7 +2233,6 @@ export function PurchaseOrderFlow({
             <div className="flex flex-col gap-4 border-t pt-6 [grid-area:timeline]">
               <PoTimeline
                 orderId={orderId}
-                viewer={viewer === "buyer" ? "Alex Rivera" : "Maya Liu"}
                 viewerOrg={viewer === "buyer" ? "Harbor Goods" : "Northwind Textiles"}
                 counterparty={viewer === "buyer" ? "supplier" : "customer"}
                 timeZone="UTC"
