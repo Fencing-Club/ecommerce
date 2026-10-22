@@ -4,6 +4,7 @@ import {
   connectionOperations,
   createRegistry,
   isQuery,
+  jsonObject,
   operationSummarySchema,
   metaSchema,
   parseInput,
@@ -306,7 +307,7 @@ export async function operationResponse(request: Request, operation: string) {
     if (!parsed.success) {
       throw new CliError("invalid_input", "The input does not match this operation's schema.")
     }
-    const isRead = isQuery(definition.descriptor, body.input)
+    const isRead = isQuery(definition.descriptor, jsonObject.parse(parsed.data))
     const result = isRead
       ? await found.execute(parsed.data, context)
       : await mutation(context, request.headers.get("idempotency-key"), parsed.data, (fresh) =>
