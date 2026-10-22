@@ -89,7 +89,8 @@ closed status still does not prove loss, completed receiving, or reimbursement e
 ## Stored-evidence acceptance and remaining work
 
 PR #71 deployed as `dae10ab0` on October 19, 2026. Its read-only production checks verified reimbursement diagnostics,
-Shopify payment differences and FBA/AWD receipt comparisons without starting a sync or backfill. The dated results and
+Shopify payment differences and FBA receipt comparisons without starting a sync or backfill. AWD receipt data was
+observed, but its comparison remains pending explicit network and unit mapping. The dated results and
 remaining coverage, payment-classification and transfer-accounting work are tracked in the
 [analytics data backlog](specs/analytics/analytics-data-backlog.md#next-stored-evidence-work-no-backfill-or-ux).
 Receipt movement sums are partial-history observations until coverage of the receipt period is established. They do not
