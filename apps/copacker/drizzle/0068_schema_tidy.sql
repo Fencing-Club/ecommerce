@@ -4,5 +4,4 @@ ALTER TABLE "documents" ALTER COLUMN "outdated" SET DEFAULT false;--> statement-
 ALTER TABLE "supplier_products" ALTER COLUMN "active" DROP DEFAULT;--> statement-breakpoint
 ALTER TABLE "supplier_products" ALTER COLUMN "active" SET DATA TYPE boolean USING "active" <> 0;--> statement-breakpoint
 ALTER TABLE "supplier_products" ALTER COLUMN "active" SET DEFAULT true;--> statement-breakpoint
-ALTER TABLE "sales_syncs" DROP COLUMN "dataVersion";--> statement-breakpoint
-ALTER TABLE "suppliers" DROP COLUMN "paymentTerms";
+ALTER TABLE "sales_syncs" DROP COLUMN "dataVersion";

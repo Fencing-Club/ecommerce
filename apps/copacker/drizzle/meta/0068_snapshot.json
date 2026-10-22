@@ -7074,6 +7074,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "paymentTerms": {
+          "name": "paymentTerms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Due immediately'"
+        },
         "shopifySupplierName": {
           "name": "shopifySupplierName",
           "type": "text",

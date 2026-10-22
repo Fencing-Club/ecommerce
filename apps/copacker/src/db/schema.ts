@@ -114,6 +114,8 @@ export const suppliers = pgTable(
     // Days from ordering to stock arriving at the buyer's own locations, and at Amazon. Restock orders enough to last
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
+    // Retained stored terms; purchase orders own the terms used by the application.
+    paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
     shopifySupplierName: text(),

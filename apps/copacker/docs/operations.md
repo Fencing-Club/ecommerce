@@ -166,11 +166,14 @@ migrations rather than replacing deployed history with a fresh baseline. `db:mig
 to existing databases and builds the full schema on empty databases. Never clear migration bookkeeping or reset a
 database during deployment. Preview branches inherit staging's history and follow the same incremental path.
 
-The compatibility cleanup added customer-coverage tracking without deleting orders or connections. Migration
-`0068_schema_tidy` later dropped two stored fields nothing read: each supplier's payment terms (every PO keeps its own)
-and each sales sync's numeric data version. It also converts `supplier_products.active` and `documents.outdated` from
-0/1 integers to booleans in place, so every stored value keeps its meaning. Resets of disposable local, preview or
-staging data require explicit authorization; production must be upgraded in place with a verified backup.
+The compatibility cleanup adds customer-coverage tracking without deleting orders, connections, supplier terms or
+stored sync metadata. Numeric sync versions no longer drive runtime behavior. Removing unused stored fields is a
+separate data-retention decision, not a prerequisite for simplifying the application. Resets of disposable local,
+preview or staging data require explicit authorization; production must be upgraded in place with a verified backup.
+
+Migration `0068_schema_tidy` drops each sales sync's numeric data version, which nothing reads. It converts
+`supplier_products.active` and `documents.outdated` from 0/1 integers to booleans in place, so every stored value keeps
+its meaning.
 
 Migration `0059_customer_coverage` refuses to proceed if stored Shopify orders or stock snapshots lack fields now
 required by the runtime. Refresh those records using the previous release and retry; do not fabricate prices or delete
