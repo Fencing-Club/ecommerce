@@ -254,7 +254,8 @@
       "supplierHint": "Your team and the supplier can see this message.",
       "customerHint": "Your team and the customer can see this message.",
       "sharedSupplier": "Shared with supplier",
-      "sharedCustomer": "Shared with customer"
+      "sharedCustomer": "Shared with customer",
+      "dismissError": "Dismiss"
     },
     "events": {
       "created": "Purchase order created",
