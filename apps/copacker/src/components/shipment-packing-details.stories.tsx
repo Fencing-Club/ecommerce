@@ -4,7 +4,12 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { pickupAddress, pickupLocations } from "@/stories/fixtures/purchase-orders"
 import { PackingDetailsFields } from "./packing-form"
-import { ShipmentAddress, ShipmentTransportLegs } from "./shipment-packing-details"
+import {
+  ShipmentAddress,
+  ShipmentOrigin,
+  ShipmentPackingDetails,
+  ShipmentTransportLegs
+} from "./shipment-packing-details"
 
 function Example({
   readOnly = false,
@@ -26,34 +31,39 @@ function Example({
     destinationAddress = "42 Distribution Way, Portland, Oregon 97230, United States"
   }
   const [pickup, setPickup] = useState("supplier-origin")
+  const details = {
+    route: ["Northwind Textiles", ...(forwarder ? ["Bayline Freight"] : []), destination],
+    shipTo: (
+      <ShipmentAddress
+        readOnly={readOnly}
+        label="Ship to"
+        name={forwarder ? "Bayline Freight" : destination}
+        address={destinationAddress}
+      />
+    ),
+    transport: (
+      <ShipmentTransportLegs
+        legs={
+          forwarder
+            ? ["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]
+            : [amazonPickup ? "Amazon pickup from Northwind Textiles." : `Supplier ships to ${destination}.`]
+        }
+      />
+    )
+  }
+  // Packed, the card shows where the cartons left from; while packing, the packing form's fields.
   return (
     <div className="max-w-4xl">
-      <FormProvider {...form}>
-        <PackingDetailsFields
-          pickup={pickup}
-          onPickupChange={setPickup}
-          addresses={pickupLocations}
-          readOnly={readOnly}
-          route={["Northwind Textiles", ...(forwarder ? ["Bayline Freight"] : []), destination]}
-          shipTo={
-            <ShipmentAddress
-              readOnly={readOnly}
-              label="Ship to"
-              name={forwarder ? "Bayline Freight" : destination}
-              address={destinationAddress}
-            />
-          }
-          transport={
-            <ShipmentTransportLegs
-              legs={
-                forwarder
-                  ? ["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]
-                  : [amazonPickup ? "Amazon pickup from Northwind Textiles." : `Supplier ships to ${destination}.`]
-              }
-            />
-          }
+      {readOnly ? (
+        <ShipmentPackingDetails
+          {...details}
+          shipFrom={<ShipmentOrigin origin={pickupAddress} addresses={pickupLocations} />}
         />
-      </FormProvider>
+      ) : (
+        <FormProvider {...form}>
+          <PackingDetailsFields pickup={pickup} onPickupChange={setPickup} addresses={pickupLocations} {...details} />
+        </FormProvider>
+      )}
     </div>
   )
 }
@@ -74,11 +84,16 @@ export const ViaForwarder = meta.story({
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeRequired()
   }
 })
+// A packed shipment's pickup address is the saved address it matches, by that address's name, with its contact.
 export const ReadOnly = meta.story({
   args: { readOnly: true },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("combobox")).toBeNull()
+    await expect(canvas.queryByLabelText("Ready date", { exact: false })).toBeNull()
     await expect(canvas.getByText("Ship from", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("Northwind Textiles / Main factory")).toBeVisible()
+    await expect(canvas.getByText("Mei Chen")).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
   }
 })
 export const Mobile = meta.story({

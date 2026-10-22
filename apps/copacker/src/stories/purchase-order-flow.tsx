@@ -2,7 +2,7 @@ import { Toast } from "@base-ui/react/toast"
 import { type OrderInput, orderSubtotal } from "@repo/copacker-orders"
 import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing } from "@repo/copacker-shipments"
+import { packingSchema, type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
@@ -28,19 +28,28 @@ import { useId, useState } from "react"
 import { match } from "ts-pattern"
 import { useLocale } from "use-intl"
 import { AddProductsDialog } from "@/components/add-products-dialog"
+import { CartonList } from "@/components/carton-list"
 import { StatusBadge } from "@/components/common"
 import { DetailFields } from "@/components/detail-fields"
 import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
+import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
+import { PalletList } from "@/components/pallet-list"
 import { PoTimeline, type TimelineEntry } from "@/components/po-timeline"
 import { ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentDocuments } from "@/components/shipment-documents"
-import { ShipmentAddress, ShipmentTransportLegs } from "@/components/shipment-packing-details"
+import { ShipmentLayout } from "@/components/shipment-layout"
+import {
+  ShipmentAddress,
+  ShipmentOrigin,
+  ShipmentPackingDetails,
+  ShipmentTransportLegs
+} from "@/components/shipment-packing-details"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -68,6 +77,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMoney } from "@/hooks/use-money"
+import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
@@ -1028,6 +1038,96 @@ export function PurchaseOrderFlow({
     }
   }
   if (packing) {
+    const packingOrder: OrderInput = {
+      ...order,
+      reference: "PO38",
+      items: packing.items.map((item) => ({
+        ...item,
+        receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
+      }))
+    }
+    const draft: PackingDraft = packingRecords[packing.id]?.packing ?? {
+      origin: pickupAddress,
+      readyDate,
+      cartons: packingCartons()
+    }
+    const route = ["Northwind Textiles", ...(packing.stop ? [receivingStop(packing).name] : []), packing.destination]
+    const shipTo = (
+      <ShipmentAddress
+        readOnly={packingFinished}
+        label="Ship to"
+        name={packing.stop ? receivingStop(packing).name : packing.destination}
+        address={
+          packing.stop
+            ? receivingStop(packing).address
+            : "Amazon assigns the receiving warehouse when the shipment is confirmed."
+        }
+      />
+    )
+    const transport = (
+      <ShipmentTransportLegs
+        legs={[
+          ...(packing.stop
+            ? [
+                packing.firstLeg?.endsWith("pickup")
+                  ? `${receivingStop(packing).name} picks up from Northwind Textiles.`
+                  : `Supplier ships to ${receivingStop(packing).location}.`
+              ]
+            : []),
+          packing.transport === "Amazon pickup"
+            ? `Amazon pickup from ${packing.stop ? receivingStop(packing).location : "Northwind Textiles"}.`
+            : `${onwardShipper(packing)} ships to ${packing.destination}.`
+        ]}
+      />
+    )
+    const productActions = (item: OrderInput["items"][number]) => (
+      <ProductDownloadsMenu
+        productName={item.supplierSku || item.buyerSku}
+        items={productDownloads([item])}
+        busy={downloadingPacking}
+        onDownload={(ids) =>
+          void downloadProductLabels([item], ids, `Shipment-${packing.id}-${item.supplierSku || item.buyerSku}`)
+        }
+      />
+    )
+    const sidebar = (summary: React.ComponentProps<typeof ShipmentDetails>) => (
+      <div className="space-y-6">
+        <ShipmentDocuments
+          busy={downloadingPacking}
+          productLabels={productDownloads(packing.items)}
+          onProductDownload={(ids) => void downloadProductLabels(packing.items, ids, `Shipment-${packing.id}`)}
+          onDownload={(id) => void downloadShipmentDocument(id)}
+          onDownloadPacket={labelsReady ? () => void downloadSupplierPack(packing.id) : undefined}
+          documents={[
+            ...(packingFinished ? [{ id: "packing", label: "Packing list" }] : []),
+            ...(labelsReady
+              ? [
+                  { id: "carton", label: "Carton labels" },
+                  ...(packing.transport !== "Amazon pickup" ? [{ id: "carrier", label: "Carrier labels" }] : []),
+                  { id: "checklist", label: "Packing checklist" },
+                  { id: "reference", label: "Carton label reference" }
+                ]
+              : [])
+          ]}
+        />
+        <ShipmentDetails {...summary} />
+      </div>
+    )
+    const heading = (
+      <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
+        <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
+        <StatusBadge tone={packingFinished ? "success" : "info"}>{packingFinished ? "Packed" : "Packing"}</StatusBadge>
+        {packingFinished && (
+          <div className="ms-auto flex w-full flex-wrap gap-2 sm:w-auto">
+            <Button variant="outline" onClick={() => setPackingFinished(false)}>
+              Edit packing
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+    const cartons = groupCartons(draft.cartons)
+    const pallets = draft.palletized ? editorPallets(draft.pallets) : undefined
     return (
       <div className={pageLayout}>
         <div className="flex items-center gap-2 text-meta text-muted-foreground">
@@ -1046,116 +1146,58 @@ export function PurchaseOrderFlow({
           <ChevronRight className="size-3" />
           <span>Shipment {packing.id}</span>
         </div>
-        <PackingForm
-          renderProductActions={(item) => (
-            <ProductDownloadsMenu
-              productName={item.supplierSku || item.buyerSku}
-              items={productDownloads([item])}
-              busy={downloadingPacking}
-              onDownload={(ids) =>
-                void downloadProductLabels([item], ids, `Shipment-${packing.id}-${item.supplierSku || item.buyerSku}`)
-              }
-            />
-          )}
-          renderSidebar={(summary) => (
-            <div className="space-y-6">
-              <ShipmentDocuments
-                busy={downloadingPacking}
-                productLabels={productDownloads(packing.items)}
-                onProductDownload={(ids) => void downloadProductLabels(packing.items, ids, `Shipment-${packing.id}`)}
-                onDownload={(id) => void downloadShipmentDocument(id)}
-                onDownloadPacket={labelsReady ? () => void downloadSupplierPack(packing.id) : undefined}
-                documents={[
-                  ...(packingFinished ? [{ id: "packing", label: "Packing list" }] : []),
-                  ...(labelsReady
-                    ? [
-                        { id: "carton", label: "Carton labels" },
-                        ...(packing.transport !== "Amazon pickup" ? [{ id: "carrier", label: "Carrier labels" }] : []),
-                        { id: "checklist", label: "Packing checklist" },
-                        { id: "reference", label: "Carton label reference" }
-                      ]
-                    : [])
-                ]}
+        {packingFinished ? (
+          <ShipmentLayout
+            header={<div className="flex flex-wrap items-center justify-between gap-3">{heading}</div>}
+            details={
+              <ShipmentPackingDetails
+                route={route}
+                shipFrom={<ShipmentOrigin origin={draft.origin} addresses={pickupLocations} />}
+                shipTo={shipTo}
+                transport={transport}
               />
-              <ShipmentDetails {...summary} />
-            </div>
-          )}
-          heading={
-            <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
-              <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
-              <StatusBadge tone={packingFinished ? "success" : "info"}>
-                {packingFinished ? "Packed" : "Packing"}
-              </StatusBadge>
-              {packingFinished && (
-                <div className="ms-auto flex w-full flex-wrap gap-2 sm:w-auto">
-                  <Button variant="outline" onClick={() => setPackingFinished(false)}>
-                    Edit packing
-                  </Button>
-                </div>
-              )}
-            </div>
-          }
-          readOnly={packingFinished}
-          onSubmitted={(completed) => {
-            setPackingRecords((current) => ({
-              ...current,
-              [packing.id]: { shipment: packing, packing: completed }
-            }))
-            setPackingFinished(true)
-          }}
-          shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
-          shipmentName={`Shipment ${packing.id}`}
-          revision={1}
-          orderRevision={1}
-          order={{
-            ...order,
-            reference: "PO38",
-            items: packing.items.map((item) => ({
-              ...item,
-              receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
-            }))
-          }}
-          availablePieces={Object.fromEntries(packing.items.map((item) => [item.id, item.pieces]))}
-          initial={
-            packingRecords[packing.id]?.packing ?? {
-              origin: pickupAddress,
-              readyDate,
-              cartons: packingCartons()
             }
-          }
-          addresses={pickupLocations}
-          shippingDetails={{
-            route: ["Northwind Textiles", ...(packing.stop ? [receivingStop(packing).name] : []), packing.destination],
-            shipTo: (
-              <ShipmentAddress
-                readOnly={packingFinished}
-                label="Ship to"
-                name={packing.stop ? receivingStop(packing).name : packing.destination}
-                address={
-                  packing.stop
-                    ? receivingStop(packing).address
-                    : "Amazon assigns the receiving warehouse when the shipment is confirmed."
-                }
+            products={
+              <PackedProductsTable
+                order={packingOrder}
+                cartons={cartons}
+                reserved={{}}
+                renderActions={productActions}
               />
-            ),
-            transport: (
-              <ShipmentTransportLegs
-                legs={[
-                  ...(packing.stop
-                    ? [
-                        packing.firstLeg?.endsWith("pickup")
-                          ? `${receivingStop(packing).name} picks up from Northwind Textiles.`
-                          : `Supplier ships to ${receivingStop(packing).location}.`
-                      ]
-                    : []),
-                  packing.transport === "Amazon pickup"
-                    ? `Amazon pickup from ${packing.stop ? receivingStop(packing).location : "Northwind Textiles"}.`
-                    : `${onwardShipper(packing)} ships to ${packing.destination}.`
-                ]}
-              />
-            )
-          }}
-        />
+            }
+            sidebar={sidebar({ readyDate: draft.readyDate ?? "", ...cartonMeasures(cartons, pallets) })}
+          >
+            <CartonList readOnly showErrors order={packingOrder} cartons={cartons} reserved={{}} />
+            {pallets && <PalletList readOnly order={packingOrder} cartons={cartons} pallets={pallets} />}
+          </ShipmentLayout>
+        ) : (
+          <PackingForm
+            renderHeader={(actions) => (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {heading}
+                {actions}
+              </div>
+            )}
+            renderProductActions={productActions}
+            renderSidebar={sidebar}
+            onSubmitted={(completed) => {
+              setPackingRecords((current) => ({
+                ...current,
+                [packing.id]: { shipment: packing, packing: completed }
+              }))
+              setPackingFinished(true)
+            }}
+            shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
+            shipmentName={`Shipment ${packing.id}`}
+            revision={1}
+            orderRevision={1}
+            order={packingOrder}
+            reserved={{}}
+            initial={draft}
+            addresses={pickupLocations}
+            shippingDetails={{ route, shipTo, transport }}
+          />
+        )}
       </div>
     )
   }

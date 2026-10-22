@@ -29,6 +29,9 @@ each hook.
   see [forms](../apps/copacker/docs/forms.md).
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
+- `usePackingDraft` (`use-packing-draft.ts`): saves a shipment's packing as a draft, finishes it after the server's
+  checks, and links an existing AWD shipment, returning `{ save, submit, link, working, error, clearError }`. Each save
+  reads the shipment again before it's done, so the next request sends the new revision. Used by the packing form.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total. An amount
   typed outside a form's `FormMoney` goes in `MoneyInput` (`components/money-input.tsx`), which reports minor units as
   they're typed.
