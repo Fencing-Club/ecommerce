@@ -54,7 +54,6 @@
     "ship": "Imprimez le dossier, emballez les cartons et marquez-les comme expédiés",
     "forward": "Le transitaire réexpédie les marchandises et ajoute le coût du fret, le transporteur et le suivi",
     "receive": "Marquez les marchandises comme reçues à leur arrivée",
-    "complete": "Expédition terminée",
     "cancellation": "Annulez l’expédition Amazon existante avant d’en créer une de remplacement",
     "reconcile": "Trouvez et liez la commande Amazon avant de continuer",
     "retry": "Résolvez le problème signalé, puis relancez l’expédition",

@@ -1,10 +1,10 @@
 import { ChevronDown, Plus } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AddForwarder } from "./add-forwarder"
 import { InviteSupplier } from "./invite-supplier"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 // One button for adding either kind of partner. `?add=supplier` or `?add=forwarder` opens its dialog, so the top bar's
 // Create menu can link straight to it.

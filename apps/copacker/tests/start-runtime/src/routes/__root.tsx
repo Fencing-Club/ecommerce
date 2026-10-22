@@ -5,9 +5,11 @@ import { ThemeScript } from "@/components/theme-script"
 import { direction } from "@/i18n/locales"
 import { documentFonts } from "@/styles/document-fonts"
 import { readDocument } from "../document.functions"
-import { skipLink } from "@/app/layout.css"
-import "@/styles/global.css"
+import "@/styles/theme.css"
 import "@/app/globals.css"
+
+const skipLink =
+  "sr-only focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-2 focus:ring-ring"
 
 export const Route = createRootRoute({
   loader: ({ location }) =>

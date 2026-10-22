@@ -2,13 +2,20 @@ import { cartonList } from "@repo/copacker-packing-rules"
 import { ChevronDown, ListChecks, Search } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import type { PalletCarton, PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { useMeasure } from "./packing-fields"
-import { Button } from "./ui/button"
-import { Checkbox } from "./ui/checkbox"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 
 // Chooses the cartons on a pallet, a row per carton configuration that opens onto its cartons, so a configuration can
 // split across pallets. Each carton shows the pallet it's on now; choosing it here moves it.
@@ -160,7 +167,7 @@ export function PalletCartonsDialog({
                           </Button>
                         )}
                       </div>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground [overflow-wrap:anywhere]">
+                      <p className="mt-0.5 text-meta text-muted-foreground [overflow-wrap:anywhere]">
                         {[
                           ids.length > 1 && units("cartonCount", { count: ids.length }),
                           contents,
@@ -169,7 +176,7 @@ export function PalletCartonsDialog({
                           .filter(Boolean)
                           .join(" / ")}
                       </p>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground @lg/chooser:hidden">{size(first)}</p>
+                      <p className="mt-0.5 text-meta text-muted-foreground @lg/chooser:hidden">{size(first)}</p>
                     </div>
                     <span className="hidden tabular-nums @lg/chooser:block">{size(first)}</span>
                     <span className={cn("text-end", palletText === "—" && "text-muted-foreground")}>{palletText}</span>

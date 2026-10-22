@@ -13,7 +13,9 @@ vi.mock("../src/server/connections", async (original) => ({
   ...(await original<typeof import("../src/server/connections")>()),
   shopifyFor: async () => shopify
 }))
-import { emailJob, PollAgain } from "../src/server/job-handlers"
+import { emailJob } from "../src/server/job-email"
+import { jobPayloads } from "../src/server/job-payloads"
+import { PollAgain } from "../src/server/job-runtime"
 import { queueReconciliation, reconcileJob } from "../src/server/reconcile"
 import { shopifyComplianceJob } from "../src/server/shopify-compliance"
 import {
@@ -195,24 +197,24 @@ describe("Shopify event jobs", () => {
 describe("Shopify webhook subscriptions", () => {
   it("subscribes the connected store at the EventBridge source", async () => {
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", source)
-    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    await shopifySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     // Without read_fulfillments, Shopify would refuse the shipment topics.
     const withoutShipments = shopifyWebhookTopics.filter((topic) => !topic.startsWith("FULFILLMENTS_"))
     expect(withoutShipments).toHaveLength(shopifyWebhookTopics.length - 2)
     expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, withoutShipments]])
-    await shopifySubscribeJob({ orgId: otherBuyerId }, owned)
+    await shopifySubscribeJob({ orgId: otherBuyerId }, { assertOwned: owned })
     expect(shopify.subscribeWebhooks).toHaveBeenCalledTimes(1)
     await pg.exec("UPDATE connections SET scopes = 'read_orders,read_fulfillments'")
-    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    await shopifySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(shopify.subscribeWebhooks).toHaveBeenLastCalledWith(source, shopifyWebhookTopics)
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", "arn:aws:sqs:us-east-1:1:not-a-source")
-    await expect(shopifySubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow("Invalid string")
+    await expect(shopifySubscribeJob({ orgId: buyerId }, { assertOwned: owned })).rejects.toThrow("Invalid string")
   })
 
   it("skips subscribing without an EventBridge source", async () => {
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", "")
     const warned = vi.spyOn(console, "warn").mockImplementation(() => undefined)
-    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    await shopifySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(shopify.subscribeWebhooks).not.toHaveBeenCalled()
     warned.mockRestore()
   })
@@ -238,7 +240,7 @@ describe("daily reconciliation", () => {
       // Left from an Amazon account the workspace no longer uses.
       { orgId: otherBuyerId, source: "awd", externalAccountId: "A000000000", scopeKey: "us" }
     ])
-    await reconcileJob({ date: "2026-09-25" }, owned)
+    await reconcileJob({ date: "2026-09-25" }, { assertOwned: owned })
     const syncs = await database.select().from(tables.salesSyncs)
     expect(syncs.map((sync) => [sync.orgId, sync.source, sync.status]).sort()).toEqual(
       [
@@ -312,7 +314,7 @@ describe("Shopify privacy webhooks", () => {
     const [job] = await queued("shopify-compliance")
     expect(await queued("shopify-compliance")).toHaveLength(1)
     expect(JSON.stringify(job!.payload)).not.toContain("customer@example.com")
-    await shopifyComplianceJob(job!.payload)
+    await shopifyComplianceJob(jobPayloads["shopify-compliance"].parse(job!.payload))
     const emails = await queued("email")
     expect(emails.map((email) => email.payload)).toEqual([
       {
@@ -327,7 +329,7 @@ describe("Shopify privacy webhooks", () => {
     vi.stubEnv("EMAIL_FROM", "copacker@example.com")
     const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
     vi.stubGlobal("fetch", send)
-    await emailJob(emails[0]!.payload, emails[0]!.key, owned)
+    await emailJob(jobPayloads.email.parse(emails[0]!.payload), { key: emails[0]!.key, assertOwned: owned })
     vi.unstubAllGlobals()
     const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; html: string; text: string }
     expect(sent.subject).toBe(`Customer data request for ${shop}`)
@@ -353,7 +355,7 @@ describe("Shopify privacy webhooks", () => {
     expect(await receiveShopifyEvent(event("customers/redact", body))).toBe(true)
     const [job] = await queued("shopify-compliance")
     expect(JSON.stringify(job!.payload)).not.toContain("customer@example.com")
-    await shopifyComplianceJob(job!.payload)
+    await shopifyComplianceJob(jobPayloads["shopify-compliance"].parse(job!.payload))
     const stored = await database.select().from(tables.salesOrders)
     expect(
       Object.fromEntries(stored.map((row) => [row.orderId, "lines" in row.data ? (row.data.customerId ?? null) : null]))
@@ -424,7 +426,7 @@ describe("Shopify privacy webhooks", () => {
     ])
     expect(await receiveShopifyEvent(event("shop/redact", { shop_id: 1, shop_domain: shop }))).toBe(true)
     const [job] = await queued("shopify-compliance")
-    await shopifyComplianceJob(job!.payload)
+    await shopifyComplianceJob(jobPayloads["shopify-compliance"].parse(job!.payload))
     expect((await database.select().from(tables.salesOrders)).map((row) => row.orgId)).toEqual([buyerId])
     expect((await database.select().from(tables.stockSnapshots)).map((row) => row.orgId)).toEqual([buyerId])
   })

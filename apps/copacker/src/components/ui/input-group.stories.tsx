@@ -7,6 +7,7 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
+  InputGroupNumberInput,
   InputGroupText,
   InputGroupTextarea
 } from "./input-group"
@@ -164,5 +165,27 @@ export const Invalid = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("textbox", { name: "Email" })).toBeInvalid()
     await expect(canvas.getByRole("button", { name: "Send invite" })).toHaveAttribute("data-size", "icon-sm")
+  }
+})
+
+// A number with its unit after it, as the packing tables' weights and the restock settings have it: no up and down
+// buttons, and the digits lined up.
+export const NumberWithUnit = meta.story({
+  render: () => (
+    <InputGroup className="max-w-40">
+      <InputGroupNumberInput aria-label="Gross weight" inputMode="decimal" min={0} step="any" defaultValue={12.5} />
+      <InputGroupAddon align="inline-end">
+        <InputGroupText>kg</InputGroupText>
+      </InputGroupAddon>
+    </InputGroup>
+  ),
+  play: async ({ canvas }) => {
+    const input = canvas.getByRole("spinbutton", { name: "Gross weight" })
+    await expect(input).toHaveAttribute("data-slot", "input-group-control")
+    await expect(getComputedStyle(input).appearance).toBe("textfield")
+    await expect(getComputedStyle(input).fontVariantNumeric).toBe("tabular-nums")
+    await userEvent.clear(input)
+    await userEvent.type(input, "14.2")
+    await expect(input).toHaveValue(14.2)
   }
 })

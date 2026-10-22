@@ -7,6 +7,15 @@ import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Field, FieldError, FieldGroup } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
@@ -19,15 +28,6 @@ import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { InviteSupplier } from "./invite-supplier"
-import { Badge } from "./ui/badge"
-import { Button } from "./ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Field, FieldError, FieldGroup } from "./ui/field"
-import { Input } from "./ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 
 const reviewApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -113,9 +113,6 @@ function reasonText(reason: string, t: ReviewTranslator) {
   }
   return reason === addedReason ? t("addedDuringReview") : reason
 }
-
-// The table's first and last columns line up with the card's header.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 
 // Focuses the product search when it opens. Defined once, so React calls it only when the search mounts.
 const focusOnMount = (input: HTMLInputElement | null) => input?.focus()
@@ -525,12 +522,12 @@ export function ImportReview({
             </CardContent>
           </Card>
 
-          <Card className="gap-0 overflow-hidden py-0 @5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
-            <CardHeader className="border-b p-4">
+          <Card flush className="@5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
+            <CardHeader>
               <CardTitle>{tr("lines")}</CardTitle>
             </CardHeader>
             {/* An editing grid: on a phone it scrolls sideways rather than squeezing the inputs. */}
-            <Table framed={false} className={cn(edgeTable, "min-w-3xl")}>
+            <Table framed={false} inset className="min-w-3xl">
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("columns.product")}</TableHead>
@@ -742,7 +739,7 @@ export function ImportReview({
                                       <li key={result.id}>
                                         <button
                                           type="button"
-                                          className="flex w-full flex-col items-start px-3 py-2 text-start text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+                                          className="focus-ring flex w-full flex-col items-start px-3 py-2 text-start text-sm hover:bg-muted focus-visible:bg-muted focus-visible:ring-inset"
                                           onClick={() => choose(index, result)}
                                         >
                                           <span className="font-medium">{option.title}</span>

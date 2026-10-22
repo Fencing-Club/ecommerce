@@ -74,7 +74,7 @@ export function TimelineComment({
             className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint"
           >
             <CircleAlert aria-hidden />
-            <AlertDescription className="text-[13px]/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
+            <AlertDescription className="text-meta/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
           </Alert>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/50 px-2 py-1.5">

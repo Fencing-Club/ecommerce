@@ -158,9 +158,6 @@
       "contact": "联系我们"
     }
   },
-  "banner": {
-    "dismiss": "关闭"
-  },
   "actionBar": {
     "label": "操作",
     "discard": "放弃",

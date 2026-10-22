@@ -1,4 +1,6 @@
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import type { OverviewPageData } from "@/server/overview-page"
 import { EmptyState, PageHeader } from "./common"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "./overview"
@@ -6,8 +8,6 @@ import { SetupChecklist } from "./overview-sections"
 import type { PeriodSelection } from "./period-picker"
 import { PeriodPicker } from "./period-picker"
 import { SupplierOverview } from "./supplier/overview"
-import { Button } from "./ui/button"
-import { Card, CardContent } from "./ui/card"
 
 // Ordinary synchronous components, shared by the route and stories. All reads and permission filtering finish on the
 // server before this data reaches the browser; neither Suspense nor a client component is an authorization boundary.

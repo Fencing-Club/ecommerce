@@ -190,7 +190,7 @@ export function RestockShot() {
           </div>
         </CardContent>
       </Card>
-      <Card className="gap-0 overflow-hidden py-0">
+      <Card flush>
         <div className="flex items-center gap-3 border-b px-4 py-3">
           <ChevronDown className="size-4 text-muted-foreground" />
           <span className="flex flex-col">

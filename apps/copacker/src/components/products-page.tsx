@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
 import type { productsPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
 import { InventorySync } from "./inventory-sync"
 import { ProductIndex } from "./supplier/product-index"
 import { ProductActions } from "./supplier/product-transfer"
-import { Button } from "./ui/button"
 
 export function ProductsPageView({
   page,

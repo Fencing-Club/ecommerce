@@ -166,12 +166,12 @@ export function PageHeader({
     <div data-slot="page-header" className="flex flex-col gap-2.5">
       {parents?.length ? (
         <nav aria-label={t("breadcrumb")}>
-          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted-foreground max-md:hidden">
+          <ol className="flex flex-wrap items-center gap-1.5 text-meta font-medium text-muted-foreground max-md:hidden">
             {parents.map((parent, index) => (
               <li key={parent.label} className="flex items-center gap-1.5">
                 {index > 0 && <ChevronRight aria-hidden className="size-3.5 shrink-0 rtl:rotate-180" />}
                 {parent.href ? (
-                  <a href={parent.href} className="rounded-sm hover:text-foreground">
+                  <a href={parent.href} className="focus-ring rounded-sm hover:text-foreground">
                     {parent.label}
                   </a>
                 ) : (
@@ -183,7 +183,7 @@ export function PageHeader({
           {back?.href && (
             <a
               href={back.href}
-              className="flex w-fit items-center gap-1 rounded-sm text-[13px] font-medium text-muted-foreground hover:text-foreground md:hidden"
+              className="focus-ring flex w-fit items-center gap-1 rounded-sm text-meta font-medium text-muted-foreground hover:text-foreground md:hidden"
             >
               <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
               {back.label}
@@ -207,7 +207,7 @@ export function PageHeader({
       {meta?.length ? (
         <dl
           data-slot="page-meta"
-          className="flex flex-wrap items-center gap-x-6 gap-y-1 text-[13px] max-md:flex-col max-md:items-stretch max-md:gap-y-[3px] max-md:pt-1"
+          className="flex flex-wrap items-center gap-x-6 gap-y-1 text-meta max-md:flex-col max-md:items-stretch max-md:gap-y-[3px] max-md:pt-1"
         >
           {meta.map((item) => (
             <div key={item.label} className="flex items-center gap-1.5 max-md:items-start">
@@ -222,26 +222,29 @@ export function PageHeader({
   )
 }
 
+// An empty list, a page that failed or a menu with nothing in it: an icon, a title, a line on what to do, and the
+// actions that do it. A page whose header already says what happened leaves the title out. `titleAs` makes the title a
+// heading, such as the h1 of a page outside the shell.
 export function EmptyState({
   title,
+  titleAs: Heading,
   description,
-  media,
+  icon = <PackageOpen aria-hidden />,
   children
 }: {
-  title: string
-  description: string
+  title?: string
+  titleAs?: "h1" | "h2" | "h3"
+  description?: React.ReactNode
   // In place of the empty box, such as a spinner while the first sync runs.
-  media?: React.ReactNode
+  icon?: React.ReactNode
   children?: React.ReactNode
 }) {
   return (
-    <Empty className="gap-4 py-10">
-      <EmptyHeader className="gap-1">
-        <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
-          {media ?? <PackageOpen aria-hidden className="size-5" />}
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">{icon}</EmptyMedia>
+        {title && <EmptyTitle>{Heading ? <Heading>{title}</Heading> : title}</EmptyTitle>}
+        {description && <EmptyDescription>{description}</EmptyDescription>}
       </EmptyHeader>
       {children && <EmptyContent>{children}</EmptyContent>}
     </Empty>

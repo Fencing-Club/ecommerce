@@ -339,7 +339,7 @@ describe("durable ad spend imports", () => {
     await disconnectAds(orgId)
     await amazonAdsJob(
       { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
-      async () => undefined
+      { assertOwned: async () => undefined }
     )
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -364,7 +364,7 @@ describe("durable ad spend imports", () => {
         reportId: "report",
         productDetail: true
       },
-      async () => undefined
+      { assertOwned: async () => undefined }
     )
     expect(await database.select().from(tables.amazonAdsDays)).toHaveLength(0)
     const evidence = await database.select().from(tables.analyticsEvidence)
@@ -379,7 +379,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       options: {
@@ -398,7 +398,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       message: "Waiting for Amazon Ads report",
@@ -427,7 +427,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({ message: `Amazon Ads report is outside the requested scope: ${label}` })
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
@@ -457,12 +457,12 @@ describe("durable ad spend imports", () => {
       to: "2026-10-13",
       reportId: "report"
     }
-    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+    await expect(amazonAdsJob(payload, { assertOwned: async () => undefined })).rejects.toMatchObject({
       options: { payload: expect.objectContaining({ productDetail: true }) }
     })
     expect((await database.select().from(tables.amazonAdsDays)).map((d) => d.cost)).toEqual(["3.750000", "0.000000"])
     cost = 2
-    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+    await expect(amazonAdsJob(payload, { assertOwned: async () => undefined })).rejects.toMatchObject({
       options: { payload: expect.objectContaining({ productDetail: true }) }
     })
     const from = new Date("2026-10-12T07:00:00Z"),
@@ -510,7 +510,7 @@ describe("durable ad spend imports", () => {
           to: "2026-10-13",
           reportId: "report"
         },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toThrow("generation failed")
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
@@ -541,7 +541,7 @@ describe("durable ad spend imports", () => {
       await expect(
         amazonAdsJob(
           { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-          async () => undefined
+          { assertOwned: async () => undefined }
         )
       ).rejects.toThrow("download is missing")
       expect((await database.select().from(tables.amazonAdsDays)).map((day) => day.cost)).toEqual(["12.500000"])
@@ -565,7 +565,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       message: `Amazon Ads ${stage} transport_TypeError failure (503)`,
@@ -599,7 +599,7 @@ describe("durable ad spend imports", () => {
       await expect(
         amazonAdsJob(
           { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-          async () => undefined
+          { assertOwned: async () => undefined }
         )
       ).rejects.toMatchObject({
         message: `Amazon Ads ${stage} transport_TypeError failure (503)`,

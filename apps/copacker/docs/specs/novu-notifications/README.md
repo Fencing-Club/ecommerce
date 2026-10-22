@@ -294,7 +294,7 @@ in implementation docs rather than assuming this plan verifies an external integ
 - [Orders](../../../src/server/orders.ts), [proposals](../../../src/server/order-proposals.ts),
   [shipment legs](../../../src/server/shipment-legs.ts), [comments](../../../src/server/comments.ts).
 - [Queue](../../../src/server/queue.ts), [worker](../../../src/server/worker.ts),
-  [email handler](../../../src/server/job-handlers.ts), [schema](../../../src/db/schema.ts).
+  [email handler](../../../src/server/job-email.ts), [schema](../../../src/db/schema.ts).
 - [Catalogs](../../../src/server/catalogs.ts), [products](../../../src/server/supplier-products.ts),
   [supplier stock](../../../src/server/supplier-stock.ts), [restock plan](../../../src/server/restock-plan.ts).
 - [Emails package](../../../../../packages/copacker-emails/src/index.ts).
