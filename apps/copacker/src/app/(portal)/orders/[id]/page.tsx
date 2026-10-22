@@ -403,6 +403,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
             timeZone={timeZone}
             entries={timeline}
             prices={prices}
+            commentable={order.status !== "closed"}
             counterparty={buyer ? "supplier" : "customer"}
           />
         </div>
