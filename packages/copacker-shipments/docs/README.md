@@ -13,13 +13,7 @@ its `receiver`; `orderDestination` reads where the PO goes from them.
 
 ## Amazon inbound shipments
 
-`@repo/copacker-shipments/amazon-inbound` holds what Copacker decides about an Amazon inbound shipment without a
-database or a web framework: the names it gives AWD orders and FBA plans (`amazonReference`, `fbaPlanName`), each
-network's Seller Central page, the FBA plan's choices (packing, placement, the buyer's own carrier, delivery window,
-pallets and box matching), and spreading inbound freight over the SKUs each shipment carried (`freightShipment`,
-`freightPerSku`). A choice that stops the plan throws `FbaInboundError` with a `code` and `values`; the app turns it
-into its translated error. The app's FBA job (`apps/copacker/src/server/fba-shipments.ts`) calls Amazon and stores
-the results.
+Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).
 
 ## Shipping documents
 
