@@ -150,6 +150,31 @@ describe("reviewed import save", () => {
     expect(await database.select().from(tables.orders)).toHaveLength(1)
     expect((await database.select().from(tables.poImports))[0]?.status).toBe("review")
   })
+  it("starts each line with its product's saved defaults and Amazon network, at the document's quantity and price", async () => {
+    const imported = await reviewedImport()
+    await database.insert(tables.productDefaults).values({
+      orgId: buyerId,
+      shopifyDomain: "test.myshopify.com",
+      productId: "gid://shopify/Product/1",
+      description: "Coil each cord",
+      prepCategory: "NO_PREP",
+      suffocationWarning: true,
+      amazonNetwork: "awd_us"
+    })
+    const saved = await saveImportedOrder(buyer, imported.id, imported.input)
+    const [order] = await database.select().from(tables.orders).where(eq(tables.orders.id, saved.id))
+    expect(order?.data.items).toMatchObject([
+      {
+        receiver: "awd_us",
+        instructions: "Coil each cord",
+        prepCategory: "NO_PREP",
+        suffocationWarning: true,
+        pieces: 160,
+        piecesPerSet: 2,
+        unitPrice: 408
+      }
+    ])
+  })
   it("saves reviewed per-set pricing as individual pieces and preserves signed charges", async () => {
     const imported = await reviewedImport()
     const item = imported.proposal.items[0]!

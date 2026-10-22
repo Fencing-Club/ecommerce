@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
-import type { OrderCurrency } from "@repo/copacker-orders"
+import type { LineDefaults, OrderCurrency } from "@repo/copacker-orders"
 import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import { arrayIncludes } from "ts-extras"
 import type { ActionName } from "@/server/actions"
@@ -11,7 +11,6 @@ import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
 import type { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { apiTags, invalidatesHeader } from "./api-tags"
-import type { LineDefaults } from "./order-lines"
 
 export type ActionResult = { ok?: boolean; error?: string; redirect?: string; id?: string } & Record<string, unknown>
 export type CatalogProduct = CatalogVariant & {

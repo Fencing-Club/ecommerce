@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto"
-import { destinationSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
-import { receiverFor } from "@repo/copacker-packing-rules"
+import { destinationSchema, orderInputSchema, orderLine, orderTotal } from "@repo/copacker-orders"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { requireBuyer } from "./authorization"
+import { shopifyFor } from "./connections"
 import { requestInput } from "./errors"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
+import { lineDefaultsFor } from "./product-defaults"
+import { withVariantFields } from "./product-fields"
 import type { Session } from "./workspace-session"
 
 const saveSchema = z
@@ -47,7 +49,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   if (!proposal.currency) {
     throw new LocalizedError("confirmCurrency")
   }
-  const items = proposal.items.map((item, index) => {
+  const lines = proposal.items.map((item, index) => {
     if (!item.selectedVariantId || item.pieces === null || item.piecesPerSet === null || item.pricePerPiece === null) {
       throw new LocalizedError("resolveImportLine", { line: index + 1 })
     }
@@ -55,22 +57,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
     if (item.sourceLineTotal !== null && priceInMinorUnits(item.sourceLineTotal) !== item.pieces * unitPrice) {
       throw new LocalizedError("importLineTotalDiffers", { line: index + 1 })
     }
-    return {
-      id: randomUUID(),
-      variantId: item.selectedVariantId,
-      inventoryItemId: "gid://shopify/InventoryItem/0",
-      name: item.description,
-      variant: "",
-      buyerSku: item.selectedVariantId,
-      supplierSku: "",
-      asin: "",
-      fnsku: "",
-      pieces: item.pieces,
-      piecesPerSet: item.piecesPerSet,
-      unitPrice,
-      instructions: "",
-      receiver: receiverFor(input.destination)
-    }
+    return { variantId: item.selectedVariantId, pieces: item.pieces, piecesPerSet: item.piecesPerSet, unitPrice }
   })
   const adjustments = proposal.adjustments.map((adjustment) => {
     if (adjustment.amount === null) {
@@ -81,6 +68,23 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       description: adjustment.description,
       amount: (negative ? -1 : 1) * priceInMinorUnits(negative ? adjustment.amount.slice(1) : adjustment.amount)
     }
+  })
+  // Each line starts as one added in the PO editor would, with the product's saved defaults and Amazon network, at the
+  // document's quantity and price.
+  const shopify = await shopifyFor(s.org.id, record.shopifyDomain)
+  const [variants, defaultsFor] = await Promise.all([
+    shopify
+      .variants(lines.map((line) => line.variantId))
+      .then((found) => withVariantFields(s.org.id, record.shopifyDomain, found)),
+    lineDefaultsFor(s.org.id)
+  ])
+  const currency = proposal.currency
+  const items = lines.map(({ variantId, ...line }, index) => {
+    const variant = variants.find((candidate) => candidate?.id === variantId)
+    if (!variant) {
+      throw new LocalizedError("resolveImportLine", { line: index + 1 })
+    }
+    return { ...orderLine(variant, randomUUID(), defaultsFor(variant), currency, input.destination), ...line }
   })
   const { destination: _, ...order } = input
   const proposed = orderInputSchema.parse({ ...order, currency: proposal.currency, items, adjustments })

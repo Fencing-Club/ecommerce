@@ -223,7 +223,7 @@ export async function reviewedImport() {
         id: orderData.items[0]!.variantId,
         sku: "foil-2",
         title: "Two-pack",
-        product: { title: "Verified foil cord" },
+        product: { id: "gid://shopify/Product/1", title: "Verified foil cord" },
         inventoryItem: { id: orderData.items[0]!.inventoryItemId },
         supplierSku: { value: "B-2" },
         asin: { value: "B000000001" },

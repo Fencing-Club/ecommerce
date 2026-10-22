@@ -4,7 +4,15 @@ import { useTranslations } from "use-intl"
 import { FormLabel } from "./form-controls"
 import type { PartnerAddress } from "./partner-address"
 import { Field } from "./ui/field"
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "./ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue
+} from "./ui/select"
 
 const addAddress = "add-address"
 
@@ -65,22 +73,30 @@ export function PickupAddressSelect({
             {selected ? details(selected) : <span className="text-muted-foreground">{t("chooseAddress")}</span>}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false} align="start" className="p-1">
-          {addresses.map((address) => (
-            <SelectItem
-              key={address.id}
-              value={address.id}
-              className="items-start px-3 py-3 [&>span:first-child]:min-w-0 [&>span:first-child]:shrink"
-            >
-              <MapPin aria-hidden className="mt-0.5 text-muted-foreground" />
-              {details(address)}
+        <SelectContent alignItemWithTrigger={false} align="start">
+          {addresses.length > 0 && (
+            <>
+              <SelectGroup>
+                {addresses.map((address) => (
+                  <SelectItem
+                    key={address.id}
+                    value={address.id}
+                    className="items-start px-3 py-3 [&>span:first-child]:min-w-0 [&>span:first-child]:shrink"
+                  >
+                    <MapPin aria-hidden className="mt-0.5 text-muted-foreground" />
+                    {details(address)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+            </>
+          )}
+          <SelectGroup>
+            <SelectItem value={addAddress} className="px-3 py-3">
+              <Plus aria-hidden />
+              {t("addNewAddress")}
             </SelectItem>
-          ))}
-          {addresses.length > 0 && <SelectSeparator />}
-          <SelectItem value={addAddress} className="px-3 py-3">
-            <Plus aria-hidden />
-            {t("addNewAddress")}
-          </SelectItem>
+          </SelectGroup>
         </SelectContent>
       </Select>
     </Field>

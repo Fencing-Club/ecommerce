@@ -37,8 +37,17 @@ export const Default = meta.story({
     await expect(canvas.getByText("Purchase order emailed to Lotus Manufacturing")).toBeVisible()
     // Only comments have avatars: the comment box spans the timeline.
     await expect(canvas.getAllByText("AR")).toHaveLength(1)
+    // Revisions start collapsed.
+    for (const name of ["Revision 2: Approved supplier changes", "Purchase order created"]) {
+      await expect(canvas.getByRole("button", { name })).toHaveAttribute("aria-expanded", "false")
+    }
+    await expect(canvas.queryByText(/TOTE-NAT/)).toBeNull()
+  }
+})
 
-    // A revision opens to show its lines, with prices and supplier SKUs.
+// A revision opens to show its lines, with prices and supplier SKUs.
+export const RevisionLines = meta.story({
+  play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Revision 2: Approved supplier changes" }))
     await expect(await canvas.findByText("TOTE-NAT: 300 units at $4.25, supplier SKU LM-TOTE")).toBeVisible()
     // The first revision is the purchase order being created, without a number.
