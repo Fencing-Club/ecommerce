@@ -113,9 +113,44 @@ export function OrderMenu({
   )
 }
 
-// A PO line's menu, as in the PO editor: its product label, made from its product when downloaded, its suffocation
-// warning labels, and editing a draft. A label that can't be made yet shows why beside it. Labels are uploaded and
-// removed on the Products page.
+// A saved PO line's label downloads, in its menu on the PO's page and in its editor: its product label, made from its
+// product when downloaded, and the PO's suffocation warning labels when the line needs them.
+export function LineLabelMenuItems({
+  orderId,
+  itemId,
+  label,
+  warning
+}: {
+  orderId: string
+  itemId: string
+  label: boolean
+  warning: boolean
+}) {
+  const t = useTranslations("orders.actions")
+  return (
+    <>
+      {label && (
+        <DropdownMenuItem
+          render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label={t("downloadLabel")} />}
+        >
+          <Download />
+          {t("downloadLabel")}
+        </DropdownMenuItem>
+      )}
+      {warning && (
+        <DropdownMenuItem
+          render={<a href={`/api/orders/${orderId}/labels/warning`} download aria-label={t("downloadHazardLabel")} />}
+        >
+          <Download />
+          {t("downloadHazardLabel")}
+        </DropdownMenuItem>
+      )}
+    </>
+  )
+}
+
+// A PO line's menu, as in the PO editor: its label downloads (LineLabelMenuItems) and editing a draft. A label that
+// can't be made yet shows why beside it. Labels are uploaded and removed on the Products page.
 export function LineMenu({
   orderId,
   itemId,
@@ -159,24 +194,7 @@ export function LineMenu({
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {labeled && (
-              <DropdownMenuItem
-                render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label={t("downloadLabel")} />}
-              >
-                <Download />
-                {t("downloadLabel")}
-              </DropdownMenuItem>
-            )}
-            {warning && (
-              <DropdownMenuItem
-                render={
-                  <a href={`/api/orders/${orderId}/labels/warning`} download aria-label={t("downloadHazardLabel")} />
-                }
-              >
-                <Download />
-                {t("downloadHazardLabel")}
-              </DropdownMenuItem>
-            )}
+            <LineLabelMenuItems orderId={orderId} itemId={itemId} label={labeled} warning={warning} />
             {editable && (
               <DropdownMenuItem onClick={() => router.navigate({ href: `/orders/${orderId}/edit` })}>
                 <Pencil />

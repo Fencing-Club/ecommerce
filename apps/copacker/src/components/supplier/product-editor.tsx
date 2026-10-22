@@ -5,6 +5,7 @@ import { useRef, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { fileName, PageHeader } from "@/components/common"
+import { MoneyInput } from "@/components/money-input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,7 +31,7 @@ import { useSaveProductMutation, useUploadProductImageMutation } from "@/lib/sup
 import type { ProductImage } from "@/lib/supplier-product"
 import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
+import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
 
 export type EditorVariant = {

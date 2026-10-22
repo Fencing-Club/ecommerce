@@ -32,7 +32,9 @@ each hook.
 - `usePackingDraft` (`use-packing-draft.ts`): saves a shipment's packing as a draft, finishes it after the server's
   checks, and links an existing AWD shipment, returning `{ save, submit, link, working, error, clearError }`. Each save
   reads the shipment again before it's done, so the next request sends the new revision. Used by the packing form.
-- `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
+- `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total. An amount
+  typed outside a form's `FormMoney` goes in `MoneyInput` (`components/money-input.tsx`), which reports minor units as
+  they're typed.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.

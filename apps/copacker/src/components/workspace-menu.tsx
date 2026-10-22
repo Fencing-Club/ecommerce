@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
+import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 
 export type Workspace = { id: string; name: string; kind: string }
@@ -23,15 +24,6 @@ const kinds = {
 
 function isKind(kind: string): kind is keyof typeof kinds {
   return Object.hasOwn(kinds, kind)
-}
-
-export function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 // A 28px tile at the start of each of the menu's items.

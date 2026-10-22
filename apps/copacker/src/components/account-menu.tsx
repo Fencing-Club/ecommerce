@@ -16,8 +16,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
+import { initials } from "@/lib/initials"
 import { themeStore } from "@/lib/theme"
-import { initials } from "./workspace-menu"
 
 // Each labelled by its key under the "navigation" messages' `accountMenu.themes`.
 const themeOptions = [
