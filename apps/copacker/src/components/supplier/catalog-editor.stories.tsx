@@ -11,6 +11,7 @@ import {
   newCatalog,
   wholesaleCatalog
 } from "@/stories/fixtures/supplier"
+import { shownDialog, chooseOption, shownAlertDialog } from "@/stories/play"
 import { CatalogEditor } from "./catalog-editor"
 
 // What the form sent: each save's body and each delete's catalog.
@@ -87,8 +88,7 @@ export const RenameAndSave = meta.story({
     const title = canvas.getByRole("textbox", { name: /Title/ })
     await userEvent.clear(title)
     await userEvent.type(title, "Wholesale 2027")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Draft" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Status" }), "Draft")
     // Assigned customers see list prices until the catalog is active again.
     await expect(
       canvas.getByText("Customers see every active product at its own price until the catalog is active.")
@@ -129,7 +129,8 @@ export const Customers = meta.story({
     const option = await screen.findByRole("option", { name: /Pine & Paper Co\./ })
     await expect(within(option).getByText("Moves from Retail partners")).toBeInTheDocument()
     await userEvent.click(option)
-    await userEvent.keyboard("{Escape}")
+    // Choosing closes the list. Escape on the closed field would clear every customer.
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(saved).toHaveBeenCalledWith(
@@ -192,7 +193,7 @@ export const VolumePricing = meta.story({
     await userEvent.click(
       canvas.getByRole("button", { name: "Quantity rules and volume pricing for Canvas tote bag, Black" })
     )
-    const dialog = within(await screen.findByRole("dialog", { name: "Quantity rules and volume pricing" }))
+    const dialog = await shownDialog("Quantity rules and volume pricing")
     await expect(dialog.getByText("Canvas tote bag, Black")).toBeInTheDocument()
     await expect(dialog.getByRole("textbox", { name: "Base price" })).toHaveValue("$4.05")
     await userEvent.click(dialog.getByRole("button", { name: "Add break" }))
@@ -224,7 +225,7 @@ export const VolumePricing = meta.story({
 export const UseProductRules = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /Quantity rules and volume pricing for Linen apron/ }))
-    const dialog = within(await screen.findByRole("dialog"))
+    const dialog = await shownDialog()
     await expect(dialog.getByRole("spinbutton", { name: "Increment" })).toHaveValue(6)
     await userEvent.click(dialog.getByRole("button", { name: "Use product settings" }))
     // Back to the apron's own rules: its break, 10% off, and its minimum.
@@ -288,8 +289,7 @@ export const SearchProducts = meta.story({
 
 export const IncreaseAdjustment = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Adjustment direction" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Increase by" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Adjustment direction" }), "Increase by")
     await expect(canvas.getByText(/\$100 becomes \$110/)).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Price for Linen apron: $9.79" })).toBeVisible()
     const percent = canvas.getByRole("textbox", { name: "Price adjustment" })
@@ -347,7 +347,7 @@ export const Delete = meta.story({
       `/api/catalogs/${catalogIds.wholesale}/export?format=pdf`
     )
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete catalog" }))
-    const dialog = within(await screen.findByRole("alertdialog", { name: "Delete Wholesale 2026?" }))
+    const dialog = await shownAlertDialog("Delete Wholesale 2026?")
     await expect(
       dialog.getByText("Its customers will see every active product at its own price. You can’t undo this.")
     ).toBeInTheDocument()
@@ -374,9 +374,7 @@ export const DeleteFails = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
-    await userEvent.click(
-      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
-    )
+    await userEvent.click((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" }))
     await expect(await screen.findByText("Couldn’t delete the catalog. Try again.")).toBeVisible()
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
@@ -391,9 +389,7 @@ export const DeleteOffline = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
-    await userEvent.click(
-      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
-    )
+    await userEvent.click((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" }))
     await expect(
       await saveBar().findByText("Couldn’t reach Copacker. Check your connection and try again.")
     ).toBeVisible()
@@ -401,9 +397,7 @@ export const DeleteOffline = meta.story({
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
-    await expect(
-      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
-    ).toBeEnabled()
+    await expect((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" })).toBeEnabled()
   }
 })
 

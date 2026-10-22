@@ -1,6 +1,6 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { type ImportMode, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
 
 // A file of names, a name to a line under a Name header, imported beside the names already there.

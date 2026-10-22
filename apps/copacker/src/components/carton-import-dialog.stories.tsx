@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { cartonTotals, groupCartons, type CartonGroup } from "@/lib/carton-groups"
 import { cartonColumns } from "@/lib/carton-import"
 import { sendTo } from "@/stories/fixtures/orders"
-import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { order, packed } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
 
@@ -187,7 +188,7 @@ export const Loading = meta.story({
   play: async () => {
     const dialog = await upload(valid())
     await userEvent.click(dialog.getByRole("button", { name: "Import cartons" }))
-    const loading = within(await screen.findByRole("dialog", { name: "Import cartons" }))
+    const loading = await shownDialog("Import cartons")
     await expect(loading.getByRole("status")).toHaveTextContent("Importing cartons…")
     await expect(loading.getByRole("button", { name: "Importing…" })).toBeDisabled()
     await expect(loading.getByRole("button", { name: "Remove packing.csv" })).toBeDisabled()

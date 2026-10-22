@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
 import { expect, fn, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ProductLabelBulk } from "./product-label-bulk"
 
@@ -33,7 +34,7 @@ const labelsApi = [
 
 async function openSheet() {
   await userEvent.click(screen.getByRole("button", { name: "Manage labels" }))
-  return within(await screen.findByRole("dialog", { name: "Manage labels" }))
+  return shownDialog("Manage labels")
 }
 
 const meta = preview.meta({

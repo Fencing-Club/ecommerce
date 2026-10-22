@@ -58,12 +58,15 @@ export const InvalidEmail = meta.story({
   },
   play: async ({ canvas }) => {
     const input = canvas.getByRole("textbox", { name: "Email" })
+    // The browser stops an invalid form before it submits, so nothing is ever sent.
+    const submitted = fn()
+    input.closest("form")?.addEventListener("submit", submitted)
     await userEvent.click(canvas.getByRole("button", { name: "Join" }))
     await expect(input).toBeInvalid()
     await userEvent.type(input, "not an address")
     await userEvent.click(canvas.getByRole("button", { name: "Join" }))
     await expect(input).toBeInvalid()
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    await expect(submitted).not.toHaveBeenCalled()
     await expect(received).not.toHaveBeenCalled()
     await expect(canvas.getByRole("button", { name: "Join" })).toBeEnabled()
   }

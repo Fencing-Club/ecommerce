@@ -7,6 +7,7 @@ import { z } from "zod"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { useFormErrorMap } from "@/hooks/use-error-text"
+import { chooseOption } from "@/stories/play"
 import { AddressFields, emptyAddress } from "./address-fields"
 
 type Address = typeof emptyAddress
@@ -80,10 +81,8 @@ export const FillIn = meta.story({
     await userEvent.type(canvas.getByLabelText(/Postal code/), "94607")
     const country = canvas.getByRole("combobox", { name: /Country/ })
     await expect(country).toHaveTextContent("Choose a country")
-    await userEvent.click(country)
-    await userEvent.click(await screen.findByRole("option", { name: "United States" }))
-    await userEvent.click(canvas.getByRole("combobox", { name: /State or province/ }))
-    await userEvent.click(await screen.findByRole("option", { name: "California" }))
+    await chooseOption(country, "United States")
+    await chooseOption(canvas.getByRole("combobox", { name: /State or province/ }), "California")
     await expect(country).toHaveTextContent("United States")
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(args.onSubmit).toHaveBeenCalledOnce())
@@ -113,8 +112,7 @@ export const Filled = meta.story({
     await expect(canvas.getByLabelText(/Address line 2/)).toHaveValue("Building 3")
     const country = canvas.getByRole("combobox", { name: /Country/ })
     await expect(country).toHaveTextContent("China")
-    await userEvent.click(country)
-    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
+    await chooseOption(country, "Canada")
     await expect(country).toHaveTextContent("Canada")
   }
 })
@@ -137,8 +135,7 @@ export const RegionsFollowCountry = meta.story({
   args: { address: { ...filled, countryCode: "US", stateOrRegion: "CA" } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("combobox", { name: /State or province/ })).toHaveTextContent("California")
-    await userEvent.click(canvas.getByRole("combobox", { name: /Country/ }))
-    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
+    await chooseOption(canvas.getByRole("combobox", { name: /Country/ }), "Canada")
     const region = canvas.getByRole("combobox", { name: /State or province/ })
     await expect(region).not.toHaveTextContent("California")
     await userEvent.click(region)
@@ -160,8 +157,7 @@ export const UnlistedCountryCode = meta.story({
     await userEvent.click(screen.getByRole("option", { name: "UK" }))
     await expect(country).toHaveTextContent("UK")
     // Picking a listed country replaces it.
-    await userEvent.click(country)
-    await userEvent.click(await screen.findByRole("option", { name: "United Kingdom" }))
+    await chooseOption(country, "United Kingdom")
     await expect(country).toHaveTextContent("United Kingdom")
     await userEvent.type(canvas.getByLabelText(/State or province/), "Zhejiang")
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))

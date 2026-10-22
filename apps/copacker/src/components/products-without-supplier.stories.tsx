@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { suppliers, withoutSupplier } from "@/stories/fixtures/catalog"
+import { chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ProductsWithoutSupplier } from "./products-without-supplier"
 
@@ -44,8 +45,10 @@ export const Assign = meta.story({
     await expect(canvas.getByRole("button", { name: "Assign" })).toBeDisabled()
 
     await userEvent.click(table.getByRole("checkbox", { name: "Select Linen apron" }))
-    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier for the selected products" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
+    await chooseOption(
+      canvas.getByRole("combobox", { name: "Supplier for the selected products" }),
+      "Northwind Textiles"
+    )
     await userEvent.click(canvas.getByRole("button", { name: "Assign to 1 product" }))
     await waitFor(() =>
       expect(assigned).toEqual([{ productIds: ["gid://shopify/Product/502"], supplierId: suppliers[1]!.id }])
@@ -81,8 +84,10 @@ export const AssignFailed = meta.story({
   play: async ({ canvas }) => {
     const table = await openPanel()
     await userEvent.click(table.getByRole("checkbox", { name: "Select Cotton napkins" }))
-    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier for the selected products" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Lotus Manufacturing" }))
+    await chooseOption(
+      canvas.getByRole("combobox", { name: "Supplier for the selected products" }),
+      "Lotus Manufacturing"
+    )
     await userEvent.click(canvas.getByRole("button", { name: "Assign to 1 product" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("That supplier was removed")
     // The product stays ticked to try again.

@@ -6,6 +6,7 @@ import { can, type Permissions } from "@/lib/access"
 import type { PartnerForwarder, PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 import { forwarderRecordId, partnerAddresses, supplierRecordId } from "@/stories/fixtures/logistics"
+import { shownDialog } from "@/stories/play"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
 import PageView from "./page"
@@ -211,8 +212,8 @@ export const All = meta.story({
 export const OpenPartner = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Northwind Textiles" }))
-    const dialog = await screen.findByRole("dialog", { name: "Edit Northwind Textiles" })
-    await expect(within(dialog).getByRole("textbox", { name: "Name" })).toHaveValue("Northwind Textiles")
+    const dialog = await shownDialog("Edit Northwind Textiles")
+    await expect(dialog.getByRole("textbox", { name: "Name" })).toHaveValue("Northwind Textiles")
   }
 })
 

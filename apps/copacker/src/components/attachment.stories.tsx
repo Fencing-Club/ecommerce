@@ -1,5 +1,6 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { width } from "@/stories/play"
 import { Attachment } from "./attachment"
 const meta = preview.meta({
   title: "Components/Display/Attachment",
@@ -10,13 +11,7 @@ const meta = preview.meta({
     downloadLabel: "Download packing list",
     onDownload: fn()
   },
-  decorators: [
-    (Story) => (
-      <div className="w-72">
-        <Story />
-      </div>
-    )
-  ]
+  decorators: [width("w-72")]
 })
 export const Default = meta.story({
   play: async ({ canvas, args }) => {

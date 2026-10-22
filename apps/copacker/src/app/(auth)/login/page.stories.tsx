@@ -2,10 +2,11 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 function Login({ next, email, error }: { next: string; email?: string; error?: string }) {
   return (
@@ -21,8 +22,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/login" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/")))
   }
 })
 
@@ -41,7 +41,7 @@ export const Default = meta.story({
     await userEvent.type(main.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(main.getByRole("button", { name: "Sign in" }))
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/"))
-    await expect(actions.sent[0]?.data).toEqual({
+    await expect(sent[0]?.data).toEqual({
       email: "alex@example.com",
       password: "correct horse battery",
       next: "/"
@@ -61,7 +61,7 @@ export const OAuthFailed = meta.story({
 export const ReturnsToPage = meta.story({
   args: { next: "/orders/new" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/orders/new")))
+    msw.use(recordActions(sent, redirectTo("/orders/new")))
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "Create an account" })).toHaveAttribute(
@@ -76,7 +76,7 @@ export const ReturnsToPage = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders/new"))
-    await expect(actions.sent[0]?.data).toMatchObject({ next: "/orders/new" })
+    await expect(sent[0]?.data).toMatchObject({ next: "/orders/new" })
   }
 })
 
@@ -84,7 +84,7 @@ export const ReturnsToPage = meta.story({
 export const WithEmail = meta.story({
   args: { email: "alex@example.com" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.incorrectCredentials)))
+    msw.use(recordActions(sent, failWith(errors.incorrectCredentials)))
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("Email")).toHaveValue("alex@example.com")

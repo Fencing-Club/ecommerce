@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
 import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { BulkBarcodeUpload } from "./bulk-barcode-upload"
 
 const pdf = (name: string) => new File(["%PDF-1.7"], name, { type: "application/pdf" })
@@ -38,7 +39,7 @@ const uploadApi = http.post("/api/inventory/barcodes", async ({ request }) => {
 
 async function openSheet() {
   await userEvent.click(screen.getByRole("button", { name: "Upload barcodes" }))
-  return within(await screen.findByRole("dialog", { name: "Upload barcodes" }))
+  return shownDialog("Upload barcodes")
 }
 
 // The drop zone's file input, which a click on the zone opens.

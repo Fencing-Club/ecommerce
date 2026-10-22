@@ -16,9 +16,9 @@ import type { LineLabel } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
 import { forwarderLeg } from "@/server/shipment-legs"
 import type { orderWorkflow } from "@/server/workflow"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import { deliveryId } from "@/stories/fixtures/orders"
 import {
-  actionHandler,
   documentRecord,
   forwarderId,
   forwarderWarehouse,
@@ -359,7 +359,7 @@ function page(kind: Args["kind"], permissions: Permissions = owner) {
   return { loaders: story.loaders, decorators: story.decorators, parameters: { ...story.parameters, permissions } }
 }
 
-const actions = fn()
+const posted: ActionRequest[] = []
 const answered = fn()
 
 const meta = preview.meta({
@@ -398,7 +398,7 @@ const meta = preview.meta({
   } satisfies Args,
   beforeEach: ({ msw }) => {
     msw.use(
-      actionHandler(actions),
+      recordActions(posted),
       http.post("/api/proposals/:id", async ({ params, request }) => {
         answered(params.id, await request.json())
         return HttpResponse.json({ ok: true })
@@ -440,7 +440,7 @@ export const Sent = meta.story({
     ).toBeVisible()
 
     await userEvent.click(canvas.getByRole("button", { name: "Continue packing" }))
-    await waitFor(() => expect(actions).toHaveBeenCalledWith({ action: "shipment.create", data: { id: orderId } }))
+    await waitFor(() => expect(posted).toContainEqual({ action: "shipment.create", data: { id: orderId } }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
@@ -465,9 +465,7 @@ export const Draft = meta.story({
     await userEvent.keyboard("{Escape}")
 
     await userEvent.click(canvas.getByRole("button", { name: "Submit to supplier" }))
-    await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({ action: "order.submit", data: { id: orderId, revision: 1 } })
-    )
+    await waitFor(() => expect(posted).toContainEqual({ action: "order.submit", data: { id: orderId, revision: 1 } }))
   }
 })
 

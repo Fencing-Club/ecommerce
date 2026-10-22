@@ -81,8 +81,9 @@ import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
+import { northwindFactory } from "@/stories/fixtures/parties"
 import { daysAgo, orderItem } from "./fixtures/orders"
-import { order, orderId, pickupAddress, pickupLocations } from "./fixtures/purchase-orders"
+import { order, orderId, pickupLocations } from "./fixtures/purchase-orders"
 const pageLayout = "@container/po flex min-w-0 flex-col gap-6 text-sm"
 type Item = OrderInput["items"][number] & { taxRate?: number }
 function quantityError(item: Item) {
@@ -796,7 +797,7 @@ export function PurchaseOrderFlow({
           [packing.id]: {
             shipment: packing,
             packing: packingSchema.parse({
-              origin: pickupAddress,
+              origin: northwindFactory,
               readyDate,
               cartons: packingCartons(),
               changes: []
@@ -1047,7 +1048,7 @@ export function PurchaseOrderFlow({
       }))
     }
     const draft: PackingDraft = packingRecords[packing.id]?.packing ?? {
-      origin: pickupAddress,
+      origin: northwindFactory,
       readyDate,
       cartons: packingCartons()
     }

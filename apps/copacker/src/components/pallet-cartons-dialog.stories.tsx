@@ -2,7 +2,7 @@ import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { bagOrder, bagPacking, towelOrder, towelPacking } from "@/stories/fixtures/packing"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { PalletCartonsDialog } from "./pallet-cartons-dialog"
 
 const cartons = palletCartons(groupCartons(towelPacking().cartons), towelOrder.items)

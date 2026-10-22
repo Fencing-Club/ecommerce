@@ -2,10 +2,11 @@ import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 const token = "reset_9fK2mQ7xLp3Zt8Wn"
 
 function ResetPassword({ token }: { token?: string }) {
@@ -22,8 +23,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/reset-password" } } },
   args: { token },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/")))
   }
 })
 
@@ -34,15 +34,13 @@ export const Default = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
     // Saving signs straight in.
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/"))
-    await expect(actions.sent).toEqual([
-      { action: "auth.resetPassword", data: { password: "a brand new password", token } }
-    ])
+    await expect(sent).toEqual([{ action: "auth.resetPassword", data: { password: "a brand new password", token } }])
   }
 })
 
 export const LinkExpired = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.linkExpired)))
+    msw.use(recordActions(sent, failWith(errors.linkExpired)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("New password"), "a brand new password")

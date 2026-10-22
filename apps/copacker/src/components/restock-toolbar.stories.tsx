@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { restockChannels, suppliers } from "@/stories/fixtures/catalog"
+import { chooseOption } from "@/stories/play"
 import { RestockToolbar } from "./restock-toolbar"
 
 // The toolbar holding its own settings, as the report does.
@@ -61,11 +62,9 @@ export const Settings = meta.story({
   play: async ({ args, canvas }) => {
     await expect(canvas.getByRole("combobox", { name: "Restock location" })).toHaveTextContent("Amazon")
     await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveTextContent("All suppliers")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Restock location" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Harbor Warehouse" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Restock location" }), "Harbor Warehouse")
     await expect(args.onChannelChange).toHaveBeenCalledWith("shopify:81234")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
-    await userEvent.click(await screen.findByRole("option", { name: suppliers[1]!.name }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Supplier" }), suppliers[1]!.name)
     await expect(args.onSupplierChange).toHaveBeenCalledWith(suppliers[1]!.id)
   }
 })

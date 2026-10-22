@@ -1,5 +1,6 @@
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
 import { Button } from "./ui/button"
 import { Dialog, DialogTrigger } from "./ui/dialog"
@@ -36,14 +37,14 @@ export const Manage = meta.story({
     const trigger = canvas.getByRole("button", { name: "Manage Shopify" })
     trigger.focus()
     await userEvent.keyboard("{Enter}")
-    const panel = await screen.findByRole("dialog", { name: "Shopify" })
-    await waitFor(() => expect(within(panel).getByText("Harbor Goods")).toBeVisible())
-    await expect(within(panel).getByText("harbor-goods.myshopify.com")).toBeVisible()
-    await expect(within(panel).getByRole("region", { name: "Import preferences" })).toBeVisible()
+    const panel = await shownDialog("Shopify")
+    await waitFor(() => expect(panel.getByText("Harbor Goods")).toBeVisible())
+    await expect(panel.getByText("harbor-goods.myshopify.com")).toBeVisible()
+    await expect(panel.getByRole("region", { name: "Import preferences" })).toBeVisible()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(trigger).toHaveFocus())
     await userEvent.click(trigger)
-    await userEvent.click(within(await screen.findByRole("dialog")).getAllByRole("button", { name: "Close" })[0]!)
+    await userEvent.click((await shownDialog()).getAllByRole("button", { name: "Close" })[0]!)
     await waitFor(() => expect(trigger).toHaveFocus())
   }
 })

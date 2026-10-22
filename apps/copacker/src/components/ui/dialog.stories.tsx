@@ -1,5 +1,6 @@
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { Button } from "./button"
 import {
   Dialog,
@@ -59,18 +60,18 @@ export const Default = meta.story({
   play: async ({ canvas, args }) => {
     const trigger = canvas.getByRole("button", { name: "Rename product" })
     await userEvent.click(trigger)
-    const dialog = await screen.findByRole("dialog", { name: "Rename product" })
-    await expect(dialog).toHaveAccessibleDescription("Suppliers see the new name on their next purchase order.")
+    const dialog = await shownDialog("Rename product")
+    await expect(dialog.element).toHaveAccessibleDescription("Suppliers see the new name on their next purchase order.")
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true, expect.anything())
 
-    const input = within(dialog).getByRole("textbox", { name: "Name" })
+    const input = dialog.getByRole("textbox", { name: "Name" })
     await userEvent.clear(input)
     await userEvent.type(input, "Harbor Tote Large")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await expect(args.onSave).toHaveBeenCalledWith("Harbor Tote Large")
 
     // Cancel closes it and hands focus back to the trigger.
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false, expect.anything())
     await expect(trigger).toHaveFocus()
@@ -80,8 +81,8 @@ export const Default = meta.story({
 export const CloseButton = meta.story({
   args: { defaultOpen: true },
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("dialog", { name: "Rename product" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }))
+    const dialog = await shownDialog("Rename product")
+    await userEvent.click(dialog.getByRole("button", { name: "Close" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
   }
@@ -90,7 +91,7 @@ export const CloseButton = meta.story({
 export const EscapeCloses = meta.story({
   args: { defaultOpen: true },
   play: async ({ args }) => {
-    await screen.findByRole("dialog", { name: "Rename product" })
+    await shownDialog("Rename product")
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(args.onSave).not.toHaveBeenCalled()
@@ -111,9 +112,9 @@ export const FooterClose = meta.story({
     </Dialog>
   ),
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("dialog", { name: "Carton sizes" })
+    const dialog = await shownDialog("Carton sizes")
     // getByRole finds exactly one: the footer's.
-    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Close" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false, expect.anything())
   }

@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { shownDialog } from "@/stories/play"
 import { InviteSupplier } from "./invite-supplier"
 import { Button } from "./ui/button"
 
@@ -23,7 +24,6 @@ const meta = preview.meta({
   title: "Components/Partners/Invite supplier",
   render: () => <Opener />,
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -31,16 +31,16 @@ const meta = preview.meta({
 export const Add = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Open" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add a supplier" })
-    await expect(dialog).toHaveTextContent("For a supplier that isn’t in Shopify yet.")
-    await expect(within(dialog).getByRole("textbox", { name: "Supplier company" })).toHaveAttribute(
+    const dialog = await shownDialog("Add a supplier")
+    await expect(dialog.element).toHaveTextContent("For a supplier that isn’t in Shopify yet.")
+    await expect(dialog.getByRole("textbox", { name: "Supplier company" })).toHaveAttribute(
       "placeholder",
       "Northwind Textiles"
     )
-    await expect(dialog).toHaveTextContent("Add one to invite them now.")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "sales@northwind.example.com")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
+    await expect(dialog.element).toHaveTextContent("Add one to invite them now.")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "sales@northwind.example.com")
+    await userEvent.click(dialog.getByRole("button", { name: "Add supplier" }))
     await waitFor(() =>
       expect(sent).toEqual([
         { action: "supplier.create", data: { name: "Northwind Textiles", email: "sales@northwind.example.com" } }
@@ -55,28 +55,26 @@ export const Add = meta.story({
 export const AddValidation = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Open" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
-    await expect(await within(dialog).findByText("Fill in this field")).toBeInTheDocument()
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "sales@")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
-    await expect(await within(dialog).findByText("Enter an email address")).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Add supplier" }))
+    await expect(await dialog.findByText("Fill in this field")).toBeInTheDocument()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "sales@")
+    await userEvent.click(dialog.getByRole("button", { name: "Add supplier" }))
+    await expect(await dialog.findByText("Enter an email address")).toBeInTheDocument()
     await expect(sent).toHaveLength(0)
   }
 })
 
 export const AddFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Northwind Textiles is already one of your suppliers.")))
+    msw.use(recordActions(sent, failWith("Northwind Textiles is already one of your suppliers.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Open" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
-    await expect(
-      await within(dialog).findByText("Northwind Textiles is already one of your suppliers.")
-    ).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")
+    await userEvent.click(dialog.getByRole("button", { name: "Add supplier" }))
+    await expect(await dialog.findByText("Northwind Textiles is already one of your suppliers.")).toBeInTheDocument()
   }
 })
 
@@ -84,8 +82,8 @@ export const AddFails = meta.story({
 export const Cancel = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Open" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add a supplier" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    const dialog = await shownDialog("Add a supplier")
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })

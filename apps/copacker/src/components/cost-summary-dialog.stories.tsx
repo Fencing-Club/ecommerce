@@ -1,6 +1,6 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { CostSummaryDialog } from "./cost-summary-dialog"
 
 const meta = preview.meta({
@@ -21,8 +21,7 @@ export const AddAdjustments = meta.story({
     const save = dialog.getByRole("button", { name: "Save" })
     await userEvent.click(dialog.getByRole("button", { name: "Add adjustment" }))
     await expect(save).toBeDisabled()
-    await userEvent.click(dialog.getByRole("combobox", { name: "Adjustment" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Discount" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Adjustment" }), "Discount")
     await expect(save).toBeDisabled()
     await expect(dialog.getByText("$")).toBeVisible()
     await userEvent.type(dialog.getByRole("textbox", { name: "Amount" }), "12.5")

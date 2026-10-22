@@ -10,6 +10,7 @@ import {
   customerIds,
   customerRows
 } from "@/stories/fixtures/supplier"
+import { chooseOption } from "@/stories/play"
 import { CatalogPicker, CustomerIndex } from "./customers"
 
 // Each catalog assignment the page sent: the customer and its body.
@@ -70,8 +71,7 @@ export const AssignCatalog = meta.story({
 
 export const RemoveCatalog = meta.story({
   play: async () => {
-    await userEvent.click(rowOf("Summit Outfitters").getByRole("combobox"))
-    await userEvent.click(await screen.findByRole("option", { name: /No catalog/ }))
+    await chooseOption(rowOf("Summit Outfitters").getByRole("combobox"), /No catalog/)
     await waitFor(() => expect(assigned).toHaveBeenCalledWith(customerIds.summit, { catalogId: null }))
   }
 })
@@ -85,8 +85,7 @@ export const AssignFails = meta.story({
     )
   },
   play: async () => {
-    await userEvent.click(rowOf("Harbor Goods").getByRole("combobox"))
-    await userEvent.click(await screen.findByRole("option", { name: "Retail partners (draft)" }))
+    await chooseOption(rowOf("Harbor Goods").getByRole("combobox"), "Retail partners (draft)")
     await expect(await rowOf("Harbor Goods").findByText("That catalog was deleted.")).toBeVisible()
     // The customer keeps the catalog it had.
     await expect(rowOf("Harbor Goods").getByRole("combobox")).toHaveTextContent("Wholesale 2026")
@@ -140,8 +139,7 @@ export const WithoutPrices = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("columnheader", { name: "Amount spent" })).toBeNull()
     await expect(canvas.queryByText("$12,840")).toBeNull()
-    await userEvent.click(rowOf("Bluebird Home").getByRole("combobox"))
-    await userEvent.click(await screen.findByRole("option", { name: "Wholesale 2026" }))
+    await chooseOption(rowOf("Bluebird Home").getByRole("combobox"), "Wholesale 2026")
     await waitFor(() =>
       expect(assigned).toHaveBeenCalledWith(customerIds.bluebird, { catalogId: catalogIds.wholesale })
     )
@@ -170,8 +168,7 @@ export const PickerWithHint = meta.story({
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByText("All products at list prices")).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Catalog for Bluebird Home" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Wholesale 2026" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Catalog for Bluebird Home" }), "Wholesale 2026")
     await waitFor(() => expect(canvas.queryByText("All products at list prices")).toBeNull())
     await waitFor(() =>
       expect(assigned).toHaveBeenCalledWith(customerIds.bluebird, { catalogId: catalogIds.wholesale })

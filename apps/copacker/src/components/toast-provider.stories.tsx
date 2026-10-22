@@ -1,7 +1,11 @@
 import { Toast } from "@base-ui/react/toast"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { purchaseOrderFeedback, shipmentActionFeedback, shipmentFailureFeedback } from "@/lib/shipment-action-feedback"
+import {
+  purchaseOrderFeedback,
+  shipmentActionFeedback,
+  shipmentFailureFeedback
+} from "@/stories/fixtures/shipment-action-feedback"
 import { ToastItem, ToastProvider } from "./toast-provider"
 
 const retry = fn()

@@ -1,12 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FormProvider, useForm } from "react-hook-form"
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, fn, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { useFormErrorMap } from "@/hooks/use-error-text"
 import { companySchema, personSchema, placeSchema, type WorkspaceKind } from "@/lib/onboarding"
 import { blankWizard } from "@/stories/fixtures/auth"
+import { chooseOption } from "@/stories/play"
 import {
   AboutFields,
   AddressStepFields,
@@ -82,8 +83,7 @@ export const About = meta.story({
     await expect(canvas.getByText("Choose your position")).toBeVisible()
     await userEvent.type(canvas.getByLabelText(/First name/), "Alex")
     await userEvent.type(canvas.getByLabelText(/Last name/), "Rivera")
-    await userEvent.click(canvas.getByRole("combobox", { name: /Position/ }))
-    await userEvent.click(await screen.findByRole("option", { name: "Purchasing manager" }))
+    await chooseOption(canvas.getByRole("combobox", { name: /Position/ }), "Purchasing manager")
     await expect(canvas.getByRole("combobox", { name: /Position/ })).toHaveTextContent("Purchasing manager")
     await waitFor(() => expect(canvas.queryByText("Choose your position")).toBeNull())
     await expect(canvas.queryByText("Enter your first name")).toBeNull()
@@ -196,8 +196,7 @@ export const AddressWithoutKind = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Address" })).toBeVisible()
     await expect(canvas.getByLabelText(/Address name/)).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: /Country/ }))
-    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
+    await chooseOption(canvas.getByRole("combobox", { name: /Country/ }), "Canada")
     await expect(canvas.getByRole("combobox", { name: /Country/ })).toHaveTextContent("Canada")
   }
 })

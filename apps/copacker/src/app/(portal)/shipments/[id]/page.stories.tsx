@@ -14,30 +14,23 @@ import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { knownPackingGroups, releasedLabelKinds, releasedStates } from "@/server/readiness"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  type ActionRequest,
   buyerContacts,
   documentRow,
   type DocumentRow,
   orderRecords,
   packingFor,
   partnerAddresses,
-  recordActions,
   shipmentId,
   shipmentRow,
   type ShipmentRow,
   supplierRecordId
 } from "@/stories/fixtures/logistics"
 import { daysAgo } from "@/stories/fixtures/orders"
-import {
-  bagOrder,
-  bagPacking,
-  baylineWarehouse,
-  northwindFactory,
-  towelOrder,
-  towelPacking,
-  towelPackingDraft
-} from "@/stories/fixtures/packing"
+import { bagOrder, bagPacking, towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
+import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
+import { shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
 import { shipmentDestinations } from "../destination"
@@ -343,7 +336,6 @@ const meta = preview.meta({
   } satisfies Args,
   parameters: { db: { contacts: buyerContacts.map(({ id, name }) => ({ id, name })) } },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -984,13 +976,12 @@ export const WaitingForCarrierLabels = meta.story({
     await expect(canvas.queryByText("Before the labels go to the supplier")).toBeNull()
     await expect(canvas.queryByText("Add a carrier label for carton C2")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Upload labels" }))
-    const dialog = await screen.findByRole("dialog", { name: "Upload carrier labels" })
-    await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText("1Z4F7E210393821041")).toBeVisible()
-    await expect(within(dialog).getByText("ups-labels.pdf, page 1")).toBeVisible()
-    await expect(within(dialog).getAllByText("Drag a label here")).toHaveLength(1)
-    await expect(within(dialog).getByText("1 of 2 have a label")).toBeVisible()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    const dialog = await shownDialog("Upload carrier labels")
+    await expect(dialog.getByText("1Z4F7E210393821041")).toBeVisible()
+    await expect(dialog.getByText("ups-labels.pdf, page 1")).toBeVisible()
+    await expect(dialog.getAllByText("Drag a label here")).toHaveLength(1)
+    await expect(dialog.getByText("1 of 2 have a label")).toBeVisible()
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })

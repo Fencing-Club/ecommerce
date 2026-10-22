@@ -1,9 +1,12 @@
 import { HttpResponse } from "msw/http"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { recordActions } from "@/stories/fixtures/shared"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { shownAlertDialog } from "@/stories/play"
 import { DisconnectButton } from "./disconnect-button"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Forms/Disconnect button",
@@ -15,17 +18,17 @@ const meta = preview.meta({
 
 export const Shopify = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Disconnect Shopify?" })
+    const dialog = await shownAlertDialog("Disconnect Shopify?")
     await expect(
-      within(dialog).getByText(
+      dialog.getByText(
         "Copacker stops syncing products, stock, sales, and costs with harbor-goods.myshopify.com. Purchase orders stay as they are."
       )
     ).toBeInTheDocument()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Disconnect" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
-    await expect(posted).toEqual([{ action: "connection.delete", data: { provider: "shopify" } }])
+    await expect(sent).toEqual([{ action: "connection.delete", data: { provider: "shopify" } }])
     await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
@@ -33,16 +36,16 @@ export const Shopify = meta.story({
 export const Amazon = meta.story({
   args: { provider: "amazon", account: "Harbor Goods (North America)" },
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Disconnect Amazon?" })
+    const dialog = await shownAlertDialog("Disconnect Amazon?")
     await expect(
-      within(dialog).getByText(/stops reading sales and stock from Harbor Goods \(North America\)/)
+      dialog.getByText(/stops reading sales and stock from Harbor Goods \(North America\)/)
     ).toBeInTheDocument()
     // Cancel leaves the connection.
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
-    await expect(posted).toEqual([])
+    await expect(sent).toEqual([])
   }
 })
 
@@ -50,14 +53,14 @@ export const Amazon = meta.story({
 export const Ebay = meta.story({
   args: { provider: "ebay", account: "harbor_goods" },
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Disconnect eBay?" })
+    const dialog = await shownAlertDialog("Disconnect eBay?")
     await expect(
-      within(dialog).getByText("Copacker stops reading sales from harbor_goods. Purchase orders stay as they are.")
+      dialog.getByText("Copacker stops reading sales from harbor_goods. Purchase orders stay as they are.")
     ).toBeInTheDocument()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }))
-    await waitFor(() => expect(posted).toEqual([{ action: "connection.delete", data: { provider: "ebay" } }]))
+    await userEvent.click(dialog.getByRole("button", { name: "Disconnect" }))
+    await waitFor(() => expect(sent).toEqual([{ action: "connection.delete", data: { provider: "ebay" } }]))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
   }
 })
@@ -66,13 +69,13 @@ export const Ebay = meta.story({
 export const Fails = meta.story({
   args: { provider: "amazon", account: "Harbor Goods (North America)" },
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => new HttpResponse(null, { status: 500 }))
+    msw.use(recordActions(sent, () => new HttpResponse(null, { status: 500 })))
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect" }))
-    const dialog = await screen.findByRole("alertdialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }))
-    await expect(await within(dialog).findByRole("alert")).toHaveTextContent("Couldn’t disconnect Amazon")
+    const dialog = await shownAlertDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Disconnect" }))
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn’t disconnect Amazon")
     // The dialog stays open to try again.
-    await expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeEnabled()
+    await expect(dialog.getByRole("button", { name: "Disconnect" })).toBeEnabled()
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })

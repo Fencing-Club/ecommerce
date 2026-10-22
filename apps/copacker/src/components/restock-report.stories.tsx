@@ -5,6 +5,7 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { restockChannels, restockLines, restockReport, suppliers } from "@/stories/fixtures/catalog"
 import { supplierId } from "@/stories/fixtures/orders"
+import { chooseOption } from "@/stories/play"
 import { RestockReport } from "./restock-report"
 
 // What each story's page asked the plan for, in order.
@@ -135,8 +136,7 @@ export const SearchAndSort = meta.story({
     await expect(canvas.getByRole("button", { name: "Set suppliers" })).toHaveAttribute("href", "/products")
 
     await userEvent.clear(canvas.getByRole("searchbox", { name: "Search products" }))
-    await userEvent.click(canvas.getByRole("combobox", { name: "Sort by" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Product name" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Sort by" }), "Product name")
     await expect(canvas.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Product name")
     await expect(localStorage.getItem("restock-sort")).toBe(JSON.stringify("name"))
 
@@ -177,16 +177,14 @@ export const ChooseLocationAndSupplier = meta.story({
   },
   play: async ({ canvas }) => {
     await lotusGroup()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Restock location" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Harbor Warehouse" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Restock location" }), "Harbor Warehouse")
     await waitFor(
       () => expect(plans.at(-1)).toMatchObject({ channel: { kind: "shopify", locationId: "81234" } }),
       loaded
     )
     await expect(localStorage.getItem("restock-channel")).toBe(JSON.stringify("shopify:81234"))
 
-    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Supplier" }), "Northwind Textiles")
     await expect(await canvas.findByText("No products linked to Northwind Textiles", undefined, loaded)).toBeVisible()
     await expect(plans.at(-1)).toMatchObject({ supplier: suppliers[1]!.id })
   }
@@ -197,8 +195,7 @@ export const KeepsSearchWhenSettingsChange = meta.story({
     await lotusGroup()
     await userEvent.type(canvas.getByRole("searchbox", { name: "Search products" }), "wool")
     await expect(await canvas.findByText("No products match")).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Northwind Textiles" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Supplier" }), "Northwind Textiles")
     await waitFor(() => expect(plans.at(-1)).toMatchObject({ supplier: suppliers[1]!.id }), loaded)
     await expect(await canvas.findByRole("searchbox", { name: "Search products" }, loaded)).toHaveValue("wool")
     await expect(await canvas.findByText("No products match")).toBeVisible()

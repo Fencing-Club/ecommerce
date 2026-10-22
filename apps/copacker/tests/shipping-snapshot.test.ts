@@ -3,8 +3,8 @@ import { shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
 import { packingListSnapshot, shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { transportSchema } from "@repo/copacker-shipments/transport"
 import { describe, expect, it } from "vitest"
-import { pickupAddress } from "../src/stories/fixtures/logistics"
 import { orderData, orderItem } from "../src/stories/fixtures/orders"
+import { lotusFactory } from "../src/stories/fixtures/parties"
 
 const product = orderItem({
   supplierSku: "SUP-2",
@@ -19,7 +19,7 @@ const product = orderItem({
 const input = {
   order: orderData({ destination: "amazon", deliveryId: undefined, items: [product] }),
   packing: packingSchema.parse({
-    origin: pickupAddress,
+    origin: lotusFactory,
     readyDate: "2026-10-20",
     cartons: ["A1", "A2"].map((cartonId) => ({
       cartonId,
@@ -63,7 +63,7 @@ describe("accepted shipment document snapshot", () => {
       contents: [{ productId: product.id, packs: 80 }]
     })
     expect(data.transport.carrierLabels).toBe(false)
-    expect(data.origin.address).toContain(pickupAddress.email)
+    expect(data.origin.address).toContain(lotusFactory.email)
   })
 
   it("lists each pallet with its cartons, size and gross weight when the cartons are on pallets", () => {

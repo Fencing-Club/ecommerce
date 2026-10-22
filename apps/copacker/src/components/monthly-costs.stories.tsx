@@ -2,7 +2,8 @@ import { HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { MonthlyCosts } from "./monthly-costs"
 
 const sent: ActionRequest[] = []
@@ -27,7 +28,6 @@ const meta = preview.meta({
   component: MonthlyCosts,
   args: { costs, currency: "USD", admin: true },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -51,13 +51,12 @@ export const Empty = meta.story({
 export const Add = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add monthly cost" })
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Helium 10")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "99")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Channel" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Amazon" }))
-    await userEvent.type(within(dialog).getByLabelText("Paid since"), "2026-01-05")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
+    const dialog = await shownDialog("Add monthly cost")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "Helium 10")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Amount a month" }), "99")
+    await chooseOption(dialog.getByRole("combobox", { name: "Channel" }), "Amazon")
+    await userEvent.type(dialog.getByLabelText("Paid since"), "2026-01-05")
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -81,10 +80,10 @@ export const Add = meta.story({
 export const AddForEbay = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "eBay Store subscription")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "27.95")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Channel" }))
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "eBay Store subscription")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Amount a month" }), "27.95")
+    await userEvent.click(dialog.getByRole("combobox", { name: "Channel" }))
     const listbox = await screen.findByRole("listbox")
     await expect(
       within(listbox)
@@ -92,7 +91,7 @@ export const AddForEbay = meta.story({
         .map((option) => option.textContent)
     ).toEqual(["All channels", "Amazon", "Shopify", "eBay"])
     await userEvent.click(within(listbox).getByRole("option", { name: "eBay" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -116,12 +115,12 @@ export const AddForEveryChannel = meta.story({
   args: { currency: "EUR" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
-    const dialog = await screen.findByRole("dialog")
-    await expect(within(dialog).getByRole("combobox", { name: "Channel" })).toHaveTextContent("All channels")
-    await expect(dialog).toHaveTextContent("EUR")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bookkeeping")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "250,50")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
+    const dialog = await shownDialog()
+    await expect(dialog.getByRole("combobox", { name: "Channel" })).toHaveTextContent("All channels")
+    await expect(dialog.element).toHaveTextContent("EUR")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "Bookkeeping")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Amount a month" }), "250,50")
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -136,34 +135,32 @@ export const AddForEveryChannel = meta.story({
 export const AddValidation = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
-    await expect(await within(dialog).findByText("Enter a name")).toBeInTheDocument()
-    await expect(within(dialog).getByText("Enter the amount")).toBeInTheDocument()
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Rent")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "0")
-    await userEvent.type(within(dialog).getByLabelText("Paid since"), "2026-06-01")
-    await userEvent.type(within(dialog).getByLabelText("Paid until"), "2026-01-31")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
-    await expect(await within(dialog).findByText("The end date can’t be before the start date")).toBeInTheDocument()
-    await expect(within(dialog).getByText("Enter the amount")).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
+    await expect(await dialog.findByText("Enter a name")).toBeInTheDocument()
+    await expect(dialog.getByText("Enter the amount")).toBeInTheDocument()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "Rent")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Amount a month" }), "0")
+    await userEvent.type(dialog.getByLabelText("Paid since"), "2026-06-01")
+    await userEvent.type(dialog.getByLabelText("Paid until"), "2026-01-31")
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
+    await expect(await dialog.findByText("The end date can’t be before the start date")).toBeInTheDocument()
+    await expect(dialog.getByText("Enter the amount")).toBeInTheDocument()
     await expect(sent).toHaveLength(0)
   }
 })
 
 export const AddFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Monthly costs are in the Overview's currency, USD.")))
+    msw.use(recordActions(sent, failWith("Monthly costs are in the Overview's currency, USD.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Rent")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "1800")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
-    await expect(
-      await within(dialog).findByText("Monthly costs are in the Overview's currency, USD.")
-    ).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "Rent")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Amount a month" }), "1800")
+    await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
+    await expect(await dialog.findByText("Monthly costs are in the Overview's currency, USD.")).toBeInTheDocument()
   }
 })
 

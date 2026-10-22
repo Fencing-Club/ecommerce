@@ -3,6 +3,7 @@ import { createRef } from "react"
 import { expect, fn, screen, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { pressEscapeIn } from "@/stories/fixtures/marketing"
+import { shownDialog } from "@/stories/play"
 import { FilmDialog } from "./film-dialog"
 
 const meta = preview.meta({
@@ -17,15 +18,15 @@ const meta = preview.meta({
 
 export const Open = meta.story({
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" })
+    const dialog = await shownDialog("Copacker: Restocking, handled")
     const video = await screen.findByLabelText("Copacker: Restocking, handled", { selector: "video" })
-    await expect(dialog).toContainElement(video)
+    await expect(dialog.element).toContainElement(video)
     await expect(video).toHaveAttribute("src", "https://media.copacker.ai/film-924d480a.mp4")
     await expect(video).toHaveAttribute("poster", "/marketing/film.jpg")
     await expect(video).toHaveAttribute("preload", "none")
     await expect(video).toHaveAttribute("controls")
     // Escape asks to close it.
-    await pressEscapeIn(dialog)
+    await pressEscapeIn(dialog.element)
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything()))
   }
 })
@@ -33,7 +34,7 @@ export const Open = meta.story({
 export const Closed = meta.story({
   args: { open: false },
   play: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    // Closed, the dialog renders nothing, so there's nothing to wait for.
     await expect(screen.queryByRole("dialog")).toBeNull()
     await expect(document.querySelector("video")).toBeNull()
   }

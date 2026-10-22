@@ -7,22 +7,21 @@ import { can, isAdmin, type Permissions } from "@/lib/access"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
 import { restockSettings } from "@/server/restock-report"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  type ActionRequest,
   amazonAccount,
   buyerContacts,
   ebayAccount,
-  forwarderAddress,
   forwarderRecordId,
   inventoryLocations,
-  pickupAddress,
-  recordActions,
   shopifyAccount,
   storeSyncHandlers,
   supplierContacts,
   supplierRecordId,
   team
 } from "@/stories/fixtures/logistics"
+import { lotusFactory, baylineShenzhen } from "@/stories/fixtures/parties"
+import { shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import PageView from "./page"
@@ -163,7 +162,7 @@ const buyerSaved: Contact[] = [
       id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a08",
       name: "Kept for Lotus",
       kind: "pickup",
-      address: pickupAddress,
+      address: lotusFactory,
       shopifyLocationId: null
     },
     { supplierId: supplierRecordId }
@@ -173,7 +172,7 @@ const buyerSaved: Contact[] = [
       id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a09",
       name: "Kept for Bayline",
       kind: "forwarder",
-      address: forwarderAddress,
+      address: baylineShenzhen,
       shopifyLocationId: null
     },
     { forwarderId: forwarderRecordId }
@@ -251,7 +250,6 @@ const meta = preview.meta({
   ...serverStory(SettingsPage),
   args: buyerArgs,
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent), ...storeSyncHandlers())
   }
 })
@@ -307,16 +305,16 @@ export const ShopifySettings = meta.story({
     const integrations = canvas.getByRole("region", { name: "Integrations" })
     await expect(within(integrations).getByText(shopifyAccount)).toBeVisible()
     await userEvent.click(within(integrations).getByRole("button", { name: "Manage Shopify" }))
-    const sheet = await screen.findByRole("dialog", { name: "Shopify" })
-    await expect(within(sheet).getByRole("heading", { name: "Orders" })).toBeInTheDocument()
-    await expect(within(sheet).getByRole("heading", { name: "Inventory" })).toBeInTheDocument()
-    await expect(await within(sheet).findByText("Portland warehouse")).toBeInTheDocument()
-    await expect(within(sheet).getByRole("heading", { name: "Excluded order tags" })).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "Edit excluded order tags" }))
-    const dialog = await screen.findByRole("dialog", { name: "Excluded order tags" })
+    const sheet = await shownDialog("Shopify")
+    await expect(sheet.getByRole("heading", { name: "Orders" })).toBeInTheDocument()
+    await expect(sheet.getByRole("heading", { name: "Inventory" })).toBeInTheDocument()
+    await expect(await sheet.findByText("Portland warehouse")).toBeInTheDocument()
+    await expect(sheet.getByRole("heading", { name: "Excluded order tags" })).toBeInTheDocument()
+    await userEvent.click(sheet.getByRole("button", { name: "Edit excluded order tags" }))
+    const dialog = await shownDialog("Excluded order tags")
     // The store's own tags are suggested.
-    await userEvent.click(within(dialog).getByRole("button", { name: "wholesale" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await userEvent.click(dialog.getByRole("button", { name: "wholesale" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(sent).toEqual([{ action: "workspace.excludedShopifyTags", data: { tags: ["Amazon", "wholesale"] } }])
     )
@@ -327,17 +325,17 @@ export const AmazonSettings = meta.story({
   ...buyer,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const sheet = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(sheet).toHaveTextContent("Harbor Goods US")
+    const sheet = await shownDialog("Amazon")
+    await expect(sheet.element).toHaveTextContent("Harbor Goods US")
     for (const name of ["Orders", "Inventory", "Financial data"]) {
-      await waitFor(() => expect(within(sheet).getByRole("heading", { name })).toBeVisible())
+      await waitFor(() => expect(sheet.getByRole("heading", { name })).toBeVisible())
     }
-    await expect(within(sheet).getByRole("button", { name: "Sync Amazon financial data" })).toBeVisible()
-    await expect(sheet).not.toHaveTextContent(amazonAccount)
-    await expect(sheet).not.toHaveTextContent("Amazon Ads")
-    await waitFor(() => expect(within(sheet).getByText("United States")).toBeVisible())
-    await expect(within(sheet).getByText("Canada")).toBeVisible()
-    await expect(within(sheet).queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
+    await expect(sheet.getByRole("button", { name: "Sync Amazon financial data" })).toBeVisible()
+    await expect(sheet.element).not.toHaveTextContent(amazonAccount)
+    await expect(sheet.element).not.toHaveTextContent("Amazon Ads")
+    await waitFor(() => expect(sheet.getByText("United States")).toBeVisible())
+    await expect(sheet.getByText("Canada")).toBeVisible()
+    await expect(sheet.queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
   }
 })
 
@@ -349,8 +347,8 @@ export const AmazonUnavailable = meta.story({
     await expect(canvas.queryByText(amazonAccount)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const sheet = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(sheet).toHaveTextContent("Couldn’t load from Amazon")
+    const sheet = await shownDialog("Amazon")
+    await expect(sheet.element).toHaveTextContent("Couldn’t load from Amazon")
   }
 })
 
@@ -377,11 +375,11 @@ export const EbaySettings = meta.story({
     const integrations = canvas.getByRole("region", { name: "Integrations" })
     await expect(within(integrations).getByText(ebayAccount)).toBeVisible()
     await userEvent.click(within(integrations).getByRole("button", { name: "Manage eBay" }))
-    const sheet = await screen.findByRole("dialog", { name: "eBay" })
-    await expect(within(sheet).getByRole("heading", { name: "Orders" })).toBeInTheDocument()
-    await expect(within(sheet).queryByRole("heading", { name: "Inventory" })).toBeNull()
-    await expect(await within(sheet).findByText(/./, { selector: "time" })).toBeInTheDocument()
-    await expect(within(sheet).getByRole("button", { name: "Sync eBay orders" })).toBeEnabled()
+    const sheet = await shownDialog("eBay")
+    await expect(sheet.getByRole("heading", { name: "Orders" })).toBeInTheDocument()
+    await expect(sheet.queryByRole("heading", { name: "Inventory" })).toBeNull()
+    await expect(await sheet.findByText(/./, { selector: "time" })).toBeInTheDocument()
+    await expect(sheet.getByRole("button", { name: "Sync eBay orders" })).toBeEnabled()
   }
 })
 
@@ -519,7 +517,7 @@ export const Forwarder = meta.story({
     profile: null,
     linked: [],
     saved: [
-      contact({ ...buyerContacts[0]!, name: "Shenzhen warehouse", address: forwarderAddress, shopifyLocationId: null })
+      contact({ ...buyerContacts[0]!, name: "Shenzhen warehouse", address: baylineShenzhen, shopifyLocationId: null })
     ],
     team: { members: [team.members[0]!], invitations: [] }
   },

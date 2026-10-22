@@ -3,8 +3,9 @@ import { useWatch } from "react-hook-form"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import type { OrderForm } from "@/lib/order-form"
-import { order, orderId, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { order, orderId } from "@/stories/fixtures/purchase-orders"
 import { OrderFormStory } from "@/stories/order-form"
+import { shownDialog } from "@/stories/play"
 import { OrderLineRow } from "./order-line-row"
 
 type Args = Omit<ComponentProps<typeof OrderLineRow>, "item">

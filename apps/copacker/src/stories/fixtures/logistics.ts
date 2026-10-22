@@ -9,76 +9,16 @@ import type { Access } from "@/lib/access"
 import type { Role } from "@/lib/access"
 import type { AmazonShipment } from "@/server/amazon-shipments"
 import { daysAgo, orderData, orderItem } from "./orders"
+import { baylineShenzhen, harborWarehouse, lotusFactory } from "./parties"
 
 // Shipments, partners and their addresses, as the database keeps them, for stories.
 
-// A request the app's forms send to /api/action.
-export type ActionRequest = { action: string; data: Record<string, unknown> }
-
-function isActionRequest(body: unknown): body is ActionRequest {
-  return typeof body === "object" && body !== null && "action" in body && typeof body.action === "string"
-}
-
-// Answers /api/action and keeps each request in `sent` for the play function to check. `respond` answers a request
-// itself, such as with the server's error; without it, or when it returns nothing, the change succeeds.
-export function recordActions(sent: ActionRequest[], respond?: (request: ActionRequest) => Response | undefined) {
-  return http.post("/api/action", async ({ request }) => {
-    const body: unknown = await request.json()
-    if (!isActionRequest(body)) {
-      return HttpResponse.json({ error: "Unknown action" }, { status: 400 })
-    }
-    sent.push(body)
-    return respond?.(body) ?? HttpResponse.json({ ok: true })
-  })
-}
-
-// The server's error for a change it refused, as the app's API sends it.
-export function serverError(error: string) {
-  return HttpResponse.json({ error }, { status: 400 })
-}
-
-export const pickupAddress: Address = {
-  name: "Mei Chen",
-  phoneNumber: "+8657985551234",
-  email: "mei@lotus.example.com",
-  addressLine1: "1000 Siji Road",
-  addressLine2: "Building 3",
-  city: "Yiwu",
-  stateOrRegion: "Zhejiang",
-  postalCode: "322000",
-  countryCode: "CN"
-}
-
-export const warehouseAddress: Address = {
-  name: "Jordan Lee",
-  phoneNumber: "+15035550142",
-  email: "receiving@harbor.example.com",
-  addressLine1: "2400 NW Front Ave",
-  addressLine2: "",
-  city: "Portland",
-  stateOrRegion: "OR",
-  postalCode: "97209",
-  countryCode: "US"
-}
-
-export const forwarderAddress: Address = {
-  name: "Wei Zhang",
-  phoneNumber: "+8675555501234",
-  email: "",
-  addressLine1: "88 Harbor Road",
-  addressLine2: "",
-  city: "Shenzhen",
-  stateOrRegion: "Guangdong",
-  postalCode: "518000",
-  countryCode: "CN"
-}
-
 export const partnerAddresses = {
-  factory: { id: "3c1a8f2e-0d4b-4c7a-9e21-5a6b7c8d9e01", name: "Factory", address: pickupAddress },
+  factory: { id: "3c1a8f2e-0d4b-4c7a-9e21-5a6b7c8d9e01", name: "Factory", address: lotusFactory },
   forwarderWarehouse: {
     id: "3c1a8f2e-0d4b-4c7a-9e21-5a6b7c8d9e02",
     name: "Shenzhen consolidation",
-    address: forwarderAddress
+    address: baylineShenzhen
   }
 } satisfies Record<string, PartnerAddress>
 
@@ -112,7 +52,7 @@ export function packingFor(order: OrderInput, overrides: Partial<Packing> = {}):
   const [first, second] = order.items
   return {
     readyDate: daysAgo(-5).toISOString().slice(0, 10),
-    origin: pickupAddress,
+    origin: lotusFactory,
     cartons: [
       { cartonId: "C1", length: 60, width: 40, height: 40, weight: 18.5, items: [{ itemId: first!.id, pieces: 120 }] },
       {
@@ -221,28 +161,28 @@ export const buyerContacts: SavedContact[] = [
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a02",
     name: "Portland warehouse",
     kind: "delivery",
-    address: warehouseAddress,
+    address: harborWarehouse,
     shopifyLocationId: shopifyLocations[0]!.id
   },
   {
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a03",
     name: "Reno 3PL",
     kind: "delivery",
-    address: { ...warehouseAddress, addressLine1: "900 Logistics Pkwy", city: "Reno", stateOrRegion: "NV" },
+    address: { ...harborWarehouse, addressLine1: "900 Logistics Pkwy", city: "Reno", stateOrRegion: "NV" },
     shopifyLocationId: "gid://shopify/Location/7999"
   },
   {
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a04",
     name: "Shenzhen consolidation",
     kind: "forwarder",
-    address: forwarderAddress,
+    address: baylineShenzhen,
     shopifyLocationId: null
   },
   {
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a05",
     name: "Lotus factory",
     kind: "pickup",
-    address: pickupAddress,
+    address: lotusFactory,
     shopifyLocationId: null
   }
 ]
@@ -253,14 +193,14 @@ export const supplierContacts: SavedContact[] = [
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a06",
     name: "Factory",
     kind: "pickup",
-    address: pickupAddress,
+    address: lotusFactory,
     shopifyLocationId: null
   },
   {
     id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a07",
     name: "Showroom",
     kind: "pickup",
-    address: { ...pickupAddress, addressLine1: "55 Futian Market", addressLine2: "", phoneNumber: "" },
+    address: { ...lotusFactory, addressLine1: "55 Futian Market", addressLine2: "", phoneNumber: "" },
     shopifyLocationId: null
   }
 ]

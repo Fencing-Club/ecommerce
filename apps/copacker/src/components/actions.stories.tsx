@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw/http"
+import { http } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
@@ -6,10 +6,13 @@ import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useActionForm } from "@/hooks/use-action-form"
-import { held, recordActions } from "@/stories/fixtures/shared"
+import { held, type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { shownDialog } from "@/stories/play"
 import { ActionForm } from "./action-form"
 import { ActionButton } from "./actions"
 import { FormInput } from "./form-controls"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Forms/Actions",
@@ -23,11 +26,11 @@ const meta = preview.meta({
 
 export const Succeeds = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     const button = canvas.getByRole("button", { name: "Mark shipped" })
     await userEvent.click(button)
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
-    await expect(posted).toEqual([{ action: "shipment.ship", data: { id: "shipment-1" } }])
+    await expect(sent).toEqual([{ action: "shipment.ship", data: { id: "shipment-1" } }])
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
     await waitFor(() => expect(button).toBeEnabled())
   }
@@ -37,7 +40,7 @@ export const Succeeds = meta.story({
 export const Redirects = meta.story({
   args: { action: "shipment.create", data: { id: "order-1045" }, children: "Prepare shipment", variant: "outline" },
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ redirect: "/shipments/shipment-2" }))
+    msw.use(recordActions(sent, redirectTo("/shipments/shipment-2")))
     await userEvent.click(canvas.getByRole("button", { name: "Prepare shipment" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/shipments/shipment-2" }))
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
@@ -47,7 +50,7 @@ export const Redirects = meta.story({
 export const Fails = meta.story({
   args: { variant: "destructive" },
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ error: "Pack the shipment first" }, { status: 400 }))
+    msw.use(recordActions(sent, failWith("Pack the shipment first")))
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     // The failure shows as a toast, outside the button's row.
     await expect(await screen.findByText("Pack the shipment first")).toBeVisible()
@@ -70,7 +73,7 @@ export const Pending = meta.story({
 
 export const WaitsForRefresh = meta.story({
   play: async ({ canvas, msw }) => {
-    recordActions(msw)
+    msw.use(recordActions(sent))
     const refresh = Promise.withResolvers<void>()
     getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
     const button = canvas.getByRole("button", { name: "Mark shipped" })
@@ -116,7 +119,7 @@ function SupplierForm({ dialog = false, onSuccess }: { dialog?: boolean; onSucce
 export const Form = meta.story({
   render: () => <SupplierForm />,
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     const save = canvas.getByRole("button", { name: "Save" })
     // Nothing to save until the form changes.
     await expect(save).toBeDisabled()
@@ -126,11 +129,11 @@ export const Form = meta.story({
     await userEvent.click(save)
     await expect(await canvas.findByText("Fill in this field")).toBeVisible()
     await expect(input).toHaveAttribute("aria-invalid", "true")
-    await expect(posted).toEqual([])
+    await expect(sent).toEqual([])
     await userEvent.type(input, "Lotus Manufacturing Co.")
     await userEvent.click(save)
     await waitFor(() =>
-      expect(posted).toEqual([
+      expect(sent).toEqual([
         { action: "supplier.rename", data: { id: "supplier-lotus", name: "Lotus Manufacturing Co." } }
       ])
     )
@@ -141,7 +144,7 @@ export const Form = meta.story({
 export const FormServerError = meta.story({
   render: () => <SupplierForm />,
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ error: "A supplier with this name exists" }, { status: 409 }))
+    msw.use(recordActions(sent, failWith("A supplier with this name exists", 409)))
     await userEvent.type(canvas.getByLabelText(/Supplier name/), " Ltd")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("A supplier with this name exists")
@@ -152,7 +155,7 @@ const formSucceeded = fn()
 export const FormWaitsForRefresh = meta.story({
   render: () => <SupplierForm onSuccess={formSucceeded} />,
   play: async ({ canvas, msw }) => {
-    recordActions(msw)
+    msw.use(recordActions(sent))
     formSucceeded.mockClear()
     const refresh = Promise.withResolvers<void>()
     getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
@@ -177,7 +180,7 @@ export const FormWaitsForRefresh = meta.story({
 export const FormRedirects = meta.story({
   render: () => <SupplierForm onSuccess={formSucceeded} />,
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ redirect: "/partners" }))
+    msw.use(recordActions(sent, redirectTo("/partners")))
     formSucceeded.mockClear()
     await userEvent.type(canvas.getByLabelText(/Supplier name/), " Ltd")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
@@ -201,10 +204,10 @@ export const FormInDialog = meta.story({
   ),
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Rename supplier" }))
-    const dialog = await screen.findByRole("dialog")
+    const dialog = await shownDialog()
     // In a dialog, Save is ready at once and Cancel closes it.
     await expect(screen.getByRole("button", { name: "Save" })).toBeEnabled()
-    await expect(dialog).toContainElement(screen.getByLabelText(/Supplier name/))
+    await expect(dialog.element).toContainElement(screen.getByLabelText(/Supplier name/))
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }

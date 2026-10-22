@@ -1,12 +1,13 @@
 import { HttpResponse } from "msw/http"
 import type { ComponentProps } from "react"
-import { expect, fn, userEvent, waitFor, within } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { actionHandler, createdTimelineEntry, orderId, timelineEntries } from "@/stories/fixtures/purchase-orders"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { createdTimelineEntry, orderId, timelineEntries } from "@/stories/fixtures/purchase-orders"
 import { serverStory } from "@/stories/server"
 import { PoTimeline } from "./po-timeline"
 
-const actions = fn()
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Purchase orders/PO timeline",
@@ -19,7 +20,7 @@ const meta = preview.meta({
     prices: true
   },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions))
+    msw.use(recordActions(sent))
   }
 })
 
@@ -55,7 +56,7 @@ export const PostComment = meta.story({
     await userEvent.type(box, "Labels are attached")
     await userEvent.click(post)
     await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({
+      expect(sent).toContainEqual({
         action: "order.comment",
         data: { orderId, message: "Labels are attached", visibility: "internal" }
       })
@@ -110,7 +111,7 @@ export const Closed = meta.story({
 export const CommentFails = meta.story({
   args: { entries: [createdTimelineEntry] },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, () => new HttpResponse(null, { status: 500 })))
+    msw.use(recordActions(sent, () => new HttpResponse(null, { status: 500 })))
   },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole("heading", { level: 3 })).toHaveLength(1)
@@ -120,7 +121,7 @@ export const CommentFails = meta.story({
     await userEvent.type(box, "Any update?")
     await userEvent.keyboard("{Control>}{Enter}{/Control}")
     await expect(await timeline.findByRole("alert")).toHaveTextContent("Something went wrong. Try again.")
-    await expect(actions).toHaveBeenCalledOnce()
+    await expect(sent).toHaveLength(1)
     // What was written stays, to post again.
     await expect(box).toHaveValue("Any update?")
   }

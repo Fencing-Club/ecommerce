@@ -19,7 +19,7 @@ import {
   totalPiecesLeft
 } from "@/lib/carton-groups"
 import { towelOrder } from "@/stories/fixtures/packing"
-import { pickupAddress } from "@/stories/fixtures/purchase-orders"
+import { northwindFactory } from "@/stories/fixtures/parties"
 
 const [natural, , teaTowel] = towelOrder.items
 const group = (cartonId: string, count: number, cartonIds: string[] = []): CartonGroup => ({
@@ -133,7 +133,7 @@ describe("carton rules", () => {
   it("saves each physical carton, and the pallets only when packed on them, holding cartons the packing has", () => {
     const values = (palletized: boolean) => ({
       readyDate: "",
-      origin: pickupAddress,
+      origin: northwindFactory,
       cartons: [{ ...group("A1", 2), weight: Number.NaN }],
       palletized,
       pallets: [pallet("1", ["A1", "Z9"])],
@@ -153,7 +153,7 @@ describe("packing editor", () => {
   const schema = packingEditorSchema("UTC")
   const values = (palletized: boolean, weight: number) => ({
     readyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-    origin: pickupAddress,
+    origin: northwindFactory,
     cartons: [group("A1", 1)],
     palletized,
     pallets: [{ palletId: "1", length: 120, width: 100, height: 90, weight, stackable: true, cartonIds: ["A1"] }],

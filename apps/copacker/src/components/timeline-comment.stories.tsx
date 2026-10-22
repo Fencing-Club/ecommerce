@@ -2,8 +2,10 @@ import { http, HttpResponse } from "msw/http"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { held, recordActions } from "@/stories/fixtures/shared"
+import { held, type ActionRequest, recordActions } from "@/stories/actions"
 import { TimelineComment } from "./timeline-comment"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Display/Timeline comment",
@@ -13,7 +15,7 @@ const meta = preview.meta({
 
 export const SharedMessage = meta.story({
   play: async ({ canvas, canvasElement, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await expect(canvas.getByText("Only your team can see this comment.")).toBeVisible()
     await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
     await userEvent.click(
@@ -23,7 +25,7 @@ export const SharedMessage = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Please check the labels")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     await waitFor(() =>
-      expect(posted).toEqual([
+      expect(sent).toEqual([
         {
           action: "order.comment",
           data: { orderId: "order-1045", message: "Please check the labels", visibility: "shared" }
@@ -35,7 +37,7 @@ export const SharedMessage = meta.story({
 
 export const Post = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     const box = canvas.getByRole("textbox", { name: "Comment" })
     const post = canvas.getByRole("button", { name: "Post" })
     await expect(box).toHaveAttribute("placeholder", "Leave a comment…")
@@ -47,7 +49,7 @@ export const Post = meta.story({
     await expect(post).toBeEnabled()
     await userEvent.click(post)
     await waitFor(() =>
-      expect(posted).toEqual([
+      expect(sent).toEqual([
         {
           action: "order.comment",
           data: { orderId: "order-1045", message: "Cartons ship Friday", visibility: "internal" }
@@ -63,13 +65,13 @@ export const Post = meta.story({
 // Ctrl+Enter (Cmd+Enter on a Mac) posts too.
 export const KeyboardShortcut = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await userEvent.type(
       canvas.getByRole("textbox", { name: "Comment" }),
       "Labels are attached{Control>}{Enter}{/Control}"
     )
     await waitFor(() =>
-      expect(posted).toEqual([
+      expect(sent).toEqual([
         {
           action: "order.comment",
           data: { orderId: "order-1045", message: "Labels are attached", visibility: "internal" }
@@ -93,7 +95,7 @@ export const Posting = meta.story({
 // A failure shows inside the box, between what was written and the Post button.
 export const Fails = meta.story({
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => new HttpResponse(null, { status: 500 }))
+    msw.use(recordActions(sent, () => new HttpResponse(null, { status: 500 })))
     const textbox = canvas.getByRole("textbox", { name: "Comment" })
     await userEvent.type(textbox, "Cartons ship Friday")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
@@ -113,7 +115,7 @@ export const Fails = meta.story({
 export const SupplierMessage = meta.story({
   args: { counterparty: "customer" },
   play: async ({ canvas, canvasElement, msw }) => {
-    const posted = recordActions(msw)
+    msw.use(recordActions(sent))
     await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
     await userEvent.click(
       await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message customer" })
@@ -121,7 +123,7 @@ export const SupplierMessage = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Ready for collection")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     await waitFor(() =>
-      expect(posted).toEqual([
+      expect(sent).toEqual([
         {
           action: "order.comment",
           data: { orderId: "order-1045", message: "Ready for collection", visibility: "shared" }

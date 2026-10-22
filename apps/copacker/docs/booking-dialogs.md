@@ -25,7 +25,7 @@ radios. Their copy is in the `booking` message namespace.
 
 `Components/Booking` has a story for every step and variation the two frames draw, and for each piece.
 
-- `src/components/booking/fixtures.ts` holds one booking per state: `agl.start`, `agl.differs`, `fba.expired` and so on.
+- `src/stories/fixtures/booking.ts` holds one booking per state: `agl.start`, `agl.differs`, `fba.expired` and so on.
   A flow's story is its meta's arguments with a fixture and, when it opens later in the flow, `initialStep`. A new state
   is a fixture and a few lines.
 - `src/stories/booking.tsx` has what the stories share: `bookingDialog(name)` finds the dialog and checks its one height,

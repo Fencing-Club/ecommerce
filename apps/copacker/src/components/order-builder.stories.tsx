@@ -3,25 +3,25 @@ import { HttpResponse, http } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import { supplierId } from "@/stories/fixtures/orders"
 import {
-  actionHandler,
   builderSuppliers,
   catalogMatches,
-  catalogProducts,
+  catalogVariants,
   deliveries,
   order,
   orderId,
   productHandlers,
-  shownDialog,
   stops
 } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { OrderBuilder } from "./order-builder"
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const lookups = fn()
 const [tote, apron, basket] = order.items
-const sand = catalogProducts[0]!
+const sand = catalogVariants[0]!
 
 const meta = preview.meta({
   title: "Components/Purchase orders/Order builder",
@@ -34,7 +34,7 @@ const meta = preview.meta({
     parents: [{ label: "Purchase orders", href: "/orders" }]
   },
   beforeEach: ({ msw }) => {
-    msw.use(...productHandlers(), catalogMatches({}, lookups), actionHandler(actions))
+    msw.use(...productHandlers(), catalogMatches({}, lookups), recordActions(sent))
   }
 })
 
@@ -42,9 +42,7 @@ type Canvas = ReturnType<typeof within>
 
 // Picks a choice from one of the route's pills, such as the supplier.
 async function choose(canvas: Canvas, pill: string, option: string) {
-  await userEvent.click(canvas.getByRole("combobox", { name: pill }))
-  await userEvent.click(await screen.findByRole("option", { name: option }))
-  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+  await chooseOption(canvas.getByRole("combobox", { name: pill }), option)
 }
 
 // Clears a quantity, which stays empty, then types a new one into it.
@@ -82,7 +80,7 @@ export const Empty = meta.story({
 // Choosing the supplier and a product, setting its quantity and cost, then saving creates the purchase order.
 export const CreateOrder = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, () => HttpResponse.json({ ok: true, redirect: `/orders/${orderId}` })))
+    msw.use(recordActions(sent, () => HttpResponse.json({ ok: true, redirect: `/orders/${orderId}` })))
   },
   play: async ({ canvas }) => {
     await choose(canvas, "Supplier", "Lotus Manufacturing")
@@ -122,7 +120,7 @@ export const CreateOrder = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
 
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "order.create",
       data: expect.objectContaining({
         reference: "PO-1050",
@@ -176,7 +174,7 @@ export const Validation = meta.story({
     await expect(canvas.getByRole("textbox", { name: "Reference number" })).toHaveAttribute("aria-invalid", "true")
     await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveAttribute("aria-invalid", "true")
     await expect(address).toHaveAttribute("aria-invalid", "true")
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
 
     await choose(canvas, "Delivery address", "Oakland warehouse")
     await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveAttribute("aria-invalid", "false")
@@ -192,7 +190,7 @@ export const Validation = meta.story({
     await expect(canvas.getByText("1 variant (0 units)")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(quantity).toHaveAttribute("aria-invalid", "true"))
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
     await userEvent.type(quantity, "40")
     await expect(quantity).toHaveAttribute("aria-invalid", "false")
     await expect(canvas.getByText("1 variant (40 units)")).toBeVisible()
@@ -204,7 +202,7 @@ export const Validation = meta.story({
     await expect(cost).toHaveValue("")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(cost).toHaveAttribute("aria-invalid", "true"))
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
   }
 })
 
@@ -382,7 +380,7 @@ export const EditDraft = meta.story({
     await expect(save).toBeEnabled()
     await userEvent.click(save)
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "order.update",
       data: {
         id: orderId,
@@ -405,16 +403,14 @@ export const CostSummary = meta.story({
     await userEvent.click(dialog.getByRole("button", { name: "Add adjustment" }))
     const save = dialog.getByRole("button", { name: "Save" })
     await expect(save).toBeDisabled()
-    await userEvent.click(dialog.getByRole("combobox", { name: "Adjustment" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Shipping amount" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Adjustment" }), "Shipping amount")
     await expect(save).toBeDisabled()
     await userEvent.type(dialog.getByRole("textbox", { name: "Amount" }), "80")
     await expect(save).toBeEnabled()
 
     await userEvent.click(dialog.getByRole("button", { name: "Add adjustment" }))
     const types = dialog.getAllByRole("combobox", { name: "Adjustment" })
-    await userEvent.click(types[1]!)
-    await userEvent.click(await screen.findByRole("option", { name: "Discount" }))
+    await chooseOption(types[1]!, "Discount")
     await userEvent.type(dialog.getAllByRole("textbox", { name: "Amount" })[1]!, "20")
     await userEvent.click(save)
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
@@ -505,7 +501,7 @@ export const ShipmentGroups = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1052")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({
+      expect(sent).toContainEqual({
         action: "order.create",
         data: expect.objectContaining({
           items: [
@@ -589,17 +585,15 @@ export const PackingRequirements = meta.story({
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit packing details" }))
     const dialog = await shownDialog("Packing details")
     await expect(dialog.queryByRole("button", { name: "Add expense" })).not.toBeInTheDocument()
-    await userEvent.click(dialog.getByRole("combobox", { name: "Preparation" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Sealed polybag" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Preparation" }), "Sealed polybag")
     await userEvent.click(dialog.getByRole("checkbox", { name: "Country of origin label" }))
-    await userEvent.click(dialog.getByRole("combobox", { name: "Country code" }))
-    await userEvent.click(await screen.findByRole("option", { name: /^China$/ }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Country code" }), /^China$/)
     await userEvent.click(dialog.getByRole("checkbox", { name: "Choking hazard label" }))
     await userEvent.click(dialog.getByRole("button", { name: "Done" }))
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-PACKING")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({
+      expect(sent).toContainEqual({
         action: "order.create",
         data: expect.objectContaining({
           items: [
@@ -644,7 +638,7 @@ export const PackingDetails = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1051")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({
+      expect(sent).toContainEqual({
         action: "order.create",
         data: expect.objectContaining({
           items: [

@@ -8,26 +8,29 @@ import { storyTimeZone } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { addDays, zonedDay } from "@/lib/time-zone"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import { supplierId } from "@/stories/fixtures/orders"
-import { actionHandler, order, pickupAddress, shipmentRecord, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { northwindFactory } from "@/stories/fixtures/parties"
+import { order, shipmentRecord } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { PackingForm } from "./packing-form"
 import { ShipmentTransportSettings } from "./shipment-transport"
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const shipment = shipmentRecord()
 const [tote, apron, basket] = order.items
 // The PO's other shipments hold all but these pieces of each line, which this shipment packs.
 const leaving = (left: Record<string, number>) =>
   Object.fromEntries(order.items.map((item) => [item.id, item.pieces - (left[item.id] ?? 0)]))
-const savedAddress = { id: "5d6e7f80-1a2b-4c3d-8e9f-000000000001", name: "Ningbo factory", address: pickupAddress }
+const savedAddress = { id: "5d6e7f80-1a2b-4c3d-8e9f-000000000001", name: "Ningbo factory", address: northwindFactory }
 // Today where the stories are set, which packing can finish on at the earliest.
 const today = zonedDay(Date.now(), storyTimeZone)
 
 // A packing list ready to check: two cartons of totes, ready in two weeks, from the factory.
 const draft: PackingDraft = {
   readyDate: addDays(today, 14),
-  origin: pickupAddress,
+  origin: northwindFactory,
   cartons: [
     { cartonId: "C1", length: 60, width: 40, height: 40, weight: 12, items: [{ itemId: tote!.id, pieces: 40 }] },
     { cartonId: "C2", length: 60, width: 40, height: 40, weight: 12, items: [{ itemId: tote!.id, pieces: 40 }] }
@@ -52,7 +55,7 @@ const completeDraft: PackingDraft = {
 
 // Saving a draft answers with its new revision; a check answers with `check`.
 function packingActions(check: { canSubmit: boolean; requiresApproval: boolean; issues: unknown[] }) {
-  return actionHandler(actions, (body) => {
+  return recordActions(sent, (body) => {
     if (body.action === "shipment.save") {
       return HttpResponse.json({ ok: true, revision: 2 })
     }
@@ -69,7 +72,7 @@ let read = stored
 function shipmentServer(linkedAmazonShipmentId: string | null) {
   stored = { revision: 1, linkedAmazonShipmentId }
   read = stored
-  return actionHandler(actions, (body) => {
+  return recordActions(sent, (body) => {
     if (body.data.revision !== stored.revision) {
       return HttpResponse.json(
         {
@@ -162,7 +165,7 @@ export const LinkExistingAwd = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
     await expect(await canvas.findByText(/Linked to STAR-EXAMPLE/)).toBeVisible()
     await expect(carton).toBeVisible()
-    await expect(actions).toHaveBeenNthCalledWith(1, {
+    await expect(sent[0]).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({
         revision: 1,
@@ -171,14 +174,14 @@ export const LinkExistingAwd = meta.story({
         })
       })
     })
-    await expect(actions).toHaveBeenNthCalledWith(2, {
+    await expect(sent[1]).toEqual({
       action: "shipment.linkExisting",
       data: { id: shipment.id, revision: 2, amazonShipmentId: "STAR-EXAMPLE" }
     })
     await userEvent.click(canvas.getByRole("button", { name: "Remove link" }))
     await expect(await canvas.findByRole("textbox", { name: "AWD shipment ID" })).toBeVisible()
     await expect(carton).toBeVisible()
-    await expect(actions).toHaveBeenNthCalledWith(4, {
+    await expect(sent[3]).toEqual({
       action: "shipment.linkExisting",
       data: { id: shipment.id, revision: 4, amazonShipmentId: null }
     })
@@ -196,14 +199,14 @@ export const SaveDraftThenTransport = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({ revision: 1 })
     })
 
     await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))
     await waitFor(() =>
-      expect(actions).toHaveBeenLastCalledWith({
+      expect(sent.at(-1)).toEqual({
         action: "shipment.transport",
         data: expect.objectContaining({ id: shipment.id, revision: 2, expected: null })
       })
@@ -214,7 +217,7 @@ export const SaveDraftThenTransport = meta.story({
 
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(3))
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({ revision: 2 })
     })
@@ -244,7 +247,7 @@ export const Empty = meta.story({
     await expectPacked(canvas, 0)
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "shipment.save",
       data: {
         id: shipment.id,
@@ -273,7 +276,7 @@ export const FixFields = meta.story({
       "aria-invalid",
       "true"
     )
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
   }
 })
 
@@ -291,7 +294,7 @@ export const CheckFindsIssues = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
-    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(pickupAddress.addressLine1)
+    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(northwindFactory.addressLine1)
     await expect(canvas.getAllByText(/88 Harbour Road/)[0]).toBeVisible()
     await expectPacked(canvas, 80)
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
@@ -302,7 +305,7 @@ export const CheckFindsIssues = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     await expect(await canvas.findByText(/Carton C2: Weighs more than 22.67 kg/)).toBeVisible()
     await expect(canvas.getByText(/Pack Linen apron too/)).toBeVisible()
-    await expect(actions).toHaveBeenCalledWith({ action: "shipment.check", data: { id: shipment.id } })
+    await expect(sent).toContainEqual({ action: "shipment.check", data: { id: shipment.id } })
   }
 })
 
@@ -316,7 +319,7 @@ export const Submit = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     // It submits the revision the save just made, and the page reads the shipment again after each.
     await waitFor(() =>
-      expect(actions).toHaveBeenLastCalledWith({
+      expect(sent.at(-1)).toEqual({
         action: "shipment.submit",
         data: { id: shipment.id, revision: 2 }
       })
@@ -392,7 +395,7 @@ export const MixedCarton = meta.story({
     await expectPacked(canvas, 26)
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({
         draft: expect.objectContaining({
@@ -474,8 +477,7 @@ export const PickupAddress = meta.story({
   args: { addresses: [savedAddress] },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText(/88 Harbour Road/)[0]).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
     const dialog = await shownDialog("Add new address")
     await expect(dialog.getByRole("textbox", { name: "Street address" })).toHaveValue("")
     await userEvent.keyboard("{Escape}")
@@ -485,7 +487,7 @@ export const PickupAddress = meta.story({
 
 export const SaveFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, () => HttpResponse.json({ error: "The purchase order changed" }, { status: 409 })))
+    msw.use(recordActions(sent, () => HttpResponse.json({ error: "The purchase order changed" }, { status: 409 })))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
@@ -508,8 +510,7 @@ export const ForSupplier = meta.story({
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await expect(canvas.queryByRole("textbox", { name: "Supplier SKU" })).toBeNull()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
     const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
     await expect(dialog.getAllByRole("textbox").length).toBeGreaterThan(3)
   }
@@ -536,7 +537,7 @@ export const LiveValidation = meta.story({
     await userEvent.clear(weight)
     await userEvent.type(weight, "12")
     await expect(canvas.queryByText(/22[.,]/)).toBeNull()
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
     await userEvent.clear(weight)
     await userEvent.tab()
     await expect(weight).toHaveAttribute("aria-invalid", "true")
@@ -556,11 +557,11 @@ export const PassedReadyDate = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({ draft: expect.objectContaining({ readyDate: "2026-10-05" }) })
     })
-    actions.mockClear()
+    const saved = sent.length
 
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     await expect(await canvas.findByText("Choose today or a later date")).toBeVisible()
@@ -568,7 +569,7 @@ export const PassedReadyDate = meta.story({
     // The field's own error is the only one, and the field takes focus.
     await expect(readyDate).toHaveFocus()
     await expect(canvas.queryByText("Fix the highlighted fields")).toBeNull()
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toHaveLength(saved)
     // The field checks each date as it's chosen.
     fireEvent.change(readyDate, { target: { value: today } })
     await waitFor(() => expect(readyDate).not.toHaveAttribute("aria-invalid", "true"))
@@ -580,9 +581,9 @@ export const PassedReadyDate = meta.story({
 
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     await waitFor(() =>
-      expect(actions).toHaveBeenLastCalledWith({ action: "shipment.submit", data: { id: shipment.id, revision: 2 } })
+      expect(sent.at(-1)).toEqual({ action: "shipment.submit", data: { id: shipment.id, revision: 2 } })
     )
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "shipment.save",
       data: expect.objectContaining({ draft: expect.objectContaining({ readyDate: today }) })
     })
@@ -657,7 +658,7 @@ export const AmazonCheckFailure = meta.story({
   args: { initial: completeDraft, addresses: [savedAddress] },
   beforeEach: ({ msw }) => {
     msw.use(
-      actionHandler(actions, (body) =>
+      recordActions(sent, (body) =>
         body.action === "shipment.save"
           ? HttpResponse.json({ ok: true, revision: 2 })
           : HttpResponse.json(
@@ -670,7 +671,7 @@ export const AmazonCheckFailure = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
     await expect(await canvas.findByText(/Amazon could not validate/)).toBeVisible()
-    await expect(actions).not.toHaveBeenCalledWith(expect.objectContaining({ action: "shipment.submit" }))
+    await expect(sent).not.toContainEqual(expect.objectContaining({ action: "shipment.submit" }))
     await expectPacked(canvas, 420)
   }
 })
@@ -754,7 +755,7 @@ export const SaveIncompletePacking = meta.story({
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).not.toHaveBeenCalledWith(expect.objectContaining({ action: "shipment.submit" }))
+    await expect(sent).not.toContainEqual(expect.objectContaining({ action: "shipment.submit" }))
     await expect(args.onSubmitted).not.toHaveBeenCalled()
   }
 })
@@ -825,7 +826,7 @@ export const PackedOnPallets = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({
         draft: expect.objectContaining({
@@ -907,7 +908,9 @@ export const ExportCartonsAndPallets = meta.story({
       downloads.push({ name: this.download, file: fetch(this.href).then((response) => response.arrayBuffer()) })
     })
     try {
+      // One at a time, so the files come in a known order.
       await userEvent.click(canvas.getByRole("button", { name: "Export cartons" }))
+      await waitFor(() => expect(downloads).toHaveLength(1))
       const pallets = within(canvas.getByRole("region", { name: "Pallets" }))
       await userEvent.click(pallets.getByRole("button", { name: "Export pallets" }))
       await waitFor(() =>
@@ -979,13 +982,13 @@ export const NotPackedOnPallets = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Save draft" }))
     await expect(await screen.findByText("Draft saved")).toBeVisible()
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({
         draft: expect.not.objectContaining({ pallets: expect.anything() })
       })
     })
-    await expect(actions).toHaveBeenLastCalledWith({
+    await expect(sent.at(-1)).toEqual({
       action: "shipment.save",
       data: expect.objectContaining({ draft: expect.objectContaining({ palletized: false }) })
     })

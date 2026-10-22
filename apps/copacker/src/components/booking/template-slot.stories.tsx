@@ -1,7 +1,7 @@
 import { expect, fireEvent, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { dialogWidth } from "@/stories/booking"
-import { agl, cartonIssue } from "./fixtures"
+import { agl, cartonIssue } from "@/stories/fixtures/booking"
 import { TemplateSlot, type TemplateSlotState } from "./template-slot"
 
 const { cartons, units } = agl.start

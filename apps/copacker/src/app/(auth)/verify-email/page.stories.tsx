@@ -2,10 +2,11 @@ import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 function VerifyEmail({ email }: { email: string }) {
   return (
@@ -21,8 +22,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/verify-email" } } },
   args: { email: "alex@example.com" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/onboarding")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/onboarding")))
   }
 })
 
@@ -35,13 +35,13 @@ export const Default = meta.story({
     await expect(canvas.getByRole("button", { name: /Send again in \d+s/ })).toBeDisabled()
     await userEvent.type(canvas.getByLabelText("Verification code"), "482913")
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/onboarding"))
-    await expect(actions.sent).toEqual([{ action: "auth.verifyEmail", data: { code: "482913" } }])
+    await expect(sent).toEqual([{ action: "auth.verifyEmail", data: { code: "482913" } }])
   }
 })
 
 export const WrongCode = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.wrongCode)))
+    msw.use(recordActions(sent, failWith(errors.wrongCode)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Verification code"), "000000")

@@ -3,6 +3,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { searchIndex } from "@/stories/fixtures/shared"
+import { shownDialog } from "@/stories/play"
 import { TopBar } from "./top-bar"
 
 const meta = preview.meta({
@@ -48,8 +49,8 @@ export const Buyer = meta.story({
     await expect(within(header).getByRole("button", { name: "Search" }).getBoundingClientRect().height).toBe(36)
     // Search opens its panel with the buyer's pages, Sales among them.
     await userEvent.click(within(header).getByRole("button", { name: "Search" }))
-    const panel = await screen.findByRole("dialog", { name: "Search" })
-    await expect(within(panel).getByRole("option", { name: "Sales" })).toBeInTheDocument()
+    const panel = await shownDialog("Search")
+    await expect(panel.getByRole("option", { name: "Sales" })).toBeInTheDocument()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
@@ -83,9 +84,9 @@ export const Supplier = meta.story({
   args: { kind: "supplier" },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Search" }))
-    const panel = await screen.findByRole("dialog", { name: "Search" })
-    await expect(within(panel).getByRole("option", { name: "Catalogs" })).toBeInTheDocument()
-    await expect(within(panel).queryByRole("option", { name: "Restock" })).toBeNull()
+    const panel = await shownDialog("Search")
+    await expect(panel.getByRole("option", { name: "Catalogs" })).toBeInTheDocument()
+    await expect(panel.queryByRole("option", { name: "Restock" })).toBeNull()
   }
 })
 

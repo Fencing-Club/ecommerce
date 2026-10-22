@@ -1,8 +1,8 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { bookingDialog } from "@/stories/booking"
+import { agl, chestProtectors, templateIssues } from "@/stories/fixtures/booking"
 import { AglBookingDialog } from "./agl-booking"
-import { agl, chestProtectors, templateIssues } from "./fixtures"
 
 // Booking Amazon Global Logistics, as copacker.pen's 10.03 draws it: every step and every problem, each in the one
 // dialog height. Each story is a booking from the fixtures and the step it opens on, in a dialog held open as the

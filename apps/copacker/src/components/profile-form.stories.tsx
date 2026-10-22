@@ -1,7 +1,8 @@
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { chooseOption } from "@/stories/play"
 import { ProfileForm } from "./profile-form"
 
 const sent: ActionRequest[] = []
@@ -13,7 +14,6 @@ const meta = preview.meta({
     profile: { firstName: "Alex", lastName: "Rivera", position: "Owner", company: "Harbor Goods", website: "" }
   },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -50,8 +50,7 @@ export const SavedWebsite = meta.story({
 export const Owner = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("combobox", { name: "Position" })).toHaveTextContent("Owner")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Position" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Purchasing manager" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Position" }), "Purchasing manager")
     const website = canvas.getByRole("textbox", { name: "Company website" })
     await userEvent.type(website, "harbor.example.com")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
@@ -123,7 +122,7 @@ export const Validation = meta.story({
 
 export const ServerError = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Your session ended. Sign in again.")))
+    msw.use(recordActions(sent, failWith("Your session ended. Sign in again.")))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("textbox", { name: "Company" }), " Co.")

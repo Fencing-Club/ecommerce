@@ -1,6 +1,5 @@
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { skipAnimations } from "@/stories/fixtures/auth"
 import Setup from "./page"
 
 // Where sign-in sends everyone until WorkOS is configured. The page reads nothing, so the story renders it as it is;
@@ -8,8 +7,7 @@ import Setup from "./page"
 const meta = preview.meta({
   title: "Pages/Setup",
   component: Setup,
-  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/setup" } } },
-  beforeEach: skipAnimations
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/setup" } } }
 })
 
 export const Default = meta.story({

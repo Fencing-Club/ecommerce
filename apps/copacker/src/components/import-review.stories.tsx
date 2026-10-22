@@ -5,12 +5,13 @@ import { getStoryRouter } from "#.storybook/router"
 import { supplierId } from "@/stories/fixtures/orders"
 import {
   builderSuppliers,
-  catalogProducts,
+  catalogVariants,
   importedProducts,
   importId,
   importProposal,
   orderId
 } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { ImportReview } from "./import-review"
 
 const searched = fn()
@@ -18,7 +19,7 @@ const corrected = fn()
 const saved = fn()
 // A catalog product the search finds for the unmatched basket.
 const market = {
-  ...catalogProducts[2]!,
+  ...catalogVariants[2]!,
   id: "gid://shopify/ProductVariant/300031",
   title: "Large",
   sku: "BASKET-L",
@@ -52,7 +53,7 @@ const meta = preview.meta({
         const url = new URL(request.url)
         searched(Object.fromEntries(url.searchParams))
         return HttpResponse.json({
-          results: url.searchParams.get("cursor") ? [catalogProducts[1]] : [market],
+          results: url.searchParams.get("cursor") ? [catalogVariants[1]] : [market],
           nextCursor: url.searchParams.get("cursor") ? null : "page-2",
           complete: false
         })
@@ -69,8 +70,7 @@ function line(canvas: Canvas, number: number) {
 
 // The details the draft needs before it saves: the supplier and the date it's required by.
 async function fillDetails(canvas: Canvas) {
-  await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
-  await userEvent.click(await screen.findByRole("option", { name: "Lotus Manufacturing" }))
+  await chooseOption(canvas.getByRole("combobox", { name: "Supplier" }), "Lotus Manufacturing")
   await userEvent.type(canvas.getByLabelText(/Required by/), "2026-11-01")
 }
 
@@ -96,7 +96,7 @@ export const Review = meta.story({
     await expect(first.queryByText("SKU matches the supplier SKU")).toBeNull()
     await userEvent.click(first.getByRole("button", { name: "More for line 1" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Source details" }))
-    const details = within(await screen.findByRole("dialog", { name: "Source details" }))
+    const details = await shownDialog("Source details")
     await waitFor(() => expect(details.getByText("SKU LM-TOTE-001, 240 pcs at 4.25, page 1")).toBeVisible())
     await expect(details.getByText("SKU matches the supplier SKU")).toBeVisible()
     await userEvent.click(details.getByRole("button", { name: "Close" }))
@@ -305,8 +305,7 @@ export const NoCurrency = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Units × price is 870.00, but the line total is 900.00")).toBeVisible()
     await expect(canvas.getAllByText("—")).toHaveLength(3)
-    await userEvent.click(canvas.getByRole("combobox", { name: "Currency" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Euro (EUR €)" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Currency" }), "Euro (EUR €)")
     await expect(await canvas.findByText("€1,975")).toBeVisible()
     for (const name of ["Price per unit on line 1", "Line total on line 1", "Amount of charge 1", "Document total"]) {
       const input = canvas.getByRole("textbox", { name })
@@ -322,7 +321,7 @@ export const NoSuppliers = meta.story({
     await expect(canvas.getByRole("combobox", { name: "Supplier" })).toBeDisabled()
     await expect(canvas.getByText("No suppliers in this workspace yet. Add one to continue.")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Add supplier" }))
-    const dialog = within(await screen.findByRole("dialog"))
+    const dialog = await shownDialog()
     await waitFor(() => expect(dialog.getByRole("textbox", { name: /company/i })).toBeVisible())
     await userEvent.keyboard("{Escape}")
     await expect(canvas.getByRole("textbox", { name: /Reference number/ })).toHaveValue("LM-2026-118")

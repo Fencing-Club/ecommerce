@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { newCatalog, wholesaleCatalog } from "@/stories/fixtures/supplier"
+import { chooseOption } from "@/stories/play"
 import { type CatalogSettingsDraft, CatalogSettings, initialSettings } from "./catalog-settings"
 
 // The settings holding their own draft, as the catalog editor does.
@@ -46,8 +47,7 @@ export const Existing = meta.story({
 // Choosing a status hands back its own value; an inactive catalog's customers see list prices.
 export const ChangeStatus = meta.story({
   play: async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Draft" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Status" }), "Draft")
     await expect(args.onChange).toHaveBeenCalledWith({ status: "draft" })
     await expect(
       canvas.getByText("Customers see every active product at its own price until the catalog is active.")
@@ -57,8 +57,7 @@ export const ChangeStatus = meta.story({
 
 export const Adjustment = meta.story({
   play: async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Adjustment direction" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Increase by" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Adjustment direction" }), "Increase by")
     await expect(args.onChange).toHaveBeenCalledWith({ direction: "increase" })
     await expect(canvas.getByText(/\$100 becomes \$110/)).toBeVisible()
     const percent = canvas.getByRole("textbox", { name: "Price adjustment" })

@@ -3,8 +3,8 @@ import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { fileName } from "@/components/common"
 import { dialogWidth } from "@/stories/booking"
+import { agl, chestProtectors, fba } from "@/stories/fixtures/booking"
 import { DownloadAction, FileRow, LabelsRow, OpenAction, RowStatus } from "./file-row"
-import { agl, chestProtectors, fba } from "./fixtures"
 
 const { file, sellerCentralUrl } = agl.start
 

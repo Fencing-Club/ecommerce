@@ -3,11 +3,12 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
-import { actionRecorder, redirectTo, savedProfile, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
+import { savedProfile } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 // A new workspace from the workspace menu (page.tsx), with the person's saved profile. The layout is only
 // AppProviders, the story frame's own providers.
@@ -46,8 +47,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/workspaces/new" } } },
   args: { profile: savedProfile, complete: true },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/overview")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/overview")))
   }
 })
 
@@ -66,7 +66,7 @@ export const Default = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Skip for now" }))
     // The new workspace opens once it's made.
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent[0]).toMatchObject({
+    await expect(sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: {
         person: { firstName: "Alex", lastName: "Rivera", position: "Operations manager" },

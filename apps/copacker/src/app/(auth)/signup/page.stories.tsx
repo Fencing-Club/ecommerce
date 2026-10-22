@@ -2,10 +2,10 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { actionRecorder, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 function SignUp({
   next,
@@ -33,8 +33,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/signup" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/verify-email")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/verify-email")))
   }
 })
 
@@ -54,7 +53,7 @@ export const Default = meta.story({
     await userEvent.click(main.getByRole("button", { name: "Create account" }))
     // A code to the email confirms it next.
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/verify-email"))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       { action: "auth.signUp", data: { email: "alex@example.com", password: "a long enough password", next: "/" } }
     ])
   }
@@ -71,8 +70,8 @@ export const ReturnsToPage = meta.story({
     await userEvent.type(canvas.getByLabelText("Work email"), "alex@example.com")
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toMatchObject({ next: "/restock" })
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toMatchObject({ next: "/restock" })
   }
 })
 
@@ -84,7 +83,7 @@ export const WithEmail = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "short")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
     await expect(await canvas.findByText("Use at least 10 characters")).toBeVisible()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -98,8 +97,8 @@ export const Invited = meta.story({
     await expect(canvas.queryByRole("button", { name: "Continue with Google" })).toBeNull()
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toEqual({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toEqual({
       email: "alex@example.com",
       password: "a long enough password",
       next: "/",

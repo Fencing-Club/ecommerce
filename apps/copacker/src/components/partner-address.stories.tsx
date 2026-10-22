@@ -1,18 +1,12 @@
 import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
-import {
-  type ActionRequest,
-  forwarderRecordId,
-  partnerAddresses,
-  pickupAddress,
-  recordActions,
-  serverError,
-  supplierRecordId,
-  warehouseAddress
-} from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { forwarderRecordId, partnerAddresses, supplierRecordId } from "@/stories/fixtures/logistics"
+import { lotusFactory, harborWarehouse } from "@/stories/fixtures/parties"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { AddressSummary, PartnerAddressDialog, PartnerAddressSheet } from "./partner-address"
 
 const sent: ActionRequest[] = []
@@ -32,22 +26,21 @@ const meta = preview.meta({
     onOpenChange: fn()
   },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
 
 export const SupplierPickups = meta.story({
   play: async ({ args }) => {
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await expect(sheet).toHaveTextContent("Pickup addresses")
-    await expect(within(sheet).getByText("Factory")).toBeInTheDocument()
-    await expect(within(sheet).getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeInTheDocument()
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.element).toHaveTextContent("Pickup addresses")
+    await expect(sheet.getByText("Factory")).toBeInTheDocument()
+    await expect(sheet.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeInTheDocument()
     // Who to contact there, with links to call or email them.
-    await expect(within(sheet).getByRole("link", { name: /^\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
-    await expect(within(sheet).getByRole("link", { name: "mei@lotus.example.com" })).toBeInTheDocument()
-    await expect(within(sheet).getByRole("button", { name: "Add address" })).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "Close" }))
+    await expect(sheet.getByRole("link", { name: /^\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
+    await expect(sheet.getByRole("link", { name: "mei@lotus.example.com" })).toBeInTheDocument()
+    await expect(sheet.getByRole("button", { name: "Add address" })).toBeInTheDocument()
+    await userEvent.click(sheet.getByRole("button", { name: "Close" }))
     await expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
   }
 })
@@ -56,18 +49,18 @@ export const EditPickup = meta.story({
   play: async () => {
     await userEvent.click(await screen.findByRole("button", { name: "More actions for Factory" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    const dialog = await screen.findByRole("dialog", { name: "Edit pickup address" })
-    const name = within(dialog).getByRole("textbox", { name: "Address name" })
+    const dialog = await shownDialog("Edit pickup address")
+    const name = dialog.getByRole("textbox", { name: "Address name" })
     await expect(name).toHaveValue("Factory")
     await userEvent.clear(name)
     await userEvent.type(name, "Main factory")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save changes" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toEqual({
       action: "supplier.address",
       data: {
         name: "Main factory",
-        address: pickupAddress,
+        address: lotusFactory,
         supplierId: supplierRecordId,
         id: partnerAddresses.factory.id
       }
@@ -110,31 +103,26 @@ export const RemoveFails = meta.story({
 export const AddPickup = meta.story({
   args: { addresses: [] },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await expect(within(sheet).getByText("No addresses yet")).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "Add address" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add a pickup address for Lotus Manufacturing" })
-    await expect(within(dialog).getByRole("textbox", { name: "Address name" })).toHaveAttribute(
-      "placeholder",
-      "Factory"
-    )
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.getByText("No addresses yet")).toBeInTheDocument()
+    await userEvent.click(sheet.getByRole("button", { name: "Add address" }))
+    const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
+    await expect(dialog.getByRole("textbox", { name: "Address name" })).toHaveAttribute("placeholder", "Factory")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
     await expect(
-      await within(dialog).findByText("Add a pickup phone number. Amazon needs it to schedule pickup")
+      await dialog.findByText("Add a pickup phone number. Amazon needs it to schedule pickup")
     ).toBeInTheDocument()
-    await expect(within(dialog).getAllByText("Fill in this field").length).toBeGreaterThan(3)
+    await expect(dialog.getAllByText("Fill in this field").length).toBeGreaterThan(3)
     await expect(sent).toHaveLength(0)
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Warehouse 2")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Contact name" }), "Mei Chen")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Phone number" }), "+86 579 8555 1234")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Street address" }), "12 Chouzhou Road")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "City" }), "Yiwu")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Postal code" }), "322000")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Country" }))
-    await userEvent.click(await screen.findByRole("option", { name: "China" }))
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "State or province" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Zhejiang Sheng" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
+    await userEvent.type(dialog.getByRole("textbox", { name: "Address name" }), "Warehouse 2")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Contact name" }), "Mei Chen")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Phone number" }), "+86 579 8555 1234")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Street address" }), "12 Chouzhou Road")
+    await userEvent.type(dialog.getByRole("textbox", { name: "City" }), "Yiwu")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Postal code" }), "322000")
+    await chooseOption(dialog.getByRole("combobox", { name: "Country" }), "China")
+    await chooseOption(dialog.getByRole("combobox", { name: "State or province" }), "Zhejiang Sheng")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toMatchObject({
       action: "supplier.address",
@@ -157,15 +145,15 @@ export const Forwarder = meta.story({
     children: <Button variant="outline">Rename</Button>
   },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Bayline Freight" })
-    await expect(sheet).toHaveTextContent("Stops on the way to Amazon or your warehouse")
-    await expect(within(sheet).getByRole("button", { name: "Rename" })).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "More actions for Shenzhen consolidation" }))
+    const sheet = await shownDialog("Bayline Freight")
+    await expect(sheet.element).toHaveTextContent("Stops on the way to Amazon or your warehouse")
+    await expect(sheet.getByRole("button", { name: "Rename" })).toBeInTheDocument()
+    await userEvent.click(sheet.getByRole("button", { name: "More actions for Shenzhen consolidation" }))
     const edit = await screen.findByRole("menuitem", { name: "Edit" })
     await expect(screen.queryByRole("menuitem", { name: "Remove" })).toBeNull()
     await userEvent.click(edit)
-    const dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
+    const dialog = await shownDialog("Edit address")
+    await userEvent.click(dialog.getByRole("button", { name: "Save changes" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -185,20 +173,20 @@ export const Forwarder = meta.story({
 export const JoinedSupplier = meta.story({
   args: { joined: true, editable: false },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await expect(sheet).toHaveTextContent("Keeps its own pickup addresses on Copacker")
-    await expect(within(sheet).getByText("Factory")).toBeInTheDocument()
-    await expect(within(sheet).queryByRole("button", { name: "Add address" })).toBeNull()
-    await expect(within(sheet).queryByRole("button", { name: /More actions/ })).toBeNull()
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.element).toHaveTextContent("Keeps its own pickup addresses on Copacker")
+    await expect(sheet.getByText("Factory")).toBeInTheDocument()
+    await expect(sheet.queryByRole("button", { name: "Add address" })).toBeNull()
+    await expect(sheet.queryByRole("button", { name: /More actions/ })).toBeNull()
   }
 })
 
 export const JoinedForwarder = meta.story({
   args: { partner: forwarder, joined: true, editable: false, addresses: [] },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Bayline Freight" })
-    await expect(sheet).toHaveTextContent("Keeps its own addresses on Copacker")
-    await expect(within(sheet).getByText("No addresses yet")).toBeInTheDocument()
+    const sheet = await shownDialog("Bayline Freight")
+    await expect(sheet.element).toHaveTextContent("Keeps its own addresses on Copacker")
+    await expect(sheet.getByText("No addresses yet")).toBeInTheDocument()
   }
 })
 
@@ -207,7 +195,7 @@ export const DialogFromDraft = meta.story({
   render: (args) => (
     <PartnerAddressDialog
       partner={supplier}
-      draft={{ ...pickupAddress, addressLine2: "" }}
+      draft={{ ...lotusFactory, addressLine2: "" }}
       open
       onOpenChange={args.onOpenChange}
       onSaved={onSaved}
@@ -217,15 +205,15 @@ export const DialogFromDraft = meta.story({
     msw.use(recordActions(sent, () => HttpResponse.json({ ok: true, id: "3c1a8f2e-0d4b-4c7a-9e21-5a6b7c8d9e09" })))
   },
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("dialog", { name: "Add a pickup address for Lotus Manufacturing" })
-    await expect(within(dialog).getByRole("textbox", { name: "Street address" })).toHaveValue("1000 Siji Road")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Factory")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
+    const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
+    await expect(dialog.getByRole("textbox", { name: "Street address" })).toHaveValue("1000 Siji Road")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Address name" }), "Factory")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
     await waitFor(() =>
       expect(onSaved).toHaveBeenCalledWith({
         id: "3c1a8f2e-0d4b-4c7a-9e21-5a6b7c8d9e09",
         name: "Factory",
-        address: { ...pickupAddress, addressLine2: "" }
+        address: { ...lotusFactory, addressLine2: "" }
       })
     )
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false))
@@ -234,28 +222,23 @@ export const DialogFromDraft = meta.story({
 
 export const DialogFails = meta.story({
   render: (args) => (
-    <PartnerAddressDialog partner={forwarder} draft={warehouseAddress} open onOpenChange={args.onOpenChange} />
+    <PartnerAddressDialog partner={forwarder} draft={harborWarehouse} open onOpenChange={args.onOpenChange} />
   ),
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Bayline Freight already has an address named Portland.")))
+    msw.use(recordActions(sent, failWith("Bayline Freight already has an address named Portland.")))
   },
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("dialog", { name: "Add an address for Bayline Freight" })
-    await expect(within(dialog).getByRole("textbox", { name: "Address name" })).toHaveAttribute(
-      "placeholder",
-      "Yiwu warehouse"
-    )
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Portland")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
-    await expect(
-      await within(dialog).findByText("Bayline Freight already has an address named Portland.")
-    ).toBeInTheDocument()
+    const dialog = await shownDialog("Add an address for Bayline Freight")
+    await expect(dialog.getByRole("textbox", { name: "Address name" })).toHaveAttribute("placeholder", "Yiwu warehouse")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Address name" }), "Portland")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
+    await expect(await dialog.findByText("Bayline Freight already has an address named Portland.")).toBeInTheDocument()
     await expect(args.onOpenChange).not.toHaveBeenCalled()
   }
 })
 
 export const Summary = meta.story({
-  render: () => <AddressSummary name="Factory" address={pickupAddress} />,
+  render: () => <AddressSummary name="Factory" address={lotusFactory} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Factory")).toBeVisible()
     await expect(canvas.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeVisible()

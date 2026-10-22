@@ -1,12 +1,13 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { catalogProducts, productHandlers, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { catalogVariants, productHandlers } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { AddProductsDialog } from "./add-products-dialog"
 
 const requests = fn()
-const sand = catalogProducts[0]!
-const napkins = catalogProducts[2]!
+const sand = catalogVariants[0]!
+const napkins = catalogVariants[2]!
 
 const meta = preview.meta({
   title: "Components/Purchase orders/Add products dialog",

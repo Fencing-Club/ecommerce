@@ -1,8 +1,8 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { bookingDialog, dialogBody, dialogWidth } from "@/stories/booking"
+import { cartonIssue } from "@/stories/fixtures/booking"
 import { BookingDialog } from "./booking-dialog"
-import { cartonIssue } from "./fixtures"
 import { type Issue, IssueSummary, IssuesView } from "./issues"
 
 const meta = preview.meta({
