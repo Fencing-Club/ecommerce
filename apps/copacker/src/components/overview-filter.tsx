@@ -1,6 +1,6 @@
 import { Store } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Every channel together, which the URL leaves out.
 const all = "all"
@@ -33,12 +33,14 @@ export function ChannelFilter({
         <Store className="text-muted-foreground" aria-hidden />
         <SelectValue />
       </SelectTrigger>
-      <SelectContent align="end" alignItemWithTrigger={false}>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
+      <SelectContent align="end" alignItemWithTrigger={false} className="w-auto min-w-(--anchor-width)">
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )
