@@ -6,9 +6,10 @@ import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import type { PriceBasis } from "@/lib/catalog-pricing"
-import { responseError } from "@/lib/response-data"
+import { useSetProductsActiveMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { IndexToolbar, matches, Pager, ProductThumb, rowLink, StatusBadge } from "./shared"
@@ -99,10 +100,11 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   // Choosing products is for archiving or restoring them, which changes them.
   const editable = useCan("products", "edit")
   const prices = useCan("prices")
-  const [pending, setPending] = useState(false)
+  const [setProductsActive, { isLoading: pending }] = useSetProductsActiveMutation()
   const [error, setError] = useState("")
   const t = useTranslations("supplier.productIndex")
   const shared = useTranslations("supplier.shared")
+  const errorMessage = useErrorMessage()
   const locale = useLocale()
   const priceRange = usePriceRange()
 
@@ -124,23 +126,13 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   const allChosen = rows.length > 0 && chosen.length === rows.length
 
   async function setActive(active: boolean) {
-    setPending(true)
     setError("")
     try {
-      const response = await fetch("/api/supplier-catalog/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [...selected], active })
-      })
-      if (!response.ok) {
-        throw new Error(responseError(await response.json(), shared("couldNotSave")))
-      }
+      await setProductsActive({ ids: [...selected], active }).unwrap()
       setSelected(new Set())
       router.invalidate()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
-    } finally {
-      setPending(false)
+      setError(errorMessage(caught, shared("couldNotSave")))
     }
   }
 

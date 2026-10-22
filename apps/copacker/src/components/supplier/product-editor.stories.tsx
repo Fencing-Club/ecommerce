@@ -21,13 +21,16 @@ const meta = preview.meta({
     msw.use(
       http.post("/api/supplier-catalog/products", async ({ request }) => {
         saved(await request.json())
-        return HttpResponse.json({ id: newId })
+        return HttpResponse.json({ id: newId, revision: 1 })
       }),
-      // Photos upload one at a time; a file named bad-* is refused.
+      // Photos upload one at a time; a file named bad-* is refused, and one named offline-* never reaches the server.
       http.post("/api/product-images", async ({ request }) => {
         const file = (await request.formData()).get("file")
         const name = file instanceof File ? file.name : ""
         uploaded(name)
+        if (name.startsWith("offline")) {
+          return HttpResponse.error()
+        }
         return name.startsWith("bad")
           ? HttpResponse.json({ error: "Photos must be under 10 MB" }, { status: 413 })
           : HttpResponse.json({ key: `supplier-images/org_supplier/${name}`, name, contentType: "image/png" })
@@ -156,6 +159,42 @@ export const Photos = meta.story({
       expect(saved.mock.calls[0]![0].images).toEqual([
         toteProduct.images[1],
         { key: "supplier-images/org_supplier/strap.png", name: "strap.png", contentType: "image/png" }
+      ])
+    )
+  }
+})
+
+// Chooses photos as the browser's file picker does. userEvent.upload's list survives the input being cleared, but the
+// browser's own list empties with it.
+function choosePhotos(input: HTMLInputElement, names: string[]) {
+  const transfer = new DataTransfer()
+  for (const name of names) {
+    transfer.items.add(png(name))
+  }
+  input.files = transfer.files
+  input.dispatchEvent(new Event("change", { bubbles: true }))
+}
+
+// A photo that never reaches the server is skipped: the photos around it still upload and stay, and the tile takes
+// more.
+export const PhotoUploadOffline = meta.story({
+  play: async ({ canvas, canvasElement }) => {
+    const images = () => canvas.getAllByRole("img").map((image) => image.getAttribute("alt"))
+    choosePhotos(photoInput(canvasElement), ["strap.png", "offline-scan.png", "handle.png"])
+    await waitFor(() => expect(images()).toEqual(["tote.png", "tote-back.png", "strap.png", "handle.png"]))
+    await expect(uploaded).toHaveBeenCalledTimes(3)
+    await expect(canvas.getByText("offline-scan.png").parentElement).toHaveTextContent(
+      "offline-scan.png: Couldn’t reach Copacker. Check your connection and try again."
+    )
+    // The Add tile comes before the variants' Add option button.
+    await expect(canvas.getAllByRole("button", { name: "Add" })[0]).toBeEnabled()
+    await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
+    await waitFor(() =>
+      expect(saved.mock.calls[0]![0].images.map((image: { name: string }) => image.name)).toEqual([
+        "tote.png",
+        "tote-back.png",
+        "strap.png",
+        "handle.png"
       ])
     )
   }
