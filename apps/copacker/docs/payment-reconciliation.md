@@ -127,6 +127,21 @@ no case conversion is inferred. Changes to this cache invalidate continuation sn
 Reimbursement candidates include `strongerPaymentCandidate` when order, nonempty SKU, marketplace, stored and payload
 currency, signed whole-transaction amount and reimbursement transaction type agree. These candidates rank first within
 the current 5,000-transaction search page, before 20-candidate pagination. The matching summary exposes their count.
-Search-page counts do not establish global uniqueness; competing reimbursement rows across report pages are explicitly
-not assessed. Existing release, total, allocation and reversal checks still apply. No candidate confirms payment or adds
+Search-page counts do not establish global uniqueness. Stronger candidates also expose `paymentCompetition`: the
+other stored report rows that meet the same strict criteria for that payment, across all dates and report pages.
+The lookup uses all order references on stronger candidates from the current transaction search page within the same workspace, seller and marketplace, reads at most 1,000
+report rows, and includes current page rows even when that bound is reached. Each candidate returns at most 20 other
+report row IDs with the observed count and explicit truncation flags. Truncated counts are lower bounds; no observed
+competitor then means `search_incomplete`, never uniqueness. A complete stored search with no competitor still does
+not prove payment assignment or complete provider history. Shared candidates are flagged before candidate pagination,
+and the summary count remains limited to the current transaction search page. Existing release, total, allocation and reversal checks still apply. No candidate confirms payment or adds
 income, even when only one candidate is visible. These changes read saved data only and schedule no acquisition.
+
+
+### October 22 live acceptance
+
+PRs #168, #169 and #171 were deployed in release `3da902ffe2969fd483ad46430ef0baa7011d8389` after CI and staging
+passed. Read-only production responses confirmed 12 AWD receipts, saved declared units for three shipments,
+64 FBA receipts with 13 stored coverage windows, and linked refund fields on 100 Shopify orders (11 linked groups).
+September's 11 reimbursement rows exposed three stronger candidates within the inspected transaction search page,
+with reported recovery outcomes and no confirmed payment assignments. No sync or backfill was started.

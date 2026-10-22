@@ -296,3 +296,77 @@ it.each([
   )[0]!
   expect(result.finance.matching.strongerPaymentCandidateCount).toBe(0)
 })
+
+it("flags a payment shared by report rows across dates without counting duplicate context twice", () => {
+  const current = { ...row, source: "reimbursements" }
+  const other = { ...current, id: "other", occurredAt: "2025-01-01T00:00:00Z" }
+  const payments = Array.from({ length: 21 }, (_, i) => ({
+    ...posting,
+    type: "FBAInventoryReimbursement",
+    transactionId: `T${i}`
+  }))
+  const context = { rows: [current, other, other], truncated: false }
+  const result = reconcileAmazonEvidence([current], [], payments, 1, context)[0]!
+  expect(result.finance.candidates).toHaveLength(1)
+  expect(result.finance.candidates[0]?.paymentCompetition).toMatchObject({
+    status: "shared_candidate",
+    otherReportRowCount: 1,
+    otherReportRowIds: ["other"],
+    countIsLowerBound: false,
+    reportSearchTruncated: false,
+    paymentAssignmentConfirmed: false
+  })
+  expect(result.finance.matching.sharedPaymentCandidateCount).toBe(21)
+  expect(result.finance.reconciled).toBe(false)
+})
+it("does not claim uniqueness from a truncated report search, and bounds returned IDs", () => {
+  const current = { ...row, source: "reimbursements" }
+  const payment = { ...posting, type: "FBAInventoryReimbursement" }
+  const context = { rows: Array.from({ length: 25 }, (_, i) => ({ ...current, id: `other-${i}` })), truncated: true }
+  const shared = reconcileAmazonEvidence([current], [], [payment], 0, context)[0]!.finance.candidates[0]!
+  expect(shared.paymentCompetition).toMatchObject({
+    status: "shared_candidate",
+    otherReportRowCount: 25,
+    returnedIdsTruncated: true,
+    countIsLowerBound: true
+  })
+  expect(shared.paymentCompetition?.otherReportRowIds).toHaveLength(20)
+  const missing = reconcileAmazonEvidence([current], [], [payment], 0, { rows: [], truncated: true })[0]!.finance
+    .candidates[0]!
+  expect(missing.paymentCompetition).toMatchObject({
+    status: "search_incomplete",
+    otherReportRowCount: 0,
+    countIsLowerBound: true
+  })
+})
+it("uses the same strict identity and signed amount rules for competing reports", () => {
+  const current = { ...row, source: "reimbursements" }
+  const changes = [
+    { orderId: "other" },
+    { sku: "other" },
+    { asin: "other" },
+    { marketplaceId: "other" },
+    { currency: "EUR" },
+    { amount: "-0.3" },
+    { sku: null }
+  ]
+  const context = { rows: changes.map((change, i) => ({ ...current, ...change, id: `other-${i}` })), truncated: false }
+  const payment = {
+    ...posting,
+    orderId: null,
+    type: "FBAInventoryReimbursement",
+    data: {
+      ...posting.data,
+      relatedIdentifiers: [{ relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "ORDER1" }]
+    }
+  }
+  const candidate = reconcileAmazonEvidence([current], [], [payment], 0, context)[0]!.finance.candidates[0]!
+  expect(candidate.paymentCompetition).toMatchObject({
+    status: "no_other_matching_stored_rows",
+    otherReportRowCount: 0,
+    paymentAssignmentConfirmed: false
+  })
+  const weak = reconcileAmazonEvidence([{ ...current, sku: null }], [], [payment], 0, context)[0]!.finance
+    .candidates[0]!
+  expect(weak.paymentCompetition).toBeNull()
+})

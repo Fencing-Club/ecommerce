@@ -121,14 +121,88 @@ export function postingEvidence(posting: ReconciliationPosting) {
     }
   }
 }
+type FinancialEvidence = ReturnType<typeof postingEvidence> & { total: unknown }
+type ReimbursementCompetition = { rows: AmazonEvidence[]; truncated: boolean }
+
+// Identical criteria for ranking a payment and finding other reports competing for that payment.
+export function isStrongerPaymentCandidate(row: AmazonEvidence, posting: FinancialEvidence) {
+  return (
+    row.source === "reimbursements" &&
+    Boolean(
+      row.orderId &&
+      (posting.orderId === row.orderId ||
+        posting.references.some((ref) => ref.name === "ORDER_ID" && ref.value === row.orderId))
+    ) &&
+    Boolean(
+      row.sku &&
+      posting.products.some((item) => item.sku === row.sku && !(row.asin && item.asin && row.asin !== item.asin))
+    ) &&
+    posting.type === "FBAInventoryReimbursement" &&
+    posting.marketplaceId === row.marketplaceId &&
+    row.currency === posting.currency &&
+    checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
+  )
+}
+
+// All-time stored report context is bounded separately from transaction and candidate pagination.
+function paymentCompetition(rows: AmazonEvidence[], context: ReimbursementCompetition | undefined) {
+  const reportsByOrder = new Map<string, AmazonEvidence[]>()
+  for (const row of new Map([...(context?.rows ?? []), ...rows].map((row) => [row.id, row])).values()) {
+    if (row.orderId) {
+      const reports = reportsByOrder.get(row.orderId) ?? []
+      reports.push(row)
+      reportsByOrder.set(row.orderId, reports)
+    }
+  }
+  const matches = new Map<string, string[]>()
+  return (row: AmazonEvidence, posting: FinancialEvidence) => {
+    let ids = matches.get(posting.transactionId)
+    if (!ids) {
+      const orders = new Set([
+        posting.orderId,
+        ...posting.references.filter((ref) => ref.name === "ORDER_ID").map((ref) => ref.value)
+      ])
+      ids = [...orders]
+        .flatMap((order) => (order ? (reportsByOrder.get(order) ?? []) : []))
+        .filter((report) => isStrongerPaymentCandidate(report, posting))
+        .map((report) => report.id)
+        .sort()
+      matches.set(posting.transactionId, ids)
+    }
+    const others = ids.filter((id) => id !== row.id)
+    let status = "not_assessed"
+    if (context) {
+      status = "no_other_matching_stored_rows"
+      if (context.truncated) {
+        status = "search_incomplete"
+      }
+      if (others.length) {
+        status = "shared_candidate"
+      }
+    }
+    return {
+      status,
+      scope: "stored_reimbursements_for_candidate_orders_all_dates",
+      otherReportRowCount: context ? others.length : null,
+      otherReportRowIds: context ? others.slice(0, 20) : [],
+      returnedIdsTruncated: Boolean(context && others.length > 20),
+      reportSearchTruncated: context?.truncated ?? null,
+      countIsLowerBound: context?.truncated ?? null,
+      paymentAssignmentConfirmed: false
+    }
+  }
+}
+
 export function reconcileAmazonEvidence(
   rows: AmazonEvidence[],
   inventory: Product[],
   postings: ReconciliationPosting[],
-  candidatePage = 0
+  candidatePage = 0,
+  competition?: ReimbursementCompetition
 ) {
   const products = [...new Map(inventory.map((product) => [JSON.stringify(product), product])).values()]
   const financial = postings.map((posting) => ({ ...postingEvidence(posting), total: posting.data.totalAmount }))
+  const competingReports = paymentCompetition(rows, competition)
   return rows.map((row) => {
     const candidates = financial
       .flatMap((posting) => {
@@ -150,18 +224,12 @@ export function reconcileAmazonEvidence(
         if (!orderReference && !matchedItems.length) {
           return []
         }
-        const strongerPaymentCandidate =
-          row.source === "reimbursements" &&
-          orderReference &&
-          Boolean(row.sku && matchedItems.some((item) => item.sku === row.sku)) &&
-          posting.type === "FBAInventoryReimbursement" &&
-          posting.marketplaceId === row.marketplaceId &&
-          row.currency === posting.currency &&
-          checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
+        const strongerPaymentCandidate = isStrongerPaymentCandidate(row, posting)
         return [
           {
             ...postingEvidenceFields(posting),
             strongerPaymentCandidate,
+            paymentCompetition: strongerPaymentCandidate ? competingReports(row, posting) : null,
             basis: orderReference ? "order_reference" : "product_only",
             itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
             currencyMatches: row.currency ? row.currency === posting.currency : null,
@@ -197,7 +265,10 @@ export function reconcileAmazonEvidence(
           candidateCount: candidates.length,
           strongerPaymentCandidateCount: candidates.filter((candidate) => candidate.strongerPaymentCandidate).length,
           strongerPaymentCandidateBasis: "order_sku_marketplace_currency_signed_whole_transaction_amount",
-          competingReportRows: "not_assessed_across_report_pages",
+          competingReportRows: competition ? "assessed_for_stronger_candidates" : "not_assessed_across_report_pages",
+          sharedPaymentCandidateCount: competition
+            ? candidates.filter((candidate) => candidate.paymentCompetition?.status === "shared_candidate").length
+            : null,
           sameSignedAmountCount: candidates.filter(
             (candidate) =>
               candidate.checks.signedSourceToTransactionTotal === "balanced" &&
