@@ -1,4 +1,5 @@
 import type { OrderInput } from "@repo/copacker-orders"
+import { shippedStates } from "@repo/copacker-shipments/states"
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { db } from "@/db"
 import { catalogs, events, orders, shipments, supplierProducts, suppliers } from "@/db/schema"
@@ -10,7 +11,6 @@ import { storeTimeZone } from "./store-time-zone"
 import { inventoryRows, supplierOrders, totalsByCurrency } from "./supplier-workspace"
 
 type Query = Record<string, string | string[] | undefined>
-const shippedStates = new Set(["shipped", "forwarded", "received"])
 
 // The pieces of each supplier SKU a PO's lines order; a bundle orders its components.
 function skuPieces(data: OrderInput) {
@@ -128,7 +128,7 @@ export async function supplierOverview(org: { id: string; timeZone: string | nul
   const shipped = orderIds.flatMap((orderId) => {
     const left = shipEvents.filter((event) => event.orderId === orderId)
     return shipmentRows
-      .filter((row) => row.orderId === orderId && shippedStates.has(row.status))
+      .filter((row) => row.orderId === orderId && shippedStates.includes(row.status))
       .flatMap((row, index) => {
         const event = left[index]
         const pieces = (row.packing?.cartons ?? []).reduce(

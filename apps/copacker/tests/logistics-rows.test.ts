@@ -1,5 +1,5 @@
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import { describe, expect, it } from "vitest"
-import type { ShipmentState } from "@/db/schema"
 import { amazonParty, orderProgress, shipmentParty, shipmentStage } from "@/server/logistics-rows"
 
 const toAmazon = [{ receiver: "fba" as const }]
