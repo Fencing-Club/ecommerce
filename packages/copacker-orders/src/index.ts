@@ -66,7 +66,7 @@ export const itemSchema = z
   .object({
     id: z.uuid(),
     variantId: variantIdSchema,
-    inventoryItemId: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
+    inventoryItemId: inventoryItemIdSchema,
     name: z.string().trim().min(1).max(240),
     variant: z.string().max(240),
     buyerSku: z.string().trim().min(1).max(255),

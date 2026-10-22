@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto"
 import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { addressSchema } from "@repo/copacker-orders"
-import { amazonReference, awdShipmentIdPattern, fbaInboundPlanIdPattern, fbaPlanName } from "@repo/copacker-shipments/amazon-inbound"
+import {
+  amazonReference,
+  awdShipmentIdPattern,
+  fbaInboundPlanIdPattern,
+  fbaPlanName
+} from "@repo/copacker-shipments/amazon-inbound"
 import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
