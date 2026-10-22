@@ -11,6 +11,7 @@ import { rangeDays } from "@/lib/date-range"
 import { stores, type Store } from "@/lib/stores"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { adsCharge } from "./amazon-ads"
+import { countedAmazonTransaction } from "./amazon-counted-transaction"
 import { freightDescriptions } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
 import { taggedWith } from "./shopify-tags"
@@ -334,9 +335,9 @@ export type OrderFees = { orderId: string; revenueMinor: number | null; feesMino
 // Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
 // The fees on an order's payment. Refunds and other charges are counted by when they're posted (see platformCharges).
 // A release of a deferred payment repeats that payment's fees, so releases are left out.
-const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
+const amazonOrderFee = sql`(select sum(t."feesMinor") from amazon_transactions t
   where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
-    and t.type = 'Shipment' and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
+    and t.type = 'Shipment' and ${countedAmazonTransaction(sql.identifier("t"))})`
 // eBay's fees on an order, as eBay reports them with the order. This and shopifyOrderFee repeat in SQL what
 // summarizeSalesOrder counts for the order list (minorUnits, and shopifyOrderFees in @repo/copacker-marketplaces/sales);
 // change them together.
@@ -748,7 +749,7 @@ export async function platformCharges(
             amazonCashDescriptions.map((name) => sql`${name}`),
             sql`, `
           )}, ${freightDescriptions})
-          and not coalesce(data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'
+          and ${countedAmazonTransaction(sql.identifier("amazon_transactions"))}
         group by 1`)
       for (const row of rows(result)) {
         if (row.key === "amazon-ads" && advertising !== null) {
