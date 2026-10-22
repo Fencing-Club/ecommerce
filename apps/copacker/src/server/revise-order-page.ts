@@ -1,4 +1,5 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { orderSubtotal } from "@repo/copacker-orders"
 import { notFound, redirect } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
 import type * as React from "react"
@@ -82,7 +83,7 @@ export async function reviseOrderPage(params: { id: string }): Promise<React.Com
     customer: customer?.name ?? t("yourCustomer"),
     currency: data.currency,
     items: [...items, ...removed],
-    subtotal: data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+    subtotal: orderSubtotal(data.items),
     current: current,
     terms: proposal
       ? { paymentTerms: proposal.paymentTerms, readyDate: proposal.readyDate, note: proposal.note }

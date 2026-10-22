@@ -1,4 +1,5 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
+import type { SupplierCatalogStatus } from "@repo/copacker-orders"
 import {
   adjustmentTypes,
   commonPaymentTerms,
@@ -62,7 +63,6 @@ import { Separator } from "@/components/ui/separator"
 import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { CatalogProduct } from "@/lib/api"
-import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
@@ -105,7 +105,7 @@ function matchNote(status: string) {
 
 type Match = {
   sku: string
-  status: BundleQuoteStatus
+  status: SupplierCatalogStatus
   unitPriceMinor: number | null
   product: { title?: string } | null
   // Pieces the supplier can still sell, or null when there's no limit.

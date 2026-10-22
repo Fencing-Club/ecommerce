@@ -143,6 +143,12 @@ export const packingDraftSchema = z
   .strict()
 export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
+// The PO lines a packing's cartons hold, by their IDs.
+export function packedItemIds(
+  packing: { cartons: readonly { items: readonly { itemId: string }[] }[] } | null | undefined
+) {
+  return new Set(packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+}
 export type Pallet = z.infer<typeof palletInputSchema>
 // A pallet's place in the Amazon shipment its cartons travel in, as Amazon numbers its pallet labels: the shipment's
 // pallets in packing order, from 1.

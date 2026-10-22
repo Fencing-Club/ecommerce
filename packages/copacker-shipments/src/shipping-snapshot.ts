@@ -3,7 +3,7 @@ import { type OrderInput } from "@repo/copacker-orders"
 import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
 import { validatePacking } from "@repo/copacker-packing-rules"
 import { addressLines } from "./documents"
-import { palletLabels, type Packing, type Pallet, orderDestination } from "./index"
+import { orderDestination, packedItemIds, palletLabels, type Packing, type Pallet } from "./index"
 import type { CartonLabel } from "./labels"
 import {
   documentIssues,
@@ -181,7 +181,7 @@ export class IncompletePackingList extends Error {
 
 // The PO's lines that some carton holds.
 function packedItems(order: OrderInput, packing: Packing) {
-  const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(packing)
   return order.items.filter((item) => included.has(item.id))
 }
 

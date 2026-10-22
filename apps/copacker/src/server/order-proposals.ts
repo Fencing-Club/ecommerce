@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
-import { itemSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
+import { itemSchema, orderInputSchema, orderSubtotal, orderTotal } from "@repo/copacker-orders"
 import { orderDestination, packingSchema, receiverFor } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
@@ -101,9 +101,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
       before: { pieces: item.pieces, unitPrice: item.unitPrice },
       after: null
     }))
-  const addedTotal = proposal.lines
-    .filter((line) => !line.itemId)
-    .reduce((sum, line) => sum + line.pieces * line.unitPrice, 0)
+  const addedTotal = orderSubtotal(proposal.lines.filter((line) => !line.itemId))
   return {
     lines: [...lines, ...removed],
     paymentTerms:

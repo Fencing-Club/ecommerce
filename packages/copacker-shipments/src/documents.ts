@@ -3,6 +3,7 @@ import {
   type Address,
   money,
   orderCharges,
+  orderSubtotal,
   orderTotal,
   supplierChargeTotal,
   type OrderInput
@@ -594,7 +595,7 @@ async function orderPdf(input: {
   const adjustments = orderCharges(order)
   const summary: Array<[string, number]> = adjustments.length
     ? [
-        ["Subtotal", order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)],
+        ["Subtotal", orderSubtotal(order.items)],
         ...adjustments.map((adjustment): [string, number] => [adjustment.description, adjustment.amount])
       ]
     : []
