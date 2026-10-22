@@ -20,7 +20,8 @@ document data from a PO, its packing, labels and transport. Copacker's app rende
 countries addresses use.
 
 `documents` draws the purchase order and commercial invoice with pdf-lib, and `combinePdfs` joins PDFs. Packing lists and
-checklists come only from the shipping-document data above.
+checklists come only from the shipping-document data above. `orderLineText` is the text a PO or invoice line prints;
+tests check it rather than drawing a document, and the app's tests stub `purchaseOrderPdf` and `commercialInvoicePdf`.
 
 ## Shared values
 

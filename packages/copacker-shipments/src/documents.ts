@@ -463,6 +463,34 @@ export async function commercialInvoicePdf(input: {
   })
 }
 
+// What a PO or invoice prints for a line beside its name: the buyer's SKU, each supplier service with its rate and
+// cost, how to prepare it, its own Markdown packing instructions, and the supplier's SKUs.
+export function orderLineText(
+  item: OrderInput["items"][number],
+  currency: string,
+  prep: ReturnType<typeof sharedPrep>
+) {
+  const price = (minor: number) => money(minor, currency)
+  return {
+    details: [
+      `SKU ${item.buyerSku}`,
+      ...(item.supplierCharges ?? []).map(
+        (charge) =>
+          `${charge.description}: ${price(charge.amount)}${charge.basis === "flat" ? " flat" : ` per ${charge.basis}`} (${price(supplierChargeTotal(item, charge))})`
+      ),
+      ...itemRequirements(item, prep)
+        .filter((requirement) => requirement.code !== "instruction")
+        .map(requirementText)
+    ],
+    instructions: packingInstructions(item),
+    skus: item.components?.length
+      ? item.components.map(
+          (component) => `${component.quantity} x ${component.supplierSku || component.buyerSku || "?"}`
+        )
+      : [item.supplierSku || "Not set"]
+  }
+}
+
 async function orderPdf(input: {
   title: string
   heading: DocumentBuyer
@@ -502,22 +530,10 @@ async function orderPdf(input: {
     const title = wrap(item.name, bold, 10.5, descriptionWidth)
     const variant =
       item.variant && item.variant !== "Default Title" ? wrap(item.variant, regular, 9.5, descriptionWidth) : []
-    const details = [
-      `SKU ${item.buyerSku}`,
-      ...(item.supplierCharges ?? []).map(
-        (charge) =>
-          `${charge.description}: ${price(charge.amount)}${charge.basis === "flat" ? " flat" : ` per ${charge.basis}`} (${price(supplierChargeTotal(item, charge))})`
-      ),
-      ...itemRequirements(item, prep)
-        .filter((requirement) => requirement.code !== "instruction")
-        .map(requirementText)
-    ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
-    const instructions = kit.markdownLines(packingInstructions(item), 8.5, descriptionWidth)
-    const skus = item.components?.length
-      ? item.components.map(
-          (component) => `${component.quantity} x ${component.supplierSku || component.buyerSku || "?"}`
-        )
-      : [item.supplierSku || "Not set"]
+    const text = orderLineText(item, order.currency, prep)
+    const details = text.details.flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
+    const instructions = kit.markdownLines(text.instructions, 8.5, descriptionWidth)
+    const skus = text.skus
     const rowHeight =
       8 +
       title.length * 12.5 +
