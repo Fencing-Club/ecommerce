@@ -1,20 +1,9 @@
-import { useRouter } from "@tanstack/react-router"
 import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError } from "@/components/form-feedback"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,9 +13,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog"
-import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
-import { useActionMutation } from "@/lib/api"
 import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 
@@ -110,43 +97,19 @@ export function RenameForwarder({ id, name }: { id: string; name: string }) {
 
 export function RemoveForwarder({ id, name }: { id: string; name: string }) {
   const t = useTranslations("partners.forwarder.remove")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
   const [open, setOpen] = useState(false)
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-
-  async function remove() {
-    setPending(true)
-    setError("")
-    try {
-      await run({ action: "forwarder.remove", data: { id } }).unwrap()
-      setOpen(false)
-      router.invalidate()
-    } catch (e) {
-      setError(errorMessage(e, t("failed", { name })))
-    } finally {
-      setPending(false)
-    }
-  }
-
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" size="sm" />}>{t("trigger")}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("title", { name })}</AlertDialogTitle>
-          <AlertDialogDescription>{t("description")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <FormError message={error} />
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-            {t("confirm")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={<AlertDialogTrigger render={<Button variant="ghost" size="sm" />}>{t("trigger")}</AlertDialogTrigger>}
+      title={t("title", { name })}
+      description={t("description")}
+      confirmLabel={t("confirm")}
+      tone="destructive"
+      action="forwarder.remove"
+      data={{ id }}
+      fallback={t("failed", { name })}
+    />
   )
 }

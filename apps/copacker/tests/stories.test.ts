@@ -13,7 +13,7 @@ const withoutStories = new Set([
   "src/components/refresh-while.tsx",
   "src/components/reload-when-back.tsx",
   "src/components/system-time-zone.tsx",
-  "src/components/theme-provider.tsx",
+  "src/components/theme-script.tsx",
   "src/components/workspace-watch.tsx"
 ])
 

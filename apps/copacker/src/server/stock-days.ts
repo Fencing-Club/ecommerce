@@ -1,4 +1,5 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { ledgerReportOptions, ledgerReportType, parseLedgerSummary } from "@repo/copacker-marketplaces/ledger"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm"
@@ -11,7 +12,7 @@ type StockData =
   | Awaited<ReturnType<Amazon["awdStock"]>>
 
 const dayMs = 86400000
-const marketplace = "ATVPDKIKX0DER"
+const marketplace = usMarketplaceId
 export const stockHistoryDays = 365
 
 function isoDay(time: number) {

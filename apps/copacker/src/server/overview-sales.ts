@@ -1,3 +1,5 @@
+import { amazonMarketplaces } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { freightPerSku } from "@repo/copacker-shipments/amazon-inbound"
 import { sql } from "drizzle-orm"
 import { db } from "@/db"
 import type { ServerKey } from "@/i18n/server-text"
@@ -7,7 +9,7 @@ import type { DayRange } from "@/lib/date-range"
 import { rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { adsCharge } from "./amazon-ads"
-import { freightDescriptions, freightPerSku } from "./amazon-shipments"
+import { freightDescriptions } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
 import type { SalesSource } from "./sales-orders"
 import { taggedWith } from "./shopify-tags"
@@ -108,14 +110,6 @@ type Account = {
   withoutAmazon?: boolean
   marketplaceId?: string | null
 }
-
-// The Amazon marketplaces Copacker reads, as the channel filter and breakdown name them.
-export const amazonMarketplaces = [
-  { code: "us", id: "ATVPDKIKX0DER", label: "Amazon US" },
-  { code: "ca", id: "A2EUQ1WTGCTBG2", label: "Amazon Canada" },
-  { code: "mx", id: "A1AM78C64UM0Y8", label: "Amazon Mexico" },
-  { code: "br", id: "A2Q3Y263D00KWC", label: "Amazon Brazil" }
-] as const
 
 // Shopify's Amazon sales channel copies each marketplace's orders into Shopify under a source such as "amazon-us".
 export const amazonImport = sql.raw(`(coalesce(o.data->>'sourceName', '') like 'amazon%')`)
@@ -322,7 +316,7 @@ export async function shopifyCustomers(orgId: string, account: Account, period: 
   }
 }
 
-// The Amazon marketplaces with orders stored since `since`, in the order they're listed above.
+// The Amazon marketplaces with orders stored since `since`, in the order amazonMarketplaces lists them.
 export async function storedMarketplaces(orgId: string, account: string, since: Date) {
   const result = await db().execute(sql`
     select distinct o.data->'salesChannel'->>'marketplaceId' as id from sales_orders o
@@ -339,7 +333,9 @@ export type OrderFees = { orderId: string; revenueMinor: number | null; feesMino
 const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
   where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
     and t.type = 'Shipment' and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
-// eBay's fees on an order, as eBay reports them with the order.
+// eBay's fees on an order, as eBay reports them with the order. This and shopifyOrderFee repeat in SQL what
+// summarizeSalesOrder counts for the order list (minorUnits, and shopifyOrderFees in @repo/copacker-marketplaces/sales);
+// change them together.
 const ebayOrderFee = sql.raw(`round((o.data->'totalMarketplaceFee'->>'value')::numeric * 100)`)
 // Shopify Payments' fees on an order, with their tax, from its successful payments.
 const shopifyOrderFee = sql.raw(`

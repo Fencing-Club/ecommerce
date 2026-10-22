@@ -231,7 +231,8 @@ export const ProfileOnly = meta.story({
     await userEvent.click(await screen.findByRole("option", { name: "Owner" }))
     await waitFor(() => expect(canvas.getByRole("combobox", { name: /Position/ })).toHaveTextContent("Owner"))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
+    // With the profile complete, the page's refresh sends them on to /orders.
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
     await expect(actions.sent[0]).toEqual({
       action: "profile.update",
       data: { firstName: "Alex", lastName: "Rivera", position: "Owner", company: "Lotus Packaging Co" }

@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   normalizeShopDomain,
@@ -9,6 +10,7 @@ import {
   bundleSupplierComponents,
   shopifyLocationKind
 } from "../src/shopify"
+import { exchangeShopifyCode, refreshShopifyToken, revokeShopifyToken, verifyShopifyHmac } from "../src/shopify-auth"
 
 const domain = "example.myshopify.com"
 const itemId = "gid://shopify/InventoryItem/1"
@@ -710,5 +712,68 @@ describe("Shopify webhook subscriptions", () => {
     await expect(new Shopify(domain, "test", transport).subscribeWebhooks(address, ["ORDERS_CREATE"])).rejects.toThrow(
       "Shopify rejected the ORDERS_CREATE subscription: Protected customer data access required"
     )
+  })
+})
+
+describe("Shopify authorization", () => {
+  const app = { clientId: "client", clientSecret: "secret" }
+  const token = {
+    access_token: "access",
+    refresh_token: "refresh",
+    expires_in: 3600,
+    refresh_token_expires_in: 7200,
+    scope: "read_orders"
+  }
+  it("trades the callback code for an expiring token", async () => {
+    vi.useFakeTimers({ now: 1_000_000 })
+    const transport = vi.fn<typeof fetch>(async () => Response.json(token))
+    await expect(exchangeShopifyCode(app, domain, "code", transport)).resolves.toEqual({
+      token: { token: "access", refreshToken: "refresh", expiresAt: 4_600_000, refreshExpiresAt: 8_200_000 },
+      scope: "read_orders"
+    })
+    const [url, init] = transport.mock.calls[0]!
+    expect(url).toBe(`https://${domain}/admin/oauth/access_token`)
+    expect(JSON.parse(String(init?.body))).toEqual({
+      client_id: "client",
+      client_secret: "secret",
+      expiring: 1,
+      code: "code"
+    })
+    vi.useRealTimers()
+  })
+  it("reports a rejected exchange or refresh with its status", async () => {
+    const transport = vi.fn<typeof fetch>(async () => new Response(null, { status: 400 }))
+    await expect(exchangeShopifyCode(app, domain, "code", transport)).rejects.toMatchObject({ status: 400 })
+    await expect(refreshShopifyToken(app, domain, "refresh", transport)).rejects.toBeInstanceOf(ShopifyRequestError)
+  })
+  it("refreshes with a form-encoded grant", async () => {
+    const transport = vi.fn<typeof fetch>(async () => Response.json(token))
+    await expect(refreshShopifyToken(app, domain, "old", transport)).resolves.toMatchObject({ token: "access" })
+    const body = transport.mock.calls[0]![1]?.body
+    expect(body).toBeInstanceOf(URLSearchParams)
+    expect(Object.fromEntries(body as URLSearchParams)).toEqual({
+      grant_type: "refresh_token",
+      refresh_token: "old",
+      client_id: "client",
+      client_secret: "secret"
+    })
+  })
+  it("revokes the app's permissions", async () => {
+    const transport = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }))
+    await expect(revokeShopifyToken(domain, "access", transport)).resolves.toBe(true)
+    expect(transport).toHaveBeenCalledWith(
+      `https://${domain}/admin/api_permissions/current.json`,
+      expect.objectContaining({ method: "DELETE", headers: { "X-Shopify-Access-Token": "access" } })
+    )
+  })
+  it("validates Shopify callbacks and rejects tampering", () => {
+    const params = new URLSearchParams({ code: "abc", shop: "test.myshopify.com", state: "nonce", timestamp: "123" }),
+      secret = "test-secret"
+    params.set("hmac", createHmac("sha256", secret).update(params.toString()).digest("hex"))
+    expect(verifyShopifyHmac(params, secret)).toBe(true)
+    params.set("state", "different")
+    expect(verifyShopifyHmac(params, secret)).toBe(false)
+    params.set("hmac", "short")
+    expect(verifyShopifyHmac(params, secret)).toBe(false)
   })
 })

@@ -1,13 +1,9 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { ledgerDetailReportType, parseLedgerDetail } from "@repo/copacker-marketplaces/ledger-detail"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonMovementReports, amazonInventoryMovements } from "@/db/schema"
-import {
-  type AmazonReportInput,
-  fbaReportMarketplace,
-  monthlyReportStatus,
-  syncMonthlyAmazonReport
-} from "./amazon-report-sync"
+import { type AmazonReportInput, monthlyReportStatus, syncMonthlyAmazonReport } from "./amazon-report-sync"
 
 export async function syncAmazonInventoryMovements(
   input: AmazonReportInput,
@@ -15,7 +11,7 @@ export async function syncAmazonInventoryMovements(
   now = new Date()
 ) {
   const { orgId, externalAccountId } = input
-  const marketplaceId = fbaReportMarketplace
+  const marketplaceId = usMarketplaceId
   const reports = await db()
     .select()
     .from(amazonMovementReports)
@@ -79,7 +75,7 @@ export async function amazonInventoryMovementsStatus(orgId: string, externalAcco
       and(
         eq(amazonMovementReports.orgId, orgId),
         eq(amazonMovementReports.externalAccountId, externalAccountId),
-        eq(amazonMovementReports.marketplaceId, fbaReportMarketplace)
+        eq(amazonMovementReports.marketplaceId, usMarketplaceId)
       )
     )
   return monthlyReportStatus(reports, now)

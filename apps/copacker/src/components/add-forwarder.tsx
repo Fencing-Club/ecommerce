@@ -2,8 +2,7 @@ import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { useSubmissionForm } from "@/hooks/use-submission-form"
-import { useActionMutation } from "@/lib/api"
+import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 import { Button } from "./ui/button"
@@ -17,10 +16,8 @@ const addSchema = z.object({
 // Adds a freight forwarder. With an email, it's invited to join and keep its own addresses.
 export function AddForwarder({
   open: shown,
-  onOpenChange,
-  onCreated
+  onOpenChange
 }: {
-  onCreated: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
@@ -28,15 +25,11 @@ export function AddForwarder({
   const [own, setOwn] = useState(false)
   const open = shown ?? own
   const setOpen = onOpenChange ?? setOwn
-  const [run] = useActionMutation()
-  const { form, submit } = useSubmissionForm({
+  const { form, submit } = useActionForm({
     schema: addSchema,
-    run: (data) => run({ action: "forwarder.create", data }).unwrap(),
+    action: "forwarder.create",
     defaultValues: { name: "", email: "" },
-    onSuccess: () => {
-      setOpen(false)
-      onCreated()
-    }
+    onSuccess: () => setOpen(false)
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>

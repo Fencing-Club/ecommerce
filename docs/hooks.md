@@ -8,25 +8,31 @@ each hook.
 
 - **Reuse first.** Check Copacker's hooks and the catalog below before writing a hook.
 - **File names are kebab-case**: `use-{name}.ts`, colocated with the feature or in `apps/copacker/src/hooks` when
-  shared. A file may export a few closely related hooks (see `use-error-text.ts`). `useActionForm.ts` predates this.
+  shared. A file may export a few closely related hooks (see `use-error-text.ts`). `useActionForm.ts` predates this,
+  and keeps its name until the open pull requests that import it land.
 - **The React Compiler is on.** Don't hand-write `useMemo`, `useCallback`, or `React.memo` for performance; follow the
   Rules of React.
 - **Follow the Rules of Hooks** (call unconditionally, at the top level). oxlint's `react/rules-of-hooks` enforces this.
 
 ## Copacker hooks (`apps/copacker/src/hooks`)
 
-- `useActionForm` (`useActionForm.ts`): React Hook Form + Zod form that posts to `/api/action`, shows server errors on
-  `root.server`, then redirects or resets and refreshes. Use it for portal forms while their routes remain on Next.
-- `useAuthForm` (`use-auth-form.ts`): the same validated action submission for sign-in and recovery screens. A successful
-  authentication opens a fresh document so the previous session's router/API caches cannot survive; recovery confirmation
-  stays on the page.
-- `useSubmissionForm` (`use-submission-form.ts`): the shared validation, reset and error lifecycle behind those two hooks.
-  It receives a submit operation and completion callback, and imports no router. Prefer the action-specific hooks above
-  when submitting to `/api/action`.
+- `useAction` (`use-action.ts`): runs one mutation, by its `/api/action` name or as another request, and returns
+  `{ run, pending, error, reset }`. `run` never throws; a failure's message is in `error` (and goes to `onError`). After
+  success it opens the action's redirect, or awaits `router.invalidate({ sync: true })` when there's none, so pending
+  lasts until the result shows and `onSuccess` runs on fresh data. `navigation: "document"` opens the redirect as a new
+  document, for anything that changes the session or workspace. Use it for every button, menu item and dialog that
+  runs an action; `ConfirmDialog` and `ActionButton` are built on it. Another request, such as a connection's own
+  endpoint, refreshes what it needs itself.
+- `useActionForm` (`useActionForm.ts`): the one form hook. React Hook Form + Zod, a server error on `root.server`, and
+  `useAction`'s step after success, then `onSuccess(result, values)` and a reset for the next entry (or `keepSaved`).
+  Pass `action` to post to `/api/action`, or `run` for a form a parent saves, such as linking a shipment. Sign-in and
+  recovery forms pass `navigation: "document"`.
+- `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
+  other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.
-  Use them when showing validation or request errors outside `useActionForm`.
+  Use them when showing validation or request errors outside `useAction` and `useActionForm`.
 - `useIsMobile` (`use-mobile.ts`): `true` below 768px, `false` on the server. Used by shadcn's sidebar; use it for
   layout switches that CSS can't handle.
 

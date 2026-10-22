@@ -86,7 +86,6 @@
       "trigger": "Quitar",
       "title": "¿Quitar a {name}?",
       "description": "Las nuevas órdenes de compra no podrán enviarse a este agente. Las órdenes de compra ya enviadas conservan su dirección.",
-      "cancel": "Cancelar",
       "confirm": "Quitar",
       "failed": "No se pudo quitar a {name}. Inténtalo de nuevo."
     }

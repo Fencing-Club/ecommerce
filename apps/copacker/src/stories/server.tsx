@@ -3,17 +3,16 @@ import type { Loader } from "@storybook/react-vite"
 import type { Args } from "@storybook/react-vite"
 import { createContext, use, type ReactNode } from "react"
 import { prepareIntl } from "#.storybook/intl"
-import { mockRows } from "#.storybook/mocks/db"
 import { getStoryRouter } from "#.storybook/router"
 import { Shell } from "@/components/shell"
 import type { WorkspaceKind } from "./workspace"
 import { person, workspaces } from "./workspace"
 
-// Prepare asynchronous fixture data in a loader; React renders the actual page components.
+// Prepare asynchronous fixture data in a loader; React renders the actual page components. The `@/db` mock already
+// holds the story's `db` rows: preview.tsx's loader, which runs first, sets them.
 export function serverStory<A extends Args>(render: (args: A) => ReactNode | Promise<ReactNode>) {
-  const loader: Loader = async ({ args, globals, parameters }) => {
+  const loader: Loader = async ({ args, globals }) => {
     await prepareIntl(globals.locale)
-    mockRows(parameters.db ?? {})
     return { server: await render(args as A) }
   }
   return {

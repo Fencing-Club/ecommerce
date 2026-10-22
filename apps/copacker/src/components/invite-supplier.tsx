@@ -8,10 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 export function InviteSupplier({
   open: shown,
   onOpenChange,
-  finalFocus,
-  onCreated
+  finalFocus
 }: {
-  onCreated: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
   finalFocus?: React.RefObject<HTMLElement | null>
@@ -33,12 +31,7 @@ export function InviteSupplier({
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <SupplierForm
-          onSuccess={() => {
-            setOpen(false)
-            onCreated()
-          }}
-        />
+        <SupplierForm onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   )

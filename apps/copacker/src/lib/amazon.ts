@@ -1,5 +1,5 @@
+import { amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { z } from "zod"
-import { amazonMarketplaceSchema } from "./amazon-marketplaces"
 
 // Private authorization supplies a marketplace and refresh token; the seller ID stays in server configuration.
 export const selfAuthorizationSchema = z.object({

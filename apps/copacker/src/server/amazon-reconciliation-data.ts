@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, desc, sql, inArray, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -13,7 +14,6 @@ import {
 import { historicalProductMatch } from "./amazon-product-mappings"
 import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconciliation"
 import { reimbursementAccounting } from "./amazon-reimbursement-accounting"
-import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog, importedProductMatch } from "./analytics-product-evidence"
 import { analyticsSnapshot } from "./analytics-snapshot"
@@ -82,7 +82,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         return { snapshot, connected: false, rows: [], hasMore: false }
       }
       const externalAccountId = account.externalId,
-        marketplaceId = fbaReportMarketplace
+        marketplaceId = usMarketplaceId
       const scope = sql`"orgId"=${orgId} and "externalAccountId"=${externalAccountId} and "marketplaceId"=${marketplaceId}`
       const sources = {
         returns: sql`select id, 'returns' as source, "returnedAt" as "occurredAt", "marketplaceId", sku, asin, fnsku, "orderId", null::text as currency, null::text as amount from amazon_returns where ${scope}`,

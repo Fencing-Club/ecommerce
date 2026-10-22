@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 // One button for adding either kind of partner. `?add=supplier` or `?add=forwarder` opens its dialog, so the top bar's
 // Create menu can link straight to it.
-export function AddPartner({ onCreated }: { onCreated: () => void }) {
+export function AddPartner() {
   const t = useTranslations("partners.add")
   const [adding, setAdding] = useQueryState("add", parseAsStringLiteral(["supplier", "forwarder"]))
   return (
@@ -24,16 +24,8 @@ export function AddPartner({ onCreated }: { onCreated: () => void }) {
           <DropdownMenuItem onClick={() => void setAdding("forwarder")}>{t("forwarder")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <InviteSupplier
-        onCreated={onCreated}
-        open={adding === "supplier"}
-        onOpenChange={(open) => void setAdding(open ? "supplier" : null)}
-      />
-      <AddForwarder
-        onCreated={onCreated}
-        open={adding === "forwarder"}
-        onOpenChange={(open) => void setAdding(open ? "forwarder" : null)}
-      />
+      <InviteSupplier open={adding === "supplier"} onOpenChange={(open) => void setAdding(open ? "supplier" : null)} />
+      <AddForwarder open={adding === "forwarder"} onOpenChange={(open) => void setAdding(open ? "forwarder" : null)} />
     </>
   )
 }

@@ -1,16 +1,11 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import { addressSchema, type AmazonNetwork, amazonNetworks } from "@repo/copacker-shipments"
+import { freightShipment, sellerCentralShipment } from "@repo/copacker-shipments/amazon-inbound"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import type { shipments } from "@/db/schema"
 import { amazonInboundShipments } from "@/db/schema"
-
-// Each network's page for one of its inbound shipments in Seller Central, which opens on the shipment's events.
-const sellerCentralShipment: Record<AmazonNetwork, (shipmentId: string) => string> = {
-  fba: (id) => `https://sellercentral.amazon.com/fba/inbound-shipment/summary/${id}`,
-  awd_us: (id) => `https://sellercentral.amazon.com/awd/inbound-shipment/${id}`
-}
 
 // The Amazon shipments a shipment's cartons travel in, each with its page in Seller Central. An FBA inbound plan can
 // split into several, recorded comma-separated.
@@ -105,17 +100,6 @@ export const freightDescriptions = sql.join(
   sql`, `
 )
 
-// The inbound shipment a freight charge names: an FBA shipment (FBA15ABC12) or an AWD shipment (STAR-ABC123, sometimes
-// with a date before it). Transfers from AWD to FBA (repl-...) and other references name no inbound shipment.
-export function freightShipment(reference: string | null) {
-  const fba = reference?.match(/^FBA[0-9A-Z]{6,}$/)
-  if (fba) {
-    return { network: "fba" as const, shipmentId: fba[0] }
-  }
-  const awd = reference?.match(/(?:^|_)(STAR-[0-9A-Z]+)$/)
-  return awd ? { network: "awd" as const, shipmentId: awd[1]! } : null
-}
-
 // How long a shipment Amazon couldn't find waits before it's looked up again.
 const retryMissingMs = 7 * 86400000
 // Shipments looked up in one sync; the rest wait for the next.
@@ -197,45 +181,4 @@ export async function amazonFreightByOrder(orgId: string) {
     currency: String(row.currency),
     freightMinor: Number(row.freight)
   }))
-}
-
-export type FreightCharge = { reference: string | null; freightMinor: number }
-
-// Spreads freight over the SKUs of the shipments it was charged for, as a cost per unit shipped: each shipment's
-// freight is shared by its units. Freight for a shipment whose contents aren't known, or naming no inbound shipment
-// (such as transfers from AWD to FBA), is returned as `unallocatedMinor`, to spread over every unit sold instead.
-export function freightPerSku(
-  charges: readonly FreightCharge[],
-  shipments: ReadonlyMap<string, Readonly<Record<string, number>> | null>
-) {
-  const freight = new Map<string, number>(),
-    shipped = new Map<string, number>()
-  let unallocated = 0
-  const byShipment = new Map<string, number>()
-  for (const charge of charges) {
-    const shipment = freightShipment(charge.reference)
-    const units = shipment ? shipments.get(shipment.shipmentId) : null
-    const total = units ? Object.values(units).reduce((sum, count) => sum + count, 0) : 0
-    if (shipment && total > 0) {
-      byShipment.set(shipment.shipmentId, (byShipment.get(shipment.shipmentId) ?? 0) + charge.freightMinor)
-    } else {
-      unallocated += charge.freightMinor
-    }
-  }
-  for (const [shipmentId, charged] of byShipment) {
-    const units = shipments.get(shipmentId)!
-    const total = Object.values(units).reduce((sum, count) => sum + count, 0)
-    for (const [sku, count] of Object.entries(units)) {
-      freight.set(sku, (freight.get(sku) ?? 0) + (charged * count) / total)
-      shipped.set(sku, (shipped.get(sku) ?? 0) + count)
-    }
-  }
-  const perUnit = new Map<string, number>()
-  for (const [sku, amount] of freight) {
-    const count = shipped.get(sku) ?? 0
-    if (count > 0 && amount !== 0) {
-      perUnit.set(sku, amount / count)
-    }
-  }
-  return { perUnit, unallocatedMinor: unallocated }
 }
