@@ -1,5 +1,17 @@
 {
   "title": "Продажі",
+  "status": {
+    "fulfilled": "Виконано",
+    "unfulfilled": "Не виконано",
+    "partiallyFulfilled": "Частково виконано",
+    "pending": "Очікує",
+    "shipped": "Відправлено",
+    "unshipped": "Не відправлено",
+    "partiallyShipped": "Частково відправлено",
+    "cancelled": "Скасовано",
+    "unfulfillable": "Неможливо виконати",
+    "unknown": "Невідомо"
+  },
   "sync": {
     "reconnect": "Повторно підключіть {source} у розділі <settings>Налаштування</settings>",
     "askAdminToReconnect": "Попросіть адміністратора повторно підключити {source}",

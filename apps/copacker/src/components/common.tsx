@@ -3,6 +3,7 @@ import { useTranslations } from "use-intl"
 import type { StatusTone } from "@/components/ui/badge"
 import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import type { Messages } from "@/i18n/messages"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
 import { Attachment } from "./attachment"
@@ -110,17 +111,54 @@ function words(status: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-export function Status({ status }: { status: string }) {
-  const label = useStatusLabel()
+// Whose words a status takes. Every status shares one tone, but its words agree with what it's the status of: a sales
+// order's are under `sales.status` (in French, "Expédiée", for une commande) and a supplier's product's or catalog's
+// under `supplier.shared.status`. Anything else reads in the app's own words, `common.status`.
+export type StatusLabels = "app" | "sales" | "supplier"
+
+// The statuses each domain words itself, by the same keys as `common.status`.
+const salesLabels: Record<keyof Messages["sales"]["status"], true> = {
+  fulfilled: true,
+  unfulfilled: true,
+  partiallyFulfilled: true,
+  pending: true,
+  shipped: true,
+  unshipped: true,
+  partiallyShipped: true,
+  cancelled: true,
+  unfulfillable: true,
+  unknown: true
+}
+const supplierLabels: Record<keyof Messages["supplier"]["shared"]["status"], true> = {
+  active: true,
+  draft: true,
+  archived: true
+}
+const isSalesLabel = (key: string): key is keyof typeof salesLabels => Object.hasOwn(salesLabels, key)
+const isSupplierLabel = (key: string): key is keyof typeof supplierLabels => Object.hasOwn(supplierLabels, key)
+
+export function Status({ status, labels = "app" }: { status: string; labels?: StatusLabels }) {
+  const label = useStatusLabel(labels)
   return <StatusBadge tone={statuses[statusKey(status)]?.tone ?? "neutral"}>{label(status)}</StatusBadge>
 }
 
 // A status's words without its pill, for filters and exports.
-export function useStatusLabel() {
-  const t = useTranslations("common.status")
+export function useStatusLabel(labels: StatusLabels = "app") {
+  const app = useTranslations("common.status")
+  const sales = useTranslations("sales.status")
+  const supplier = useTranslations("supplier.shared.status")
   return (status: string) => {
     const known = statuses[statusKey(status)]
-    return known ? t(known.label) : words(status)
+    if (!known) {
+      return words(status)
+    }
+    if (labels === "sales" && isSalesLabel(known.label)) {
+      return sales(known.label)
+    }
+    if (labels === "supplier" && isSupplierLabel(known.label)) {
+      return supplier(known.label)
+    }
+    return app(known.label)
   }
 }
 

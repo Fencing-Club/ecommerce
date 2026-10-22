@@ -1,5 +1,17 @@
 {
   "title": "Vendite",
+  "status": {
+    "fulfilled": "Evaso",
+    "unfulfilled": "Non evaso",
+    "partiallyFulfilled": "Evaso in parte",
+    "pending": "In attesa",
+    "shipped": "Spedito",
+    "unshipped": "Non spedito",
+    "partiallyShipped": "Spedito in parte",
+    "cancelled": "Annullato",
+    "unfulfillable": "Non evadibile",
+    "unknown": "Sconosciuto"
+  },
   "sync": {
     "reconnect": "Ricollega {source} nelle <settings>Impostazioni</settings>",
     "askAdminToReconnect": "Chiedi a un amministratore di ricollegare {source}",

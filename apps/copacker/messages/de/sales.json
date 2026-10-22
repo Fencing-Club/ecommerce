@@ -1,5 +1,17 @@
 {
   "title": "Verkäufe",
+  "status": {
+    "fulfilled": "Ausgeführt",
+    "unfulfilled": "Nicht ausgeführt",
+    "partiallyFulfilled": "Teilweise ausgeführt",
+    "pending": "Ausstehend",
+    "shipped": "Versendet",
+    "unshipped": "Nicht versendet",
+    "partiallyShipped": "Teilweise versendet",
+    "cancelled": "Storniert",
+    "unfulfillable": "Nicht ausführbar",
+    "unknown": "Unbekannt"
+  },
   "sync": {
     "reconnect": "Verbinden Sie {source} in den <settings>Einstellungen</settings> erneut",
     "askAdminToReconnect": "Bitten Sie einen Admin, {source} erneut zu verbinden",

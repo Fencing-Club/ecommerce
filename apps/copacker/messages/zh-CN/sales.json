@@ -1,5 +1,17 @@
 {
   "title": "销售",
+  "status": {
+    "fulfilled": "已履约",
+    "unfulfilled": "未履约",
+    "partiallyFulfilled": "部分履约",
+    "pending": "待处理",
+    "shipped": "已发货",
+    "unshipped": "未发货",
+    "partiallyShipped": "部分发货",
+    "cancelled": "已取消",
+    "unfulfillable": "无法履约",
+    "unknown": "未知"
+  },
   "sync": {
     "reconnect": "在<settings>设置</settings>中重新连接 {source}",
     "askAdminToReconnect": "请管理员重新连接 {source}",

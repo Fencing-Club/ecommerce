@@ -1,5 +1,17 @@
 {
   "title": "Sales",
+  "status": {
+    "fulfilled": "Fulfilled",
+    "unfulfilled": "Unfulfilled",
+    "partiallyFulfilled": "Partially fulfilled",
+    "pending": "Pending",
+    "shipped": "Shipped",
+    "unshipped": "Unshipped",
+    "partiallyShipped": "Partially shipped",
+    "cancelled": "Canceled",
+    "unfulfillable": "Unfulfillable",
+    "unknown": "Unknown"
+  },
   "sync": {
     "reconnect": "Reconnect {source} in <settings>Settings</settings>",
     "askAdminToReconnect": "Ask an admin to reconnect {source}",

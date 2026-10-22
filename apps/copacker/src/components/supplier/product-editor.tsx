@@ -201,7 +201,7 @@ export function ProductEditor({
       <PageHeader
         parents={[{ label: t("products"), href: "/products" }]}
         title={saved.id ? saved.title : t("addProduct")}
-        badge={saved.id ? <Status status={saved.status} /> : undefined}
+        badge={saved.id ? <Status status={saved.status} labels="supplier" /> : undefined}
       />
       <div className="@container flex flex-col gap-4">
         <fieldset
@@ -521,7 +521,7 @@ export function ProductEditor({
                           <PageLink href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
                             {catalog.title}
                           </PageLink>
-                          {catalog.status !== "active" && <Status status={catalog.status} />}
+                          {catalog.status !== "active" && <Status status={catalog.status} labels="supplier" />}
                         </li>
                       ))}
                     </ul>

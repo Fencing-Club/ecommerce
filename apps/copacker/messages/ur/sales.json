@@ -1,5 +1,17 @@
 {
   "title": "سیلز",
+  "status": {
+    "fulfilled": "مکمل",
+    "unfulfilled": "مکمل نہیں ہوا",
+    "partiallyFulfilled": "جزوی طور پر مکمل",
+    "pending": "زیر التوا",
+    "shipped": "بھیج دیا گیا",
+    "unshipped": "نہیں بھیجا گیا",
+    "partiallyShipped": "جزوی طور پر بھیجا گیا",
+    "cancelled": "منسوخ",
+    "unfulfillable": "ناقابلِ تکمیل",
+    "unknown": "نامعلوم"
+  },
   "sync": {
     "reconnect": "<settings>سیٹنگز</settings> میں {source} دوبارہ منسلک کریں",
     "askAdminToReconnect": "کسی ایڈمن سے {source} دوبارہ منسلک کرنے کو کہیں",

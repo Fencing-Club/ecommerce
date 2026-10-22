@@ -1,5 +1,17 @@
 {
   "title": "Ventas",
+  "status": {
+    "fulfilled": "Surtido",
+    "unfulfilled": "Sin surtir",
+    "partiallyFulfilled": "Surtido parcialmente",
+    "pending": "Pendiente",
+    "shipped": "Enviado",
+    "unshipped": "Sin enviar",
+    "partiallyShipped": "Enviado parcialmente",
+    "cancelled": "Cancelado",
+    "unfulfillable": "No surtible",
+    "unknown": "Desconocido"
+  },
   "sync": {
     "reconnect": "Vuelve a conectar {source} en <settings>Configuración</settings>",
     "askAdminToReconnect": "Pide a un administrador que vuelva a conectar {source}",

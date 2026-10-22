@@ -94,7 +94,7 @@ export function CatalogEditor({
       <PageHeader
         parents={[{ label: t("catalogs"), href: "/catalogs" }]}
         title={catalog ? saved.title : t("newCatalog")}
-        badge={catalog ? <Status status={saved.status} /> : undefined}
+        badge={catalog ? <Status status={saved.status} labels="supplier" /> : undefined}
       >
         {catalog && (
           <DropdownMenu>

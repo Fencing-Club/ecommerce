@@ -226,7 +226,7 @@ function SearchResults({
                 <span className="shrink-0 font-medium">{order.number}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.channel}</span>
                 <span className="ms-auto flex shrink-0">
-                  <Status status={order.status} />
+                  <Status status={order.status} labels="sales" />
                 </span>
               </CommandItem>
             ))}

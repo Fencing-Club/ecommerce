@@ -258,14 +258,14 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                         </span>
                         {product.status === "archived" && (
                           <span className="mt-1 @md:hidden">
-                            <Status status="archived" />
+                            <Status status="archived" labels="supplier" />
                           </span>
                         )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className={columns.status}>
-                    <Status status={product.status} />
+                    <Status status={product.status} labels="supplier" />
                   </TableCell>
                   <TableCell className={columns.inventory}>
                     <Inventory variants={product.variants} />

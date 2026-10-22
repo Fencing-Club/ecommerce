@@ -91,7 +91,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Status status={catalog.status} />
+                  <Status status={catalog.status} labels="supplier" />
                 </TableCell>
                 <TableCell className="hidden max-w-64 truncate @2xl:table-cell">
                   <Assigned customers={catalog.customers} />

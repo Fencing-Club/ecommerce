@@ -43,30 +43,36 @@ export const Statuses = meta.story({
   }
 })
 
+const salesStatuses = [
+  "Fulfilled",
+  "Unfulfilled",
+  "Partially fulfilled",
+  "Pending",
+  "Shipped",
+  "Unshipped",
+  "Partially shipped",
+  "Cancelled",
+  "Unfulfillable",
+  "Unknown",
+  "On hold"
+]
+
 // A sales order's status as the server names it, and a supplier product's or catalog's, on the same tones as every other
-// status: Shipped reads in progress as a shipment's does, and Pending is idle until Amazon prices the order.
+// status: Shipped reads in progress as a shipment's does, and Pending is idle until Amazon prices the order. Each takes
+// its own domain's words.
+const salesAndProductStatuses = (
+  <div className="flex flex-wrap gap-2">
+    {salesStatuses.map((status) => (
+      <Status key={status} status={status} labels="sales" />
+    ))}
+    {["active", "archived"].map((status) => (
+      <Status key={status} status={status} labels="supplier" />
+    ))}
+  </div>
+)
+
 export const SalesAndProductStatuses = meta.story({
-  render: () => (
-    <div className="flex flex-wrap gap-2">
-      {[
-        "Fulfilled",
-        "Unfulfilled",
-        "Partially fulfilled",
-        "Pending",
-        "Shipped",
-        "Unshipped",
-        "Partially shipped",
-        "Cancelled",
-        "Unfulfillable",
-        "Unknown",
-        "On hold",
-        "active",
-        "archived"
-      ].map((status) => (
-        <Status key={status} status={status} />
-      ))}
-    </div>
-  ),
+  render: () => salesAndProductStatuses,
   play: async ({ canvas }) => {
     const tone = (text: string) => canvas.getByText(text).getAttribute("data-tone")
     await expect(tone("Fulfilled")).toBe("success")
@@ -79,6 +85,32 @@ export const SalesAndProductStatuses = meta.story({
     await expect(tone("Active")).toBe("success")
     await expect(tone("Archived")).toBe("neutral")
     await expect(canvas.getByText("Shipped")).toHaveAttribute("data-slot", "status")
+  }
+})
+
+// The words agree with what the status is of: une commande is feminine, while a shipment's Shipped stays masculine.
+export const SalesStatusesInFrench = meta.story({
+  globals: { locale: "fr" },
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      {salesAndProductStatuses}
+      <Status status="shipped" />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Expédiée")).toHaveAttribute("data-tone", "info")
+    await expect(canvas.getByText("Annulée")).toHaveAttribute("data-tone", "destructive")
+    await expect(canvas.getByText("Partiellement traitée")).toBeVisible()
+    await expect(canvas.getByText("Expédié")).toHaveAttribute("data-tone", "info")
+  }
+})
+
+// A supplier's product or catalog reads in its own words: in Ukrainian, Активний for a товар.
+export const ProductStatusInUkrainian = meta.story({
+  globals: { locale: "uk" },
+  render: () => <Status status="active" labels="supplier" />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Активний")).toHaveAttribute("data-tone", "success")
   }
 })
 
