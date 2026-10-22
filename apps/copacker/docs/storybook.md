@@ -111,7 +111,8 @@ without it. The packet's stories also carry `documents`, since they render PDFs.
 
 ## The toolbar
 
-- **Theme**: light or dark. It sets the `dark` class and the choice the app's ThemeProvider reads.
+- **Theme**: light or dark. It chooses that theme in the app's theme store, as the account menu does
+  ([styling](styling.md#theme)).
 - **Language**: every locale in `src/i18n/locales.ts`, with Urdu right to left. Messages load with the app's own
   `loadMessages`, so a missing translation falls back to English as in the app.
 - **Viewport**: Storybook's device sizes.
@@ -146,7 +147,8 @@ export const Default = meta.story({
   workspace kind, empty state and permission branch; title them `Pages/<Route>/<View>`.
 - **Server data** can be prepared through `serverStory(render)`, which resolves asynchronous fixtures in a loader.
   The localization context answers from the toolbar language. The `@/db` mock supplies each table from
-  `parameters: { db: { contacts: [...] } }`.
+  `parameters: { db: { contacts: [...] } }`; the preview's loader sets those rows before every story, so a story
+  without the parameter finds none.
 
 - **API calls** go through Mock Service Worker. `.storybook/mocks/handlers.ts` has the defaults (changes succeed, lists
   are empty); a story overrides them in `beforeEach({ msw })` with `msw.use(http.get(...))`.
