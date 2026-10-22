@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db, type Database, type Transaction } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { effectiveAccess } from "@/lib/access"
 
 // The cookie chooses among this person's current memberships; it never grants access to a workspace.
 export const workspaceCookie = "copacker-workspace"
@@ -32,7 +33,7 @@ export async function workspaceSession(user: Identity, active: string | undefine
     // Full workspace settings stay server-side. A route returns an explicit rendering DTO instead of this session.
     org: chosen.org,
     role: chosen.member.role,
-    access: chosen.member.access,
+    access: effectiveAccess(chosen.org.kind, chosen.member.access),
     workspaces: available.map(({ org }) => ({ id: org.id, name: org.name, kind: org.kind }))
   }
 }

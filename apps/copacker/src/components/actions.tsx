@@ -1,6 +1,7 @@
 import { Toast } from "@base-ui/react/toast"
 import { SubmitButton } from "@/components/form-feedback"
 import { useAction } from "@/hooks/use-action"
+import type { ActionName } from "@/server/actions"
 
 // A page's one-click action, beside its title. It spins until the page shows the result, and a failure shows as a
 // toast, so the header keeps its layout.
@@ -10,7 +11,7 @@ export function ActionButton({
   children,
   variant = "default"
 }: {
-  action: string
+  action: ActionName
   data: Record<string, unknown>
   children: React.ReactNode
   variant?: "default" | "outline" | "destructive"

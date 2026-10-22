@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { events } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { type AccessibleOrder, accessibleOrder } from "./access"
+import { requestInput } from "./errors"
 import { ownProfile } from "./profile"
 import type { Session } from "./workspace-session"
 
@@ -27,7 +28,7 @@ export async function orderEvents(s: Session, po: string | AccessibleOrder) {
 // The workspace comes from the authenticated session; clients cannot choose another workspace's private audience. A
 // closed PO shows no comments, so it takes none; the PO is locked so it can't close while one is added.
 export async function addComment(s: Session, raw: unknown) {
-  const input = commentInputSchema.parse(raw)
+  const input = requestInput(commentInputSchema, raw)
   const { profile } = await ownProfile(s.user.id)
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, input.orderId, tx, true)

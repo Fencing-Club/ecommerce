@@ -5,6 +5,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { contactKindsFor } from "@/lib/contacts"
 import { joinSchema, workspaceSetupSchema } from "@/lib/onboarding"
 import { setWorkspace } from "./auth"
+import { requestInput } from "./errors"
 import { acceptForwarderInvitation } from "./forwarders"
 import type { InvitationKind } from "./invitations"
 import { acceptSupplierInvitation, acceptTeamInvitation, findInvitation } from "./invitations"
@@ -38,7 +39,7 @@ async function nameAccount(userId: string, person: { firstName: string; lastName
 // Creates the person's workspace with its details and first address, saves their profile, and accepts the buyer's
 // invitation that brought them, all at once. The new workspace opens next.
 export async function setUpWorkspace(user: Person, raw: unknown) {
-  const input = workspaceSetupSchema.parse(raw)
+  const input = requestInput(workspaceSetupSchema, raw)
   const { invitation, person, company, address } = input
   if (invitation) {
     await openInvitation(user, invitation.kind, invitation.token)
@@ -81,7 +82,7 @@ export async function setUpWorkspace(user: Person, raw: unknown) {
 // Accepts an invitation into a workspace that already exists: a colleague joins the one that invited them, or a
 // supplier or forwarder links one it owns. A colleague without a profile gives it here, as they join.
 export async function joinWorkspace(user: Person, raw: unknown) {
-  const input = joinSchema.parse(raw)
+  const input = requestInput(joinSchema, raw)
   const invitation = await openInvitation(user, input.kind, input.token)
   const orgId = await db().transaction(async (tx) => {
     if (input.kind === "team") {

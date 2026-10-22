@@ -27,6 +27,7 @@ import {
   signUpSchema
 } from "@/lib/sign-in"
 import { sendEmail } from "./email"
+import { requestInput } from "./errors"
 import { describeError, logEvent } from "./log"
 import { appUrl, decrypt, encrypt, returnPath, siteUrlFor } from "./security"
 import { workos, workosClientId } from "./workos"
@@ -236,7 +237,7 @@ const next = z
   .transform((value) => returnPath(value, "/"))
 
 export async function signIn(request: SignInRequest, raw: unknown) {
-  const input = signInSchema.extend({ next }).parse(raw)
+  const input = requestInput(signInSchema.extend({ next }), raw)
   const context = requestContext(request)
   return complete(
     request,
@@ -262,7 +263,7 @@ export async function invitedEmail(token: string) {
 // Creates the account, then signs in, which emails a code to confirm the address. Signing in with a WorkOS invitation's
 // token accepts it, which confirms the address instead.
 export async function signUp(request: SignInRequest, raw: unknown) {
-  const input = signUpSchema.extend({ next, invitation: z.string().max(200).optional() }).parse(raw)
+  const input = requestInput(signUpSchema.extend({ next, invitation: z.string().max(200).optional() }), raw)
   const context = requestContext(request)
   try {
     await workos().userManagement.createUser({ email: input.email, password: input.password, ...context })
@@ -284,7 +285,7 @@ export async function signUp(request: SignInRequest, raw: unknown) {
 }
 
 export async function verifyEmail(request: SignInRequest, raw: unknown) {
-  const { code } = codeSchema.parse(raw)
+  const { code } = requestInput(codeSchema, raw)
   const pending = unseal(request, pendingCookie, pendingSchema)
   if (!pending) {
     throw new LocalizedError("codeExpired")
@@ -322,7 +323,7 @@ export async function resendCode(request: SignInRequest) {
 // either way. WorkOS sends its own reset email too until it's turned off in its dashboard, so a failure to send this
 // one is logged rather than shown.
 export async function requestPasswordReset(request: SignInRequest, raw: unknown) {
-  const input = forgotPasswordSchema.parse(raw)
+  const input = requestInput(forgotPasswordSchema, raw)
   let reset: PasswordReset
   try {
     reset = await workos().userManagement.createPasswordReset({ email: input.email })
@@ -378,7 +379,7 @@ export async function requestPasswordReset(request: SignInRequest, raw: unknown)
 
 // Sets the new password and signs straight in with it.
 export async function resetPassword(request: SignInRequest, raw: unknown) {
-  const input = resetPasswordSchema.extend({ token: z.string().min(1).max(512) }).parse(raw)
+  const input = requestInput(resetPasswordSchema.extend({ token: z.string().min(1).max(512) }), raw)
   let resetEmail: string
   try {
     const { user } = await workos().userManagement.resetPassword({ token: input.token, newPassword: input.password })

@@ -6,30 +6,12 @@ import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { issueValues } from "@/lib/packing-messages"
+import { canEditPacking, canReopenPacking } from "@/lib/shipment-states"
 import type { ShipmentState } from "../db/schema"
 import type { documents, shipments } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
-// The supplier packet is released from "ready" on; "received" means the goods arrived where the PO sent them.
-export const releasedStates: readonly ShipmentState[] = ["ready", "shipped", "forwarded", "received"]
-// From "packed" on, the shipment's packing is finished, so its packing list prints; a correction reopens it.
-export const packedStates: readonly ShipmentState[] = [
-  "packed",
-  "approval",
-  "queued",
-  "creating",
-  "waiting_labels",
-  "ready",
-  "shipped",
-  "forwarded",
-  "received",
-  "needs_attention"
-]
-// Once the supplier ships, a shipment's cartons and documents can't change any more.
-export const finishedStates: readonly ShipmentState[] = ["shipped", "forwarded", "received", "cancelled"]
-// Amazon's and the carrier's labels reach the supplier and forwarder only once the buyer releases the shipment.
-export const releasedLabelKinds: ReadonlyArray<Document["kind"]> = ["carton_label", "pallet_label", "shipping_label"]
 
 // Pieces per PO item in shipments that arrived.
 export function receivedPieces(rows: Shipment[]) {
@@ -124,11 +106,7 @@ export function packingReadiness(
       message: t("readiness.orderChanged")
     })
   }
-  if (
-    !["packing", "correction", "packed"].includes(shipment.status) ||
-    shipment.operation !== "none" ||
-    shipment.amazonOrderId
-  ) {
+  if (!canEditPacking(shipment) && !canReopenPacking(shipment)) {
     issues.push({ code: "shipment_locked", message: t("readiness.shipmentLocked") })
   }
   const parsed = packingSchema.safeParse(raw)

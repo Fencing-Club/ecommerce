@@ -2,13 +2,16 @@ import { describe, expect, it, vi } from "vitest"
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("@/db", () => ({ db: () => null }))
 
-import { type Access, can, canOpen, pageOf, type Role } from "../src/lib/access"
+import { type Access, can, canOpen, effectiveAccess, pageOf, type Role } from "../src/lib/access"
 import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
-import { POST as action } from "../src/server/http/api/action"
+import { POST as postAction } from "../src/server/http/api/action"
 import { GET as purchaseOrderPdf } from "../src/server/http/api/orders/$id/po"
 import { GET as salesOrders } from "../src/server/http/api/sales/orders"
 import { served } from "./served"
 import { signedIn, testSession } from "./test-session"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 const actor = (kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}) =>
   testSession({ orgId: "00000000-0000-4000-8000-000000000001", kind, name: "Test org", role, access })
@@ -32,6 +35,21 @@ describe("page access", () => {
     expect(can(member, "shipments")).toBe(true)
     expect(can(member, "shipments", "edit")).toBe(false)
     expect(can(member, "partners")).toBe(false)
+  })
+
+  it("never gives a member more than the rules allow, whatever their saved grant", () => {
+    // Purchase orders: Edit sets prices, so a grant saved without them reads as View.
+    expect(effectiveAccess("buyer", { orders: "edit", shipments: "edit" })).toEqual({
+      orders: "view",
+      shipments: "edit"
+    })
+    expect(effectiveAccess("buyer", { orders: "edit", prices: "view" })).toEqual({ orders: "edit", prices: "view" })
+    // A supplier's products are priced, a buyer's aren't.
+    expect(effectiveAccess("supplier", { products: "edit" })).toEqual({ products: "view" })
+    expect(effectiveAccess("buyer", { products: "edit" })).toEqual({ products: "edit" })
+    // Catalogs are about money: without prices they're gone, and view-only pages stay view.
+    expect(effectiveAccess("supplier", { catalogs: "edit", inventory: "view" })).toEqual({ inventory: "view" })
+    expect(effectiveAccess("buyer", { restock: "edit", prices: "view" })).toEqual({ restock: "view", prices: "view" })
   })
 
   it("reads a link's page, with Settings open to everyone", () => {
@@ -101,6 +119,15 @@ describe("the server's checks", () => {
       params: { id: "00000000-0000-4000-8000-000000000003" }
     })
     expect(po.status).toBe(403)
+  })
+
+  it("refuses priced order changes to a grant of Purchase orders: Edit saved without prices", async () => {
+    signedIn.actor = actor("buyer", "member", { orders: "edit" })
+    for (const name of ["order.create", "order.submit"]) {
+      const response = await send(name, {})
+      expect(response.status).toBe(403)
+      expect(await response.json()).toEqual({ error: "Ask an admin for access to Purchase orders" })
+    }
   })
 
   it("keeps handing over and deleting the workspace to its owner", async () => {

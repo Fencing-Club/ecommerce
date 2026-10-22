@@ -152,6 +152,7 @@ const center = (element: Element) => {
   const rect = element.getBoundingClientRect()
   return { clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2 }
 }
+// dnd-kit's own pause: after a drag ends it swallows clicks for 50 ms, the click a browser sends after the mouse up.
 const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
 // Where the pointer is. Events go to it and bubble up to the document, where dnd-kit listens, as a browser's do.
 let pointer: Element = document.body
@@ -301,9 +302,11 @@ export const FillCartonsInOrder = meta.story({
 // whose weight and size don't fit its carton's configuration says so. A carton is as tall with a label as without
 // one. Ends with a label held over A14.
 export const DragLabelToCarton = meta.story({
-  // The held label is let go once the story ends: a drag left going blocks the next story's first click.
-  beforeEach: () => () => {
+  // The held label is let go once the story ends, and the story waits as `release` does: dnd-kit swallows clicks for a
+  // moment after a drag ends, which would take the next story's first click.
+  beforeEach: () => async () => {
     fireEvent.mouseUp(document)
+    await settle()
   },
   play: async ({ args }) => {
     const dialog = await shown()
@@ -356,7 +359,7 @@ export const TakeLabelOff = meta.story({
     await expect(within(cartonRow("A2")).getByText("shopify-labels-1.pdf, page 2")).toBeVisible()
     await expect(within(cartonList()).getByText("3 of 24 have a label")).toBeVisible()
     await userEvent.click(within(cartonList()).getByRole("button", { name: "Take the label off A1" }))
-    await expect(within(cartonRow("A1")).getByText("Drag a label here")).toBeVisible()
+    await expect(await within(cartonRow("A1")).findByText("Drag a label here")).toBeVisible()
     await waitFor(() => expect(within(notPlaced()).getByText(tracking(first, 1))).toBeVisible())
 
     await pickUp(label, notPlaced())

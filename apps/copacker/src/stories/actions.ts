@@ -1,8 +1,9 @@
 import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
+import type { ActionName } from "@/server/actions"
 
-// A change the app sends to /api/action.
-export type ActionRequest = { action: string; data: Record<string, unknown> }
+// A change the app sends to /api/action: one of the registry's actions, which is all the app's client can name.
+export type ActionRequest = { action: ActionName; data: Record<string, unknown> }
 
 // How the story's server answers a change. Nothing means it succeeds.
 type Answer = (request: ActionRequest) => Response | Promise<Response> | undefined

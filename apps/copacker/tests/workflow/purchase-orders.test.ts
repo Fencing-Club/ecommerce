@@ -6,7 +6,7 @@ import * as tables from "../../src/db/schema"
 import { accessibleOrder } from "../../src/server/access"
 import { generatePo } from "../../src/server/documents"
 import { createForwarder, forwarderAddresses, saveForwarderAddress } from "../../src/server/forwarders"
-import { POST as action } from "../../src/server/http/api/action"
+import { POST as postAction } from "../../src/server/http/api/action"
 import { GET as coverageRoute } from "../../src/server/http/api/orders/summary"
 import { orderLandedCosts } from "../../src/server/landed-costs"
 import {
@@ -42,6 +42,9 @@ import {
   warehouseLines,
   withGroup
 } from "./fixtures"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 vi.mock("../../src/server/connections", async () => (await import("../mocks/providers")).connectionsModule())
 vi.mock("../../src/server/product-fields", async (original) =>

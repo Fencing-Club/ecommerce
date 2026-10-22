@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import type { ActionName } from "@/server/actions"
 
 // The kinds of workspace, each of which says what deleting it takes with it. The purchase orders are the buyer's, so a
 // supplier's or forwarder's buyers keep theirs.
@@ -102,7 +103,7 @@ function Confirm({
   expected,
   blocked = false
 }: {
-  action: string
+  action: ActionName
   label: string
   title: string
   description: string

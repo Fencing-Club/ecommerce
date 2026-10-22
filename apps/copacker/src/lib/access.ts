@@ -55,6 +55,23 @@ export function highestLevel(kind: string, area: Area, prices: boolean): AccessL
   return viewOnlyAreas.has(area) || (!prices && editSetsPrices(kind, area)) ? "view" : "edit"
 }
 
+// What a member's saved access lets them do in a workspace of this kind: each page at most what highestLevel allows.
+// Saving someone's access applies the same rules, but a grant saved before a rule changed, or written another way, can
+// hold more, such as Purchase orders: Edit without prices. Every check reads access through this, so it never gives
+// more than the rules do.
+export function effectiveAccess(kind: string, access: Access): Access {
+  const prices = access.prices !== undefined
+  const effective: Access = prices ? { prices: "view" } : {}
+  for (const area of areas) {
+    const level = access[area]
+    const highest = highestLevel(kind, area, prices)
+    if (level && highest) {
+      effective[area] = highest === "view" ? "view" : level
+    }
+  }
+  return effective
+}
+
 // The page a portal link opens, such as "restock" for "/restock?status=order", or undefined for Settings and anything
 // else that isn't one of the pages.
 export function pageOf(href: string) {

@@ -6,7 +6,7 @@ import { LocalizedError } from "@/i18n/errors"
 import type { ProductImage } from "@/lib/supplier-product"
 import { session } from "@/server/auth"
 import { requireAccess, requireSupplier } from "@/server/authorization"
-import { errorTextResponse, failureMessage, failureStatus } from "@/server/errors"
+import { errorTextResponse, requestForm } from "@/server/errors"
 import { getFile, putFile } from "@/server/storage"
 
 const maxBytes = 10 * 1024 * 1024
@@ -25,32 +25,28 @@ const keyPattern = /^supplier-images\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|g
 
 // Stores a product photo a supplier uploads. The product keeps it once the product is saved.
 export async function POST(request: Request) {
-  try {
-    const s = await session()
-    requireSupplier(s)
-    requireAccess(s, "products", "edit")
-    const file = (await request.formData()).get("file")
-    if (!(file instanceof File)) {
-      throw new LocalizedError("choosePhoto")
-    }
-    if (file.size > maxBytes) {
-      throw new LocalizedError("photoTooLarge")
-    }
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    const kind = kinds.find((candidate) => candidate.test(bytes))
-    if (!kind) {
-      throw new LocalizedError("photoType")
-    }
-    const image: ProductImage = {
-      key: `supplier-images/${s.org.id}/${randomUUID()}.${kind.extension}`,
-      name: file.name.slice(0, 255),
-      contentType: kind.type
-    }
-    await putFile(image.key, bytes, kind.type)
-    return Response.json(image)
-  } catch (error) {
-    return Response.json({ error: await failureMessage(error, "uploadFailed") }, { status: failureStatus(error) })
+  const s = await session()
+  requireSupplier(s)
+  requireAccess(s, "products", "edit")
+  const file = (await requestForm(request)).get("file")
+  if (!(file instanceof File)) {
+    throw new LocalizedError("choosePhoto")
   }
+  if (file.size > maxBytes) {
+    throw new LocalizedError("photoTooLarge")
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const kind = kinds.find((candidate) => candidate.test(bytes))
+  if (!kind) {
+    throw new LocalizedError("photoType")
+  }
+  const image: ProductImage = {
+    key: `supplier-images/${s.org.id}/${randomUUID()}.${kind.extension}`,
+    name: file.name.slice(0, 255),
+    contentType: kind.type
+  }
+  await putFile(image.key, bytes, kind.type)
+  return Response.json(image)
 }
 
 // A product photo, for the supplier that owns it and the buyers it supplies.

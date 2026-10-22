@@ -25,7 +25,7 @@ function Rename({ requireChange = false }: { requireChange?: boolean }) {
       requireChange={requireChange}
       form={{
         schema,
-        action: "supplier.rename",
+        action: "supplier.update",
         defaultValues: { name: "Lotus Manufacturing" },
         toPayload: (values) => ({ id: "supplier-lotus", ...values }),
         onSuccess: (_, values) => saved(values)
@@ -51,7 +51,7 @@ function FromMenu() {
         title="Edit Lotus Manufacturing"
         size="lg"
         submitLabel="Save"
-        form={{ schema, action: "supplier.rename", defaultValues: { name: "Lotus Manufacturing" } }}
+        form={{ schema, action: "supplier.update", defaultValues: { name: "Lotus Manufacturing" } }}
       >
         <FormInput name="name" required label="Supplier name" autoComplete="off" />
       </FormDialog>
@@ -81,7 +81,7 @@ export const Save = meta.story({
     await userEvent.type(name, "Lotus Textiles")
     await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() =>
-      expect(sent).toEqual([{ action: "supplier.rename", data: { id: "supplier-lotus", name: "Lotus Textiles" } }])
+      expect(sent).toEqual([{ action: "supplier.update", data: { id: "supplier-lotus", name: "Lotus Textiles" } }])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true })

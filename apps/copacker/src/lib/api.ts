@@ -2,12 +2,15 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import type { LineDefaults, OrderCurrency } from "@repo/copacker-orders"
 import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
+import { arrayIncludes } from "ts-extras"
+import type { ActionName } from "@/server/actions"
 import type { AmazonOnlyStock, InventoryProduct, InventoryVariant } from "@/server/inventory-products"
 import type { ProductBarcode } from "@/server/product-barcodes"
 import type { ProductDefaults } from "@/server/product-defaults"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
 import type { matchSupplierCatalog } from "@/server/supplier-catalog-match"
+import { apiTags, invalidatesHeader } from "./api-tags"
 
 export type ActionResult = { ok?: boolean; error?: string; redirect?: string; id?: string } & Record<string, unknown>
 export type CatalogProduct = CatalogVariant & {
@@ -62,12 +65,17 @@ export type InventoryProductsPage = {
   amazonOnly: AmazonOnlyStock[]
 }
 
-// Data cached here is tagged, so a change made anywhere re-renders every view that shows it: "Supplier" for supplier
-// names and lead times, "Restock" for restock results, "ProductSupplier" for which products have a supplier, and
-// "InventoryLocation" for which Shopify locations count. Pages refresh their own data with router.invalidate().
+// Data cached here is tagged (see apiTags), so a change made anywhere re-renders every view that shows it. Pages refresh
+// their own data with router.invalidate().
 // Follow session redirects as document navigation, never inside a background request. In particular, fetching
 // through recovery could change the workspace cookie while leaving the old company's screen and caches visible.
 const fetchQuery = fetchBaseQuery({ baseUrl: "/api", redirect: "manual" })
+
+// The caches an action's response says it changed (see defineAction's `invalidates`).
+function invalidatedTags(response: Response | undefined) {
+  const named = response?.headers.get(invalidatesHeader)?.split(",") ?? []
+  return named.map((tag) => tag.trim()).filter((tag) => arrayIncludes(apiTags, tag))
+}
 
 export const api = createApi({
   reducerPath: "api",
@@ -80,12 +88,11 @@ export const api = createApi({
     }
     return result
   },
-  tagTypes: ["Supplier", "Restock", "ProductSupplier", "InventoryLocation"],
+  tagTypes: apiTags,
   endpoints: (build) => ({
-    action: build.mutation<ActionResult, { action: string; data: Record<string, unknown> }>({
+    action: build.mutation<ActionResult, { action: ActionName; data: Record<string, unknown> }>({
       query: (body) => ({ url: "action", method: "POST", body }),
-      invalidatesTags: (_result, _error, { action }) =>
-        action.startsWith("supplier.") ? ["Supplier", "ProductSupplier"] : []
+      invalidatesTags: (_result, _error, _body, meta) => invalidatedTags(meta?.response)
     }),
     // The buyer's current suppliers, for pickers and restock.
     suppliers: build.query<SupplierOption[], void>({

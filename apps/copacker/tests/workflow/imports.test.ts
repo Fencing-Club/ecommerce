@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
-import { POST as uploadImport } from "../../src/server/http/api/imports"
+import { POST as uploadImportHandler } from "../../src/server/http/api/imports"
 import {
   GET as getImport,
   DELETE as cancelImport,
@@ -15,6 +15,7 @@ import { GET as searchImportCatalog } from "../../src/server/http/api/imports/$i
 import { importJob } from "../../src/server/import-job"
 import { saveImportedOrder } from "../../src/server/import-save"
 import { provider, storage } from "../mocks/providers"
+import { served } from "../served"
 import { database } from "../test-db"
 import { signedIn } from "../test-session"
 import {
@@ -50,6 +51,8 @@ vi.mock("../../src/server/readiness", async (original) =>
 )
 
 setUpWorkflowTests()
+
+const uploadImport = served(uploadImportHandler)
 
 describe("reviewed import save", () => {
   beforeEach(orderConnections)
@@ -631,15 +634,15 @@ describe("import source upload", () => {
   it("does not expose a retryable import when source storage fails", async () => {
     const req = await request()
     storage.putFile.mockRejectedValue(new Error("Storage unavailable"))
-    expect((await uploadImport(req)).status).toBe(400)
+    // An unexpected failure goes on to Start, which logs it and answers 500.
+    await expect(uploadImport(req)).rejects.toThrow("Storage unavailable")
     expect(await database.select().from(tables.poImports)).toHaveLength(0)
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
   })
   it("checks the complete prompt configuration before storing the source", async () => {
     const req = await request()
     vi.stubEnv("LANGFUSE_PUBLIC_KEY", "")
-    const response = await uploadImport(req)
-    expect(await response.json()).toEqual({ error: "AI import is not configured" })
+    await expect(uploadImport(req)).rejects.toThrow("AI import is not configured")
     expect(storage.putFile).not.toHaveBeenCalled()
     expect(await database.select().from(tables.poImports)).toHaveLength(0)
   })
