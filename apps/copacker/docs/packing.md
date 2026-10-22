@@ -99,6 +99,10 @@ The form's actions sit at the top, in the page header: **Finish packing** (or **
 pack) and the Actions menu with **Save draft**. On a phone the button moves below the cartons. The totals are the side
 panel's, so there's no summary bar.
 
+Each draft save moves the shipment to its next revision. The form stays pending until the page has read the shipment
+again (`router.invalidate({ sync: true })`), so the next save, a link to an existing AWD shipment and the buyer's
+transport settings beside the form all send the new revision. The form keeps no copy of the revision or the link.
+
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.
 
 ## Importing cartons and pallets

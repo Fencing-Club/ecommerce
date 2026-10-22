@@ -1,5 +1,7 @@
 import type { OrderInput, PackingDraft } from "@repo/copacker-shipments"
+import { useRouter } from "@tanstack/react-router"
 import { HttpResponse } from "msw/http"
+import { type ComponentProps, useSyncExternalStore } from "react"
 import { expect, fireEvent, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import { storyTimeZone } from "#.storybook/intl"
 import preview from "#.storybook/preview"
@@ -9,6 +11,7 @@ import { supplierId } from "@/stories/fixtures/orders"
 import { actionHandler, order, pickupAddress, shipmentRecord, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { member } from "@/stories/workspace"
 import { PackingForm } from "./packing-form"
+import { ShipmentTransportSettings } from "./shipment-transport"
 
 const actions = fn()
 const shipment = shipmentRecord()
@@ -53,6 +56,72 @@ function packingActions(check: { canSubmit: boolean; requiresApproval: boolean; 
   })
 }
 
+// The shipment as the stories' server keeps it, and as the page last read it. Saving the draft or linking moves it to
+// its next revision, and an action sent with an older revision fails, as on the server. Saving the transport keeps the
+// revision.
+type StoredShipment = { revision: number; linkedAmazonShipmentId: string | null }
+let stored: StoredShipment = { revision: 1, linkedAmazonShipmentId: null }
+let read = stored
+function shipmentServer(linkedAmazonShipmentId: string | null) {
+  stored = { revision: 1, linkedAmazonShipmentId }
+  read = stored
+  return actionHandler(actions, (body) => {
+    if (body.data.revision !== stored.revision) {
+      return HttpResponse.json(
+        {
+          error:
+            body.action === "shipment.transport"
+              ? "Transport changed or is already released. Reload the shipment."
+              : "The purchase order or packing draft has changed. Refresh before saving."
+        },
+        { status: 409 }
+      )
+    }
+    if (body.action === "shipment.linkExisting") {
+      const { amazonShipmentId } = body.data
+      stored = { ...stored, linkedAmazonShipmentId: typeof amazonShipmentId === "string" ? amazonShipmentId : null }
+    }
+    if (body.action !== "shipment.save" && body.action !== "shipment.linkExisting") {
+      return undefined
+    }
+    stored = { ...stored, revision: stored.revision + 1 }
+    return HttpResponse.json({ ok: true, revision: stored.revision })
+  })
+}
+
+// The shipment page around the form, as a buyer edits it: the transport settings follow the header, and both send the
+// shipment's revision as the page last read it. Like the page's loader data, it reads the shipment again each time the
+// router loads, and shows it in the same render as the router's own state.
+function PackingPage(args: ComponentProps<typeof PackingForm>) {
+  const router = useRouter()
+  const shipment = useSyncExternalStore(
+    (changed) =>
+      router.subscribe("onLoad", () => {
+        read = stored
+        changed()
+      }),
+    () => read
+  )
+  return (
+    <PackingForm
+      {...args}
+      revision={shipment.revision}
+      linkedAmazonShipmentId={args.linkedAmazonShipmentId === undefined ? undefined : shipment.linkedAmazonShipmentId}
+      renderHeader={(formActions) => (
+        <>
+          <div className="flex justify-end">{formActions}</div>
+          <ShipmentTransportSettings
+            id={args.shipmentId}
+            revision={shipment.revision}
+            initial={null}
+            hasForwarder={false}
+          />
+        </>
+      )}
+    />
+  )
+}
+
 // The units the Cartons header counts as packed. The shipment page's side panel has the other totals.
 async function expectPacked(canvas: ReturnType<typeof within>, units: number) {
   await expect(canvas.getByText(new RegExp(String.raw`^${units} of \d+ units$`))).toBeVisible()
@@ -75,11 +144,13 @@ const meta = preview.meta({
   }
 })
 
+// Linking saves the draft first, then links with the revision that save made. The link shows once the page has read it.
 export const LinkExistingAwd = meta.story({
   args: { linkedAmazonShipmentId: null },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, (body) => HttpResponse.json({ revision: Number(body.data.revision) + 1 })))
+    msw.use(shipmentServer(null))
   },
+  render: (args) => <PackingPage {...args} />,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
     const carton = canvas.getByRole("region", { name: "Carton A1" })
@@ -107,6 +178,43 @@ export const LinkExistingAwd = meta.story({
       action: "shipment.linkExisting",
       data: { id: shipment.id, revision: 4, amazonShipmentId: null }
     })
+  }
+})
+
+// Saving the draft moves the shipment to its next revision, and the page reads it again before the save is done, so
+// the buyer's transport settings beside the form, and the next save, send the new one.
+export const SaveDraftThenTransport = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(shipmentServer(null))
+  },
+  render: (args) => <PackingPage {...args} />,
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await screen.findByText("Draft saved")).toBeVisible()
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({ revision: 1 })
+    })
+
+    await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))
+    await waitFor(() =>
+      expect(actions).toHaveBeenLastCalledWith({
+        action: "shipment.transport",
+        data: expect.objectContaining({ id: shipment.id, revision: 2, expected: null })
+      })
+    )
+    // The transport form reads the page again only once it has saved.
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(2))
+    await expect(canvas.queryByText(/Transport changed/)).toBeNull()
+
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(3))
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({ revision: 2 })
+    })
+    await expect(canvas.queryByText(/packing draft has changed/)).toBeNull()
   }
 })
 
@@ -202,12 +310,14 @@ export const Submit = meta.story({
   play: async ({ canvas }) => {
     await expectPacked(canvas, 420)
     await userEvent.click(canvas.getByRole("button", { name: "Finish packing" }))
-    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
-    // It submits the revision the save just made.
-    await expect(actions).toHaveBeenLastCalledWith({
-      action: "shipment.submit",
-      data: { id: shipment.id, revision: 2 }
-    })
+    // It submits the revision the save just made, and the page reads the shipment again after each.
+    await waitFor(() =>
+      expect(actions).toHaveBeenLastCalledWith({
+        action: "shipment.submit",
+        data: { id: shipment.id, revision: 2 }
+      })
+    )
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(2))
   }
 })
 
