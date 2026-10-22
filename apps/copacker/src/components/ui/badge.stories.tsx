@@ -74,13 +74,13 @@ export const WithIcon = meta.story({
 // A badge that links somewhere, rendered as the link itself.
 export const AsLink = meta.story({
   render: () => (
-    <Badge variant="outline" render={<Link to="/orders" search={{ status: "draft" }} />}>
+    <Badge variant="outline" render={<Link to="/orders" search={{ view: "draft" }} />}>
       3 drafts
     </Badge>
   ),
   play: async ({ canvas }) => {
     const link = canvas.getByRole("link", { name: "3 drafts" })
-    await expect(link).toHaveAttribute("href", "/orders?status=draft")
+    await expect(link).toHaveAttribute("href", "/orders?view=draft")
     await expect(link).toHaveAttribute("data-slot", "badge")
   }
 })

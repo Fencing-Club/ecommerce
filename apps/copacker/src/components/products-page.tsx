@@ -8,11 +8,14 @@ import { InventorySync } from "./inventory-sync"
 import { ProductIndex } from "./supplier/product-index"
 import { ProductActions } from "./supplier/product-transfer"
 
+// `search` is a buyer's search from the URL, such as the header search's ?q=.
 export function ProductsPageView({
   page,
+  search = "",
   refresh
 }: {
   page: Awaited<ReturnType<typeof productsPageData>>
+  search?: string
   refresh: () => void
 }) {
   const t = useTranslations("products.page")
@@ -35,7 +38,7 @@ export function ProductsPageView({
   return (
     <>
       <PageHeader title={t("title")} />
-      <InventorySync providers={page.providers} search={page.search} />
+      <InventorySync providers={page.providers} search={search} />
     </>
   )
 }

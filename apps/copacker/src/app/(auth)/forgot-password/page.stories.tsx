@@ -1,9 +1,10 @@
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+// The route renders the sign-in screen itself.
+import { AuthScreen as PageView } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, skipAnimations } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
-import PageView from "./page"
 
 const actions = actionRecorder()
 

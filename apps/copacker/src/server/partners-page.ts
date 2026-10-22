@@ -1,4 +1,5 @@
 import { can } from "@/lib/access"
+import type { PartnersSearch } from "@/lib/page-search"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import type { PartnerForwarder } from "@/server/partners"
@@ -7,7 +8,6 @@ import { listPartners } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 import { serverTranslator } from "@/server/translation"
 
-const tabs = [{ key: "all" }, { key: "supplier" }, { key: "forwarder" }] as const
 // A partner's address, without the workspace and partner it's stored with.
 function addressDetails(contact: PartnerSupplier["addresses"][number]) {
   return { id: contact.id, name: contact.name, address: contact.address }
@@ -41,15 +41,15 @@ function forwarderDetails(row: PartnerForwarder) {
   }
 }
 
-export async function partnersPage(input: { query: Record<string, string | string[]> }) {
+// The partners of the URL's type (?type=supplier or forwarder) that match its search (?q=).
+export async function partnersPage(search: Pick<PartnersSearch, "type" | "q">) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "partners")
   const t = await serverTranslator("partners.page")
   const editable = can(s, "partners", "edit")
-  const params = input.query
-  const tab = tabs.find((candidate) => candidate.key === params.type)?.key ?? "all"
-  const q = (typeof params.q === "string" ? params.q : "").trim().slice(0, 200)
+  const tab = search.type ?? ("all" as const)
+  const q = search.q ?? ""
   const needle = q.toLowerCase()
   const partners = await listPartners(s.org.id)
   const shown = partners.filter(

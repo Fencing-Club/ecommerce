@@ -33,8 +33,9 @@ Views live in the URL as `?view=`:
 | Received  | Received shipments                       | Shipments                           |
 | All       | Everything, cancelled shipments included | Everyone                            |
 
-Buyers' orders open on Needs you; everything else opens on All, or Active for a forwarder's orders. Older links such as
-`/orders?status=draft` open the matching view.
+Buyers' orders open on Needs you; everything else opens on All, or Active for a forwarder's orders. The list changes
+`?view=` in place, and the page reads it from the URL rather than its loader, so a new view loads nothing. `?status=` is
+no longer read: `/orders?status=draft` opens the default view.
 
 ## Finding and exporting
 

@@ -1,13 +1,15 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { salesSearch } from "@/lib/page-search"
 import { salesOrders, syncState } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
 import { member } from "@/stories/workspace"
 import PageView from "./page"
 
+// The page with the URL's ?q=, read as the route reads it.
 function SalesPage({ q }: { q?: string | string[] }) {
-  return <PageView page={{ search: typeof q === "string" ? q.trim().slice(0, 100) : "" }} />
+  return <PageView search={salesSearch.parse({ q })} />
 }
 
 // The orders API's queries, in order.

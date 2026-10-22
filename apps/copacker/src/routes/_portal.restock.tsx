@@ -1,28 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/restock/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { restockSearch } from "@/lib/page-search"
 import { readRestock } from "@/workspace.functions"
+import { PortalPage, PortalRouteError, pageHead, reloadOnEnter } from "./-page-route"
 
+// A link's filters start the report, which loads its own suggestions.
 export const Route = createFileRoute("/_portal/restock")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => ({ query: search }),
-  loader: ({ deps }) => readRestock({ data: { ...deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: restockSearch,
+  loader: () => readRestock(),
+  shouldReload: reloadOnEnter,
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} search={search} />}</PortalPage>
 }

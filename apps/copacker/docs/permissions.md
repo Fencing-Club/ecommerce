@@ -91,9 +91,10 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
 
 ## How it's enforced
 
-- Every page calls `requirePage(s, area, level)`, which renders the portal's `forbidden.tsx` ("No access") through
-  the portal's forbidden response. The Overview and `/` send someone to their first page instead.
-  A page's title goes through the same check (`titleFor`), so No access keeps its own tab title.
+- Every page calls `requirePage(s, area, level)` or `requireAccess`. Its loader reads through `pageResult`
+  (`server/page-result.ts`), which answers the `AccessError` with a 403 and the No access title, and the route's
+  `PortalPage` renders the portal's `forbidden.tsx` ("No access"). The Overview and `/` send someone to their first page
+  instead. See [routes](routes.md).
 - Every request checks too: `requireAccess`, `requireAdmin` and `requireOwner` throw an `AccessError`, which routes
   answer with 403 and its message, and read-only routes call `requirePage`.
 - A route or page for one kind of workspace calls `requireBuyer` or `requireSupplier` (both `requireKind` in

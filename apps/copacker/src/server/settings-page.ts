@@ -21,7 +21,7 @@ import { shopifyOrderTags } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { teamOf } from "@/server/team"
 import { serverTranslator } from "@/server/translation"
-export async function settingsPage(_input: { query: Record<string, string | string[]> }) {
+export async function settingsPage() {
   const s = await session()
   // The viewer's computer's zone, as their browser last reported it.
   const computerZone = await storeTimeZone({ timeZone: null })

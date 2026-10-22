@@ -135,9 +135,9 @@ describe("page data authorization and serialization", () => {
     ["catalog edit grant", () => catalogPageData(session({ catalogs: "view", prices: "view" }), null)],
     ["customers", () => customersPageData(session({}))],
     ["customer detail", () => customerPageData(session({}), customer)],
-    ["products", () => productsPageData(session({}), "")],
+    ["products", () => productsPageData(session({}))],
     ["product detail", () => productPageData(session({}), product)],
-    ["inventory", () => inventoryPageData(session({}), "all")]
+    ["inventory", () => inventoryPageData(session({}))]
   ])("rejects direct %s access before rendering", async (_name, run) => {
     await expect(run()).rejects.toThrow(AccessError)
   })
@@ -195,7 +195,7 @@ describe("page data authorization and serialization", () => {
 
   it("projects product lists and details, dropping both unit prices and volume pricing for a member", async () => {
     const s = session({ products: "edit" })
-    const list = await productsPageData(s, "")
+    const list = await productsPageData(s)
     if (list.kind !== "supplier") {
       throw new Error("Expected supplier data")
     }
@@ -218,31 +218,24 @@ describe("page data authorization and serialization", () => {
     await expect(productPageData(owner, "invalid")).rejects.toThrow(NotFoundError)
   })
 
-  it("returns only provider names and a bounded search to the buyer", async () => {
+  it("returns only provider names to the buyer", async () => {
     const s = session({ products: "view" }, "buyer")
-    expect(await productsPageData(s, ["ignored"])).toEqual({ kind: "buyer", providers: ["shopify"], search: "" })
-    expect(await productsPageData(s, `  ${"q".repeat(250)}  `)).toEqual({
-      kind: "buyer",
-      providers: ["shopify"],
-      search: "q".repeat(200)
-    })
+    expect(await productsPageData(s)).toEqual({ kind: "buyer", providers: ["shopify"] })
   })
 
-  it("keeps stock scoped to the supplier and accepts only scalar query values", async () => {
-    const page = await inventoryPageData(session({ inventory: "view" }), ["short"])
-    expect(page.tab).toBeUndefined()
+  it("keeps stock scoped to the supplier", async () => {
+    const page = await inventoryPageData(session({ inventory: "view" }))
     expect(page.rows.map((row) => row.supplierSku)).toEqual(["SKU-1"])
     expect(page.rows[0]?.onHand).toBe(75)
   })
 
-  it("validates buyer page access and emits only the selected settings and search", () => {
+  it("validates buyer page access and emits only the selected settings", () => {
     const s = session({ restock: "view", sales: "view" }, "buyer")
     expect(restockPageData(s)).toEqual({ settings: { days: 90, leadTimeDays: 30 } })
-    expect(salesPageData(s, ["ignored"])).toEqual({ search: "" })
-    expect(salesPageData(s, ` ${"q".repeat(150)} `)).toEqual({ search: "q".repeat(100) })
-    expect(() => salesPageData(session({}, "buyer"), "")).toThrow(AccessError)
+    expect(salesPageData(s)).toEqual({})
+    expect(() => salesPageData(session({}, "buyer"))).toThrow(AccessError)
     expect(() => restockPageData(session({}, "buyer"))).toThrow(AccessError)
-    expect(() => salesPageData(owner, "")).toThrow(LocalizedError)
+    expect(() => salesPageData(owner)).toThrow(LocalizedError)
     expect(() => restockPageData(owner)).toThrow(LocalizedError)
   })
 
@@ -253,9 +246,9 @@ describe("page data authorization and serialization", () => {
       () => catalogPageData(other, catalog),
       () => customersPageData(other),
       () => customerPageData(other, customer),
-      () => productsPageData(other, ""),
+      () => productsPageData(other),
       () => productPageData(other, product),
-      () => inventoryPageData(other, "short")
+      () => inventoryPageData(other)
     ]) {
       await expect(run()).rejects.toThrow(LocalizedError)
     }

@@ -3,6 +3,7 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import type { ProductRow } from "@/components/supplier/product-index"
 import { can, type Permissions } from "@/lib/access"
+import { productsSearch } from "@/lib/page-search"
 import { productsPage, supplierProducts, withoutSupplier } from "@/stories/fixtures/catalog"
 import { daysAgo } from "@/stories/fixtures/orders"
 import { pageStory } from "@/stories/server"
@@ -30,8 +31,8 @@ function ProductsPage({ kind, permissions, products, providers, q }: Args) {
             }))
           }))
         }
-      : { kind: "buyer" as const, providers, search: typeof q === "string" ? q.trim().slice(0, 200) : "" }
-  return <PageView page={page} />
+      : { kind: "buyer" as const, providers }
+  return <PageView page={page} search={productsSearch.parse({ q })} />
 }
 
 const buyer = pageStory("/products", ProductsPage, "buyer")

@@ -1,7 +1,8 @@
 import { RestockPageView } from "@/components/restock-page"
+import type { RestockSearch } from "@/lib/page-search"
+import type { PageData } from "@/server/page-result"
 import type { readRestock } from "@/workspace.functions"
 
-type Data = Extract<Awaited<ReturnType<typeof readRestock>>, { forbidden: false }>["page"]
-export default function RestockPage({ page }: { page: Data["data"] }) {
-  return <RestockPageView {...page} />
+export default function RestockPage({ page, search }: { page: PageData<typeof readRestock>; search: RestockSearch }) {
+  return <RestockPageView {...page} link={search} />
 }

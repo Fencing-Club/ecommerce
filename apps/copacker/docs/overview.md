@@ -105,7 +105,8 @@ suppliers, locations, connections, the sales period or lead time).
 ## Links into Restock
 
 Restock accepts `channel`, `q` (search), `cover` (a days-of-cover group from `lib/cover.ts`) and `status=order` (items to
-reorder). A link calculates straight away; each filter can be cleared on the page.
+reorder), read by `restockSearch` in `lib/page-search.ts`. A link calculates straight away; each filter can be cleared on
+the page.
 
 ## Landed costs
 

@@ -1,25 +1,20 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { orderSubtotal } from "@repo/copacker-orders"
-import { notFound, redirect } from "@tanstack/react-router"
+import { redirect } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
 import type * as React from "react"
-import { z } from "zod"
 import type { OrderReviser } from "@/components/supplier/order-reviser"
 import { db } from "@/db"
 import { organizations } from "@/db/schema"
 import { requirePage, session } from "@/server/auth"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
+import { pageId } from "./page-id"
 import { serverTranslator } from "./translation"
 
 export async function reviseOrderPage(params: { id: string }): Promise<React.ComponentProps<typeof OrderReviser>> {
   const [s, t] = await Promise.all([session(), serverTranslator("orders.revise")])
-  // A malformed id, such as /orders/abc/revise, finds nothing, like an unknown one.
-  const parsed = z.uuid().safeParse((await params).id)
-  if (!parsed.success) {
-    throw notFound()
-  }
-  const id = parsed.data
+  const id = pageId(params.id)
   if (s.org.kind !== "supplier") {
     throw redirect({ href: `/orders/${id}` })
   }

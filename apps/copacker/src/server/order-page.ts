@@ -20,7 +20,7 @@ import { orderEvents } from "./comments"
 import { forwarderPage } from "./forwarder-page"
 import { unpricedChanges, unpricedOrder } from "./prices"
 
-export async function orderPage(input: { id: string; query: Record<string, string | string[]> }) {
+export async function orderPage(input: { id: string }) {
   const [s, t] = await Promise.all([session(), serverTranslator("orders")])
   requirePage(s, "orders")
   // A malformed or unknown id is a not-found, from forwarderOrder or accessibleOrder.

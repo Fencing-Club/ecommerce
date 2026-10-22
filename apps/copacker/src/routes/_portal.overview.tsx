@@ -1,28 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/overview/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { overviewSearch } from "@/lib/page-search"
 import { readOverview } from "@/workspace.functions"
+import { PortalPage, PortalRouteError, pageHead } from "./-page-route"
 
+// The Overview's figures are for the URL's period and channel.
 export const Route = createFileRoute("/_portal/overview")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => ({ query: search }),
-  loader: ({ deps }) => readOverview({ data: { ...deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: overviewSearch,
+  loaderDeps: ({ search }) => search,
+  loader: ({ deps }) => readOverview({ data: deps }),
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} query={result.page.query} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} search={search} />}</PortalPage>
 }
