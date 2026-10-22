@@ -133,7 +133,8 @@ preferences persist, revoked access is handled and a failure is diagnosable with
 - [ ] Connect invoice uploads, comments and generated packing-list availability.
 - [ ] Connect packing submitted, commercial approval required, correction requested and labels required.
 - [ ] Connect released shipment documents and migrate labels-ready email delivery.
-- [ ] Preserve explicit `shipment.release` as the ready-email trigger; packing completion alone does not send it.
+- [ ] Keep `sendLabelsWhenComplete` (labels sent once the packet is complete) as the ready-email trigger; packing
+  completion alone does not send it.
 - [ ] Preserve joined-supplier/email eligibility, PO revision/PDF attachment parity and release revision identity.
 - [ ] Connect supplier shipped, forwarder forwarded and buyer-confirmed receipt.
 - [ ] Notify an assigned forwarder of goods shipped toward it and relevant ready-date changes.

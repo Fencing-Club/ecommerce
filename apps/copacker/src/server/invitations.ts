@@ -1,4 +1,4 @@
-import type { Address } from "@repo/aisle"
+import type { Address } from "@repo/copacker-shipments"
 import { and, eq, isNull, sql } from "drizzle-orm"
 import type { Transaction } from "@/db"
 import { db } from "@/db"

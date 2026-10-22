@@ -3,9 +3,10 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { cartonTotals, groupCartons, type CartonGroup } from "@/lib/carton-groups"
 import { cartonColumns } from "@/lib/carton-import"
+import { sendTo } from "@/stories/fixtures/orders"
 import { order, packed, shownDialog } from "@/stories/fixtures/purchase-orders"
-import { CartonEditor } from "./carton-editor"
 import { CartonImportDialog } from "./carton-import-dialog"
+import { CartonTable } from "./carton-table"
 import { Button } from "./ui/button"
 
 type Props = React.ComponentProps<typeof CartonImportDialog>
@@ -17,9 +18,7 @@ function ImportFlow(props: Props) {
       <Button className="self-end" onClick={() => setOpen(true)}>
         Import cartons
       </Button>
-      {groups.map((group) => (
-        <CartonEditor key={group.cartonId} value={group} products={props.order.items} readOnly />
-      ))}
+      <CartonTable cartons={groups} products={props.order.items} readOnly />
       <output>{cartonTotals(groups).pieces} packed units</output>
       <CartonImportDialog
         {...props}
@@ -50,7 +49,7 @@ const meta = preview.meta({
 function csv(rows: string[]) {
   return new File([[cartonColumns.join(","), ...rows].join("\n")], "packing.csv", { type: "text/csv" })
 }
-const valid = () => csv([`2,1,${order.items[0]!.supplierSku},20,60,40,40,12`])
+const valid = () => csv([`D1,1,${order.items[0]!.supplierSku},20,60,40,40,12`])
 async function upload(file: File) {
   const dialog = await shownDialog("Import cartons")
   const input = screen.getByRole("dialog").querySelector("input[type=file]")
@@ -60,7 +59,7 @@ async function upload(file: File) {
   await userEvent.upload(input, file)
   await waitFor(() => expect(dialog.getByRole("button", { name: "Review import" })).toBeEnabled())
   await userEvent.click(dialog.getByRole("button", { name: "Review import" }))
-  return shownDialog("Review import")
+  return shownDialog("Review carton import")
 }
 export const Upload = meta.story({
   play: async () => {
@@ -74,7 +73,7 @@ export const Review = meta.story({
     const dialog = await upload(valid())
     await expect(dialog.getByRole("radio", { name: "Add cartons" })).toBeChecked()
     await expect(dialog.getByText("1 carton")).toBeVisible()
-    await userEvent.click(dialog.getByRole("button", { name: /Carton 2/ }))
+    await userEvent.click(dialog.getByRole("button", { name: /Carton D1/ }))
     await expect(dialog.getByText("60 × 40 × 40 cm / 12 kg")).toBeVisible()
   }
 })
@@ -122,9 +121,9 @@ export const RemoveInvalidFile = meta.story({
 })
 export const RowErrors = meta.story({
   play: async () => {
-    const dialog = await upload(csv(["2,1,UNKNOWN,20,60,40,40,12"]))
+    const dialog = await upload(csv(["D1,1,UNKNOWN,20,60,40,40,12"]))
     await expect(dialog.getByText(/must match exactly one product/)).toBeVisible()
-    await expect(dialog.getByText("Row 2 / Carton 2")).toBeVisible()
+    await expect(dialog.getByText("Row 2 / Carton D1")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
     await expect(dialog.queryByRole("button", { name: "Download errors" })).toBeNull()
   }
@@ -134,14 +133,14 @@ export const MultipleRowErrors = meta.story({
   play: async () => {
     const dialog = await upload(
       csv([
-        "2,1,UNKNOWN,20,60,40,40,12",
-        `3,1,${order.items[0]!.supplierSku},-1,60,40,40,0`,
-        `4,1,${order.items[1]!.supplierSku},20,60,40,40,12`,
-        `4,1,${order.items[1]!.supplierSku},20,50,40,40,12`
+        "D1,1,UNKNOWN,20,60,40,40,12",
+        `E1,1,${order.items[0]!.supplierSku},-1,60,40,40,0`,
+        `F1,1,${order.items[1]!.supplierSku},20,60,40,40,12`,
+        `F1,1,${order.items[1]!.supplierSku},20,50,40,40,12`
       ])
     )
     await expect(dialog.getByText("4 issues")).toBeVisible()
-    await expect(dialog.getByText("Row 5 / Carton 4")).toBeVisible()
+    await expect(dialog.getByText("Row 5 / Carton F1")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
   }
 })
@@ -150,14 +149,30 @@ export const MultipleCartons = meta.story({
   play: async () => {
     const dialog = await upload(
       csv([
-        `2,1,${order.items[0]!.supplierSku},20,60,40,40,12`,
-        `2,1,${order.items[1]!.supplierSku},10,60,40,40,12`,
-        `3,2,${order.items[2]!.supplierSku},10,50,35,30,7.8`
+        `D1,1,${order.items[0]!.supplierSku},20,60,40,40,12`,
+        `D1,1,${order.items[1]!.supplierSku},10,60,40,40,12`,
+        `E1,2,${order.items[2]!.supplierSku},10,50,35,30,7.8`
       ])
     )
     await expect(dialog.getByText("3 cartons")).toBeVisible()
     await expect(dialog.getByText("3 products")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeEnabled()
+  }
+})
+// Amazon has set the FBA shipment's packing groups, so a carton holding two of them is an issue to fix before importing.
+const [tote, apron] = order.items
+export const PackingGroups = meta.story({
+  args: {
+    order: sendTo(order, "amazon"),
+    packingGroups: { [tote!.buyerSku]: "pg-totes", [apron!.buyerSku]: "pg-aprons" }
+  },
+  play: async () => {
+    const dialog = await upload(
+      csv([`D1,1,${tote!.supplierSku},20,60,40,40,12`, `D1,1,${apron!.supplierSku},10,60,40,40,12`])
+    )
+    const message = `FBA can’t take ${tote!.supplierSku} and ${apron!.supplierSku} in one carton: Amazon handles them differently, for example for dangerous goods, prep or labels`
+    await expect(dialog.getByText(message)).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeDisabled()
   }
 })
 export const Loading = meta.story({

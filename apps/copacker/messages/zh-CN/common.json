@@ -70,7 +70,8 @@
     "shippingLabel": "运输标签",
     "productLabel": "产品标签",
     "cartonLabels": "箱唛",
-    "shippingLabels": "运输标签"
+    "palletLabels": "托盘标签",
+    "shippingLabels": "承运商标签"
   },
   "format": {
     "plusAmounts": "另加 {amounts}",
@@ -117,27 +118,6 @@
     "remove": "移除 {name}",
     "replaceFile": "替换 {name}",
     "replace": "替换"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "正式商业发票",
-      "productLabels": "产品标签",
-      "shippingLabels": "承运商运输标签"
-    },
-    "chooseVariationError": "请选择产品变体",
-    "enterLabelPage": "请至少为一个箱输入标签页码",
-    "failed": "上传失败，请重试。",
-    "choosePdf": "请选择 PDF 文件",
-    "variation": "产品变体",
-    "chooseVariation": "选择变体",
-    "productLabelHint": "每个变体一份标签文件，最大 32 MB",
-    "uploading": "正在上传",
-    "uploaded": "已上传",
-    "upload": "上传",
-    "labelPages": "每箱的标签页码",
-    "labelPagesDescription": "如果某箱的标签在其他文件中，请留空",
-    "carton": "第 {carton} 箱",
-    "page": "页码"
   },
   "ui": {
     "close": "关闭",

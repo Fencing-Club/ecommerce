@@ -1,45 +1,67 @@
 import { Toast } from "@base-ui/react/toast"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
 import {
   type Address,
-  type OrderInput,
-  type PackingDraft,
-  type Packing,
-  packingSchema,
   cartonInputSchema,
-  validatePacking,
-  money
-} from "@repo/aisle"
+  money,
+  type OrderInput,
+  type Packing,
+  type PackingDraft,
+  packingSchema,
+  palletInputSchema
+} from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
-import { CircleCheck, Ellipsis, Plus, Upload } from "lucide-react"
+import { CircleAlert, CircleCheck, Clock3, Download, Ellipsis, Info, Plus, Upload } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { objectKeys } from "ts-extras"
-import { useLocale, useTranslations } from "use-intl"
+import { useLocale, useNow, useTimeZone, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { useCartonTemplate, usePalletTemplate } from "@/hooks/use-import-templates"
 import { useActionMutation } from "@/lib/api"
-import { cartonTotals, expandCartonGroups, groupCartons, nextCartonId, packingEditorSchema } from "@/lib/carton-groups"
+import {
+  cartonTotals,
+  editorPallets,
+  expandCartonGroups,
+  groupCartons,
+  nextCartonId,
+  nextPalletId,
+  packingEditorSchema,
+  palletCartons,
+  type PalletValue
+} from "@/lib/carton-groups"
 import { formatPhone, phoneHref } from "@/lib/phone"
+import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
+import { zonedDay } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
 import { emptyAddress } from "./address-fields"
-import { CartonEditor } from "./carton-editor"
 import { CartonImportDialog } from "./carton-import-dialog"
+import { CartonTable } from "./carton-table"
 import { EmptyState } from "./common"
 import { FormInput } from "./form-controls"
+import { FieldError } from "./packing-fields"
+import { usePackingIssueText, usePalletIssueErrors } from "./packing-issues"
+import { PalletImportDialog } from "./pallet-import-dialog"
+import { PalletTable } from "./pallet-table"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
 import { ProductIdentity } from "./product-identity"
 import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentAddress, ShipmentPackingDetails } from "./shipment-packing-details"
+import { Checkbox } from "./ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { Label } from "./ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
-type Values = z.input<typeof packingEditorSchema>
+type EditorSchema = ReturnType<typeof packingEditorSchema>
+type Values = z.input<EditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
 // number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
@@ -49,6 +71,19 @@ const withoutBlanks = (values: z.input<typeof packingSchema>): PackingDraft =>
       value === null || (typeof value === "number" && Number.isNaN(value)) ? undefined : value
     )
   )
+// The packing as it's saved: each physical carton, and the pallets only when the cartons are packed on them, each
+// holding only cartons the packing still has.
+function savedPacking(values: Values) {
+  const cartons = expandCartonGroups(values.cartons)
+  const ids = new Set(cartons.map((carton) => carton.cartonId))
+  return {
+    ...values,
+    cartons,
+    pallets: values.palletized
+      ? values.pallets.map((pallet) => ({ ...pallet, cartonIds: pallet.cartonIds.filter((id) => ids.has(id)) }))
+      : undefined
+  }
+}
 const checkResult = z.object({
   canSubmit: z.boolean(),
   requiresApproval: z.boolean(),
@@ -78,6 +113,7 @@ export function PackingForm({
   orderRevision,
   availablePieces,
   order,
+  packingGroups,
   initial,
   addresses,
   addAddressTo,
@@ -121,6 +157,9 @@ export function PackingForm({
   orderRevision: number
   availablePieces: Record<string, number>
   order: OrderInput
+  // Amazon's packing groups by SKU, for a packing with FBA cartons, which keep to one group each; null while Amazon
+  // hasn't set them, when the cartons can't be checked against them.
+  packingGroups?: Readonly<Record<string, string>> | null
   initial: PackingDraft | null
   // The supplier's saved pickup addresses.
   addresses: PartnerAddress[]
@@ -133,9 +172,12 @@ export function PackingForm({
   const t = useTranslations("orders.packing")
   const locale = useLocale()
   const detail = useTranslations("orders.detail")
-  const rules = useTranslations("server.readiness.packing")
+  const packingIssueText = usePackingIssueText()
+  const palletIssueErrors = usePalletIssueErrors()
   const errorMessage = useErrorMessage()
   const formErrorMap = useFormErrorMap()
+  // The zone the supplier's browser reports, so today is the supplier's own; UTC until it has reported one.
+  const timeZone = useTimeZone() ?? "UTC"
   const router = useRouter()
   const [run] = useActionMutation()
   const formId = useId()
@@ -147,28 +189,51 @@ export function PackingForm({
   const [working, setWorking] = useState<"save" | "submit" | "link" | null>(null)
   const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const [importing, setImporting] = useState(false)
+  const [importingPallets, setImportingPallets] = useState(false)
   const importText = useTranslations("orders.cartonImport")
+  const palletImportText = useTranslations("orders.palletImport")
+  const palletText = useTranslations("orders.pallets")
   // A packing list without a pickup address yet starts from the supplier's only saved one.
   const noOrigin = objectKeys(emptyAddress).every((key) => !initial?.origin?.[key])
   const startAddress =
     noOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, initial?.origin ?? {})
   // The saved address the cartons leave from, or "" for one typed in.
   const [pickup, setPickup] = useState(startAddress?.id ?? "")
-  const form = useForm<Values, unknown, z.output<typeof packingEditorSchema>>({
+  const form = useForm<Values, unknown, z.output<EditorSchema>>({
     mode: "onChange",
-    resolver: zodResolver(packingEditorSchema, { error: formErrorMap }),
+    resolver: zodResolver(packingEditorSchema(timeZone), { error: formErrorMap }),
     defaultValues: {
       readyDate: initial?.readyDate ?? "",
       origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
       cartons: groupCartons(initial?.cartons),
+      palletized: initial?.palletized ?? false,
+      pallets: editorPallets(initial?.pallets),
       changes: []
     }
   })
   const cartons = useFieldArray({ control: form.control, name: "cartons" })
   const readyDate = useWatch({ control: form.control, name: "readyDate" })
   const cartonValues = useWatch({ control: form.control, name: "cartons" }) ?? []
+  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
+  const palletValues = useWatch({ control: form.control, name: "pallets" }) ?? []
   const totals = cartonTotals(cartonValues)
   const physicalCartons = totals.cartons > 1000 ? [] : expandCartonGroups(cartonValues)
+  const physicalIds = new Set(physicalCartons.map((carton) => carton.cartonId))
+  // Pallets hold only the cartons the packing still has, as they'll be saved.
+  const pallets = palletValues.map((pallet) => ({
+    ...pallet,
+    cartonIds: pallet.cartonIds.filter((id) => physicalIds.has(id))
+  }))
+  const cartonTemplate = useCartonTemplate(order)
+  const palletTemplate = usePalletTemplate(physicalCartons.map((carton) => carton.cartonId))
+  // The cartons or pallets in their import template, to edit and import again.
+  async function exportSheet(title: string, build: () => Promise<BlobPart>, failed: string) {
+    try {
+      downloadSpreadsheet(await build(), [title, order.reference, shipmentName ?? t("cartons")])
+    } catch {
+      toast.add({ title: failed })
+    }
+  }
   const contents = physicalCartons.flatMap((carton) => carton.items)
   const availableUnits = Object.values(availablePieces).reduce((total, value) => total + value, 0)
   const packed = (itemId: string) =>
@@ -181,18 +246,48 @@ export function PackingForm({
     const result = cartonInputSchema.safeParse(carton)
     return result.success ? [result.data] : []
   })
-  // Read-only cartons show as they are, without the packing checks.
+  // Read-only cartons show as they are, without the packing checks. Pallets are checked against every carton, complete
+  // or not.
   const packingIssues = readOnly
     ? []
-    : validatePacking(
-        order,
-        { cartons: completeCartons, changes: [] },
-        Object.fromEntries(
-          order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
-        )
-      ).issues
-  const issueText = (issue: (typeof packingIssues)[number]) =>
-    "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+    : [
+        ...validatePacking(
+          order,
+          { cartons: completeCartons, changes: [], packingGroups: packingGroups ?? undefined },
+          Object.fromEntries(
+            order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
+          )
+        ).issues,
+        ...(palletized
+          ? [
+              ...validatePallets({ cartons: physicalCartons, pallets }),
+              ...checkPallets(order, { cartons: physicalCartons, pallets })
+            ]
+          : [])
+      ]
+  const palletIssues = packingIssues.filter((issue) => palletRules.has(issue.code))
+  const completePallets = pallets.flatMap((pallet) => {
+    const result = palletInputSchema.safeParse(pallet)
+    return result.success ? [result.data] : []
+  })
+  // Finishing takes every carton, and every pallet when packed on them, complete, with nothing for the checks to point
+  // out.
+  const cantFinish =
+    working !== null ||
+    totals.cartons > 1000 ||
+    (allUnitsPacked &&
+      (!cartons.fields.length ||
+        packingIssues.length > 0 ||
+        completeCartons.length !== physicalCartons.length ||
+        (palletized && completePallets.length !== pallets.length)))
+  // The shipment's weight and volume: its pallets' when packed on them, otherwise its cartons'. Blank until complete.
+  const loads = palletized
+    ? completePallets.length === pallets.length && pallets.length > 0 && completePallets
+    : completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && physicalCartons
+  const weight = loads ? loads.reduce((sum, load) => sum + load.weight, 0) : null
+  const volume = loads ? loads.reduce((sum, load) => sum + (load.length * load.width * load.height) / 1000000, 0) : null
+  const chooserCartons = totals.cartons > 1000 ? [] : palletCartons(cartonValues, order.items)
+  const onPallets = pallets.reduce((sum, pallet) => sum + pallet.cartonIds.length, 0)
   // Drafts save incomplete values; submission runs authoritative checks after field validation.
   async function saveDraft(draft: Values) {
     if (cartonTotals(draft.cartons).cartons > 1000) {
@@ -205,7 +300,7 @@ export function PackingForm({
           id: shipmentId,
           revision: savedRevision,
           orderRevision,
-          draft: withoutBlanks({ ...draft, cartons: expandCartonGroups(draft.cartons) })
+          draft: withoutBlanks(savedPacking(draft))
         }
       }).unwrap()
     )
@@ -233,7 +328,7 @@ export function PackingForm({
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
-      onSubmitted?.(packingSchema.parse(withoutBlanks({ ...values, cartons: expandCartonGroups(values.cartons) })))
+      onSubmitted?.(packingSchema.parse(withoutBlanks(savedPacking(values))))
       router.invalidate()
     } catch (error) {
       setServerError(errorMessage(error, t("saveFailed")))
@@ -260,13 +355,16 @@ export function PackingForm({
       setWorking(null)
     }
   }
+  // Each invalid field shows its own error, and the first one takes focus, so nothing else is added; an earlier
+  // attempt's message no longer applies.
   const validated = () =>
     form.handleSubmit(
       () => perform("submit", form.getValues()),
-      () => {
-        setServerError(t("fixFields"))
-      }
+      () => setServerError("")
     )
+  function setPallets(next: PalletValue[]) {
+    form.setValue("pallets", next, { shouldDirty: true, shouldValidate: form.formState.submitCount > 0 })
+  }
   function addCarton() {
     cartons.append({
       cartonId: nextCartonId(cartonValues),
@@ -279,8 +377,7 @@ export function PackingForm({
       items: []
     })
   }
-  // A header beside the title takes the actions, which the bar below the cartons keeps only on a phone.
-  const headed = Boolean(heading || renderHeader)
+  // The actions sit at the top, beside the title; on a phone the button moves below the cartons.
   const actions = !readOnly && (
     <div className="flex items-center gap-2">
       <DropdownMenu>
@@ -301,12 +398,7 @@ export function PackingForm({
         type="submit"
         form={formId}
         pending={working === (allUnitsPacked ? "submit" : "save")}
-        disabled={
-          working !== null ||
-          totals.cartons > 1000 ||
-          (allUnitsPacked &&
-            (!cartons.fields.length || packingIssues.length > 0 || completeCartons.length !== physicalCartons.length))
-        }
+        disabled={cantFinish}
       >
         {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
       </SubmitButton>
@@ -314,17 +406,17 @@ export function PackingForm({
   )
   return (
     <FormProvider {...form}>
-      {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
       {/* The page's header sits outside the fieldset, so a form it holds stays usable while packing saves. */}
       <div className="flex min-w-0 flex-col gap-6">
-        {renderHeader?.(actions)}
+        {renderHeader
+          ? renderHeader(actions)
+          : (heading || actions) && (
+              <div className={cn("flex flex-wrap items-center gap-3", heading ? "justify-between" : "justify-end")}>
+                {heading}
+                {actions}
+              </div>
+            )}
         <fieldset disabled={working !== null} className="@container/po flex min-w-0 flex-col gap-6 text-sm">
-          {heading && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {heading}
-              {actions}
-            </div>
-          )}
           <div
             className={cn("grid min-w-0 items-start gap-6", renderSidebar && "@5xl/po:grid-cols-[minmax(0,1fr)_17rem]")}
           >
@@ -416,7 +508,7 @@ export function PackingForm({
                                     <span
                                       className={cn(
                                         "inline-flex items-center gap-1",
-                                        available > 0 && count === available && "text-green-700",
+                                        available > 0 && count === available && "text-success",
                                         count > available && "text-destructive"
                                       )}
                                     >
@@ -466,7 +558,7 @@ export function PackingForm({
                       <span
                         className={cn(
                           "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-                          totals.pieces === availableUnits && "text-green-700"
+                          totals.pieces === availableUnits && "text-success"
                         )}
                       >
                         {t("packedUnits", { count: totals.pieces, available: availableUnits })}
@@ -474,6 +566,29 @@ export function PackingForm({
                     </div>
                     {!readOnly && (
                       <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={importText("export")}
+                                disabled={!cartons.fields.length}
+                                onClick={() =>
+                                  void exportSheet(
+                                    "Cartons",
+                                    () => cartonTemplate(cartonValues),
+                                    importText("exportFailed")
+                                  )
+                                }
+                              />
+                            }
+                          >
+                            <Download />
+                          </TooltipTrigger>
+                          <TooltipContent>{importText("export")}</TooltipContent>
+                        </Tooltip>
                         <Tooltip>
                           <TooltipTrigger
                             render={
@@ -502,53 +617,41 @@ export function PackingForm({
                       </div>
                     )}
                   </div>
+                  {packingGroups === null && !readOnly && (
+                    <Alert role="note" className="p-4 has-[>svg]:gap-x-3 *:[svg]:text-muted-foreground">
+                      <Clock3 aria-hidden className="size-4.5" />
+                      <AlertTitle>{t("groupsUnchecked.title")}</AlertTitle>
+                      <AlertDescription className="text-[13px]">{t("groupsUnchecked.description")}</AlertDescription>
+                    </Alert>
+                  )}
                   {cartons.fields.length > 0 && (
-                    <div className="flex flex-col gap-6 max-sm:gap-5">
-                      {cartons.fields.map((carton, index) => {
-                        const value = cartonValues[index] ?? carton
-                        const ids = expandCartonGroups([value]).map((physical) => physical.cartonId)
-                        const issues = packingIssues.filter((issue) => issue.cartonId && ids.includes(issue.cartonId))
-                        const note = renderCartonNote?.(ids)
-                        const editor = (
-                          <CartonEditor
-                            key={carton.id}
-                            value={value}
-                            products={order.items}
-                            context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
-                            remainingPieces={Object.fromEntries(
-                              order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
-                            )}
-                            showErrors={
-                              form.formState.submitCount > 0 ||
-                              Boolean(
-                                initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId))
-                              )
-                            }
-                            issues={issues}
-                            readOnly={readOnly}
-                            onChange={(next) =>
-                              form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
-                            }
-                            onDuplicate={() =>
-                              cartons.append({
-                                ...structuredClone(value),
-                                cartonId: nextCartonId(cartonValues),
-                                cartonIds: []
-                              })
-                            }
-                            onDelete={() => cartons.remove(index)}
-                          />
-                        )
-                        return note ? (
-                          <div key={carton.id} className="flex flex-col gap-2">
-                            {editor}
-                            {note}
-                          </div>
-                        ) : (
-                          editor
-                        )
-                      })}
-                    </div>
+                    <CartonTable
+                      cartons={cartons.fields.map((carton, index) => cartonValues[index] ?? carton)}
+                      rowKeys={cartons.fields.map((carton) => carton.id)}
+                      products={order.items}
+                      issues={packingIssues}
+                      context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                      remainingPieces={Object.fromEntries(
+                        order.items.map((item) => [item.id, (availablePieces[item.id] ?? 0) - packed(item.id)])
+                      )}
+                      showErrors={(ids) =>
+                        form.formState.submitCount > 0 ||
+                        Boolean(initial?.cartons?.some((carton) => carton.cartonId && ids.includes(carton.cartonId)))
+                      }
+                      readOnly={readOnly}
+                      renderNote={renderCartonNote}
+                      onChange={(index, next) =>
+                        form.setValue(`cartons.${index}`, next, { shouldDirty: true, shouldValidate: true })
+                      }
+                      onDuplicate={(index) =>
+                        cartons.append({
+                          ...structuredClone(cartonValues[index]!),
+                          cartonId: nextCartonId(cartonValues),
+                          cartonIds: []
+                        })
+                      }
+                      onDelete={(index) => cartons.remove(index)}
+                    />
                   )}
                   {!cartons.fields.length && (
                     <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
@@ -556,24 +659,122 @@ export function PackingForm({
                   {cartonsError && <FormError message={cartonsError} />}
                   {totals.cartons > 1000 && <FormError message={importText("errors.limit")} />}
                 </section>
+                {palletized && (
+                  <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={palletText("title")}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
+                        <h2 className="text-sm font-semibold max-sm:text-base">{palletText("title")}</h2>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums text-muted-foreground",
+                            physicalCartons.length > 0 && onPallets === physicalCartons.length && "text-success"
+                          )}
+                        >
+                          {palletText("onPallets", { count: onPallets, total: physicalCartons.length })}
+                        </span>
+                      </div>
+                      {!readOnly && (
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={palletImportText("export")}
+                                  disabled={!pallets.length}
+                                  onClick={() =>
+                                    void exportSheet(
+                                      "Pallets",
+                                      () => palletTemplate(pallets),
+                                      palletImportText("exportFailed")
+                                    )
+                                  }
+                                />
+                              }
+                            >
+                              <Download />
+                            </TooltipTrigger>
+                            <TooltipContent>{palletImportText("export")}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={palletImportText("title")}
+                                  onClick={() => setImportingPallets(true)}
+                                />
+                              }
+                            >
+                              <Upload />
+                            </TooltipTrigger>
+                            <TooltipContent>{palletImportText("title")}</TooltipContent>
+                          </Tooltip>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="max-sm:w-[34px] max-sm:px-0"
+                            onClick={() =>
+                              setPallets([
+                                ...pallets,
+                                {
+                                  palletId: nextPalletId(pallets),
+                                  length: blank,
+                                  width: blank,
+                                  height: blank,
+                                  weight: blank,
+                                  stackable: true,
+                                  cartonIds: []
+                                }
+                              ])
+                            }
+                          >
+                            <Plus />
+                            <span className="max-sm:sr-only">{palletText("addPallet")}</span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {pallets.length > 0 ? (
+                      <PalletTable
+                        pallets={pallets}
+                        cartons={chooserCartons}
+                        issues={palletIssues}
+                        context={`${order.reference} / ${shipmentName ?? t("cartons")}`}
+                        readOnly={readOnly}
+                        showErrors={form.formState.submitCount > 0}
+                        onChange={setPallets}
+                      />
+                    ) : (
+                      <EmptyState title={palletText("noPallets")} description={palletText("noPalletsDescription")} />
+                    )}
+                    {palletIssues.some((issue) => !issue.palletId) && (
+                      <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
+                        {palletIssueErrors(palletIssues.filter((issue) => !issue.palletId)).map((error) => (
+                          <li key={error.message} className="flex items-start gap-2">
+                            <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                            {error.message}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                )}
               </form>
               {/* Beside a sidebar, read-only cartons have no bar: the sidebar sums them up, and there's nothing to submit. */}
               {!(readOnly && renderSidebar) && (
-                <div
-                  className={cn(
-                    "flex flex-col gap-3 text-sm",
-                    !headed && "sticky bottom-4 z-10 rounded-xl bg-card p-3 shadow-lg ring-1 ring-foreground/10"
-                  )}
-                >
-                  {packingIssues.some((issue) => !issue.cartonId) && (
-                    <ul aria-live="polite" className="text-sm text-destructive">
+                <div className="flex flex-col gap-3 text-sm">
+                  {packingIssues.some((issue) => !issue.cartonId && !palletRules.has(issue.code)) && (
+                    <ul aria-live="polite" className="flex flex-col gap-1">
                       {packingIssues
-                        .filter((issue) => !issue.cartonId)
+                        .filter((issue) => !issue.cartonId && !palletRules.has(issue.code))
                         .map((issue, index) => (
                           <li key={index}>
-                            {issue.cartonId
-                              ? t("cartonIssue", { carton: issue.cartonId, message: issueText(issue) })
-                              : issueText(issue)}
+                            <FieldError>{packingIssueText(issue)}</FieldError>
                           </li>
                         ))}
                     </ul>
@@ -593,58 +794,14 @@ export function PackingForm({
                         </span>
                       </p>
                     )}
-                    {!renderSidebar && (
-                      <div className="flex flex-col px-1">
-                        <p className="font-medium tabular-nums">
-                          {headed
-                            ? importText("cartonCount", { count: totals.cartons })
-                            : t("cartonsAndUnits", { cartons: totals.cartons, units: totals.pieces })}
-                        </p>
-                        {headed && completeCartons.length === physicalCartons.length && physicalCartons.length > 0 && (
-                          <p className="mt-1 flex gap-5 text-xs tabular-nums">
-                            <span>
-                              {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                                physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                              )}{" "}
-                              kg
-                            </span>
-                            <span>
-                              {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-                                physicalCartons.reduce(
-                                  (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                                  0
-                                )
-                              )}{" "}
-                              m³
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    )}
                     {!readOnly && (
-                      <div className={cn("flex flex-wrap gap-2", headed && "max-sm:w-full sm:hidden")}>
-                        <SubmitButton
-                          type="button"
-                          variant="ghost"
-                          className={headed || !allUnitsPacked ? "hidden" : undefined}
-                          pending={working === "save"}
-                          disabled={totals.cartons > 1000}
-                          onClick={() => void perform("save", form.getValues())}
-                        >
-                          {t("saveDraft")}
-                        </SubmitButton>
+                      <div className="flex flex-wrap gap-2 max-sm:w-full sm:hidden">
                         <SubmitButton
                           type="submit"
                           form={formId}
                           pending={working === (allUnitsPacked ? "submit" : "save")}
-                          className={headed ? "max-sm:flex-1" : undefined}
-                          disabled={
-                            totals.cartons > 1000 ||
-                            (allUnitsPacked &&
-                              (!cartons.fields.length ||
-                                packingIssues.length > 0 ||
-                                completeCartons.length !== physicalCartons.length))
-                          }
+                          className="max-sm:flex-1"
+                          disabled={cantFinish}
                         >
                           {t(allUnitsPacked ? "finishPacking" : "saveDraft")}
                         </SubmitButton>
@@ -661,17 +818,8 @@ export function PackingForm({
                   cartons: totals.cartons,
                   units: totals.pieces,
                   readyDate,
-                  weight:
-                    completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                      ? physicalCartons.reduce((sum, carton) => sum + carton.weight, 0)
-                      : null,
-                  volume:
-                    completeCartons.length === physicalCartons.length && physicalCartons.length > 0
-                      ? physicalCartons.reduce(
-                          (sum, carton) => sum + (carton.length * carton.width * carton.height) / 1000000,
-                          0
-                        )
-                      : null
+                  weight,
+                  volume
                 })}
               </aside>
             )}
@@ -683,8 +831,20 @@ export function PackingForm({
             shipmentName={shipmentName ?? t("cartons")}
             existing={cartonValues}
             availablePieces={availablePieces}
+            packingGroups={packingGroups ?? undefined}
             onImport={async (groups, mode) => {
               cartons.replace(mode === "replace" ? groups : [...form.getValues("cartons"), ...groups])
+            }}
+          />
+          <PalletImportDialog
+            open={importingPallets}
+            onOpenChange={setImportingPallets}
+            reference={order.reference}
+            shipmentName={shipmentName ?? t("cartons")}
+            cartonIds={physicalCartons.map((carton) => carton.cartonId)}
+            existing={pallets}
+            onImport={async (next, mode) => {
+              setPallets(mode === "replace" ? next : [...pallets, ...next])
             }}
           />
         </fieldset>
@@ -712,8 +872,14 @@ export function PackingDetailsFields({
   transport?: React.ReactNode
 }) {
   const t = useTranslations("orders.packing")
+  const palletText = useTranslations("orders.pallets")
   const form = useFormContext<Values>()
+  // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
+  // The clock ticks each minute, so a page left open past midnight moves on to the next day here too.
+  const today = zonedDay(useNow({ updateInterval: 60000 }), useTimeZone() ?? "UTC")
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
+  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
+  const palletizedId = useId()
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
   const { errors } = useFormState({ control: form.control })
@@ -818,8 +984,38 @@ export function PackingDetailsFields({
       }
       packing={
         !readOnly && (
-          <div className="max-w-72">
-            <FormInput name="readyDate" required label={t("readyDate")} type="date" />
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+            <div className="w-full max-w-72">
+              <FormInput name="readyDate" required label={t("readyDate")} type="date" min={today} />
+            </div>
+            <div className="flex min-h-9 items-center gap-2.5">
+              <Checkbox
+                id={palletizedId}
+                checked={palletized}
+                onCheckedChange={(checked) =>
+                  form.setValue("palletized", checked, { shouldDirty: true, shouldValidate: true })
+                }
+              />
+              <Label htmlFor={palletizedId} className="font-normal">
+                {palletText("packedOnPallets")}
+              </Label>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-muted-foreground"
+                      aria-label={palletText("packedOnPalletsHelp")}
+                    />
+                  }
+                >
+                  <Info />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">{palletText("packedOnPalletsHint")}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         )
       }

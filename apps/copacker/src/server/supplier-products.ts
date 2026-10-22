@@ -1,3 +1,4 @@
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"
@@ -16,7 +17,7 @@ const variantSchema = z.object({
   id: z.uuid().optional(),
   supplierSku: z.string().trim().min(1, "errors.addSku").max(255),
   options: z.record(z.string(), z.string().trim().max(255)),
-  currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
+  currency: z.enum(orderCurrencies),
   priceMinor: z.number().int().nonnegative().max(2_147_483_647).nullable(),
   priceBasis: z.enum(["piece", "sellable_pack", "case"]),
   piecesPerSellablePack: count,

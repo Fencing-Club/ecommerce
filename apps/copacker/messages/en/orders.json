@@ -371,6 +371,7 @@
     },
     "draftSaved": "Draft saved",
     "cartonIssue": "Carton {carton}: {message}",
+    "ruleSource": "{receiver} requirements",
     "readyToSubmit": "Ready to submit",
     "readyToSubmitApproval": "Ready to submit; changes go to the buyer for approval",
     "readyToSubmitUpdates": "Ready to submit; changes update the purchase order",
@@ -392,7 +393,6 @@
     "addCarton": "Add carton",
     "noCartons": "No cartons yet",
     "noCartonsDescription": "Add a carton, then duplicate identical ones.",
-    "cartonsAndUnits": "{cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unit} other {# units}}",
     "saveDraft": "Save draft",
     "check": "Check packing",
     "submit": "Submit packing list",
@@ -407,6 +407,7 @@
     "readyForPickup": "Ready for pickup",
     "shipFrom": "Ship from",
     "readyDate": "Ready date",
+    "readyDatePassed": "Choose today or a later date",
     "addCartonProduct": "Add product to carton",
     "removeCartonProduct": "Remove product {number} from carton",
     "finishPacking": "Finish packing",
@@ -414,7 +415,11 @@
     "chooseAddress": "Choose an address",
     "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
     "leftCount": "{count} left",
-    "overCount": "{count} too many"
+    "overCount": "{count} too many",
+    "groupsUnchecked": {
+      "title": "Products that can share a carton aren’t checked yet",
+      "description": "Amazon says which products need separate cartons when it plans the shipment. Until then, pack products Amazon handles separately, such as dangerous goods, in their own cartons."
+    }
   },
   "paymentTerms": {
     "net7": "Net 7",
@@ -450,15 +455,7 @@
     "cancel": "Cancel",
     "addSelected": "Add {count, plural, one {# product} other {# products}}",
     "carton": "Carton {carton}",
-    "count": "Cartons",
-    "length": "Length",
-    "width": "Width",
-    "height": "Height",
-    "weight": "Weight",
-    "enterNumber": "Enter a positive number for {field}.",
-    "enterQuantity": "Enter a whole quantity for {sku}.",
     "addProductRequired": "Add a product to this carton.",
-    "dimensions": "Dimensions (cm)",
     "axis": {
       "length": "L",
       "width": "W",
@@ -473,22 +470,115 @@
     "removeProduct": "Remove {sku} from carton {carton}",
     "product": "Product",
     "leftToPack": "Left to pack",
-    "packCount": "{count, plural, one {# pack} other {# packs}}",
     "addToCarton": "Add to carton",
     "selectedCount": "{count} selected",
-    "cartonGroup": "Cartons {cartons}",
     "addProductsToCartons": "Add products to cartons {cartons}",
+    "columns": {
+      "cartons": "Cartons",
+      "count": "Count",
+      "dimensions": "Dimensions",
+      "weight": "Weight",
+      "contents": "Contents"
+    },
+    "toggleProducts": "Products in {cartons}",
+    "contentsDetail": "{products, plural, one {# product, {perCarton, number} per carton} other {# products}}",
+    "contentsSummary": "{units}, {detail}",
+    "emptyCarton": "No products yet",
+    "issues": "{count, plural, one {# issue} other {# issues}}",
+    "addProduct": "Add product",
+    "units": "units",
+    "packsOf": "{packs, plural, one {# pack} other {# packs}}, {size, number} units each",
+    "enterCount": "Enter how many cartons are packed this way.",
+    "enterDimensions": "Enter the length, width and height of each carton.",
+    "enterWeight": "Enter the weight of each carton.",
+    "enterUnits": "Enter how many units of this product each carton holds.",
+    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "rules": {
-      "unitsPerCarton": "Quantity: {units, number} sellable units per carton exceeds {receiver}’s limit of {max, number}. Split them into smaller cartons.",
-      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in) for this carton}}.",
-      "cartonWeight": "Weight: {weight, number} kg exceeds the {maxLb, number} lb limit ({maxKg, number} kg). Reduce the weight of each carton.",
-      "oneSku": "Products: {receiver} requires one SKU per carton. Move these SKUs into separate cartons.",
-      "samePacking": "Packing template: This SKU uses {difference, select, units {{units, number} units per carton} other {{length, number} × {width, number} × {height, number} cm cartons at {weight, number} kg}} elsewhere in this shipment. Use the same packing template for every carton of this SKU."
+      "unitsPerCarton": "Quantity: {units, number} units is over {receiver}’s limit of {max, number} per carton. Pack {max, number} or fewer in each carton.",
+      "cartonSize": "Dimensions: {side, select, width {Width} height {Height} other {Length}} is {size, number} cm. {receiver} allows up to {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} in) on each side} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} in)}}{exception, select, oneUnit {, unless the carton holds a single unit} other {}}.",
+      "cartonWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, unless the carton holds a single unit} other {}}. Pack fewer units in each carton.",
+      "oneSku": "Products: this carton holds more than one SKU, and {receiver} takes one SKU per carton. Pack each SKU in its own cartons.",
+      "packingGroups": "Products: {receiver} can’t take {product} and {other} in one carton. Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different warehouses. Move one of them to another carton.",
+      "samePacking": "{difference, select, units {Quantity: {sku}’s other cartons hold {units, number} units each.} other {Dimensions: {sku}’s other cartons are {length, number} × {width, number} × {height, number} cm at {weight, number} kg.}} {receiver} needs every carton of a SKU to match in units, size and weight. Match them, or ship this carton in another shipment.",
+      "incompletePacks": "Quantity: {sku} is sold in packs of {pack, number}. Enter a multiple of {pack, number}.",
+      "missingAsin": "Products: {sku} has no ASIN, which {receiver} needs to receive it. The buyer adds it on the purchase order.",
+      "missingFnsku": "Products: {sku} has no FNSKU, which {receiver} needs to label it. The buyer adds it on the purchase order.",
+      "duplicateCarton": "Carton ID: {carton} is already used by another carton. Give each carton its own ID.",
+      "repeatedProduct": "Products: {sku} is listed more than once in this carton. List it once, with all its units.",
+      "mixedNetworks": "Products: this carton mixes FBA and AWD products. Pack each network’s products in separate cartons.",
+      "unknownProduct": "Products: this carton holds a product that isn’t on the purchase order. Remove it from the carton.",
+      "overQuantity": "Quantity: the cartons hold {packed, number} units of {sku}, but the purchase order has {remaining, number} left. Remove {extra, plural, one {# unit} other {# units}}.",
+      "unknownChange": "Invoice changes: one change is for a product that isn’t on the purchase order, or repeats another change. Remove it."
     }
+  },
+  "pallets": {
+    "title": "Pallets",
+    "packedOnPallets": "Packed on pallets",
+    "packedOnPalletsHelp": "About packed on pallets",
+    "packedOnPalletsHint": "Check this when the cartons ship on pallets, then list each pallet and the cartons on it.",
+    "onPallets": "{count, number} of {total, plural, one {# carton} other {# cartons}} on pallets",
+    "addPallet": "Add pallet",
+    "noPallets": "No pallets yet",
+    "noPalletsDescription": "Add a pallet, then choose the cartons on it.",
+    "columns": {
+      "pallet": "Pallet",
+      "dimensions": "Dimensions",
+      "weight": "Weight",
+      "stacking": "Stacking",
+      "cartons": "Cartons"
+    },
+    "name": "Pallet {pallet}",
+    "toggleCartons": "Cartons on {pallet}",
+    "summary": "{cartons}, {units}",
+    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
+    "stackable": "Stackable",
+    "notStackable": "Not stackable",
+    "actions": "{pallet} actions",
+    "duplicate": "Duplicate pallet",
+    "delete": "Delete pallet",
+    "cartonsOnPallet": "Cartons on pallet",
+    "chooseCartons": "Choose cartons",
+    "removeCartons": "Remove {cartons} from {pallet}",
+    "noCartons": "No cartons on this pallet yet",
+    "enterDimensions": "Enter the pallet’s length, width and height.",
+    "enterWeight": "Enter the pallet’s gross weight, with the pallet itself.",
+    "rules": {
+      "palletFootprint": "Dimensions: the load is {length, number} × {width, number} cm, over the edges of {receiver}’s {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} in) pallet. Keep the cartons within the pallet.",
+      "palletHeight": "Height: {height, number} cm is over {receiver}’s limit of {maxCm, number} cm ({maxIn, number} in), including the pallet. Spread the cartons over more pallets.",
+      "stackableHeight": "Height: {height, number} cm is too tall for a stackable {receiver} pallet, which may be up to {maxCm, number} cm ({maxIn, number} in). Set Stacking to Not stackable, or lower the load.",
+      "palletWeight": "Weight: {weight, number} kg is over {receiver}’s limit of {maxKg, number} kg ({maxLb, number} lb), including the pallet. Spread the cartons over more pallets.",
+      "emptyPallet": "Cartons: this pallet has no cartons yet. Choose its cartons, or delete the pallet.",
+      "palletMixedNetworks": "Cartons: this pallet mixes FBA and AWD cartons. Put each network’s cartons on separate pallets.",
+      "duplicatePallet": "Pallets: two pallets are numbered {pallet}. Re-import them with unique numbers.",
+      "unknownPalletCarton": "Cartons: {carton} isn’t a carton in this shipment. Remove it from this pallet.",
+      "palletCartonTwice": "Cartons: {carton} is already on another pallet. Remove it from this pallet or the other.",
+      "noPallets": "Pallets: these cartons ship on pallets, and there are none yet. Add a pallet, or uncheck Packed on pallets.",
+      "cartonsOffPallets": "Cartons: {count, plural, one {# carton isn’t on a pallet: {cartons}. Choose a pallet for it, or add a pallet.} other {# cartons aren’t on a pallet: {cartons}. Choose a pallet for each, or add a pallet.}}"
+    }
+  },
+  "palletCartons": {
+    "title": "Choose cartons for {pallet}",
+    "search": "Search cartons or products",
+    "cartons": "Cartons",
+    "sizeAndWeight": "Size and weight",
+    "pallet": "Pallet",
+    "thisPallet": "This pallet",
+    "palletCount": "{count, plural, one {# pallet} other {# pallets}}",
+    "onThisPallet": "{count, number} on this pallet",
+    "content": "{sku}, {count, plural, one {# unit} other {# units}}",
+    "contentEach": "{sku}, {count, plural, one {# unit} other {# units}} each",
+    "measure": "{dimensions}, {weight}",
+    "showCartons": "Show cartons {cartons}",
+    "selection": "{count, plural, one {# carton} other {# cartons}}, {weight}",
+    "noCartons": "No cartons found",
+    "cancel": "Cancel",
+    "save": "Save cartons"
   },
   "cartonImport": {
     "title": "Import cartons",
-    "reviewTitle": "Review import",
+    "export": "Export cartons",
+    "exportFailed": "Couldn’t export the cartons.",
+    "reviewTitle": "Review carton import",
     "downloadTemplate": "Download template",
     "templateHint": "Use the template to enter carton contents, quantities, dimensions, and weight.",
     "downloadFailed": "Couldn’t download the template.",
@@ -526,12 +616,77 @@
       "limit": "A shipment can contain up to 1,000 cartons."
     },
     "template": {
-      "identity": "Keep the prefilled supplier SKU, product, variant and units per pack unchanged. Ask the buyer to correct missing or incorrect product details.",
-      "rows": "Use one row per product in a carton. Copy a product row for additional cartons. Repeat the Carton ID for products packed together. Leave unused packing rows blank.",
-      "cartons": "Carton ID is your reference, not an Amazon label number. Use A1, A2, etc. with Carton count 1 for separate cartons. For identical cartons, use a count greater than 1: A1 with count 3 becomes A1, A1-2 and A1-3. Existing IDs are skipped.",
-      "quantity": "Quantity per carton counts packs. For a 2-pack, quantity 10 means 20 pieces. Every carton in an identical group must have the same products and quantities.",
-      "measurements": "Enter dimensions in centimetres and weight in kilograms. Repeat the same count, dimensions and weight on every row sharing a Carton ID.",
-      "format": "Fill the white packing cells. Keep the English headers and Cartons sheet name unchanged. Upload the XLSX workbook or export the Cartons table as CSV."
+      "columns": {
+        "cartonId": "Your reference for a kind of carton, not an Amazon label number: a letter for each kind, numbered from 1, such as A1, B1, C1. Repeat it on each row of a carton that holds more than one product.",
+        "cartonCount": "How many identical cartons of this kind. A1 with a count of 3 becomes A1, A2 and A3. IDs the shipment already has are skipped.",
+        "supplierSku": "Prefilled from the order. Keep it as it is, and ask the buyer to correct a missing or wrong product.",
+        "quantity": "Packs of this product in each carton. For a 2-pack, 10 means 20 units.",
+        "length": "The carton’s length in centimetres.",
+        "width": "The carton’s width in centimetres.",
+        "height": "The carton’s height in centimetres.",
+        "weight": "The packed carton’s weight in kilograms.",
+        "product": "Prefilled from the order. Keep it as it is.",
+        "variant": "Prefilled from the order. Keep it as it is.",
+        "unitsPerPack": "Prefilled from the order: the units in one pack. Keep it as it is."
+      },
+      "notes": {
+        "rows": "Use one row per product in a carton. To pack a product in more kinds of carton, copy its row. Leave the rows you don’t use blank. The Example sheet shows the template filled in for this shipment.",
+        "sameCarton": "Rows with the same Carton ID are one carton: give them the same count, dimensions and weight. Identical cartons hold the same products and quantities.",
+        "format": "Fill in the white cells and keep the grey ones. Keep the English headers and the Cartons sheet name. Upload the XLSX file, or export the Cartons sheet as CSV."
+      }
     }
+  },
+  "palletImport": {
+    "title": "Import pallets",
+    "export": "Export pallets",
+    "exportFailed": "Couldn’t export the pallets.",
+    "reviewTitle": "Review pallet import",
+    "review": "Review import",
+    "failed": "Couldn’t import pallets. No changes were made.",
+    "add": "Add pallets",
+    "replace": "Replace pallets",
+    "import": "Import pallets",
+    "importing": "Importing pallets…",
+    "palletCount": "{count, plural, one {# pallet} other {# pallets}}",
+    "cartons": "{count, plural, one {Carton {cartons}} other {Cartons {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "The file has no pallet rows.",
+      "worksheet": "The file needs a worksheet named Pallets.",
+      "palletId": "Enter a pallet ID of 1–60 characters.",
+      "duplicatePallet": "Pallet {pallet} is also on row {other}. Use one row per pallet.",
+      "stacking": "Enter Stackable or Not stackable.",
+      "cartons": "Enter the cartons on this pallet, such as A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Carton {cartons} isn’t in this shipment.} other {Cartons {cartons} aren’t in this shipment.}}",
+      "cartonTwice": "{count, plural, one {Carton {cartons} is also on Pallet {pallet}.} other {Cartons {cartons} are also on Pallet {pallet}.}} Put each carton on one pallet."
+    },
+    "clashes": {
+      "replace": "{count, plural, one {These pallets clash with the pallet already on this shipment.} other {These pallets clash with the # pallets already on this shipment.}} Choose Replace pallets to use only the file’s pallets.",
+      "palletExists": "There’s already a Pallet {pallet}. Give this one another ID.",
+      "cartonsOnPallet": "{count, plural, one {Carton {cartons} is already on Pallet {pallet}.} other {Cartons {cartons} are already on Pallet {pallet}.}}"
+    },
+    "template": {
+      "columns": {
+        "palletId": "Your reference for the pallet, such as 1, 2, 3. Use each ID once.",
+        "length": "The loaded pallet’s length in centimetres.",
+        "width": "The loaded pallet’s width in centimetres.",
+        "height": "The loaded pallet’s height in centimetres, from the floor to the top of the cartons.",
+        "weight": "The gross weight in kilograms: the pallet with its cartons.",
+        "stacking": "Stackable if another pallet can go on top, otherwise Not stackable. Choose from the list.",
+        "cartonIds": "The cartons on the pallet, by their IDs on the packing list. Join a run with a dash and separate the rest with commas. Put each carton on one pallet."
+      },
+      "notes": {
+        "rows": "Use one row per pallet. The Example sheet shows the template filled in for this shipment.",
+        "shipmentCartons": "This shipment’s cartons: {cartons}.",
+        "format": "Keep the English headers, the Stacking values and the Pallets sheet name. Upload the XLSX file, or export the Pallets sheet as CSV."
+      }
+    }
+  },
+  "importTemplate": {
+    "column": "Column",
+    "entry": "What to enter",
+    "example": "Example"
   }
 }

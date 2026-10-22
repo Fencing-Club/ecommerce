@@ -100,13 +100,14 @@ for (let file = pending.pop(); file !== undefined; file = pending.pop()) {
   }
 }
 
-// The sidebar has five sections: Foundations (the ui primitives), Components (grouped by product area), Pages (the
-// real routes), Prototypes (designs built only in Storybook) and Unused (components no app code renders yet).
+// The sidebar has six sections: Foundations (the ui primitives), Components (grouped by product area), Pages (the
+// real routes), Prototypes (designs built only in Storybook), Simulators (the real rules and documents, run on sample
+// data) and Unused (components no app code renders yet).
 describe("story titles", () => {
   const stories = sources
     .filter((file) => file.endsWith(".stories.tsx"))
     .map((file) => ({ file, title: read(file).match(/\.meta\(\{[\s\S]*?\btitle: "([^"]+)"/)?.[1] }))
-  const sections = ["Foundations", "Components", "Pages", "Prototypes", "Unused"]
+  const sections = ["Foundations", "Components", "Pages", "Prototypes", "Simulators", "Unused"]
 
   it.each(stories)("$file is titled within a section", ({ title }) => {
     expect(sections).toContain(title?.split("/")[0])
@@ -115,6 +116,19 @@ describe("story titles", () => {
   it.each(stories.filter(({ file }) => file.startsWith("src/components/ui/")))("$file is a foundation", ({ title }) => {
     expect(title).toMatch(/^Foundations\//)
   })
+
+  // A simulator lives in src/stories/simulators, and only there.
+  it.each(stories)("$file is a simulator exactly when it's in src/stories/simulators", ({ file, title }) => {
+    expect(title?.startsWith("Simulators/")).toBe(file.startsWith("src/stories/simulators/"))
+  })
+
+  // Simulators are for trying things by hand: each carries the "simulator" tag, which test runs leave out.
+  it.each(stories.filter(({ file }) => file.startsWith("src/stories/simulators/")))(
+    "$file is left out of test runs",
+    ({ file }) => {
+      expect(read(file).match(/\.meta\(\{[\s\S]*?\btags: \[([^\]]*)\]/)?.[1]).toContain('"simulator"')
+    }
+  )
 
   // Every story beside a route is that route's page story, except designs not yet built into it. The order and shipment
   // list designs are now the pages themselves, so none are waiting.

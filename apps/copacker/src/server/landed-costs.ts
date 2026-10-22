@@ -1,11 +1,12 @@
-import { itemTotal, orderTotal, type OrderInput } from "@repo/aisle"
+import { itemTotal, orderTotal, type OrderInput } from "@repo/copacker-shipments"
 import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { events, landedCosts, orders } from "@/db/schema"
+import { landedCosts, orders } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
+import { sentDates } from "./sent-dates"
 import type { Session } from "./workspace-session"
 
 // Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
@@ -106,43 +107,54 @@ export function landedMarkups(
   return markups
 }
 
-// The buyer's landed markups by variant, from their sent and closed POs: the landed costs recorded on each, and the
-// freight Amazon charged for its shipments (in the PO's currency).
-export async function landedMarkupsFor(orgId: string) {
-  const [list, totals, sent, freight] = await Promise.all([
+// What landed markups read besides the landed costs themselves: the buyer's POs (drafts don't count), when each was
+// sent, and the freight Amazon charged for their shipments.
+type MarkupInputs = {
+  orders: { id: string; status: "draft" | "submitted" | "closed"; data: OrderInput; createdAt: Date }[]
+  sentAt: ReadonlyMap<string, Date>
+  freight: { orderId: string; currency: string; freightMinor: number }[]
+}
+
+async function markupInputs(orgId: string): Promise<MarkupInputs> {
+  const [list, sentAt, freight] = await Promise.all([
     db()
-      .select({ id: orders.id, data: orders.data, createdAt: orders.createdAt })
+      .select({ id: orders.id, status: orders.status, data: orders.data, createdAt: orders.createdAt })
       .from(orders)
       .where(and(eq(orders.buyerOrgId, orgId), ne(orders.status, "draft"))),
+    sentDates(orgId),
+    amazonFreightByOrder(orgId)
+  ])
+  return { orders: list, sentAt, freight }
+}
+
+// The buyer's landed markups by variant, from their sent and closed POs: the landed costs recorded on each, and the
+// freight Amazon charged for its shipments (in the PO's currency). The Overview passes the POs, sent dates and freight
+// it has already read, so only the landed costs are read here; called without them, it reads them too.
+export async function landedMarkupsFor(orgId: string, read?: MarkupInputs) {
+  const [totals, inputs] = await Promise.all([
     db()
       .select({ orderId: landedCosts.orderId, amount: sql<number>`sum(${landedCosts.amountMinor})`.mapWith(Number) })
       .from(landedCosts)
       .innerJoin(orders, eq(orders.id, landedCosts.orderId))
       .where(eq(orders.buyerOrgId, orgId))
       .groupBy(landedCosts.orderId),
-    db()
-      .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
-      .from(events)
-      .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(and(eq(orders.buyerOrgId, orgId), eq(events.messageKey, "submittedToSupplier")))
-      .groupBy(events.orderId),
-    amazonFreightByOrder(orgId)
+    read ?? markupInputs(orgId)
   ])
+  const list = inputs.orders.filter((order) => order.status !== "draft")
   const landed = new Map(totals.map((row) => [row.orderId, row.amount]))
   const currencies = new Map(list.map((order) => [order.id, order.data.currency]))
-  for (const row of freight) {
+  for (const row of inputs.freight) {
     if (currencies.get(row.orderId) === row.currency) {
       landed.set(row.orderId, (landed.get(row.orderId) ?? 0) + row.freightMinor)
     }
   }
-  const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
   return landedMarkups(
     list
       .filter((order) => landed.has(order.id))
       .map((order) => ({
         data: order.data,
         landedMinor: landed.get(order.id)!,
-        sentAt: sentAt.get(order.id) ?? order.createdAt
+        sentAt: inputs.sentAt.get(order.id) ?? order.createdAt
       }))
   )
 }

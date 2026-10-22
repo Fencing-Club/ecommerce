@@ -1,4 +1,4 @@
-import { removalReportTypes, parseRemovalReport } from "@repo/aisle/removals"
+import { removalReportTypes, parseRemovalReport } from "@repo/copacker-marketplaces/removals"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonRemovalReports, amazonRemovals } from "@/db/schema"

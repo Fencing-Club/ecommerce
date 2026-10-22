@@ -170,7 +170,7 @@
       "description": "Download the labels now, or find them on {shipment} anytime.",
       "summary": "{service}, {total}",
       "booked": "Booked",
-      "amazonLabels": "Amazon carton labels",
+      "amazonLabels": "Carton labels",
       "carrierLabels": "Carrier labels"
     },
     "problems": {

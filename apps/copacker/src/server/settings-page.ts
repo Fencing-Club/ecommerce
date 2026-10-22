@@ -1,4 +1,4 @@
-import { money } from "@repo/aisle"
+import { money } from "@repo/copacker-shipments"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import { eq } from "drizzle-orm"
 import { createFormatter } from "use-intl"

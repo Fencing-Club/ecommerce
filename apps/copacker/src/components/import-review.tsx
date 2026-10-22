@@ -1,4 +1,4 @@
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
 import { Fragment, useId, useRef, useState } from "react"

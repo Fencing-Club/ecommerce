@@ -10,7 +10,7 @@ vi.mock("../src/server/auth-session", () => ({
 }))
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { orderInputSchema } from "@repo/aisle"
+import { orderInputSchema } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -54,7 +54,6 @@ const supplierLinkId = randomUUID(),
 const data = orderInputSchema.parse({
   supplierId: supplierLinkId,
   reference: "PO-1",
-  destination: "amazon",
   currency: "USD",
   items: [
     {
@@ -70,7 +69,7 @@ const data = orderInputSchema.parse({
       pieces: 10,
       piecesPerSet: 1,
       unitPrice: 500,
-      amazonNetwork: "awd_us"
+      receiver: "awd_us"
     }
   ]
 })

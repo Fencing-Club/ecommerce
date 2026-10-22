@@ -1,5 +1,5 @@
-import type { OrderInput } from "@repo/aisle"
-import { money } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-shipments"
 import { ChevronDown, Lock, Users } from "lucide-react"
 import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"

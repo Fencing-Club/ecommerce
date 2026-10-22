@@ -83,7 +83,9 @@ that same component. This data/rendering split prepares the page for the Start l
   selling price in that channel, else its Shopify price) and the potential gross profit between them.
 - **Days of cover** with links into Restock per group, and the sales lost to stockouts (stockout days times the
   in-stock sales rate, valued at the selling price).
-- **Upcoming spend:** reorders due now plus sent POs past due or due within 60 days, by PO due date.
+- **Upcoming spend:** reorders due now plus sent POs past due or due within 60 days, by PO due date. A PO's payment
+  is due its Net days after it was sent, whether or not its supplier is on Copacker (`sentDates()` in
+  `server/sent-dates.ts`); else on the date it asks for the goods by; else when it was sent.
 - **Trending products** (units in the last 30 days against the 30 before; items under 5 units in both are left out) and
   **slow-moving stock** (over 3 months of cover, or no sales in 8 weeks), valued at cost.
 - **Best sellers, shipments in progress, open POs by supplier, and purchasing by month.**

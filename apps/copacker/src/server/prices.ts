@@ -1,5 +1,5 @@
-import type { OrderInput } from "@repo/aisle"
-import type { PackingDraft } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { PackingDraft } from "@repo/copacker-shipments"
 import type { proposalChanges } from "./order-proposals"
 
 // Purchase order data for someone who doesn't see prices, for the client components that need the rest of it: every

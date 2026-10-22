@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto"
-import type { Address } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import type { Packing } from "@repo/aisle"
-import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/aisle/documents"
-import { destinationName } from "@repo/aisle/requirements"
+import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { Packing } from "@repo/copacker-shipments"
+import { addressLines } from "@repo/copacker-shipments/documents"
+import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"
+import { destinationName } from "@repo/copacker-shipments/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { db } from "@/db"
@@ -74,16 +75,6 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     return doc
   })
 }
-// "1 Test Street", "Suite 2", "Testville, WA 98000", "US"
-function addressLines(address: Address) {
-  return [
-    address.addressLine1,
-    address.addressLine2,
-    [address.city, [address.stateOrRegion, address.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-    address.countryCode
-  ].filter(Boolean)
-}
-
 // "Wei Chen, wei@supplier.example, +86 512 5555 0100", leaving out what isn't known.
 function contactLine(...parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ")
@@ -100,7 +91,8 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   if (!row) {
     throw new Error("Purchase order is unavailable")
   }
-  const { destination, via } = data
+  const { via } = data
+  const destination = orderDestination(data)
   // With a stop on the way, the supplier ships to the forwarder's address there, and the forwarder sends the goods on
   // to Amazon or the buyer's location. A forwarder's address is the buyer's until the forwarder joins, then its own.
   const [forwarder] = via
@@ -241,12 +233,12 @@ async function shipmentParties(shipment: PackedShipment) {
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
-  const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+  const network = `Amazon ${amazonNetworkNames[shipment.amazonNetwork ?? "awd_us"]}`
   const shipTo =
     warehouses.length && !shipment.snapshot.via
       ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
       : parties.shipTo
-  if (shipment.snapshot.destination === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
+  if (orderDestination(shipment.snapshot) === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
     const addresses = await amazonFor(order!.buyerOrgId, order!.amazonSellerId)
       .then((api) => amazonDestinationAddresses(api, shipment))
       .catch(() => [])
@@ -269,12 +261,12 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
     return undefined
   }
   if (
-    shipment.snapshot.destination === "amazon" &&
+    orderDestination(shipment.snapshot) === "amazon" &&
     !shipment.snapshot.via &&
     shipment.amazonShipmentId &&
     shipment.labels.some((label) => label.destinationCode)
   ) {
-    return shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+    return `Amazon ${amazonNetworkNames[shipment.amazonNetwork ?? "awd_us"]}`
   }
   return (await shipmentParties(shipment)).shipTo?.name ?? destinationName(shipment.snapshot)
 }

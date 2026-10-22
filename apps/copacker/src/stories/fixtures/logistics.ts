@@ -1,8 +1,8 @@
-import type { Address } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import type { Packing } from "@repo/aisle"
-import type { ShopifyLocationKind } from "@repo/aisle/shopify"
-import { http, HttpResponse } from "msw"
+import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
+import type { Address } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { Packing } from "@repo/copacker-shipments"
+import { http, HttpResponse } from "msw/http"
 import type { PartnerAddress } from "@/components/partner-address"
 import type { documents, shipments } from "@/db/schema"
 import type { Access } from "@/lib/access"
@@ -88,8 +88,8 @@ export const shipmentId = "c0ffee00-1234-4abc-9def-000000000001"
 const orderId = "0b5e6d7c-8a9f-4b1c-9d2e-3f4a5b6c7d01"
 const amazonOrderId = "0b5e6d7c-8a9f-4b1c-9d2e-3f4a5b6c7d02"
 
-// One purchase order to the buyer's warehouse, and one to Amazon with a line for each network, each item made once so
-// cartons and changes can point at it.
+// One purchase order to the buyer's warehouse, and one to Amazon FBA, each item made once so cartons and changes can
+// point at it.
 const warehouseOrder: OrderInput = orderData({ reference: "PO-1045" })
 const amazonOrder: OrderInput = orderData({
   reference: "PO-1046",
@@ -148,6 +148,7 @@ export function shipmentRow(overrides: Partial<ShipmentRow> = {}): ShipmentRow {
     linkedAmazonShipmentId: null,
     amazonOrderId: null,
     amazonShipmentId: null,
+    packingGroups: null,
     operation: "none",
     labels: [],
     stockTaken: null,
@@ -185,6 +186,9 @@ export function documentRow(
     kind,
     itemId: null,
     cartonId: null,
+    trackingNumber: null,
+    sourceName: null,
+    sourcePage: null,
     objectKey: `documents/${name}`,
     name,
     bytes: 48213,

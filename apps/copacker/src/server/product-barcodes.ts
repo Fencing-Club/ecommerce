@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/aisle"
-import { combinePdfs } from "@repo/aisle/documents"
-import { splitPdfPages } from "@repo/aisle/labels"
-import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/aisle/product-labels"
-import { needsWarningLabel } from "@repo/aisle/requirements"
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import { type Destination, type OrderInput, orderDestination } from "@repo/copacker-shipments"
+import { combinePdfs } from "@repo/copacker-shipments/documents"
+import { splitPdfPages } from "@repo/copacker-shipments/labels"
+import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/copacker-shipments/product-labels"
+import { needsWarningLabel } from "@repo/copacker-shipments/requirements"
 import { and, eq, inArray } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "@/db"
 import { connections, productBarcodes, shipments, stockSnapshots } from "@/db/schema"
 import { LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
@@ -15,6 +15,7 @@ import { amazonFor, shopifyFor } from "./connections"
 import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { isCollective } from "./inventory-products"
+import { queueLabels, type QueuedLabels } from "./label-release"
 import type { ProductDefaults } from "./product-defaults"
 import { readProductDefaults } from "./product-defaults"
 import { describeError } from "./stock"
@@ -23,8 +24,6 @@ import type { Session } from "./workspace-session"
 
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
-
-export const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 
 export class ProductBarcodeError extends StatusError {}
 
@@ -68,7 +67,7 @@ const needsUpload = (defaults: ReadonlyMap<string, ProductDefaults>, productId: 
 const labelFree = (
   defaults: ReadonlyMap<string, ProductDefaults>,
   productId: string | undefined,
-  destination: OrderInput["destination"]
+  destination: Destination
 ) => productId !== undefined && defaults.get(productId)?.productLabel === "none" && destination !== "amazon"
 
 // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
@@ -179,9 +178,9 @@ export async function saveProductBarcode(s: Session, form: FormData) {
     uploadedBy: s.user.id,
     createdAt: new Date()
   }
-  let replaced: string | null
+  let saved: { replaced: string | null; labels: QueuedLabels }
   try {
-    replaced = await db().transaction(async (tx) => {
+    saved = await db().transaction(async (tx) => {
       const [previous] = await tx
         .select({ objectKey: productBarcodes.objectKey })
         .from(productBarcodes)
@@ -194,12 +193,17 @@ export async function saveProductBarcode(s: Session, form: FormData) {
           target: [productBarcodes.orgId, productBarcodes.shopifyDomain, productBarcodes.variantId],
           set: value
         })
-      return previous?.objectKey ?? null
+      // A product's barcode can complete the packets of the buyer's shipments that waited on it.
+      return {
+        replaced: previous?.objectKey ?? null,
+        labels: await queueLabels(tx, { buyerOrgId: s.org.id, actor: s.user.id })
+      }
     })
   } catch (error) {
     await discardFile(objectKey)
     throw error
   }
+  const { replaced, labels } = saved
   if (replaced) {
     await discardFile(replaced)
   }
@@ -213,7 +217,9 @@ export async function saveProductBarcode(s: Session, form: FormData) {
       sku: row.buyerSku,
       product: row.productTitle,
       variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
-    } satisfies BarcodeTarget
+    } satisfies BarcodeTarget,
+    // The job that sends any packets the barcode completed, for the caller to send straight away.
+    labels
   }
 }
 
@@ -462,7 +468,7 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   ])
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
-  const forAmazon = order.data.destination === "amazon"
+  const forAmazon = orderDestination(order.data) === "amazon"
   return order.data.items.flatMap((item): LineLabel[] => {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
     const productId = rows.find((row) => row.variantId === item.variantId)?.productId
@@ -516,7 +522,7 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
     }
     // A line set to go without its label skips it, except to Amazon, which needs every unit labeled.
     const unlabeled =
-      item.skuLabel === undefined ? labelFree(defaults, productId, order.data.destination) : !item.skuLabel
+      item.skuLabel === undefined ? labelFree(defaults, productId, orderDestination(order.data)) : !item.skuLabel
     if (unlabeled && !forAmazon) {
       return [{ itemId: item.id, state: "none" }]
     }
@@ -600,9 +606,8 @@ export async function warningLabelFile(
     : null
 }
 
-// The lines of a PO the workspace can see whose product can't make a label yet.
-export async function linesMissingLabels(s: Session, orderId: string) {
-  const { order } = await accessibleOrder(s, orderId)
+// The lines of a PO whose product can't make a label yet.
+export async function linesMissingLabels(order: LabelOrder) {
   return new Set((await lineLabels(order)).flatMap((label) => (label.state === "missing" ? [label.itemId] : [])))
 }
 
@@ -642,8 +647,7 @@ export async function shipmentLabelsPdf(
   const { order } = await accessibleOrder(s, shipment.orderId)
   const data = shipment.snapshot ?? order.data
   const items = data.items.filter(
-    (item) =>
-      (!shipment.amazonNetwork || item.amazonNetwork === shipment.amazonNetwork) && (!itemId || item.id === itemId)
+    (item) => (!shipment.amazonNetwork || item.receiver === shipment.amazonNetwork) && (!itemId || item.id === itemId)
   )
   if (itemId && !items.length) {
     throw new ProductBarcodeError("lineNotOnOrder", 404)

@@ -96,8 +96,8 @@ criteria to apply per dataset/account/period, not a list of implementation tasks
 | Shopify customers | Optional customer IDs and repeat-customer calculations already exist | Check permissions, historical coverage and backfill; this is not a wholly missing integration |
 | Sync coverage and FX | Existing source coverage records and exchange-rate conversion | Extend to each new dataset and financial event |
 
-Evidence: [sales collectors](../../../../../packages/aisle/src/sales.ts),
-[ledger parser](../../../../../packages/aisle/src/ledger.ts),
+Evidence: [sales collectors](../../../../../packages/copacker-marketplaces/src/sales.ts),
+[ledger parser](../../../../../packages/copacker-marketplaces/src/ledger.ts),
 [stored records](../../../src/db/schema.ts), [profit calculations](../../../src/server/overview-sales.ts),
 [landed costs](../../../src/server/landed-costs.ts), [Overview](../../overview.md),
 [sales ingestion](../../sales-demand.md), and [Ads ingestion](../../amazon-ads.md).

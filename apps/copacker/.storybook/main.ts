@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url"
 import type { StorybookConfig } from "@storybook/react-vite"
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin"
 import { mergeConfig } from "vite"
+import { tesseract } from "../scripts/vite-tesseract.ts"
 
 const mock = (file: string) => fileURLToPath(new URL(`./mocks/${file}`, import.meta.url))
 const localHost =
@@ -32,7 +33,7 @@ const config: StorybookConfig = {
             }
           })
       },
-      plugins: [vanillaExtractPlugin()],
+      plugins: [vanillaExtractPlugin(), tesseract()],
       resolve: {
         // The server's side of what server components use: messages from the story's language, a database that
         // answers with each story's rows. Components use the story's real locale and router providers.
@@ -46,7 +47,8 @@ const config: StorybookConfig = {
       },
       optimizeDeps: {
         include: [
-          "msw",
+          "msw/http",
+          "msw/utils/delay",
           "msw/browser",
           "msw-storybook-addon",
           "@vanilla-extract/sprinkles/createRuntimeSprinkles",

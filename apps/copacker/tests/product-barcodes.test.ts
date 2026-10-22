@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { inflateSync } from "node:zlib"
 import { PGlite } from "@electric-sql/pglite"
-import type { OrderInput } from "@repo/aisle"
+import { type Destination, type OrderInput, receiverFor } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"
@@ -164,12 +164,13 @@ function item(id: string, variantId: string): OrderInput["items"][number] {
     instructions: "",
     prepCategory: "POLYBAGGING",
     suffocationWarning: false,
-    amazonNetwork: "fba"
+    receiver: "fba"
   }
 }
 
-async function order(items: OrderInput["items"], destination: OrderInput["destination"] = "warehouse") {
-  const data = { reference: "PO-1", supplierId, currency: "USD", destination, items } as OrderInput
+async function order(items: OrderInput["items"], destination: Destination = "warehouse") {
+  const lines = items.map((line) => ({ ...line, receiver: receiverFor(destination, line.receiver) }))
+  const data = { reference: "PO-1", supplierId, currency: "USD", items: lines } as OrderInput
   const [row] = await database
     .insert(tables.orders)
     .values({ buyerOrgId: buyerId, supplierId, shopifyDomain: domain, data })
@@ -562,7 +563,7 @@ describe("shipment labels", () => {
     const po = await order(
       [
         { ...item(glove, variantB), suffocationWarning: true },
-        { ...item(cord, variantA), amazonNetwork: "awd_us" }
+        { ...item(cord, variantA), receiver: "awd_us" }
       ],
       "amazon"
     )

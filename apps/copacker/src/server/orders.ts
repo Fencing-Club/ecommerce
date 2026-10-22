@@ -1,14 +1,16 @@
-import type { OrderInput } from "@repo/aisle"
-import type { Packing } from "@repo/aisle"
+import { bundleSupplierComponents, piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { Packing } from "@repo/copacker-shipments"
 import {
   amazonNetworkNames,
   approveChanges,
   commercialChanges,
   orderInputSchema,
   packingDraftSchema,
-  splitByNetwork
-} from "@repo/aisle"
-import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
+  splitByNetwork,
+  orderDestination,
+  isAmazonNetwork
+} from "@repo/copacker-shipments"
 import { ne, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"
@@ -209,7 +211,7 @@ export async function checkOrder(
   if (stock) {
     await checkSupplierStock(tx, supplier.supplierOrgId, input)
   }
-  if (input.destination === "warehouse") {
+  if (orderDestination(input) === "warehouse") {
     const [delivery] = await tx
       .select({ id: contacts.id })
       .from(contacts)
@@ -283,7 +285,7 @@ export async function createOrder(s: Session, raw: unknown) {
 async function missingAmazonIdentities(s: Session, id: string) {
   const { order } = await accessibleOrder(s, id)
   const missing = order.data.items.filter((item) => !item.asin || !item.fnsku)
-  if (!missing.length || order.data.destination !== "amazon") {
+  if (!missing.length || orderDestination(order.data) !== "amazon") {
     return null
   }
   const amazon = await amazonAccount(s.org.id)
@@ -383,8 +385,8 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
           })
           .onConflictDoNothing()
       }
-      const networks =
-        order.data.destination === "amazon" ? [...new Set(order.data.items.map((item) => item.amazonNetwork))] : [null]
+      const amazon = order.data.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? [item.receiver] : []))
+      const networks = amazon.length ? [...new Set(amazon)] : [null]
       const [shipment] = await tx
         .insert(shipments)
         .values(
@@ -490,7 +492,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         order.data,
         shipment,
         keepOrderPrices(s, order.data, raw ?? shipment.packingDraft),
-        reservedPieces(others, shipmentId),
+        others,
         order.revision,
         await serverText()
       )
@@ -501,7 +503,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
       }
       const packing = assessed.packing
       const approval = commercialChanges(order.data, packing).length > 0
-      const amazon = order.data.destination === "amazon"
+      const amazon = orderDestination(order.data) === "amazon"
       let status: ShipmentState = "ready"
       let event: TimelineEvent = { key: "packingReady", values: null }
       if (approval) {
@@ -549,7 +551,7 @@ export async function prepareAmazonShipment(s: Session, shipmentId: string, expe
       if (!shipment || shipment.status !== "packed" || shipment.revision !== expectedRevision) {
         throw new LocalizedError("shipmentChangedSubmit")
       }
-      if (order.data.destination !== "amazon" || shipment.amazonOrderId || shipment.operation !== "none") {
+      if (orderDestination(order.data) !== "amazon" || shipment.amazonOrderId || shipment.operation !== "none") {
         throw new LocalizedError("resolveAmazonShipment")
       }
       await refusePendingChanges(tx, order.id)
@@ -558,7 +560,7 @@ export async function prepareAmazonShipment(s: Session, shipmentId: string, expe
         order.data,
         shipment,
         shipment.packing,
-        reservedPieces(others, shipmentId),
+        others,
         order.revision,
         await serverText()
       )
@@ -658,7 +660,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
         .insert(orderRevisions)
         .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "approvedCommercialChanges" })
       await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, order.id))
-      if (order.data.destination === "amazon") {
+      if (orderDestination(order.data) === "amazon") {
         await tx
           .update(shipments)
           .set({ snapshot: data, orderRevision: revision, status: "packed", updatedAt: new Date() })
@@ -843,7 +845,7 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
       order.data,
       shipment,
       keepOrderPrices(s, order.data, raw ?? shipment.packingDraft ?? shipment.packing ?? {}),
-      reserved,
+      all,
       order.revision,
       await serverText()
     )

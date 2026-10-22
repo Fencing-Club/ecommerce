@@ -1,3 +1,4 @@
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
@@ -8,7 +9,7 @@ const linkSchema = z.object({
 })
 const inputSchema = z.strictObject({
   supplierSku: z.string().trim().max(255).nullable(),
-  currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"])
+  currency: z.enum(orderCurrencies)
 })
 
 // A supplier SKU identifies a product, not a supplier. Restock may suggest a

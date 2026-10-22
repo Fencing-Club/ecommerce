@@ -2,19 +2,19 @@ import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { orderInputSchema, packingSchema } from "@repo/aisle"
-import { matchLabels } from "@repo/aisle/labels"
-import { transportSchema } from "@repo/aisle/transport"
-import { PDFDocument } from "pdf-lib"
-import { z } from "zod"
+import { orderInputSchema, packingSchema } from "@repo/copacker-shipments"
+import { matchLabels } from "@repo/copacker-shipments/labels"
 import {
   defaultDocumentSettings,
   documentSettingsSchema,
   shippingPdfFilename,
   shippingTotals
-} from "../src/documents/shipping-model"
+} from "@repo/copacker-shipments/shipping-model"
+import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
+import { transportSchema } from "@repo/copacker-shipments/transport"
+import { PDFDocument } from "pdf-lib"
+import { z } from "zod"
 import { renderShippingDocument, ShippingPdf } from "../src/documents/shipping-pdf"
-import { shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
 import { renderSupplierPacket } from "../src/documents/supplier-packet"
 
 // Local, read-only export: input is an audited snapshot, never a live database or a new Amazon booking.

@@ -371,6 +371,7 @@
     },
     "draftSaved": "Brouillon enregistré",
     "cartonIssue": "Carton {carton} : {message}",
+    "ruleSource": "Exigences de {receiver}",
     "readyToSubmit": "Prêt à envoyer",
     "readyToSubmitApproval": "Prêt à envoyer ; les modifications seront soumises à l’approbation de l’acheteur",
     "readyToSubmitUpdates": "Prêt à envoyer ; les modifications mettent à jour le bon de commande",
@@ -392,7 +393,6 @@
     "addCarton": "Ajouter un carton",
     "noCartons": "Aucun carton pour l’instant",
     "noCartonsDescription": "Ajoutez un carton, puis dupliquez les cartons identiques.",
-    "cartonsAndUnits": "{cartons, plural, one {# carton} other {# cartons}}, {units, plural, one {# unité} other {# unités}}",
     "saveDraft": "Enregistrer le brouillon",
     "check": "Vérifier l’emballage",
     "submit": "Envoyer la liste de colisage",
@@ -407,6 +407,7 @@
     "readyForPickup": "Prêt pour l’enlèvement",
     "shipFrom": "Adresse d’enlèvement",
     "readyDate": "Prêt pour l’enlèvement",
+    "readyDatePassed": "Choisissez aujourd’hui ou une date ultérieure",
     "addCartonProduct": "Ajouter un produit au carton",
     "removeCartonProduct": "Retirer le produit {number} du carton",
     "finishPacking": "Terminer l’emballage",
@@ -414,7 +415,11 @@
     "chooseAddress": "Adresse d’enlèvement",
     "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
     "leftCount": "{count} restant(s)",
-    "overCount": "{count} en trop"
+    "overCount": "{count} en trop",
+    "groupsUnchecked": {
+      "title": "Produits pouvant partager un carton pas encore vérifiés",
+      "description": "Amazon indique quels produits doivent être dans des cartons séparés lorsqu’il planifie l’envoi. D’ici là, emballez dans leurs propres cartons les produits qu’Amazon traite séparément, comme les marchandises dangereuses."
+    }
   },
   "paymentTerms": {
     "net7": "7 jours net",
@@ -450,15 +455,7 @@
     "cancel": "Annuler",
     "addSelected": "Ajouter {count, plural, one {# produit} other {# produits}}",
     "carton": "Carton {carton}",
-    "count": "Cartons",
-    "length": "Longueur",
-    "width": "Largeur",
-    "height": "Hauteur",
-    "weight": "Poids",
-    "enterNumber": "Saisissez un nombre positif pour {field}.",
-    "enterQuantity": "Saisissez une quantité entière pour {sku}.",
     "addProductRequired": "Ajoutez un produit à ce carton.",
-    "dimensions": "Dimensions (cm)",
     "axis": {
       "length": "L",
       "width": "l",
@@ -473,22 +470,115 @@
     "removeProduct": "Retirer {sku} du carton {carton}",
     "product": "Produit",
     "leftToPack": "Reste à emballer",
-    "packCount": "{count, plural, one {# lot} other {# lots}}",
     "addToCarton": "Ajouter au carton",
     "selectedCount": "{count} sélectionnés",
-    "cartonGroup": "Cartons {cartons}",
     "addProductsToCartons": "Ajouter des produits aux cartons {cartons}",
+    "columns": {
+      "cartons": "Cartons",
+      "count": "Nombre",
+      "dimensions": "Dimensions",
+      "weight": "Poids",
+      "contents": "Contenu"
+    },
+    "toggleProducts": "Produits de {cartons}",
+    "contentsDetail": "{products, plural, one {# produit, {perCarton, number} par carton} other {# produits}}",
+    "contentsSummary": "{units}, {detail}",
+    "emptyCarton": "Aucun produit pour l’instant",
+    "issues": "{count, plural, one {# problème} other {# problèmes}}",
+    "addProduct": "Ajouter un produit",
+    "units": "unités",
+    "packsOf": "{packs, plural, one {# lot} other {# lots}} de {size, number} unités",
+    "enterCount": "Indiquez combien de cartons sont emballés ainsi.",
+    "enterDimensions": "Indiquez la longueur, la largeur et la hauteur de chaque carton.",
+    "enterWeight": "Indiquez le poids de chaque carton.",
+    "enterUnits": "Indiquez combien d’unités de ce produit contient chaque carton.",
+    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
     "rules": {
-      "unitsPerCarton": "Quantité : {units, number} unités vendables par carton dépassent la limite {receiver} de {max, number}. Répartissez-les dans des cartons plus petits.",
-      "cartonSize": "Dimensions : la {side, select, width {largeur} height {hauteur} other {longueur}} est de {size, number} cm. {receiver} autorise {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} po) maximum sur chaque côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} po) maximum pour ce carton}}.",
-      "cartonWeight": "Poids : {weight, number} kg dépassent la limite de {maxLb, number} lb ({maxKg, number} kg). Réduisez le poids de chaque carton.",
-      "oneSku": "Produits : {receiver} exige un seul SKU par carton. Placez ces SKU dans des cartons séparés.",
-      "samePacking": "Modèle d’emballage : ce SKU utilise {difference, select, units {{units, number} unités par carton} other {des cartons de {length, number} × {width, number} × {height, number} cm et {weight, number} kg}} ailleurs dans cet envoi. Utilisez le même modèle d’emballage pour chaque carton de ce SKU."
+      "unitsPerCarton": "Quantité : {units, number} unités dépassent la limite {receiver} de {max, number} par carton. Mettez-en {max, number} au maximum dans chaque carton.",
+      "cartonSize": "Dimensions : la {side, select, width {largeur} height {hauteur} other {longueur}} est de {size, number} cm. {receiver} autorise {shape, select, cube {{lengthCm, number} cm ({lengthIn, number} po) maximum sur chaque côté} other {{lengthCm, number} × {widthCm, number} × {heightCm, number} cm ({lengthIn, number} × {widthIn, number} × {heightIn, number} po) maximum}}{exception, select, oneUnit {, sauf si le carton ne contient qu’une seule unité} other {}}.",
+      "cartonWeight": "Poids : {weight, number} kg dépassent la limite {receiver} de {maxKg, number} kg ({maxLb, number} lb){exception, select, oneUnit {, sauf si le carton ne contient qu’une seule unité} other {}}. Mettez moins d’unités dans chaque carton.",
+      "oneSku": "Produits : ce carton contient plus d’un SKU, et {receiver} n’accepte qu’un SKU par carton. Emballez chaque SKU dans ses propres cartons.",
+      "packingGroups": "Produits : {receiver} n’accepte pas {product} et {other} dans le même carton. Amazon les traite différemment, par exemple pour les marchandises dangereuses, la préparation ou les étiquettes, et peut les envoyer dans des entrepôts différents. Déplacez l’un d’eux dans un autre carton.",
+      "samePacking": "{difference, select, units {Quantité : les autres cartons de {sku} contiennent {units, number} unités chacun.} other {Dimensions : les autres cartons de {sku} mesurent {length, number} × {width, number} × {height, number} cm pour {weight, number} kg.}} {receiver} exige que tous les cartons d’un SKU aient les mêmes unités, dimensions et poids. Alignez-les, ou envoyez ce carton dans un autre envoi.",
+      "incompletePacks": "Quantité : {sku} est vendu par lots de {pack, number}. Saisissez un multiple de {pack, number}.",
+      "missingAsin": "Produits : {sku} n’a pas d’ASIN, dont {receiver} a besoin pour le réceptionner. L’acheteur l’ajoute sur le bon de commande.",
+      "missingFnsku": "Produits : {sku} n’a pas de FNSKU, dont {receiver} a besoin pour l’étiqueter. L’acheteur l’ajoute sur le bon de commande.",
+      "duplicateCarton": "Identifiant de carton : {carton} est déjà utilisé par un autre carton. Donnez à chaque carton son propre identifiant.",
+      "repeatedProduct": "Produits : {sku} figure plusieurs fois dans ce carton. Indiquez-le une seule fois avec toutes ses unités.",
+      "mixedNetworks": "Produits : ce carton mélange des produits FBA et AWD. Emballez les produits de chaque réseau dans des cartons séparés.",
+      "unknownProduct": "Produits : ce carton contient un produit absent du bon de commande. Retirez-le du carton.",
+      "overQuantity": "Quantité : les cartons contiennent {packed, number} unités de {sku}, mais il n’en reste que {remaining, number} sur le bon de commande. Retirez {extra, plural, one {# unité} other {# unités}}.",
+      "unknownChange": "Modifications de facture : une modification porte sur un produit absent du bon de commande, ou répète une autre modification. Supprimez-la."
     }
+  },
+  "pallets": {
+    "title": "Palettes",
+    "packedOnPallets": "Emballé sur palettes",
+    "packedOnPalletsHelp": "À propos de « Emballé sur palettes »",
+    "packedOnPalletsHint": "Cochez cette case si les cartons sont expédiés sur palettes, puis indiquez chaque palette et ses cartons.",
+    "onPallets": "{count, number} sur {total, plural, one {# carton} other {# cartons}} sur palettes",
+    "addPallet": "Ajouter une palette",
+    "noPallets": "Aucune palette pour l’instant",
+    "noPalletsDescription": "Ajoutez une palette, puis choisissez les cartons qu’elle porte.",
+    "columns": {
+      "pallet": "Palette",
+      "dimensions": "Dimensions",
+      "weight": "Poids",
+      "stacking": "Gerbage",
+      "cartons": "Cartons"
+    },
+    "name": "Palette {pallet}",
+    "toggleCartons": "Cartons sur {pallet}",
+    "summary": "{cartons}, {units}",
+    "cartonCount": "{count, plural, one {# carton} other {# cartons}}",
+    "stackable": "Gerbable",
+    "notStackable": "Non gerbable",
+    "actions": "Actions de {pallet}",
+    "duplicate": "Dupliquer la palette",
+    "delete": "Supprimer la palette",
+    "cartonsOnPallet": "Cartons sur la palette",
+    "chooseCartons": "Choisir les cartons",
+    "removeCartons": "Retirer {cartons} de {pallet}",
+    "noCartons": "Aucun carton sur cette palette pour l’instant",
+    "enterDimensions": "Indiquez la longueur, la largeur et la hauteur de la palette.",
+    "enterWeight": "Indiquez le poids brut de la palette, palette comprise.",
+    "rules": {
+      "palletFootprint": "Dimensions : la charge mesure {length, number} × {width, number} cm et dépasse des bords de la palette {receiver} de {lengthCm, number} × {widthCm, number} cm ({lengthIn, number} × {widthIn, number} po). Gardez les cartons à l’intérieur de la palette.",
+      "palletHeight": "Hauteur : {height, number} cm dépasse la limite {receiver} de {maxCm, number} cm ({maxIn, number} po), palette comprise. Répartissez les cartons sur plus de palettes.",
+      "stackableHeight": "Hauteur : {height, number} cm est trop haut pour une palette {receiver} gerbable, limitée à {maxCm, number} cm ({maxIn, number} po). Réglez Gerbage sur Non gerbable ou réduisez la charge.",
+      "palletWeight": "Poids : {weight, number} kg dépassent la limite {receiver} de {maxKg, number} kg ({maxLb, number} lb), palette comprise. Répartissez les cartons sur plus de palettes.",
+      "emptyPallet": "Cartons : cette palette n’a pas encore de cartons. Choisissez ses cartons ou supprimez la palette.",
+      "palletMixedNetworks": "Cartons : cette palette mélange des cartons FBA et AWD. Placez les cartons de chaque réseau sur des palettes séparées.",
+      "duplicatePallet": "Palettes : deux palettes portent le numéro {pallet}. Importez-les à nouveau avec des numéros uniques.",
+      "unknownPalletCarton": "Cartons : {carton} n’est pas un carton de cet envoi. Retirez-le de cette palette.",
+      "palletCartonTwice": "Cartons : {carton} est déjà sur une autre palette. Retirez-le de cette palette ou de l’autre.",
+      "noPallets": "Palettes : ces cartons sont expédiés sur palettes, et il n’y en a aucune pour l’instant. Ajoutez une palette ou décochez « Emballé sur palettes ».",
+      "cartonsOffPallets": "Cartons : {count, plural, one {# carton n’est sur aucune palette : {cartons}. Choisissez-lui une palette ou ajoutez une palette.} other {# cartons ne sont sur aucune palette : {cartons}. Choisissez une palette pour chacun ou ajoutez une palette.}}"
+    }
+  },
+  "palletCartons": {
+    "title": "Choisir les cartons de {pallet}",
+    "search": "Rechercher des cartons ou des produits",
+    "cartons": "Cartons",
+    "sizeAndWeight": "Taille et poids",
+    "pallet": "Palette",
+    "thisPallet": "Cette palette",
+    "palletCount": "{count, plural, one {# palette} other {# palettes}}",
+    "onThisPallet": "{count, number} sur cette palette",
+    "content": "{sku}, {count, plural, one {# unité} other {# unités}}",
+    "contentEach": "{sku}, {count, plural, one {# unité} other {# unités}} chacun",
+    "measure": "{dimensions}, {weight}",
+    "showCartons": "Afficher les cartons {cartons}",
+    "selection": "{count, plural, one {# carton} other {# cartons}}, {weight}",
+    "noCartons": "Aucun carton trouvé",
+    "cancel": "Annuler",
+    "save": "Enregistrer les cartons"
   },
   "cartonImport": {
     "title": "Importer des cartons",
-    "reviewTitle": "Vérifier l’importation",
+    "export": "Exporter les cartons",
+    "exportFailed": "Impossible d’exporter les cartons.",
+    "reviewTitle": "Vérifier l’importation des cartons",
     "downloadTemplate": "Télécharger le modèle",
     "templateHint": "Utilisez le modèle pour saisir le contenu, les quantités, les dimensions et le poids des cartons.",
     "downloadFailed": "Impossible de télécharger le modèle.",
@@ -526,12 +616,77 @@
       "limit": "Un envoi peut contenir jusqu’à 1 000 cartons."
     },
     "template": {
-      "identity": "Ne modifiez pas le SKU fournisseur, le produit, la variante ni le nombre de pièces par lot préremplis. Demandez à l’acheteur de corriger les données manquantes ou incorrectes.",
-      "rows": "Utilisez une ligne par produit et par carton. Copiez une ligne produit pour les cartons supplémentaires. Répétez le Carton ID pour les produits emballés ensemble. Laissez vides les cellules d’emballage inutilisées.",
-      "cartons": "Carton ID est votre référence, pas un numéro d’étiquette Amazon. Utilisez A1, A2, etc. avec Carton count 1 pour des cartons distincts. Pour des cartons identiques, indiquez un nombre supérieur à 1 : A1 avec 3 donne A1, A1-2 et A1-3. Les identifiants existants sont ignorés.",
-      "quantity": "Quantity per carton compte les lots. Pour un lot de 2, une quantité de 10 représente 20 pièces. Les cartons d’un groupe identique doivent contenir les mêmes produits et quantités.",
-      "measurements": "Indiquez les dimensions en centimètres et le poids en kilogrammes. Répétez le nombre, les dimensions et le poids sur chaque ligne ayant le même Carton ID.",
-      "format": "Remplissez les cellules d’emballage blanches. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le classeur XLSX ou exportez la table Cartons au format CSV."
+      "columns": {
+        "cartonId": "Votre référence pour un type de carton, pas un numéro d’étiquette Amazon : une lettre par type, numérotée à partir de 1, par exemple A1, B1, C1. Répétez-la sur chaque ligne d’un carton contenant plusieurs produits.",
+        "cartonCount": "Le nombre de cartons identiques de ce type. A1 avec 3 donne A1, A2 et A3. Les identifiants que l’envoi a déjà sont ignorés.",
+        "supplierSku": "Prérempli depuis la commande. Ne le modifiez pas et demandez à l’acheteur de corriger un produit manquant ou erroné.",
+        "quantity": "Le nombre de lots de ce produit dans chaque carton. Pour un lot de 2, 10 représente 20 unités.",
+        "length": "La longueur du carton, en centimètres.",
+        "width": "La largeur du carton, en centimètres.",
+        "height": "La hauteur du carton, en centimètres.",
+        "weight": "Le poids du carton emballé, en kilogrammes.",
+        "product": "Prérempli depuis la commande. Ne le modifiez pas.",
+        "variant": "Préremplie depuis la commande. Ne la modifiez pas.",
+        "unitsPerPack": "Prérempli depuis la commande : les unités d’un lot. Ne le modifiez pas."
+      },
+      "notes": {
+        "rows": "Utilisez une ligne par produit et par carton. Pour emballer un produit dans d’autres types de carton, copiez sa ligne. Laissez vides les lignes inutilisées. La feuille Example montre le modèle rempli pour cet envoi.",
+        "sameCarton": "Les lignes ayant le même Carton ID forment un seul carton : indiquez le même nombre, les mêmes dimensions et le même poids. Les cartons identiques contiennent les mêmes produits et quantités.",
+        "format": "Remplissez les cellules blanches et ne modifiez pas les grises. Conservez les en-têtes anglais et le nom de feuille Cartons. Importez le fichier XLSX ou exportez la feuille Cartons au format CSV."
+      }
     }
+  },
+  "palletImport": {
+    "title": "Importer des palettes",
+    "export": "Exporter les palettes",
+    "exportFailed": "Impossible d’exporter les palettes.",
+    "reviewTitle": "Vérifier l’importation des palettes",
+    "review": "Vérifier les palettes",
+    "failed": "Impossible d’importer les palettes. Aucune modification effectuée.",
+    "add": "Ajouter des palettes",
+    "replace": "Remplacer les palettes",
+    "import": "Importer des palettes",
+    "importing": "Importation des palettes…",
+    "palletCount": "{count, plural, one {# palette} other {# palettes}}",
+    "cartons": "{count, plural, one {Carton {cartons}} other {Cartons {cartons}}}",
+    "dimensions": "{length} × {width} × {height} cm",
+    "weight": "{weight} kg",
+    "weightAndStacking": "{weight} kg / {stacking}",
+    "errors": {
+      "empty": "Le fichier ne contient aucune ligne de palette.",
+      "worksheet": "Le fichier doit contenir une feuille nommée Pallets.",
+      "palletId": "Saisissez un identifiant de palette de 1 à 60 caractères.",
+      "duplicatePallet": "La palette {pallet} figure aussi à la ligne {other}. Utilisez une ligne par palette.",
+      "stacking": "Saisissez Stackable ou Not stackable.",
+      "cartons": "Saisissez les cartons de cette palette, par exemple A1–A6, B1.",
+      "unknownCarton": "{count, plural, one {Le carton {cartons} ne fait pas partie de cet envoi.} other {Les cartons {cartons} ne font pas partie de cet envoi.}}",
+      "cartonTwice": "{count, plural, one {Le carton {cartons} est aussi sur la palette {pallet}.} other {Les cartons {cartons} sont aussi sur la palette {pallet}.}} Mettez chaque carton sur une seule palette."
+    },
+    "clashes": {
+      "replace": "{count, plural, one {Ces palettes entrent en conflit avec la palette déjà présente dans cet envoi.} other {Ces palettes entrent en conflit avec les # palettes déjà présentes dans cet envoi.}} Choisissez Remplacer les palettes pour n’utiliser que celles du fichier.",
+      "palletExists": "Il existe déjà une palette {pallet}. Donnez un autre identifiant à celle-ci.",
+      "cartonsOnPallet": "{count, plural, one {Le carton {cartons} est déjà sur la palette {pallet}.} other {Les cartons {cartons} sont déjà sur la palette {pallet}.}}"
+    },
+    "template": {
+      "columns": {
+        "palletId": "Votre référence pour la palette, par exemple 1, 2, 3. Utilisez chaque identifiant une seule fois.",
+        "length": "La longueur de la palette chargée, en centimètres.",
+        "width": "La largeur de la palette chargée, en centimètres.",
+        "height": "La hauteur de la palette chargée, en centimètres, du sol au haut des cartons.",
+        "weight": "Le poids brut en kilogrammes : la palette avec ses cartons.",
+        "stacking": "Stackable si une autre palette peut être posée dessus, sinon Not stackable. Choisissez dans la liste.",
+        "cartonIds": "Les cartons de la palette, par leurs identifiants de la liste de colisage. Reliez une suite par un tiret et séparez le reste par des virgules. Mettez chaque carton sur une seule palette."
+      },
+      "notes": {
+        "rows": "Utilisez une ligne par palette. La feuille Example montre le modèle rempli pour cet envoi.",
+        "shipmentCartons": "Cartons de cet envoi : {cartons}.",
+        "format": "Conservez les en-têtes anglais, les valeurs de Stacking et le nom de feuille Pallets. Importez le fichier XLSX ou exportez la feuille Pallets au format CSV."
+      }
+    }
+  },
+  "importTemplate": {
+    "column": "Colonne",
+    "entry": "À saisir",
+    "example": "Exemple"
   }
 }

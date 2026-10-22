@@ -113,6 +113,8 @@ function StepBody({ className, children }: { className?: string; children: React
   )
 }
 
+// The footer is muted grey, so the empty part of the bar takes the darker input grey rather than the usual muted track
+// to stay visible.
 function StepProgress({ step }: { step: BookingStepCount }) {
   const t = useTranslations("booking")
   return (
@@ -120,7 +122,7 @@ function StepProgress({ step }: { step: BookingStepCount }) {
       value={step.current}
       max={step.total}
       aria-valuetext={t("step", step)}
-      className="flex-nowrap items-center gap-2 *:data-[slot=progress-track]:w-10 *:data-[slot=progress-track]:shrink-0"
+      className="flex-nowrap items-center gap-2 *:data-[slot=progress-track]:w-10 *:data-[slot=progress-track]:shrink-0 *:data-[slot=progress-track]:bg-input"
     >
       <ProgressLabel className="order-last text-[13px] font-normal text-muted-foreground">
         {t("step", step)}

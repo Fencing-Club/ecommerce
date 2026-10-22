@@ -17,8 +17,8 @@ vi.mock("../src/server/connections", async (original) => ({
   connection: async () => ({ scopes: "read_orders,read_all_orders" }),
   shopifyFor: async () => ({})
 }))
-vi.mock("@repo/aisle/sales", async (original) => ({
-  ...(await original<typeof import("@repo/aisle/sales")>()),
+vi.mock("@repo/copacker-marketplaces/sales", async (original) => ({
+  ...(await original<typeof import("@repo/copacker-marketplaces/sales")>()),
   collectShopifySales: context.read
 }))
 vi.mock("../src/server/shopify-balance", () => ({ syncShopifyBalance: context.balance }))

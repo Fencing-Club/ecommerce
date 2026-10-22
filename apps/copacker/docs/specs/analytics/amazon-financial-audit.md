@@ -19,7 +19,7 @@ attribution rates and actual history remain unverified until the command runs ag
 | Money | Existing importer converts amounts to hundredths | Audit keeps currencies separate and flags currencies outside the current USD/CAD/MXN/BRL reporting set for review |
 | Presentation | Overview groups much account activity together and allocates some costs | Classification and product attribution are still required; retaining a payload is not reporting readiness |
 
-Sources in code: [collector and schemas](../../../../../packages/aisle/src/sales.ts),
+Sources in code: [collector and schemas](../../../../../packages/copacker-marketplaces/src/sales.ts),
 [fee sync](../../../src/server/amazon-fees.ts), [sync windows](../../../src/server/sales-orders.ts),
 [Overview calculations](../../../src/server/overview-sales.ts).
 Provider reference: [Amazon Finances API](https://developer-docs.amazon/sp-api/docs/finances-api).

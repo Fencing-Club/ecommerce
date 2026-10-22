@@ -9,15 +9,32 @@ The **Documents / Supplier packet** Storybook folder groups examples into:
 - **Layout**: pagination, large carton groups, Markdown instructions, and mobile.
 - **States and settings**: loading, failure, missing label assignments, and saved download preferences.
 
+**Simulators / Supplier packet** builds the whole packet from a shipment as production does, with sample labels, and
+lists every checklist line with when it's printed (see [Storybook](storybook.md#simulators)).
+
 It is the review surface for the Pen packing list, checklist,
 label reference, and shipment overview. It generates a real PDF with `@react-pdf/renderer` and previews that same
 file with PDF.js. No Chromium executable, backend service, customer data, or credentials are needed to generate it.
 The shipment's supplier-packet page uses these same templates. Provider barcode artwork stays on the authenticated
 label-download endpoint and is never recreated from the preview.
 
+## One pipeline
+
+Copacker makes its packing list and packing checklist one way: this pipeline. The framework-free parts live in
+`@repo/copacker-shipments`, so a script or CLI builds the same snapshot the app does:
+
+- `shipping-snapshot`: `shippingDocumentSnapshot` and `packingListSnapshot` turn an accepted PO, its packing, labels and
+  transport into the document data.
+- `shipping-model`: the snapshot's types, document settings, `documentIssues` and `cartonGroupLabel`.
+- `shipping-rules`: the checklist lines for each product task and carton or pallet rule.
+- `shipping-copy`: the documents' text in each language.
+
+The app keeps only the React renderer: `src/documents/shipping-pdf.tsx` and `src/documents/supplier-packet.tsx`. The
+package's own pdf-lib documents are the purchase order and commercial invoice.
+
 ## Composition
 
-`src/documents/shipping-model.ts` describes the immutable shipment snapshot. Destination, booked transport,
+`@repo/copacker-shipments/shipping-model` describes the immutable shipment snapshot. Destination, booked transport,
 recipient, incoming transfer, products, and explicit carton label assignments are independent inputs. Templates
 share typography, page headers, footers, addresses, totals, and assignment rows. The scenario fixtures cover parcel
 pickup/drop-off, FBA/AWD freight, AGL, own warehouses, both supplier-to-forwarder arrangements, and forwarder repacking.
@@ -25,14 +42,14 @@ pickup/drop-off, FBA/AWD freight, AGL, own warehouses, both supplier-to-forwarde
 Product tasks are an explicit list: absence means the recipient has no task. They are not inferred from the destination.
 The approved Pen/Storybook packing modal offers None, Polybag, or Sealed polybag, plus independent optional SKU,
 FNSKU, suffocation, and choking hazard labels. Country-of-origin labels are outside this scope. The shared
-option IDs and validation live in `@repo/aisle/packing-requirements`, with UI options in `src/lib/packing-requirements.ts`.
+option IDs and validation live in `@repo/copacker-shipments/packing-requirements`, with UI options in `src/lib/packing-requirements.ts`.
 PO items persist explicit tasks in their JSON snapshot through the packing-details modal. Existing items without
 explicit tasks must be confirmed before generating these documents; destination alone does not establish a labelling
 task. Custom packaging with reference photos remains a planned follow-up.
 
 Carton grouping includes contents, quantities, dimensions, and weight. Each physical carton retains its own Amazon
 and carrier label identifier. The packing list leaves label numbers out; the carton label reference lists them, one row
-per carton under Carton, Amazon carton label, and Carrier label columns.
+per carton under Carton, Carton label, and Carrier label columns, then each pallet's label.
 Carton groups stay intact with repeated headings on each page; a group too large for one page blocks generation for
 layout review. Missing required assignments and duplicate IDs block download. Provider label PDFs
 must be downloaded separately in their original form and page size; these templates are reference documents,
@@ -46,8 +63,7 @@ a PDF translation exists (English otherwise) and A4. Only explicit user choices 
 These preferences are local to the browser; they do not change the order or shipment.
 English, German, Simplified Chinese, and Urdu are review samples drawn from the app's supported locales.
 Translations require native-speaker review before customer release. Names, addresses, SKU/label IDs, and authored
-Markdown remain source data. Urdu mirrors layout and table order; identifiers remain left to right. Language names
-and reading direction reuse the app's locale definitions.
+Markdown remain source data. Urdu mirrors layout and table order; identifiers remain left to right.
 
 Fonts are bundled under `public/document-fonts`, with their SIL Open Font Licenses. Inter comes from the repository's
 print fonts. Noto Sans Arabic and Noto Sans SC come from Google Fonts' `ofl/notosansarabic` and `ofl/notosanssc`
@@ -58,7 +74,6 @@ to make a document fit or subset these fonts only to the fixture text.
 
 All previews and exports use `renderShippingDocument`. It serializes rendering and registers fresh fonts per document:
 reusing renderer font objects across exports can shift Unicode punctuation and word boundaries in later PDFs.
-The regression test renders a packing list followed by two checklist requests and checks their extracted text.
 
 ## Audited local exports
 
@@ -73,8 +88,8 @@ and creates the packing list, checklist, carton reference, and combined packet (
 the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
 supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
 
-`amazonCartonPolicies` in `@repo/aisle` supplies numeric limits to validation and these templates. Transport
-requirements stay in `@repo/aisle/transport`.
+`amazonCartonPolicies` in `@repo/copacker-shipments` supplies numeric limits to validation and these templates. Transport
+requirements stay in `@repo/copacker-shipments/transport`.
 
 ## Shipment integration
 
@@ -82,13 +97,13 @@ requirements stay in `@repo/aisle/transport`.
 explicit product tasks, supplier SKUs and the destination returned for the exact linked Amazon shipment. The page
 does not expose prices or storage keys. Incomplete input shows an explanation and a link back to the shipment.
 
-The API serves `verify`, `carton_labels`, `carrier_labels` and `product_labels` sections. Each download checks current
+The API serves `verify`, `carton_labels`, `carrier_labels`, `pallet_labels` and `product_labels` sections. Each download checks current
 workspace membership and a snapshot hash before and after reading files. The browser verifies that same hash before
 and after assembling a packet. A stale page cannot download a mixture of revisions. Responses are private and
 uncacheable. Individual labels preserve provider page dimensions; the combined PDF retains those dimensions too.
 
 The packet runs: the packing list, the checklist, the carton label reference, the carton labels (Amazon's, then the
-carrier's), then the product labels. The reference lists every carton with its labels in one table, right before the
+carrier's), the pallet labels for an FBA shipment on pallets, then the product labels. The reference lists every carton with its labels in one table, right before the
 label pages; a packet without carton labels leaves it out. `renderSupplierPacket` owns this order.
 
 Before the packet, a read-only shipment page lists a Packing list under Documents once packing is finished.
@@ -98,10 +113,13 @@ layout, in the language and paper last chosen for shipping documents. A line wit
 buyer's, as the packing page shows it. When the packet page can't make its reference documents, it still offers the
 packing list beside the label files.
 
-The first supported live document arrangement is direct supplier-to-Amazon AGL pickup without separate carrier
-labels. The templates demonstrate additional arrangements, but their live adapter requires persisted per-carton
-carrier assignments and explicit freight/forwarder handoff data before enabling them. It rejects missing information
-instead of inferring it from PDF order. Multiple Amazon destinations must be represented separately.
+The live packet covers a supplier handing its cartons to the carrier itself without separate carrier labels: by AGL,
+or by freight, on pallets (with Amazon's pallet labels for FBA) or loaded loose. A freight packet names a freight
+carrier pickup and asks the supplier to have the bill of lading ready; copacker doesn't record the carrier's name or the
+bill of lading number, which the templates print when given. The templates demonstrate more arrangements, but the live adapter still needs
+persisted carrier label numbers for each carton before a shipment with carrier labels can export, and a forwarder's
+handoff is prepared as its own leg. It rejects missing information instead of inferring it from PDF order. Multiple
+Amazon destinations must be represented separately.
 
 Transport configuration records the service, pickup/drop-off, handoff party, carrier-label requirement and instructions.
 Selecting a service proposes defaults; it does not book transport. Confirming AGL pickup does not create a new Amazon
@@ -111,9 +129,9 @@ shipment or notify the supplier. FBA booking is independent of document generati
 
 Review the actual downloadable PDF on A4 and Letter, plus German, Chinese, and Urdu. Check multi-page packing and
 reference examples for repeated headings and intact carton groups. Stories cover download bytes, saved preferences,
-mobile, loading, generation failure, and missing carrier assignments. Unit tests inspect actual PDFs for page size,
-continuation headers, label identity, and group integrity. Fonts, complex scripts, and long content also require visual
-review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
+mobile, loading, generation failure, and missing carrier assignments. Tests cover the snapshot, model and rules, never
+rendered PDFs or their text; the PDF stories carry the `documents` tag, which verify and CI skip. Fonts, complex
+scripts, and long content require visual review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
 
 ## Carton import workbook
 

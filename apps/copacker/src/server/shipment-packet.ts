@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto"
+import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
-import { shippingDocumentSnapshot } from "@/documents/shipping-snapshot"
 import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
@@ -60,7 +60,7 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
 }
 
 export async function shipmentPacketPage(s: Session, id: string) {
-  const { shipment, order, supplier, version, labels } = await releasedPacket(s, id)
+  const { shipment, order, supplier, version, labels, docs } = await releasedPacket(s, id)
   if (!shipment.packing || !shipment.snapshot || !shipment.transport) {
     throw new StatusError("packetIncomplete", 409)
   }
@@ -83,6 +83,12 @@ export async function shipmentPacketPage(s: Session, id: string) {
       order: shipment.snapshot,
       packing: shipment.packing,
       labels: shipment.labels,
+      // Each carton's carrier label number: the tracking number the buyer added it with.
+      carrierLabels: docs.flatMap((doc) =>
+        doc.shipmentId === id && doc.kind === "shipping_label" && doc.cartonId && doc.trackingNumber
+          ? [{ cartonId: doc.cartonId, labelNumber: doc.trackingNumber }]
+          : []
+      ),
       transport: shipment.transport,
       company: buyer.name,
       supplier: supplier.name,
@@ -122,13 +128,14 @@ export async function shipmentPacketResult(s: Session, id: string) {
     }
     // Even an unsupported reference-document layout must keep its released original labels accessible.
     // In the packet’s order: the carton labels, then the product labels.
-    let labelSections: Array<"carton_labels" | "carrier_labels" | "product_labels"> = []
+    let labelSections: Array<"carton_labels" | "carrier_labels" | "pallet_labels" | "product_labels"> = []
     try {
       const { shipment, labels, labelOrder } = await releasedPacket(s, id)
       const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
       labelSections = [
         ...(shipment.amazonNetwork ? ["carton_labels" as const] : []),
         ...(shipment.transport?.carrierLabels === "per_carton" ? ["carrier_labels" as const] : []),
+        ...(shipment.amazonNetwork === "fba" && shipment.packing?.palletized ? ["pallet_labels" as const] : []),
         ...(hasProductLabels(labelOrder.data.items, labels, included) ? ["product_labels" as const] : [])
       ]
     } catch (labelError) {

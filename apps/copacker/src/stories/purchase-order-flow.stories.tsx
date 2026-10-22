@@ -1,4 +1,4 @@
-import { HttpResponse } from "msw"
+import { HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { actionHandler, orderId, productHandlers, shownDialog } from "@/stories/fixtures/purchase-orders"
@@ -579,7 +579,7 @@ export const FinishSupplierPacking = meta.story({
     await expect(await canvas.findByText("Packed", { exact: true })).toBeVisible()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Edit packing" }))
-    await expect(canvas.getByRole("spinbutton", { name: "Carton 1: Cartons" })).toHaveValue(10)
+    await expect(canvas.getByRole("spinbutton", { name: "Carton A1: Count" })).toHaveValue(10)
   }
 })
 export const ForwarderCollects = meta.story({
@@ -616,7 +616,7 @@ export const SupplierFbaMixedCartons = meta.story({
   play: async ({ canvas }) => {
     // The cartons header and the phone's action bar both count units; one shows at a time.
     await expect(canvas.getAllByText("180 of 180 units").some((element) => element.checkVisibility())).toBe(true)
-    await expect(canvas.getAllByRole("region", { name: /^Carton [123]$/ })).toHaveLength(3)
+    await expect(canvas.getAllByRole("region", { name: /^Carton [ABC]1$/ })).toHaveLength(3)
     await expect(canvas.getByRole("button", { name: "Finish packing" })).toBeEnabled()
     await expect(canvas.queryByText(/Enter.*FNSKU/)).toBeNull()
   }

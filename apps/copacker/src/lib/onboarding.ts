@@ -1,4 +1,4 @@
-import { addressSchema } from "@repo/aisle"
+import { addressSchema } from "@repo/copacker-shipments"
 import { objectKeys } from "ts-extras"
 import { z } from "zod"
 import { phoneSchema } from "./phone"

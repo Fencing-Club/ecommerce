@@ -5,7 +5,7 @@ import { build } from "vite"
 import { expect, it } from "vitest"
 
 it("reads AWD label identities inside the deployed Workers runtime", async () => {
-  const reader = fileURLToPath(new URL("../../../packages/aisle/src/awd-label-pdf.ts", import.meta.url))
+  const reader = fileURLToPath(new URL("../../../packages/copacker-shipments/src/awd-label-pdf.ts", import.meta.url))
   const result = await build({
     configFile: false,
     envFile: false,

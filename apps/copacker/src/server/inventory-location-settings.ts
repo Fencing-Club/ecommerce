@@ -1,4 +1,4 @@
-import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

@@ -47,7 +47,7 @@ contexts, effects that render nothing) are listed there instead.
 
 ## The sidebar
 
-Every story file sets an explicit `title` in one of five sections. `tests/stories.test.ts` checks each rule.
+Every story file sets an explicit `title` in one of six sections. `tests/stories.test.ts` checks each rule.
 
 | Section | Holds | Title |
 | --- | --- | --- |
@@ -55,6 +55,7 @@ Every story file sets an explicit `title` in one of five sections. `tests/storie
 | Components | App components, grouped by product area | `Components/<Area>/<Name>` |
 | Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
 | Prototypes | Designs built only in Storybook: in `src/stories`, or beside the route a design is for until it's built (listed in the test) | `Prototypes/<Name>` |
+| Simulators | The real packing rules run on sample data, in `src/stories/simulators` and only there (see [Simulators](#simulators)) | `Simulators/<Name>` |
 | Unused | Components no app code renders yet | `Unused/<Area>/<Name>` |
 
 Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booking, Products, Inventory, Sales and
@@ -69,6 +70,44 @@ the page. Every other story in `src/app` must be a `Pages/` story too, unless th
 component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
 fails the test until its stories move to `Components`, and removing its last use fails it until they move to `Unused`.
 Review that section for components awaiting app work or ready to delete.
+
+## Simulators
+
+The simulators run `@repo/copacker-packing-rules` itself on sample data, so a change to a rule or its copy shows up
+here before it reaches a shipment. Nothing in them restates a limit: the examples are built from each policy's own
+rules.
+
+- **Simulators/Carton validation** and **Simulators/Pallet validation**: the carton or pallet table as the packing page
+  runs it, with a data set and receiver to pick (FBA, AWD US, both networks, the buyer's warehouse). Every edit goes
+  through `validatePacking`, and each issue it reports is listed below the table with the codes it can report.
+- **Every Error**: one table per simulator with every error, grouped by receiver and sorted by rule. Each row gives
+  the code, the rule's own `description` with the supplier's checklist line under it, the error exactly as the editor
+  shows it (with its link to the receiver's rule), and the readiness line. **Open in simulator** loads that row's
+  example into the simulator (`?path=/story/simulators-carton-validation--error-example&args=dataSet:<id>`), to edit
+  it by hand. A new policy or rule adds its rows; a new rule type fails type checks until the examples break it; and a
+  message with no example gets a red row.
+
+Each data set lives in `src/stories/simulators/data.ts`; the Every Error examples are in `carton-examples.ts` and
+`pallet-examples.ts`.
+
+- **Simulators/Supplier packet**: the packet as production builds it. A data set (cartons or pallets, to FBA, AWD or
+  the buyer's warehouse, or products with every preparation and label) and how it ships (service, handoff, collection,
+  carrier labels) go through `shippingDocumentSnapshot`, with a sample Amazon label for each carton to Amazon and a
+  carrier label for each when the carrier labels cartons. It shows whether production can export the packet (and the
+  snapshot's reason when it can't), the checklist as the packet words it in the chosen language, and every page of the
+  packet. Sample labels are bordered boxes in each provider's page size: 4 × 6 in carton labels, Letter pallet labels
+  (four a pallet) and 2 × 1 in product labels. When the snapshot refuses a shipment, the pages are built from the
+  packing list snapshot with the packet's labels and address, to show what the documents would print.
+- **Every Checklist Line**: every line the checklist can print, built from the checklist rules across the data sets and
+  ways to ship them (`packet-catalog.tsx`): each product requirement, then each carton, pallet and handoff line, when
+  it's printed, whether production's export reaches it, and a link that opens a shipment printing it in the simulator.
+
+The packet's data sets are in `packet-data.ts`.
+
+Simulators are for trying the rules and documents by hand, so `pnpm verify` and CI leave them out: every simulator's
+stories carry the `simulator` tag, which `vitest.config.ts` excludes, and `tests/stories.test.ts` fails on a simulator
+without it. The packet's stories also carry `documents`, since they render PDFs. The rules themselves are tested in
+`@repo/copacker-packing-rules` and the app's own tests.
 
 ## The toolbar
 

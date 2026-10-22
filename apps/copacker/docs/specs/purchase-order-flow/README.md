@@ -75,7 +75,7 @@ to AWD) and packing splits the shipment by network. Planned:
 - When an order has more than one destination, or any AWD line, sending shows the packing rules below and you confirm
   them. The supplier sees each line's destination and rules on the purchase order, the email and the checklist.
 - One destination per carton. Submitting packing splits the shipment by destination; each follows its own route.
-- In the data, the line's `amazonNetwork` becomes a list of destinations with their units (`fba`, `awd_us`,
+- In the data, the line's `receiver` becomes a list of receivers with their units (`fba`, `awd_us`,
   `warehouse`), a delivery address is required when any line goes to your warehouse, and each shipment records its
   destination.
 

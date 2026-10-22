@@ -1,5 +1,5 @@
-import { addressSchema, type AmazonNetwork, amazonNetworks } from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { addressSchema, type AmazonNetwork, amazonNetworks } from "@repo/copacker-shipments"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

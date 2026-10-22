@@ -14,7 +14,7 @@ transaction across a Workflow sleep/checkpoint. Retained Node processes keep the
 Source: [Hyperdrive connection lifecycle](https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/).
 
 Pass database access through a typed server context or another explicitly scoped server abstraction. Audit every caller
-of the current globally cached DB export, including `@repo/aisle` consumers, authentication, email jobs and event
+of the current globally cached DB export, including `@repo/copacker-shipments` consumers, authentication, email jobs and event
 handlers. Shared schema/type imports must not instantiate a connection. Each transaction uses one connection and releases
 it on success, validation error, provider failure and cancellation.
 
@@ -96,6 +96,7 @@ remove existing job behavior. Each kind needs a parity fixture and recovery dril
 | `amazon` | Workflow | Shipment/report create, poll, download, revision checks and ambiguous-create reconciliation |
 | `import` | Workflow plus measured processing executor | PDF validation, AI timeout, progress, cancellation and result persistence |
 | `reconcile` | Cron creates durable job; Workflow for bounded batches | One daily identity at 07:00 UTC, missed-trigger recovery and idempotent repairs |
+| `labels` | Queue consumer | Queued with the change that can complete a packet; sends once, checked under the shipment's row lock |
 
 Persist outputs needed by later steps. Use deterministic step identities, provider idempotency keys when supported and
 durable sleeps for `PollAgain` behavior; keep its delay/progress semantics. Store large outputs in R2 and checkpoint

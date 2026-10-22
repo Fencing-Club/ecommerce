@@ -1,4 +1,5 @@
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
@@ -73,10 +74,7 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
     const searchArgs = z.object({ queries: z.array(z.string().trim().min(1).max(255)).min(1).max(50) }).strict()
     const variantsArgs = z
       .object({
-        ids: z
-          .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/))
-          .min(1)
-          .max(20)
+        ids: z.array(variantIdSchema).min(1).max(20)
       })
       .strict()
     const amazonArgs = z.object({ skus: z.array(z.string().min(1).max(255)).min(1).max(20) }).strict()

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import type { CatalogVariant } from "@repo/aisle/shopify"
-import type { ShippingDocumentData } from "@/documents/shipping-model"
+import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
+import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
 import type { LineDefaults } from "./order-lines"
@@ -60,6 +60,10 @@ export const api = createApi({
     uploadDocument: build.mutation<ActionResult, FormData>({
       query: (body) => ({ url: "documents", method: "POST", body })
     }),
+    // A shipment's carrier labels, from the Upload carrier labels dialog. `sent` says whether they went to the supplier.
+    saveCarrierLabels: build.mutation<{ sent: boolean }, { id: string; body: FormData }>({
+      query: ({ id, body }) => ({ url: `shipments/${id}/carrier-labels`, method: "POST", body })
+    }),
     // What the header's search looks through, and the sales orders it finds as the Orders page's search does.
     search: build.query<SearchIndex, void>({ query: () => "search" }),
     salesSearch: build.query<{ orders: SalesOrderSummary[] }, string>({
@@ -81,6 +85,7 @@ export const {
   useLazyPackingListQuery,
   useMaintenanceQuery,
   useSalesSearchQuery,
+  useSaveCarrierLabelsMutation,
   useSearchQuery,
   useSuppliersQuery,
   useUploadDocumentMutation

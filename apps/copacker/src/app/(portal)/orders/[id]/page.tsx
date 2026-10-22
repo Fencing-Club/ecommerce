@@ -1,6 +1,13 @@
-import type { OrderItem } from "@repo/aisle"
-import { amazonNetworkNames, itemTotal, money, orderCharges, orderTotal } from "@repo/aisle"
-import { packingInstructions } from "@repo/aisle/requirements"
+import type { OrderItem } from "@repo/copacker-shipments"
+import {
+  amazonNetworkNames,
+  itemTotal,
+  money,
+  orderCharges,
+  orderTotal,
+  orderDestination
+} from "@repo/copacker-shipments"
+import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowRight,
@@ -80,18 +87,18 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
   const labelFor = (id: string) => labels.find((row) => row.itemId === id)
   const place = (id: string | undefined) => places.find((row) => row.id === id)?.name
   const itemGroups =
-    order.data.destination === "amazon"
+    orderDestination(order.data) === "amazon"
       ? (["awd_us", "fba"] as const)
           .map((network) => ({
             key: network,
             label: amazonNetworkNames[network],
-            items: order.data.items.filter((item) => item.amazonNetwork === network)
+            items: order.data.items.filter((item) => item.receiver === network)
           }))
           .filter((group) => group.items.length > 0)
       : [
           {
             key: "warehouse",
-            label: place(order.data.deliveryId) ?? formatDestination(order.data.destination, common),
+            label: place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common),
             items: order.data.items
           }
         ]
@@ -179,7 +186,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 </>
               )}
               <RoutePill icon={<MapPin />}>
-                {place(order.data.deliveryId) ?? formatDestination(order.data.destination, common)}
+                {place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)}
               </RoutePill>
               {order.status === "draft" && buyer && editsOrder && (
                 <Button

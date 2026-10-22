@@ -1,5 +1,5 @@
-import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/aisle/amazon"
-import { FbmReturnsError } from "@repo/aisle/fbm-returns"
+import { ProviderError, ReportProcessingError, ReportDeferredError } from "@repo/copacker-marketplaces/amazon"
+import { FbmReturnsError } from "@repo/copacker-marketplaces/fbm-returns"
 import { z } from "zod"
 
 // Only schema-owned field names and fixed error categories. Never provider text, row values, URLs or IDs.

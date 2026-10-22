@@ -1,3 +1,4 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -11,11 +12,11 @@ import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { releasedStates, reservedPieces } from "@/server/readiness"
+import { knownPackingGroups, releasedLabelKinds, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
-import { hasProductLabels, lineLabels } from "./product-barcodes"
+import { lineLabels } from "./product-barcodes"
 export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
   const s = await session()
   requirePage(s, "shipments")
@@ -39,11 +40,18 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const { order, supplier } = await accessibleOrder(s, shipment.orderId)
   const workflow = await orderWorkflow(s, order.id)
   const step = workflow.shipments.find((row) => row.id === id)!
-  const reserved = reservedPieces(await db().select().from(shipments).where(eq(shipments.orderId, order.id)), id)
+  const rows = await db().select().from(shipments).where(eq(shipments.orderId, order.id))
+  const reserved = reservedPieces(rows, id)
   const snapshot = shipment.snapshot ?? order.data
   const packingOrder = shipment.amazonNetwork
-    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    ? { ...order.data, items: order.data.items.filter((item) => item.receiver === shipment.amazonNetwork) }
     : order.data
+  // FBA cartons keep to Amazon's packing groups, which the packing checks know once Amazon has planned a shipment of
+  // the PO. Until then they're null, and the supplier is told the groups aren't checked.
+  const packingGroups =
+    orderDestination(order.data) === "amazon" && packingOrder.items.some((item) => item.receiver === "fba")
+      ? (knownPackingGroups(rows, shipment) ?? null)
+      : undefined
   const [docs, addresses] = await Promise.all([
     db()
       .select()
@@ -71,7 +79,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
     (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
       !["invoice", "packing_list", "checklist"].includes(d.kind)
   )
   // The shipment's commercial invoice. There's one at most: each upload replaces the last.
@@ -82,7 +90,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const fba = shipment.amazonNetwork === "fba"
   // A supplier that isn't on Copacker sends its details by email, and the buyer enters them here.
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
-  const amazon = order.data.destination === "amazon"
+  const amazon = orderDestination(order.data) === "amazon"
   // A purchase order's shipments are numbered oldest first, as on the shipments list.
   const title = t("title", { number: workflow.shipments.findIndex((row) => row.id === id) + 1 })
   const destination = await shipmentDestinations([order.data])
@@ -93,11 +101,6 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   // The viewer's next step when it's a single click, beside the title.
   return {
     id,
-    hasProductLabels: hasProductLabels(
-      snapshot.items,
-      labels,
-      new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
-    ),
     // The label types each line being packed prints, and why a barcode label can't be made yet.
     lineLabels: packingOrder.items.map((item) => ({
       itemId: item.id,
@@ -136,11 +139,27 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     },
     step: {
       next: { step: step.next.step, message: step.next.message },
-      issues: step.issues.map(({ message }) => ({ message })),
-      packetUrl: step.packetUrl,
-      canRelease: step.canRelease
+      issues: step.issues.map(({ code, message }) => ({ code, message })),
+      packetUrl: step.packetUrl
     },
+    // The buyer's carrier label for each carton so far, which the Upload carrier labels dialog opens with.
+    carrierLabels: isBuyer
+      ? docs.flatMap((doc) =>
+          doc.kind === "shipping_label" && doc.cartonId
+            ? [
+                {
+                  cartonId: doc.cartonId,
+                  documentId: doc.id,
+                  trackingNumber: doc.trackingNumber,
+                  sourceName: doc.sourceName,
+                  sourcePage: doc.sourcePage
+                }
+              ]
+            : []
+        )
+      : [],
     reserved,
+    packingGroups,
     snapshot: prices ? snapshot : unpricedOrder(snapshot),
     addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
     awaitingChanges,

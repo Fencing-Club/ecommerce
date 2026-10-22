@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { orderInputSchema, orderTotal, destinationSchema } from "@repo/aisle"
+import { destinationSchema, orderInputSchema, orderTotal, receiverFor } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -66,7 +66,8 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       pieces: item.pieces,
       piecesPerSet: item.piecesPerSet,
       unitPrice,
-      instructions: ""
+      instructions: "",
+      receiver: receiverFor(input.destination)
     }
   })
   const adjustments = proposal.adjustments.map((adjustment) => {
@@ -79,7 +80,8 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       amount: (negative ? -1 : 1) * priceInMinorUnits(negative ? adjustment.amount.slice(1) : adjustment.amount)
     }
   })
-  const proposed = orderInputSchema.parse({ ...input, currency: proposal.currency, items, adjustments })
+  const { destination: _, ...order } = input
+  const proposed = orderInputSchema.parse({ ...order, currency: proposal.currency, items, adjustments })
   if (proposal.documentTotal !== null && priceInMinorUnits(proposal.documentTotal) !== orderTotal(proposed)) {
     throw new LocalizedError("documentTotalDiffers")
   }

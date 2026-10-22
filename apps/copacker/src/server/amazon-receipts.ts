@@ -1,4 +1,4 @@
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsEvidence, analyticsFeeds } from "@/db/schema"

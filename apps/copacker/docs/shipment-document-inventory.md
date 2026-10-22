@@ -9,10 +9,11 @@ Review reference for the files associated with a shipment. This is separate from
 | Packing list | Every shipment | Packing is submitted, the destination is known and the PDF is generated | Shipment packing snapshot |
 | Packing checklist | Every shipment with packing or handling tasks | Tasks and the shipping arrangement are confirmed and the PDF is generated | PO product requirements and shipment transport |
 | Carton label reference | Shipments with carton label assignments | Required label files are matched to physical cartons and the reference PDF is generated | Verified carton-to-label mapping |
-| Amazon carton labels | FBA and AWD | Amazon supplies the original label files for the confirmed shipment | Amazon |
+| Carton labels | FBA and AWD | Amazon supplies the original label files for the confirmed shipment | Amazon |
+| Pallet labels | FBA shipments on pallets | Amazon supplies four labels for each pallet once it labels the cartons | Amazon |
 | Carrier labels | Services requiring carrier labels | The selected carrier supplies the files after booking, or the buyer uploads them | Amazon or the booked carrier |
 
-The carton label reference explains which label belongs to each carton; it is not printable barcode artwork. Amazon carton labels and carrier labels are separate files. AGL or forwarder pickup must not imply a separate carrier-label requirement.
+The carton label reference explains which label belongs to each carton; it is not printable barcode artwork. Carton labels, carrier labels and pallet labels are separate files. AGL or forwarder pickup must not imply a separate carrier-label requirement.
 
 ## Related PO and product files
 
@@ -36,4 +37,4 @@ The supplier pack is a convenience download of available, released documents, no
 
 Confirm which additional carrier or customs documents we want to support: bill of lading, air waybill, commercial invoice, customs declaration and proof of delivery. Their requirements depend on the booked service and route; do not promise them for every shipment or substitute the supplier invoice for a commercial invoice.
 
-Source audit: document kinds in `src/db/schema.ts`, packet composition in `src/server/shipment-packet.ts`, templates in `src/documents/shipping-model.ts`, and product label options in `src/lib/packing-requirements.ts`. This inventory defines the review scope; it does not mean every download is wired into the current shipment page.
+Source audit: document kinds in `src/db/schema.ts`, packet composition in `src/server/shipment-packet.ts`, document data in `@repo/copacker-shipments/shipping-model`, templates in `src/documents/shipping-pdf.tsx` and `src/documents/supplier-packet.tsx`, and product label options in `src/lib/packing-requirements.ts`. This inventory defines the review scope; it does not mean every download is wired into the current shipment page.

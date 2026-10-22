@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { describe, expect, it } from "vitest"
 import { landedMarkup, landedMarkups } from "../src/server/landed-costs"
 import { catalogIndex } from "../src/server/overview-sales"

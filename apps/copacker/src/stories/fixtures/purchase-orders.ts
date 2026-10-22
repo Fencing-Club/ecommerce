@@ -1,6 +1,6 @@
-import type { Address } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import { http, HttpResponse } from "msw"
+import type { Address } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-shipments"
+import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
 import { z } from "zod"
 import type { TimelineEntry } from "@/components/po-timeline"
@@ -110,6 +110,7 @@ export function shipmentRecord(overrides: Partial<Shipment> = {}): Shipment {
     linkedAmazonShipmentId: null,
     amazonOrderId: null,
     amazonShipmentId: null,
+    packingGroups: null,
     operation: "none",
     labels: [],
     stockTaken: null,
@@ -185,6 +186,9 @@ export function documentRecord(overrides: Partial<Document> = {}): Document {
     kind: "purchase_order",
     itemId: null,
     cartonId: null,
+    trackingNumber: null,
+    sourceName: null,
+    sourcePage: null,
     objectKey: `documents/${documentCount}.pdf`,
     name: "PO-1042.pdf",
     bytes: 48_000,

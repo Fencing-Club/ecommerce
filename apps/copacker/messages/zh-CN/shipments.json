@@ -51,8 +51,7 @@
       "waitingForBuyer": "等待买家审批"
     },
     "labels": {
-      "title": "标签",
-      "waiting": "等待标签"
+      "heldBack": "标签发送给供应商之前"
     },
     "creating": {
       "title": "正在创建 Amazon 货件",
@@ -60,15 +59,16 @@
     },
     "packet": {
       "title": "供应商资料包已就绪",
-      "description": "按实际尺寸打印标签。",
-      "downloadLabel": "下载供应商资料包",
-      "download": "下载资料包",
+      "downloadLabel": "下载货件资料包",
       "incompleteTitle": "供应商资料包不完整",
       "waitingForLabels": "等待买家的标签",
       "cartonLabels": "外箱标签",
       "unitLabels": "商品标签",
       "carrierLabels": "承运商标签",
-      "backToShipment": "返回货件"
+      "palletLabels": "托盘标签",
+      "backToShipment": "返回货件",
+      "document": "货件资料包",
+      "documentDescription": "货件的全部文件"
     },
     "cartons": {
       "title": "箱",
@@ -77,7 +77,7 @@
       "units": "件数",
       "dimensions": "尺寸（cm）",
       "weight": "重量（kg）",
-      "amazonLabel": "Amazon 标签"
+      "amazonLabel": "箱标"
     },
     "pickup": {
       "title": "提货",
@@ -110,10 +110,6 @@
       "updateCost": "同时更新 Shopify 单位成本",
       "updateCostDescription": "Shopify 成本须使用采购订单的币种。",
       "submit": "批准修改"
-    },
-    "release": {
-      "submit": "向供应商发放标签",
-      "bookingReference": "Amazon 运输预订编号"
     },
     "correction": {
       "trigger": "申请更正",
@@ -232,5 +228,63 @@
     "suffocation": "窒息警告标签",
     "choking": "小零件窒息危险标签",
     "notProvided": "未提供标签"
+  },
+  "carrierLabels": {
+    "title": "上传承运商标签",
+    "upload": "上传标签",
+    "intro": "添加承运商的标签 PDF。标签会按重量和尺寸匹配到箱子。",
+    "reading": "{files, plural, =1 {正在读取 {name}} other {正在读取 # 个 PDF 文件}}",
+    "source": "{name}，第 {page} 页",
+    "savedLabel": "已保存的标签",
+    "trackingNumber": "运单号",
+    "enterTracking": "输入运单号",
+    "noTracking": "没有运单号",
+    "addTracking": "添加",
+    "addTrackingFor": "为 {name} 添加运单号",
+    "trackingNotRead": "无法识别的运单标签。",
+    "trackingRecognized": "已识别运单号。",
+    "trackingUnknown": "无法识别此运单号。请与标签核对。",
+    "trackingInvalid": "请按标签上印的内容输入运单号。",
+    "notPdf": "{name} 不是 PDF 文件。",
+    "unreadable": "无法读取 {name}。",
+    "alreadyAdded": "{labels, plural, other {# 个标签已添加过，已跳过。}}",
+    "cancel": "取消",
+    "save": "保存标签",
+    "failed": "标签未保存。请重试。",
+    "saved": "承运商标签已保存",
+    "sent": "承运商标签已发送给供应商",
+    "notPlaced": "未分配",
+    "fill": "按顺序填入箱子",
+    "dropTitle": "将承运商的 PDF 拖放到此处",
+    "dropNote": "每张标签一个 PDF，或每页一张标签的单个 PDF",
+    "browse": "浏览",
+    "dropMore": "将更多 PDF 拖放到此处，或<browse>浏览</browse>",
+    "files": "{count} 个文件",
+    "dropFiles": "松开以添加 {count} 个 PDF",
+    "dropFilesNote": "每一页都会成为一张标签",
+    "dropToTakeOff": "松开以将 {name} 从其箱子上取下",
+    "cartons": "箱子",
+    "cartonsLabelled": "{total} 个中有 {count} 个已有标签",
+    "dragHere": "将标签拖到此处",
+    "dropOnCarton": "松开以将 {name} 放到 {carton}",
+    "takeOff": "从 {carton} 取下标签",
+    "preview": "预览 {name}",
+    "pictureOf": "来自 {name} 的标签",
+    "noPicture": "没有此标签的图片",
+    "readingText": "正在读取标签文字",
+    "trackingFor": "{name} 的运单号",
+    "carrier": "承运商",
+    "unknownCarrier": "未知",
+    "allLabels": "所有标签",
+    "previousLabel": "上一张标签",
+    "nextLabel": "下一张标签",
+    "positionNotPlaced": "未分配的第 {position} 张，共 {count} 张",
+    "positionPlaced": "箱子上的第 {position} 张，共 {count} 张",
+    "carton": "箱子",
+    "cartonTaken": "{carton}，已有标签",
+    "notRead": "未读取",
+    "doesNotFit": "重量和尺寸不符合 {cartons}",
+    "weight": "重量",
+    "dimensions": "尺寸"
   }
 }

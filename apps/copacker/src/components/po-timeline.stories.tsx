@@ -1,4 +1,4 @@
-import { HttpResponse } from "msw"
+import { HttpResponse } from "msw/http"
 import type { ComponentProps } from "react"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"

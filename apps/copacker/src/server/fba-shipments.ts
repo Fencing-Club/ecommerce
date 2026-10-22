@@ -1,16 +1,18 @@
-import type { AmazonPrep } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import type { Packing } from "@repo/aisle"
-import { buildFbaPlan, fbaBoxes, originSchema } from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
-import type { FbaBox } from "@repo/aisle/amazon"
-import type { FbaDeliveryWindow } from "@repo/aisle/amazon"
-import type { FbaPackingOption } from "@repo/aisle/amazon"
-import type { FbaPlacementOption } from "@repo/aisle/amazon"
-import type { FbaTransportationOption } from "@repo/aisle/amazon"
-import { downloadAmazonLabels, ProviderError } from "@repo/aisle/amazon"
-import type { CartonLabel } from "@repo/aisle/labels"
-import { unpackLabels } from "@repo/aisle/labels"
+import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { FbaBox } from "@repo/copacker-marketplaces/amazon"
+import type { FbaDeliveryWindow } from "@repo/copacker-marketplaces/amazon"
+import type { FbaPackingOption } from "@repo/copacker-marketplaces/amazon"
+import type { FbaPlacementOption } from "@repo/copacker-marketplaces/amazon"
+import type { FbaTransportationOption } from "@repo/copacker-marketplaces/amazon"
+import { downloadAmazonLabels, ProviderError } from "@repo/copacker-marketplaces/amazon"
+import type { OrderInput } from "@repo/copacker-shipments"
+import type { Packing } from "@repo/copacker-shipments"
+import type { Pallet } from "@repo/copacker-shipments"
+import { buildFbaPlan, cartonsValue, fbaBoxes, fbaPallets, originSchema, palletLabels } from "@repo/copacker-shipments"
+import { combinePdfs } from "@repo/copacker-shipments/documents"
+import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import { splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { shipments } from "@/db/schema"
@@ -18,6 +20,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { PollAgain } from "./job-handlers"
+import { queueLabels, sendQueuedLabels } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
 
@@ -98,8 +101,10 @@ const netFees = (option: Pick<FbaPackingOption, "fees" | "discounts">) =>
   option.fees.reduce((sum, fee) => sum + fee.value.amount, 0) -
   option.discounts.reduce((sum, discount) => sum + discount.value.amount, 0)
 
-// The packing option whose groups keep each carton's products together, with the fewest groups and then the lowest fees.
-// Amazon puts products that must ship separately in different packing groups, and a carton can't span two.
+// The packing option whose groups keep each carton's products together, with the fewest groups and then the lowest fees,
+// and each SKU's group in it. Amazon puts products that must ship separately in different packing groups, and a carton
+// can't span two. When no option keeps every carton to one group, the one with the fewest groups and lowest fees comes
+// back with `fits` false, so its groups can show the supplier which cartons to repack.
 export async function choosePackingOption(
   api: Pick<Amazon, "fbaPackingGroupItems">,
   planId: string,
@@ -107,7 +112,7 @@ export async function choosePackingOption(
   order: OrderInput,
   packing: Packing
 ) {
-  const fitting: Array<{ option: FbaPackingOption; groups: Map<string, string> }> = []
+  const offered: Array<{ option: FbaPackingOption; groups: Map<string, string>; fits: boolean }> = []
   for (const option of options.filter((row) => row.status === "OFFERED")) {
     // Each SKU's packing group in this option.
     const groups = new Map<string, string>()
@@ -118,12 +123,14 @@ export async function choosePackingOption(
     }
     const skus = (carton: Packing["cartons"][number]) =>
       carton.items.map((content) => order.items.find((item) => item.id === content.itemId)!.buyerSku)
-    if (packing.cartons.every((carton) => new Set(skus(carton).map((sku) => groups.get(sku))).size === 1)) {
-      fitting.push({ option, groups })
-    }
+    const fits = packing.cartons.every((carton) => new Set(skus(carton).map((sku) => groups.get(sku))).size === 1)
+    offered.push({ option, groups, fits })
   }
-  const [best] = fitting.toSorted(
-    (a, b) => a.option.packingGroups.length - b.option.packingGroups.length || netFees(a.option) - netFees(b.option)
+  const [best] = offered.toSorted(
+    (a, b) =>
+      Number(b.fits) - Number(a.fits) ||
+      a.option.packingGroups.length - b.option.packingGroups.length ||
+      netFees(a.option) - netFees(b.option)
   )
   if (!best) {
     throw new LocalizedError("amazonPackSeparately")
@@ -139,10 +146,41 @@ export function choosePlacementOption(options: FbaPlacementOption[]) {
   return best ?? null
 }
 
-// The buyer's own carrier or forwarder takes FBA shipments, as small parcels when Amazon allows it.
-export function chooseTransportationOption(options: FbaTransportationOption[]) {
+// The buyer's own carrier or forwarder takes FBA shipments: as small parcels when Amazon allows it, or as less than a
+// truckload when the cartons are on pallets.
+export function chooseTransportationOption(options: FbaTransportationOption[], palletized = false) {
   const own = options.filter((option) => option.shippingSolution === "USE_YOUR_OWN_CARRIER")
-  return own.find((option) => option.shippingMode === "GROUND_SMALL_PARCEL") ?? own.at(0) ?? null
+  const modes = palletized ? ["FREIGHT_LTL", "FREIGHT_FTL_PALLET"] : ["GROUND_SMALL_PARCEL"]
+  const preferred = modes.map((mode) => own.find((option) => option.shippingMode === mode)).find(Boolean)
+  // Pallets go as freight or not at all: Amazon prints pallet labels only for a confirmed LTL or FTL shipment.
+  return preferred ?? (palletized ? null : (own.at(0) ?? null))
+}
+
+// What Amazon is told about each shipment's pallets, when the cartons are on pallets: its whole pallets, identical ones
+// counted together, and the declared value of its goods, which Amazon needs to quote freight. A pallet whose cartons
+// Amazon sends to two warehouses can't be booked.
+export function palletConfiguration(
+  order: OrderInput,
+  packing: Packing,
+  cartons: Array<{ cartonId: string; shipmentId: string }>,
+  shipmentId: string
+) {
+  if (!packing.palletized) {
+    return {}
+  }
+  const ids = new Set(cartons.filter((carton) => carton.shipmentId === shipmentId).map((carton) => carton.cartonId))
+  const { pallets, split } = fbaPallets(packing, ids)
+  if (split.length) {
+    throw new LocalizedError("amazonPalletSplit", { pallets: split.join(", ") })
+  }
+  const value = cartonsValue(
+    order,
+    packing.cartons.filter((carton) => ids.has(carton.cartonId))
+  )
+  return {
+    pallets,
+    freightInformation: { declaredValue: { amount: value / 100, code: order.currency }, freightClass: "NONE" }
+  }
 }
 
 // The week the cartons are expected at Amazon: the first delivery window starting once they're ready, or the latest
@@ -189,6 +227,39 @@ export function matchBoxes(
 // Moves a shipment's FBA inbound plan on as far as it can go: creating the plan, choosing packing, sending carton
 // contents, choosing warehouses and the buyer's own carrier with a delivery window, then fetching each carton's box
 // label. Amazon does most steps in the background, so the job waits on each one's operation and runs again.
+// A palletized shipment's pallet labels as one file. Amazon prints four for each pallet, one for each side, for each
+// Amazon shipment's pallets in order; the file keeps each pallet's labels together, the pallets in packing order.
+// Amazon prints four labels for each pallet, one for each side, a page each on plain paper.
+const labelsPerPallet = 4
+
+export async function fbaPalletLabelFile(
+  api: Pick<Amazon, "fbaPalletLabels">,
+  pallets: ReadonlyArray<Pick<Pallet, "palletId" | "cartonIds">>,
+  labels: ReadonlyArray<CartonLabel>
+) {
+  const placed = palletLabels(pallets, labels)
+  if (!placed.length) {
+    return undefined
+  }
+  const sheets = new Map<string, Uint8Array[]>()
+  for (const amazonShipmentId of new Set(placed.map((pallet) => pallet.amazonShipmentId))) {
+    const shipmentPallets = placed.filter((pallet) => pallet.amazonShipmentId === amazonShipmentId)
+    const url = await api.fbaPalletLabels(amazonShipmentId, shipmentPallets.length)
+    const [file] = await unpackLabels(await downloadAmazonLabels(url))
+    const pages = await splitPdfPages(file!.data)
+    if (pages.length !== shipmentPallets.length * labelsPerPallet) {
+      throw new Error("Amazon's pallet labels don't match the shipment's pallets")
+    }
+    for (const [index, pallet] of shipmentPallets.entries()) {
+      sheets.set(
+        pallet.palletId,
+        pages.slice(index * labelsPerPallet, (index + 1) * labelsPerPallet).map((page) => page.data)
+      )
+    }
+  }
+  return combinePdfs(placed.flatMap((pallet) => sheets.get(pallet.palletId)!))
+}
+
 export async function fbaShipmentJob(
   api: Amazon,
   shipment: Shipment,
@@ -254,13 +325,26 @@ export async function fbaShipmentJob(
   }
   await assertOwned()
 
-  // Packing: an option that keeps each carton's products together, then each carton's size, weight and contents.
+  // Packing: an option that keeps each carton's products together, then each carton's size, weight and contents. The
+  // shipment keeps each SKU's group for the packing checks, also when no option fits, to show which cartons to repack.
+  const choosePacking = async (options: FbaPackingOption[]) => {
+    const chosen = await choosePackingOption(api, planId!, options, order, packing)
+    await assertOwned()
+    await db()
+      .update(shipments)
+      .set({ packingGroups: Object.fromEntries(chosen.groups) })
+      .where(eq(shipments.id, shipment.id))
+    if (!chosen.fits) {
+      throw new LocalizedError("amazonPackSeparately")
+    }
+    return chosen
+  }
   if (!plan.packingOptions?.some((option) => option.status === "ACCEPTED")) {
     const options = await api.fbaPackingOptions(planId!)
     if (!options.some((option) => option.status === "OFFERED")) {
       wait("Amazon is working out packing options", await api.fbaGeneratePackingOptions(planId!))
     }
-    const { option } = await choosePackingOption(api, planId!, options, order, packing)
+    const { option } = await choosePacking(options)
     await assertOwned()
     wait("Amazon is confirming the packing option", await api.fbaConfirmPackingOption(planId!, option.packingOptionId))
   }
@@ -270,13 +354,7 @@ export async function fbaShipmentJob(
     if (!(await api.fbaPlanBoxes(planId!)).length) {
       const packingOptions = await api.fbaPackingOptions(planId!)
       const packingOption = packingOptions.find((option) => option.status === "ACCEPTED")!
-      const { groups } = await choosePackingOption(
-        api,
-        planId!,
-        [{ ...packingOption, status: "OFFERED" }],
-        order,
-        packing
-      )
+      const { groups } = await choosePacking([{ ...packingOption, status: "OFFERED" }])
       const grouped = new Map<string, ReturnType<typeof fbaBoxes>[number]["box"][]>()
       for (const { box } of fbaBoxes(order, packing, prep)) {
         const group = groups.get(box.items[0]!.msku)!
@@ -321,6 +399,24 @@ export async function fbaShipmentJob(
         phoneNumber: packing.origin.phoneNumber,
         ...(packing.origin.email ? { email: packing.origin.email } : {})
       }
+      // Pallets go to Amazon per shipment, so each carton's shipment comes first.
+      const cartons = packing.palletized
+        ? matchBoxes(
+            order,
+            packing,
+            prep,
+            (
+              await Promise.all(
+                destinations.map(async (row) =>
+                  (await api.fbaShipmentBoxes(planId!, row.shipmentId)).map((box) => ({
+                    box,
+                    shipmentId: row.shipmentId
+                  }))
+                )
+              )
+            ).flat()
+          )
+        : []
       await assertOwned()
       wait(
         "Amazon is finding carriers",
@@ -329,15 +425,16 @@ export async function fbaShipmentJob(
           shipmentTransportationConfigurations: unbooked.map((row) => ({
             shipmentId: row.shipmentId,
             readyToShipWindow: { start: start.toISOString() },
-            contactInformation: contact
+            contactInformation: contact,
+            ...palletConfiguration(order, packing, cartons, row.shipmentId)
           }))
         })
       )
     }
     const offered = listed.map(({ shipment: row, options }) => {
-      const option = chooseTransportationOption(options)
+      const option = chooseTransportationOption(options, packing.palletized)
       if (!option) {
-        throw new LocalizedError("amazonNoOwnCarrier")
+        throw new LocalizedError(packing.palletized ? "amazonNoOwnFreight" : "amazonNoOwnCarrier")
       }
       return { shipment: row, option }
     })
@@ -413,6 +510,24 @@ export async function fbaShipmentJob(
       amazonShipmentId: destination.shipmentConfirmationId!
     })
   }
+  if (packing.palletized) {
+    const bytes = await fbaPalletLabelFile(api, packing.pallets ?? [], labels)
+    if (bytes) {
+      await assertOwned()
+      await storeDocument(
+        {
+          orderId: shipment.orderId,
+          shipmentId: shipment.id,
+          kind: "pallet_label",
+          name: "Pallet labels.pdf",
+          orderRevision: shipment.orderRevision,
+          shipmentRevision: revision,
+          uploadedBy: "amazon"
+        },
+        bytes
+      )
+    }
+  }
   await db()
     .update(shipments)
     .set({
@@ -426,5 +541,10 @@ export async function fbaShipmentJob(
     .where(eq(shipments.id, shipment.id))
   await assertOwned()
   await assertOwned()
-  await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
+  const queued = await db().transaction(async (tx) => {
+    await tx.update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipment.id))
+    return queueLabels(tx, { shipmentId: shipment.id, actor: "amazon" })
+  })
+  // A shipment that needs nothing more from the buyer goes straight to its supplier.
+  await sendQueuedLabels(queued)
 }

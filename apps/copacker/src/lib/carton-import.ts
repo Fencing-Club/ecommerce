@@ -1,8 +1,16 @@
-import type { OrderInput } from "@repo/aisle"
-import type { CellValue } from "exceljs"
+import { cartonRuns } from "@repo/copacker-packing-rules"
+import { cartonInputSchema, type OrderInput } from "@repo/copacker-shipments"
 import { z } from "zod"
-import type { CartonGroup } from "./carton-groups"
-import { csvTable } from "./csv-table"
+import { type CartonGroup, groupCartonIds } from "./carton-groups"
+import {
+  addGuide,
+  cellNumber,
+  matchColumns,
+  readSpreadsheet,
+  styleTemplateSheet,
+  type TemplateGuide,
+  type TemplateRow
+} from "./spreadsheet-import"
 
 export const cartonColumns = [
   "Carton ID",
@@ -38,44 +46,17 @@ export type ImportIssue = {
 }
 export type CartonImportResult = { groups: CartonGroup[]; issues: ImportIssue[]; templateMatches: boolean }
 
-const positive = z.number().finite().positive()
-const quantity = positive.int().max(1000000)
-
-// Preserve text SKUs, reject formulas instead of trusting a workbook's cached result.
-function cellValue(value: CellValue): string {
-  if (value === null || value === undefined) {
-    return ""
-  }
-  if (typeof value === "string" || typeof value === "number") {
-    return String(value)
-  }
-  if (typeof value === "object" && "richText" in value) {
-    return value.richText.map((part) => part.text).join("")
-  }
-  return ""
-}
+// A row's carton count, at most a packing's cartons.
+const cartonCount = z.number().int().positive().max(1000)
+const { pieces } = cartonInputSchema.shape.items.element.shape
 
 export function parseCartonTable(table: string[][], products: OrderInput["items"]): CartonImportResult {
-  const header = (table[0] ?? []).map((cell) => cell.trim().toLowerCase())
-  const expected = cartonColumns.map((column) => column.toLowerCase())
-  const missing = cartonColumns.filter((column) => !header.includes(column.toLowerCase()))
-  const duplicate = header.filter((column, index) => column && header.indexOf(column) !== index)
-  const unknown = header.filter((column) => column && !expected.includes(column))
+  const { issues: columnIssues, positions } = matchColumns(table[0] ?? [], cartonColumns)
+  if (columnIssues.length) {
+    return { groups: [], issues: columnIssues, templateMatches: false }
+  }
   const issues: ImportIssue[] = []
-  if (missing.length) {
-    issues.push({ code: "missingColumns", value: "\n" + missing.join("\n") })
-  }
-  if (duplicate.length) {
-    issues.push({ code: "duplicateColumns", value: "\n" + [...new Set(duplicate)].join("\n") })
-  }
-  if (unknown.length) {
-    issues.push({ code: "unknownColumns", value: "\n" + unknown.join("\n") })
-  }
-  if (issues.length) {
-    return { groups: [], issues, templateMatches: false }
-  }
   const groups = new Map<string, CartonGroup>()
-  const positions = cartonColumns.map((column) => header.indexOf(column.toLowerCase()))
   for (const [index, cells] of table.slice(1).entries()) {
     if (cells.every((cell) => !cell.trim())) {
       continue
@@ -90,7 +71,7 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
       continue
     }
     const location = { row, carton: id }
-    if (!id || id.length > 60) {
+    if (!cartonInputSchema.shape.cartonId.safeParse(id).success) {
       issues.push({ ...location, code: "cartonId" })
       continue
     }
@@ -112,16 +93,16 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
     const measurements = measurementText.map(Number)
     const [length = 0, width = 0, height = 0, weight = 0] = measurements
     let valid = true
-    if (!positive.int().max(1000).safeParse(count).success) {
+    if (!cartonCount.safeParse(count).success) {
       issues.push({ ...location, code: "number", value: "Carton count" })
       valid = false
     }
-    if (!quantity.safeParse(packs).success || packs * product.piecesPerSet > 1000000) {
+    if (!pieces.safeParse(packs).success || !pieces.safeParse(packs * product.piecesPerSet).success) {
       issues.push({ ...location, code: "number", value: "Quantity per carton" })
       valid = false
     }
-    for (const [dimension, value] of measurements.entries()) {
-      if (!positive.max(dimension === 3 ? 1000 : 500).safeParse(value).success) {
+    for (const [dimension, field] of (["length", "width", "height", "weight"] as const).entries()) {
+      if (!cartonInputSchema.shape[field].safeParse(measurements[dimension]).success) {
         issues.push({ ...location, code: "number", value: cartonColumns[dimension + 4] })
         valid = false
       }
@@ -167,73 +148,125 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
 }
 
 export async function readCartonFile(file: File, products: OrderInput["items"]): Promise<CartonImportResult> {
-  try {
-    if (file.name.toLowerCase().endsWith(".csv")) {
-      return parseCartonTable(csvTable((await file.text()).replace(/^\uFEFF/, "")), products)
-    }
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      return { groups: [], issues: [{ code: "unreadable" }], templateMatches: false }
-    }
-    const { default: ExcelJS } = await import("exceljs")
-    const book = new ExcelJS.Workbook()
-    await book.xlsx.load(await file.arrayBuffer())
-    const sheet = book.getWorksheet("Cartons")
-    if (!sheet) {
-      return { groups: [], issues: [{ code: "worksheet" }], templateMatches: false }
-    }
-    const table: string[][] = []
-    sheet.eachRow((row, index) => {
-      table[index - 1] = Array.from({ length: Math.max(row.cellCount, cartonColumns.length) }, (_, column) =>
-        cellValue(row.getCell(column + 1).value)
-      )
-    })
-    return parseCartonTable(
-      Array.from(table, (row) => row ?? []),
-      products
-    )
-  } catch {
-    return { groups: [], issues: [{ code: "unreadable" }], templateMatches: false }
-  }
+  const table = await readSpreadsheet(file, "Cartons", cartonColumns.length)
+  return Array.isArray(table)
+    ? parseCartonTable(table, products)
+    : { groups: [], issues: [table], templateMatches: false }
 }
 
+// The Example sheet's cartons: a kind of carton for each of the order's first three products, A1 as three identical
+// cartons, with quantities the order has, so the example reads like the file the supplier will make and imports as it
+// is. Each holds one product, as AWD cartons must; the instructions say how to pack products together.
+export function cartonExample(products: OrderInput["items"]) {
+  const kinds = [
+    ["A1", 3, 60, 40, 40, 12.5],
+    ["B1", 2, 50, 40, 30, 9],
+    ["C1", 1, 40, 30, 30, 6]
+  ] as const
+  return products
+    .map((item) => ({ item, packs: Math.floor(item.pieces / item.piecesPerSet) }))
+    .filter(({ packs }) => packs > 0)
+    .slice(0, kinds.length)
+    .map(({ item, packs }, index) => {
+      const [cartonId, cartons, length, width, height, weight] = kinds[index]!
+      const count = Math.min(cartons, packs)
+      return [
+        cartonId,
+        count,
+        item.supplierSku,
+        Math.min(24, Math.floor(packs / count)),
+        length,
+        width,
+        height,
+        weight,
+        item.name,
+        item.variant,
+        item.piecesPerSet
+      ]
+    })
+}
+
+// A shipment's cartons as the template's rows, to export and import again: a row for each product of each kind of
+// carton. A kind's cartons share a row when the import would number them back the same (A1 with a count of 3 for
+// A1–A3); otherwise they go in runs, or one by one, so every carton keeps its ID. Unfinished values stay blank, for
+// the import to point out.
+export function cartonRows(groups: CartonGroup[], products: OrderInput["items"]): TemplateRow[] {
+  const ids = groupCartonIds(groups)
+  return groups.flatMap((group, index) => {
+    const size = [group.length, group.width, group.height, group.weight].map(cellNumber)
+    return cartonRuns(ids[index] ?? [])
+      .flatMap((run) => {
+        const [numbered = []] = groupCartonIds([{ ...group, cartonId: run[0]!, cartonIds: [], count: run.length }])
+        return numbered.join() === run.join() ? [run] : run.map((id) => [id])
+      })
+      .flatMap((run) =>
+        (group.items.length ? group.items : [undefined]).map((content) => {
+          const product = products.find((item) => item.id === content?.itemId)
+          return product && content
+            ? [
+                run[0]!,
+                run.length,
+                product.supplierSku,
+                cellNumber(content.pieces / product.piecesPerSet),
+                ...size,
+                product.name,
+                product.variant,
+                product.piecesPerSet
+              ]
+            : [run[0]!, run.length, "", "", ...size, "", "", ""]
+        })
+      )
+  })
+}
+
+// The carton template: a Cartons sheet with a row for each of the order's products to fill in, under the shipment's
+// cartons when it's an export, the same filled in on an Example sheet, and the instructions in the reader's language,
+// right to left for Urdu. The product cells are grey, to keep as they are.
 export async function cartonTemplate(
   products: OrderInput["items"],
-  instructionsCopy: readonly string[],
-  rightToLeft = false
+  guide: TemplateGuide,
+  example: ReturnType<typeof cartonExample>,
+  rightToLeft = false,
+  cartons: readonly TemplateRow[] = []
 ) {
   const { default: ExcelJS } = await import("exceljs")
   const book = new ExcelJS.Workbook()
-  const cartons = book.addWorksheet("Cartons")
-  cartons.columns = cartonColumns.map((header) => ({
-    header,
-    width: header === "Product" || header === "Variant" ? 36 : 22
-  }))
-  cartons.views = [{ state: "frozen", ySplit: 1, rightToLeft }]
-  cartons.getColumn(1).numFmt = "@"
-  cartons.getColumn(3).numFmt = "@"
-  cartons.addRows(
-    products.map((item) => ["", "", item.supplierSku, "", "", "", "", "", item.name, item.variant, item.piecesPerSet])
-  )
-  cartons.autoFilter = { from: { row: 1, column: 1 }, to: { row: products.length + 1, column: cartonColumns.length } }
-  cartons.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } }
-  cartons.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } }
-  cartons.getRow(1).height = 30
-  cartons.eachRow((row, index) => {
-    row.alignment = { vertical: "middle", wrapText: true }
-    if (index > 1) {
-      row.height = 42
-      for (const column of [3, 9, 10, 11]) {
-        row.getCell(column).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }
+  const references = products.map((item): TemplateRow => [
+    "",
+    "",
+    item.supplierSku,
+    "",
+    "",
+    "",
+    "",
+    "",
+    item.name,
+    item.variant,
+    item.piecesPerSet
+  ])
+  for (const [name, rows] of [
+    ["Cartons", [...cartons, ...references]],
+    ["Example", example]
+  ] as const) {
+    const sheet = book.addWorksheet(name)
+    sheet.columns = cartonColumns.map((header) => ({
+      header,
+      width: header === "Product" || header === "Variant" ? 36 : 22
+    }))
+    sheet.getColumn(1).numFmt = "@"
+    sheet.getColumn(3).numFmt = "@"
+    sheet.addRows([...rows])
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: rows.length + 1, column: cartonColumns.length } }
+    styleTemplateSheet(sheet)
+    sheet.eachRow((row, index) => {
+      if (index > 1) {
+        row.height = 42
+        for (const column of [3, 9, 10, 11]) {
+          row.getCell(column).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }
+        }
       }
-    }
-  })
-  const instructions = book.addWorksheet("Instructions")
-  instructions.views = [{ rightToLeft }]
-  instructions.getColumn(1).width = 110
-  for (const instruction of instructionsCopy) {
-    const row = instructions.addRow([instruction])
-    row.alignment = { wrapText: true, vertical: "top", readingOrder: rightToLeft ? "rtl" : "ltr" }
-    row.height = 60
+    })
   }
+  addGuide(book, guide, rightToLeft)
   return book.xlsx.writeBuffer()
 }

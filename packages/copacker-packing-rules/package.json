@@ -1,0 +1,25 @@
+{
+  "name": "@repo/copacker-packing-rules",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./carton-policies": "./src/carton-policies.ts",
+    "./pallet-policies": "./src/pallet-policies.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "oxlint --max-warnings=0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "5.0.5",
+    "@vitest/coverage-v8": "5.0.5"
+  }
+}

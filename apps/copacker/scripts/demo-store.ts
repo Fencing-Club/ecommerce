@@ -1,8 +1,8 @@
 // A demo Shopify store for a buyer workspace, so Inventory, purchase orders and Restock can be tried without connecting
 // real accounts. `pnpm db:seed` fills every buyer workspace with it; `pnpm db:seed:e2e` fills the Playwright suite's.
 import { randomUUID } from "node:crypto"
-import type { ShopifySale } from "@repo/aisle/sales"
-import type { Shopify } from "@repo/aisle/shopify"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { db } from "../src/db/index"
 import {
@@ -297,7 +297,6 @@ export async function seedDemoStore(org: { id: string; name: string }) {
         data: {
           supplierId,
           reference: "DEMO-1",
-          destination: "amazon",
           currency: "USD",
           dueDate: "2026-12-01",
           paymentTerms: "30% deposit, 70% before shipment",
@@ -320,7 +319,7 @@ export async function seedDemoStore(org: { id: string; name: string }) {
               instructions: "",
               prepCategory: "POLYBAGGING",
               suffocationWarning: false,
-              amazonNetwork: "awd_us"
+              receiver: "awd_us"
             }
           ]
         }

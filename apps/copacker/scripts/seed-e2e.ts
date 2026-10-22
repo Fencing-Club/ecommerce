@@ -4,7 +4,7 @@
 // signed-in browsers stay in them. Refuses to run against anything but a local or staging database.
 // Usage: pnpm db:seed:e2e (needs WORKOS_API_KEY for the environment the app signs in with).
 import { randomUUID } from "node:crypto"
-import type { Address, OrderInput } from "@repo/aisle"
+import type { Address, OrderInput } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
 import { db } from "../src/db/index"
 import {
@@ -124,7 +124,7 @@ const item = (variant: 1 | 2, pieces: number): OrderInput["items"][number] => ({
   instructions: "",
   prepCategory: "POLYBAGGING",
   suffocationWarning: false,
-  amazonNetwork: "fba"
+  receiver: "warehouse"
 })
 const drafts = [
   { reference: "E2E-DRAFT", supplierId: demoSupplier!.id },
@@ -138,7 +138,6 @@ for (const draft of drafts) {
   const data: OrderInput = {
     supplierId: draft.supplierId,
     reference: draft.reference,
-    destination: "warehouse",
     deliveryId: buyer.addressId,
     ...(draft.via && { via: { forwarderId: joinedForwarder!.id, addressId: forwarder.addressId } }),
     currency: "USD",

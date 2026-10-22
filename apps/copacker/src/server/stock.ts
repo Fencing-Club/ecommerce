@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { ProviderError } from "@repo/aisle/amazon"
-import { ShopifyPermissionError, ShopifyRequestError } from "@repo/aisle/shopify"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { ShopifyPermissionError, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

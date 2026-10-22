@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import { fileURLToPath } from "node:url"
-import { orderInputSchema } from "@repo/aisle"
+import { orderInputSchema } from "@repo/copacker-shipments"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"
@@ -214,7 +214,6 @@ try {
   const order = orderInputSchema.parse({
     supplierId,
     reference: "PO-WORKFLOW",
-    destination: "amazon",
     currency: "USD",
     items: [
       {
@@ -230,7 +229,7 @@ try {
         pieces: 10,
         piecesPerSet: 1,
         unitPrice: 100,
-        amazonNetwork: "awd_us"
+        receiver: "awd_us"
       }
     ]
   })

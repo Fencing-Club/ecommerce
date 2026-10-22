@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
-import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/aisle/ebay"
-import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
+import { sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
+import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
+import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -144,10 +145,7 @@ export async function GET(request: Request, context: { params: { provider: strin
       ...(token.refreshTokenExpiresAt ? { refreshExpiresAt: token.refreshTokenExpiresAt.getTime() } : {})
     }
   } else {
-    externalId = z
-      .string()
-      .regex(/^[A-Z0-9]{8,32}$/)
-      .parse(url.searchParams.get("selling_partner_id"))
+    externalId = sellerIdSchema.parse(url.searchParams.get("selling_partner_id"))
     const response = await fetch("https://api.amazon.com/auth/o2/token", {
       method: "POST",
       body: new URLSearchParams({

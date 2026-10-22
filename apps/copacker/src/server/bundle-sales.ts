@@ -1,4 +1,4 @@
-import type { BundleComponent } from "@repo/aisle/shopify"
+import type { BundleComponent } from "@repo/copacker-marketplaces/shopify"
 import type { DemandRow } from "./sales-attribution"
 
 type CatalogRow = {

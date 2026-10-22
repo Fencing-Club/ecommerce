@@ -1,3 +1,6 @@
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import {
   type Address,
   amazonNetworks,
@@ -5,12 +8,9 @@ import {
   type Packing,
   type PackingDraft,
   prepCategories
-} from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
-import type { CartonLabel } from "@repo/aisle/labels"
-import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
-import type { Shopify } from "@repo/aisle/shopify"
-import type { ShipmentTransport } from "@repo/aisle/transport"
+} from "@repo/copacker-shipments"
+import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
 import { sql } from "drizzle-orm"
 import {
   pgTable,
@@ -473,6 +473,10 @@ export const shipments = pgTable(
     linkedAmazonShipmentId: text(),
     amazonOrderId: text(),
     amazonShipmentId: text(),
+    // Each SKU's packing group in the FBA inbound plan, once Amazon has worked out its packing options: the confirmed
+    // option's, or, when none keeps each carton to one group, the option the job would have chosen. The packing checks
+    // read them (see knownPackingGroups).
+    packingGroups: jsonb().$type<Record<string, string>>(),
     operation: text().notNull().default("none"),
     labels: jsonb().$type<CartonLabel[]>().notNull().default([]),
     // Pieces this shipment took from the supplier's stock, by supplier product, once its commercial invoice was
@@ -502,6 +506,8 @@ export const documents = pgTable(
         "invoice",
         "product_label",
         "carton_label",
+        // Amazon's pallet labels for an LTL or FTL shipment: four for each pallet, one for each side, in one file.
+        "pallet_label",
         "shipping_label",
         "packing_list",
         "checklist",
@@ -510,6 +516,11 @@ export const documents = pgTable(
     }).notNull(),
     itemId: uuid(),
     cartonId: text(),
+    // A carrier label's tracking number, which the supplier packet lists for its carton, and the file and page the
+    // buyer added it from.
+    trackingNumber: text(),
+    sourceName: text(),
+    sourcePage: integer(),
     objectKey: text().notNull().unique(),
     name: text().notNull(),
     bytes: integer().notNull(),
@@ -580,7 +591,8 @@ export const jobs = pgTable(
         "amazon-ads",
         "ebay-event",
         "ebay-subscribe",
-        "reconcile"
+        "reconcile",
+        "labels"
       ]
     }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),

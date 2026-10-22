@@ -1,4 +1,4 @@
-import { money } from "@repo/aisle"
+import { money } from "@repo/copacker-shipments"
 import { adjustmentLabel, catalogPricing, countOf, unitName } from "@/lib/catalog-pricing"
 import { formatDate } from "@/lib/format"
 import { catalogEditor } from "./catalogs"

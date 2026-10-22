@@ -1,7 +1,13 @@
-import type { AmazonNetwork } from "@repo/aisle"
-import type { OrderInput } from "@repo/aisle"
-import type { Amazon } from "@repo/aisle/amazon"
-import type { Shopify } from "@repo/aisle/shopify"
+import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { Shopify } from "@repo/copacker-marketplaces/shopify"
+import {
+  type AmazonNetwork,
+  amazonNetworkNames,
+  type Destination,
+  isAmazonNetwork,
+  orderDestination,
+  type OrderInput
+} from "@repo/copacker-shipments"
 import type { LocationClassification } from "./inventory-locations"
 
 type OrderItem = OrderInput["items"][number]
@@ -17,7 +23,7 @@ export type PurchaseOrderLink = { id: string; reference: string }
 export type PendingOrder = PurchaseOrderLink & {
   units: number
   locationIds: string[]
-  destination: OrderInput["destination"]
+  destination: Destination
 }
 
 // Sellable units on POs already sent to suppliers.
@@ -78,11 +84,13 @@ const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 // location a delivery address is linked to. A delivery address that isn't linked counts only toward "All locations".
 const networkPools: Record<AmazonNetwork, string> = { fba: "amazon:fba", awd_us: "amazon:awd" }
 export function receivingLocations(
-  order: Pick<OrderInput, "destination" | "deliveryId"> & { items: Pick<OrderItem, "amazonNetwork">[] },
+  order: Pick<OrderInput, "deliveryId"> & { items: Pick<OrderItem, "receiver">[] },
   deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
-  if (order.destination === "amazon") {
-    return [...new Set(order.items.map((item) => networkPools[item.amazonNetwork]))]
+  if (orderDestination(order) === "amazon") {
+    return [
+      ...new Set(order.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? networkPools[item.receiver] : [])))
+    ]
   }
   const linked = order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
   return linked ? [linked] : []
@@ -93,8 +101,8 @@ export function receivingLocations(
 export function onOrderByVariant(
   orders: {
     id: string
-    data: Pick<OrderInput, "reference" | "destination" | "deliveryId"> & {
-      items: Pick<OrderItem, "id" | "variantId" | "pieces" | "piecesPerSet" | "amazonNetwork">[]
+    data: Pick<OrderInput, "reference" | "deliveryId"> & {
+      items: Pick<OrderItem, "id" | "variantId" | "pieces" | "piecesPerSet" | "receiver">[]
     }
     received?: Record<string, number>
   }[],
@@ -116,7 +124,7 @@ export function onOrderByVariant(
           reference: order.data.reference,
           units,
           locationIds,
-          destination: order.data.destination
+          destination: orderDestination(order.data)
         })
       }
       byVariant.set(item.variantId, pending)
@@ -141,8 +149,8 @@ function combineOnOrder(items: OnOrder[]): OnOrder {
 
 // Amazon's stock pools, shown alongside Shopify's locations under these ids.
 export const amazonPools = {
-  fba: { id: "amazon:fba", name: "Amazon FBA" },
-  awd: { id: "amazon:awd", name: "Amazon AWD" }
+  fba: { id: "amazon:fba", name: `Amazon ${amazonNetworkNames.fba}` },
+  awd: { id: "amazon:awd", name: `Amazon ${amazonNetworkNames.awd_us}` }
 } as const
 export function isAmazonPool(locationId: string) {
   return locationId === amazonPools.fba.id || locationId === amazonPools.awd.id

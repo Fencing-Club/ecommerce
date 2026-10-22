@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import type { ShopifySale } from "@repo/aisle/sales"
+import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"

@@ -1,0 +1,47 @@
+{
+  "name": "@repo/copacker-shipments",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./labels": "./src/labels.ts",
+    "./documents": "./src/documents.ts",
+    "./product-labels": "./src/product-labels.ts",
+    "./requirements": "./src/requirements.ts",
+    "./markdown": "./src/markdown.ts",
+    "./transport": "./src/transport.ts",
+    "./packing-requirements": "./src/packing-requirements.ts",
+    "./countries": "./src/countries.ts",
+    "./shipping-model": "./src/shipping-model.ts",
+    "./shipping-rules": "./src/shipping-rules.ts",
+    "./shipping-snapshot": "./src/shipping-snapshot.ts",
+    "./shipping-copy": "./src/shipping-copy.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "oxlint --max-warnings=0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@repo/copacker-marketplaces": "workspace:*",
+    "@repo/copacker-packing-rules": "workspace:*",
+    "zod": "^4.6.7",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.4.299",
+    "yauzl": "3.4.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/yauzl": "^3.0.0",
+    "typescript": "catalog:",
+    "vitest": "5.0.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "@types/mdast": "^4.0.4"
+  }
+}

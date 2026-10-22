@@ -1,4 +1,4 @@
-import { amazonNetworkNames, type OrderInput } from "@repo/aisle"
+import { amazonNetworkNames, type OrderInput, orderDestination } from "@repo/copacker-shipments"
 import { inArray } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
 import type { ListParty, ListStage, LogisticsRow } from "@/components/logistics-list"
@@ -21,7 +21,8 @@ type Shipment = Pick<
   | "bookingReference"
   | "createdAt"
 >
-type Route = Pick<OrderInput, "destination" | "via">
+// Where a PO goes, read from its lines' receivers, and its stop on the way.
+type Route = Pick<OrderInput, "via"> & { items: ReadonlyArray<Pick<OrderInput["items"][number], "receiver">> }
 
 // Who a shipment waits on next: the supplier packs and ships, the buyer approves and buys labels, Amazon creates its
 // shipment and receives, a forwarder ships the goods on, and the carrier delivers to the buyer's own location.
@@ -43,9 +44,9 @@ export function shipmentParty(status: ShipmentState, route: Route): ListParty {
       if (route.via) {
         return "forwarder"
       }
-      return route.destination === "amazon" ? "amazon" : "carrier"
+      return orderDestination(route) === "amazon" ? "amazon" : "carrier"
     case "forwarded":
-      return route.destination === "amazon" ? "amazon" : "carrier"
+      return orderDestination(route) === "amazon" ? "amazon" : "carrier"
     case "received":
     case "cancelled":
       return "done"
@@ -88,7 +89,10 @@ const shippedStates: ShipmentState[] = ["shipped", "forwarded", "received"]
 
 // A purchase order's place in the lists. A pending proposal waits on the buyer before anything its shipments need.
 export function orderProgress(
-  order: { status: "draft" | "submitted" | "closed"; data: Route & { items: ReadonlyArray<{ pieces: number }> } },
+  order: {
+    status: "draft" | "submitted" | "closed"
+    data: Omit<Route, "items"> & { items: ReadonlyArray<Route["items"][number] & { pieces: number }> }
+  },
   orderShipments: ReadonlyArray<{
     status: ShipmentState
     snapshot: Route | null
@@ -228,23 +232,21 @@ export async function shipmentListRows(input: {
   )
   const amazonRows = amazon
     .filter((row) => !linked.has(row.shipmentId))
-    .map(
-      (row): LogisticsRow => ({
-        id: row.shipmentId,
-        // Made in Seller Central or elsewhere, so it opens there.
-        href: row.url,
-        external: true,
-        reference: row.shipmentId,
-        detail: row.name ?? undefined,
-        partner: null,
-        forwarder: null,
-        destination: `Amazon ${amazonNetworkNames[row.network]}`,
-        status: row.status,
-        stage: shipmentStage(row.status),
-        waiting: amazonParty(row.status),
-        source: "amazon",
-        ready: null
-      })
-    )
+    .map((row): LogisticsRow => ({
+      id: row.shipmentId,
+      // Made in Seller Central or elsewhere, so it opens there.
+      href: row.url,
+      external: true,
+      reference: row.shipmentId,
+      detail: row.name ?? undefined,
+      partner: null,
+      forwarder: null,
+      destination: `Amazon ${amazonNetworkNames[row.network]}`,
+      status: row.status,
+      stage: shipmentStage(row.status),
+      waiting: amazonParty(row.status),
+      source: "amazon",
+      ready: null
+    }))
   return [...orderRows, ...amazonRows]
 }

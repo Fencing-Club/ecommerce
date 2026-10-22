@@ -1,11 +1,10 @@
-import type { OrderInput } from "@repo/aisle"
-import { orderTotal } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
+import { orderTotal, orderDestination } from "@repo/copacker-shipments"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {
   connections,
   contacts,
-  events,
   inventoryLocationMappings,
   orders,
   productDefaults,
@@ -47,6 +46,7 @@ import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockSettings } from "./restock-report"
 import { hasCustomerScope, historyDaysFor, orderSyncProgress, type SalesSource, salesSources } from "./sales-orders"
+import { sentDates } from "./sent-dates"
 import { excludedShopifyTags } from "./shopify-tags"
 import { serverText } from "./text"
 
@@ -849,11 +849,10 @@ export async function overview(
     itemRows,
     feeRows,
     purchaseOrders,
-    sent,
+    sentAt,
     deliveries,
     shipmentRows,
     stock,
-    markups,
     otherMarketplaces,
     platformLines,
     costs,
@@ -881,12 +880,7 @@ export async function overview(
       .from(orders)
       .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
       .where(eq(orders.buyerOrgId, orgId)),
-    db()
-      .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
-      .from(events)
-      .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(and(eq(orders.buyerOrgId, orgId), eq(events.messageKey, "submittedToSupplier")))
-      .groupBy(events.orderId),
+    sentDates(orgId),
     db()
       .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
       .from(contacts)
@@ -905,7 +899,6 @@ export async function overview(
       })
       .from(stockSnapshots)
       .where(eq(stockSnapshots.orgId, orgId)),
-    landedMarkupsFor(orgId),
     shopifyWithoutAmazon
       ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window.current.from, window.current.to)
       : Promise.resolve(0),
@@ -947,7 +940,6 @@ export async function overview(
       .filter((row) => row.currency)
       .toSorted((a, b) => b.revenueMinor - a.revenueMinor)
       .at(0)?.currency ?? null
-  const index = catalogIndex(restock.catalog, markups)
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
     Record<SalesSource, ReturnType<typeof platformFees>>
   >
@@ -963,9 +955,11 @@ export async function overview(
       zonedStart(row.date, timeZone) >= freightFrom &&
       zonedStart(row.date, timeZone) < window.current.to
   )
-  const freight =
+  const [markups, freight, periodOut] = await Promise.all([
+    // Each product's PO landed markup, from the POs, sent dates and PO freight read above.
+    landedMarkupsFor(orgId, { orders: purchaseOrders, sentAt, freight: linkedFreight }),
     amazonAccount && freightFrom
-      ? await amazonFreight(
+      ? amazonFreight(
           orgId,
           amazonAccount.externalId,
           { from: freightFrom, to: window.current.to },
@@ -973,7 +967,11 @@ export async function overview(
           freightDays.reduce((sum, row) => sum + row.units, 0),
           new Set(linkedFreight.map((row) => row.reference))
         )
-      : null
+      : null,
+    // Stockouts over the page's period, so the sales they cost match the other figures.
+    periodStockouts(orgId, restock, window.current)
+  ])
+  const index = catalogIndex(restock.catalog, markups)
   const profit = grossProfit(itemRows, index, fees, charges, freight, t)
   // Trends compare the period with the one it's compared with, for sources whose orders cover both.
   const previousStart = window.previous?.from
@@ -985,8 +983,6 @@ export async function overview(
   const scopedChannels = restock.channels.filter(
     (channel) => (!restockKey && !ebaySelected) || channel.key === restockKey
   )
-  // Stockouts over the page's period, so the sales they cost match the other figures.
-  const periodOut = await periodStockouts(orgId, restock, window.current)
   const landedCost = (line: RestockLine) => index.unitCost(index.byVariant.get(line.variantId) ?? null)
   const summary = summarizeRestock(
     scopedChannels,
@@ -1014,12 +1010,11 @@ export async function overview(
       return true
     }
     if (restockKey === "amazon") {
-      return order.data.destination === "amazon"
+      return orderDestination(order.data) === "amazon"
     }
     return stockLocationId !== null && receivingLocations(order.data, deliveryLocations).includes(stockLocationId)
   })
   const orderIds = new Set(scopedOrders.map((order) => order.id))
-  const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
   const poList = scopedOrders.map((order) => ({
     status: order.status,
     supplier: order.supplier,

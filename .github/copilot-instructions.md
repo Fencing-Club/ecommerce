@@ -88,7 +88,7 @@ needs a human discussion**, not a silent add.
   `apps/copacker/src/db/schema.ts` and run `pnpm --filter copacker db:generate`. See
   [database setup](../apps/copacker/docs/operations.md#databases-and-migrations). Database resets require explicit
   authorization.
-- Never test migrations. The one exception is CI's `verify` job, which applies them to an empty Postgres once per run as
+- Never test migrations. The one exception is CI's `worker` job, which applies them to an empty Postgres once per run as
   a release gate. How database tests get their schema is in
   [database setup](../apps/copacker/docs/operations.md#databases-and-migrations).
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is

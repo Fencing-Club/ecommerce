@@ -1,4 +1,4 @@
-import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
+import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
@@ -36,11 +36,13 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   const editsShipments = can(s, "shipments", "edit")
   // Someone who doesn't see prices gets the PO without its costs, totals, landed costs and priced documents.
   const prices = can(s, "prices")
-  const { order, supplier } = await accessibleOrder(s, id)
+  // The events and workflow below take the PO as opened here, rather than opening it again.
+  const opened = await accessibleOrder(s, id)
+  const { order, supplier } = opened
   const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
     db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
-    orderEvents(s, id),
+    orderEvents(s, opened),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision)),
     // The supplier reads the buyer's note as from the buyer, by its workspace's name.
     s.org.kind === "supplier"
@@ -57,7 +59,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
     s.org.kind === "supplier" && order.status !== "closed"
       ? (shipmentRows.at(-1)?.status ?? order.status)
       : order.status
-  const [workflow, proposals] = await Promise.all([orderWorkflow(s, id), proposalState(id)])
+  const [workflow, proposals] = await Promise.all([orderWorkflow(s, opened), proposalState(id)])
   // The supplier's latest changes: pending for both sides, or declined for the supplier to see why.
   const proposal =
     proposals.latest &&
@@ -111,7 +113,15 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   // The documents kept with the PO that this workspace can download: the PO's own, then each shipment's, in the order
   // they're made. Product labels are made from each product instead, in the Products table.
-  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
+  const documentOrder = [
+    "purchase_order",
+    "invoice",
+    "packing_list",
+    "checklist",
+    "carton_label",
+    "pallet_label",
+    "shipping_label"
+  ]
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
     // Shipments' documents are for those who can open shipments.
@@ -234,7 +244,7 @@ export async function orderPage(input: { id: string; query: Record<string, strin
       instructionsByItem: Object.fromEntries(
         order.data.items.map((item) => [
           item.id,
-          itemRequirements(item, order.data.destination, prep)
+          itemRequirements(item, prep)
             .filter((requirement) => !["packFor", "bundle", "fnskuLabel", "instruction"].includes(requirement.code))
             .map(text.requirement)
         ])

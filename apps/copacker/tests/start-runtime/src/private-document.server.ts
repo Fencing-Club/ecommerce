@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { env } from "cloudflare:workers"
 import { eq, sql } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
@@ -127,7 +127,6 @@ export async function privateDocumentProbe(request: Request) {
           const data: OrderInput = {
             supplierId: supplierLink,
             reference: "Probe PO",
-            destination: "warehouse",
             deliveryId: randomUUID(),
             currency: "USD",
             paymentTerms: "Net 30",

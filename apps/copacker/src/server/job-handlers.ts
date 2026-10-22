@@ -1,6 +1,3 @@
-import { buildAwdRequest, money, orderTotal } from "@repo/aisle"
-import { downloadAmazonLabels } from "@repo/aisle/amazon"
-import { matchLabels, splitPdfPages, unpackLabels } from "@repo/aisle/labels"
 import type { Email } from "@repo/copacker-emails"
 import {
   customerDataRequestEmail,
@@ -9,6 +6,9 @@ import {
   purchaseOrderEmail,
   shownLines
 } from "@repo/copacker-emails"
+import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
+import { buildAwdRequest, money, orderTotal, packingSchema } from "@repo/copacker-shipments"
+import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
@@ -21,6 +21,7 @@ import { amazonFor, shopifyFor } from "./connections"
 import { filedPo, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
+import { queueLabels, sendQueuedLabels } from "./label-release"
 import { saveSupplierSkus } from "./product-fields"
 import { appUrl } from "./security"
 
@@ -209,7 +210,12 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
     .where(eq(shipments.id, shipmentId))
   await assertOwned()
   await assertOwned()
-  await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
+  const queued = await db().transaction(async (tx) => {
+    await tx.update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
+    return queueLabels(tx, { shipmentId, actor: "amazon" })
+  })
+  // A shipment that needs nothing more from the buyer goes straight to its supplier.
+  await sendQueuedLabels(queued)
 }
 
 // The language an email is written in: the one its reader chose in Settings, found by their address. A reader with an
@@ -466,7 +472,7 @@ export async function shopifyJob(payload: Record<string, unknown>, assertOwned: 
       orgId: z.uuid(),
       orderId: z.uuid(),
       revision: z.number(),
-      changes: z.array(z.object({ itemId: z.uuid(), supplierSku: z.string(), unitPrice: z.number() })),
+      changes: packingSchema.shape.changes,
       updateCost: z.boolean()
     })
     .parse(payload)

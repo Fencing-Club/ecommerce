@@ -70,7 +70,8 @@
     "shippingLabel": "Étiquette d’expédition",
     "productLabel": "Étiquette produit",
     "cartonLabels": "Étiquettes de carton",
-    "shippingLabels": "Étiquettes d’expédition"
+    "palletLabels": "Étiquettes de palette",
+    "shippingLabels": "Étiquettes du transporteur"
   },
   "format": {
     "plusAmounts": "Plus {amounts}",
@@ -117,27 +118,6 @@
     "remove": "Retirer {name}",
     "replaceFile": "Remplacer {name}",
     "replace": "Remplacer"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "Facture commerciale officielle",
-      "productLabels": "Étiquettes produit",
-      "shippingLabels": "Étiquettes d’expédition du transporteur"
-    },
-    "chooseVariationError": "Choisissez une variante de produit",
-    "enterLabelPage": "Indiquez la page d’étiquette d’au moins un carton",
-    "failed": "Échec de l’import. Réessayez.",
-    "choosePdf": "Choisissez un PDF",
-    "variation": "Variante de produit",
-    "chooseVariation": "Choisissez une variante",
-    "productLabelHint": "Une planche d’étiquettes par variante, 32 Mo maximum",
-    "uploading": "Import en cours",
-    "uploaded": "Importé",
-    "upload": "Importer",
-    "labelPages": "Page d’étiquette de chaque carton",
-    "labelPagesDescription": "Laissez un carton vide si son étiquette se trouve dans un autre fichier",
-    "carton": "Carton {carton}",
-    "page": "Page"
   },
   "ui": {
     "close": "Fermer",

@@ -1,4 +1,4 @@
-import { collectShopifyBalanceTransactions } from "@repo/aisle/sales"
+import { collectShopifyBalanceTransactions } from "@repo/copacker-marketplaces/sales"
 import { and, eq, gte, lt, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { salesSyncs, shopifyBalanceTransactions } from "@/db/schema"

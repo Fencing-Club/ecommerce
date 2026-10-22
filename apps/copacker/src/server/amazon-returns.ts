@@ -1,4 +1,4 @@
-import { fbaReturnsReportType, parseFbaReturns } from "@repo/aisle/returns"
+import { fbaReturnsReportType, parseFbaReturns } from "@repo/copacker-marketplaces/returns"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonReturnReports, amazonReturns } from "@/db/schema"

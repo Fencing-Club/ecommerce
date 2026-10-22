@@ -199,7 +199,7 @@ configuration and inspect supported commands instead of copying Wrangler command
 | Operational/developer docs and preferred stack | Update instructions only when the associated behavior changes; keep retained worker/DB instructions until their own cutovers |
 
 Do not add a second router-generation plugin if the pinned Start plugin already owns that work. Do not import a Next
-tooling helper from a shared package after removing `next` locally. Check `@repo/aisle`'s transitive runtime imports,
+tooling helper from a shared package after removing `next` locally. Check `@repo/copacker-shipments`'s transitive runtime imports,
 email rendering and all build tools; remove Next-only packages only when no remaining consumer needs them.
 
 Keep local Postgres and CI data isolated. Cloudflare local R2 can replace object-store emulation only for code using its

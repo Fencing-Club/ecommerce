@@ -199,19 +199,20 @@ describe("AuthKit session migration", () => {
     const { AuthService } = await import("@workos/authkit-session")
     const services = new Set<SessionService<Request, Response>>()
     const release = Promise.withResolvers<void>()
-    vi.spyOn(AuthService.prototype, "withAuth").mockImplementation(
-      async function (this: SessionService<Request, Response>, request) {
-        services.add(this)
-        const marker = readCookie("marker")
-        if (services.size === 2) {
-          release.resolve()
-        }
-        await release.promise
-        expect(readCookie("marker")).toBe(marker)
-        expect(request.url).toBe(`${origin}/`)
-        return { auth: { user: null }, refreshedSessionData: marker }
+    vi.spyOn(AuthService.prototype, "withAuth").mockImplementation(async function (
+      this: SessionService<Request, Response>,
+      request
+    ) {
+      services.add(this)
+      const marker = readCookie("marker")
+      if (services.size === 2) {
+        release.resolve()
       }
-    )
+      await release.promise
+      expect(readCookie("marker")).toBe(marker)
+      expect(request.url).toBe(`${origin}/`)
+      return { auth: { user: null }, refreshedSessionData: marker }
+    })
     const { authentication } = await import("../src/server/auth-session")
     const run = (marker: string) =>
       respond(

@@ -170,7 +170,7 @@
       "description": "Descarga las etiquetas ahora o encuéntralas en {shipment} cuando quieras.",
       "summary": "{service}, {total}",
       "booked": "Reservado",
-      "amazonLabels": "Etiquetas de cajas de Amazon",
+      "amazonLabels": "Etiquetas de cajas",
       "carrierLabels": "Etiquetas del transportista"
     },
     "problems": {

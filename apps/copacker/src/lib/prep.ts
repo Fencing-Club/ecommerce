@@ -1,4 +1,4 @@
-import type { PrepCategory } from "@repo/aisle"
+import type { PrepCategory } from "@repo/copacker-shipments"
 
 // Preparation choices offered on purchase orders and product defaults, in order, each with its label's key in the
 // "shipments" messages.

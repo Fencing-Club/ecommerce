@@ -1,20 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { addressSchema } from "@repo/aisle"
-import { canConfigureTransport, transportSchema } from "@repo/aisle/transport"
+import { addressSchema } from "@repo/copacker-shipments"
+import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import {
-  organizations,
-  suppliers,
-  contacts,
-  jobs,
-  shipments,
-  documents,
-  events,
-  profiles,
-  supplierProfiles
-} from "@/db/schema"
+import { organizations, suppliers, contacts, jobs, shipments, events, profiles, supplierProfiles } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { locales } from "@/i18n/locales"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
@@ -40,6 +30,7 @@ import {
   saveForwarderAddress
 } from "@/server/forwarders"
 import { withJobWake } from "@/server/job-delivery"
+import { queueLabels, sendQueuedLabels } from "@/server/label-release"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { requestLocale } from "@/server/localization"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
@@ -60,9 +51,7 @@ import {
   deleteDraftOrder,
   receiveShipment
 } from "@/server/orders"
-import { linesMissingLabels } from "@/server/product-barcodes"
 import { saveProfile } from "@/server/profile"
-import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { token, hash, isAppOrigin } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
@@ -77,7 +66,6 @@ import {
   resendInvitation,
   transferOwnership
 } from "@/server/team"
-import { serverText } from "@/server/text"
 import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
@@ -702,7 +690,7 @@ export async function POST(request: Request) {
       requireAccess(s, "shipments", "edit")
       const transport = transportSchema.parse(data.transport)
       const expected = transportSchema.nullable().parse(data.expected)
-      await db().transaction(async (tx) => {
+      const queued = await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
         if (!initial) {
           throw new LocalizedError("shipmentNotFound")
@@ -721,65 +709,12 @@ export async function POST(request: Request) {
           throw new LocalizedError("transportForwarderMissing")
         }
         await tx.update(shipments).set({ transport, updatedAt: new Date() }).where(eq(shipments.id, id()))
+        // Transport that needs no carrier labels can complete a shipment that waited on it.
+        return shipment.status === "waiting_labels" ? queueLabels(tx, { shipmentId: id(), actor: s.user.id }) : null
       })
-      return Response.json({ ok: true })
-    }
-    if (action === "shipment.release") {
-      requireAccess(s, "shipments", "edit")
-      const [released] = await db().select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, id()))
-      const missingLabels = released ? await linesMissingLabels(s, released.orderId) : new Set<string>()
-      requireBuyer(s)
-      await withJobWake(
-        db().transaction(async (tx) => {
-          const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
-          if (!initial) {
-            throw new LocalizedError("shipmentNotFound")
-          }
-          const { supplier } = await accessibleOrder(s, initial.orderId, tx, true)
-          const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
-          if (
-            !shipment?.packing ||
-            !shipment.snapshot ||
-            shipment.status !== "waiting_labels" ||
-            shipment.revision !== revision()
-          ) {
-            throw new LocalizedError("shipmentNotReadyForRelease")
-          }
-          const docs = await tx
-            .select()
-            .from(documents)
-            .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-          const issues = releaseIssues(shipment, docs, missingLabels, await serverText())
-          if (issues.length) {
-            throw new Error(issues.map((issue) => issue.message).join("\n"))
-          }
-          await tx
-            .update(shipments)
-            .set({
-              status: "ready",
-              bookingReference: z.string().trim().max(100).optional().parse(data.bookingReference) || null
-            })
-            .where(eq(shipments.id, id()))
-          // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the
-          // shipment in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the
-          // purchase order's documents.
-          if (supplier.supplierOrgId && supplier.email) {
-            await tx
-              .insert(jobs)
-              .values({
-                key: `ready:${shipment.id}:${shipment.revision}`,
-                kind: "email",
-                payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
-              })
-              .onConflictDoNothing()
-          }
-          await tx.insert(events).values({
-            orderId: shipment.orderId,
-            actor: s.user.id,
-            ...eventMessage({ key: supplier.supplierOrgId ? "labelsReleased" : "labelsReleasedToShare", values: null })
-          })
-        })
-      )
+      if (queued) {
+        await sendQueuedLabels(queued)
+      }
       return Response.json({ ok: true })
     }
     throw new Error("Unknown action")

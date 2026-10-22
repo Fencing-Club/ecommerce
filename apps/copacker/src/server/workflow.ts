@@ -1,18 +1,19 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"
 import { documents, shipments } from "@/db/schema"
 import type { ServerKey } from "@/i18n/server-text"
-import { accessibleOrder } from "./access"
+import { type AccessibleOrder, accessibleOrder } from "./access"
 import { linesMissingLabels } from "./product-barcodes"
 import type { ReadinessIssue } from "./readiness"
 import {
   finishedStates,
   orderCoverage,
   packingReadiness,
+  releasedLabelKinds,
   releasedStates,
-  releaseIssues,
-  reservedPieces
+  releaseIssues
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { serverText } from "./text"
@@ -23,23 +24,25 @@ const finishedMessages: Partial<Record<ShipmentState, ServerKey>> = {
   cancelled: "workflow.cancelled"
 }
 
-export async function orderWorkflow(s: Session, orderId: string) {
+// Where a PO and each of its shipments stand, and who acts next. `po` is the PO's id, or the PO the caller has already
+// opened with accessibleOrder.
+export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
+  const { order, supplier } = typeof po === "string" ? await accessibleOrder(s, po) : po
   // Lines whose product can't make a label yet hold back the packet's release.
-  const missingLabels = await linesMissingLabels(s, orderId)
+  const missingLabels = await linesMissingLabels(order)
   const t = await serverText()
   return db().transaction(async (tx) => {
-    const { order, supplier } = await accessibleOrder(s, orderId, tx)
     // Whether the goods pass through a forwarder, whose leg comes after the supplier's.
     const leg = forwarderLeg(order.data) !== null
-    const rows = await tx.select().from(shipments).where(eq(shipments.orderId, orderId)).orderBy(shipments.createdAt)
-    const docs = await tx.select().from(documents).where(eq(documents.orderId, orderId))
+    const rows = await tx.select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(shipments.createdAt)
+    const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
     return {
       order: {
         id: order.id,
         reference: order.data.reference,
         revision: order.revision,
         status: order.status,
-        destination: order.data.destination
+        destination: orderDestination(order.data)
       },
       supplier: { name: supplier.name },
       items: orderCoverage(order.data, rows),
@@ -52,7 +55,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           order.data,
           shipment,
           shipment.packingDraft ?? shipment.packing ?? {},
-          reservedPieces(rows, shipment.id),
+          rows,
           order.revision,
           t
         )
@@ -87,18 +90,8 @@ export async function orderWorkflow(s: Session, orderId: string) {
         } else if (["queued", "creating"].includes(shipment.status)) {
           next = { owner: "system", step: "processing", message: t("workflow.processing") }
         } else if (shipment.status === "waiting_labels") {
-          next = release.length
-            ? {
-                owner: "buyer",
-                step: "labels",
-                message: t("workflow.labels")
-              }
-            : {
-                owner: "buyer",
-                step: "release",
-                action: "shipment.release",
-                message: t("workflow.release")
-              }
+          // The labels go to the supplier by themselves once nothing in release is left.
+          next = { owner: "buyer", step: "labels", message: t("workflow.labels") }
         } else if (shipment.status === "ready") {
           next = {
             owner: "supplier",
@@ -171,7 +164,6 @@ export async function orderWorkflow(s: Session, orderId: string) {
           next,
           editable,
           canSubmit: editable && !packing.issues.length,
-          canRelease: s.org.kind === "buyer" && shipment.status === "waiting_labels" && !release.length,
           issues,
           // The packet downloads only while it's complete.
           packetUrl:
@@ -184,7 +176,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           const shipment = rows.find((row) => row.id === doc.shipmentId)
           const downloadable =
             s.org.kind === "buyer" ||
-            !["carton_label", "shipping_label"].includes(doc.kind) ||
+            !releasedLabelKinds.includes(doc.kind) ||
             (!!shipment && releasedStates.includes(shipment.status))
           return {
             id: doc.id,

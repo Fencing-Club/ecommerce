@@ -8,7 +8,10 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
   private documents.
 - `apps/video`: the Copacker ad, made with Remotion ([video](apps/video/docs/README.md)).
 - `apps/turbo-cache`: the Turborepo remote cache the monorepos share ([turbo cache](apps/turbo-cache/docs/README.md)).
-- `packages/aisle`: reusable shipment, catalog, packing validation, and label/document logic adapted from Aisle.
+- `packages/copacker-shipments`: Copacker's purchase orders, packing, labels and shipping documents.
+- `packages/copacker-marketplaces`: Copacker's Amazon, Shopify and eBay clients, sales collectors and report parsers.
+- `packages/copacker-cli`, `packages/copacker-client` and `packages/copacker-contract`: the `copacker` command line, its
+  API client and the shared operation contract. Not usable until the app serves the operation API.
 - `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them.
 - `packages/fc-templates`: Fencing Club email and print templates.
 - `packages/fc-theme` and `packages/fc-theme-base`: Shopify themes.

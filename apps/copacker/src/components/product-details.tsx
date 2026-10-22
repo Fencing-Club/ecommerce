@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import type { PrepCategory } from "@repo/aisle"
-import { amazonNetworkNames, amazonNetworks, prepCategories } from "@repo/aisle"
+import type { PrepCategory } from "@repo/copacker-shipments"
+import { amazonNetworkNames, amazonNetworks, prepCategories } from "@repo/copacker-shipments"
 import { ImageOff, Plus, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"

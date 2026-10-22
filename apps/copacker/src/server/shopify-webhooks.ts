@@ -1,4 +1,4 @@
-import { shopDomainSchema, ShopifyRequestError } from "@repo/aisle/shopify"
+import { shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { objectEntries, objectKeys } from "ts-extras"
 import { z } from "zod"

@@ -1,5 +1,5 @@
-import type { AmazonNetwork } from "@repo/aisle"
-import { amazonNetworkNames, type OrderInput } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/copacker-shipments"
+import { amazonNetworkNames, isAmazonNetwork, type OrderInput, orderDestination } from "@repo/copacker-shipments"
 import { and, eq, inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
@@ -7,7 +7,7 @@ import { db } from "@/db"
 import { type orders, type shipments, contacts } from "@/db/schema"
 import { localization } from "@/server/localization"
 
-type Destination = Pick<OrderInput, "destination" | "deliveryId" | "items">
+type Destination = Pick<OrderInput, "deliveryId" | "items">
 
 // Names where each PO's shipments end up, for the shipments list and a shipment's page: the Amazon network, such as
 // Amazon FBA, or the delivery address by name.
@@ -21,12 +21,14 @@ export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliv
   ])
   const common = createTranslator({ ...config, namespace: "common" })
   return (order: Destination, network: AmazonNetwork | null) => {
-    if (order.destination === "amazon") {
+    const destination = orderDestination(order)
+    if (destination === "amazon") {
       // A shipment gets its network when it's queued; until then it's its PO lines', when they all go to one.
-      const [only, ...others] = network ? [network] : [...new Set(order.items.map((item) => item.amazonNetwork))]
+      const lines = order.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? [item.receiver] : []))
+      const [only, ...others] = network ? [network] : [...new Set(lines)]
       return only && !others.length ? `Amazon ${amazonNetworkNames[only]}` : "Amazon"
     }
-    return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(order.destination, common)
+    return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(destination, common)
   }
 }
 // The next delivery stop, resolved within the buyer's workspace after the page's access check.
@@ -37,7 +39,7 @@ export async function shipmentDelivery(order: typeof orders.$inferSelect, shipme
     const stop = await forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId)
     return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false }
   }
-  if (data.destination === "warehouse") {
+  if (orderDestination(data) === "warehouse") {
     const places = data.deliveryId
       ? await db()
           .select()

@@ -249,7 +249,7 @@ In order, each as its own migration:
 - `src/server/inventory-locations.ts`, `inventory-location-settings.ts` and the Settings location dialog become location
   roles on `stock_locations`.
 - `receiveShipment` in `src/server/orders.ts` becomes the receipt flow.
-- `packages/aisle`:
+- `packages/copacker-marketplaces`:
   - `shopify.ts` gains the inventory mutations and transfers.
   - `amazon.ts` gains Listings Items writes and inbound receipts.
   - `ebay.ts` gains a Trading API client and the Inventory API.

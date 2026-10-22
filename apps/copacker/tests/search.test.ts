@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/copacker-shipments"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -32,8 +32,7 @@ async function order(
   [buyerOrgId, link] = [buyerId, supplierId]
 ) {
   const items: OrderInput["items"] = []
-  const destination: OrderInput["destination"] = "warehouse"
-  const data = { reference, supplierId: link, currency: "USD", destination, items, via } as OrderInput
+  const data = { reference, supplierId: link, currency: "USD", items, via } as OrderInput
   const [row] = await database
     .insert(tables.orders)
     .values({ buyerOrgId, supplierId: link, shopifyDomain: domain, status, data })

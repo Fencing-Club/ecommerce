@@ -1,10 +1,9 @@
-import { and, eq, inArray, isNull, ne } from "drizzle-orm"
+import { and, eq, isNull, ne, type SQL, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"
 import { db } from "@/db"
 import { forwarders, orders, suppliers } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
-import { forwarderLeg } from "./shipment-legs"
 import type { Session } from "./workspace-session"
 
 // The POs a buyer or supplier workspace can open: every one of a buyer's own, and a supplier's sent ones for as long as
@@ -36,6 +35,8 @@ export async function accessibleOrder(
   }
   return row
 }
+// A PO the workspace can open and its supplier, as accessibleOrder found them.
+export type AccessibleOrder = Awaited<ReturnType<typeof accessibleOrder>>
 export async function visibleOrders(s: Session) {
   return db()
     .select({ order: orders, supplier: suppliers })
@@ -45,41 +46,39 @@ export async function visibleOrders(s: Session) {
     .orderBy(orders.createdAt)
 }
 
-// The POs a forwarder's workspace handles: sent ones whose goods pass through a forwarder the workspace joined as.
+// The POs a forwarder's workspace handles, with the forwarder each passes through: sent ones whose route stops at a
+// forwarder the workspace joined as (the PO's forwarderLeg, one of its buyer's forwarders). `only` narrows them further.
 // Forwarders only read these and move shipments on; they never reach accessibleOrder, whose actions assume a supplier.
-export async function forwarderOrders(s: Session, executor: Transaction | ReturnType<typeof db> = db()) {
-  if (s.org.kind !== "forwarder") {
-    return []
-  }
-  const joined = await executor
-    .select({ id: forwarders.id, name: forwarders.name, buyerOrgId: forwarders.buyerOrgId })
-    .from(forwarders)
-    .where(and(eq(forwarders.forwarderOrgId, s.org.id), isNull(forwarders.removedAt)))
-  if (!joined.length) {
-    return []
-  }
-  const rows = await executor
-    .select({ order: orders, supplier: suppliers })
+function forwarderRows(s: Session, executor: Transaction | ReturnType<typeof db>, only?: SQL) {
+  return executor
+    .select({
+      order: orders,
+      supplier: suppliers,
+      forwarder: { id: forwarders.id, name: forwarders.name, buyerOrgId: forwarders.buyerOrgId }
+    })
     .from(orders)
     .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-    .where(
+    .innerJoin(
+      forwarders,
       and(
-        inArray(
-          orders.buyerOrgId,
-          joined.map((row) => row.buyerOrgId)
-        ),
-        ne(orders.status, "draft")
+        eq(forwarders.buyerOrgId, orders.buyerOrgId),
+        sql`${forwarders.id}::text = ${orders.data}->'via'->>'forwarderId'`
       )
     )
+    .where(and(eq(forwarders.forwarderOrgId, s.org.id), isNull(forwarders.removedAt), ne(orders.status, "draft"), only))
     .orderBy(orders.createdAt)
-  return rows.flatMap((row) => {
-    const forwarder = joined.find((candidate) => candidate.id === forwarderLeg(row.order.data))
-    return forwarder ? [{ ...row, forwarder }] : []
-  })
+}
+
+export async function forwarderOrders(s: Session, executor: Transaction | ReturnType<typeof db> = db()) {
+  return s.org.kind === "forwarder" ? forwarderRows(s, executor) : []
 }
 
 export async function forwarderOrder(s: Session, id: string, executor: Transaction | ReturnType<typeof db> = db()) {
-  const row = (await forwarderOrders(s, executor)).find((candidate) => candidate.order.id === id)
+  // A malformed id, such as /orders/abc, finds nothing, like an unknown one.
+  const [row] =
+    s.org.kind === "forwarder" && z.uuid().safeParse(id).success
+      ? await forwarderRows(s, executor, eq(orders.id, id))
+      : []
   if (!row) {
     throw new NotFoundError()
   }

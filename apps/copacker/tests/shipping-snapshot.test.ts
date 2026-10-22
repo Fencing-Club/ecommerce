@@ -1,8 +1,9 @@
-import { packingSchema } from "@repo/aisle"
-import { packingRequirementsSchema } from "@repo/aisle/packing-requirements"
-import { transportSchema } from "@repo/aisle/transport"
+import { packingSchema } from "@repo/copacker-shipments"
+import { packingRequirementsSchema } from "@repo/copacker-shipments/packing-requirements"
+import { shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
+import { packingListSnapshot, shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
+import { transportSchema } from "@repo/copacker-shipments/transport"
 import { describe, expect, it } from "vitest"
-import { shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
 import { pickupAddress } from "../src/stories/fixtures/logistics"
 import { orderData, orderItem } from "../src/stories/fixtures/orders"
 
@@ -13,7 +14,7 @@ const product = orderItem({
   piecesPerSet: 2,
   fnsku: "X000000001",
   asin: "B000000001",
-  amazonNetwork: "awd_us",
+  receiver: "awd_us",
   packingRequirements: { preparation: "sealedPolybag", labels: [], countryCode: "", instructions: "" }
 })
 const input = {
@@ -64,6 +65,88 @@ describe("accepted shipment document snapshot", () => {
     })
     expect(data.transport.carrierLabels).toBe(false)
     expect(data.origin.address).toContain(pickupAddress.email)
+  })
+
+  it("lists each pallet with its cartons, size and gross weight when the cartons are on pallets", () => {
+    const pallet = { palletId: "1", length: 120, width: 100, height: 90, weight: 62, stackable: true }
+    expect(shippingDocumentSnapshot(input).pallets).toBeUndefined()
+    const data = shippingDocumentSnapshot({
+      ...input,
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1", "A2"] }] }
+    })
+    expect(data.transport.palletized).toBe(true)
+    // AWD takes its cartons as cases, so its pallets have no label.
+    expect(data.pallets).toEqual([
+      { id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62, stackable: true }
+    ])
+    expect(() =>
+      shippingDocumentSnapshot({
+        ...input,
+        packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1"] }] }
+      })
+    ).toThrow(/cartonsOffPallets/)
+  })
+
+  it("gives each FBA pallet its Amazon shipment and its number there, as Amazon's pallet labels show them", () => {
+    const pallet = { length: 120, width: 100, height: 90, weight: 62, stackable: true }
+    const order = { ...input.order, items: [{ ...product, receiver: "fba" as const }] }
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order,
+      packing: {
+        ...input.packing,
+        palletized: true,
+        pallets: [
+          { ...pallet, palletId: "1", cartonIds: ["A1"] },
+          { ...pallet, palletId: "2", cartonIds: ["A2"] }
+        ]
+      },
+      labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" }))
+    })
+    expect(data.network).toBe("fba")
+    expect(data.pallets?.map((row) => row.label)).toEqual(["FBA18ABCD123 1/2", "FBA18ABCD123 2/2"])
+  })
+
+  it("exports a shipment on pallets that goes by freight from the supplier, with its pallet steps", () => {
+    const pallet = { length: 120, width: 100, height: 90, weight: 62, stackable: false }
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: { ...input.order, items: [{ ...product, receiver: "fba" as const }] },
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, palletId: "1", cartonIds: ["A1", "A2"] }] },
+      labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
+      transport: { ...input.transport, service: "freight" }
+    })
+    expect(data.transport).toMatchObject({ service: "freight", collection: "pickup", palletized: true })
+    expect(data.pallets?.map((row) => row.label)).toEqual(["FBA18ABCD123 1/1"])
+    const checks = shipmentDocumentChecks(data)
+    expect(checks.pallets.map((check) => check.title)).toContain("palletLabel")
+    expect(checks.handoff.map((check) => check.title)).toEqual(["bol", "ready"])
+  })
+
+  it("asks for the bill of lading on freight loaded loose, without pallet steps", () => {
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: { ...input.order, items: [{ ...product, receiver: "fba" as const }] },
+      labels: input.labels.map((label) => ({ ...label, amazonShipmentId: "FBA18ABCD123" })),
+      transport: { ...input.transport, service: "freight" }
+    })
+    expect(data.transport).toMatchObject({ service: "freight", palletized: false })
+    const checks = shipmentDocumentChecks(data)
+    expect(checks.pallets).toEqual([])
+    expect(checks.handoff.map((check) => check.title)).toEqual(["bol", "ready"])
+  })
+
+  it("lists the pallets in the packing list download, before Amazon labels them", () => {
+    const pallet = { palletId: "1", length: 120, width: 100, height: 90, weight: 62, stackable: true }
+    const data = packingListSnapshot({
+      ...input,
+      packing: { ...input.packing, palletized: true, pallets: [{ ...pallet, cartonIds: ["A1", "A2"] }] },
+      destination: "Example AWD"
+    })
+    expect(data.transport.palletized).toBe(true)
+    expect(data.pallets).toEqual([
+      { id: "1", cartons: ["A1", "A2"], dimensions: [120, 100, 90], weight: 62, stackable: true }
+    ])
   })
 
   it("requires packing tasks to be confirmed instead of inferring tasks for already labelled products", () => {

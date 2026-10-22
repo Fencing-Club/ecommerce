@@ -1,8 +1,9 @@
+import { orderDestination } from "@repo/copacker-shipments"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
 import type { forwarderOrders } from "@/server/access"
-import { releasedStates } from "@/server/readiness"
+import { releasedLabelKinds, releasedStates } from "@/server/readiness"
 import { serverTranslator } from "@/server/translation"
 import { unpricedOrder } from "./prices"
 // The products table runs edge to edge in its card, its first and last columns in line with the route above it and
@@ -13,6 +14,7 @@ const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
   "invoice",
   "packing_list",
   "carton_label",
+  "pallet_label",
   "shipping_label"
 ]
 
@@ -41,12 +43,12 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
 
   // The buyer's location the forwarder ships the goods on to, when they don't go on to Amazon.
   const onward =
-    order.data.destination === "warehouse"
+    orderDestination(order.data) === "warehouse"
       ? places.find((candidate) => candidate.id === order.data.deliveryId)
       : undefined
-  // Carton and shipping labels come once the buyer releases the shipment, as for the supplier.
+  // Carton, pallet and shipping labels come once the buyer releases the shipment, as for the supplier.
   const visible = docs.filter((doc) => {
-    if (doc.kind !== "carton_label" && doc.kind !== "shipping_label") {
+    if (!releasedLabelKinds.includes(doc.kind)) {
       return true
     }
     const shipment = shipmentRows.find((candidate) => candidate.id === doc.shipmentId)

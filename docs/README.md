@@ -14,7 +14,10 @@ package's own `docs/` folder, next to its code: its product rules, pages, APIs, 
 `docs/README.md`, or its `README.md` where the package has no index.
 
 - [Copacker](../apps/copacker/docs/README.md)
-- [Aisle commerce and purchasing contracts](../packages/aisle/docs/README.md)
+- [Copacker shipments](../packages/copacker-shipments/docs/README.md)
+- [Copacker marketplaces](../packages/copacker-marketplaces/docs/README.md)
+- [Copacker packing rules: carton and pallet policies](../packages/copacker-packing-rules/docs/README.md)
+- [Copacker CLI](../packages/copacker-cli/docs/README.md), its [API client](../packages/copacker-client/docs/README.md) and [operation contract](../packages/copacker-contract/docs/README.md)
 - [Video: the Copacker ad in Remotion](../apps/video/docs/README.md)
 - [Turbo remote cache on Cloudflare](../apps/turbo-cache/docs/README.md)
 - [Fencing Club email and print templates](../packages/fc-templates/README.md)

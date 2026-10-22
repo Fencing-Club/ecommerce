@@ -1,3 +1,4 @@
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema, type QuantityRules } from "@/lib/catalog-pricing"
 
@@ -11,7 +12,7 @@ const catalogProductSchema = z.object({
   notes: z.string().nullable().optional(),
   revision: positive,
   active: z.boolean(),
-  currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
+  currency: z.enum(orderCurrencies),
   priceMinor: money.nullable(),
   priceBasis: z.enum(["piece", "sellable_pack", "case"]),
   piecesPerSellablePack: positive,

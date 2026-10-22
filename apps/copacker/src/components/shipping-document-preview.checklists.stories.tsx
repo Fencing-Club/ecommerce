@@ -10,6 +10,7 @@ const meta = preview.meta({
 })
 
 export const FbaParcel = meta.story({ play: ready })
+export const FbaFreight = meta.story({ args: { data: scenario("fba-freight") }, play: ready })
 export const AwdFreight = meta.story({ args: { data: scenario("awd-freight") }, play: ready })
 export const AwdMultipacks = meta.story({ args: { data: scenario("grouped-multipacks") }, play: ready })
 export const SupplierTransfer = meta.story({ args: { data: scenario("supplier-transfer") }, play: ready })

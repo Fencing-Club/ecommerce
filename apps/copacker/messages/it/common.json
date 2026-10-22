@@ -70,7 +70,8 @@
     "shippingLabel": "Etichetta di spedizione",
     "productLabel": "Etichetta prodotto",
     "cartonLabels": "Etichette dei cartoni",
-    "shippingLabels": "Etichette di spedizione"
+    "palletLabels": "Etichette dei pallet",
+    "shippingLabels": "Etichette del corriere"
   },
   "format": {
     "plusAmounts": "Più {amounts}",
@@ -117,27 +118,6 @@
     "remove": "Rimuovi {name}",
     "replaceFile": "Sostituisci {name}",
     "replace": "Sostituisci"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "Fattura commerciale ufficiale",
-      "productLabels": "Etichette prodotto",
-      "shippingLabels": "Etichette di spedizione del corriere"
-    },
-    "chooseVariationError": "Scegli una variante del prodotto",
-    "enterLabelPage": "Inserisci la pagina dell’etichetta per almeno un cartone",
-    "failed": "Caricamento non riuscito. Riprova.",
-    "choosePdf": "Scegli un PDF",
-    "variation": "Variante del prodotto",
-    "chooseVariation": "Scegli una variante",
-    "productLabelHint": "Un foglio di etichette per variante, fino a 32 MB",
-    "uploading": "Caricamento",
-    "uploaded": "Caricato",
-    "upload": "Carica",
-    "labelPages": "Pagina dell’etichetta per ogni cartone",
-    "labelPagesDescription": "Lascia vuoto un cartone se la sua etichetta è in un altro file",
-    "carton": "Cartone {carton}",
-    "page": "Pagina"
   },
   "ui": {
     "close": "Chiudi",

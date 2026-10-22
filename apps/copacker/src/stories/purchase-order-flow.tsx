@@ -1,7 +1,8 @@
 import { Toast } from "@base-ui/react/toast"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing, type OrderInput } from "@repo/aisle"
-import { packingTasks } from "@repo/aisle/packing-requirements"
+import { packingSchema, type Packing, type OrderInput } from "@repo/copacker-shipments"
+import { packingTasks } from "@repo/copacker-shipments/packing-requirements"
+import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
   ArrowRight,
@@ -59,12 +60,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { documentSettingsForLocale, type ShippingDocumentData } from "@/documents/shipping-model"
 import { useMoney } from "@/hooks/use-money"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
-import { orderItem } from "./fixtures/orders"
+import { daysAgo, orderItem } from "./fixtures/orders"
 import { order, orderId, pickupAddress, pickupLocations } from "./fixtures/purchase-orders"
 const pageLayout = "@container/po flex min-w-0 flex-col gap-6 text-sm"
 type Item = OrderInput["items"][number] & { taxRate?: number }
@@ -231,6 +231,8 @@ const products = [
     piecesPerSet: 2
   })
 ]
+// Cartons are ready in two weeks, so packing can finish.
+const readyDate = daysAgo(-14).toISOString().slice(0, 10)
 const packingCharge = { id: "packing", name: "Packing", amount: 12000 }
 const handlingCharge = { id: "handling", name: "Handling", amount: 2500 }
 const lineTotal = (items: Item[]) => items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
@@ -717,7 +719,7 @@ export function PurchaseOrderFlow({
     if (mixedFba) {
       return [
         {
-          cartonId: "1",
+          cartonId: "A1",
           length: 60,
           width: 40,
           height: 40,
@@ -728,7 +730,7 @@ export function PurchaseOrderFlow({
           ]
         },
         {
-          cartonId: "2",
+          cartonId: "B1",
           length: 60,
           width: 40,
           height: 40,
@@ -740,7 +742,7 @@ export function PurchaseOrderFlow({
           ]
         },
         {
-          cartonId: "3",
+          cartonId: "C1",
           length: 60,
           width: 40,
           height: 40,
@@ -755,7 +757,7 @@ export function PurchaseOrderFlow({
     if (initialPacking) {
       return packing.items.flatMap((item, index) =>
         Array.from({ length: [10, 6, 2][index]! }, (_, carton) => ({
-          cartonId: String([0, 10, 16][index]! + carton + 1),
+          cartonId: `${"ABC"[index]}${carton + 1}`,
           length: index === 2 ? 50 : 60,
           width: index === 2 ? 35 : 40,
           height: [40, 50, 30][index]!,
@@ -781,7 +783,7 @@ export function PurchaseOrderFlow({
             shipment: packing,
             packing: packingSchema.parse({
               origin: pickupAddress,
-              readyDate: "2026-10-20",
+              readyDate,
               cartons: packingCartons(),
               changes: []
             })
@@ -855,8 +857,9 @@ export function PurchaseOrderFlow({
       }))
   }
   async function productLabelPdf(id: string, items: Item[]) {
-    const { standardProductLabels, suffocationWarningLabels, labelTitle } = await import("@repo/aisle/product-labels")
-    const { combinePdfs } = await import("@repo/aisle/documents")
+    const { standardProductLabels, suffocationWarningLabels, labelTitle } =
+      await import("@repo/copacker-shipments/product-labels")
+    const { combinePdfs } = await import("@repo/copacker-shipments/documents")
     if (id === "suffocation") {
       return suffocationWarningLabels()
     }
@@ -896,7 +899,7 @@ export function PurchaseOrderFlow({
   async function downloadProductLabels(items: Item[], ids: string[], scope: string) {
     setDownloadingPacking(true)
     try {
-      const { combinePdfs } = await import("@repo/aisle/documents")
+      const { combinePdfs } = await import("@repo/copacker-shipments/documents")
       const files = await Promise.all(
         ids.map((id) =>
           productLabelPdf(
@@ -962,7 +965,7 @@ export function PurchaseOrderFlow({
   async function downloadSupplierPack(shipmentId?: string) {
     setDownloadingPacking(true)
     try {
-      const { combinePdfs } = await import("@repo/aisle/documents")
+      const { combinePdfs } = await import("@repo/copacker-shipments/documents")
       const { renderSupplierPacket } = await import("@/documents/supplier-packet")
       const productLabels = (items: Item[]) =>
         Promise.all(
@@ -1103,17 +1106,16 @@ export function PurchaseOrderFlow({
           order={{
             ...order,
             reference: "PO38",
-            destination: "amazon",
             items: packing.items.map((item) => ({
               ...item,
-              amazonNetwork: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
+              receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
             }))
           }}
           availablePieces={Object.fromEntries(packing.items.map((item) => [item.id, item.pieces]))}
           initial={
             packingRecords[packing.id]?.packing ?? {
               origin: pickupAddress,
-              readyDate: "2026-10-20",
+              readyDate,
               cartons: packingCartons()
             }
           }

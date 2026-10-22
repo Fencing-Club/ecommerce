@@ -70,7 +70,8 @@
     "shippingLabel": "شپنگ لیبل",
     "productLabel": "پروڈکٹ لیبل",
     "cartonLabels": "کارٹن لیبل",
-    "shippingLabels": "شپنگ لیبل"
+    "palletLabels": "پیلٹ لیبل",
+    "shippingLabels": "کیریئر لیبل"
   },
   "format": {
     "plusAmounts": "مزید {amounts}",
@@ -117,27 +118,6 @@
     "remove": "{name} ہٹائیں",
     "replaceFile": "{name} تبدیل کریں",
     "replace": "تبدیل کریں"
-  },
-  "upload": {
-    "titles": {
-      "invoice": "سرکاری کمرشل انوائس",
-      "productLabels": "پروڈکٹ لیبلز",
-      "shippingLabels": "کیریئر شپنگ لیبلز"
-    },
-    "chooseVariationError": "پروڈکٹ ویریئنٹ منتخب کریں",
-    "enterLabelPage": "کم از کم ایک کارٹن کے لیے لیبل کا صفحہ درج کریں",
-    "failed": "اپ لوڈ ناکام ہو گیا۔ دوبارہ کوشش کریں۔",
-    "choosePdf": "PDF منتخب کریں",
-    "variation": "پروڈکٹ ویریئنٹ",
-    "chooseVariation": "ویریئنٹ منتخب کریں",
-    "productLabelHint": "ہر ویریئنٹ کے لیے ایک لیبل شیٹ، 32 MB تک",
-    "uploading": "اپ لوڈ ہو رہا ہے",
-    "uploaded": "اپ لوڈ ہو گیا",
-    "upload": "اپ لوڈ کریں",
-    "labelPages": "ہر کارٹن کے لیے لیبل کا صفحہ",
-    "labelPagesDescription": "اگر کسی کارٹن کا لیبل دوسری فائل میں ہے تو اسے خالی چھوڑ دیں",
-    "carton": "کارٹن {carton}",
-    "page": "صفحہ"
   },
   "ui": {
     "close": "بند کریں",

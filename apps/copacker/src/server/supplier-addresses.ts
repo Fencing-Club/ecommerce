@@ -1,4 +1,4 @@
-import { originSchema } from "@repo/aisle"
+import { originSchema } from "@repo/copacker-shipments"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

@@ -1,6 +1,6 @@
-import { money } from "@repo/aisle"
-import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
-import { http, HttpResponse } from "msw"
+import { money } from "@repo/copacker-shipments"
+import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
+import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
@@ -126,7 +126,15 @@ async function OrderPage(args: Args) {
       revisionNumber: r.revision
     }))
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
-  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
+  const documentOrder = [
+    "purchase_order",
+    "invoice",
+    "packing_list",
+    "checklist",
+    "carton_label",
+    "pallet_label",
+    "shipping_label"
+  ]
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
     ...(seesShipments ? shipmentRows : []).map((shipment, index) => ({
@@ -225,7 +233,7 @@ async function OrderPage(args: Args) {
           instructionsByItem: Object.fromEntries(
             order.data.items.map((item) => [
               item.id,
-              itemRequirements(item, order.data.destination, prep)
+              itemRequirements(item, prep)
                 .filter((requirement) => requirement.code !== "packFor")
                 .map(text.requirement)
             ])
@@ -470,11 +478,10 @@ export const AmazonShipmentGroups = meta.story({
       status: "draft",
       data: {
         ...orderData,
-        destination: "amazon",
         deliveryId: undefined,
         items: orderData.items.map((item, index) => ({
           ...item,
-          amazonNetwork: index === 0 ? "awd_us" : "fba",
+          receiver: index === 0 ? "awd_us" : "fba",
           piecesPerSet: index === 0 ? 2 : item.piecesPerSet
         }))
       }
