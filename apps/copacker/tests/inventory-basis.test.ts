@@ -1,26 +1,14 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema } from "@repo/copacker-shipments"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
 import { served } from "./served"
-const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => {
-    if (!context.actor) {
-      throw new ApiSessionError(401)
-    }
-    return context.actor
-  }
-}))
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { multiplyInventoryCost } from "../src/lib/inventory-basis"
-import { ApiSessionError } from "../src/server/auth"
 import { POST as costPreviews } from "../src/server/http/api/analytics/cost-import-previews"
 import { POST as openingRoute } from "../src/server/http/api/analytics/opening-balances"
 import { GET as listPurchases, POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
@@ -30,29 +18,8 @@ import { DELETE as receiptDelete } from "../src/server/http/api/analytics/receip
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
 const previewCosts = served(costPreviews)
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
   otherId = randomUUID()
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const purchase = {
   kind: "purchase",
@@ -105,15 +72,8 @@ const request = (body: unknown, key = randomUUID()) =>
   })
 const resource = (id: string) => ({ params: { id } })
 const save = (body: unknown = purchase, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }
@@ -122,7 +82,7 @@ beforeEach(async () => {
     { orgId, shopifyDomain: "store", variantId: "v1" },
     { orgId: otherId, shopifyDomain: "secret", variantId: "secret" }
   ])
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
 it("preserves exact dated costs and piece-to-sellable-unit basis without changing profit postings", async () => {
   const response = await purchaseRoute(request(purchase))
@@ -222,11 +182,11 @@ it("preserves corrections and blocks purchase changes while active receipts depe
 // The HTTP boundary checks the origin (http-response.test.ts).
 it("protects other workspaces and requires correct permissions and request shape", async () => {
   const { record } = await save()
-  context.actor = actor(otherId, "buyer")
+  signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
   expect((await purchaseGet(request(null), resource(record.id))).status).toBe(404)
   expect((await purchaseDelete(request(null), resource(record.id))).status).toBe(404)
   expect((await receiptRoute(request(receipt(record.id)))).status).toBe(404)
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
   expect(
     (
       await purchaseRoute(
@@ -235,11 +195,11 @@ it("protects other workspaces and requires correct permissions and request shape
     ).status
   ).toBe(422)
   expect((await receiptRoute(request(purchase))).status).toBe(400)
-  context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
+  signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "view", prices: "view" } })
   expect((await purchaseRoute(request(purchase))).status).toBe(403)
-  context.actor = { ...actor(orgId, "buyer"), role: "member", access: { sales: "view" } }
+  signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { sales: "view" } })
   expect((await listPurchases(request(null))).status).toBe(403)
-  context.actor = null
+  signedIn.actor = null
   expect((await listPurchases(request(null))).status).toBe(401)
 })
 it("supports immutable PO revision snapshots without treating ordered quantities as receipts", async () => {
@@ -410,9 +370,9 @@ it("isolates draft and foreign purchase order sources", async () => {
   }
   expect((await purchaseRoute(request(body))).status).toBe(404)
   await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, orderId))
-  context.actor = actor(otherId, "buyer")
+  signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
   expect((await purchaseRoute(request(body))).status).toBe(404)
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
   expect((await purchaseRoute(request({ ...body, source: { ...body.source, revision: 99 } }))).status).toBe(404)
 })
 
@@ -432,13 +392,13 @@ it("protects cost previews with edit access without requiring an import key", as
   expect(await database.select().from(tables.inventoryBasisRecords)).toHaveLength(0)
   expect((await previewCosts(makeRequest("text/plain"))).status).toBe(415)
   expect((await previewCosts(makeRequest("application/json", "{"))).status).toBe(400)
-  context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
+  signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "view", prices: "view" } })
   expect((await previewCosts(makeRequest())).status).toBe(403)
-  context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "edit" } }
+  signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "edit" } })
   expect((await previewCosts(makeRequest())).status).toBe(403)
-  context.actor = actor(orgId, "supplier")
+  signedIn.actor = testSession({ orgId, kind: "supplier" })
   expect((await previewCosts(makeRequest())).status).toBe(403)
-  context.actor = null
+  signedIn.actor = null
   const denied = await previewCosts(makeRequest())
   expect(denied.status).toBe(401)
   expect(denied.headers.get("content-type")).toContain("application/problem+json")

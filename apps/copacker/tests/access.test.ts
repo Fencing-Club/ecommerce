@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { httpResponse } from "../src/server/http-response"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ actor: null as Session | null }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("@/db", () => ({ db: () => null }))
 
 import { type Access, can, canOpen, pageOf, type Role } from "../src/lib/access"
@@ -14,26 +9,10 @@ import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
 import { POST as action } from "../src/server/http/api/action"
 import { GET as purchaseOrderPdf } from "../src/server/http/api/orders/$id/po"
 import { GET as salesOrders } from "../src/server/http/api/sales/orders"
+import { signedIn, testSession } from "./test-session"
 
-function actor(kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}): Session {
-  return {
-    user: { id: "user-tess", email: "tess@example.com", emailVerified: true, name: "Tess Tester" },
-    org: {
-      id: "00000000-0000-4000-8000-000000000001",
-      kind,
-      name: "Test org",
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role,
-    access,
-    workspaces: []
-  }
-}
+const actor = (kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}) =>
+  testSession({ orgId: "00000000-0000-4000-8000-000000000001", kind, name: "Test org", role, access })
 
 function send(name: string, data: Record<string, unknown>) {
   return action(
@@ -83,19 +62,19 @@ describe("page access", () => {
 
 describe("the server's checks", () => {
   it("turns away a member without edit access to a page, naming it", async () => {
-    context.actor = actor("buyer", "member", { orders: "view", partners: "view" })
+    signedIn.actor = actor("buyer", "member", { orders: "view", partners: "view" })
     const order = await send("order.create", {})
     expect(order.status).toBe(403)
     expect(await order.json()).toEqual({ error: "Ask an admin for access to Purchase orders" })
     const partner = await send("supplier.create", { name: "Unic" })
     expect(partner.status).toBe(403)
     expect(await partner.json()).toEqual({ error: "Ask an admin for access to Partners" })
-    context.actor = actor("supplier", "member", { orders: "edit" })
+    signedIn.actor = actor("supplier", "member", { orders: "edit" })
     expect(await (await send("shipment.save", {})).json()).toEqual({ error: "Ask an admin for access to Shipments" })
   })
 
   it("keeps the team and settings to owners and admins", async () => {
-    context.actor = actor("buyer", "member", { orders: "edit", shipments: "edit", partners: "edit" })
+    signedIn.actor = actor("buyer", "member", { orders: "edit", shipments: "edit", partners: "edit" })
     for (const [name, data] of [
       ["team.invite", { email: "lee@club.example", role: "admin" }],
       ["team.access", { userId: "user-sam", role: "admin" }],
@@ -110,12 +89,12 @@ describe("the server's checks", () => {
       expect(await response.json()).toEqual({ error: "Only admins can do this" })
     }
     // An admin gets past the check, to the request's own validation.
-    context.actor = actor("buyer", "admin")
+    signedIn.actor = actor("buyer", "admin")
     expect((await send("team.invite", { email: "not an email", role: "admin" })).status).toBe(400)
   })
 
   it("keeps prices from a member who doesn't see them", async () => {
-    context.actor = actor("buyer", "member", { orders: "view", shipments: "edit" })
+    signedIn.actor = actor("buyer", "member", { orders: "view", shipments: "edit" })
     const approval = await send("shipment.approve", { id: "00000000-0000-4000-8000-000000000002", revision: 1 })
     expect(approval.status).toBe(403)
     expect(await approval.json()).toEqual({ error: "Ask an admin for access to prices and costs" })
@@ -129,7 +108,7 @@ describe("the server's checks", () => {
   })
 
   it("keeps handing over and deleting the workspace to its owner", async () => {
-    context.actor = actor("buyer", "admin")
+    signedIn.actor = actor("buyer", "admin")
     for (const [name, data] of [
       ["team.transfer", { userId: "user-sam" }],
       ["workspace.delete", { name: "Test org" }]
@@ -141,7 +120,7 @@ describe("the server's checks", () => {
   })
 
   it("answers a read of a page the member doesn't have with 403", async () => {
-    context.actor = actor("buyer", "member", { orders: "edit" })
+    signedIn.actor = actor("buyer", "member", { orders: "edit" })
     expect((await httpResponse(() => salesOrders(new Request("http://localhost:3000/api/sales/orders")))).status).toBe(
       403
     )

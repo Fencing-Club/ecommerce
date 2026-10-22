@@ -1,27 +1,16 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const context = vi.hoisted(() => ({ database: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@/db", () => import("./test-db"))
 import { seedDemoStore } from "../scripts/demo-store"
 import { disconnect, shopifyFor } from "../src/server/connections"
 import { demoShopConnection, demoShopDomain } from "../src/server/demo-shopify"
 import { withVariantFields } from "../src/server/product-fields"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const org = { id: randomUUID(), name: "Fixture buyer" }
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
   vi.stubEnv("DEPLOYMENT_ENV", "preview")
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
@@ -31,7 +20,6 @@ beforeEach(async () => {
       throw new Error("A fixture reached the real network")
     })
   )
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values({ ...org, kind: "buyer" })
   await seedDemoStore(org)
 })

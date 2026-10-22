@@ -1,48 +1,15 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => {
-    if (!context.actor) {
-      throw new ApiSessionError(401)
-    }
-    return context.actor
-  }
-}))
-import { ApiSessionError } from "../src/server/auth"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
   otherId = randomUUID()
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const opening = {
   kind: "opening",
@@ -65,15 +32,8 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
     body: JSON.stringify(body)
   })
 const save = (body: unknown, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }
@@ -82,7 +42,7 @@ beforeEach(async () => {
     { orgId, shopifyDomain: "store", variantId: "v1" },
     { orgId: otherId, shopifyDomain: "secret", variantId: "secret" }
   ])
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
 import { inventoryFifo } from "../src/server/inventory-fifo"
 const range = {
@@ -264,7 +224,7 @@ it("rejects overlap, allows adjacent periods, and enforces idempotent mapping wr
   expect((await mappingPost(request(body, key))).status).toBe(200)
   expect((await mappingPost(request({ ...body, piecesPerUnit: 3 }, key))).status).toBe(409)
   expect((await mappingGet(request(null), { params: { id: mapping.id } })).status).toBe(200)
-  context.actor = actor(otherId, "buyer")
+  signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
   expect((await mappingDelete(request(null), { params: { id: mapping.id } })).status).toBe(404)
   expect((await mappingGet(request(null), { params: { id: mapping.id } })).status).toBe(404)
 })
@@ -367,7 +327,7 @@ it("scopes and paginates import status and mapping history", async () => {
   expect(
     (await (await mappingList(new Request(`${appUrl()}/api/analytics/unit-mappings`))).json()).mappings
   ).toHaveLength(1)
-  context.actor = actor(otherId, "buyer")
+  signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
   expect((await (await importList(new Request(url))).json()).results).toEqual([])
 })
 

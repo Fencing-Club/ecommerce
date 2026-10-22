@@ -1,8 +1,6 @@
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { AccessError, NotFoundError } from "../src/i18n/errors"
 import { downloadDocument } from "../src/server/document-download"
@@ -10,16 +8,13 @@ import { resolveLocalization, withLocalization } from "../src/server/localizatio
 import type { StoredFile } from "../src/server/storage"
 import { workspaceSession, type Session } from "../src/server/workspace-session"
 import { orderData } from "../src/stories/fixtures/orders"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
 const context = vi.hoisted(() => ({
-  database: null as unknown,
   readFile: vi.fn<(key: string) => Promise<StoredFile>>()
 }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/storage", () => ({ readFile: context.readFile }))
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`
 const buyer = id(1),
   supplier = id(2),
@@ -49,17 +44,10 @@ function storedFile(): StoredFile {
   }
 }
 
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles] })
 beforeEach(async () => {
   vi.resetAllMocks()
   context.readFile.mockImplementation(async () => storedFile())
-  await pg.exec("truncate organizations, profiles cascade")
   await database.insert(tables.organizations).values([
     { id: buyer, name: "Buyer", kind: "buyer" },
     { id: supplier, name: "Supplier", kind: "supplier" },

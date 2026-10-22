@@ -1,54 +1,28 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq, like } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 vi.mock("../src/server/connections", () => ({
   amazonFor: vi.fn<() => void>(),
   shopifyFor: vi.fn<() => void>(),
   connection: vi.fn<() => void>()
 }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
+vi.mock("@/db", () => import("./test-db"))
 
 import { POST as action } from "../src/server/http/api/action"
 import { appUrl, hash } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID(),
   supplierOrgId = randomUUID(),
   pendingId = randomUUID(),
   joinedId = randomUUID()
 
-function actor(id: string): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind: "buyer",
-      name: "Fencing Club",
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
+const actor = (id: string) => testSession({ orgId: id, kind: "buyer", name: "Fencing Club" })
 
 const resend = async (id: string) =>
   action(
@@ -59,16 +33,9 @@ const resend = async (id: string) =>
     })
   )
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
 beforeEach(async () => {
-  context.actor = actor(buyerId)
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
+  signedIn.actor = actor(buyerId)
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Fencing Club", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" },
@@ -132,7 +99,7 @@ describe("supplier.resend", () => {
   })
 
   it("refuses another buyer's supplier", async () => {
-    context.actor = actor(otherBuyerId)
+    signedIn.actor = actor(otherBuyerId)
     const response = await resend(pendingId)
     expect(response.status).toBeGreaterThanOrEqual(400)
     const [supplier] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, pendingId))
