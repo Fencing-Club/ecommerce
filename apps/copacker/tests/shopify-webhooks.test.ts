@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { sql } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 const shopify = vi.hoisted(() => ({
   graphql: vi.fn<(...args: never[]) => Promise<unknown>>(),
   subscribeWebhooks: vi.fn<(...args: never[]) => Promise<string[]>>()
@@ -26,10 +23,8 @@ import {
   shopifySubscribeJob,
   shopifyWebhookTopics
 } from "../src/server/shopify-webhooks"
-import { applySchema } from "./database"
+import { database, pg, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID()
 const shop = "test.myshopify.com"
@@ -65,20 +60,13 @@ const queued = (kind: string) =>
     .from(tables.jobs)
     .then((rows) => rows.filter((row) => row.kind === kind))
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 beforeEach(async () => {
   vi.resetAllMocks()
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" }
@@ -377,10 +365,54 @@ describe("Shopify privacy webhooks", () => {
     })
   })
 
-  it("rejects a privacy request it can't read", async () => {
-    expect(await receiveShopifyEvent(event("customers/data_request", "not json"))).toBe(false)
-    expect(await receiveShopifyEvent(event("shop/redact", { shop_id: 1 }))).toBe(false)
+  it("logs a privacy request it can't read and throws, without logging the customer's details", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    await expect(receiveShopifyEvent(event("customers/data_request", "not json"))).rejects.toThrow(
+      "isn't what Shopify sends"
+    )
+    await expect(receiveShopifyEvent(event("shop/redact", { shop_id: 1 }))).rejects.toThrow("isn't what Shopify sends")
+    const customer = { id: 7, email: "customer@example.com" }
+    await expect(receiveShopifyEvent(event("customers/redact", { shop_domain: shop, customer }))).rejects.toThrow(
+      "isn't what Shopify sends"
+    )
+    expect(logged.mock.calls.map(([line]) => JSON.parse(String(line)))).toEqual([
+      {
+        event: "shopify_compliance_rejected",
+        topic: "customers/data_request",
+        deliveryId: "webhook-customers/data_request",
+        fields: ["body"]
+      },
+      {
+        event: "shopify_compliance_rejected",
+        topic: "shop/redact",
+        deliveryId: "webhook-shop/redact",
+        fields: ["body.shop_domain"]
+      },
+      {
+        event: "shopify_compliance_rejected",
+        topic: "customers/redact",
+        deliveryId: "webhook-customers/redact",
+        fields: ["body.orders_to_redact"]
+      }
+    ])
+    logged.mockRestore()
     expect(await database.select().from(tables.jobs)).toEqual([])
+  })
+
+  it("keeps a privacy request it can't read in the queue, and still handles the rest of the batch", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const queue = {
+      receive: vi.fn<() => Promise<{ body: string; handle: string }[]>>().mockResolvedValue([
+        { body: event("customers/redact", { shop_domain: shop }), handle: "unreadable" },
+        { body: event("orders/create"), handle: "order" }
+      ]),
+      remove: vi.fn<(handle: string) => Promise<void>>()
+    }
+    await expect(pollShopifyEvents(queue)).rejects.toThrow("isn't what Shopify sends")
+    expect(queue.remove.mock.calls).toEqual([["order"]])
+    expect(await queued("shopify-event")).toHaveLength(1)
+    expect(logged).toHaveBeenCalledOnce()
+    logged.mockRestore()
   })
 
   it("erases a removed store's copied data, except in workspaces connected to it again", async () => {

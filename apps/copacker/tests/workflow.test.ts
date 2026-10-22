@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import {
   type Address,
@@ -12,9 +11,8 @@ import {
 } from "@repo/copacker-shipments"
 import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument, StandardFonts } from "pdf-lib"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
 import { inventoryMovementReport } from "./fixtures/amazon-inventory-movements"
@@ -104,12 +102,8 @@ vi.mock("@repo/copacker-shipments/documents", async (original) => {
     commercialInvoicePdf: vi.fn<typeof documents.commercialInvoicePdf>(pdf)
   }
 })
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/import-trace", async (original) => ({
   ...(await original<typeof import("../src/server/import-trace")>()),
   traceImport: async () => true
@@ -214,9 +208,10 @@ import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { profileFor } from "../src/server/workspace-session"
-import { applySchema } from "./database"
 import { drainSales } from "./drain-sales"
 import { served } from "./served"
+import { database, pg, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
 const readDemand = served(demandRoute)
 const readLocations = served(locationsRoute)
@@ -224,8 +219,6 @@ const patchLocation = served(patchLocationRoute)
 const refreshInventory = served(refreshRoute)
 const getCoverage = served(coverageRoute)
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   supplierId = randomUUID(),
   otherId = randomUUID(),
@@ -260,41 +253,17 @@ const orderData = orderInputSchema.parse({
 // A PO's lines sent to the buyer's own location instead.
 const warehouseLines = <T extends { receiver: string }>(items: T[]) =>
   items.map((item) => ({ ...item, receiver: "warehouse" as const }))
-function actor(kind: Session["org"]["kind"], id: string): Session {
-  return {
-    user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true, name: "Tess Tester" },
-    org: {
-      id,
-      kind,
-      name: "Test org",
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
+const actor = (kind: Session["org"]["kind"], id: string) => testSession({ orgId: id, kind, name: "Test org" })
 const buyer = actor("buyer", buyerId),
   supplier = actor("supplier", supplierId)
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs, tables.profiles] })
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
 })
 beforeEach(async () => {
   vi.resetAllMocks()
-  context.actor = buyer
+  signedIn.actor = buyer
   provider.amazonFor.mockResolvedValue(provider.api)
   provider.api.metafieldValues.mockResolvedValue([])
   provider.api.salesMarketplaces.mockResolvedValue(["ATVPDKIKX0DER"])
@@ -316,7 +285,6 @@ beforeEach(async () => {
       ]
     ])
   )
-  await pg.exec("TRUNCATE organizations, jobs, profiles CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: supplierId, name: "Supplier", kind: "supplier" },
@@ -901,10 +869,10 @@ describe("Postgres workflow and authorization", () => {
     const failed = await (await readFba()).json()
     expect(failed.snapshotId).toBe(result.snapshotId)
     expect(failed.refresh.errorCode).toBe("refresh_failed")
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await (await readFba()).json()).rows).toEqual([])
     expect((await refreshFba()).status).toBe(409)
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await refreshFba()).status).toBe(403)
   })
   it("requires an explicit supported marketplace for FBA only", async () => {
@@ -1038,10 +1006,10 @@ describe("Postgres workflow and authorization", () => {
       classification: "merchant",
       revision: 1
     })
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await (await readLocations()).json()).locations).toEqual([])
     expect((await patch(body)).status).toBe(409)
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await readLocations()).status).toBe(403)
     expect((await patch(body)).status).toBe(403)
   })
@@ -1102,7 +1070,7 @@ describe("Postgres workflow and authorization", () => {
     // Forwarders' addresses are kept with each forwarder, on the Partners page.
     expect(await (await save("forwarder")).json()).toMatchObject({ error: expect.stringContaining("Partners page") })
     expect(await (await save("pickup")).json()).toMatchObject({ error: expect.stringContaining("Partners page") })
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await save("pickup")).status).toBe(200)
     expect(await (await save("delivery")).json()).toMatchObject({
       error: expect.stringContaining("pickup addresses only")
@@ -1314,10 +1282,10 @@ describe("Postgres workflow and authorization", () => {
     expect((await (await readInventory(new Request("http://localhost/api/inventory?source=awd"))).json()).rows).toEqual(
       stockData.rows
     )
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await (await readShopify()).json()).snapshotId).toBeNull()
     expect((await refreshShopify()).status).toBe(409)
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await readShopify()).status).toBe(403)
     expect((await refreshShopify()).status).toBe(403)
   })
@@ -1457,10 +1425,10 @@ describe("Postgres workflow and authorization", () => {
   })
 
   it("denies supplier refresh/read and returns unknown for an unconnected buyer", async () => {
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await refreshInventory(refreshRequest())).status).toBe(403)
     expect((await readInventory(new Request("http://localhost/api/inventory?source=awd"))).status).toBe(403)
-    context.actor = buyer
+    signedIn.actor = buyer
     expect((await refreshInventory(refreshRequest())).status).toBe(409)
     const response = await (await readInventory(new Request("http://localhost/api/inventory?source=awd"))).json()
     expect(response).toMatchObject({
@@ -1480,7 +1448,7 @@ describe("Postgres workflow and authorization", () => {
     const response = await (
       await readInventory(new Request("http://localhost/api/inventory?source=awd&limit=1"))
     ).json()
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     const unrelated = await (await readInventory(new Request("http://localhost/api/inventory?source=awd"))).json()
     expect(unrelated.rows).toEqual([])
     expect(
@@ -1568,7 +1536,7 @@ describe("Postgres workflow and authorization", () => {
       const response = await getCoverage(new Request(`http://localhost/api/orders/summary?${filter}`))
       expect(await response.json()).toEqual({ orders: [], nextCursor: null })
     }
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     const unrelated = await getCoverage(new Request(`http://localhost/api/orders/summary?supplierId=${supplierLinkId}`))
     expect(await unrelated.json()).toEqual({ orders: [], nextCursor: null })
   })
@@ -1600,7 +1568,7 @@ describe("Postgres workflow and authorization", () => {
   })
 
   it("rejects supplier access to buyer coverage", async () => {
-    context.actor = supplier
+    signedIn.actor = supplier
     const response = await getCoverage(new Request("http://localhost/api/orders/summary"))
     expect(response.status).toBe(403)
     expect(await response.json()).not.toHaveProperty("orders")
@@ -1713,7 +1681,7 @@ describe("Postgres workflow and authorization", () => {
     expect(await response.json()).toEqual({ results: [variant], nextCursor: "next", complete: false })
     expect(provider.shopifyFor).toHaveBeenCalledWith(buyerId, "test.myshopify.com")
     provider.shopifyFor.mockClear()
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await searchImportCatalog(request, params)).status).toBe(404)
     expect(provider.shopifyFor).not.toHaveBeenCalled()
   })
@@ -1762,7 +1730,7 @@ describe("Postgres workflow and authorization", () => {
     const own = await getImport(new Request(`http://localhost/api/imports/${id}`), params)
     expect(own.status).toBe(200)
     expect(await own.json()).not.toHaveProperty("objectKey")
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await getImport(new Request(`http://localhost/api/imports/${id}`), params)).status).toBe(404)
   })
   it("cancels import revisions and retries failures only once", async () => {
@@ -2256,14 +2224,14 @@ describe("leg holders shipping the goods on", () => {
       error: "The supplier marks this shipment shipped"
     })
     await expect(receiveShipment(buyer, id)).rejects.toThrow("hasn’t shipped")
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await post("shipment.ship", { id })).status).toBe(200)
     expect((await post("shipment.ship", { id })).status).toBe(400)
     expect((await orderWorkflow(supplier, orderId)).shipments[0]?.next).toMatchObject({
       owner: "buyer",
       step: "receive"
     })
-    context.actor = buyer
+    signedIn.actor = buyer
     await receiveShipment(buyer, id)
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
     expect(events.map((event) => event.messageKey)).toContain("supplierShipped")
@@ -2272,7 +2240,7 @@ describe("leg holders shipping the goods on", () => {
   it("ships independently of the PO invoice", async () => {
     const id = await released()
     await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "invoice"))
-    context.actor = supplier
+    signedIn.actor = supplier
     expect(await (await post("shipment.ship", { id })).json()).toEqual({ ok: true })
   })
 
@@ -2282,7 +2250,7 @@ describe("leg holders shipping the goods on", () => {
     const data = { ...orderData, via: { forwarderId: forwarder.id, addressId: randomUUID() } }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     const id = await released(data)
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await post("shipment.ship", { id })).status).toBe(200)
     expect((await orderWorkflow(buyer, orderId)).shipments[0]?.next).toMatchObject({
       owner: "forwarder",
@@ -2292,7 +2260,7 @@ describe("leg holders shipping the goods on", () => {
     await expect(receiveShipment(buyer, id)).rejects.toThrow("forwarder hasn’t shipped")
     const forward = { id, freight: { amountMinor: 12500, currency: "USD" }, carrier: "DHL", reference: "1234567890" }
     // Until the forwarder joins, the buyer records its leg; once it has, only the forwarder does.
-    context.actor = forwarderActor
+    signedIn.actor = forwarderActor
     expect(await (await post("shipment.forward", forward)).json()).toEqual({
       error: "This shipment isn’t yours to ship"
     })
@@ -2300,11 +2268,11 @@ describe("leg holders shipping the goods on", () => {
       .update(tables.forwarders)
       .set({ forwarderOrgId: forwarderOrg })
       .where(eq(tables.forwarders.id, forwarder.id))
-    context.actor = buyer
+    signedIn.actor = buyer
     expect(await (await post("shipment.forward", forward)).json()).toEqual({
       error: "Yiwu Logistics marks this shipment shipped"
     })
-    context.actor = forwarderActor
+    signedIn.actor = forwarderActor
     expect(
       await (await post("shipment.forward", { ...forward, freight: { amountMinor: 900, currency: "CNY" } })).json()
     ).toEqual({ error: "Enter the freight in USD, the purchase order’s currency" })
@@ -2318,7 +2286,7 @@ describe("leg holders shipping the goods on", () => {
         amountMinor: 12500
       })
     ])
-    context.actor = buyer
+    signedIn.actor = buyer
     await receiveShipment(buyer, id)
   })
 
@@ -2608,9 +2576,9 @@ describe("transport configuration", () => {
     const draft = await preparation()
     await database.update(tables.shipments).set({ transport: null }).where(eq(tables.shipments.id, draft.id))
     const input = { id: draft.id, revision: 1, expected: null, transport: agl }
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await post("shipment.transport", input)).status).toBe(403)
-    context.actor = buyer
+    signedIn.actor = buyer
     expect((await post("shipment.transport", { ...input, transport: { ...agl, handoff: "forwarder" } })).status).toBe(
       400
     )
@@ -2625,9 +2593,9 @@ describe("transport configuration", () => {
       const draft = await preparation()
       await database.update(tables.shipments).set({ status, transport: null }).where(eq(tables.shipments.id, draft.id))
       const input = { id: draft.id, revision: 1, expected: null, transport: agl }
-      context.actor = supplier
+      signedIn.actor = supplier
       expect((await post("shipment.transport", input)).status).toBe(403)
-      context.actor = buyer
+      signedIn.actor = buyer
       expect((await post("shipment.transport", input)).status).toBe(200)
       expect((await post("shipment.transport", { ...input, expected: agl })).status).toBe(400)
       const [saved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
@@ -2848,7 +2816,7 @@ describe("document upload and packet release", () => {
   })
   it("rejects an invoice upload if the PO changes during storage, preserving the current invoice", async () => {
     const prepared = await preparation()
-    context.actor = supplier
+    signedIn.actor = supplier
     storage.putFile.mockImplementation(async () => {
       await database.update(tables.orders).set({ revision: 2 }).where(eq(tables.orders.id, orderId))
     })
@@ -2929,7 +2897,7 @@ describe("document upload and packet release", () => {
       access: { shipments: "view", prices: "view" }
     })
     storage.getFile.mockResolvedValue(new Uint8Array([1, 2, 3]))
-    context.actor = supplier
+    signedIn.actor = supplier
     const result = await downloadDocument(new Request("http://localhost"), {
       params: { id: prepared.invoiceId }
     })
@@ -2939,7 +2907,7 @@ describe("document upload and packet release", () => {
   })
   it("denies unrelated document downloads before reading private storage", async () => {
     const prepared = await preparation()
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     await expect(
       downloadDocument(new Request("http://localhost"), {
         params: { id: prepared.invoiceId }
@@ -2956,7 +2924,7 @@ describe("document upload and packet release", () => {
       role: "member",
       access: { shipments: "view", prices: "view" }
     })
-    context.actor = supplier
+    signedIn.actor = supplier
     storage.getFile.mockImplementation(async () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
       return new Uint8Array([1, 2, 3])
@@ -3017,7 +2985,7 @@ describe("document upload and packet release", () => {
     const pdf = await PDFDocument.create()
     pdf.addPage()
     const bytes = await pdf.save()
-    context.actor = supplier
+    signedIn.actor = supplier
     await database.insert(tables.memberships).values({
       orgId: supplierId,
       userId: supplier.user.id,
@@ -3043,7 +3011,7 @@ describe("document upload and packet release", () => {
       .update(tables.shipments)
       .set({ status: "ready", packing: prepared.packing })
       .where(eq(tables.shipments.id, prepared.id))
-    context.actor = supplier
+    signedIn.actor = supplier
     const result = await downloadPacket(new Request("http://localhost?section=carton_labels"), {
       params: { id: prepared.id }
     })
@@ -3060,7 +3028,7 @@ describe("document upload and packet release", () => {
   it("replaces draft invoices without leaving the previous invoice current", async () => {
     // The shipment brings the current invoice.
     await preparation()
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await uploadPdf("invoice")).status).toBe(200)
     const rows = await database.select().from(tables.documents)
     expect(rows.filter((row) => !row.outdated)).toHaveLength(1)
@@ -3079,9 +3047,9 @@ describe("document upload and packet release", () => {
       expect(result.status).not.toBe(200)
       return (await result.json()).error
     }
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect(await refused([label])).toContain("not found")
-    context.actor = buyer
+    signedIn.actor = buyer
     expect(await refused([{ ...label, cartonId: "unknown" }])).toBe("Label assignment has an unknown carton or page")
     expect(await refused([label, { ...label, page: 2 }], [2])).toBe("Assign each label page and carton only once")
     expect(await refused([label, { ...label, cartonId: "A7", trackingNumber: printed(2) }])).toBe(
@@ -3208,9 +3176,9 @@ describe("document upload and packet release", () => {
     expect((await uploadPdf("product_label")).status).toBe(200)
     const label = { cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }
     // Only the buyer adds carrier labels, to the shipment as it last saw it.
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(403)
-    context.actor = buyer
+    signedIn.actor = buyer
     expect((await uploadCarrierLabels(prepared.id, [label], [1], 2)).status).toBe(400)
     // Amazon's carton label hasn't arrived, so the carrier label alone doesn't complete the packet.
     const saved = await uploadCarrierLabels(prepared.id, [label], [1])
@@ -3249,7 +3217,7 @@ describe("document upload and packet release", () => {
     expect((await database.select().from(tables.shipments))[0]?.status).toBe("ready")
     expect((await database.select().from(tables.jobs)).filter((job) => job.key.startsWith("ready:"))).toHaveLength(1)
     expect((await uploadPdf("product_label")).status).toBe(400)
-    context.actor = supplier
+    signedIn.actor = supplier
     const pdf = await PDFDocument.create()
     pdf.addPage([288, 432])
     const bytes = await pdf.save()
@@ -3559,7 +3527,7 @@ describe("PO to a released Amazon shipment", () => {
     expect(await kinds()).toEqual(["purchase_order"])
 
     // The supplier uploads its invoice and submits the cartons.
-    context.actor = supplier
+    signedIn.actor = supplier
     const uploadedInvoice = await uploadPdf("invoice")
     expect(uploadedInvoice.status).toBe(200)
     const packing = packingSchema.parse({
@@ -3615,7 +3583,7 @@ describe("PO to a released Amazon shipment", () => {
     )
     // The PO email waits for the email sender, which these tests don't have.
     await database.delete(tables.jobs).where(eq(tables.jobs.kind, "email"))
-    context.actor = buyer
+    signedIn.actor = buyer
     for (let run = 0; run < 3; run++) {
       await retryDue()
       expect(await runNextJob()).toBe(true)
@@ -3665,7 +3633,7 @@ describe("PO to a released Amazon shipment", () => {
     expect((await kinds()).toSorted()).toEqual(
       ["carton_label", "carton_label", "invoice", "purchase_order", "shipping_label", "shipping_label"].toSorted()
     )
-    context.actor = supplier
+    signedIn.actor = supplier
     const released = await orderWorkflow(supplier, orderId)
     expect(released.shipments[0]).toMatchObject({ status: "ready", packetUrl: `/shipments/${shipmentId}/packet` })
     expect(released.documents.every((doc) => doc.downloadUrl)).toBe(true)
@@ -3739,7 +3707,7 @@ describe("PO to the buyer's own location", () => {
   // The buyer sends the PO, and the supplier packs it in two cartons with its invoice.
   async function packed() {
     const { shipmentId } = await submitOrder(buyer, orderId, 1)
-    context.actor = supplier
+    signedIn.actor = supplier
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
       readyDate,
@@ -4311,7 +4279,7 @@ describe("PO to a released FBA shipment", () => {
     const forwarderOrg = await joinForwarder(forwarder.id)
     const [own] = await database.select().from(tables.contacts).where(eq(tables.contacts.orgId, forwarderOrg))
     // The forwarder adds the phone number to the address it now keeps, and the buyer retries.
-    context.actor = actor("forwarder", forwarderOrg)
+    signedIn.actor = actor("forwarder", forwarderOrg)
     const update = {
       id: own!.id,
       name: "Yiwu warehouse",
@@ -4319,7 +4287,7 @@ describe("PO to a released FBA shipment", () => {
       address: { ...stop, phoneNumber: "+8657985550100" }
     }
     expect((await post("contact.update", update)).status).toBe(200)
-    context.actor = buyer
+    signedIn.actor = buyer
     expect((await post("shipment.retry", { id: shipmentId, revision: 1 })).status).toBe(200)
     for (let run = 0; run < 30 && (await runNextJob()); run++) {
       await retryDue()
@@ -4464,7 +4432,7 @@ describe("PO to a released FBA shipment", () => {
     // The FBA shipment's cartons are corrected while the AWD shipment carries on and is released.
     await correctShipment(buyer, shipmentId, "Change cartons")
     await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, awd!.id))
-    context.actor = supplier
+    signedIn.actor = supplier
     expect(await (await post("shipment.ship", { id: awd!.id })).json()).toEqual({ ok: true })
     const invoices = await database.select().from(tables.documents).where(eq(tables.documents.kind, "invoice"))
     expect(invoices).toMatchObject([{ shipmentId: null, name: "Labels.pdf", outdated: 0 }])
@@ -5149,7 +5117,7 @@ describe("tenant sales demand reads", () => {
       })
     const body = { source: "amazon", window: window() }
     expect((await readDemand(request({ ...body, orgId: otherId }))).status).toBe(400)
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await readDemand(request(body))).status).toBe(403)
     expect(provider.api.request).not.toHaveBeenCalled()
   })
@@ -5967,14 +5935,14 @@ describe("landed costs", () => {
     ])
     expect((await send("landedCost.create", { orderId, kind: "duty", amount: 0 })).status).toBe(400)
 
-    context.actor = supplier
+    signedIn.actor = supplier
     expect((await send("landedCost.create", { orderId, kind: "duty", amount: 500 })).status).toBe(403)
     expect((await send("landedCost.delete", { id })).status).toBe(403)
 
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await send("landedCost.delete", { id })).status).toBe(400)
 
-    context.actor = buyer
+    signedIn.actor = buyer
     expect((await send("landedCost.delete", { id })).status).toBe(200)
     expect(await orderLandedCosts(orderId)).toEqual([])
   })
@@ -6002,9 +5970,9 @@ describe("timeline comments", () => {
     })
     expect((await send({ orderId, message: " " })).status).toBe(400)
 
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect((await send({ orderId, message: "Not mine" })).status).not.toBe(200)
-    context.actor = buyer
+    signedIn.actor = buyer
   })
 
   it("keeps internal comments within the author's workspace, even for a user who belongs to both", async () => {
@@ -6023,6 +5991,20 @@ describe("timeline comments", () => {
     expect(supplierRows.some((event) => event.message === "Shared")).toBe(true)
     await expect(orderEvents(actor("buyer", otherId), orderId)).rejects.toThrow("not found")
     expect((await send({ orderId, message: "Unknown audience", visibility: "everyone" })).status).toBe(400)
+  })
+
+  it("takes no comments on a closed PO", async () => {
+    const [{ status }] = await database
+      .select({ status: tables.orders.status })
+      .from(tables.orders)
+      .where(eq(tables.orders.id, orderId))
+    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    const response = await send({ orderId, message: "Too late" })
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ error: "This purchase order is already closed" })
+    const comments = await database.select().from(tables.events).where(eq(tables.events.message, "Too late"))
+    expect(comments).toEqual([])
+    await database.update(tables.orders).set({ status }).where(eq(tables.orders.id, orderId))
   })
 })
 
@@ -6409,7 +6391,7 @@ describe("supplier pickup addresses", () => {
     // Another buyer can't add one, or change or remove this one, even through a supplier of its own.
     const theirs = randomUUID()
     await database.insert(tables.suppliers).values({ id: theirs, buyerOrgId: otherId, name: "Unic" })
-    context.actor = actor("buyer", otherId)
+    signedIn.actor = actor("buyer", otherId)
     expect(await (await save({ supplierId: unicId, name: "Theirs", address })).json()).toEqual({
       error: "This supplier was removed"
     })
@@ -6421,12 +6403,12 @@ describe("supplier pickup addresses", () => {
     })
 
     // Nor can a member of the buyer's workspace who can only view partners, or a supplier.
-    context.actor = { ...buyer, role: "member", access: { partners: "view" } }
+    signedIn.actor = { ...buyer, role: "member", access: { partners: "view" } }
     const member = await save({ supplierId: unicId, id: row!.id, remove: true })
     expect(member.status).toBe(403)
     expect(await member.json()).toEqual({ error: "Ask an admin for access to Partners" })
     // The workspace's own address actions don't reach a partner's addresses either, even for its owner.
-    context.actor = buyer
+    signedIn.actor = buyer
     const generic = (name: string, data: Record<string, unknown>) =>
       action(
         new Request("http://localhost:3000/api/action", {
@@ -6438,7 +6420,7 @@ describe("supplier pickup addresses", () => {
     expect((await generic("contact.delete", { id: row!.id })).status).toBe(404)
     expect((await generic("contact.update", { id: row!.id, name: "Mine", kind: "delivery", address })).status).toBe(404)
     expect(await saved()).toMatchObject([{ id: row!.id, kind: "pickup", name: "Factory" }])
-    context.actor = supplier
+    signedIn.actor = supplier
     expect(await (await save({ supplierId: unicId, name: "Dock", address })).json()).toEqual({
       error: "Switch to a buyer workspace"
     })
@@ -6580,7 +6562,7 @@ describe("supplier overview", () => {
       .where(eq(tables.shipments.id, prepared.id))
     const overview = () => supplierOverview({ id: supplierId, timeZone: "UTC" }, { period: "today" })
     expect((await overview()).kpis.shipped.value).toBe(0)
-    context.actor = supplier
+    signedIn.actor = supplier
     const shipped = await action(
       new Request("http://localhost:3000/api/action", {
         method: "POST",

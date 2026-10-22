@@ -26,65 +26,55 @@ import { summarizeSalesOrder } from "./sales-orders"
 // answered with the stored order details; a redaction removes the customer's ID from their orders. Customer contact
 // details in the webhooks are never kept.
 export const shopifyComplianceTopics = ["customers/data_request", "customers/redact", "shop/redact"] as const
-const orderIds = z.array(z.number().int().positive().safe()).max(1000)
-const dataRequest = z.object({
-  shop_domain: shopDomainSchema,
-  orders_requested: orderIds,
-  data_request: z.object({ id: z.number().int().positive().safe() })
-})
-const shopRedact = z.object({ shop_domain: shopDomainSchema })
-const customerRedact = z.object({
-  shop_domain: shopDomainSchema,
-  customer: z.object({ id: z.number().int().positive().safe() }),
-  orders_to_redact: orderIds
-})
+const id = z.number().int().positive().safe()
+const orderIds = z.array(id).max(1000)
 
-// Queues the work a verified compliance webhook calls for. Returns false for a body that isn't what Shopify sends.
-export async function receiveShopifyCompliance(topic: string, body: string, deliveryId: string) {
-  let json: unknown
-  try {
-    json = JSON.parse(body)
-  } catch {
-    return false
-  }
-  let payload: Record<string, unknown>
-  if (topic === "customers/data_request") {
-    const input = dataRequest.safeParse(json)
-    if (!input.success) {
-      return false
-    }
-    payload = {
+// A privacy webhook's body as Shopify sends it for its topic, turned into the job's payload. Only the IDs are kept: the
+// customer's contact details in the webhook are dropped here.
+const complianceWebhook = z.discriminatedUnion("topic", [
+  z
+    .object({
+      topic: z.literal("customers/data_request"),
+      body: z.object({ shop_domain: shopDomainSchema, orders_requested: orderIds, data_request: z.object({ id }) })
+    })
+    .transform(({ topic, body }) => ({
       topic,
-      shop: input.data.shop_domain,
-      orders: input.data.orders_requested,
-      requestId: input.data.data_request.id
-    }
-  } else if (topic === "shop/redact") {
-    const input = shopRedact.safeParse(json)
-    if (!input.success) {
-      return false
-    }
-    payload = { topic, shop: input.data.shop_domain }
-  } else {
-    const input = customerRedact.safeParse(json)
-    if (!input.success) {
-      return false
-    }
-    // Only the IDs are kept: the customer's contact details in the webhook are dropped here.
-    payload = {
+      shop: body.shop_domain,
+      orders: body.orders_requested,
+      requestId: body.data_request.id
+    })),
+  z
+    .object({ topic: z.literal("shop/redact"), body: z.object({ shop_domain: shopDomainSchema }) })
+    .transform(({ topic, body }) => ({ topic, shop: body.shop_domain })),
+  z
+    .object({
+      topic: z.literal("customers/redact"),
+      body: z.object({ shop_domain: shopDomainSchema, customer: z.object({ id }), orders_to_redact: orderIds })
+    })
+    .transform(({ topic, body }) => ({
       topic,
-      shop: input.data.shop_domain,
-      customer: input.data.customer.id,
-      orders: input.data.orders_to_redact
-    }
+      shop: body.shop_domain,
+      customer: body.customer.id,
+      orders: body.orders_to_redact
+    }))
+])
+
+// Queues the work a privacy webhook calls for. Shopify requires an answer to each one, so a body that isn't what Shopify
+// sends is logged and thrown: its message stays in the queue and, once it keeps failing, moves to the dead-letter queue.
+export async function receiveShopifyCompliance(topic: string, body: unknown, deliveryId: string) {
+  const webhook = complianceWebhook.safeParse({ topic, body })
+  if (!webhook.success) {
+    // The fields that didn't match, never their values: the body can hold a customer's contact details.
+    const fields = webhook.error.issues.map((issue) => issue.path.join("."))
+    console.error(JSON.stringify({ event: "shopify_compliance_rejected", topic, deliveryId, fields }))
+    throw new Error(`Shopify ${topic} webhook ${deliveryId} isn't what Shopify sends`)
   }
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `shopify-compliance:${deliveryId}`, kind: "shopify-compliance", payload })
+      .values({ key: `shopify-compliance:${deliveryId}`, kind: "shopify-compliance", payload: webhook.data })
       .onConflictDoNothing()
   )
-  return true
 }
 
 const compliancePayload = z.discriminatedUnion("topic", [

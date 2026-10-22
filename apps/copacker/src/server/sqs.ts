@@ -23,13 +23,24 @@ export function sqsQueue(sqs: SQSClient, queueUrl: string, waitTimeSeconds = 20)
   }
 }
 
-// Reads one batch of messages and handles each. A message is removed only after it's handled; one that keeps failing
-// moves to the queue's dead-letter queue.
+// Reads one batch of messages and handles each. A message is removed only after it's handled. One that fails stays in
+// the queue to be tried again, and moves to the queue's dead-letter queue once it keeps failing. The rest of the batch
+// is still handled, so a failing message doesn't hold back the others or use up their tries, and then the first failure
+// is thrown.
 export async function pollQueue(queue: NotificationQueue, handle: (body: string) => Promise<unknown>) {
   const messages = await queue.receive()
+  let failed: { error: unknown } | null = null
   for (const message of messages) {
-    await handle(message.body)
+    try {
+      await handle(message.body)
+    } catch (error) {
+      failed ??= { error }
+      continue
+    }
     await queue.remove(message.handle)
+  }
+  if (failed) {
+    throw failed.error
   }
   return messages.length
 }

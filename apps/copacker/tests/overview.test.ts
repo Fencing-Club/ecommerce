@@ -1,14 +1,11 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import type { OrderInput } from "@repo/copacker-shipments"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { coverBucket } from "../src/lib/cover"
 import type { RestockLine } from "../src/server/restock-plan"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/connections", () => ({
   amazonFor: vi.fn<() => void>(),
   shopifyFor: vi.fn<() => void>(),
@@ -39,7 +36,10 @@ import {
   salesByItem,
   sellingPrices
 } from "../src/server/overview-sales"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+
+// The query suites below share the file's database; each seeds its own workspace.
+setUpTestDatabase()
 
 function line(overrides: Partial<RestockLine>): RestockLine {
   return {
@@ -577,16 +577,12 @@ describe("margins and trends", () => {
 })
 
 describe("sales queries", () => {
-  const pg = new PGlite()
-  const database = drizzle(pg, { schema: tables })
   const orgId = randomUUID()
   const shopifyAccount = { provider: "shopify" as const, externalId: "club.myshopify.com" }
   const amazonAccount = { provider: "amazon" as const, externalId: "SELLER" }
   const money = (amount: string) => ({ shopMoney: { amount, currencyCode: "USD" } })
 
   beforeAll(async () => {
-    context.current = database
-    await applySchema(pg)
     await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
     const shopifyOrder = (id: string, createdAt: string, lines: unknown[], extra: Record<string, unknown> = {}) => ({
       orgId,
@@ -818,9 +814,6 @@ describe("sales queries", () => {
         data: {}
       }
     ])
-  })
-  afterAll(async () => {
-    await pg.close()
   })
 
   it("counts orders, units and sales per source and store day", async () => {
@@ -1063,8 +1056,6 @@ describe("sales queries", () => {
 })
 
 describe("the Overview's purchase orders", () => {
-  const pg = new PGlite()
-  const database = drizzle(pg, { schema: tables })
   const org = { id: randomUUID(), timeZone: "UTC" }
   const po = (variantId: string, status: "draft" | "submitted") => ({
     buyerOrgId: org.id,
@@ -1078,8 +1069,6 @@ describe("the Overview's purchase orders", () => {
   })
 
   beforeAll(async () => {
-    context.current = database
-    await applySchema(pg)
     await database.insert(tables.organizations).values({ id: org.id, name: "Fencing Club", kind: "buyer" })
     // A supplier that isn't on Copacker: the buyer shares the PO's documents with it.
     const [supplier] = await database
@@ -1106,9 +1095,6 @@ describe("the Overview's purchase orders", () => {
         createdBy: "user-1"
       }))
     )
-  })
-  afterAll(async () => {
-    await pg.close()
   })
 
   it("dates a Net 30 PO sent to a supplier not on Copacker from when it was sent", async () => {

@@ -1,29 +1,17 @@
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as schema from "../src/db/schema"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+import { database, setUpTestDatabase } from "./test-db"
+vi.mock("@/db", () => import("./test-db"))
 import {
   amazonReportPolicy,
   observeAmazonReportRequest,
   reserveAmazonReportRequest
 } from "../src/server/amazon-report-policy"
-const pg = new PGlite()
-const database = drizzle(pg, { schema })
 const now = new Date("2026-10-19T01:00:00Z")
 const response = { reportType: "AGED", status: 429, rateLimit: null, retryAfterMs: null, requestId: "request-id" }
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
-beforeEach(async () => {
-  await pg.exec("TRUNCATE amazon_report_quotas")
+setUpTestDatabase({ truncate: [schema.amazonReportQuotas] })
+beforeEach(() => {
   vi.restoreAllMocks()
 })
 
