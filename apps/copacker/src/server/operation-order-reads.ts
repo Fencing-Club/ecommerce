@@ -1,5 +1,5 @@
 import { orderReadOperations, type metaSchema } from "@repo/copacker-contract"
-import { and, eq, gte, lte, sql } from "drizzle-orm"
+import { and, eq, gte, lte, or, sql } from "drizzle-orm"
 import type { z } from "zod"
 import { db } from "@/db"
 import { connections, salesOrders } from "@/db/schema"
@@ -11,6 +11,7 @@ import type { Session } from "./workspace-session"
 
 type Filter = {
   id?: string
+  reference?: string
   connectionId?: string
   provider?: "shopify" | "amazon" | "ebay"
   from?: string
@@ -33,6 +34,13 @@ export async function readCustomerOrders(s: Session, filter: Filter) {
       and(
         eq(salesOrders.orgId, s.org.id),
         filter.id ? eq(salesOrders.id, filter.id) : undefined,
+        filter.reference
+          ? or(
+              eq(salesOrders.orderId, filter.reference),
+              sql`${salesOrders.data}->>'name' = ${filter.reference}`,
+              sql`${salesOrders.data}->>'salesRecordReference' = ${filter.reference}`
+            )
+          : undefined,
         filter.connectionId ? eq(connections.id, filter.connectionId) : undefined,
         filter.provider ? eq(connections.provider, filter.provider) : undefined,
         filter.from ? gte(salesOrders.orderedAt, new Date(`${filter.from}T00:00:00Z`)) : undefined,

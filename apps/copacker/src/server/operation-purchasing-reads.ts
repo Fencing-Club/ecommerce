@@ -96,6 +96,19 @@ export async function readCatalogs(s: Session) {
   return Promise.all((await catalogList(s.org.id)).map((row) => readCatalog(s, row.id)))
 }
 
+function purchaseOrderState(status: string) {
+  switch (status) {
+    case "draft":
+      return "draft"
+    case "submitted":
+      return "sent"
+    case "closed":
+      return "closed"
+    default:
+      throw new CliError("source_invalid", "A purchase order has an unsupported stored status.", 409)
+  }
+}
+
 export async function readPurchaseOrders(s: Session) {
   const rows = s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)
   const ids = rows.map(({ order }) => order.id)
@@ -109,7 +122,7 @@ export async function readPurchaseOrders(s: Session) {
   return rows.map(({ order }) => ({
     id: order.id,
     revision: order.revision,
-    state: order.status === "submitted" ? ("sent" as const) : order.status,
+    state: purchaseOrderState(order.status),
     reference: order.data.reference,
     supplierId: order.supplierId,
     destination: orderDestination(order.data),

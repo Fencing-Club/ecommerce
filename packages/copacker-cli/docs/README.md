@@ -31,7 +31,7 @@ copacker connection settings show <connection-id> --json
 copacker report restock --json
 copacker product list --json
 copacker inventory list --json
-copacker order show 1043 --connection <connection-id> --json
+copacker order show "#1043" --connection <connection-id> --json
 copacker po show <po-id> --json
 copacker shipment list --json
 ```

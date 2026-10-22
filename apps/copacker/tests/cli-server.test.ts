@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { CopackerClient } from "@repo/copacker-client"
 import { orderInputSchema } from "@repo/copacker-orders"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   cliAuthorizations,
@@ -488,6 +488,11 @@ describe("Operational resource reads", () => {
     expect((await call("po.list", { state: "sent" }, supplierOrg)).body.data.items).toHaveLength(1)
     expect((await call("shipment.list", { origin: "copacker" }, supplierOrg)).body.data.items).toHaveLength(1)
     expect((await call("shipment.show", { id: shipmentId }, supplierOrg)).body.data.poId).toBe(poId)
+    await database.update(orders).set({ status: "closed" }).where(eq(orders.id, poId))
+    expect((await call("po.show", { id: poId })).body.data.state).toBe("closed")
+    await database.execute(sql`update orders set status = 'unsupported' where id = ${poId}::uuid`)
+    expect((await call("po.list")).body.error.code).toBe("source_invalid")
+    await database.update(orders).set({ status: "submitted" }).where(eq(orders.id, poId))
     await database
       .update(memberships)
       .set({ role: "member", access: { orders: "view" } })
@@ -521,6 +526,10 @@ describe("Operational resource reads", () => {
         sourceName: "web"
       }
     })
+    // Unrelated orders must be filtered before the 10,000-row read limit and before summary parsing.
+    await database.execute(sql`insert into sales_orders ("orgId", source, "externalAccountId", "orderId", "orderedAt", data)
+      select ${workspaceId}::uuid, 'shopify', 'shop.myshopify.com', 'noise-' || n, '2020-01-01'::timestamptz,
+      '{"tags":[]}'::jsonb from generate_series(1, 10001) n`)
     const row = await call("order.show", { reference: "#1043", connectionId })
     expect(row.status).toBe(200)
     expect(row.body.data.id).toBe(orderId)
