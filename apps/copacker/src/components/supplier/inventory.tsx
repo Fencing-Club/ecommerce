@@ -6,22 +6,11 @@ import { EmptyState } from "@/components/common"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { responseError } from "@/lib/response-data"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useSaveStockMutation, useSetTrackingMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar } from "./shared"
-
-// Sends a change; a failure throws the server's message, or `fallback`.
-async function post(url: string, body: unknown, fallback: string) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  })
-  if (!response.ok) {
-    throw new Error(responseError(await response.json(), fallback))
-  }
-}
 
 // A typed count as a whole number, or null for anything else.
 function count(text: string) {
@@ -96,8 +85,7 @@ function Toggle({
   label: string
 }) {
   const router = useRouter()
-  const shared = useTranslations("supplier.shared")
-  const [pending, setPending] = useState(false)
+  const [setTracking, { isLoading: pending }] = useSetTrackingMutation()
   const [failed, setFailed] = useState(false)
   const editable = useCan("inventory", "edit")
   return (
@@ -108,15 +96,12 @@ function Toggle({
       aria-label={label}
       aria-invalid={failed}
       onCheckedChange={async (checked) => {
-        setPending(true)
         setFailed(false)
         try {
-          await post("/api/supplier-catalog/tracking", { id: row.id, [field]: checked }, shared("couldNotSave"))
+          await setTracking({ id: row.id, [field]: checked }).unwrap()
           router.invalidate()
         } catch {
           setFailed(true)
-        } finally {
-          setPending(false)
         }
       }}
     />
@@ -139,12 +124,13 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
   const [page, setPage] = useState(0)
   // Counts typed but not saved, by variant.
   const [edits, setEdits] = useState<Record<string, string>>({})
-  const [pending, setPending] = useState(false)
+  const [saveStock, { isLoading: pending }] = useSaveStockMutation()
   const [error, setError] = useState("")
   // Someone who can only view inventory sees each count without a field to change it.
   const editable = useCan("inventory", "edit")
   const t = useTranslations("supplier.inventory")
   const shared = useTranslations("supplier.shared")
+  const errorMessage = useErrorMessage()
   const locale = useLocale()
   const changes = rows.flatMap((row) => {
     const text = edits[row.id]
@@ -161,17 +147,17 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     })
   }
 
+  // Save is off while a count isn't a whole number, so every count sent is one.
   async function save() {
-    setPending(true)
     setError("")
     try {
-      await post("/api/supplier-catalog/stock", { counts: changes }, shared("couldNotSave"))
+      await saveStock({
+        counts: changes.flatMap(({ id, onHand }) => (onHand === null ? [] : [{ id, onHand }]))
+      }).unwrap()
       setEdits({})
       router.invalidate()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
-    } finally {
-      setPending(false)
+      setError(errorMessage(caught, shared("couldNotSave")))
     }
   }
 

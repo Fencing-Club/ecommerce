@@ -13,8 +13,10 @@ import { Providers } from "@/components/providers"
 import { direction, localeNames, locales, type Locale } from "@/i18n/locales"
 import type { Messages } from "@/i18n/messages"
 import { type Permissions } from "@/lib/access"
+import { themeStore } from "@/lib/theme"
 import { owner } from "@/stories/workspace"
 import { prepareIntl, storyTimeZone } from "./intl"
+import { mockRows } from "./mocks/db"
 import { handlers } from "./mocks/handlers"
 import { prepareStoryRouter, StoryRouter } from "./router"
 // The app's stylesheet, as AppProviders brings it: the reset first, then Tailwind's layers.
@@ -27,18 +29,6 @@ configure({ asyncUtilTimeout: 5000 })
 
 const themes = ["light", "dark"] as const
 type Theme = (typeof themes)[number]
-
-// Shows the story in the toolbar's theme: the class the app's theme script sets, and the choice the ThemeProvider
-// reads, so the account menu's Appearance shows it too.
-function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("dark", theme === "dark")
-  try {
-    localStorage.setItem("theme", theme)
-  } catch {
-    // Without storage the class alone shows the theme.
-  }
-  window.dispatchEvent(new StorageEvent("storage", { key: "theme" }))
-}
 
 // What each story renders in: the page's language and direction, the app's providers, the permissions of the person
 // signed in (an owner unless the story's `permissions` parameter says otherwise), and the URL's query, which state kept
@@ -61,7 +51,9 @@ function StoryFrame({
   query: Record<string, string>
   children: React.ReactNode
 }) {
-  useEffect(() => applyTheme(theme), [theme])
+  // The toolbar's theme, chosen in the app's theme store as the account menu would, so the menu shows it too. Providers
+  // has started the store by now: a child's effects run before its parent's.
+  useEffect(() => themeStore.setTheme(theme), [theme])
   useEffect(() => {
     // Document links are real navigation in the app. In a story, record their destination without leaving the test
     // iframe; the integrated browser separately verifies full document loads and Start transitions.
@@ -150,9 +142,12 @@ export default definePreview({
     // Accessibility checks report in the panel and in tests without failing them.
     a11y: { test: "todo" }
   },
-  // The story's language, loaded before it renders, for client components and the mocked server alike.
+  // The story's database rows and language, ready before it renders, for client components and the mocked server alike.
+  // Each story gets only the rows its `db` parameter gives, none without one, so one story's rows never leak into the
+  // next. Storybook runs these loaders before a story's own.
   loaders: [
     async ({ globals, parameters }) => {
+      mockRows(parameters.db ?? {})
       const { locale, messages } = await prepareIntl(globals.locale)
       const storyRouter = await prepareStoryRouter(
         parameters.router?.navigation?.pathname ?? "/",

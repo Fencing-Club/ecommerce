@@ -17,9 +17,10 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { dayDate } from "@/lib/format"
-import { responseError } from "@/lib/response-data"
+import { type ProposalReply, useAnswerProposalMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { proposalChanges } from "@/server/order-proposals"
 
@@ -116,6 +117,8 @@ export function ProposalPanel({
   const unchanged = changes.lines.length - shown.length
   const t = useTranslations("supplier.proposal")
   const shared = useTranslations("supplier.shared")
+  const errorMessage = useErrorMessage()
+  const [answer] = useAnswerProposalMutation()
   const locale = useLocale()
   const money = useMoney()
   const price = (value: number) => money(value, currency)
@@ -127,22 +130,15 @@ export function ProposalPanel({
   // Someone who doesn't see prices gets the changes without them.
   const prices = useCan("prices")
 
-  async function act(action: "approve" | "decline" | "withdraw", body: Record<string, unknown>) {
-    setPending(action)
+  async function act(reply: ProposalReply) {
+    setPending(reply.action)
     setError("")
     try {
-      const response = await fetch(`/api/proposals/${proposal.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      })
-      if (!response.ok) {
-        throw new Error(responseError(await response.json(), shared("couldNotSave")))
-      }
+      await answer({ id: proposal.id, ...reply }).unwrap()
       setDeclining(false)
       startTransition(() => router.invalidate())
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
+      setError(errorMessage(caught, shared("couldNotSave")))
     } finally {
       setPending(null)
     }
@@ -265,13 +261,13 @@ export function ProposalPanel({
               >
                 {t("decline")}
               </Button>
-              <Button disabled={busy} onClick={() => void act("approve", { action: "approve" })}>
+              <Button disabled={busy} onClick={() => void act({ action: "approve" })}>
                 {pending === "approve" ? t("approving") : t("approve")}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" disabled={busy} onClick={() => void act("withdraw", { action: "withdraw" })}>
+              <Button variant="outline" disabled={busy} onClick={() => void act({ action: "withdraw" })}>
                 {pending === "withdraw" ? t("withdrawing") : t("withdraw")}
               </Button>
               <Button
@@ -304,11 +300,7 @@ export function ProposalPanel({
             <Button variant="outline" disabled={busy} onClick={() => setDeclining(false)}>
               {shared("cancel")}
             </Button>
-            <Button
-              variant="destructive"
-              disabled={busy}
-              onClick={() => void act("decline", { action: "decline", reason })}
-            >
+            <Button variant="destructive" disabled={busy} onClick={() => void act({ action: "decline", reason })}>
               {pending === "decline" ? t("declining") : t("declineChanges")}
             </Button>
           </DialogFooter>

@@ -28,7 +28,7 @@ const meta = preview.meta({
     msw.use(
       http.post("/api/catalogs", async ({ request }) => {
         saved(await request.json())
-        return HttpResponse.json({ id: newId })
+        return HttpResponse.json({ id: newId, revision: 1 })
       }),
       http.delete("/api/catalogs/:id", ({ params }) => {
         deleted(params.id)
@@ -380,6 +380,30 @@ export const DeleteFails = meta.story({
     await expect(await screen.findByText("Couldn’t delete the catalog. Try again.")).toBeVisible()
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
+  }
+})
+
+// A delete that never reaches the server says so, and leaves nothing pending: the dialog closes and can delete again.
+export const DeleteOffline = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(http.delete("/api/catalogs/:id", () => HttpResponse.error()))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
+    )
+    await expect(
+      await saveBar().findByText("Couldn’t reach Copacker. Check your connection and try again.")
+    ).toBeVisible()
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
+    await expect(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
+    ).toBeEnabled()
   }
 })
 

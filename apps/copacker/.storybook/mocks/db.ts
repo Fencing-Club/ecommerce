@@ -4,8 +4,8 @@ import { getTableName, isTable, type Table } from "drizzle-orm"
 // the query's filters, joins or columns. With none given, a query finds nothing.
 let tables = new Map<string, unknown[]>()
 
-// The rows each table holds for the story, by table name, such as { contacts: [...] }. preview.tsx empties them
-// before every story.
+// The rows each table holds for the story, by table name, such as { contacts: [...] }. preview.tsx's loader sets them
+// from the story's `db` parameter before every story, and empties them for a story without one.
 export function mockRows(rows: Record<string, unknown[]>) {
   tables = new Map(Object.entries(rows))
 }

@@ -22,12 +22,11 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import type { PriceBreak } from "@/lib/catalog-pricing"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { defaultQuantityRules, type PriceBasis } from "@/lib/catalog-pricing"
-import { savedRecord } from "@/lib/response-data"
-import { responseError } from "@/lib/response-data"
-import { productImageSchema } from "@/lib/supplier-product"
+import { useSaveProductMutation, useUploadProductImageMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
 import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
@@ -141,23 +140,24 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
   const [uploading, setUploading] = useState(0)
   // The last photo that didn't upload, and why.
   const [failed, setFailed] = useState<{ name: string; error: string } | null>(null)
+  const [uploadImage] = useUploadProductImageMutation()
   const t = useTranslations("supplier.productEditor")
+  const errorMessage = useErrorMessage()
 
-  async function upload(files: FileList) {
+  // A photo that fails, even one that never reaches the server, is skipped: the rest still upload, and every photo that
+  // did is kept.
+  async function upload(files: File[]) {
     setFailed(null)
     setUploading(files.length)
     const added: ProductImage[] = []
     for (const file of files) {
-      const body = new FormData()
-      body.set("file", file)
-      const response = await fetch("/api/product-images", { method: "POST", body })
-      const result = await response.json()
-      if (response.ok) {
-        added.push(productImageSchema.parse(result))
-      } else {
-        setFailed({ name: file.name, error: responseError(result, t("couldNotUpload")) })
+      try {
+        added.push(await uploadImage(file).unwrap())
+      } catch (caught) {
+        setFailed({ name: file.name, error: errorMessage(caught, t("couldNotUpload")) })
+      } finally {
+        setUploading((count) => count - 1)
       }
-      setUploading((count) => count - 1)
     }
     onChange([...images, ...added])
   }
@@ -223,10 +223,12 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
           multiple
           hidden
           onChange={(event) => {
-            if (event.target.files?.length) {
-              void upload(event.target.files)
-            }
+            // Copied first: clearing the input, so the same photos can be chosen again, empties its own file list.
+            const files = Array.from(event.target.files ?? [])
             event.target.value = ""
+            if (files.length) {
+              void upload(files)
+            }
           }}
         />
         {failed && <p className="text-sm text-destructive">{t.rich("fileError", { ...failed, file: fileName })}</p>}
@@ -479,9 +481,11 @@ export function ProductEditor({
   const [newOption, setNewOption] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  const [saveProduct] = useSaveProductMutation()
   const t = useTranslations("supplier.productEditor")
   const shared = useTranslations("supplier.shared")
   const pricing = useTranslations("supplier.pricing")
+  const errorMessage = useErrorMessage()
   const locale = useLocale()
   const dirty = JSON.stringify(product) !== JSON.stringify(saved)
   const change = (next: Partial<EditorProduct>) => setProduct((current) => ({ ...current, ...next }))
@@ -518,35 +522,27 @@ export function ProductEditor({
     setPending(true)
     setError("")
     try {
-      const response = await fetch("/api/supplier-catalog/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: product.id,
-          revision: product.revision,
-          title: product.title.trim(),
-          status: product.status,
-          category: product.category.trim(),
-          productCode: product.productCode.trim(),
-          url: product.url.trim(),
-          description: product.description,
-          optionNames: product.optionNames,
-          images: product.images,
-          variants
-        })
-      })
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(responseError(result, t("saveFailed")))
-      }
+      const { id } = await saveProduct({
+        id: product.id,
+        revision: product.revision,
+        title: product.title.trim(),
+        status: product.status,
+        category: product.category.trim(),
+        productCode: product.productCode.trim(),
+        url: product.url.trim(),
+        description: product.description,
+        optionNames: product.optionNames,
+        images: product.images,
+        variants
+      }).unwrap()
       setSaved(product)
       if (product.id) {
         router.invalidate()
       } else {
-        router.navigate({ href: `/products/${savedRecord.parse(result).id}`, replace: true })
+        router.navigate({ href: `/products/${id}`, replace: true })
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("saveFailed"))
+      setError(errorMessage(caught, t("saveFailed")))
     } finally {
       setPending(false)
     }
