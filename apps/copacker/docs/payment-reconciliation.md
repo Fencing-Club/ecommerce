@@ -96,7 +96,9 @@ explicit network/reference and unit mappings and are not compared to FBA movemen
 Regression tests cover duplicate/conflicting payments, pending refunds, exact precision, currency separation,
 cross-account isolation, changed balance snapshots, reversals outside the period, multi-step chains, one-sided release
 references and ambiguous releases. PR #70 deployed as `d93964ff`; read-only live checks confirmed Shopify deduplication,
-reimbursement reversal netting and single released-posting contribution. The subsequent stored-evidence diagnostics
-and receipt-movement comparison described above await their own deployment and live acceptance.
+reimbursement reversal netting and single released-posting contribution. PR #71 deployed the subsequent stored-evidence
+diagnostics and receipt-movement comparison as `dae10ab0` on October 19, 2026. Read-only live acceptance confirmed the
+diagnostics without starting a sync or backfill; see the dated results and remaining coverage limitations in the
+[analytics data backlog](specs/analytics/analytics-data-backlog.md#pr-71-acceptance-october-19-2026-pacific).
 External gateway fees, refund duty components, payout matching, historical product identity and return-to-stock lot
 restoration remain separate data/accounting gaps.
