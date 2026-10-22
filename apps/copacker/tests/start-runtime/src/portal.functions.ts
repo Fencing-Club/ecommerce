@@ -3,7 +3,8 @@ import { createServerFn } from "@tanstack/react-start"
 import { getCookie, setResponseStatus } from "@tanstack/react-start/server"
 import { createTranslator } from "use-intl"
 import { AccessError } from "@/i18n/errors"
-import { overviewHref, overviewSearch } from "@/lib/overview-search"
+import { overviewSearch } from "@/lib/page-search"
+import { stringifyUrlSearch } from "@/lib/url-search"
 import { failureMessage } from "@/server/errors"
 import { localization } from "@/server/localization"
 import { overviewPageData } from "@/server/overview-page"
@@ -15,7 +16,7 @@ export const readOverview = createServerFn()
   .validator(overviewSearch)
   .handler(({ data }) =>
     portalData(async (user) => {
-      const result = await portalSession(user, getCookie(workspaceCookie), overviewHref(data))
+      const result = await portalSession(user, getCookie(workspaceCookie), `/overview${stringifyUrlSearch(data)}`)
       if (result.redirect) {
         throw redirect({ href: result.redirect })
       }

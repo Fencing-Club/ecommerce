@@ -122,7 +122,7 @@ export function comparisonRange(range: DayRange, comparison: Comparison): DayRan
   return { from: addDays(range.from, -days), to: addDays(range.from, -1) }
 }
 
-const dayKey = /^\d{4}-\d{2}-\d{2}$/
+export const dayKey = /^\d{4}-\d{2}-\d{2}$/
 const isDay = (value: string) =>
   dayKey.test(value) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value
 const validDay = (value: unknown): value is string => typeof value === "string" && isDay(value)
@@ -164,19 +164,18 @@ export function readPeriod(query: Record<string, string | string[] | undefined>,
   return { key: preset.key, label: preset.label, range, comparison, previous: comparisonRange(range, comparison) }
 }
 
-// The query that selects a period, for links.
-export function periodQuery(period: Pick<Period, "key" | "range" | "comparison">) {
-  const query = new URLSearchParams()
+// The search that selects a period, for links: the range or the preset, leaving out the default preset and comparison.
+export function periodSearch(period: Pick<Period, "key" | "range" | "comparison">): {
+  period?: PresetKey
+  from?: string
+  to?: string
+  compare?: Comparison
+} {
+  const compare = period.comparison === "previousPeriod" ? {} : { compare: period.comparison }
   if (period.key === "custom") {
-    query.set("from", period.range.from)
-    query.set("to", period.range.to)
-  } else if (period.key !== defaultPreset) {
-    query.set("period", period.key)
+    return { from: period.range.from, to: period.range.to, ...compare }
   }
-  if (period.comparison !== "previousPeriod") {
-    query.set("compare", period.comparison)
-  }
-  return query
+  return period.key === defaultPreset ? compare : { period: period.key, ...compare }
 }
 
 const dayFormat = (withYear: boolean, locale: string) =>

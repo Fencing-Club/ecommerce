@@ -106,7 +106,7 @@ export async function customerPageData(s: Workspace, rawId: string) {
   }
 }
 
-export async function productsPageData(s: Workspace, rawSearch: unknown) {
+export async function productsPageData(s: Workspace) {
   requireAccess(s, "products")
   if (s.org.kind === "supplier") {
     const prices = can(s, "prices")
@@ -138,11 +138,7 @@ export async function productsPageData(s: Workspace, rawSearch: unknown) {
     .select({ provider: connections.provider })
     .from(connections)
     .where(eq(connections.orgId, s.org.id))
-  return {
-    kind: "buyer" as const,
-    providers: linked.map((row) => row.provider),
-    search: typeof rawSearch === "string" ? rawSearch.trim().slice(0, 200) : ""
-  }
+  return { kind: "buyer" as const, providers: linked.map((row) => row.provider) }
 }
 
 export async function productPageData(s: Workspace, rawId: string) {
@@ -186,16 +182,17 @@ export async function productPageData(s: Workspace, rawId: string) {
   return { initial, catalogs: detail.catalogs, readOnly: !prices || !can(s, "products", "edit") }
 }
 
-export async function inventoryPageData(s: Workspace, rawTab: unknown) {
+export async function inventoryPageData(s: Workspace) {
   requireSupplier(s)
   requireAccess(s, "inventory")
-  return { rows: await inventoryRows(s.org.id), tab: typeof rawTab === "string" ? rawTab : undefined }
+  return { rows: await inventoryRows(s.org.id) }
 }
 
-export function salesPageData(s: Workspace, rawSearch: unknown) {
+// The sales list loads its orders itself; the page only checks the viewer may open it.
+export function salesPageData(s: Workspace) {
   requireBuyer(s)
   requireAccess(s, "sales")
-  return { search: typeof rawSearch === "string" ? rawSearch.trim().slice(0, 100) : "" }
+  return {}
 }
 
 export function restockPageData(

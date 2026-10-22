@@ -1,7 +1,7 @@
 import { ProductEditor } from "@/components/supplier/product-editor"
+import type { PageData } from "@/server/page-result"
 import type { readNewProduct } from "@/workspace.functions"
 
-type Data = Extract<Awaited<ReturnType<typeof readNewProduct>>, { forbidden: false }>["page"]
-export default function NewProductPage({ page }: { page: Data["data"] }) {
+export default function NewProductPage({ page }: { page: PageData<typeof readNewProduct> }) {
   return <ProductEditor {...page} />
 }

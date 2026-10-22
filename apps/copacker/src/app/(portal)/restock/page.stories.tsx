@@ -8,7 +8,7 @@ import PageView from "./page"
 
 type Org = { restockSalesDays: number | null; restockLeadTimeDays: number | null }
 function RestockPage({ org }: { org: Org }) {
-  return <PageView page={{ settings: restockSettings(org) }} />
+  return <PageView page={{ settings: restockSettings(org) }} search={{}} />
 }
 
 // The plans each story asked for.

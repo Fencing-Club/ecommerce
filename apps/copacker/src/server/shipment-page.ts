@@ -17,7 +17,7 @@ import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
 import { pageId } from "./page-id"
 import { lineLabels } from "./product-barcodes"
-export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
+export async function shipmentPage(input: { id: string }) {
   const s = await session()
   requirePage(s, "shipments")
   const t = await serverTranslator("shipments.detail")

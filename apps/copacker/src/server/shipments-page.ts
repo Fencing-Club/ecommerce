@@ -24,9 +24,9 @@ async function amazonShipments(orgId: string) {
     : null
 }
 
-// Every shipment the workspace sees, for the list to sort into its views. The supplier can't see the buyer's Amazon
-// account.
-export async function shipmentsPage(input: { query: Record<string, string | string[]> }) {
+// Every shipment the workspace sees, for the list to sort into its views; the view it opens on is the URL's, which the
+// page reads itself. The supplier can't see the buyer's Amazon account.
+export async function shipmentsPage() {
   const s = await session()
   requirePage(s, "shipments")
   const isBuyer = s.org.kind === "buyer"
@@ -58,7 +58,6 @@ export async function shipmentsPage(input: { query: Record<string, string | stri
     viewer: s.org.kind,
     seesOrders: can(s, "orders"),
     amazonFailed,
-    view: typeof input.query.view === "string" ? input.query.view : undefined,
     rows: await shipmentListRows({ isBuyer, rows, list, customers, amazon })
   }
 }

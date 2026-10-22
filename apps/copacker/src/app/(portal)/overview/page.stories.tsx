@@ -27,12 +27,12 @@ function BuyerOverviewPage({ permissions, data }: Args) {
           setup: isAdmin(permissions) ? data.setup : []
         }
       }}
-      query={{}}
+      search={{}}
     />
   )
 }
 function SupplierOverviewPage({ permissions, supplier }: Args) {
-  return <PageView page={{ kind: "supplier", data: supplier, permissions }} query={{}} />
+  return <PageView page={{ kind: "supplier", data: supplier, permissions }} search={{}} />
 }
 
 // A member with the Overview (which needs prices) and purchase orders, but not Restock or Shipments.

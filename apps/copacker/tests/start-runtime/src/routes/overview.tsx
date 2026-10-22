@@ -7,7 +7,8 @@ import { Providers } from "@/components/providers"
 import { Shell } from "@/components/shell"
 import { SystemTimeZone } from "@/components/system-time-zone"
 import { WorkspaceWatch } from "@/components/workspace-watch"
-import { overviewSearch, selectOverviewChannel, selectOverviewPeriod } from "@/lib/overview-search"
+import { periodSearch } from "@/lib/date-range"
+import { overviewSearch } from "@/lib/page-search"
 import { readOverview } from "../portal.functions"
 
 export const Route = createFileRoute("/overview")({
@@ -66,10 +67,10 @@ function OverviewRoute() {
                 page={page}
                 refresh={refresh}
                 onPeriodChange={(period) => {
-                  void navigate({ search: selectOverviewPeriod(query, period) })
+                  void navigate({ search: { channel: query.channel, ...periodSearch(period) } })
                 }}
                 onChannelChange={(channel) => {
-                  void navigate({ search: selectOverviewChannel(query, channel) })
+                  void navigate({ search: { ...query, channel: channel ?? undefined } })
                 }}
               />
             )

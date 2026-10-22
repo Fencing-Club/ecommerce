@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start"
 import { match } from "ts-pattern"
 import { createTranslator } from "use-intl"
 import { z } from "zod"
+import { documentKey } from "@/lib/document-key"
+import { pageTitle } from "@/lib/page-title"
 import { localization } from "@/server/localization"
 import { maintenanceActive } from "@/server/maintenance"
 import { appUrl } from "@/server/security"
@@ -11,26 +13,10 @@ export const readDocument = createServerFn()
   .handler(async ({ data: pathname }) => {
     const config = await localization()
     const { common, marketing, auth, validation, onboarding, legal, navigation } = config.messages
-    const publicPage = [
-      "/",
-      "/contact",
-      "/privacy",
-      "/terms",
-      "/unsubscribe",
-      "/setup",
-      "/maintenance",
-      "/login",
-      "/signup",
-      "/forgot-password",
-      "/reset-password",
-      "/verify-email",
-      "/invite",
-      "/onboarding",
-      "/workspaces/new"
-    ].includes(pathname)
+    const key = documentKey(pathname)
     const t = createTranslator(config)
     const marketingPage = ["/", "/contact", "/privacy", "/terms"].includes(pathname)
-    const { title, description } = match(pathname)
+    const { title, description } = match(key)
       .with("/", () => ({ title: t("marketing.metadata.title"), description: t("marketing.metadata.description") }))
       .with("/contact", () => ({
         title: t("marketing.contact.metadata.title"),
@@ -44,10 +30,13 @@ export const readDocument = createServerFn()
         title: t("legal.terms.metadata.title"),
         description: t("legal.terms.metadata.description")
       }))
-      .otherwise(() => ({ title: "Copacker", description: t("common.appDescription") }))
+      .with("/setup", () => ({ title: pageTitle(t("auth.setup.title")), description: t("common.appDescription") }))
+      .otherwise(() => ({ title: pageTitle(), description: t("common.appDescription") }))
     return {
       ...config,
-      messages: publicPage ? { common, marketing, auth, validation, onboarding, legal, navigation } : config.messages,
+      key,
+      messages:
+        key === "app" ? config.messages : { common, marketing, auth, validation, onboarding, legal, navigation },
       maintenance: maintenanceActive(),
       head: {
         meta: [

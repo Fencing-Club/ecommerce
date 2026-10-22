@@ -8,7 +8,8 @@ integration callbacks stay unchanged.
 
 ## Request boundaries
 
-`src/routes` owns the typed route tree. Presentational pages in `src/app` receive explicit loader data. Server functions
+`src/routes` owns the typed route tree ([routes](routes.md)). Presentational pages in `src/app` receive explicit loader
+data. Server functions
 and `src/server/http` retain the existing authorization and HTTP contracts. `src/server.ts` creates invocation-scoped
 authentication, localization, database, private-storage and queue-publisher contexts. A router is created per request. Database sockets
 close before the request finishes; Hyperdrive query caching is disabled. Mutations recheck current database permissions.

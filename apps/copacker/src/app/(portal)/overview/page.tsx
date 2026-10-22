@@ -1,7 +1,14 @@
+import type { OverviewSearch } from "@/lib/page-search"
+import type { PageData } from "@/server/page-result"
 import type { readOverview } from "@/workspace.functions"
 import { OverviewContent } from "./content"
 
-type Data = Extract<Awaited<ReturnType<typeof readOverview>>, { forbidden: false }>["page"]
-export default function OverviewPage({ page, query }: { page: Data["data"]; query: Data["query"] }) {
-  return <OverviewContent page={page} query={query} />
+export default function OverviewPage({
+  page,
+  search
+}: {
+  page: PageData<typeof readOverview>
+  search: OverviewSearch
+}) {
+  return <OverviewContent page={page} search={search} />
 }

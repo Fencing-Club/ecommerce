@@ -1,27 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/orders/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { ordersSearch } from "@/lib/page-search"
 import { readOrders } from "@/orders-page.functions"
+import { PortalPage, PortalRouteError, pageHead } from "./-page-route"
+
+// The list keeps its view in the URL as it changes, and the page reads it there, so a new view loads nothing.
 export const Route = createFileRoute("/_portal/orders")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => readOrders({ data: { query: deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: ordersSearch,
+  loader: () => readOrders(),
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} search={search} />}</PortalPage>
 }

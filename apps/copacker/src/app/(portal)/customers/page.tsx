@@ -1,7 +1,7 @@
 import { CustomersPageView } from "@/components/customers-page"
+import type { PageData } from "@/server/page-result"
 import type { readCustomers } from "@/workspace.functions"
 
-type Data = Extract<Awaited<ReturnType<typeof readCustomers>>, { forbidden: false }>["page"]
-export default function CustomersPage({ page }: { page: Data["data"] }) {
+export default function CustomersPage({ page }: { page: PageData<typeof readCustomers> }) {
   return <CustomersPageView {...page} />
 }

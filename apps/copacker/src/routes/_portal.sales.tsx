@@ -1,28 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/sales/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { salesSearch } from "@/lib/page-search"
 import { readSales } from "@/workspace.functions"
+import { PortalPage, PortalRouteError, pageHead } from "./-page-route"
 
+// The search starts the order list, which loads its own orders.
 export const Route = createFileRoute("/_portal/sales")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => ({ query: search }),
-  loader: ({ deps }) => readSales({ data: { ...deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: salesSearch,
+  loader: () => readSales(),
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{() => <Page search={search} />}</PortalPage>
 }

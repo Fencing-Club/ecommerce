@@ -9,10 +9,11 @@ const meta = preview.meta({
   component: OverviewContent,
   args: {
     page: { kind: "buyer", admin: true, data: buyerOverview },
-    query: { channel: "amazon", keep: "inventory" }
+    search: { channel: "amazon" }
   } satisfies React.ComponentProps<typeof OverviewContent>
 })
 
+// A new period keeps the channel.
 export const ChangePeriod = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Last 30 days" }))
@@ -20,7 +21,8 @@ export const ChangePeriod = meta.story({
     await userEvent.click(within(dialog).getByRole("button", { name: "Today" }))
     await userEvent.click(within(dialog).getByRole("button", { name: "Apply" }))
     await expect(getStoryRouter().navigate).toHaveBeenCalledWith({
-      href: "/overview?channel=amazon&keep=inventory&period=today"
+      to: "/overview",
+      search: { channel: "amazon", period: "today" }
     })
   }
 })

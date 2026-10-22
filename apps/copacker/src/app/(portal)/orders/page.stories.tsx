@@ -2,6 +2,7 @@ import { expect, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { can, isAdmin, type Permissions } from "@/lib/access"
+import type { OrdersSearch } from "@/lib/page-search"
 import { orderListRows } from "@/server/order-list"
 import type { ListedOrder } from "@/server/supplier-workspace"
 import { packingFor, shipmentRow } from "@/stories/fixtures/logistics"
@@ -20,8 +21,8 @@ type Args = {
   rows: Row[]
   // A supplier's orders, as supplierOrders returns them.
   orders: ListedOrder[]
-  // The ?view= the URL asks for.
-  view?: string
+  // The ?view= the URL asks for, or a supplier's ?tab=.
+  view?: OrdersSearch["view"]
   tab?: string
   // Whether the buyer connected Shopify, and has a supplier.
   shopify: boolean
@@ -36,9 +37,9 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, view, t
       <PageView
         page={{
           view: "supplier",
-          orders: can(s, "prices") ? orders : orders.map((order) => ({ ...order, total: null })),
-          tab
+          orders: can(s, "prices") ? orders : orders.map((order) => ({ ...order, total: null }))
         }}
+        search={{ tab }}
       />
     )
   }
@@ -77,9 +78,9 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, view, t
         creates,
         nextStep,
         guided,
-        kind,
-        listView: view
+        kind
       }}
+      search={{ view }}
     />
   )
 }
@@ -151,8 +152,8 @@ export const All = meta.story({
   }
 })
 
-// Links from before the views still open the matching orders.
-export const LegacyStatusLink = meta.story({
+// The view the URL names opens first: ?view=active holds the orders on their way.
+export const ActiveView = meta.story({
   ...page("buyer"),
   args: { view: "active" },
   play: async ({ canvas }) => {
