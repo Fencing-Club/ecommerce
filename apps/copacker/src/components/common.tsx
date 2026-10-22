@@ -1,23 +1,21 @@
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
+import type { StatusTone } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import type { Messages } from "@/i18n/messages"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
 import { Attachment } from "./attachment"
-
-// Every status reads in one of five tones, the same label always in the same tone: warning when the viewer has to act,
-// info while someone else is working on it, success when it's ready or done well, neutral when idle or filed, and
-// destructive when it failed or is lost.
-export type StatusTone = "neutral" | "info" | "success" | "warning" | "destructive"
 
 type StatusKey = keyof typeof messages.status
 
 // Keyed by the status as the app stores it, or by the words a store reports in lowercase with underscores, such as
 // partially_fulfilled for Shopify's "Partially fulfilled". The label is its key under the "common" messages' `status`.
+// One label always takes one tone (see StatusTone).
 const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
-  // Purchase orders
+  // Purchase orders, and supplier products and catalogs
   draft: { label: "draft", tone: "neutral" },
-  // Supplier products.
   active: { label: "active", tone: "success" },
   archived: { label: "archived", tone: "neutral" },
   submitted: { label: "submitted", tone: "info" },
@@ -49,8 +47,8 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   checked_in: { label: "checkedIn", tone: "info" },
   receiving: { label: "receiving", tone: "info" },
   error: { label: "error", tone: "destructive" },
-  // Sales orders, in Shopify's and Amazon's words
-  pending: { label: "pending", tone: "info" },
+  // Sales orders, in Shopify's, Amazon's and eBay's words (shipped and cancelled read as above)
+  pending: { label: "pending", tone: "neutral" },
   unshipped: { label: "unshipped", tone: "info" },
   unfulfilled: { label: "unfulfilled", tone: "info" },
   partially_shipped: { label: "partiallyShipped", tone: "info" },
@@ -58,6 +56,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   fulfilled: { label: "fulfilled", tone: "success" },
   canceled: { label: "cancelled", tone: "destructive" },
   unfulfillable: { label: "unfulfillable", tone: "destructive" },
+  unknown: { label: "unknown", tone: "neutral" },
   // Stock
   in_stock: { label: "inStock", tone: "success" },
   reorder_soon: { label: "reorderSoon", tone: "warning" },
@@ -70,17 +69,17 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   not_invited: { label: "notInvited", tone: "neutral" }
 }
 
-// Each tone's pill: its soft fill, and its dot and label in the tone's own color. Warning's label takes the darker
-// warning text, and neutral's the muted text, so every label reads on its fill.
-const tonePills: Record<StatusTone, { pill: string; dot: string }> = {
-  neutral: { pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
-  info: { pill: "bg-info-soft text-info", dot: "bg-info" },
-  success: { pill: "bg-success-soft text-success", dot: "bg-success" },
-  warning: { pill: "bg-warning-soft text-warning-foreground", dot: "bg-warning" },
-  destructive: { pill: "bg-destructive-soft text-destructive", dot: "bg-destructive" }
+// Each tone's dot, in the tone's own color.
+const toneDots: Record<StatusTone, string> = {
+  neutral: "bg-muted-foreground",
+  info: "bg-info",
+  success: "bg-success",
+  warning: "bg-warning",
+  destructive: "bg-destructive"
 }
 
-// A status pill in one of the five tones. `icon` replaces the dot, such as a Repeat icon for a replacement order.
+// A status pill: a Badge in one of the five tones, with a dot before its label. `icon` replaces the dot, such as a
+// Repeat icon for a replacement order.
 export function StatusBadge({
   tone,
   icon,
@@ -90,19 +89,11 @@ export function StatusBadge({
   icon?: React.ReactNode
   children: React.ReactNode
 }) {
-  const { pill, dot } = tonePills[tone]
   return (
-    <span
-      data-slot="status"
-      data-tone={tone}
-      className={cn(
-        "inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-full px-2 text-xs font-medium tracking-normal whitespace-nowrap [&>svg]:size-3 [&>svg]:shrink-0",
-        pill
-      )}
-    >
-      {icon ?? <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", dot)} />}
+    <Badge tone={tone} data-slot="status" className="gap-1.5 tracking-normal [&>svg]:shrink-0">
+      {icon ?? <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", toneDots[tone])} />}
       {children}
-    </span>
+    </Badge>
   )
 }
 
@@ -120,17 +111,54 @@ function words(status: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-export function Status({ status }: { status: string }) {
-  const label = useStatusLabel()
+// Whose words a status takes. Every status shares one tone, but its words agree with what it's the status of: a sales
+// order's are under `sales.status` (in French, "Expédiée", for une commande) and a supplier's product's or catalog's
+// under `supplier.shared.status`. Anything else reads in the app's own words, `common.status`.
+export type StatusLabels = "app" | "sales" | "supplier"
+
+// The statuses each domain words itself, by the same keys as `common.status`.
+const salesLabels: Record<keyof Messages["sales"]["status"], true> = {
+  fulfilled: true,
+  unfulfilled: true,
+  partiallyFulfilled: true,
+  pending: true,
+  shipped: true,
+  unshipped: true,
+  partiallyShipped: true,
+  cancelled: true,
+  unfulfillable: true,
+  unknown: true
+}
+const supplierLabels: Record<keyof Messages["supplier"]["shared"]["status"], true> = {
+  active: true,
+  draft: true,
+  archived: true
+}
+const isSalesLabel = (key: string): key is keyof typeof salesLabels => Object.hasOwn(salesLabels, key)
+const isSupplierLabel = (key: string): key is keyof typeof supplierLabels => Object.hasOwn(supplierLabels, key)
+
+export function Status({ status, labels = "app" }: { status: string; labels?: StatusLabels }) {
+  const label = useStatusLabel(labels)
   return <StatusBadge tone={statuses[statusKey(status)]?.tone ?? "neutral"}>{label(status)}</StatusBadge>
 }
 
 // A status's words without its pill, for filters and exports.
-export function useStatusLabel() {
-  const t = useTranslations("common.status")
+export function useStatusLabel(labels: StatusLabels = "app") {
+  const app = useTranslations("common.status")
+  const sales = useTranslations("sales.status")
+  const supplier = useTranslations("supplier.shared.status")
   return (status: string) => {
     const known = statuses[statusKey(status)]
-    return known ? t(known.label) : words(status)
+    if (!known) {
+      return words(status)
+    }
+    if (labels === "sales" && isSalesLabel(known.label)) {
+      return sales(known.label)
+    }
+    if (labels === "supplier" && isSupplierLabel(known.label)) {
+      return supplier(known.label)
+    }
+    return app(known.label)
   }
 }
 

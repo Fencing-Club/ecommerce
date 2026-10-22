@@ -1,4 +1,3 @@
-import type { PriceBasis } from "@repo/copacker-orders"
 import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -48,7 +47,7 @@ export async function catalogList(orgId: string) {
       })
       .from(catalogProducts)
       .innerJoin(supplierProducts, eq(supplierProducts.id, catalogProducts.productId))
-      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, 1)))
+      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, true)))
       .groupBy(catalogProducts.catalogId),
     supplierCustomers(orgId)
   ])
@@ -86,7 +85,7 @@ export async function catalogEditor(orgId: string, id: string | null) {
       })
       .from(supplierProducts)
       .innerJoin(supplierProductGroups, eq(supplierProductGroups.id, supplierProducts.groupId))
-      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, 1)))
+      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, true)))
       .orderBy(asc(supplierProductGroups.title), asc(supplierProducts.position), asc(supplierProducts.supplierSku)),
     supplierCustomers(orgId),
     db()
@@ -125,8 +124,7 @@ export async function catalogEditor(orgId: string, id: string | null) {
         image: group.images.at(0) ?? null,
         variants: rows.map(({ group: _group, groupId: _groupId, options, ...variant }) => ({
           ...variant,
-          label: variantLabel(options, group.optionNames),
-          priceBasis: variant.priceBasis as PriceBasis
+          label: variantLabel(options, group.optionNames)
         }))
       }
     }),
@@ -191,7 +189,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
     const products = await tx
       .select()
       .from(supplierProducts)
-      .where(and(eq(supplierProducts.supplierOrgId, s.org.id), eq(supplierProducts.active, 1)))
+      .where(and(eq(supplierProducts.supplierOrgId, s.org.id), eq(supplierProducts.active, true)))
     for (const entry of input.products) {
       const product = products.find((candidate) => candidate.id === entry.productId)
       if (!product) {
@@ -210,8 +208,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
       title: input.title,
       status: input.status,
       adjustmentBasisPoints: input.adjustmentBasisPoints,
-      includeNewProducts: input.includeNewProducts,
-      updatedAt: new Date()
+      includeNewProducts: input.includeNewProducts
     }
     const saved = await writeSettings(tx, s, input, settings)
     const id = saved.id
@@ -351,7 +348,7 @@ export async function customerProducts(
         .where(and(eq(catalogs.id, link.catalogId), eq(catalogs.status, "active")))
     : []
   if (!catalog || !products.length) {
-    return products.map((product) => ({ ...product, active: product.active === 1 }))
+    return products
   }
   const entries = await executor
     .select()
@@ -367,8 +364,6 @@ export async function customerProducts(
     )
   return products.flatMap((product) => {
     const entry = entries.find((candidate) => candidate.productId === product.id)
-    return entry
-      ? [{ ...product, active: product.active === 1, ...catalogPricing(product, catalog.adjustmentBasisPoints, entry) }]
-      : []
+    return entry ? [{ ...product, ...catalogPricing(product, catalog.adjustmentBasisPoints, entry) }] : []
   })
 }

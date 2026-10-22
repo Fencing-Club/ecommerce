@@ -160,7 +160,7 @@ export async function saveSupplierProfile(orgId: string, input: z.output<typeof 
   await db()
     .insert(supplierProfiles)
     .values({ orgId, ...profile })
-    .onConflictDoUpdate({ target: supplierProfiles.orgId, set: { ...profile, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: supplierProfiles.orgId, set: profile })
 }
 
 // A supplier's name, and how long they take to deliver to the buyer's locations and to Amazon (used by restock).

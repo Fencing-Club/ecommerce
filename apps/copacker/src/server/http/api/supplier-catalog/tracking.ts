@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const { id, ...changes } = requestInput(trackingInput, await requestJson(request))
   const [updated] = await db()
     .update(supplierProducts)
-    .set({ ...changes, revision: sql`${supplierProducts.revision} + 1`, updatedAt: new Date() })
+    .set({ ...changes, revision: sql`${supplierProducts.revision} + 1` })
     .where(and(eq(supplierProducts.id, id), eq(supplierProducts.supplierOrgId, s.org.id)))
     .returning({ revision: supplierProducts.revision })
   if (!updated) {

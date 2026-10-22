@@ -27,6 +27,7 @@ import type { ServerKey } from "@/i18n/server-text"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { presetRange } from "@/lib/date-range"
+import { stores, type Store } from "@/lib/stores"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
 import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
@@ -57,9 +58,6 @@ import { stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
-
-export const salesSources = ["shopify", "amazon", "ebay"] as const
-export type SalesSource = (typeof salesSources)[number]
 
 // How far back orders are kept, how much recent history each sync reads again (shipments and cancellations arrive
 // after the order), and the period each provider read covers. Two years: Amazon refuses transaction reads that start
@@ -92,7 +90,7 @@ export async function amazonSalesMarketplaces(
 }
 
 // How far back a source's orders are copied. Without read_all_orders Shopify shares only its recent orders.
-export function historyDaysFor(source: SalesSource, scopes: string) {
+export function historyDaysFor(source: Store, scopes: string) {
   return source === "shopify" && !grantedScopes(scopes).has("read_all_orders") ? recentOrderDays : salesHistoryDays
 }
 
@@ -114,7 +112,7 @@ export function orderSyncProgress(
 }
 
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
-export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: SalesSource) {
+export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: Store) {
   if (org.kind !== "buyer") {
     throw new SalesSyncError("buyerWorkspaceRequired")
   }
@@ -521,7 +519,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
   ])
   const amazonAccount = accounts.find((account) => account.provider === "amazon")
   const amazonReports = amazonAccount ? await amazonReportCoverage(orgId, amazonAccount.externalId, now) : null
-  return salesSources.flatMap((source) => {
+  return stores.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
     if (!account) {
       return []
@@ -559,7 +557,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
 
 // Demand from one source's stored orders over the last `days` days of the stored period. Throws a SalesSyncError
 // that says what to do when the orders aren't copied yet or don't reach back far enough.
-export async function storedDemand(orgId: string, source: SalesSource, days: number) {
+export async function storedDemand(orgId: string, source: Store, days: number) {
   const account = await connectedAccount(orgId, source)
   if (!account) {
     throw new SalesSyncError("connectInSettings", { provider: source })
@@ -638,7 +636,7 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
 }
 
 export type SalesOrderSummary = {
-  source: SalesSource
+  source: Store
   orderId: string
   number: string
   orderedAt: string
@@ -681,7 +679,7 @@ function words(value: string) {
 // A stored order as the Orders page lists it, its channel in t's language. Bundle components count once, as the bundle
 // bought.
 export function summarizeSalesOrder(
-  source: SalesSource,
+  source: Store,
   orderedAt: Date,
   data: ShopifySale | AmazonSale | EbaySale,
   account: string,
@@ -860,7 +858,7 @@ async function matchingProducts(orgId: string, domain: string, q: string) {
 // their amounts.
 export async function listSalesOrders(
   orgId: string,
-  filter: { source?: SalesSource; page: number; q?: string },
+  filter: { source?: Store; page: number; q?: string },
   { prices = true }: { prices?: boolean } = {}
 ) {
   const t = await serverText()
@@ -983,7 +981,7 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
   let amazonSales: SourceSales | null = null
   let ebaySales: SourceSales | null = null
   const sources = []
-  for (const source of salesSources) {
+  for (const source of stores) {
     if (!providers.includes(source)) {
       continue
     }

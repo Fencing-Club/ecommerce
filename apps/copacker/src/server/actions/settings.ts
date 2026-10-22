@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { profiles } from "@/db/schema"
 import { locales } from "@/i18n/locales"
+import { stores } from "@/lib/stores"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { connectAmazonSelfAuthorized, disconnect } from "@/server/connections"
 import { contactSchema, createContact, deleteContact, updateContact } from "@/server/contacts"
@@ -35,7 +36,7 @@ export const settingsActions = {
     run: async ({ locale }, s) => {
       await db()
         .update(profiles)
-        .set({ locale: locale || null, updatedAt: new Date() })
+        .set({ locale: locale || null })
         .where(eq(profiles.userId, s.user.id))
       return ok
     }
@@ -110,7 +111,7 @@ export const settingsActions = {
   }),
   "connection.delete": defineAction({
     guard: { admin: true, kind: "buyer" },
-    input: z.object({ provider: z.enum(["amazon", "shopify", "ebay"]) }),
+    input: z.object({ provider: z.enum(stores) }),
     run: async ({ provider }, s) => ({ ok: true, ...(await disconnect(s.org.id, provider)) })
   }),
   // Costs paid monthly that no platform reports, which feed the Overview's profit.

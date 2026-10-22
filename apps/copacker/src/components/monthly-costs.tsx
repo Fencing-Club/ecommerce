@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { useAction } from "@/hooks/use-action"
+import { storeNames } from "@/lib/stores"
 import { FormInput, FormMoney } from "./form-controls"
 import { FormDialog } from "./form-dialog"
 import { FormSelect } from "./form-select"
@@ -133,9 +134,9 @@ function AddMonthlyCost({ currency }: { currency: string }) {
         label={t("channel")}
         options={[
           { value: "", label: t("allChannels") },
-          { value: "amazon", label: "Amazon" },
-          { value: "shopify", label: "Shopify" },
-          { value: "ebay", label: "eBay" }
+          { value: "amazon", label: storeNames.amazon },
+          { value: "shopify", label: storeNames.shopify },
+          { value: "ebay", label: storeNames.ebay }
         ]}
       />
       <div className="grid gap-4 sm:grid-cols-2">

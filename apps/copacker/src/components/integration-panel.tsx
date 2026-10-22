@@ -1,6 +1,7 @@
 import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
+import type { Store } from "@/lib/stores"
 import { StatusBadge } from "./common"
 import { InventorySyncRow } from "./inventory-sync"
 import { FinancialDataSyncCard, OrdersSyncRow } from "./sales-orders"
@@ -17,7 +18,7 @@ export function IntegrationPanel({
   status,
   children
 }: {
-  store: "shopify" | "amazon" | "ebay"
+  store: Store
   title: string
   account: string
   status?: React.ReactNode
@@ -78,7 +79,7 @@ export function IntegrationPanelFooter({ children }: { children: React.ReactNode
 }
 
 // The app and its stories use the same sync section, including its responsive layout.
-export function IntegrationSyncSection({ store }: { store: "shopify" | "amazon" | "ebay" }) {
+export function IntegrationSyncSection({ store }: { store: Store }) {
   const t = useTranslations("settings.integrations.panel")
   return (
     <IntegrationSection title={t("syncTitle")}>

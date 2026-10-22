@@ -3,8 +3,8 @@ import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { DotField } from "@/components/marketing/dot-field"
 import { lift, lit, rise, stage } from "@/components/marketing/site-styles"
-import { ReloadWhenBack } from "@/components/reload-when-back"
 import { Button } from "@/components/ui/button"
+import { useReloadWhenBack } from "@/hooks/use-reload-when-back"
 import { cn } from "@/lib/utils"
 
 // A wrench in a pane of glass, lit from behind in Copacker's orange, with a light going round it while the work goes on.
@@ -32,6 +32,7 @@ const accent = (chunks: React.ReactNode) => <span className={lit}>{chunks}</span
 // opens with. It reloads into the page it stands in for once Copacker is back.
 export function Maintenance() {
   const t = useTranslations("common.pages.maintenance")
+  useReloadWhenBack()
   return (
     <div
       className={cn(stage, "relative isolate flex min-h-svh flex-col overflow-hidden [--ink:oklch(0.145_0_0)]")}
@@ -97,7 +98,6 @@ export function Maintenance() {
           </Button>
         </div>
       </main>
-      <ReloadWhenBack />
     </div>
   )
 }

@@ -52,7 +52,7 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     db()
       .select()
       .from(documents)
-      .where(and(eq(documents.shipmentId, id), eq(documents.outdated, 0))),
+      .where(and(eq(documents.shipmentId, id), eq(documents.outdated, false))),
     // Cartons leave from the supplier's pickup addresses: its own once it has joined Copacker, and until then the ones
     // the buyer saved for it.
     supplierPickupAddresses(supplier)

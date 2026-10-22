@@ -68,8 +68,7 @@ export async function saveProduct(s: Session, raw: unknown) {
       url: input.url || null,
       description: input.description || null,
       optionNames: input.optionNames,
-      images: input.images,
-      updatedAt: new Date()
+      images: input.images
     }
     let id = input.id
     let revision = 1
@@ -123,8 +122,7 @@ export async function saveProduct(s: Session, raw: unknown) {
         ...fields,
         title: variantTitle(input.title, variant.options, input.optionNames),
         position,
-        active: input.status === "active" ? 1 : 0,
-        updatedAt: new Date()
+        active: input.status === "active"
       }
       if (targetId) {
         const [updated] = await tx
@@ -146,11 +144,11 @@ export async function saveProduct(s: Session, raw: unknown) {
     }
     await tx
       .update(supplierProducts)
-      .set({ active: 0, revision: sql`${supplierProducts.revision} + 1`, updatedAt: new Date() })
+      .set({ active: false, revision: sql`${supplierProducts.revision} + 1` })
       .where(
         and(
           eq(supplierProducts.groupId, id),
-          eq(supplierProducts.active, 1),
+          eq(supplierProducts.active, true),
           notInArray(supplierProducts.id, [...kept, ...created])
         )
       )
@@ -192,7 +190,7 @@ export async function setProductsActive(s: Session, groupIds: string[], active: 
   requireSupplier(s)
   const updated = await db()
     .update(supplierProducts)
-    .set({ active: active ? 1 : 0, revision: sql`${supplierProducts.revision} + 1`, updatedAt: new Date() })
+    .set({ active, revision: sql`${supplierProducts.revision} + 1` })
     .where(and(eq(supplierProducts.supplierOrgId, s.org.id), inArray(supplierProducts.groupId, groupIds)))
     .returning({ id: supplierProducts.id })
   return updated.length
@@ -221,7 +219,7 @@ export async function productList(orgId: string) {
   const byGroup = Map.groupBy(variants, (variant) => variant.groupId)
   return groups.flatMap((group) => {
     const own = byGroup.get(group.id) ?? []
-    const active = own.filter((variant) => variant.active === 1)
+    const active = own.filter((variant) => variant.active)
     if (!own.length) {
       return []
     }
@@ -230,10 +228,7 @@ export async function productList(orgId: string) {
         ...group,
         status: active.length ? ("active" as const) : ("archived" as const),
         // An active product shows its active variants; an archived one, those it had.
-        variants: (active.length ? active : own).map((variant) => ({
-          ...variant,
-          priceBasis: variant.priceBasis as "piece" | "sellable_pack" | "case"
-        })),
+        variants: active.length ? active : own,
         catalogs: memberships.filter((row) => row.groupId === group.id).length
       }
     ]
@@ -254,7 +249,7 @@ export async function productDetail(orgId: string, id: string) {
     .from(supplierProducts)
     .where(eq(supplierProducts.groupId, id))
     .orderBy(asc(supplierProducts.position), asc(supplierProducts.supplierSku))
-  const active = variants.filter((variant) => variant.active === 1)
+  const active = variants.filter((variant) => variant.active)
   const shown = active.length ? active : variants
   const inCatalogs = shown.length
     ? await db()
@@ -274,7 +269,6 @@ export async function productDetail(orgId: string, id: string) {
     status: active.length ? ("active" as const) : ("archived" as const),
     variants: shown.map((variant) => ({
       ...variant,
-      priceBasis: variant.priceBasis as "piece" | "sellable_pack" | "case",
       quantityRules: variant.quantityRules ?? defaultQuantityRules
     })),
     catalogs: inCatalogs

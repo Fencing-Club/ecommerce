@@ -1,11 +1,12 @@
 import { z } from "zod"
 import { can } from "@/lib/access"
+import { stores } from "@/lib/stores"
 import { errorResponse } from "./errors"
-import { listSalesOrders, salesSources } from "./sales-orders"
+import { listSalesOrders } from "./sales-orders"
 import type { Session } from "./workspace-session"
 
 const filters = z.object({
-  source: z.enum(salesSources).optional(),
+  source: z.enum(stores).optional(),
   page: z.coerce.number().int().min(0).max(10000).default(0),
   q: z.string().max(100).optional()
 })

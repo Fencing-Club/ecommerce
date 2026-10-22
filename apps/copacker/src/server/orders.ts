@@ -358,7 +358,7 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       }
       await tx
         .update(orders)
-        .set({ status: "submitted", data: order.data, amazonSellerId: order.amazonSellerId, updatedAt: new Date() })
+        .set({ status: "submitted", data: order.data, amazonSellerId: order.amazonSellerId })
         .where(eq(orders.id, id))
       // A supplier that joined Copacker is emailed the PO and provides its documents there. For one that hasn't, the
       // buyer downloads the documents and shares them, and enters the supplier's side itself.
@@ -491,8 +491,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
           packingDraft: null,
           snapshot: order.data,
           orderRevision: order.revision,
-          status,
-          updatedAt: new Date()
+          status
         })
         .where(eq(shipments.id, shipmentId))
       if (!approval && !amazon) {
@@ -566,8 +565,7 @@ async function queueAmazon(
       amazonNetwork: first!.network,
       snapshot: data,
       orderRevision,
-      status: "queued",
-      updatedAt: new Date()
+      status: "queued"
     })
     .where(eq(shipments.id, shipment.id))
   await takeSupplierStock(tx, shipment.id, supplierOrgId, data, first!.packing)
@@ -618,18 +616,18 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       if (orderDestination(order.data) === "amazon") {
         await tx
           .update(shipments)
-          .set({ snapshot: data, orderRevision: revision, status: "packed", updatedAt: new Date() })
+          .set({ snapshot: data, orderRevision: revision, status: "packed" })
           .where(eq(shipments.id, shipmentId))
       } else {
         await tx
           .update(shipments)
-          .set({ snapshot: data, orderRevision: revision, status: "ready", updatedAt: new Date() })
+          .set({ snapshot: data, orderRevision: revision, status: "ready" })
           .where(eq(shipments.id, shipmentId))
         await takeSupplierStock(tx, shipmentId, supplier.supplierOrgId, data, shipment.packing)
       }
       await tx
         .update(documents)
-        .set({ outdated: 1 })
+        .set({ outdated: true })
         .where(and(eq(documents.orderId, order.id), eq(documents.kind, "purchase_order")))
       await tx
         .insert(jobs)
@@ -666,13 +664,12 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
         issue: reason,
         packingDraft: shipment.packingDraft ?? shipment.packing,
         revision: shipment.revision + 1,
-        ...(shipment.linkedAmazonShipmentId ? { amazonOrderId: null, amazonShipmentId: null, operation: "none" } : {}),
-        updatedAt: new Date()
+        ...(shipment.linkedAmazonShipmentId ? { amazonOrderId: null, amazonShipmentId: null, operation: "none" } : {})
       })
       .where(eq(shipments.id, shipmentId))
     await tx
       .update(documents)
-      .set({ outdated: 1 })
+      .set({ outdated: true })
       .where(and(eq(documents.shipmentId, shipmentId), ne(documents.kind, "invoice")))
     await tx
       .update(jobs)
@@ -697,8 +694,7 @@ export async function reopenPacking(s: Session, shipmentId: string, expectedRevi
       .set({
         status: "packing",
         packingDraft: shipment.packing,
-        revision: shipment.revision + 1,
-        updatedAt: new Date()
+        revision: shipment.revision + 1
       })
       .where(eq(shipments.id, shipmentId))
     await recordEvent(tx, shipment.orderId, s.user.id, { key: "packingReopened", values: null })
@@ -732,7 +728,7 @@ export async function savePacking(
     const revision = shipment.revision + 1
     await tx
       .update(shipments)
-      .set({ packingDraft: draft, revision, orderRevision: order.revision, updatedAt: new Date() })
+      .set({ packingDraft: draft, revision, orderRevision: order.revision })
       .where(eq(shipments.id, shipmentId))
     return { revision, savedAt: new Date().toISOString() }
   })
@@ -805,7 +801,7 @@ export async function deleteDraftOrder(s: Session, id: string) {
     await tx.delete(orderRevisions).where(eq(orderRevisions.orderId, id))
     await tx
       .update(poImports)
-      .set({ status: "review", orderId: null, revision: sql`${poImports.revision} + 1`, updatedAt: new Date() })
+      .set({ status: "review", orderId: null, revision: sql`${poImports.revision} + 1` })
       .where(eq(poImports.orderId, id))
     await tx.delete(orders).where(eq(orders.id, id))
     return removed.map((doc) => doc.objectKey)
@@ -830,9 +826,9 @@ export async function closeOrder(s: Session, id: string) {
     }
     await tx
       .update(shipments)
-      .set({ status: "cancelled", packingDraft: null, updatedAt: new Date() })
+      .set({ status: "cancelled", packingDraft: null })
       .where(and(eq(shipments.orderId, id), eq(shipments.status, "packing")))
-    await tx.update(orders).set({ status: "closed", updatedAt: new Date() }).where(eq(orders.id, id))
+    await tx.update(orders).set({ status: "closed" }).where(eq(orders.id, id))
     await recordEvent(tx, id, s.user.id, { key: "closed", values: null })
   })
 }
@@ -848,7 +844,7 @@ export async function receiveShipment(s: Session, shipmentId: string) {
     if (shipment.status !== arriving) {
       throw new LocalizedError(arriving === "forwarded" ? "forwarderNotShipped" : "supplierNotShipped")
     }
-    await tx.update(shipments).set({ status: "received", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
+    await tx.update(shipments).set({ status: "received" }).where(eq(shipments.id, shipmentId))
     await recordEvent(tx, shipment.orderId, s.user.id, { key: "shipmentReceived", values: null })
   })
 }

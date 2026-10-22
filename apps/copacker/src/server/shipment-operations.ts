@@ -148,7 +148,7 @@ export async function saveTransport(
     if (transport.handoff === "forwarder" && !(shipment.snapshot ?? order.data).via) {
       throw new LocalizedError("transportForwarderMissing")
     }
-    await tx.update(shipments).set({ transport, updatedAt: new Date() }).where(eq(shipments.id, id))
+    await tx.update(shipments).set({ transport }).where(eq(shipments.id, id))
     // Transport that needs no carrier labels can complete a shipment that waited on it.
     return shipment.status === "waiting_labels" ? queueLabels(tx, { shipmentId: id, actor: s.user.id }) : null
   })

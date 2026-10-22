@@ -130,7 +130,7 @@ describe("transport configuration", () => {
       })
     }
     // Amazon's carton label is replaced, and its new one hasn't arrived.
-    await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "carton_label"))
+    await database.update(tables.documents).set({ outdated: true }).where(eq(tables.documents.kind, "carton_label"))
     expect(await shipmentState(prepared.id)).toEqual({
       status: "waiting_labels",
       issues: ["missing_carton_label", "missing_transport"]
@@ -150,7 +150,7 @@ describe("transport configuration", () => {
         })
       ).status
     ).toBe(200)
-    await database.update(tables.documents).set({ outdated: 0 }).where(eq(tables.documents.kind, "carton_label"))
+    await database.update(tables.documents).set({ outdated: false }).where(eq(tables.documents.kind, "carton_label"))
     expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_shipping_label"] })
     // AGL without them completes the packet, and the labels go to the supplier.
     expect(
@@ -253,7 +253,7 @@ describe("document upload and packet release", () => {
     await expect(storeDocument(input, new Uint8Array([2]))).rejects.toThrow("Shipment changed")
     const docs = await database.select().from(tables.documents).where(eq(tables.documents.kind, "packing_list"))
     expect(docs).toHaveLength(1)
-    expect(docs[0]).toMatchObject({ id: original.id, outdated: 0 })
+    expect(docs[0]).toMatchObject({ id: original.id, outdated: false })
   })
   it("keeps the current packing document when regenerating its replacement fails", async () => {
     const prepared = await preparation()
@@ -288,17 +288,19 @@ describe("document upload and packet release", () => {
         new Uint8Array([2])
       )
     ).rejects.toThrow("Storage unavailable")
-    expect((await database.select().from(tables.documents).where(eq(tables.documents.id, doc.id)))[0]?.outdated).toBe(0)
+    expect((await database.select().from(tables.documents).where(eq(tables.documents.id, doc.id)))[0]?.outdated).toBe(
+      false
+    )
   })
   it("marks generated POs historical when the PO revision changes during storage", async () => {
     storage.putFile.mockImplementation(async () => {
       await database.update(tables.orders).set({ revision: 2 }).where(eq(tables.orders.id, orderId))
     })
     const doc = await storeDocument(
-      { orderId, kind: "purchase_order", name: "PO.pdf", orderRevision: 1, outdated: 0, uploadedBy: "system" },
+      { orderId, kind: "purchase_order", name: "PO.pdf", orderRevision: 1, outdated: false, uploadedBy: "system" },
       new Uint8Array([1])
     )
-    expect(doc.outdated).toBe(1)
+    expect(doc.outdated).toBe(true)
   })
   it("keeps one current PO document as the PO is revised", async () => {
     const po = { orderId, kind: "purchase_order" as const, name: "PO.pdf", uploadedBy: "system" }
@@ -310,7 +312,7 @@ describe("document upload and packet release", () => {
     const current = await database
       .select()
       .from(tables.documents)
-      .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, 0)))
+      .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, false)))
     expect(current.map((doc) => doc.id)).toEqual([second.id])
     expect(first.id).not.toBe(second.id)
   })
@@ -325,7 +327,7 @@ describe("document upload and packet release", () => {
     expect(await result.json()).toMatchObject({ error: "The purchase order changed during upload. Try again." })
     const docs = await database.select().from(tables.documents)
     expect(docs).toHaveLength(1)
-    expect(docs[0]).toMatchObject({ id: prepared.invoiceId, outdated: 0 })
+    expect(docs[0]).toMatchObject({ id: prepared.invoiceId, outdated: false })
   })
   it("rejects carrier labels when the shipment is released during upload", async () => {
     const prepared = await preparation()
@@ -375,7 +377,7 @@ describe("document upload and packet release", () => {
     expect(await result.json()).toMatchObject({ error: expect.stringContaining("released shipment") })
     const current = await database.select().from(tables.documents).where(eq(tables.documents.kind, "product_label"))
     expect(current).toHaveLength(1)
-    expect(current[0]).toMatchObject({ id: original!.id, outdated: 0 })
+    expect(current[0]).toMatchObject({ id: original!.id, outdated: false })
   })
   it("downloads the filed purchase order rather than filing another", async () => {
     const filed = await generatePo(orderId)
@@ -452,7 +454,7 @@ describe("document upload and packet release", () => {
   it("withholds a document replaced while private storage is being read", async () => {
     const prepared = await preparation()
     storage.getFile.mockImplementation(async () => {
-      await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.id, prepared.invoiceId))
+      await database.update(tables.documents).set({ outdated: true }).where(eq(tables.documents.id, prepared.invoiceId))
       return new Uint8Array([1])
     })
     const result = await downloadDocument(new Request("http://localhost"), {
@@ -930,7 +932,7 @@ describe("document upload and packet release", () => {
     expect(await (await uploadCarrierLabels(prepared.id, [])).json()).toEqual({ sent: false })
     expect(await carrierLabels()).toEqual([])
     const [dropped] = await database.select().from(tables.documents).where(eq(tables.documents.id, label!.id))
-    expect(dropped?.outdated).toBe(1)
+    expect(dropped?.outdated).toBe(true)
     expect((await shipmentState(prepared.id)).issues).toContain("missing_shipping_label")
   })
   it("builds the supplier's parcel packet with each carton's tracking number", async () => {

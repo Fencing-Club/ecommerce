@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "बिक्री, {period}",
-    "about": "{label} के बारे में",
     "versus": "{comparison, select, previousYear {पिछले साल की तुलना में} other {पिछली अवधि की तुलना में}}",
     "noPrices": "अभी कोई कीमत नहीं",
     "noOrders": "कोई ऑर्डर सिंक नहीं हुआ",

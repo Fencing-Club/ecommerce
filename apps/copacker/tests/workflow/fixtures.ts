@@ -5,11 +5,11 @@ import { and, eq } from "drizzle-orm"
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterEach, beforeEach, vi } from "vitest"
 import * as tables from "../../src/db/schema"
+import { importProposalSchema } from "../../src/lib/import-proposal"
 import { acceptForwarderInvitation } from "../../src/server/forwarders"
 import { POST as postAction } from "../../src/server/http/api/action"
 import { POST as postDocument } from "../../src/server/http/api/documents"
 import { POST as postCarrierLabelsHandler } from "../../src/server/http/api/shipments/$id/carrier-labels"
-import { importProposalSchema } from "../../src/server/import-proposal"
 import { prepareAmazonShipment, submitPacking } from "../../src/server/orders"
 import { hash } from "../../src/server/security"
 import { orderWorkflow } from "../../src/server/workflow"
@@ -124,7 +124,7 @@ export function setUpWorkflowTests() {
 }
 
 // A supplier product row with a product of its own, as imports and the product page make them.
-export async function withGroup<T extends { supplierOrgId: string; title: string }>(values: T) {
+export async function withGroup<T extends Omit<typeof tables.supplierProducts.$inferInsert, "groupId">>(values: T) {
   const [group] = await database
     .insert(tables.supplierProductGroups)
     .values({ supplierOrgId: values.supplierOrgId, title: values.title })
@@ -345,7 +345,7 @@ export async function carrierLabels() {
   return database
     .select()
     .from(tables.documents)
-    .where(and(eq(tables.documents.kind, "shipping_label"), eq(tables.documents.outdated, 0)))
+    .where(and(eq(tables.documents.kind, "shipping_label"), eq(tables.documents.outdated, false)))
 }
 // The shipment's status and what its packet still lacks, as the buyer sees them.
 export async function shipmentState(id: string) {

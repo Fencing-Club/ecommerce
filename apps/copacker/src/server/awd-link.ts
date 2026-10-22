@@ -93,7 +93,7 @@ export async function linkExistingAwd(s: Session, id: string, revision: number, 
     }
     await tx
       .update(shipments)
-      .set({ linkedAmazonShipmentId: shipmentId, revision: revision + 1, updatedAt: new Date() })
+      .set({ linkedAmazonShipmentId: shipmentId, revision: revision + 1 })
       .where(eq(shipments.id, id))
     await tx.insert(events).values({
       orderId: order.id,

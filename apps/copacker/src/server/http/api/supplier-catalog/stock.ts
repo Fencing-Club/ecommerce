@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     for (const count of counts) {
       await tx
         .update(supplierProducts)
-        .set({ onHand: count.onHand, revision: sql`${supplierProducts.revision} + 1`, updatedAt: new Date() })
+        .set({ onHand: count.onHand, revision: sql`${supplierProducts.revision} + 1` })
         .where(eq(supplierProducts.id, count.id))
     }
     return counts.length

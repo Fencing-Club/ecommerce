@@ -23,7 +23,7 @@ export async function writeProfile(tx: Transaction, userId: string, values: Prof
   await tx
     .insert(profiles)
     .values({ userId, ...values })
-    .onConflictDoUpdate({ target: profiles.userId, set: { ...values, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: profiles.userId, set: values })
 }
 
 export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw: unknown) {
@@ -40,7 +40,7 @@ export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw
         .values({ orgId: s.org.id, website: website || null })
         .onConflictDoUpdate({
           target: supplierProfiles.orgId,
-          set: { website: website || null, updatedAt: new Date() }
+          set: { website: website || null }
         })
     }
   })

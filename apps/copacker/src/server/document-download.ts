@@ -57,7 +57,7 @@ export async function downloadDocument(
   const [doc] = await executor
     .select()
     .from(documents)
-    .where(and(eq(documents.id, id), eq(documents.outdated, 0)))
+    .where(and(eq(documents.id, id), eq(documents.outdated, false)))
   if (!doc) {
     return errorTextResponse("documentNotFound", 404)
   }
@@ -74,7 +74,7 @@ export async function downloadDocument(
           eq(documents.shipmentId, doc.shipmentId),
           eq(documents.kind, doc.kind),
           eq(documents.shipmentRevision, doc.shipmentRevision!),
-          eq(documents.outdated, 0)
+          eq(documents.outdated, false)
         )
       )
     selected.sort((a, b) => (a.cartonId ?? "").localeCompare(b.cartonId ?? "", undefined, { numeric: true }))
@@ -95,7 +95,7 @@ export async function downloadDocument(
       const [current] = await executor
         .select()
         .from(documents)
-        .where(and(eq(documents.id, item.id), eq(documents.outdated, 0)))
+        .where(and(eq(documents.id, item.id), eq(documents.outdated, false)))
       if (!current || current.objectKey !== item.objectKey) {
         return errorTextResponse("documentChanged", 409)
       }
@@ -125,7 +125,7 @@ export async function downloadDocument(
     const [current] = await executor
       .select()
       .from(documents)
-      .where(and(eq(documents.id, id), eq(documents.outdated, 0)))
+      .where(and(eq(documents.id, id), eq(documents.outdated, false)))
     if (!current || current.objectKey !== doc.objectKey) {
       return await errorTextResponse("documentChanged", 409)
     }

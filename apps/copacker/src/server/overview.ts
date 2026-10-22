@@ -19,6 +19,7 @@ import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { comparisons, rangeLabel, readPeriod } from "@/lib/date-range"
+import { storeNames, type Store } from "@/lib/stores"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import { receivingLocations } from "./inventory-products"
@@ -47,7 +48,7 @@ import {
 import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockSettings } from "./restock-report"
-import { hasCustomerScope, historyDaysFor, orderSyncProgress, type SalesSource, salesSources } from "./sales-orders"
+import { hasCustomerScope, historyDaysFor, orderSyncProgress } from "./sales-orders"
 import { sentDates } from "./sent-dates"
 import { excludedShopifyTags } from "./shopify-tags"
 import { serverText } from "./text"
@@ -445,12 +446,12 @@ export function attentionItems(
       stockouts: number
       reorders: number
       reorderCost: Money
-      sources: { source: SalesSource; error: string | null }[]
+      sources: { source: Store; error: string | null }[]
     }
     shipments: { waiting: number; problems: number }
     drafts: number
     syncs: {
-      source: SalesSource
+      source: Store
       status: string
       coveredTo: Date | null
       finishedAt: Date | null
@@ -624,8 +625,8 @@ export type SetupStep = {
 // The steps that make the Overview complete, in the order a new buyer takes them.
 export function setupSteps(
   input: {
-    connected: SalesSource[]
-    ordersCopied: SalesSource[]
+    connected: Store[]
+    ordersCopied: Store[]
     stockSynced: boolean
     // A first order sync's progress (null when it isn't known yet), and whether a first stock sync is running.
     ordersSyncing?: { progress: number | null } | null
@@ -681,7 +682,7 @@ export function setupSteps(
 // before is set up, even while a later sync copies older history.
 function firstSyncProgress(
   syncs: {
-    source: SalesSource
+    source: Store
     status: string
     coveredFrom: Date | null
     coveredTo: Date | null
@@ -763,11 +764,7 @@ export async function overview(
     .select({ provider: connections.provider, externalId: connections.externalId, scopes: connections.scopes })
     .from(connections)
     .where(eq(connections.orgId, orgId))
-  const accounts = connected.flatMap((row) =>
-    salesSources.includes(row.provider as SalesSource)
-      ? [{ provider: row.provider as SalesSource, externalId: row.externalId }]
-      : []
-  )
+  const accounts = connected.map(({ provider, externalId }) => ({ provider, externalId }))
   const amazonLinked = accounts.find((account) => account.provider === "amazon")
   const [restock, currency, marketplaces] = await Promise.all([
     cachedRestock(orgId, now.getTime(), settings),
@@ -790,7 +787,7 @@ export async function overview(
           }))
         : [])
     ]),
-    ...(accounts.some((account) => account.provider === "ebay") ? [{ key: "ebay", label: "eBay" }] : [])
+    ...(accounts.some((account) => account.provider === "ebay") ? [{ key: "ebay", label: storeNames.ebay }] : [])
   ]
   const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
   const ebaySelected = selected?.key === "ebay"
@@ -805,7 +802,7 @@ export async function overview(
   const marketplaceId = selected?.key.startsWith("amazon:")
     ? (marketplaces.find((marketplace) => `amazon:${marketplace.code}` === selected.key)?.id ?? null)
     : null
-  let channelSource: SalesSource | null = null
+  let channelSource: Store | null = null
   if (ebaySelected) {
     channelSource = "ebay"
   } else if (restockKey) {
@@ -926,7 +923,7 @@ export async function overview(
   const current = syncs.filter((sync) =>
     accounts.some((account) => account.provider === sync.source && account.externalId === sync.externalAccountId)
   )
-  const coverage: Partial<Record<SalesSource, { from: Date; to: Date }>> = {}
+  const coverage: Partial<Record<Store, { from: Date; to: Date }>> = {}
   for (const sync of current) {
     if (sync.coveredFrom && sync.coveredTo) {
       coverage[sync.source] = { from: sync.coveredFrom, to: sync.coveredTo }
@@ -943,7 +940,7 @@ export async function overview(
       .toSorted((a, b) => b.revenueMinor - a.revenueMinor)
       .at(0)?.currency ?? null
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
-    Record<SalesSource, ReturnType<typeof platformFees>>
+    Record<Store, ReturnType<typeof platformFees>>
   >
   // Amazon inbound freight over the year up to the period's end (or the stretch Amazon's orders cover, if shorter), as a
   // cost per unit: by the SKUs each shipment carried, and the rest over the Amazon units sold in it. Freight for
@@ -989,7 +986,7 @@ export async function overview(
   const summary = summarizeRestock(
     scopedChannels,
     (line, channelKey) => {
-      const source: SalesSource = channelKey === "amazon" ? "amazon" : "shopify"
+      const source: Store = channelKey === "amazon" ? "amazon" : "shopify"
       const recent = priceOf(source, line.variantId)
       if (recent) {
         return recent

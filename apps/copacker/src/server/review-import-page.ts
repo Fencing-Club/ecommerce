@@ -6,10 +6,10 @@ import type { ReviewProduct } from "@/components/import-review"
 import { db } from "@/db"
 import { poImports, suppliers } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
+import { importProposalSchema } from "@/lib/import-proposal"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
-import { importProposalSchema } from "@/server/import-proposal"
 import { pageId } from "@/server/page-id"
 
 export async function reviewImportPage(params: { id: string }): Promise<React.ComponentProps<typeof ImportReview>> {

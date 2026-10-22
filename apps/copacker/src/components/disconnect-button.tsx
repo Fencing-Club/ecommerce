@@ -4,14 +4,13 @@ import { useTranslations } from "use-intl"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-
-const names = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
+import { storeNames, type Store } from "@/lib/stores"
 
 // A quiet, red Disconnect that asks first.
-export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon" | "ebay"; account: string }) {
+export function DisconnectButton({ provider, account }: { provider: Store; account: string }) {
   const t = useTranslations("common.disconnect")
   const [open, setOpen] = useState(false)
-  const name = names[provider]
+  const name = storeNames[provider]
 
   return (
     <ConfirmDialog

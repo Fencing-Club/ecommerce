@@ -28,7 +28,7 @@ export async function reviseOrder(
   const revision = order.revision + 1
   await tx
     .update(orders)
-    .set({ ...set, data, revision, updatedAt: new Date() })
+    .set({ ...set, data, revision })
     .where(eq(orders.id, order.id))
   await tx.insert(orderRevisions).values({ orderId: order.id, revision, data, actor, reason })
   return revision

@@ -130,7 +130,7 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
         .select()
         .from(documents)
         .where(
-          and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "shipping_label"), eq(documents.outdated, 0))
+          and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "shipping_label"), eq(documents.outdated, false))
         )
       for (const document of current) {
         const label = labels.find((entry) => entry.cartonId === document.cartonId)
@@ -138,7 +138,7 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
           await tx.update(documents).set({ trackingNumber: label.trackingNumber }).where(eq(documents.id, document.id))
         } else {
           // Replaced by a new page, or removed.
-          await tx.update(documents).set({ outdated: 1 }).where(eq(documents.id, document.id))
+          await tx.update(documents).set({ outdated: true }).where(eq(documents.id, document.id))
         }
       }
       // A label kept from before must still be that carton's.

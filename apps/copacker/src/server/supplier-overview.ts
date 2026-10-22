@@ -223,9 +223,7 @@ export async function supplierOverview(org: { id: string; timeZone: string | nul
     orders: stage(key).length,
     pieces: sum(stage(key), (order) => order.pieces)
   }))
-  const unpriced = new Set(
-    products.filter((row) => row.active === 1 && row.priceMinor === null).map((row) => row.groupId)
-  )
+  const unpriced = new Set(products.filter((row) => row.active && row.priceMinor === null).map((row) => row.groupId))
   const activeCatalogs = new Set(catalogRows.filter((row) => row.status === "active").map((row) => row.id))
   return {
     currency,

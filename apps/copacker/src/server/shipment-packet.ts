@@ -32,7 +32,7 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
   const docs = await db()
     .select()
     .from(documents)
-    .where(and(eq(documents.orderId, order.id), eq(documents.outdated, 0)))
+    .where(and(eq(documents.orderId, order.id), eq(documents.outdated, false)))
   const labelOrder = { ...order, data: shipment.snapshot ?? order.data }
   const labels = await lineLabels(labelOrder)
   const missing = new Set(labels.filter((label) => label.state === "missing").map((label) => label.itemId))

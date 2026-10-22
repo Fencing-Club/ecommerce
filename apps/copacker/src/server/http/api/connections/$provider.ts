@@ -8,6 +8,7 @@ import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
+import { stores } from "@/lib/stores"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
@@ -22,7 +23,7 @@ export async function GET(request: Request, context: { params: { provider: strin
   const s = await session()
   requireAdmin(s)
   requireBuyer(s)
-  const provider = requestInput(z.enum(["shopify", "amazon", "ebay"]), context.params.provider)
+  const provider = requestInput(z.enum(stores), context.params.provider)
   const url = new URL(request.url),
     isCallback = url.searchParams.has("state")
   const site = siteUrlFor(request.headers)

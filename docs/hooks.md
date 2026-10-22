@@ -45,6 +45,15 @@ each hook.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.
 - `useIsMobile` (`use-mobile.ts`): `true` below 768px, `false` on the server. Used by shadcn's sidebar; use it for
   layout switches that CSS can't handle.
+- Effects a page or layout runs, which render nothing (hooks, never components that return `null`):
+  - `useRefreshWhile(active, refresh)` (`use-refresh-while.ts`): calls `refresh` every 5 seconds while `active` and the
+    tab is in view, such as the Overview's setup checklist while a first sync runs.
+  - `useReloadWhenBack()` (`use-reload-when-back.ts`): the maintenance page asks every 10 seconds whether maintenance
+    is over, and reloads once it is.
+  - `useSystemTimeZone(refresh)` (`use-system-time-zone.ts`): keeps the computer's time zone in the `tz` cookie, and
+    calls `refresh` when it changes.
+  - `useWorkspaceWatch({ id, pathname })` (`use-workspace-watch.ts`): reloads the tab when another tab switches
+    workspaces (`announceWorkspace`), and checks the active workspace on each page change and on focus.
 
 ## `@mantine/hooks` catalog
 

@@ -48,7 +48,7 @@ export async function shipShipment(s: Session, shipmentId: string) {
     if (shipment.status !== "ready") {
       throw new LocalizedError("onlyReleasedShipped")
     }
-    await tx.update(shipments).set({ status: "shipped", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
+    await tx.update(shipments).set({ status: "shipped" }).where(eq(shipments.id, shipmentId))
     await recordEvent(tx, order.id, s.user.id, { key: "supplierShipped", values: null })
   })
 }
@@ -101,8 +101,7 @@ export async function forwardShipment(s: Session, input: z.output<typeof forward
       .set({
         status: "forwarded",
         forwarderCarrier: input.carrier,
-        forwarderReference: input.reference,
-        updatedAt: new Date()
+        forwarderReference: input.reference
       })
       .where(eq(shipments.id, shipment.id))
     if (input.freight.amountMinor > 0) {
