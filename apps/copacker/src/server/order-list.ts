@@ -1,5 +1,6 @@
-import type { OrderInput } from "@repo/copacker-shipments"
-import { money, orderTotal, orderDestination } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
+import { money, orderTotal } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-shipments"
 import { orderNetworks } from "@repo/copacker-shipments/requirements"
 import { inArray } from "drizzle-orm"
 import type { LogisticsRow } from "@/components/logistics-list"

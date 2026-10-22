@@ -1,4 +1,4 @@
-import type { Address } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
 import { Ellipsis, Plus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

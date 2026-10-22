@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { orderInputSchema } from "@repo/copacker-shipments"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { eq } from "drizzle-orm"
 import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"

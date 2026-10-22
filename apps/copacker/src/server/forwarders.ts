@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import type { Address } from "@repo/copacker-shipments"
-import { addressSchema } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
+import { addressSchema } from "@repo/copacker-orders"
 import type { AnyColumn } from "drizzle-orm"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"

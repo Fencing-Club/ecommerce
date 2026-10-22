@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
-import { type Destination, type OrderInput, orderDestination } from "@repo/copacker-shipments"
+import { type Destination, type OrderInput } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/copacker-shipments/product-labels"

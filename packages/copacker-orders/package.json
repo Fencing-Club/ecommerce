@@ -1,0 +1,29 @@
+{
+  "name": "@repo/copacker-orders",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./packing-requirements": "./src/packing-requirements.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "oxlint --max-warnings=0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@repo/copacker-marketplaces": "workspace:*",
+    "@repo/copacker-packing-rules": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "5.0.5",
+    "@vitest/coverage-v8": "5.0.5"
+  }
+}

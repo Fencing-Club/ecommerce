@@ -2,7 +2,8 @@ import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { orderInputSchema, packingSchema } from "@repo/copacker-shipments"
+import { orderInputSchema } from "@repo/copacker-orders"
+import { packingSchema } from "@repo/copacker-shipments"
 import { matchLabels } from "@repo/copacker-shipments/labels"
 import {
   defaultDocumentSettings,

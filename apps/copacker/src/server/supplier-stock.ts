@@ -1,6 +1,6 @@
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
+import type { OrderItem } from "@repo/copacker-orders"
 import type { Packing } from "@repo/copacker-shipments"
-import type { OrderItem } from "@repo/copacker-shipments"
 import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm"
 import type { Transaction } from "@/db"
 import { db } from "@/db"

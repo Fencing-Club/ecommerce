@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"

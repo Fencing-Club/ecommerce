@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
-import { itemTotal, orderCharges, orderInputSchema, orderTotal, supplierChargeTotal } from "../src/index"
+import { itemTotal, money, orderCharges, orderInputSchema, orderTotal, supplierChargeTotal } from "../src/index"
 
 const order = () =>
   orderInputSchema.parse({
@@ -75,5 +75,25 @@ describe("product supplier costs", () => {
       supplierCharges: [{ description: "Packing", amount: 100000000, basis: "piece" }]
     }))
     expect(orderInputSchema.safeParse({ ...data, items }).success).toBe(false)
+  })
+})
+
+describe("money", () => {
+  it.each([
+    [0, "$0"],
+    [400, "$4"],
+    [410, "$4.10"],
+    [401, "$4.01"],
+    [-400, "-$4"],
+    [-410, "-$4.10"],
+    [123400, "$1,234"]
+  ])("formats %i minor units as %s", (amount, expected) => {
+    expect(money(amount)).toBe(expected)
+  })
+
+  it("writes minor units in English unless given a language", () => {
+    expect(money(123450)).toBe("$1,234.50")
+    expect(money(123450, "EUR", "de")).toBe("1.234,50 €")
+    expect(money(123400, "EUR", "de")).toBe("1.234 €")
   })
 })

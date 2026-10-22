@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { coverBucket } from "../src/lib/cover"

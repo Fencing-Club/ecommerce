@@ -1,7 +1,5 @@
 import {
-  amazonNetworkNames,
   adjustmentTypes,
-  amazonNetworks,
   commonPaymentTerms,
   itemTotal,
   orderCharges,
@@ -10,8 +8,12 @@ import {
   type Destination,
   destinationSchema,
   type OrderInput,
+  orderInputSchema
+} from "@repo/copacker-orders"
+import {
+  amazonNetworkNames,
+  amazonNetworks,
   orderDestination,
-  orderInputSchema,
   type ReceiverId,
   receiverFor,
   receivers

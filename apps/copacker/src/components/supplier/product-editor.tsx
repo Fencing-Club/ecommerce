@@ -1,4 +1,4 @@
-import { orderCurrencies, type OrderCurrency } from "@repo/copacker-shipments"
+import { orderCurrencies, type OrderCurrency } from "@repo/copacker-orders"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import { useRef, useState } from "react"

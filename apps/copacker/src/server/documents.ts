@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
+import type { OrderInput } from "@repo/copacker-orders"
 import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
-import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
 import { addressLines } from "@repo/copacker-shipments/documents"
 import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"

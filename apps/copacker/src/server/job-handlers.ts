@@ -7,7 +7,8 @@ import {
   shownLines
 } from "@repo/copacker-emails"
 import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
-import { buildAwdRequest, money, orderTotal, packingSchema } from "@repo/copacker-shipments"
+import { money, orderTotal } from "@repo/copacker-orders"
+import { buildAwdRequest, packingSchema } from "@repo/copacker-shipments"
 import { amazonReference } from "@repo/copacker-shipments/amazon-inbound"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"

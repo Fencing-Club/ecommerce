@@ -1,5 +1,6 @@
+import { type OrderInput } from "@repo/copacker-orders"
 import type { AmazonNetwork } from "@repo/copacker-shipments"
-import { amazonNetworkNames, isAmazonNetwork, type OrderInput, orderDestination } from "@repo/copacker-shipments"
+import { amazonNetworkNames, isAmazonNetwork, orderDestination } from "@repo/copacker-shipments"
 import { and, eq, inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"

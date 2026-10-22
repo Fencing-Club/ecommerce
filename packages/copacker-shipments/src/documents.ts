@@ -1,5 +1,12 @@
+import {
+  type Address,
+  money,
+  orderCharges,
+  orderTotal,
+  supplierChargeTotal,
+  type OrderInput
+} from "@repo/copacker-orders"
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import { type Address, money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput } from "./index"
 import { markdownBlocks } from "./markdown"
 import {
   destinationName,
