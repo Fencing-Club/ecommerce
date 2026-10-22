@@ -1,14 +1,9 @@
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
 import { approveChanges, commercialChanges, orderInputSchema } from "@repo/copacker-orders"
+import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
-import {
-  amazonNetworkNames,
-  packingDraftSchema,
-  splitByNetwork,
-  orderDestination,
-  isAmazonNetwork
-} from "@repo/copacker-shipments"
+import { amazonNetworkNames, packingDraftSchema, splitByNetwork } from "@repo/copacker-shipments"
 import { ne, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"

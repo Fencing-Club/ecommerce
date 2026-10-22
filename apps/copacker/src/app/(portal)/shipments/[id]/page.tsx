@@ -1,6 +1,6 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"

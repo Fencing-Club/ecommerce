@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { trackingNumberSchema } from "@repo/copacker-shipments/tracking-numbers"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"

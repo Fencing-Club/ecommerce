@@ -1,4 +1,4 @@
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"

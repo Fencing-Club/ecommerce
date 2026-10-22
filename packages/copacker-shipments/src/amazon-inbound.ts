@@ -8,7 +8,8 @@ import type {
   FbaTransportationOption
 } from "@repo/copacker-marketplaces/amazon"
 import { type OrderInput } from "@repo/copacker-orders"
-import { type AmazonNetwork, cartonsValue, fbaBoxes, fbaPallets, type Packing } from "./index"
+import { type AmazonNetwork } from "@repo/copacker-packing-rules"
+import { cartonsValue, fbaBoxes, fbaPallets, type Packing } from "./index"
 
 // Amazon inbound shipments: naming and finding them, the choices an FBA inbound plan asks for, and spreading Amazon's
 // inbound freight over what each shipment carried. Nothing here reads a database or depends on a web framework.

@@ -1,4 +1,4 @@
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"

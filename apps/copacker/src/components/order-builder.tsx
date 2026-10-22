@@ -12,14 +12,8 @@ import {
   type OrderInput,
   orderInputSchema
 } from "@repo/copacker-orders"
-import {
-  amazonNetworkNames,
-  amazonNetworks,
-  orderDestination,
-  type ReceiverId,
-  receiverFor,
-  receivers
-} from "@repo/copacker-shipments"
+import { amazonNetworks, orderDestination, receiverFor, type ReceiverId, receivers } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { countriesIn } from "@repo/copacker-shipments/countries"
 import { Link, useRouter } from "@tanstack/react-router"
 import {

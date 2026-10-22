@@ -1,7 +1,7 @@
 import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
 import type { OrderInput } from "@repo/copacker-orders"
 import { orderTotal } from "@repo/copacker-orders"
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {

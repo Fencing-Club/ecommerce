@@ -1,5 +1,6 @@
 import type { PackingRequirements } from "@repo/copacker-orders/packing-requirements"
-import { packingSchema, palletLabels, orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { packingSchema, palletLabels } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import type { DocumentParty, ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot, shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"

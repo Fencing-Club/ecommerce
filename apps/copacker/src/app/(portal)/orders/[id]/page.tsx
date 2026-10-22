@@ -1,7 +1,8 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderItem } from "@repo/copacker-orders"
 import { itemTotal, money, orderCharges, orderTotal } from "@repo/copacker-orders"
-import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
 import {

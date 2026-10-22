@@ -1,5 +1,6 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
-import { amazonNetworkNames, orderDestination, receivers } from "@repo/copacker-shipments"
+import { orderDestination, receivers } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
