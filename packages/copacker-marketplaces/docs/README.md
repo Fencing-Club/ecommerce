@@ -19,6 +19,9 @@ their downloads, with the Ads app's credentials passed in.
 `ebayOrderRefund`) and Shopify Payments' fees on an order (`shopifyOrderFees`). Copacker's Overview repeats this math
 in SQL (`apps/copacker/src/server/overview-sales.ts`); change both together.
 
+Identifiers the app checks against are defined once here: a Shopify variant's ID (`variantIdSchema` in `/shopify`) and
+an Amazon seller ID (`sellerIdSchema` in `/amazon`).
+
 `@repo/copacker-marketplaces/returns` parses Amazon's FBA customer returns report with strict headers, quantities and timezone-bearing
 timestamps, including quoted multiline TSV fields. It preserves source rows and unknown codes, omits customer comments,
 and rejects malformed documents rather than silently dropping records. [Copacker's importer](../../../apps/copacker/docs/amazon-returns.md)

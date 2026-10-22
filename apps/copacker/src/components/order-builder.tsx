@@ -5,6 +5,7 @@ import {
   commonPaymentTerms,
   itemTotal,
   orderCharges,
+  orderCurrencies,
   orderTotal,
   type Destination,
   destinationSchema,
@@ -78,8 +79,6 @@ const destinations = ["amazon", "warehouse"] as const
 const builderSchema = orderInputSchema.safeExtend({ destination: destinationSchema })
 // Which of Amazon's networks a line goes to, when the PO ships to Amazon.
 const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
-// The currencies a PO can be in, each named under orders.currencies.
-const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
 
 // Why a line's price isn't the supplier's quote, in a few words, as its key under orders.builder.matchNotes. A supplier
 // without a catalog has nothing to say.
@@ -761,7 +760,7 @@ export function OrderBuilder({
                     name="currency"
                     required
                     label={tb("supplierCurrency")}
-                    options={currencies.map((value) => ({ value, label: t(`currencies.${value}`) }))}
+                    options={orderCurrencies.map((value) => ({ value, label: t(`currencies.${value}`) }))}
                   />
                 </FieldGroup>
               </CardContent>

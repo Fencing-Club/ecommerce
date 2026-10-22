@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, isNull } from "drizzle-orm"
 import type * as React from "react"
 import { z } from "zod"
@@ -16,7 +17,14 @@ import { withVariantFields } from "@/server/product-fields"
 import { serverTranslator } from "./translation"
 
 const variantIds = z
-  .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+(@[1-9]\d{0,5})?$/))
+  .array(
+    z.string().refine((entry) => {
+      const [id, units, ...rest] = entry.split("@")
+      return (
+        variantIdSchema.safeParse(id).success && (units === undefined || /^[1-9]\d{0,5}$/.test(units)) && !rest.length
+      )
+    })
+  )
   .max(100)
   .catch([])
 

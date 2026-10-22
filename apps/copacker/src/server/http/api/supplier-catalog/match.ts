@@ -1,3 +1,4 @@
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -12,7 +13,7 @@ import { availableStock } from "@/server/supplier-stock"
 
 const inputSchema = z.object({
   supplierId: z.uuid(),
-  currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
+  currency: z.enum(orderCurrencies),
   // A PO permits 150 lines, and a Shopify bundle can contain up to 25 distinct components.
   supplierSkus: z.array(z.string().trim().max(255)).max(3750)
 })

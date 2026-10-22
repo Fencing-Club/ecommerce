@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto"
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { type Destination, type OrderInput, orderDestination } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { splitPdfPages } from "@repo/copacker-shipments/labels"
 import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/copacker-shipments/product-labels"
 import { needsWarningLabel } from "@repo/copacker-shipments/requirements"
 import { and, eq, inArray } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "@/db"
 import { connections, productBarcodes, shipments, stockSnapshots } from "@/db/schema"
 import { LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
@@ -24,8 +24,6 @@ import type { Session } from "./workspace-session"
 
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
-
-export const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 
 export class ProductBarcodeError extends StatusError {}
 

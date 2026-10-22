@@ -1,5 +1,6 @@
 import type { PackingItem } from "./index"
 import type { AmazonNetwork } from "./receivers"
+import { centimetresPerInch, kilogramsPerPound } from "./units"
 
 // A rule a receiver sets for its cartons, as data. A policy is the list of rules one receiver's cartons follow, such as
 // FBA's or AWD's, and each rule type has one evaluator (checkCarton), so a new receiver, such as GWD or a 3PL, is a new
@@ -125,8 +126,6 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
   }
 }
 
-const centimetresPerInch = 2.54
-const kilogramsPerPound = 0.45359237
 // Drops floating-point noise from a conversion, so 36 in is 91.44 cm, not 91.44000000000001.
 const exact = (value: number) => Number(value.toPrecision(12))
 // Rounds a converted limit down to the hundredth, so the limit shown is one a carton can meet: 50 lb is 22.6796185 kg,

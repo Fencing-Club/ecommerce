@@ -1,5 +1,6 @@
 import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import {
   type AmazonNetwork,
   amazonNetworks,
@@ -92,7 +93,7 @@ const supplierCatalogSnapshot = z.object({
 export const itemSchema = z
   .object({
     id: z.uuid(),
-    variantId: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+    variantId: variantIdSchema,
     inventoryItemId: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
     name: z.string().trim().min(1).max(240),
     variant: z.string().max(240),
@@ -102,7 +103,7 @@ export const itemSchema = z
     components: z
       .array(
         z.object({
-          variantId: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+          variantId: variantIdSchema,
           buyerSku: z.string().trim().max(255).nullable(),
           supplierSku: z.string().trim().max(255).nullable(),
           quantity: z.number().int().positive().safe(),
@@ -186,6 +187,9 @@ export const adjustmentTypes = [
   "Tariffs",
   "Other"
 ] as const
+// The currencies a PO, and a supplier's prices, can be in.
+export const orderCurrencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
+export type OrderCurrency = (typeof orderCurrencies)[number]
 export const orderInputSchema = z
   .object({
     supplierId: z.uuid(),
@@ -195,7 +199,7 @@ export const orderInputSchema = z
     // A freight forwarder the goods stop at on the way to Amazon or the buyer's location, such as a consolidator in
     // China: the forwarder and the address the supplier ships to.
     via: z.object({ forwarderId: z.uuid(), addressId: z.uuid() }).optional(),
-    currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
+    currency: z.enum(orderCurrencies),
     // When the buyer needs the goods, as the purchase order's "Required by".
     dueDate: z.iso.date().optional(),
     // When the supplier expects the goods ready to ship, which it sets once it has the PO.

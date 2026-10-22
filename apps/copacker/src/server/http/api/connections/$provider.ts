@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { exchangeAmazonCode, ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { exchangeAmazonCode, ProviderError, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
 import { amazonConsentUrl, amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
 import { normalizeShopDomain, shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
@@ -144,10 +144,7 @@ export async function GET(request: Request, context: { params: { provider: strin
       ...(token.refreshTokenExpiresAt ? { refreshExpiresAt: token.refreshTokenExpiresAt.getTime() } : {})
     }
   } else {
-    externalId = z
-      .string()
-      .regex(/^[A-Z0-9]{8,32}$/)
-      .parse(url.searchParams.get("selling_partner_id"))
+    externalId = sellerIdSchema.parse(url.searchParams.get("selling_partner_id"))
     const code = z.string().min(1).parse(url.searchParams.get("spapi_oauth_code"))
     let refreshToken: string
     try {

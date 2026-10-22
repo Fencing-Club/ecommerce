@@ -13,6 +13,7 @@ import {
   orderSales,
   shopifyOrderFees
 } from "@repo/copacker-marketplaces/sales"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { z } from "zod"
@@ -789,7 +790,7 @@ export function summarizeSalesOrder(
     const fulfilledBy = data.fulfillment?.fulfilledBy
     let channel = "Amazon"
     if (fulfilledBy === "AMAZON") {
-      channel = "Amazon FBA"
+      channel = `Amazon ${amazonNetworkNames.fba}`
     } else if (fulfilledBy === "MERCHANT") {
       channel = "Amazon FBM"
     }

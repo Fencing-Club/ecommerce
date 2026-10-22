@@ -1,3 +1,4 @@
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 import type { EditorProduct } from "@/components/supplier/product-editor"
@@ -180,7 +181,7 @@ export async function productPageData(s: Workspace, rawId: string) {
       id: variant.id,
       supplierSku: variant.supplierSku,
       options: variant.options,
-      currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]).parse(variant.currency),
+      currency: z.enum(orderCurrencies).parse(variant.currency),
       priceMinor: prices ? variant.priceMinor : null,
       priceBasis: variant.priceBasis,
       piecesPerSellablePack: variant.piecesPerSellablePack,

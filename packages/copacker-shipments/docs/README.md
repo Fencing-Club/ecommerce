@@ -21,6 +21,13 @@ pallets and box matching), and spreading inbound freight over the SKUs each ship
 into its translated error. The app's FBA job (`apps/copacker/src/server/fba-shipments.ts`) calls Amazon and stores
 the results.
 
+## Shared values
+
+The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
+(`orderCurrencies`), each Amazon network's name (`amazonNetworkNames`), the schemas' field limits (`itemSchema.shape`,
+`cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`) and an address as documents print it
+(`addressLines` in `/documents`).
+
 ## Supplier service costs
 
 `OrderItem.supplierCharges` stores supplier services assigned to that product. Each charge has a description,

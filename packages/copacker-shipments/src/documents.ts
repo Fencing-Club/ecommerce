@@ -1,5 +1,6 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
 import {
+  type Address,
   money,
   orderCharges,
   orderDestination,
@@ -877,15 +878,21 @@ export async function checklistPdf(input: {
   return kit.save()
 }
 
+// "1 Test Street", "Suite 2", "Testville, WA 98000", "US", leaving out what isn't known.
+export function addressLines(
+  address: Pick<Address, "addressLine1" | "addressLine2" | "city" | "stateOrRegion" | "postalCode" | "countryCode">
+) {
+  return [
+    address.addressLine1,
+    address.addressLine2,
+    [address.city, [address.stateOrRegion, address.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+    address.countryCode
+  ].filter((value): value is string => Boolean(value))
+}
+
 // "No. 1000, Siji Road", "Yiwu, Zhejiang 322000", "CN", "+86 180 3818 1936"
 function originLines(origin: Packing["origin"]) {
-  return [
-    origin.addressLine1,
-    origin.addressLine2,
-    [origin.city, [origin.stateOrRegion, origin.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-    origin.countryCode,
-    origin.phoneNumber
-  ].filter((value): value is string => Boolean(value))
+  return [...addressLines(origin), origin.phoneNumber].filter((value): value is string => Boolean(value))
 }
 
 export async function combinePdfs(files: Uint8Array[]) {

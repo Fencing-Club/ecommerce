@@ -1,4 +1,4 @@
-import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { ProviderError, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { collectUpdatedAmazonSales } from "@repo/copacker-marketplaces/sales"
 import { and, eq, sql } from "drizzle-orm"
@@ -41,7 +41,7 @@ export async function pollAmazonNotifications(queue: NotificationQueue, now = Da
   return pollQueue(queue, (body) => receiveAmazonNotification(body, now()))
 }
 
-const sellerPayload = z.object({ SellerId: z.string().regex(/^[A-Z0-9]{8,32}$/) })
+const sellerPayload = z.object({ SellerId: sellerIdSchema })
 const notificationSchema = z.discriminatedUnion("NotificationType", [
   z.object({
     NotificationType: z.literal("ORDER_CHANGE"),

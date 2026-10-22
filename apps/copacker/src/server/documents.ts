@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto"
-import { orderDestination } from "@repo/copacker-shipments"
-import type { Address } from "@repo/copacker-shipments"
+import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
 import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
+import { addressLines } from "@repo/copacker-shipments/documents"
 import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"
 import { destinationName } from "@repo/copacker-shipments/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
@@ -75,16 +75,6 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     return doc
   })
 }
-// "1 Test Street", "Suite 2", "Testville, WA 98000", "US"
-function addressLines(address: Address) {
-  return [
-    address.addressLine1,
-    address.addressLine2,
-    [address.city, [address.stateOrRegion, address.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-    address.countryCode
-  ].filter(Boolean)
-}
-
 // "Wei Chen, wei@supplier.example, +86 512 5555 0100", leaving out what isn't known.
 function contactLine(...parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ")
@@ -243,7 +233,7 @@ async function shipmentParties(shipment: PackedShipment) {
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
-  const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+  const network = `Amazon ${amazonNetworkNames[shipment.amazonNetwork ?? "awd_us"]}`
   const shipTo =
     warehouses.length && !shipment.snapshot.via
       ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
@@ -276,7 +266,7 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
     shipment.amazonShipmentId &&
     shipment.labels.some((label) => label.destinationCode)
   ) {
-    return shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+    return `Amazon ${amazonNetworkNames[shipment.amazonNetwork ?? "awd_us"]}`
   }
   return (await shipmentParties(shipment)).shipTo?.name ?? destinationName(shipment.snapshot)
 }

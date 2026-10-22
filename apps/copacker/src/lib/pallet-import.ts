@@ -1,4 +1,4 @@
-import { cartonList } from "@repo/copacker-packing-rules"
+import { cartonList, readCartonIds } from "@repo/copacker-packing-rules"
 import { type Pallet, palletInputSchema } from "@repo/copacker-shipments"
 import type { PalletValue } from "./carton-groups"
 import {
@@ -48,48 +48,6 @@ export type PalletImportResult = {
   rows: number[]
   issues: PalletImportIssue[]
   templateMatches: boolean
-}
-
-// A pallet's cartons as a packing list writes them: IDs and runs (A1–A6, B1), split by commas (Chinese and Urdu ones
-// too), semicolons, new lines or spaces. A run is two IDs of one sequence joined by a dash, and the second can leave
-// out the letters (A1–6). Text that's an ID of `known`, such as 01-2, stays one ID. Each carton once, in the order
-// written.
-export function readCartonIds(text: string, known: ReadonlySet<string>) {
-  const ids = new Map<string, string>()
-  const read = (token: string) => (known.has(token.toLowerCase()) ? [token] : expandRun(token))
-  // A run of IDs with spaces in them (Box 1–Box 3) is one run; other text with spaces is several IDs or runs.
-  const readPart = (whole: string) => {
-    if (known.has(whole.toLowerCase()) || !/\s/.test(whole)) {
-      return read(whole)
-    }
-    const run = expandRun(whole)
-    return run.length > 1 ? run : whole.split(/\s+/).flatMap(read)
-  }
-  for (const part of text.replaceAll(/\s*([–—-])\s*/g, "$1").split(/[,;，；、،؛\n\r]+/)) {
-    for (const id of readPart(part.trim())) {
-      if (id && !ids.has(id.toLowerCase())) {
-        ids.set(id.toLowerCase(), id)
-      }
-    }
-  }
-  return [...ids.values()]
-}
-
-// A run such as A1–A6, B01–B12 or C1–4 as its IDs, or the text itself when it isn't a run of up to 1,000 cartons.
-function expandRun(token: string) {
-  const ends = token.split(/[–—]/).length === 2 ? token.split(/[–—]/) : token.split("-")
-  const first = ends.length === 2 ? ends[0]!.match(/^(.*?)(\d+)$/) : null
-  const last = ends.length === 2 ? ends[1]!.match(/^(.*?)(\d+)$/) : null
-  if (!first || !last || (last[1] && last[1].toLowerCase() !== first[1]!.toLowerCase())) {
-    return [token]
-  }
-  const [, prefix = "", digits = ""] = first
-  const start = Number(digits)
-  const count = Number(last[2]) - start + 1
-  if (count < 2 || count > 1000) {
-    return [token]
-  }
-  return Array.from({ length: count }, (_, index) => `${prefix}${String(start + index).padStart(digits.length, "0")}`)
 }
 
 // Reads the template's rows as pallets, one to a row, against the shipment's cartons by their IDs. A row with an issue

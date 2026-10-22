@@ -1,3 +1,5 @@
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import { orderCurrencies } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
 
@@ -6,11 +8,10 @@ const money = z
   .regex(/^-?\d{1,10}(\.\d{1,4})?$/)
   .nullable()
 const quantity = z.number().positive().max(1000000).nullable()
-const variantId = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 export const importProposalSchema = z
   .object({
     reference: z.string().max(80).nullable(),
-    currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]).nullable(),
+    currency: z.enum(orderCurrencies).nullable(),
     items: z
       .array(
         z
@@ -22,8 +23,8 @@ export const importProposalSchema = z
             sourceUnit: z.string().max(80).nullable(),
             sourceUnitPrice: money,
             sourceLineTotal: money,
-            selectedVariantId: variantId.nullable(),
-            candidateVariantIds: z.array(variantId).max(20),
+            selectedVariantId: variantIdSchema.nullable(),
+            candidateVariantIds: z.array(variantIdSchema).max(20),
             pieces: z.number().int().positive().max(1000000).nullable(),
             piecesPerSet: z.number().int().positive().max(1000).nullable(),
             pricePerPiece: money,

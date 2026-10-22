@@ -7,7 +7,7 @@ import {
   shownLines
 } from "@repo/copacker-emails"
 import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
-import { buildAwdRequest, money, orderTotal } from "@repo/copacker-shipments"
+import { buildAwdRequest, money, orderTotal, packingSchema } from "@repo/copacker-shipments"
 import { amazonReference } from "@repo/copacker-shipments/amazon-inbound"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
@@ -473,7 +473,7 @@ export async function shopifyJob(payload: Record<string, unknown>, assertOwned: 
       orgId: z.uuid(),
       orderId: z.uuid(),
       revision: z.number(),
-      changes: z.array(z.object({ itemId: z.uuid(), supplierSku: z.string(), unitPrice: z.number() })),
+      changes: packingSchema.shape.changes,
       updateCost: z.boolean()
     })
     .parse(payload)
