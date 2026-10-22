@@ -15,16 +15,16 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Sales demand integration contract](sales-demand.md): Orders and Financial data sync cards
 - [Overview page](overview.md)
 - [Purchase order and shipment lists: views, waiting on, filters and export](logistics-lists.md)
-- [Amazon Ads expense reporting](amazon-ads.md)
+- [Amazon Ads expense reporting](amazon-ads.md): ingestion and credential-safe connection diagnostics
 - [Amazon FBA returns ingestion](amazon-returns.md)
-- [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): daily-report reuse and refresh coverage
+- [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): refresh coverage and reported cash versus inventory recovery
 - [Detailed Amazon inventory movements](amazon-inventory-movements.md)
 - [Amazon monthly reports](amazon-monthly-reports.md): one definition per report, and the sales sync's steps after its orders
 - [Amazon report request limits](amazon-report-limits.md): shared pacing, durable cooldowns and investigation evidence
 - [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, unavailable-month backoff and safe failure diagnostics
 - [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
 - [Amazon reconciliation evidence](amazon-reconciliation.md): continued search, reimbursement chains and fee comparisons
-- [Stored payment and recovery reconciliation](payment-reconciliation.md): payment differences, missing-original coverage, financial candidates and receipt movements
+- [Stored payment and recovery reconciliation](payment-reconciliation.md): linked payment currencies, receipt coverage, saved shipment units, shared payment candidates and orderless reversal evidence
 - [Historical inventory cost inputs](historical-inventory-basis.md): unknown cost basis and historical product validation
 - [Analytics HTTP contract](analytics-api.md)
 - [Server query helpers](server-helpers.md): connected accounts, sales sync copies, upserts and analytics pages
@@ -56,7 +56,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 Specs (planned work; the purchase order flow also maps how orders work today):
 
 - [Novu notifications: implementation phases, event coverage, templates and settings](specs/novu-notifications/README.md)
-- [Analytics: profitability reporting and analytics data backlog](specs/analytics/README.md)
+- [Analytics: profitability reporting and analytics data backlog](specs/analytics/README.md): dated acceptance and remaining stored-evidence reconciliation
 - [TanStack Start and Cloudflare migration: tasks, milestones and cutover](specs/platform-migration/README.md)
 - [CLI and MCP contract proposal](specs/cli/README.md)
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)

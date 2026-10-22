@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import { and, eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
@@ -212,7 +213,7 @@ describe("PO coverage and access", () => {
     { status: "forwarded", assigned: 40 },
     { status: "correction", assigned: 40 },
     { status: "needs_attention", assigned: 40 }
-  ] satisfies { status: tables.ShipmentState; assigned: number }[])(
+  ] satisfies { status: ShipmentState; assigned: number }[])(
     "reports $status quantities as assignments, not receipts",
     async ({ status, assigned }) => {
       const { id, packing } = await preparation(40)
