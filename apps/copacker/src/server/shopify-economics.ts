@@ -1,3 +1,4 @@
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { collectShopifyEconomics, economicsQueries } from "@repo/copacker-marketplaces/shopify-economics"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -18,8 +19,9 @@ export async function syncShopifyEconomics(
     eq(analyticsFeeds.dataset, dataset)
   )
   const [prior] = await db().select().from(analyticsFeeds).where(scope)
-  const canReturn = scopes.split(/[,\s]+/).some((s) => s === "read_returns" || s === "write_returns")
-  const allOrders = scopes.split(/[,\s]+/).includes("read_all_orders")
+  const granted = grantedScopes(scopes)
+  const canReturn = granted.has("read_returns") || granted.has("write_returns")
+  const allOrders = granted.has("read_all_orders")
   const end = new Date(now.getTime() - 180000).toISOString()
   const previous = prior?.state.scopes === scopes && prior.state.history === "available" ? prior.state : undefined
   let state: typeof analyticsFeeds.$inferInsert.state = previous?.to
@@ -27,7 +29,7 @@ export async function syncShopifyEconomics(
     : {
         from: previous?.coveredTo
           ? new Date(Date.parse(previous.coveredTo) - 86400000).toISOString()
-          : new Date(now.getTime() - 60 * 86400000).toISOString(),
+          : new Date(now.getTime() - recentOrderDays * 86400000).toISOString(),
         to: end,
         after: null,
         coveredFrom: previous?.coveredFrom,

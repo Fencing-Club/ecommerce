@@ -98,7 +98,9 @@ Alongside the regular CI checks, trusted same-repository PRs receive a private N
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
 test edits. Forks and Dependabot do not receive credentials. With `CLOUDFLARE_PREVIEW_CONFIG` configured, CI builds
 the Cloudflare app Worker and uploads fixture-only Storybook files, verifies their commit health endpoints, and links both in
-the Actions summary. Each app gets its own Hyperdrive connection and queue. Previews reuse the existing private
+the Actions summary and in a comment on the PR. The comment names the commit it was deployed from. Each PR keeps one,
+found by its `<!-- copacker-preview -->` marker: later deploys edit it, and cleanup changes it to say the preview was
+removed. Each app gets its own Hyperdrive connection and queue. Previews reuse the existing private
 `copacker-staging-private` R2 bucket, with `previews/pr-<number>/` reserved for each PR. Referenced staging files are copied
 into that PR's `app/` folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
 pushes preserve the preview's edits. No new bucket or Railway resource is created.

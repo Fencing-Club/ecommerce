@@ -1,4 +1,4 @@
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { eq } from "drizzle-orm"
 import { match, P } from "ts-pattern"
 import { db } from "@/db"

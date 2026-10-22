@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { z } from "zod"
 import { AccessError } from "@/i18n/errors"
 import { can } from "@/lib/access"
@@ -46,7 +47,7 @@ function duplicateSkus(rows: Awaited<ReturnType<typeof inventoryContext>>["rows"
     entry.variants.push({
       variantId: row.variantId,
       product: row.productTitle,
-      variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
+      variant: variantName(row.variantTitle)
     })
     bySku.set(sku.toLowerCase(), entry)
   }

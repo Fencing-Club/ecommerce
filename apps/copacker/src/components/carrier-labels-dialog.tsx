@@ -11,7 +11,18 @@ import {
   useSensors
 } from "@dnd-kit/core"
 import type { Packing } from "@repo/copacker-shipments"
+import {
+  fitsConfiguration,
+  type LabelMeasurements,
+  readLabelMeasurements
+} from "@repo/copacker-shipments/label-measurements"
 import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
+import {
+  readTrackingFromBarcodes,
+  readTrackingNumber,
+  trackingCarrier,
+  trackingNumberSchema
+} from "@repo/copacker-shipments/tracking-numbers"
 import { useRouter } from "@tanstack/react-router"
 import {
   ArrowDownToLine,
@@ -32,15 +43,12 @@ import {
 } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
-import { getTracking } from "ts-tracking-number"
 import { useTranslations } from "use-intl"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
 import { type CartonGroup, groupCartons } from "@/lib/carton-groups"
-import { fitsConfiguration, type LabelMeasurements, readLabelMeasurements } from "@/lib/label-measurements"
 import { readPictureText } from "@/lib/label-text"
 import { preloadPdfReading, readPdfPages, type TextLine } from "@/lib/pdf-preview"
-import { readTrackingFromBarcodes, readTrackingNumber, trackingNumberSchema } from "@/lib/tracking-numbers"
 import { cn } from "@/lib/utils"
 import { SelectControl } from "./form-select"
 import { FieldError, useMeasure } from "./packing-fields"
@@ -122,15 +130,6 @@ const isPdf = (file: File) => file.type === "application/pdf" || file.name.toLow
 const valid = (value: string) => trackingNumberSchema.safeParse(value).success
 // A label whose tracking number couldn't be read and hasn't been typed yet stands out until it has one.
 const needsTracking = (label: CarrierLabel) => !label.read && !valid(label.trackingNumber)
-
-// The carrier a tracking number belongs to, known from its format and check digit.
-function carrierOf(trackingNumber: string) {
-  const found = trackingNumber ? getTracking(trackingNumber.replace(/\s+/g, "").toUpperCase()) : undefined
-  if (!found || found.courier.code === "s10") {
-    return null
-  }
-  return found.courier.code === "usps" ? "USPS" : found.courier.name
-}
 
 // A drop target for PDFs dragged in from the computer, lit with how many there are. It stays lit while the drag
 // crosses its children, and goes out when the drag leaves it, or ends or drops anywhere else.
@@ -1011,7 +1010,7 @@ function TrackingField({ label, name, fieldId, submitted, disabled, onTracking }
   const t = useTranslations("shipments.carrierLabels")
   const [left, setLeft] = useState(false)
   const value = label.trackingNumber
-  const carrier = carrierOf(value)
+  const carrier = trackingCarrier(value)
   let problem = ""
   if (!value.trim()) {
     problem = t("trackingNotRead")
@@ -1275,7 +1274,7 @@ function LabelPreview({
   useEffect(() => heading.current?.focus(), [label.id])
   const index = list.indexOf(label.id)
   // The carrier of the number read from the label, or of the one typed once it's recognized.
-  const carrier = carrierOf(label.trackingNumber)
+  const carrier = trackingCarrier(label.trackingNumber)
   return (
     <section aria-labelledby={`${id}-name`} className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -6,6 +6,7 @@ import {
   purchaseOrderEmail,
   shownLines
 } from "@repo/copacker-emails"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money, orderTotal } from "@repo/copacker-orders"
 import { and, eq, sql } from "drizzle-orm"
 import { match, P } from "ts-pattern"
@@ -140,7 +141,7 @@ async function purchaseOrder(input: EmailInput<"po">, lang: Locale, t: Translato
       .map((item) => ({
         quantity: item.pieces,
         name: item.name,
-        detail: [item.variant === "Default Title" ? "" : item.variant, item.supplierSku].filter(Boolean).join(", "),
+        detail: [variantName(item.variant), item.supplierSku].filter(Boolean).join(", "),
         amount: money(item.pieces * item.unitPrice, order.currency)
       })),
     total,

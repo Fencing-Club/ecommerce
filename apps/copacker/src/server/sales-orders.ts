@@ -13,6 +13,8 @@ import {
   orderSales,
   shopifyOrderFees
 } from "@repo/copacker-marketplaces/sales"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
@@ -65,7 +67,7 @@ export type SalesSource = (typeof salesSources)[number]
 // earlier, and its order search and order reports return nothing older. One day short, so a long sync's later reads
 // still start within the two years.
 export const salesHistoryDays = 2 * 365 - 1
-export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
+export const hasCustomerScope = (scopes: string) => grantedScopes(scopes).has("read_customers")
 
 const refreshDays = 30
 const chunkDays = 14
@@ -90,9 +92,9 @@ export async function amazonSalesMarketplaces(
   return ids
 }
 
-// How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
+// How far back a source's orders are copied. Without read_all_orders Shopify shares only its recent orders.
 export function historyDaysFor(source: SalesSource, scopes: string) {
-  return source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
+  return source === "shopify" && !grantedScopes(scopes).has("read_all_orders") ? recentOrderDays : salesHistoryDays
 }
 
 // How much of a running first sync's history is copied, from 0 to 1, or null when no sync is copying history. A
@@ -127,7 +129,7 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
         throw new SalesSyncError("connectInSettings", { provider: source })
       }
       if (source === "shopify") {
-        const scopes = new Set(account.scopes.split(/[,\s]+/))
+        const scopes = grantedScopes(account.scopes)
         if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
           throw new SalesSyncError("reconnectShopifyOrders")
         }
@@ -846,10 +848,8 @@ async function productNames(orgId: string, domain: string, orders: SalesOrderSum
     if (typeof row.product !== "string") {
       continue
     }
-    const name =
-      typeof row.variant === "string" && row.variant !== "Default Title"
-        ? `${row.product}, ${row.variant}`
-        : row.product
+    const variant = typeof row.variant === "string" ? variantName(row.variant) : null
+    const name = variant ? `${row.product}, ${variant}` : row.product
     if (typeof row.variantId === "string") {
       byVariant.set(row.variantId, name)
     }

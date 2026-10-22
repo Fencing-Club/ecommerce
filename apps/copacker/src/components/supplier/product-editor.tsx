@@ -1,4 +1,4 @@
-import { orderCurrencies, type OrderCurrency } from "@repo/copacker-orders"
+import { orderCurrencies, type OrderCurrency, priceBases, type PriceBasis } from "@repo/copacker-orders"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import { useRef, useState } from "react"
@@ -25,15 +25,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import type { PriceBreak } from "@/lib/catalog-pricing"
 import type { QuantityRules } from "@/lib/catalog-pricing"
-import { defaultQuantityRules, type PriceBasis } from "@/lib/catalog-pricing"
+import { defaultQuantityRules } from "@/lib/catalog-pricing"
 import { useSaveProductMutation, useUploadProductImageMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
 import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
-
-const bases = ["piece", "sellable_pack", "case"] as const satisfies readonly PriceBasis[]
 
 export type EditorVariant = {
   key: string
@@ -337,7 +335,7 @@ function VariantSheet({
                 <Field>
                   <FieldLabel htmlFor="variant-basis">{t("pricePer")}</FieldLabel>
                   <Select
-                    items={bases.map((value) => ({ value, label: t(`basis.${value}`) }))}
+                    items={priceBases.map((value) => ({ value, label: t(`basis.${value}`) }))}
                     value={draft.priceBasis}
                     onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
                   >
@@ -345,7 +343,7 @@ function VariantSheet({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {bases.map((value) => (
+                      {priceBases.map((value) => (
                         <SelectItem key={value} value={value}>
                           {t(`basis.${value}`)}
                         </SelectItem>

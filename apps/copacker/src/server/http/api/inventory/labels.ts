@@ -1,3 +1,4 @@
+import { productIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
@@ -5,10 +6,7 @@ import { fallbackResponse, fileResponse } from "@/server/http-response"
 import { productsLabelsPdf } from "@/server/product-barcodes"
 
 const inputSchema = z.strictObject({
-  productIds: z
-    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
-    .min(1)
-    .max(500)
+  productIds: z.array(productIdSchema).min(1).max(500)
 })
 
 // Labels for every variation of the chosen products as one PDF, one sheet each. X-Skipped-Labels counts the
