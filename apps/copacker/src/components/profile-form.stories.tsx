@@ -40,6 +40,8 @@ export const SavedWebsite = meta.story({
     await expect(canvas.getByText("https://", { exact: true })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent.at(-1)?.data.website).toBe("https://fencing.club"))
+    // The form resets to what was saved once the save finishes, and would undo an edit made before then.
+    await expect(await canvas.findByRole("status")).toHaveTextContent("Saved")
     await userEvent.clear(website)
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent.at(-1)?.data.website).toBe(""))
