@@ -86,6 +86,12 @@ Receipt `reviewState` distinguishes inactive (cancelled/deleted), not-final, clo
 shipments. Raw differences remain visible for audit but only closed shipments become quantity-review candidates;
 closed status still does not prove loss, completed receiving, or reimbursement eligibility.
 
+`receiptOutcome` separates inactive plans, receiving not final, closed with no receipts reported, closed with matching
+counts, closed with differing counts and unknown quantities. Closed comparisons require unique SKUs, nonmissing counts
+and compatible supported units. A closed zero-receipt plan is not automatically an unused plan: `unusedPlanConfirmed`
+remains null without recorded merchant evidence. `transferToFbaConfirmed` remains false. `unitConversion` explains that
+dated product and pack evidence is still required; no current catalog pack size is applied to historical case receipts.
+
 ## Stored-evidence acceptance and remaining work
 
 PR #71 deployed as `dae10ab0` on October 19, 2026. Its read-only production checks verified reimbursement diagnostics,
