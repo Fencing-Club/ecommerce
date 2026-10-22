@@ -75,7 +75,7 @@ export async function inventoryContext(orgId: string) {
   )
   // Amazon's FBA and AWD stock, added to the Shopify variants they match by SKU.
   const [amazon] = await db()
-    .select({ sellerId: connections.externalId, selection: connections.inventoryLocations })
+    .select({ sellerId: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
   const collectedAmazonSnapshots = amazon
@@ -91,15 +91,7 @@ export async function inventoryContext(orgId: string) {
         )
     : []
   const amazonSnapshots = collectedAmazonSnapshots.filter(
-    (row) =>
-      row.source !== "shopify" &&
-      row.scopeKey === stockScopes[row.source].scopeKey &&
-      inventoryLocationEnabled(amazon?.selection, {
-        provider: "amazon",
-        accountId: row.externalAccountId,
-        scope: row.scopeKey,
-        externalId: row.source
-      })
+    (row) => row.source !== "shopify" && row.scopeKey === stockScopes[row.source].scopeKey
   )
   const fba = amazonSnapshots.flatMap((row) => (row.data?.source === "fba" ? row.data.rows : []))
   const awd = amazonSnapshots.flatMap((row) => (row.data?.source === "awd" ? row.data.rows : []))

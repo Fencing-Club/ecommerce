@@ -295,7 +295,7 @@ export const commands: readonly CommandDefinition[] = [
     "lead-time-days"
   ]),
   read("connection.inventory.show", "Show a connection's inventory locations."),
-  write("connection.inventory.update", "Select connection inventory locations using JSON input.", guarded),
+  write("connection.inventory.update", "Select Shopify connection inventory locations using JSON input.", guarded),
   write("location.group.save", "Create or update a location group using JSON input.", guarded),
   write("location.group.remove", "Remove an unused location group.", guarded),
   write("location.update", "Classify an observed Shopify location.", [...guarded, "snapshot", "classification"]),

@@ -10,7 +10,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
-import { stockScopes, inventoryLocationEnabled } from "./inventory-connectors"
+import { stockScopes } from "./inventory-connectors"
 import { isCollective } from "./inventory-products"
 import { jobRow, type JobInput } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
@@ -66,17 +66,6 @@ export async function refreshStock(
     db().transaction(async (tx) => {
       const account = await connectedAccount(org.id, provider, { executor: tx, lock: "update" })
       if (!account) {
-        return null
-      }
-      if (
-        source !== "shopify" &&
-        !inventoryLocationEnabled(account.inventoryLocations, {
-          provider,
-          accountId: account.externalId,
-          scope: scopeKey,
-          externalId: source
-        })
-      ) {
         return null
       }
       const scope = and(

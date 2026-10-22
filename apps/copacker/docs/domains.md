@@ -5,6 +5,9 @@ any hostname, authentication provider, integration callback or webhook. Never pu
 Local launchers implement the development addresses; provider registrations and public DNS are separate changes.
 See [local development](development.md) for commands and [operations](operations.md) for releases.
 
+Amazon inventory connections expose the fixed `FBA` (US marketplace) and `AWD US` locations. Connection-level selection
+is read-only; pooling belongs to each variant's target. See [stock targets](stock-targets.md#locations-and-groups).
+
 Staging and production application and Storybook domains serve Cloudflare Workers. Staging's `workers.dev` aliases
 address the same deployments; production disables `workers.dev` and preview URLs. Public URLs and provider callbacks
 are unchanged. See the

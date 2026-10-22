@@ -434,6 +434,44 @@ describe("Restock operations", () => {
     expect((await call("variant.stock-targets.update", update, workspaceId, "targets-save")).status).toBe(404)
   })
 
+  it("exposes fixed Amazon locations and rejects every connection selection update", async () => {
+    const id = randomUUID()
+    await database.insert(connections).values({
+      id,
+      orgId: workspaceId,
+      provider: "amazon",
+      externalId: "seller",
+      encryptedToken: "private",
+      inventoryLocations: []
+    })
+    const before = await call("connection.inventory.show", { id })
+    expect(before.status).toBe(200)
+    expect(before.body.data.editable).toBe(false)
+    expect(before.body.data.locations).toMatchObject([
+      { name: "FBA", enabled: true, available: false },
+      { name: "AWD US", enabled: true, available: false }
+    ])
+    const locations = before.body.data.selected
+    expect(locations).toHaveLength(2)
+    for (const [index, selection] of [null, [], [locations[0]], locations].entries()) {
+      const updated = await call(
+        "connection.inventory.update",
+        {
+          id,
+          expectedRevision: before.body.data.revision,
+          locations: selection
+        },
+        workspaceId,
+        `fixed-amazon-${index}`
+      )
+      expect(updated.status).toBe(409)
+      expect(updated.body.error.code).toBe("fixed_locations")
+    }
+    expect((await call("connection.inventory.show", { id })).body.data).toEqual(before.body.data)
+    const [stored] = await database.select().from(connections).where(eq(connections.id, id))
+    expect(stored).toMatchObject({ revision: before.body.data.revision, inventoryLocations: [] })
+  })
+
   it("plans target-owned pools through the dispatcher and honors connection selections and price permissions", async () => {
     await catalog()
     const connection = await call("connection.inventory.show", { id: connectionId })

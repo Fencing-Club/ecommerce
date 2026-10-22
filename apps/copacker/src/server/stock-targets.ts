@@ -103,15 +103,13 @@ export async function stockTargetContext(orgId: string, executor: Executor = db(
         ref,
         name: source === "fba" ? "FBA" : "AWD US",
         role: "authoritative",
-        available:
-          (includeDisabled || inventoryLocationEnabled(amazon.inventoryLocations, ref)) &&
-          snapshots.some(
-            (snapshot) =>
-              snapshot.source === source &&
-              snapshot.externalAccountId === amazon.externalId &&
-              snapshot.scopeKey === ref.scope &&
-              snapshot.data?.source === source
-          )
+        available: snapshots.some(
+          (snapshot) =>
+            snapshot.source === source &&
+            snapshot.externalAccountId === amazon.externalId &&
+            snapshot.scopeKey === ref.scope &&
+            snapshot.data?.source === source
+        )
       })
     }
   }

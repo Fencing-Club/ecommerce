@@ -8,6 +8,8 @@ import {
   stockSnapshots,
   variantStockTargetSets
 } from "../src/db/schema"
+import { stockScopes } from "../src/server/inventory-connectors"
+import { inventoryContext } from "../src/server/inventory-context"
 import { connectionInventory, updateConnectionInventory } from "../src/server/operation-connections"
 import { readVariantFields, saveVariantFields } from "../src/server/product-fields"
 import { restockAllChannels, restockChannels, restockReport } from "../src/server/restock-page"
@@ -33,6 +35,8 @@ const accountId = "shop.myshopify.com"
 const variantId = "gid://shopify/ProductVariant/1"
 const first = { provider: "shopify", accountId, scope: "store", externalId: "gid://shopify/Location/1" }
 const second = { ...first, externalId: "gid://shopify/Location/2" }
+const fba = { provider: "amazon", accountId: "SELLER", scope: stockScopes.fba.scopeKey, externalId: "fba" }
+const awd = { ...fba, scope: stockScopes.awd.scopeKey, externalId: "awd" }
 const selection = { accountId, variantId }
 const target = (location = first) => ({
   id: randomUUID(),
@@ -173,11 +177,12 @@ describe("stock target settings", () => {
     }
   })
 
-  it("configures connection availability independently of target membership with revision and admin checks", async () => {
+  it("configures Shopify availability independently of target membership with revision and admin checks", async () => {
     const [account] = await database.select().from(connections)
     const id = account!.id
     await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [target(first)] })
     const before = await connectionInventory(s, id)
+    expect(before.editable).toBe(true)
     const saved = await updateConnectionInventory(s, { id, expectedRevision: before.revision, locations: [second] })
     expect(saved.locations.map((location) => location.enabled)).toEqual([false, true])
     expect(saved.revision).toBe(before.revision + 1)
@@ -200,6 +205,88 @@ describe("stock target settings", () => {
       location: first
     })
   })
+  it.each([{ stored: null }, { stored: [] }, { stored: [fba] }])(
+    "ignores saved Amazon selection $stored in discovery, inventory and targets",
+    async ({ stored }) => {
+      const id = randomUUID()
+      await database.insert(connections).values({
+        id,
+        orgId,
+        provider: "amazon",
+        externalId: fba.accountId,
+        encryptedToken: "private",
+        inventoryLocations: stored
+      })
+      const before = await connectionInventory(s, id)
+      expect(before).toMatchObject({ editable: false, selected: [fba, awd] })
+      expect(before.locations).toEqual([
+        { ref: fba, name: "FBA", role: "authoritative", enabled: true, available: false },
+        { ref: awd, name: "AWD US", role: "authoritative", enabled: true, available: false }
+      ])
+      await expect(
+        saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [target(fba)] })
+      ).rejects.toMatchObject({ status: 409 })
+      const observedAt = "2026-10-01T00:00:00Z"
+      const fbaRows = [
+        {
+          sellerSku: "SKU",
+          unit: "amazon_sellable_unit" as const,
+          totalQuantity: 20,
+          inventoryDetails: {
+            fulfillableQuantity: 20,
+            inboundWorkingQuantity: 0,
+            inboundShippedQuantity: 0,
+            inboundReceivingQuantity: 0
+          }
+        }
+      ]
+      const awdRows = [
+        {
+          sellerSku: "SKU",
+          unit: "amazon_sellable_unit" as const,
+          onHand: 30,
+          inbound: 0,
+          availableDistributable: 30,
+          reservedDistributable: 0,
+          replenishment: 0
+        }
+      ]
+      await database.insert(stockSnapshots).values([
+        {
+          orgId,
+          source: "fba",
+          externalAccountId: fba.accountId,
+          scopeKey: fba.scope,
+          data: { source: "fba", scopeKey: fba.scope, startedAt: observedAt, observedAt, rows: fbaRows }
+        },
+        {
+          orgId,
+          source: "awd",
+          externalAccountId: awd.accountId,
+          scopeKey: awd.scope,
+          data: { source: "awd", scopeKey: "us", startedAt: observedAt, observedAt, rows: awdRows }
+        }
+      ])
+      const context = await inventoryContext(orgId)
+      expect(context.fbaRows).toEqual(fbaRows)
+      expect(context.awdRows).toEqual(awdRows)
+      expect(context.inventoryRows[0]?.levels.filter((level) => level.locationId.startsWith("amazon:"))).toMatchObject([
+        { locationId: "amazon:fba", available: 20 },
+        { locationId: "amazon:awd", available: 30 }
+      ])
+      expect(
+        (await readStockTargets(s, selection)).locations.filter((location) => location.ref.provider === "amazon")
+      ).toEqual(before.locations.map(({ enabled: _enabled, ...location }) => ({ ...location, available: true })))
+      const separate = [target(fba), target(awd)]
+      expect((await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: separate })).targets).toEqual(
+        separate
+      )
+      const pooled = { id: separate[0]!.id, quantity: 100, destination: { kind: "pool", locations: [fba, awd] } }
+      expect((await saveStockTargets(s, { ...selection, expectedRevision: 1, targets: [pooled] })).targets).toEqual([
+        pooled
+      ])
+    }
+  )
   it("discovers independent locations without inventing targets and saves a variant buffer", async () => {
     const before = await readStockTargets(s, selection)
     expect(before.locations).toHaveLength(2)

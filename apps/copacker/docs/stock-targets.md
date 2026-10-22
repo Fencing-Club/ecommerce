@@ -49,11 +49,16 @@ location selection for collection. Only merchant-classified Shopify locations ar
 excluded locations and unresolved fulfillment services remain visible observations without purchase recommendations.
 GWD, Amazon Europe and direct third-party logistics connectors are not implemented.
 
-`connection.inventory.show` and `connection.inventory.update` expose and select locations for an owner/admin. Updates
-require the connection revision. Null selection uses connector defaults; an explicit empty list enables no locations.
-Shopify still collects its catalog and observes all locations for discovery; selected locations are eligible for
-planning. Disabled Amazon pools cannot queue new stock refreshes. Selections carry account identity and do not transfer
-to a different connected account. Existing targets retain disabled members and report them as ineligible.
+`connection.inventory.show` exposes locations for an owner/admin and reports whether selection is editable.
+`connection.inventory.update` selects Shopify locations and requires the connection revision. Null selection uses
+Shopify's defaults; an explicit empty list enables no locations. Shopify still collects its catalog and observes all
+locations for discovery; selected locations are eligible for planning. Selections carry account identity and do not
+transfer to a different connected account. Existing targets retain disabled Shopify members and report them as ineligible.
+
+Amazon always exposes the fixed system-defined list `FBA` and `AWD US`. Connection-level location edits are rejected,
+and any previously stored Amazon selection is ignored by discovery, inventory totals and stock refreshes. Both locations
+are enabled even before their first sync; missing snapshots remain unavailable for planning until collected. Target
+membership still chooses which locations to pool. Extending Amazon's list requires implementing another collector scope.
 
 A target's `destination: {kind: "pool", locations: [...]}` is an explicit list, not a provider category or an expanding
 query. It can select two of three Shopify warehouses, FBA plus AWD US, or supported locations across connectors.

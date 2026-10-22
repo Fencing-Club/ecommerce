@@ -59,4 +59,5 @@ migration is run or tested. Tests build the current schema directly and exercise
 It uses explicit member lists, pools raw demand and balances before MOQ/case rounding, and returns assignment and
 availability issues. This live report is not retained and does not choose a shipping destination. Unresolved imports
 make the result partial. See [stock targets](stock-targets.md) for connection selection, migration and existing-screen
-behavior. Connection inventory changes use `connection inventory update` with JSON input and a current revision.
+behavior. Shopify connection inventory changes use `connection inventory update` with JSON input and a current revision.
+Amazon locations are fixed to FBA and AWD US; `connection inventory show` reports `editable: false` and updates are rejected.
