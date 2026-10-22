@@ -1,9 +1,8 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { timeZoneLabel } from "@/lib/time-zone"
-import { type ActionRequest, pickupAddress, recordActions, serverError } from "@/stories/fixtures/logistics"
-import { ContactForm, LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "./settings-forms"
+import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "./settings-forms"
 
 const sent: ActionRequest[] = []
 
@@ -54,6 +53,8 @@ export const RestockValidation = meta.story({
     // Days outside 1 to 730 say which end they passed.
     await expect(await canvas.findByText("Enter 1 or more")).toBeVisible()
     await expect(canvas.getByText("Enter 730 or less")).toBeVisible()
+    // The lead time's hint and its error both describe it.
+    await expect(leadTime).toHaveAccessibleDescription("For suppliers without their own Enter 1 or more")
     // Emptied, a field stays empty and asks for the days.
     await userEvent.clear(leadTime)
     await expect(leadTime).toHaveValue(null)
@@ -173,39 +174,5 @@ export const TimeZoneSavedAlias = meta.story({
     await userEvent.click(await screen.findByRole("option", { name: /^Automatic/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent).toEqual([{ action: "workspace.timeZone", data: { timeZone: "" } }]))
-  }
-})
-
-export const PickupAddress = meta.story({
-  render: () => (
-    <Dialog open>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit address</DialogTitle>
-        </DialogHeader>
-        <ContactForm
-          supplier
-          contact={{
-            id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a06",
-            name: "Factory",
-            kind: "pickup",
-            address: pickupAddress,
-            shopifyLocationId: null
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  ),
-  play: async () => {
-    const dialog = await screen.findByRole("dialog")
-    await expect(within(dialog).queryByRole("combobox", { name: "Address type" })).toBeNull()
-    await expect(within(dialog).queryByRole("combobox", { name: "Shopify location" })).toBeNull()
-    await expect(within(dialog).getByRole("combobox", { name: "Country" })).toHaveTextContent("China")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
-    await waitFor(() => expect(sent).toHaveLength(1))
-    await expect(sent[0]).toMatchObject({
-      action: "contact.update",
-      data: { id: "5b0c7a1e-8a4f-4d8e-9b1a-3f2d6c7e8a06", kind: "pickup", shopifyLocationId: null }
-    })
   }
 })

@@ -141,7 +141,6 @@
     "freightCost": "Costo del flete",
     "carrier": "Transportista",
     "reference": "Número de rastreo o de reserva",
-    "cancel": "Cancelar",
     "enterCarrier": "Ingresa el transportista",
     "enterReference": "Ingresa el número de rastreo o de reserva",
     "enterFreightCost": "Ingresa el costo del flete"

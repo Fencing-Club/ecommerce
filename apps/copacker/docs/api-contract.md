@@ -5,7 +5,7 @@ routes, and the rules behind them.
 
 The pages call these routes through RTK Query (`src/lib/api.ts`), mounted with `ApiProvider` in
 `components/providers.tsx` and with no Redux store of its own. Forms submit `/api/action` commands through
-`useActionForm` (`src/hooks/useActionForm.ts`), which pairs React Hook Form with the command's Zod schema.
+`useActionForm` (`src/hooks/use-action-form.ts`), which pairs React Hook Form with the command's Zod schema.
 
 A feature adds its routes with `api.injectEndpoints`, such as the supplier workspace's in `src/lib/supplier-api.ts`,
 rather than calling `fetch` itself. Every request then gets the API's session handling: a redirect, such as to sign in,

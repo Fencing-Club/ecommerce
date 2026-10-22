@@ -29,10 +29,6 @@
     "label": "भाषा",
     "system": "सिस्टम ({language})"
   },
-  "form": {
-    "save": "सेव करें",
-    "saved": "सेव हो गया"
-  },
   "profile": {
     "title": "प्रोफ़ाइल",
     "firstName": "पहला नाम",
@@ -172,9 +168,7 @@
     "addTag": "टैग जोड़ें",
     "wildcard": "वाइल्डकार्ड के लिए * इस्तेमाल करें, जैसे amazon*",
     "saveFailed": "टैग सेव नहीं हो सके। फिर से कोशिश करें।",
-    "cancel": "रद्द करें",
-    "save": "सेव करें",
-    "saving": "सेव हो रहा है…"
+    "save": "सेव करें"
   },
   "restock": {
     "title": "रीस्टॉक",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "अब पिकअप पते आपका सप्लायर रखता है। उनके जोड़ने के बाद इसे हटा दें।",
     "saveChanges": "बदलाव सेव करें",
     "saveAddress": "पता सेव करें",
-    "name": "पते का नाम",
     "namePlaceholder": "शेन्ज़ेन वेयरहाउस",
-    "kind": "पते का प्रकार",
     "shopifyLocation": "Shopify लोकेशन",
     "shopifyLocationDescription": "यहां भेजे गए खरीद ऑर्डर वहां ऑर्डर पर दिखते हैं",
     "notLinked": "लिंक नहीं है"

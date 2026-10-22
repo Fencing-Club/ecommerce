@@ -1,38 +1,39 @@
-import { Plus } from "lucide-react"
-import { useState } from "react"
 import { useTranslations } from "use-intl"
-import { SupplierForm } from "./supplier-form"
-import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
+import { newPartnerSchema } from "@/lib/partners"
+import { FormInput } from "./form-controls"
+import { FormDialog } from "./form-dialog"
 
+// Adds a supplier that isn't in Shopify yet. With an email, it's invited to join and provide its POs' documents.
 export function InviteSupplier({
-  open: shown,
+  open,
   onOpenChange,
   finalFocus
 }: {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
   finalFocus?: React.RefObject<HTMLElement | null>
 }) {
   const t = useTranslations("partners.supplier.add")
-  const [own, setOwn] = useState(false)
-  const open = shown ?? own
-  const setOpen = onOpenChange ?? setOwn
+  const fields = useTranslations("settings.supplierForm")
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {shown === undefined && (
-        <DialogTrigger render={<Button />}>
-          <Plus data-icon="inline-start" />
-          {t("trigger")}
-        </DialogTrigger>
-      )}
-      <DialogContent finalFocus={finalFocus}>
-        <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
-        </DialogHeader>
-        <SupplierForm onSuccess={() => setOpen(false)} />
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      finalFocus={finalFocus}
+      title={t("title")}
+      description={t("description")}
+      submitLabel={fields("submit")}
+      form={{ schema: newPartnerSchema, action: "supplier.create", defaultValues: { name: "", email: "" } }}
+    >
+      <FormInput name="name" required label={fields("company")} placeholder="Northwind Textiles" autoComplete="off" />
+      <FormInput
+        name="email"
+        label={fields("email")}
+        type="email"
+        placeholder="supplier@example.com"
+        autoComplete="off"
+        description={fields("emailDescription")}
+      />
+    </FormDialog>
   )
 }
