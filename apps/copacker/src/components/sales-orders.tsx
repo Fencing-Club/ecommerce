@@ -4,7 +4,7 @@ import { ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-r
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
-import { EmptyState } from "@/components/common"
+import { EmptyState, Status } from "@/components/common"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
 import { OptionSelect } from "@/components/option-select"
@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { IntegrationSyncState } from "./integration-sync-card"
 import { IntegrationSyncCard } from "./integration-sync-card"
-import { SalesStatus } from "./sales-status"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
 type ReportCoverage = { windows: { complete: boolean; status: string; checkedAt: string | null }[] }
@@ -336,7 +335,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
           )}
           <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground @2xl:hidden">
             {order.channel}
-            <SalesStatus status={order.status} />
+            <Status status={order.status} labels="sales" />
           </span>
         </div>
       </TableCell>
@@ -347,7 +346,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
       </TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">{order.channel}</TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">
-        <SalesStatus status={order.status} />
+        <Status status={order.status} labels="sales" />
       </TableCell>
       <TableCell className={cn("hidden text-end align-top tabular-nums @2xl:table-cell", !prices && "pe-4")}>
         {format.number(order.units)}

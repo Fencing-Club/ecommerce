@@ -125,5 +125,12 @@ sideways. See Restock and Orders.
 Every status renders through `Status` (a known status string) or `StatusBadge` (a tone and a label) from
 `@/components/common`: a lightly tinted pill with a dot or icon, in one of five tones. One label always takes one tone:
 warning when the viewer has to act, info while someone else is working, success when it's ready or done well, neutral
-when idle or filed, destructive when it failed or is lost. The full list is in
+when idle or filed, destructive when it failed or is lost. `Status` knows every status the app stores, a store's sales
+order statuses (Shipped, Pending, Partially fulfilled) and a supplier's product and catalog statuses, so the same word
+never takes two tones. Its words agree with what the status is of: `labels="sales"` reads a sales order's from
+`sales.status` (French "Expédiée", for une commande) and `labels="supplier"` a product's or catalog's from
+`supplier.shared.status`; anything else reads `common.status`. The full list is in
 [consistency](specs/app-redesign/consistency.md#statuses). Don't style badges by hand.
+
+`StatusBadge` is a `Badge` with `tone`: the tone's surface (`toneSurface` in `ui/badge.tsx`, its soft fill with text in
+the tone's color) without an outline. The Overview's change pills and the action bar's lead tile use the same surfaces.

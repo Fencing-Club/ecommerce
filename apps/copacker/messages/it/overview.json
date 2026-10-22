@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "Vendite, {period}",
-    "about": "Informazioni su {label}",
     "versus": "{comparison, select, previousYear {rispetto all’anno precedente} other {rispetto al periodo precedente}}",
     "noPrices": "Ancora nessun prezzo",
     "noOrders": "Nessun ordine sincronizzato",

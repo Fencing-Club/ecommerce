@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "销售额，{period}",
-    "about": "关于{label}",
     "versus": "{comparison, select, previousYear {对比去年同期} other {对比上一周期}}",
     "noPrices": "暂无价格",
     "noOrders": "未同步订单",

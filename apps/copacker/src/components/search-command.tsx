@@ -21,7 +21,6 @@ import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
 import { navigationFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { useCan, usePermissions } from "./access"
-import { SalesStatus } from "./sales-status"
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5
@@ -227,7 +226,7 @@ function SearchResults({
                 <span className="shrink-0 font-medium">{order.number}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.channel}</span>
                 <span className="ms-auto flex shrink-0">
-                  <SalesStatus status={order.status} />
+                  <Status status={order.status} labels="sales" />
                 </span>
               </CommandItem>
             ))}

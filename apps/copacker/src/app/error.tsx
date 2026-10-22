@@ -4,7 +4,7 @@ import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { WorkspaceWatch } from "@/components/workspace-watch"
+import { useWorkspaceWatch } from "@/hooks/use-workspace-watch"
 // Outside the app's layouts, so it brings the app's stylesheet itself: the theme's colors, then Tailwind.
 import "@/styles/theme.css"
 import "./globals.css"
@@ -14,9 +14,9 @@ import "./globals.css"
 // `reset` would only re-render what already failed).
 export default function ErrorPage({ retry }: { retry: () => void }) {
   const t = useTranslations("common.pages.error")
+  useWorkspaceWatch()
   return (
     <div className="flex min-h-svh flex-col">
-      <WorkspaceWatch />
       <header className="flex h-14 shrink-0 items-center border-b px-4">
         <Link to="/" className="focus-ring rounded-md">
           <BrandMark flat />

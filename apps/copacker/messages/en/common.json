@@ -2,7 +2,7 @@
   "appDescription": "A shared workspace for buyers and suppliers to prepare Amazon shipments.",
   "skipToContent": "Skip to content",
   "breadcrumb": "Breadcrumb",
-  "about": "About: {label}",
+  "about": "About {label}",
   "errors": {
     "generic": "Something went wrong. Try again.",
     "offline": "Couldn’t reach Copacker. Check your connection and try again."
@@ -56,7 +56,8 @@
     "declined": "Declined",
     "atForwarder": "At the forwarder",
     "packed": "Packed",
-    "changesProposed": "Changes proposed"
+    "changesProposed": "Changes proposed",
+    "unknown": "Unknown"
   },
   "destinations": {
     "amazon": "Amazon",
