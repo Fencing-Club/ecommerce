@@ -123,7 +123,8 @@ export function restockOperations<C extends z.ZodType>(casePack: C) {
       operation,
       cliPath: operation.split("."),
       context: "workspace",
-      effects: [],
+      effects:
+        operation === "report.restock" ? [{ kind: "local_write", description: "Retain the generated report." }] : [],
       accessPolicy: {
         scopes: ["reports:read"],
         workspaceKinds: ["buyer"],
@@ -132,7 +133,7 @@ export function restockOperations<C extends z.ZodType>(casePack: C) {
       limits: { maxInputBytes: 1048576 },
       asyncStatusSchema: null,
       execution: {
-        kind: "query",
+        kind: operation === "report.restock" ? "mutation" : "query",
         idempotent: true,
         confirmation: false,
         readBranches: [],

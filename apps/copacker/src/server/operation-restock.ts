@@ -2,38 +2,40 @@ import { randomUUID } from "node:crypto"
 import { jsonObject, metaSchema, restockOperations, type restockSelectionSchema } from "@repo/copacker-contract"
 import { and, eq, lt } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
+import { db, type Executor } from "@/db"
 import { connections, restockReports } from "@/db/schema"
 import { can } from "@/lib/access"
 import { casePackSchema } from "@/lib/case-packs"
 import { CliError } from "./cli-auth"
-import { restockAllChannels, restockChannels, type RestockChannelOption } from "./restock-page"
+import { restockAllChannels, restockChannelDiscovery, type RestockChannelOption } from "./restock-page"
 import { restockPriceFields, restockWithoutPrices } from "./restock-plan"
 import { restockSettings } from "./restock-report"
 import type { Session } from "./workspace-session"
 
 export const restockDefinitions = restockOperations(casePackSchema)
 type Account = { id: string; provider: string }
-function channel(option: RestockChannelOption, accounts: Account[]) {
+function channel(option: RestockChannelOption, accounts: Account[], eligible: boolean) {
   return {
     id: option.key,
     name: option.label,
     kind: option.channel.kind === "amazon" ? "amazon" : "warehouse",
     connectionId: accounts.find((account) => account.provider === option.channel.kind)?.id ?? null,
     locationId: option.channel.kind === "shopify" ? option.channel.locationId : null,
-    eligible: true,
-    issues: []
+    eligible,
+    issues: eligible
+      ? []
+      : [{ code: "source_unavailable", message: "Sync the Shopify catalog before requesting restock.", path: [] }]
   }
 }
 export async function operationRestockChannels(s: Session) {
   const [options, accounts] = await Promise.all([
-    restockChannels(s.org.id),
+    restockChannelDiscovery(s.org.id),
     db()
       .select({ id: connections.id, provider: connections.provider })
       .from(connections)
       .where(eq(connections.orgId, s.org.id))
   ])
-  return { items: options.map((option) => channel(option, accounts)) }
+  return { items: options.channels.map((option) => channel(option, accounts, options.catalogAvailable)) }
 }
 
 const reportMeta = metaSchema.pick({ completeness: true, sources: true, warnings: true, redactedFields: true })
@@ -45,7 +47,11 @@ function sourceAvailability(source: Awaited<ReturnType<typeof restockAllChannels
   return Object.keys(source.gapReasons).length ? "partial" : "available"
 }
 
-export async function operationRestockReport(s: Session, input: z.infer<typeof restockSelectionSchema>) {
+export async function operationRestockReport(
+  s: Session,
+  input: z.infer<typeof restockSelectionSchema>,
+  executor: Executor
+) {
   const defaults = restockSettings(s.org)
   const settings = { days: input.days ?? defaults.days, leadTimeDays: input.leadTimeDays ?? defaults.leadTimeDays }
   const result = await restockAllChannels(s.org.id, settings.days, settings.leadTimeDays)
@@ -172,7 +178,7 @@ export async function operationRestockReport(s: Session, input: z.infer<typeof r
     settings,
     identityBasis: "provider",
     targetBasis: "pooled",
-    channels: selected.map((option) => channel(option, evidence.connections)),
+    channels: selected.map((option) => channel(option, evidence.connections, true)),
     rows,
     dependencies: snapshots.map((snapshot) => ({
       kind: "inventory_snapshot",
@@ -268,7 +274,7 @@ export async function operationRestockReport(s: Session, input: z.infer<typeof r
   if (Buffer.byteLength(JSON.stringify({ data, metadata }), "utf8") > 24 * 1024 * 1024) {
     throw new CliError("result_too_large", "Narrow the report selection (maximum report size is 24 MiB).", 413)
   }
-  await db().transaction(async (tx) => {
+  await executor.transaction(async (tx) => {
     await tx.delete(restockReports).where(and(eq(restockReports.orgId, s.org.id), lt(restockReports.expiresAt, now)))
     await tx.insert(restockReports).values({
       id: data.reportId,

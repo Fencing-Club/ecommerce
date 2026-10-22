@@ -12,6 +12,10 @@ copacker report restock --state blocked --json
 copacker report restock --format csv --output restock.csv
 ```
 
+Report creation declares a local write and requires an idempotency key, supplied by the CLI. Repeating the same
+execution returns the retained report and its original coverage metadata. Changed permissions reject replay.
+Channel discovery marks destinations ineligible until the Shopify catalog is available.
+
 Omitted channels select every eligible channel. Use returned channel keys verbatim: `amazon` or
 `shopify:gid://shopify/Location/...`. `--channel` is repeatable; empty, duplicate and inaccessible selections fail.
 Days and lead time default to workspace settings, with a supplier's lead time taking precedence. SKU filtering is

@@ -15,7 +15,7 @@ import {
 } from "@repo/copacker-contract"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Executor } from "@/db"
+import { db, withTransaction, type Executor } from "@/db"
 import { cliGrants, memberships, operationReceipts } from "@/db/schema"
 import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
@@ -67,7 +67,7 @@ const entries: Entry[] = [
     operationRestockChannels(session(context))
   ),
   entry(restockDefinitions["report.restock"], restock, async (input, context) => {
-    const result = await operationRestockReport(session(context), input)
+    const result = await operationRestockReport(session(context), input, context.executor)
     context.responseMeta = result.metadata
     return result.data
   }),
@@ -213,7 +213,6 @@ async function mutation(
     throw new CliError("idempotency_key_required", "Supply an Idempotency-Key for this change.")
   }
   const s = session(context)
-  const fingerprint = hash(canonicalJson(input))
   return db().transaction(async (tx) => {
     const [grant] = await tx.select().from(cliGrants).where(eq(cliGrants.id, context.principal.grantId)).for("share")
     if (!grant || grant.revokedAt || grant.expiresAt.getTime() <= Date.now()) {
@@ -236,6 +235,7 @@ async function mutation(
     if (!fresh || !found?.allowed(fresh)) {
       throw new CliError("forbidden", "Workspace access changed.", 403)
     }
+    const fingerprint = hash(canonicalJson({ input, role: fresh.session.role, access: fresh.session.access }))
     const where = and(
       eq(operationReceipts.userId, s.user.id),
       eq(operationReceipts.orgId, s.org.id),
@@ -255,10 +255,16 @@ async function mutation(
       if (saved.createdAt.getTime() + 7 * 86400_000 <= Date.now()) {
         throw new CliError("idempotency_expired", "This execution expired. Review before starting a new one.", 409)
       }
-      return saved.result
+      const replay = z.object({ data: z.unknown(), metadata: metaSchema.partial() }).parse(saved.result)
+      context.responseMeta = replay.metadata
+      return replay.data
     }
-    const result = await run(fresh)
-    await tx.update(operationReceipts).set({ result }).where(where)
+    const result = await withTransaction(tx, () => run(fresh))
+    context.responseMeta = fresh.responseMeta
+    await tx
+      .update(operationReceipts)
+      .set({ result: { data: result, metadata: fresh.responseMeta } })
+      .where(where)
     return result
   })
 }
