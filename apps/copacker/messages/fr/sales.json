@@ -1,17 +1,5 @@
 {
   "title": "Ventes",
-  "status": {
-    "fulfilled": "Traitée",
-    "unfulfilled": "Non traitée",
-    "partiallyFulfilled": "Partiellement traitée",
-    "pending": "En attente",
-    "shipped": "Expédiée",
-    "unshipped": "Non expédiée",
-    "partiallyShipped": "Partiellement expédiée",
-    "cancelled": "Annulée",
-    "unfulfillable": "Non traitable",
-    "unknown": "Inconnu"
-  },
   "sync": {
     "reconnect": "Reconnectez {source} dans les <settings>Paramètres</settings>",
     "askAdminToReconnect": "Demandez à un administrateur de reconnecter {source}",

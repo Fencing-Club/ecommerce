@@ -68,27 +68,39 @@ export const Tooltip = meta.story({
   }
 })
 
-// A quarter reads in weeks, each titled by its first and last day.
-export const Weekly = meta.story({
-  args: { series: series("2026-06-01", 90), comparison: "previousYear" },
+// A quarter still reads by day, as on the buyer's Overview.
+export const Quarter = meta.story({
+  args: { series: series("2026-06-01", 92) },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText("Previous year")).toHaveLength(2)
-    const rows = within(table(canvas)).getAllByRole("row")
-    await expect(rows).toHaveLength(14)
-    await expect(within(rows[1]!).getByRole("rowheader")).toHaveTextContent("Jun 1 – Jun 7")
-    // Three busy days in the first week.
-    await expect(within(rows[1]!).getAllByRole("cell")[1]).toHaveTextContent("6")
-    await expect(within(rows[13]!).getByRole("rowheader")).toHaveTextContent("Aug 24 – Aug 29")
+    await expect(within(table(canvas)).getAllByRole("row")).toHaveLength(93)
   }
 })
 
-// A year reads in months of 30 days.
+// Past three months, the period reads in weeks from its first day, each titled by its first and last day.
+export const Weekly = meta.story({
+  args: { series: series("2026-06-01", 100), comparison: "previousYear" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Previous year")).toHaveLength(2)
+    const rows = within(table(canvas)).getAllByRole("row")
+    await expect(rows).toHaveLength(16)
+    await expect(within(rows[1]!).getByRole("rowheader")).toHaveTextContent("Jun 1 – Jun 7")
+    // Three busy days in the first week.
+    await expect(within(rows[1]!).getAllByRole("cell")[1]).toHaveTextContent("6")
+    await expect(within(rows[14]!).getByRole("rowheader")).toHaveTextContent("Aug 31 – Sep 6")
+    // The two days left over.
+    await expect(within(rows[15]!).getByRole("rowheader")).toHaveTextContent("Sep 7 – Sep 8")
+  }
+})
+
+// Past 400 days, the period reads in calendar months, the first and last partly.
 export const Monthly = meta.story({
-  args: { series: series("2025-10-01", 365) },
+  args: { series: series("2025-06-15", 500) },
   play: async ({ canvas }) => {
     const rows = within(table(canvas)).getAllByRole("row")
-    await expect(rows).toHaveLength(14)
-    await expect(within(rows[1]!).getByRole("rowheader")).toHaveTextContent("Oct 1 – Oct 30")
+    await expect(rows).toHaveLength(18)
+    await expect(within(rows[1]!).getByRole("rowheader")).toHaveTextContent("Jun 15 – Jun 30")
+    await expect(within(rows[2]!).getByRole("rowheader")).toHaveTextContent("Jul 1 – Jul 31")
+    await expect(within(rows[17]!).getByRole("rowheader")).toHaveTextContent("Oct 1 – Oct 27")
   }
 })
 

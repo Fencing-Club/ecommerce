@@ -14,7 +14,7 @@
   },
   "status": {
     "draft": "Чернетка",
-    "active": "Активне",
+    "active": "Активний",
     "archived": "В архіві",
     "submitted": "У постачальника",
     "closed": "Закрите",
@@ -56,7 +56,8 @@
     "declined": "Відхилено",
     "atForwarder": "В експедитора",
     "packed": "Упаковано",
-    "changesProposed": "Запропоновано зміни"
+    "changesProposed": "Запропоновано зміни",
+    "unknown": "Невідомо"
   },
   "destinations": {
     "amazon": "Amazon",

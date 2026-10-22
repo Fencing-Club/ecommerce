@@ -92,7 +92,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
   240 px sheet under 768 px.
 - **Workspace switcher (top),** in a header with a bottom border (F2): the workspace's 28 px kind tile with its
   initials, its name (truncated) and chevrons, 44 px tall. On the rail, only the tile. The menu lists the workspaces,
-  each with its kind, then **New workspace** and **Workspace settings**. Switching reloads, as `WorkspaceWatch`
+  each with its kind, then **New workspace** and **Workspace settings**. Switching reloads, as `useWorkspaceWatch`
   requires today. The switcher names no kind of its own: most people have one workspace, and the menu already says
   which kind each is, which also leaves room for long workspace names.
 - **Home** and **Inbox** first, ungrouped, then the kind's groups, then **Settings** pinned at the bottom.

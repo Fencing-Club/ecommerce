@@ -43,6 +43,45 @@ export const Statuses = meta.story({
   }
 })
 
+// A sales order's status as the server names it, and a supplier product's or catalog's, on the same tones as every other
+// status: Shipped reads in progress as a shipment's does, and Pending is idle until Amazon prices the order.
+export const SalesAndProductStatuses = meta.story({
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      {[
+        "Fulfilled",
+        "Unfulfilled",
+        "Partially fulfilled",
+        "Pending",
+        "Shipped",
+        "Unshipped",
+        "Partially shipped",
+        "Cancelled",
+        "Unfulfillable",
+        "Unknown",
+        "On hold",
+        "active",
+        "archived"
+      ].map((status) => (
+        <Status key={status} status={status} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const tone = (text: string) => canvas.getByText(text).getAttribute("data-tone")
+    await expect(tone("Fulfilled")).toBe("success")
+    await expect(tone("Unshipped")).toBe("info")
+    await expect(tone("Shipped")).toBe("info")
+    await expect(tone("Pending")).toBe("neutral")
+    await expect(tone("Canceled")).toBe("destructive")
+    await expect(tone("Unknown")).toBe("neutral")
+    await expect(tone("On hold")).toBe("neutral")
+    await expect(tone("Active")).toBe("success")
+    await expect(tone("Archived")).toBe("neutral")
+    await expect(canvas.getByText("Shipped")).toHaveAttribute("data-slot", "status")
+  }
+})
+
 // Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color.
 export const TonesMatchTheKit = meta.story({
   render: () => (

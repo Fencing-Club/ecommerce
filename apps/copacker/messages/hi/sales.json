@@ -1,17 +1,5 @@
 {
   "title": "बिक्री",
-  "status": {
-    "fulfilled": "पूरा हुआ",
-    "unfulfilled": "पूरा नहीं हुआ",
-    "partiallyFulfilled": "आंशिक रूप से पूरा",
-    "pending": "लंबित",
-    "shipped": "भेजा गया",
-    "unshipped": "नहीं भेजा गया",
-    "partiallyShipped": "आंशिक रूप से भेजा गया",
-    "cancelled": "रद्द",
-    "unfulfillable": "पूरा नहीं हो सकता",
-    "unknown": "अज्ञात"
-  },
   "sync": {
     "reconnect": "<settings>सेटिंग्स</settings> में {source} फिर से कनेक्ट करें",
     "askAdminToReconnect": "किसी एडमिन से {source} फिर से कनेक्ट करने को कहें",

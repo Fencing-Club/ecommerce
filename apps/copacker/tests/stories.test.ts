@@ -5,16 +5,13 @@ import { describe, expect, it } from "vitest"
 
 const app = fileURLToPath(new URL("..", import.meta.url))
 
-// Components with nothing to show, which have no stories: providers and contexts, and effects that render nothing.
+// Components with nothing to show, which have no stories: providers and contexts. An effect that renders nothing is a
+// hook, not a component.
 const withoutStories = new Set([
   "src/components/access.tsx",
   "src/components/app-providers.tsx",
   "src/components/providers.tsx",
-  "src/components/refresh-while.tsx",
-  "src/components/reload-when-back.tsx",
-  "src/components/system-time-zone.tsx",
-  "src/components/theme-script.tsx",
-  "src/components/workspace-watch.tsx"
+  "src/components/theme-script.tsx"
 ])
 
 function files(pattern: string) {
