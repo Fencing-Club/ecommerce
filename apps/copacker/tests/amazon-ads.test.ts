@@ -21,6 +21,7 @@ vi.mock("@/server/auth", async (original) => ({
 import { GET, POST } from "../src/server/http/api/connections/amazon-ads"
 vi.mock("../src/server/exchange-rates", () => ({ syncExchangeRates: vi.fn<() => Promise<void>>() }))
 import { adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
+import * as adsServer from "../src/server/amazon-ads"
 import {
   adsCharge,
   adsStatus,
@@ -245,6 +246,126 @@ describe("Amazon Ads authorization and transport", () => {
       headers: { "Content-Type": "application/vnd.listaccountsresource.v1+json" },
       body: JSON.stringify({ maxResults: 100, nextToken: "next" })
     })
+  })
+  it.each([
+    { profiles: [], reason: "no_profiles", received: 0 },
+    {
+      profiles: [{ ...profile, accountInfo: { ...profile.accountInfo, id: "private-other-seller" } }],
+      reason: "seller_mismatch",
+      received: 1
+    },
+    { profiles: [{ ...profile, countryCode: "DE" }], reason: "unsupported_region", received: 1 },
+    { profiles: [profile], reason: "account_mapping_missing", received: 1 },
+    { profiles: [profile], reason: "account_mapping_ambiguous", received: 1 },
+    { profiles: [{ ...profile, timezone: "private-invalid-zone" }], reason: "invalid_response", fields: ["0.timezone"] }
+  ])("logs profile failure $reason without saving a grant or exposing credentials", async ({ profiles, ...detail }) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    try {
+      const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+      const state = new URL(start.headers.get("location")!).searchParams.get("state")!
+      fetchMock.mockImplementation(async (url) => {
+        if (String(url).includes("auth/o2")) {
+          return Response.json({ access_token: "private-access", refresh_token: "private-refresh" })
+        }
+        if (String(url).includes("adsAccounts")) {
+          return Response.json({
+            adsAccounts:
+              detail.reason === "account_mapping_ambiguous"
+                ? [
+                    {
+                      adsAccountId: "private-account-one",
+                      alternateIds: [{ profileId: profile.profileId, countryCode: "US" }]
+                    },
+                    {
+                      adsAccountId: "private-account-two",
+                      alternateIds: [{ profileId: profile.profileId, countryCode: "US" }]
+                    }
+                  ]
+                : []
+          })
+        }
+        return Response.json(profiles)
+      })
+      const response = await GET(
+        new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=private-code`)
+      )
+      expect(response.status).toBe(400)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify({ event: "amazon_ads_connection_failed", stage: "profile_matching", ...detail })
+      )
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-")
+      expect(JSON.stringify(log.mock.calls)).not.toContain(state)
+      expect(await database.select().from(tables.amazonAdsConnections)).toEqual([])
+      expect(await database.select().from(tables.jobs)).toEqual([])
+    } finally {
+      log.mockRestore()
+    }
+  })
+  it.each(["rejected", "missing_refresh", "invalid_response", "malformed_json"])(
+    "logs token exchange failure %s without provider content",
+    async (failure) => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+      try {
+        const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+        const state = new URL(start.headers.get("location")!).searchParams.get("state")!
+        let response = Response.json({ access_token: failure === "invalid_response" ? null : "private-access" })
+        if (failure === "rejected") {
+          response = new Response("private-provider-body", { status: 401 })
+        } else if (failure === "malformed_json") {
+          response = new Response("private-invalid-json")
+        }
+        fetchMock.mockResolvedValue(response)
+        expect(
+          (await GET(new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=private-code`)))
+            .status
+        ).toBe(400)
+        const detail = new Map([
+          ["rejected", { reason: "provider_request", status: 401 }],
+          ["missing_refresh", { reason: "missing_refresh_token" }],
+          ["invalid_response", { reason: "invalid_response", fields: ["access_token"] }],
+          ["malformed_json", { reason: "unexpected" }]
+        ]).get(failure)
+        expect(log).toHaveBeenCalledExactlyOnceWith(
+          JSON.stringify({ event: "amazon_ads_connection_failed", stage: "token_exchange", ...detail })
+        )
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+        expect(JSON.stringify(log.mock.calls)).not.toContain("private-")
+        expect(JSON.stringify(log.mock.calls)).not.toContain(state)
+        expect(await database.select().from(tables.amazonAdsConnections)).toEqual([])
+        expect(await database.select().from(tables.jobs)).toEqual([])
+      } finally {
+        log.mockRestore()
+      }
+    }
+  )
+  it("logs queue failures without exposing credentials and preserves the saved grant", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const queue = vi.spyOn(adsServer, "queueAdsSync").mockRejectedValueOnce(new Error("private-queue-error"))
+    try {
+      const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+      const state = new URL(start.headers.get("location")!).searchParams.get("state")!
+      fetchMock.mockImplementation(async (url) => {
+        if (String(url).includes("auth/o2")) {
+          return Response.json({ access_token: "private-access", refresh_token: "private-refresh" })
+        }
+        return String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
+      })
+      const response = await GET(
+        new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=private-code`)
+      )
+      expect(response.status).toBe(400)
+      expect(queue).toHaveBeenCalledExactlyOnceWith(orgId)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify({ event: "amazon_ads_connection_failed", stage: "queue_sync", reason: "unexpected" })
+      )
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-")
+      expect(JSON.stringify(log.mock.calls)).not.toContain(state)
+      expect(await database.select().from(tables.amazonAdsConnections)).toHaveLength(1)
+      expect(await database.select().from(tables.jobs)).toEqual([])
+    } finally {
+      queue.mockRestore()
+      log.mockRestore()
+    }
   })
   it("stores grants encrypted and rejects a changed seller", async () => {
     fetchMock.mockImplementation(async (url) =>

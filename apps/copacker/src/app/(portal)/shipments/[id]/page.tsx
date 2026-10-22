@@ -1,6 +1,7 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
+import { amazonRequestStates, packedStates } from "@repo/copacker-shipments/states"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"
@@ -31,7 +32,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { printableLabelTypes } from "@/lib/printable-labels"
-import { packedStates } from "@/lib/shipment-states"
 import type { shipmentPage } from "@/server/shipment-page"
 
 export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof shipmentPage>> }) {
@@ -168,7 +168,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   ]
   const notices = (
     <>
-      <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
+      <ShipmentProgress processing={amazonRequestStates.includes(shipment.status)} message={nextStep} />
       {(shipment.issue || reconciling) && (
         <Alert variant="destructive">
           <AlertTriangle />
@@ -406,7 +406,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
             </Alert>
           )}
 
-          {["queued", "creating"].includes(shipment.status) && (
+          {amazonRequestStates.includes(shipment.status) && (
             <Alert role="note">
               <Spinner />
               <AlertTitle>{t("creating.title")}</AlertTitle>

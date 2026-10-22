@@ -249,3 +249,50 @@ it("explains financial match blockers without recognizing duplicate recovery or 
       .checks.signedSourceToTransactionTotal
   ).toBe("unavailable")
 })
+
+it("prioritizes stronger payment candidates before candidate pagination without confirming payment", () => {
+  const source = { ...row, source: "reimbursements" }
+  const strong = { ...posting, type: "FBAInventoryReimbursement", transactionId: "strong" }
+  const weak = Array.from({ length: 25 }, (_, i) => ({
+    ...strong,
+    transactionId: `weak-${i}`,
+    data: { ...strong.data, items: [] }
+  }))
+  const result = reconcileAmazonEvidence([source], [], [...weak, strong])[0]!
+  expect(result.finance.candidates[0]).toMatchObject({ transactionId: "strong", strongerPaymentCandidate: true })
+  expect(result.finance.matching).toMatchObject({
+    strongerPaymentCandidateCount: 1,
+    scope: "current_posting_search_page",
+    competingReportRows: "not_assessed_across_report_pages"
+  })
+  expect(result.finance.reconciled).toBe(false)
+  expect(result.finance.candidates[0]?.checks.blockers).toContain("source_to_posting_allocation_required")
+})
+it.each([
+  { orderId: null },
+  { sku: null },
+  { sku: "wrong" },
+  { asin: "wrong" },
+  { amount: "-0.3" },
+  { currency: "EUR" }
+])("does not promote incomplete or conflicting reimbursement evidence: %j", (change) => {
+  const result = reconcileAmazonEvidence(
+    [{ ...row, source: "reimbursements", ...change }],
+    [],
+    [{ ...posting, type: "FBAInventoryReimbursement" }]
+  )[0]!
+  expect(result.finance.matching.strongerPaymentCandidateCount).toBe(0)
+})
+it.each([
+  { currency: "EUR" },
+  { data: { ...posting.data, marketplaceDetails: {} } },
+  { data: { ...posting.data, totalAmount: money("0.3", "EUR") } },
+  { type: "Refund" }
+])("requires matching saved and payload currency, marketplace and payment type: %j", (change) => {
+  const result = reconcileAmazonEvidence(
+    [{ ...row, source: "reimbursements" }],
+    [],
+    [{ ...posting, type: "FBAInventoryReimbursement", ...change }]
+  )[0]!
+  expect(result.finance.matching.strongerPaymentCandidateCount).toBe(0)
+})

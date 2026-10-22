@@ -9,7 +9,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --filter=copacker",
-    "verify": "run-s check:format check:lint check:types check:unused test:coverage",
+    "verify": "run-s check:format check:lint check:types check:unused test:changed",
+    "verify:ci": "run-s check:format check:lint check:types check:unused test:coverage",
     "check": "run-p check:format check:lint check:types check:unused",
     "check:change": "beachball check",
     "check:format": "oxfmt --check",
@@ -17,6 +18,7 @@
     "check:types": "turbo run check:types",
     "check:unused": "knip",
     "test": "turbo run test",
+    "test:changed": "turbo run test --filter=...[origin/main] --filter=!copacker && pnpm --filter copacker test:changed",
     "test:coverage": "turbo run test:coverage",
     "change": "beachball change",
     "change:release": "beachball publish",

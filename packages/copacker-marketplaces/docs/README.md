@@ -13,7 +13,9 @@ loads it for the shop-domain schema.
 channel code, label, Seller Central host and order-report name), with `usMarketplaceId` for the US marketplace that
 holds FBA and AWD stock, and `amazonConsentUrl` for Seller Central's authorization page. It has no Node dependencies,
 so the browser can load it. `./amazon-ads` is the Amazon Ads API client: tokens, seller profiles, ad-spend reports and
-their downloads, with the Ads app's credentials passed in.
+their downloads, with the Ads app's credentials passed in. `AdsProfileError` distinguishes missing profiles, seller
+and region mismatches, and missing or ambiguous advertiser-account mappings. These failures are raised before returning
+profiles; the app owns credential-safe [callback diagnostics](../../../apps/copacker/docs/amazon-ads.md#connection-diagnostics).
 
 `./sales` also counts an order's net product sales (`orderSales`), eBay's line and order refunds (`ebayLineSales`,
 `ebayOrderRefund`) and Shopify Payments' fees on an order (`shopifyOrderFees`). Copacker's Overview repeats this math

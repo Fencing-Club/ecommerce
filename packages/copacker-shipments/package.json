@@ -11,6 +11,7 @@
     "./product-labels": "./src/product-labels.ts",
     "./requirements": "./src/requirements.ts",
     "./markdown": "./src/markdown.ts",
+    "./states": "./src/states.ts",
     "./transport": "./src/transport.ts",
     "./countries": "./src/countries.ts",
     "./shipping-model": "./src/shipping-model.ts",

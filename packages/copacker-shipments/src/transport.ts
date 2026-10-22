@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { releasedStates, type ShipmentState } from "./states"
 
 // Receiving requirements belong to the destination; transport requirements belong to the booked service.
 // These defaults are suggestions in the form, never evidence that transport has been booked.
@@ -18,12 +19,13 @@ export const transportSchema = z.object({
 })
 export type ShipmentTransport = z.infer<typeof transportSchema>
 
-export function canConfigureTransport(status: string, operation: string, transport: ShipmentTransport | null) {
+const transportStates: readonly ShipmentState[] = ["packing", "packed", "correction", "waiting_labels"]
+
+export function canConfigureTransport(status: ShipmentState, operation: string, transport: ShipmentTransport | null) {
   return (
-    (["packing", "packed", "correction", "waiting_labels"].includes(status) &&
-      (status === "waiting_labels" || operation === "none")) ||
+    (transportStates.includes(status) && (status === "waiting_labels" || operation === "none")) ||
     // A previously released shipment can confirm its missing arrangement once, without reopening its packing.
-    (!transport && ["ready", "shipped", "forwarded", "received"].includes(status))
+    (!transport && releasedStates.includes(status))
   )
 }
 

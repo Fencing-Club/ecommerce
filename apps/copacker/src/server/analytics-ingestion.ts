@@ -3,17 +3,20 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import {
+  amazonInboundShipments,
   analyticsEvidence,
   analyticsFeeds,
   operatingCosts,
   connections,
   organizations,
   shopifyBalanceTransactions,
-  amazonInventoryMovements
+  amazonInventoryMovements,
+  amazonMovementReports
 } from "@/db/schema"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
 import { analyticsPage } from "./analytics-snapshot"
+import { declaredShipmentUnits } from "./declared-shipment-units"
 import { reconcileReceiptMovements } from "./receipt-movement-reconciliation"
 import { receiptQuantities } from "./receipt-quantities"
 import { shopifyBalanceComparison } from "./shopify-balance-comparison"
@@ -87,6 +90,30 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
             .orderBy(amazonInventoryMovements.eventDay, amazonInventoryMovements.id)
             .limit(5001)
         : []
+      let receiptNetwork: "awd" | "fba" | null = null
+      if (input.source === "amazon" && input.dataset === "awd_inbound_receipts") {
+        receiptNetwork = "awd"
+      } else if (input.source === "amazon" && input.dataset === "fba_inbound_receipts") {
+        receiptNetwork = "fba"
+      }
+      const savedShipments =
+        receiptNetwork && rows.length
+          ? await tx
+              .select()
+              .from(amazonInboundShipments)
+              .where(
+                and(
+                  eq(amazonInboundShipments.orgId, orgId),
+                  eq(amazonInboundShipments.externalAccountId, input.externalAccountId),
+                  eq(amazonInboundShipments.network, receiptNetwork),
+                  inArray(
+                    amazonInboundShipments.shipmentId,
+                    rows.slice(0, 100).map((row) => row.sourceId)
+                  )
+                )
+              )
+          : []
+      const savedByShipment = new Map(savedShipments.map((shipment) => [shipment.shipmentId, shipment]))
       const balances = orderIds.length
         ? await tx
             .select()
@@ -101,9 +128,37 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
             .orderBy(shopifyBalanceTransactions.transactionId)
             .limit(5001)
         : []
+      const movementCoverage = shipmentIds.length
+        ? await tx
+            .select({
+              from: amazonMovementReports.from,
+              requestedTo: amazonMovementReports.requestedTo,
+              coveredTo: amazonMovementReports.coveredTo,
+              status: amazonMovementReports.status
+            })
+            .from(amazonMovementReports)
+            .where(
+              and(
+                eq(amazonMovementReports.orgId, orgId),
+                eq(amazonMovementReports.externalAccountId, input.externalAccountId),
+                eq(amazonMovementReports.marketplaceId, usMarketplaceId)
+              )
+            )
+            .orderBy(amazonMovementReports.from)
+        : []
       return {
+        receiptMovementCoverage:
+          input.dataset === "fba_inbound_receipts" && input.source === "amazon"
+            ? {
+                windows: movementCoverage,
+                receiptPeriod: null,
+                status: "receipt_period_unknown",
+                meaning: "report_windows_do_not_establish_full_shipment_receipt_history"
+              }
+            : null,
         rows: rows.slice(0, 100).map((row) => ({
           ...row,
+          declaredShipmentUnits: receiptNetwork ? declaredShipmentUnits(savedByShipment.get(row.sourceId)) : null,
           receiptQuantities: receiptQuantities(input.dataset, row.data, catalogs),
           receiptReconciliation:
             input.source === "amazon"
