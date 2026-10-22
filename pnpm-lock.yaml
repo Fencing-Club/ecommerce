@@ -710,6 +710,9 @@ importers:
 
   packages/copacker-orders:
     dependencies:
+      '@repo/copacker-marketplaces':
+        specifier: workspace:*
+        version: link:../copacker-marketplaces
       '@repo/copacker-packing-rules':
         specifier: workspace:*
         version: link:../copacker-packing-rules
