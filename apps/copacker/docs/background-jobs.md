@@ -34,8 +34,9 @@ has a five-second minimum retry wake to avoid busy polling when all SQL slots ar
 ## Notification readers
 
 The scheduler publishes one read signal per provider each minute. Each handler reads at most ten SQS messages without
-long polling; it deletes each message only after its application handler succeeds. A full batch schedules another read
-one second later. AWS clients receive explicit region and credentials because the Workers browser bundle has no Node
+long polling; it deletes each message only after its application handler succeeds. A message that fails stays in its
+queue for another try (and its dead-letter queue after five), the rest of the batch is still handled, and then the read
+fails. A full batch schedules another read one second later. AWS clients receive explicit region and credentials because the Workers browser bundle has no Node
 credential-provider chain. Configure `AWS_REGION`, `AWS_NOTIFICATION_ACCESS_KEY_ID`, `AWS_NOTIFICATION_SECRET_ACCESS_KEY` and optional `AWS_NOTIFICATION_SESSION_TOKEN`,
 plus each enabled provider's `AMAZON_NOTIFICATIONS_QUEUE_URL`, `SHOPIFY_EVENTS_QUEUE_URL` or `EBAY_EVENTS_QUEUE_URL`.
 Notification credentials are separate from the web EventBridge publisher credentials, preserving the existing IAM boundaries.

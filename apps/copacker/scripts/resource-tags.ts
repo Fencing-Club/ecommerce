@@ -15,14 +15,16 @@ const snapshot = z.object({
 // Read/merge/conditional-write preserves other owners' tags. A conflict fails closed and can be retried.
 export function reconcileResourceTags(target: z.infer<typeof tagTarget>, run: Run) {
   const read = () =>
-    snapshot.parse(run(["account-tags", "get", "--resource-type", target.type, "--resource-id", target.id]))
+    snapshot.parse(
+      run(["tags", "account-resources", "get", "--resource-type", target.type, "--resource-id", target.id])
+    )
   const current = read()
   const matches = (tags: Record<string, string>) =>
     Object.entries(target.tags).every(([key, value]) => tags[key] === value)
   if (matches(current.tags)) {
     return
   }
-  run(["account-tags", "update", "--if-match", current.etag], {
+  run(["tags", "account-resources", "update", "--if-match", current.etag], {
     resource_type: target.type,
     resource_id: target.id,
     tags: { ...current.tags, ...target.tags }
