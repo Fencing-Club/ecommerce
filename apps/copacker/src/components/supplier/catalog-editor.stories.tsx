@@ -390,10 +390,11 @@ export const DeleteOffline = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
     await userEvent.click((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" }))
+    // The confirmation hides the rest of the page until it closes, save bar included.
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(
       await saveBar().findByText("Couldn’t reach Copacker. Check your connection and try again.")
     ).toBeVisible()
-    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
     await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
