@@ -48,6 +48,9 @@ dates. It retains source codes and split shipments without assuming financial or
 
 The shopify-economics collector reads bounded financial/return evidence independently of sales history; fbm-returns parses seller-fulfilled return reports without customer text, including unambiguous named-month dates and unavailable monetary placeholders. Invalid records expose field diagnostics and a masked date shape, never source values.
 
+Each report parser module also exports the report type it reads (`fbaReturnsReportType`, `fbmReturnsReportType`,
+`storageFeeReportTypes` and so on), so Copacker requests the report its parser expects.
+
 Amazon report reads retry throttling with minute-scale backoff and retain the current report ID. Provider failures carry
 a fixed operation name; FATAL processing outcomes are distinct from HTTP failures. Caller deadlines bound all retries. Opt-in reuse requires an exact report scope and a caller-defined creation-time cutoff, including the reimbursement daily-content refresh interval.
 Copacker installs a durable creation policy shared across workers. It spaces new reports, observes rate-limit headers,

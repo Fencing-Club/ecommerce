@@ -7,15 +7,18 @@ import { type ActionNavigation, useActionSettle } from "@/hooks/use-action"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { type ActionResult, useActionMutation } from "@/lib/api"
 
-type Schema = z.ZodType<FieldValues, FieldValues>
+// A form's Zod schema: what the fields hold, and what they validate to.
+export type FormSchema = z.ZodType<FieldValues, FieldValues>
 
-type Options<S extends Schema> = {
+export type ActionFormOptions<S extends FormSchema> = {
   schema: S
   defaultValues?: DefaultValues<z.input<S>>
   // Shapes validated values into the payload, for example to add an id or revision.
   toPayload?: (values: z.output<S>) => Record<string, unknown>
   // Runs once the result shows, with the values that were sent.
   onSuccess?: (result: ActionResult, values: z.output<S>) => void | Promise<void>
+  // Runs after a failure's message shows on `root.server`, such as to clear a wrong code for another try.
+  onError?: (message: string) => void
   // A settings form keeps what was saved; other forms clear for the next entry. A settings form whose saving changes
   // what was typed, such as adding a website's https://, passes what to show from the saved values instead.
   keepSaved?: boolean | ((values: z.output<S>) => DefaultValues<z.input<S>>)
@@ -38,17 +41,18 @@ type Options<S extends Schema> = {
 
 // A React Hook Form + Zod form that submits through an action. A server error shows on `root.server`. After success
 // the form resets for the next entry, unless the page changes.
-export function useActionForm<S extends Schema>({
+export function useActionForm<S extends FormSchema>({
   schema,
   action,
   run,
   defaultValues,
   toPayload,
   onSuccess,
+  onError,
   keepSaved = false,
   navigation,
   fallback
-}: Options<S>) {
+}: ActionFormOptions<S>) {
   const formErrorMap = useFormErrorMap()
   const errorMessage = useErrorMessage()
   const [mutate] = useActionMutation()
@@ -80,7 +84,9 @@ export function useActionForm<S extends Schema>({
         form.reset(keepSaved ? form.getValues() : defaultValues)
       }
     } catch (error) {
-      form.setError("root.server", { message: errorMessage(error, fallback) })
+      const message = errorMessage(error, fallback)
+      form.setError("root.server", { message })
+      onError?.(message)
     }
   })
 

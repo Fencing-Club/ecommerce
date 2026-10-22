@@ -1,17 +1,13 @@
 import { MailCheck } from "lucide-react"
 import { useState } from "react"
-import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
+import { ActionForm } from "@/components/action-form"
 import { FormInput } from "@/components/form-controls"
-import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
-import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/sign-in"
-import { cn } from "@/lib/utils"
 import { AuthPage, AuthSwitch } from "./auth-shell"
 import { PasswordField } from "./password-field"
-import { authFields, leaving } from "./sign-in-form"
 
 // Bold text inside a translated sentence, such as an email address.
 function strong(chunks: React.ReactNode) {
@@ -62,25 +58,17 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
   }
   return (
     <AuthPage title={t("forgotPassword.title")} description={t("forgotPassword.description")}>
-      <FormProvider {...form}>
-        <form onSubmit={submit} noValidate className={cn("flex flex-col gap-6", authFields)}>
-          <FieldGroup>
-            <FormInput
-              name="email"
-              label={t("fields.email")}
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              spellCheck={false}
-              placeholder={t("fields.emailPlaceholder")}
-            />
-          </FieldGroup>
-          <FormError message={form.formState.errors.root?.server?.message} />
-          <SubmitButton type="submit" className="h-10 w-full" pending={form.formState.isSubmitting}>
-            {t("forgotPassword.submit")}
-          </SubmitButton>
-        </form>
-      </FormProvider>
+      <ActionForm form={form} onSubmit={submit} label={t("forgotPassword.submit")} layout="auth">
+        <FormInput
+          name="email"
+          label={t("fields.email")}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          spellCheck={false}
+          placeholder={t("fields.emailPlaceholder")}
+        />
+      </ActionForm>
       <AuthSwitch prompt={t("forgotPassword.remembered")} href="/login">
         {t("switch.signIn")}
       </AuthSwitch>
@@ -99,14 +87,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
     toPayload: (values) => ({ ...values, token })
   })
   return (
-    <FormProvider {...form}>
-      <form onSubmit={submit} noValidate className={cn("flex flex-col gap-6", authFields)}>
-        <PasswordField name="password" label={t("fields.newPassword")} autoComplete="new-password" isNew />
-        <FormError message={form.formState.errors.root?.server?.message} />
-        <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-          {t("resetPassword.submit")}
-        </SubmitButton>
-      </form>
-    </FormProvider>
+    <ActionForm form={form} onSubmit={submit} label={t("resetPassword.submit")} layout="auth">
+      <PasswordField name="password" label={t("fields.newPassword")} autoComplete="new-password" isNew />
+    </ActionForm>
   )
 }

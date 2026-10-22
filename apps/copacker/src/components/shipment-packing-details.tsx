@@ -4,6 +4,7 @@ import { Fragment, type ReactNode } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { FieldTitle } from "@/components/ui/field"
+import { addressLine } from "@/lib/address"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { emptyAddress } from "./address-fields"
 import type { PartnerAddress } from "./partner-address"
@@ -122,16 +123,7 @@ export function ShipmentOrigin({ origin, addresses }: { origin?: Partial<Address
       readOnly
       label={t("shipFrom")}
       name={start?.name ?? shown.name ?? ""}
-      address={[
-        shown.addressLine1,
-        shown.addressLine2,
-        shown.city,
-        shown.stateOrRegion,
-        shown.postalCode,
-        shown.countryCode
-      ]
-        .filter(Boolean)
-        .join(", ")}
+      address={addressLine(shown)}
       contact={
         (shown.name || shown.phoneNumber) && (
           <>

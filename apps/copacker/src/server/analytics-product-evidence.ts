@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import type { db } from "@/db"
+import type { Executor } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
 
 const catalog = z.object({
   observedAt: z.string(),
   rows: z.array(z.object({ variantId: z.string(), buyerSku: z.string().nullable() }))
 })
-export async function importedProductCatalog(tx: Pick<ReturnType<typeof db>, "select">, orgId: string) {
+export async function importedProductCatalog(tx: Executor, orgId: string) {
   const rows = await tx
     .select({ stock: stockSnapshots })
     .from(stockSnapshots)

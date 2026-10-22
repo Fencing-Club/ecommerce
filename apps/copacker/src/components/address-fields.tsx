@@ -1,16 +1,16 @@
 import { useDebouncedValue } from "@mantine/hooks"
 import { countriesIn } from "@repo/copacker-shipments/countries"
-import { useEffect, useId, useRef, useState } from "react"
-import { useController, useFormContext, useWatch } from "react-hook-form"
+import { useEffect, useRef, useState } from "react"
+import { useFormContext, useWatch } from "react-hook-form"
 import { objectEntries } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
-import { Field, FieldError, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { addressRegions } from "@/lib/address-regions"
 import { loadGooglePlaces } from "@/lib/google-places"
 import { formatPhone } from "@/lib/phone"
 import type { placeAddress } from "@/lib/place-address"
 import { createPlaceSearch, type AddressSuggestion } from "@/lib/place-search"
-import { FormInput, FormLabel } from "./form-controls"
+import { FormField, FormInput, useFormField } from "./form-controls"
 import { SelectControl } from "./form-select"
 import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem } from "./ui/combobox"
 
@@ -161,11 +161,11 @@ function CountrySelect({ name, regionName }: { name: string; regionName: string 
   const { setValue } = useFormContext()
   const t = useTranslations("common.address")
   const countries = countriesIn(useLocale())
-  const id = useId()
   const {
     field: { ref, value, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name)
   const code = typeof value === "string" ? value.trim().toUpperCase() : ""
   // An address saved before the menu may hold a code the list lacks, such as UK. It shows as saved, and stays in the
   // list after another country is picked: Base UI's Select drops its value when an option leaves the list under it.
@@ -175,17 +175,15 @@ function CountrySelect({ name, regionName }: { name: string; regionName: string 
   )
   const options = [...unlisted.map((entry) => ({ value: entry, label: entry })), ...countries]
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <FormLabel htmlFor={id} label={t("country")} required />
+    <FormField {...fieldProps} label={t("country")} required>
       <SelectControl
-        id={id}
+        {...controlProps}
         ref={ref}
         name={fieldName}
         autoComplete="country"
         options={options}
         placeholder={t("chooseCountry")}
         required
-        invalid={fieldState.invalid}
         value={code}
         onValueChange={(next) => {
           if (next !== code) {
@@ -195,19 +193,18 @@ function CountrySelect({ name, regionName }: { name: string; regionName: string 
         }}
         onBlur={onBlur}
       />
-      <FieldError errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 
 function RegionSelect({ name, country }: { name: string; country: string }) {
   const t = useTranslations("common.address")
   const regions = addressRegions(country, useLocale())
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name)
   const value = typeof fieldValue === "string" ? fieldValue : ""
   const match = regions.find((region) => region.aliases.some((alias) => alias.toLowerCase() === value.toLowerCase()))
   // Preserve saved and Google-provided values that don't match the postal dataset.
@@ -216,23 +213,20 @@ function RegionSelect({ name, country }: { name: string; country: string }) {
     return <FormInput name={name} label={t("stateOrProvince")} required autoComplete="address-level1" />
   }
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <FormLabel htmlFor={id} label={t("stateOrProvince")} required />
+    <FormField {...fieldProps} label={t("stateOrProvince")} required>
       <SelectControl
-        id={id}
+        {...controlProps}
         ref={ref}
         name={name}
         options={options}
         placeholder={t("stateOrProvince")}
         required
-        invalid={fieldState.invalid}
         value={match?.value ?? value}
         onValueChange={(next) => onChange(next ?? "")}
         onBlur={onBlur}
         autoComplete="address-level1"
       />
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }
 

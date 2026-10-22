@@ -141,7 +141,6 @@
     "freightCost": "Costo del trasporto",
     "carrier": "Corriere",
     "reference": "Numero di tracciamento o di prenotazione",
-    "cancel": "Annulla",
     "enterCarrier": "Inserisci il corriere",
     "enterReference": "Inserisci il numero di tracciamento o di prenotazione",
     "enterFreightCost": "Inserisci il costo del trasporto"

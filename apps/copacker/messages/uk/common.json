@@ -8,7 +8,9 @@
     "offline": "Не вдалося з’єднатися з Copacker. Перевірте підключення й спробуйте ще раз."
   },
   "actions": {
-    "cancel": "Скасувати"
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "saved": "Збережено"
   },
   "status": {
     "draft": "Чернетка",
@@ -89,7 +91,8 @@
     "addressLine2": "Адреса, рядок 2",
     "city": "Місто",
     "stateOrProvince": "Область або регіон",
-    "postalCode": "Поштовий індекс"
+    "postalCode": "Поштовий індекс",
+    "addressName": "Назва адреси"
   },
   "sync": {
     "actions": "Дії: {label}",

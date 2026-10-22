@@ -29,10 +29,6 @@
     "label": "Langue",
     "system": "Système ({language})"
   },
-  "form": {
-    "save": "Enregistrer",
-    "saved": "Enregistré"
-  },
   "profile": {
     "title": "Profil",
     "firstName": "Prénom",
@@ -172,9 +168,7 @@
     "addTag": "Ajouter un tag",
     "wildcard": "Utilisez * comme caractère générique, par exemple amazon*",
     "saveFailed": "Impossible d’enregistrer les tags. Réessayez.",
-    "cancel": "Annuler",
-    "save": "Enregistrer",
-    "saving": "Enregistrement…"
+    "save": "Enregistrer"
   },
   "restock": {
     "title": "Réassort",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "Votre fournisseur gère désormais les enlèvements. Retirez-la une fois qu’il l’a ajoutée.",
     "saveChanges": "Enregistrer les modifications",
     "saveAddress": "Enregistrer l’adresse",
-    "name": "Nom de l’adresse",
     "namePlaceholder": "Entrepôt de Shenzhen",
-    "kind": "Type d’adresse",
     "shopifyLocation": "Emplacement Shopify",
     "shopifyLocationDescription": "Les bons de commande envoyés ici y apparaissent comme en commande",
     "notLinked": "Non lié"

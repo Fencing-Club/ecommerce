@@ -8,7 +8,9 @@
     "offline": "Impossible de joindre Copacker. Vérifiez votre connexion et réessayez."
   },
   "actions": {
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saved": "Enregistré"
   },
   "status": {
     "draft": "Brouillon",
@@ -89,7 +91,8 @@
     "addressLine2": "Complément d’adresse",
     "city": "Ville",
     "stateOrProvince": "État ou province",
-    "postalCode": "Code postal"
+    "postalCode": "Code postal",
+    "addressName": "Nom de l’adresse"
   },
   "sync": {
     "actions": "Actions pour {label}",

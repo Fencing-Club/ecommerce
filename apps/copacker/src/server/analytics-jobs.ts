@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { connections, jobs, salesSyncs } from "@/db/schema"
+import { jobs, salesSyncs } from "@/db/schema"
 import { withJobWake } from "./job-delivery"
 import { jobRow, type JobInput, type JobPayload } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
+import { connectedAccount } from "./provider-accounts"
+import { salesSyncScope } from "./sales-sync-coverage"
 import { syncShopifyEconomics } from "./shopify-economics"
 export async function queueShopifyEconomics(input: JobPayload<"analytics">) {
   await withJobWake(
@@ -17,27 +18,11 @@ export async function queueShopifyEconomics(input: JobPayload<"analytics">) {
 // so a restart resumes without re-reading orders or waiting for tomorrow's sales reconciliation.
 export async function analyticsJob(input: JobInput<"analytics">, { assertOwned }: Pick<JobContext, "assertOwned">) {
   await assertOwned()
-  const [account] = await db()
-    .select({ scopes: connections.scopes })
-    .from(connections)
-    .where(
-      and(
-        eq(connections.orgId, input.orgId),
-        eq(connections.provider, "shopify"),
-        eq(connections.externalId, input.externalAccountId)
-      )
-    )
+  const account = await connectedAccount(input.orgId, "shopify", { externalId: input.externalAccountId })
   const [sync] = await db()
     .select({ revision: salesSyncs.revision })
     .from(salesSyncs)
-    .where(
-      and(
-        eq(salesSyncs.orgId, input.orgId),
-        eq(salesSyncs.source, "shopify"),
-        eq(salesSyncs.externalAccountId, input.externalAccountId),
-        eq(salesSyncs.revision, input.revision)
-      )
-    )
+    .where(salesSyncScope({ ...input, source: "shopify" }))
   if (!account || !sync) {
     return
   }

@@ -1,45 +1,33 @@
 import type { Address } from "@repo/copacker-orders"
 import { addressSchema } from "@repo/copacker-orders"
 import { originSchema } from "@repo/copacker-shipments"
-import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
+import { MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Spinner } from "@/components/ui/spinner"
 import { useAction } from "@/hooks/use-action"
-import { useActionForm } from "@/hooks/useActionForm"
-import { formatPhone } from "@/lib/phone"
+import type { ActionFormOptions, FormSchema } from "@/hooks/use-action-form"
+import { addressLine } from "@/lib/address"
+import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
-import { ActionForm } from "./action-form"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput } from "./form-controls"
+import { FormDialog } from "./form-dialog"
+import { RowActionsMenu } from "./row-actions-menu"
 
 // A partner whose addresses the buyer keeps until it joins Copacker: a supplier, whose pickup addresses are where
 // carriers collect its cartons, or a freight forwarder, whose addresses purchase orders ship to.
 export type AddressPartner = { kind: "supplier" | "forwarder"; id: string; name: string }
 export type PartnerAddress = { id: string; name: string; address: Address }
 
-const addressForm = z.object({ name: z.string().trim().min(1).max(100), address: addressSchema })
+// An address with a name for it, such as "Yiwu warehouse": what AddressDialog edits.
+export const namedAddressSchema = z.object({ name: z.string().trim().min(1).max(100), address: addressSchema })
 // Amazon needs a phone number to schedule a pickup.
-const pickupForm = addressForm.extend({ address: originSchema })
-
-// "1000 Siji Road, Yiwu, Zhejiang, 322000, CN"
-function addressLine(address: Partial<Address>) {
-  return [
-    address.addressLine1,
-    address.addressLine2,
-    address.city,
-    address.stateOrRegion,
-    address.postalCode,
-    address.countryCode
-  ]
-    .filter(Boolean)
-    .join(", ")
-}
+const pickupSchema = namedAddressSchema.extend({ address: originSchema })
 
 // An address in brief: its name when it has one, its street, and who to call there.
 export function AddressSummary({
@@ -64,6 +52,98 @@ export function AddressSummary({
   )
 }
 
+// One address in a list of them: its name, with a badge when it says something, its street, and who to contact
+// there, then any notes about it and the last action's error. `actions` is its menu.
+export function AddressRow({
+  name,
+  badge,
+  address,
+  error,
+  actions,
+  children
+}: {
+  name: string
+  badge?: React.ReactNode
+  address: Address
+  error?: string
+  actions?: React.ReactNode
+  children?: React.ReactNode
+}) {
+  return (
+    <li className="flex items-start gap-3 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="flex flex-wrap items-center gap-2 font-medium">
+          {name}
+          {badge}
+        </p>
+        <p className="text-muted-foreground">{addressLine(address)}</p>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+          <span>{address.name}</span>
+          {address.phoneNumber && (
+            <a className="tabular-nums hover:text-foreground hover:underline" href={phoneHref(address.phoneNumber)}>
+              {formatPhone(address.phoneNumber)}
+            </a>
+          )}
+          {address.email && (
+            <a className="hover:text-foreground hover:underline" href={`mailto:${address.email}`}>
+              {address.email}
+            </a>
+          )}
+        </p>
+        {children}
+        {error && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+      {actions}
+    </li>
+  )
+}
+
+// The one form for a named address, such as a saved delivery address or a supplier's pickup: its name, any fields
+// `children` adds, then the address. A pickup's phone is required.
+export function AddressDialog<S extends FormSchema>({
+  trigger,
+  open,
+  onOpenChange,
+  title,
+  submitLabel,
+  placeholder,
+  requirePhone = false,
+  form,
+  children
+}: {
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  title: string
+  submitLabel: string
+  // An example name, such as "Yiwu warehouse".
+  placeholder: string
+  requirePhone?: boolean
+  form: ActionFormOptions<S>
+  children?: React.ReactNode
+}) {
+  const t = useTranslations("common.address")
+  return (
+    <FormDialog
+      trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      size="lg"
+      submitLabel={submitLabel}
+      form={form}
+    >
+      <FormInput name="name" required label={t("addressName")} placeholder={placeholder} autoComplete="off" />
+      {children}
+      <AddressFields path="address" requirePhone={requirePhone} />
+    </FormDialog>
+  )
+}
+
 type Saved = { id: string | undefined; name: string; address: Address }
 
 // Adds or edits one of a partner's addresses. `onSaved` gets the address as saved, with its id when it's new.
@@ -71,6 +151,7 @@ export function PartnerAddressDialog({
   partner,
   contact,
   draft,
+  trigger,
   open,
   onOpenChange,
   onSaved
@@ -80,8 +161,9 @@ export function PartnerAddressDialog({
   contact?: PartnerAddress
   // Where a new address starts, such as a pickup address typed on a shipment.
   draft?: Partial<Address>
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onSaved?: (saved: Saved) => void
 }) {
   const t = useTranslations("partners.address")
@@ -95,77 +177,34 @@ export function PartnerAddressDialog({
     title = pickup ? t("editPickup") : t("edit")
   }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        {/* Mounted only while the dialog is open, so each opening starts from the current address. */}
-        <AddressForm
-          partner={partner}
-          contact={contact}
-          draft={draft}
-          onSaved={(saved) => {
-            onOpenChange(false)
-            onSaved?.(saved)
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function AddressForm({
-  partner,
-  contact,
-  draft,
-  onSaved
-}: {
-  partner?: AddressPartner
-  contact?: PartnerAddress
-  draft?: Partial<Address>
-  onSaved: (saved: Saved) => void
-}) {
-  const t = useTranslations("partners.address")
-  const pickup = !partner || partner.kind === "supplier"
-  const { form, submit } = useActionForm({
-    schema: pickup ? pickupForm : addressForm,
-    defaultValues: contact
-      ? { name: contact.name, address: contact.address }
-      : { name: "", address: { ...emptyAddress, ...draft } },
-    // Without a partner, the address stays with what's being edited, such as a shipment's pickup, until it's saved.
-    ...(partner
-      ? {
-          action: pickup ? "supplier.address" : "forwarder.address",
-          toPayload: (values) => ({
-            ...values,
-            ...(pickup ? { supplierId: partner.id } : { forwarderId: partner.id }),
-            ...(contact && { id: contact.id })
-          })
-        }
-      : { run: async () => ({ id: crypto.randomUUID() }) }),
-    onSuccess: (result, values) => onSaved({ id: result.id ?? contact?.id, name: values.name, address: values.address })
-  })
-  return (
-    <ActionForm
-      form={form}
-      // The dialog may open from inside another form, such as a shipment's packing, which React would also submit.
-      onSubmit={(event) => {
-        event?.stopPropagation()
-        return submit(event)
+    <AddressDialog
+      trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      submitLabel={contact ? t("saveChanges") : t("save")}
+      placeholder={pickup ? t("pickupPlaceholder") : t("placeholder")}
+      requirePhone={pickup}
+      form={{
+        schema: pickup ? pickupSchema : namedAddressSchema,
+        defaultValues: contact
+          ? { name: contact.name, address: contact.address }
+          : { name: "", address: { ...emptyAddress, ...draft } },
+        // Without a partner, the address stays with what's being edited, such as a shipment's pickup, until it's saved.
+        ...(partner
+          ? {
+              action: pickup ? "supplier.address" : "forwarder.address",
+              toPayload: (values) => ({
+                ...values,
+                ...(pickup ? { supplierId: partner.id } : { forwarderId: partner.id }),
+                ...(contact && { id: contact.id })
+              })
+            }
+          : { run: async () => ({ id: crypto.randomUUID() }) }),
+        onSuccess: (result, values) =>
+          onSaved?.({ id: result.id ?? contact?.id, name: values.name, address: values.address })
       }}
-      label={contact ? t("saveChanges") : t("save")}
-      dialog
-    >
-      <FormInput
-        name="name"
-        required
-        label={t("name")}
-        placeholder={pickup ? t("pickupPlaceholder") : t("placeholder")}
-        autoComplete="off"
-      />
-      <AddressFields path="address" requirePhone={pickup} />
-    </ActionForm>
+    />
   )
 }
 
@@ -191,7 +230,6 @@ export function PartnerAddressSheet({
   children?: React.ReactNode
 }) {
   const t = useTranslations("partners.address")
-  const [adding, setAdding] = useState(false)
   const supplier = partner.kind === "supplier"
   let description = supplier ? t("sheet.supplier") : t("sheet.forwarder")
   if (joined) {
@@ -208,7 +246,7 @@ export function PartnerAddressSheet({
           {addresses.length ? (
             <ul className="flex flex-col divide-y rounded-lg ring-1 ring-foreground/10">
               {addresses.map((contact) => (
-                <AddressItem key={contact.id} partner={partner} contact={contact} editable={editable} />
+                <PartnerAddressRow key={contact.id} partner={partner} contact={contact} editable={editable} />
               ))}
             </ul>
           ) : (
@@ -216,11 +254,15 @@ export function PartnerAddressSheet({
           )}
           {editable && (
             <div>
-              <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
-                <MapPinPlus data-icon="inline-start" />
-                {t("addButton")}
-              </Button>
-              <PartnerAddressDialog partner={partner} open={adding} onOpenChange={setAdding} />
+              <PartnerAddressDialog
+                partner={partner}
+                trigger={
+                  <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                    <MapPinPlus data-icon="inline-start" />
+                    {t("addButton")}
+                  </DialogTrigger>
+                }
+              />
             </div>
           )}
         </div>
@@ -230,7 +272,7 @@ export function PartnerAddressSheet({
   )
 }
 
-function AddressItem({
+function PartnerAddressRow({
   partner,
   contact,
   editable
@@ -242,48 +284,35 @@ function AddressItem({
   const t = useTranslations("partners.address")
   const [editing, setEditing] = useState(false)
   const remove = useAction("supplier.address", { fallback: t("removeFailed", { name: contact.name }) })
-  const { pending: removing, error } = remove
   // Purchase orders ship to a forwarder's addresses by id, so only a supplier's pickup addresses are removed here.
   const removable = partner.kind === "supplier"
-
   return (
-    <li className="flex items-start gap-3 p-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <AddressSummary name={contact.name} address={contact.address} />
-        {error && (
-          <p role="alert" className="ps-7 text-xs text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
-      {editable && removing && (
-        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={t("removing", { name: contact.name })}>
-          <Spinner />
-        </Button>
-      )}
-      {editable && !removing && (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={t("moreActions", { name: contact.name })} />}
-          >
-            <Ellipsis />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => setEditing(true)}>{t("menuEdit")}</DropdownMenuItem>
-            {removable && (
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => void remove.run({ supplierId: partner.id, id: contact.id, remove: true })}
-              >
-                {t("menuRemove")}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-      {editable && (
-        <PartnerAddressDialog partner={partner} contact={contact} open={editing} onOpenChange={setEditing} />
-      )}
-    </li>
+    <AddressRow
+      name={contact.name}
+      address={contact.address}
+      error={remove.error}
+      actions={
+        editable && (
+          <>
+            <RowActionsMenu
+              label={t("moreActions", { name: contact.name })}
+              pending={remove.pending}
+              pendingLabel={t("removing", { name: contact.name })}
+            >
+              <DropdownMenuItem onClick={() => setEditing(true)}>{t("menuEdit")}</DropdownMenuItem>
+              {removable && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => void remove.run({ supplierId: partner.id, id: contact.id, remove: true })}
+                >
+                  {t("menuRemove")}
+                </DropdownMenuItem>
+              )}
+            </RowActionsMenu>
+            <PartnerAddressDialog partner={partner} contact={contact} open={editing} onOpenChange={setEditing} />
+          </>
+        )
+      }
+    />
   )
 }

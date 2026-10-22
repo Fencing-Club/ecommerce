@@ -3,8 +3,9 @@ import { and, eq, isNull, lt, gt, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonProductMappings, connections } from "@/db/schema"
-import { analyticsSnapshot } from "./analytics-snapshot"
+import { analyticsPage } from "./analytics-snapshot"
 import { hasInventoryProduct } from "./inventory-product"
+import { connectedAccount } from "./provider-accounts"
 
 const id = z.string().trim().min(1).max(512)
 export const productMappingInput = z
@@ -71,11 +72,7 @@ export async function saveAmazonProductMapping(
 ) {
   return db().transaction(async (tx) => {
     // All mapping writes for a seller serialize with disconnects and each other.
-    const [account] = await tx
-      .select()
-      .from(connections)
-      .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-      .for("update")
+    const account = await connectedAccount(orgId, "amazon", { executor: tx, lock: "update" })
     if (!account || account.externalId !== input.externalAccountId) {
       return { ok: false as const, reason: "amazon_account_changed" }
     }
@@ -159,33 +156,26 @@ export async function saveAmazonProductMapping(
   })
 }
 export async function listAmazonProductMappings(orgId: string, input: { page: number; snapshot?: string }) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(tx, orgId, input, "product-mappings")
-      const [account] = await tx
-        .select()
-        .from(connections)
-        .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-      if (!account) {
-        return { mappings: [], hasMore: false, snapshot, page: input.page }
-      }
-      const rows = await tx
-        .select()
-        .from(amazonProductMappings)
-        .where(
-          and(
-            eq(amazonProductMappings.orgId, orgId),
-            eq(amazonProductMappings.externalAccountId, account.externalId),
-            eq(amazonProductMappings.marketplaceId, usMarketplaceId)
-          )
+  return analyticsPage(orgId, input, "product-mappings", async (tx, snapshot) => {
+    const account = await connectedAccount(orgId, "amazon", { executor: tx })
+    if (!account) {
+      return { mappings: [], hasMore: false, snapshot, page: input.page }
+    }
+    const rows = await tx
+      .select()
+      .from(amazonProductMappings)
+      .where(
+        and(
+          eq(amazonProductMappings.orgId, orgId),
+          eq(amazonProductMappings.externalAccountId, account.externalId),
+          eq(amazonProductMappings.marketplaceId, usMarketplaceId)
         )
-        .orderBy(amazonProductMappings.validFrom, amazonProductMappings.id)
-        .limit(101)
-        .offset(input.page * 100)
-      return { mappings: rows.slice(0, 100), hasMore: rows.length > 100, snapshot, page: input.page }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
-  )
+      )
+      .orderBy(amazonProductMappings.validFrom, amazonProductMappings.id)
+      .limit(101)
+      .offset(input.page * 100)
+    return { mappings: rows.slice(0, 100), hasMore: rows.length > 100, snapshot, page: input.page }
+  })
 }
 export async function getAmazonProductMapping(orgId: string, id: string) {
   const [row] = await db()
@@ -211,11 +201,7 @@ export async function getAmazonProductMapping(orgId: string, id: string) {
 
 export async function retireAmazonProductMapping(orgId: string, userId: string, id: string) {
   return db().transaction(async (tx) => {
-    const [account] = await tx
-      .select()
-      .from(connections)
-      .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-      .for("update")
+    const account = await connectedAccount(orgId, "amazon", { executor: tx, lock: "update" })
     if (!account) {
       return false
     }

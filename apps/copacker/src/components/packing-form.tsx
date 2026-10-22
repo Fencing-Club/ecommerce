@@ -38,6 +38,7 @@ import {
 } from "@/lib/carton-groups"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { zonedDay } from "@/lib/time-zone"
+import { keepEnterFromSubmitting } from "./action-form"
 import { emptyAddress } from "./address-fields"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonList } from "./carton-list"
@@ -58,20 +59,6 @@ type EditorSchema = ReturnType<typeof packingEditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
 // number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
-// Enter in a field must not finish packing, so only the Finish packing button
-// submits. Buttons still press and text areas still start a new line, and a dialog opened from here keeps its own
-// Enter: its fields belong to its own form.
-function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
-  if (
-    event.key === "Enter" &&
-    !event.nativeEvent.isComposing &&
-    event.target instanceof HTMLInputElement &&
-    event.target.form === event.currentTarget
-  ) {
-    event.preventDefault()
-  }
-}
-
 // A shipment's packing list as the supplier fills it in, in the shipment page's layout: where the cartons leave from and
 // when they're ready, the cartons, and the pallets when they're packed on them, with the checks Finish packing runs. A
 // packed shipment shows the same layout without the form (ShipmentLayout).

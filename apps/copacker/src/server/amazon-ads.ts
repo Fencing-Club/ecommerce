@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto"
 import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { amazonAdsConnections, amazonAdsDays, connections, jobs, analyticsEvidence } from "@/db/schema"
+import { excluded } from "@/db/helpers"
+import { amazonAdsConnections, amazonAdsDays, jobs, analyticsEvidence } from "@/db/schema"
 import { addDays, zonedDay } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonAdsApp } from "./connections"
 import { syncExchangeRates } from "./exchange-rates"
 import { jobRow, type JobInput } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
+import { connectedAccount } from "./provider-accounts"
 import { decrypt, encrypt } from "./security"
 
 const connectionScope = (orgId: string) => eq(amazonAdsConnections.orgId, orgId)
@@ -18,11 +20,7 @@ export async function saveAdsConnection(orgId: string, sellerId: string, refresh
     throw new Error("No matching Amazon Ads seller profiles")
   }
   await db().transaction(async (tx) => {
-    const [seller] = await tx
-      .select()
-      .from(connections)
-      .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-      .for("update")
+    const seller = await connectedAccount(orgId, "amazon", { executor: tx, lock: "update" })
     if (seller?.externalId !== sellerId) {
       throw new Error("Amazon seller connection changed")
     }
@@ -102,10 +100,7 @@ export async function amazonAdsJob(input: JobInput<"amazon-ads">, { assertOwned 
   if (!grant) {
     return
   }
-  const [seller] = await db()
-    .select()
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  const seller = await connectedAccount(orgId, "amazon")
   if (seller?.externalId !== grant.sellerId) {
     return
   }
@@ -192,11 +187,7 @@ export async function amazonAdsJob(input: JobInput<"amazon-ads">, { assertOwned 
     }
     await assertOwned()
     await db().transaction(async (tx) => {
-      const [sellerNow] = await tx
-        .select()
-        .from(connections)
-        .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-        .for("update")
+      const sellerNow = await connectedAccount(orgId, "amazon", { executor: tx, lock: "update" })
       if (sellerNow?.externalId !== grant.sellerId) {
         return
       }
@@ -232,7 +223,7 @@ export async function amazonAdsJob(input: JobInput<"amazon-ads">, { assertOwned 
                 analyticsEvidence.dataset,
                 analyticsEvidence.sourceId
               ],
-              set: { data: sql`excluded.data`, observedAt: new Date() }
+              set: { ...excluded(analyticsEvidence, "data"), observedAt: new Date() }
             })
         }
         return
@@ -253,7 +244,7 @@ export async function amazonAdsJob(input: JobInput<"amazon-ads">, { assertOwned 
         )
         .onConflictDoUpdate({
           target: [amazonAdsDays.orgId, amazonAdsDays.sellerId, amazonAdsDays.profileId, amazonAdsDays.day],
-          set: { cost: sql`excluded.cost`, currency: sql`excluded.currency`, syncedAt: sql`excluded."syncedAt"` }
+          set: excluded(amazonAdsDays, "cost", "currency", "syncedAt")
         })
     })
     await syncExchangeRates(orgId)
@@ -329,10 +320,7 @@ export async function adsStatus(orgId: string) {
   if (!grant) {
     return { connected: false, active: false, failed: false }
   }
-  const [seller] = await db()
-    .select({ externalId: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  const seller = await connectedAccount(orgId, "amazon")
   if (seller?.externalId !== grant.sellerId) {
     return { connected: false, active: false, failed: false }
   }

@@ -23,6 +23,7 @@ import { currencySymbol } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { useCan } from "./access"
+import { keepEnterFromSubmitting } from "./action-form"
 import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
@@ -115,19 +116,6 @@ function reasonText(reason: string, t: ReviewTranslator) {
 
 // Focuses the product search when it opens. Defined once, so React calls it only when the search mounts.
 const focusOnMount = (input: HTMLInputElement | null) => input?.focus()
-
-// Enter in a field would save the draft, which creates the purchase order, so only Save draft saves. Buttons still
-// press, and the product search keeps Enter to search.
-function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
-  if (
-    event.key === "Enter" &&
-    !event.nativeEvent.isComposing &&
-    event.target instanceof HTMLInputElement &&
-    event.target.form === event.currentTarget
-  ) {
-    event.preventDefault()
-  }
-}
 
 // A cell saving needs that's still empty.
 const blank = (value: string | number | null) => value === null || value === ""
@@ -474,7 +462,7 @@ export function ImportReview({
                     error={checking && missing.supplier ? tr("chooseSupplier") : undefined}
                     options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
                     value={supplierId}
-                    onChange={(e) => setSupplierId(e.target.value)}
+                    onValueChange={setSupplierId}
                   />
                   {canAddSupplier && (
                     <Button
@@ -522,8 +510,7 @@ export function ImportReview({
                   error={checking && missing.currency ? tr("chooseCurrency") : undefined}
                   options={currencies.map((code) => ({ value: code, label: t(`currencies.${code}`) }))}
                   value={currency ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value
+                  onValueChange={(value) => {
                     if (arrayIncludes(currencies, value)) {
                       edit((p) => {
                         p.currency = value
