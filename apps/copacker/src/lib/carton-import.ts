@@ -1,8 +1,7 @@
 import { type OrderInput } from "@repo/copacker-orders"
 import { cartonRuns } from "@repo/copacker-packing-rules"
 import { cartonInputSchema } from "@repo/copacker-shipments"
-import { z } from "zod"
-import { type CartonGroup, groupCartonIds } from "./carton-groups"
+import { type CartonGroup, cartonGroupSchema, cartonTotals, groupCartonIds, maxCartons } from "./carton-groups"
 import {
   addGuide,
   cellNumber,
@@ -48,7 +47,7 @@ export type ImportIssue = {
 export type CartonImportResult = { groups: CartonGroup[]; issues: ImportIssue[]; templateMatches: boolean }
 
 // A row's carton count, at most a packing's cartons.
-const cartonCount = z.number().int().positive().max(1000)
+const cartonCount = cartonGroupSchema.shape.count
 const { pieces } = cartonInputSchema.shape.items.element.shape
 
 export function parseCartonTable(table: string[][], products: OrderInput["items"]): CartonImportResult {
@@ -142,7 +141,7 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
   if (!groups.size && !issues.length) {
     issues.push({ code: "empty" })
   }
-  if ([...groups.values()].reduce((sum, group) => sum + group.count, 0) > 1000) {
+  if (cartonTotals([...groups.values()]).cartons > maxCartons) {
     issues.push({ code: "limit" })
   }
   return { groups: [...groups.values()], issues, templateMatches: true }

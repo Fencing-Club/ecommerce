@@ -29,6 +29,9 @@ each hook.
   recovery forms pass `navigation: "document"`.
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
+- `usePackingDraft` (`use-packing-draft.ts`): saves a shipment's packing as a draft, finishes it after the server's
+  checks, and links an existing AWD shipment, returning `{ save, submit, link, working, error, clearError }`. Each save
+  reads the shipment again before it's done, so the next request sends the new revision. Used by the packing form.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.

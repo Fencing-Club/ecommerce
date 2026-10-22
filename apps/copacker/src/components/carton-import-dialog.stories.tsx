@@ -42,7 +42,7 @@ const meta = preview.meta({
     order,
     shipmentName: "Shipment 1",
     existing: groupCartons(packed(1).cartons),
-    availablePieces: Object.fromEntries(order.items.map((item) => [item.id, item.pieces])),
+    reserved: {},
     onImport: fn(() => Promise.resolve())
   }
 })

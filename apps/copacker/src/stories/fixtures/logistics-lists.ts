@@ -1,4 +1,4 @@
-import type { LogisticsRow } from "@/components/logistics-list"
+import type { LogisticsRow } from "@/lib/logistics-list"
 
 // Fictional rows from the approved Pen list frames awIJu and OzQcA, as the server would send them to a buyer.
 

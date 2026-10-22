@@ -1,8 +1,7 @@
 import { type OrderInput } from "@repo/copacker-orders"
-import { validatePacking } from "@repo/copacker-packing-rules"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCartonTemplate } from "@/hooks/use-import-templates"
-import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
+import { type CartonGroup, cartonTotals, checkCartons, maxCartons } from "@/lib/carton-groups"
 import { readCartonFile, type CartonImportResult } from "@/lib/carton-import"
 import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
@@ -18,7 +17,7 @@ export function CartonImportDialog({
   order,
   shipmentName,
   existing,
-  availablePieces,
+  reserved,
   packingGroups,
   onImport
 }: {
@@ -27,7 +26,8 @@ export function CartonImportDialog({
   order: OrderInput
   shipmentName: string
   existing: CartonGroup[]
-  availablePieces: Record<string, number>
+  // The pieces of each line the purchase order's other shipments hold.
+  reserved: Readonly<Record<string, number>>
   // Amazon's packing groups by SKU, once Amazon has set them for the shipment's FBA cartons.
   packingGroups?: Readonly<Record<string, string>>
   onImport: (groups: CartonGroup[], mode: CartonImportMode) => Promise<void>
@@ -39,16 +39,10 @@ export function CartonImportDialog({
 
   function check(result: CartonImportResult, mode: CartonImportMode) {
     const combined = mode === "add" ? [...existing, ...result.groups] : result.groups
-    const tooMany = !result.issues.length && cartonTotals(combined).cartons > 1000
+    const tooMany = !result.issues.length && cartonTotals(combined).cartons > maxCartons
     const checked =
       result.templateMatches && !result.issues.length && !tooMany
-        ? validatePacking(
-            order,
-            { cartons: expandCartonGroups(combined), changes: [], packingGroups },
-            Object.fromEntries(
-              order.items.map((item) => [item.id, Math.max(0, item.pieces - (availablePieces[item.id] ?? 0))])
-            )
-          ).issues
+        ? checkCartons(order, combined, reserved, packingGroups)
         : []
     return {
       templateMatches: result.templateMatches,
