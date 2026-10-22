@@ -85,3 +85,12 @@ piece quantity, receipt date and cost basis remain unknown. These snapshots do n
 Receipt `reviewState` distinguishes inactive (cancelled/deleted), not-final, closed-quantity-review and unknown-status
 shipments. Raw differences remain visible for audit but only closed shipments become quantity-review candidates;
 closed status still does not prove loss, completed receiving, or reimbursement eligibility.
+
+## Stored-evidence acceptance and remaining work
+
+PR #71 deployed as `dae10ab0` on October 19, 2026. Its read-only production checks verified reimbursement diagnostics,
+Shopify payment differences and FBA/AWD receipt comparisons without starting a sync or backfill. The dated results and
+remaining coverage, payment-classification and transfer-accounting work are tracked in the
+[analytics data backlog](specs/analytics/analytics-data-backlog.md#next-stored-evidence-work-no-backfill-or-ux).
+Receipt movement sums are partial-history observations until coverage of the receipt period is established. They do not
+prove loss, acquisition or cost basis. All cost basis remains unknown unless separately supported by recorded evidence.

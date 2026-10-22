@@ -53,7 +53,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 Specs (planned work; the purchase order flow also maps how orders work today):
 
 - [Novu notifications: implementation phases, event coverage, templates and settings](specs/novu-notifications/README.md)
-- [Analytics: profitability reporting and analytics data backlog](specs/analytics/README.md)
+- [Analytics: profitability reporting and analytics data backlog](specs/analytics/README.md): dated acceptance and remaining stored-evidence reconciliation
 - [TanStack Start and Cloudflare migration: tasks, milestones and cutover](specs/platform-migration/README.md)
 - [CLI and MCP contract proposal](specs/cli/README.md)
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)
