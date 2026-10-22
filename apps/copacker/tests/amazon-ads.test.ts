@@ -21,6 +21,7 @@ vi.mock("@/server/auth", async (original) => ({
 import { GET, POST } from "../src/server/http/api/connections/amazon-ads"
 vi.mock("../src/server/exchange-rates", () => ({ syncExchangeRates: vi.fn<() => Promise<void>>() }))
 import { adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
+import * as adsServer from "../src/server/amazon-ads"
 import {
   adsCharge,
   adsStatus,
@@ -337,6 +338,35 @@ describe("Amazon Ads authorization and transport", () => {
       }
     }
   )
+  it("logs queue failures without exposing credentials and preserves the saved grant", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const queue = vi.spyOn(adsServer, "queueAdsSync").mockRejectedValueOnce(new Error("private-queue-error"))
+    try {
+      const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+      const state = new URL(start.headers.get("location")!).searchParams.get("state")!
+      fetchMock.mockImplementation(async (url) => {
+        if (String(url).includes("auth/o2")) {
+          return Response.json({ access_token: "private-access", refresh_token: "private-refresh" })
+        }
+        return String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
+      })
+      const response = await GET(
+        new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=private-code`)
+      )
+      expect(response.status).toBe(400)
+      expect(queue).toHaveBeenCalledExactlyOnceWith(orgId)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify({ event: "amazon_ads_connection_failed", stage: "queue_sync", reason: "unexpected" })
+      )
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-")
+      expect(JSON.stringify(log.mock.calls)).not.toContain(state)
+      expect(await database.select().from(tables.amazonAdsConnections)).toHaveLength(1)
+      expect(await database.select().from(tables.jobs)).toEqual([])
+    } finally {
+      queue.mockRestore()
+      log.mockRestore()
+    }
+  })
   it("stores grants encrypted and rejects a changed seller", async () => {
     fetchMock.mockImplementation(async (url) =>
       String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
