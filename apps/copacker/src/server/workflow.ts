@@ -4,10 +4,11 @@ import { match, P } from "ts-pattern"
 import { db } from "@/db"
 import type { ShipmentState } from "@/db/schema"
 import { documents, shipments } from "@/db/schema"
+import { canEditPacking, releasedLabelKinds, releasedStates } from "@/lib/shipment-states"
 import { type AccessibleOrder, accessibleOrder } from "./access"
 import { linesMissingLabels } from "./product-barcodes"
 import type { ReadinessIssue } from "./readiness"
-import { orderCoverage, packingReadiness, releasedLabelKinds, releasedStates, releaseIssues } from "./readiness"
+import { orderCoverage, packingReadiness, releaseIssues } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
@@ -43,10 +44,7 @@ export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
       supplier: { name: supplier.name },
       items: orderCoverage(order.data, rows),
       shipments: rows.map((shipment) => {
-        const editable =
-          ["packing", "correction"].includes(shipment.status) &&
-          shipment.operation === "none" &&
-          !shipment.amazonOrderId
+        const editable = canEditPacking(shipment)
         const packing = packingReadiness(
           order.data,
           shipment,

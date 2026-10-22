@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { accessibleOrder } from "../../src/server/access"
-import { POST as action } from "../../src/server/http/api/action"
+import { POST as postAction } from "../../src/server/http/api/action"
 import { acceptSupplierInvitation } from "../../src/server/invitations"
 import { closeOrder } from "../../src/server/orders"
 import { listPartners } from "../../src/server/partners"
@@ -11,6 +11,7 @@ import { hash } from "../../src/server/security"
 import { saveSupplierAddress, supplierPickupAddresses } from "../../src/server/supplier-addresses"
 import { supplierOverview } from "../../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../../src/server/suppliers"
+import { served } from "../served"
 import { database } from "../test-db"
 import { signedIn } from "../test-session"
 import {
@@ -25,6 +26,9 @@ import {
   supplierId,
   supplierLinkId
 } from "./fixtures"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 vi.mock("../../src/server/connections", async () => (await import("../mocks/providers")).connectionsModule())
 vi.mock("../../src/server/product-fields", async (original) =>
@@ -259,6 +263,8 @@ describe("suppliers from Shopify and invitations", () => {
   it("adds a supplier without an email, then invites it by email", async () => {
     const created = await post({ action: "supplier.create", data: { name: "Unic", email: "" } })
     expect(created.status).toBe(200)
+    // The browser loads its supplier lists again.
+    expect(created.headers.get("X-Invalidates")).toBe("Supplier, ProductSupplier")
     const { id } = (await created.json()) as { id: string }
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
     const [added] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, id))

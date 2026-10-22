@@ -4,12 +4,13 @@ import { z } from "zod"
 import { db, type Database, type Transaction } from "@/db"
 import { documents, orders, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
+import { effectiveAccess } from "@/lib/access"
+import { releasedLabelKinds, releasedStates } from "@/lib/shipment-states"
 import { accessibleOrder, forwarderOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { shipmentDocumentFilename } from "./document-filenames"
 import { errorTextResponse, requestInput } from "./errors"
 import { fileResponse } from "./http-response"
-import { releasedLabelKinds, releasedStates } from "./readiness"
 import { readFile } from "./storage"
 import type { Session } from "./workspace-session"
 import { requireMembership } from "./workspace-session"
@@ -87,7 +88,7 @@ export async function downloadDocument(
     }
     const bytes = await combinePdfs(files)
     const member = await requireMembership(s.user.id, s.org.id, executor)
-    const currentSession = { ...s, role: member.role, access: member.access }
+    const currentSession = { ...s, role: member.role, access: effectiveAccess(s.org.kind, member.access) }
     // Recheck every source after assembling: revocation/replacement must never leak a stale combined packet.
     for (const item of selected) {
       await canRead(currentSession, item, executor)
@@ -133,7 +134,7 @@ export async function downloadDocument(
     }
     const member = await requireMembership(s.user.id, s.org.id, executor)
     // A membership can survive while its page/price grants are revoked during a slow storage read.
-    await canRead({ ...s, role: member.role, access: member.access }, current, executor)
+    await canRead({ ...s, role: member.role, access: effectiveAccess(s.org.kind, member.access) }, current, executor)
     const response = fileResponse(file.body, { filename: doc.name, contentType: "application/pdf" })
     transferred = true
     return response

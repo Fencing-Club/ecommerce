@@ -2,7 +2,7 @@ import { redirect } from "@tanstack/react-router"
 import { isCsrfRequestAllowed } from "@tanstack/react-start"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
-import { AccessError, NotFoundError } from "../src/i18n/errors"
+import { AccessError, LocalizedError, NotFoundError } from "../src/i18n/errors"
 import { loadMessages } from "../src/i18n/messages"
 import { InvalidRequestError, requestInput, requestJson, StatusError } from "../src/server/errors"
 import { apiHandlers, appOriginPolicy, fallbackResponse, fileResponse, httpResponse } from "../src/server/http-response"
@@ -55,6 +55,13 @@ describe("HTTP boundary", () => {
       throw new StatusError("packingListUnavailable", 409)
     })
     expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: "The packing list is available once packing is finished" })
+  })
+  it("answers a refusal with a message for the person with 400", async () => {
+    const response = await answer(() => {
+      throw new LocalizedError("packingListUnavailable")
+    })
+    expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: "The packing list is available once packing is finished" })
   })
   it("answers request input that doesn't parse with 400: its body, query or path", async () => {

@@ -43,7 +43,9 @@ members don't get the switch, but a forwarder can download the commercial invoic
 
 - Pages about money close: the Overview (sales, profit and costs) and a supplier's Catalogs.
 - Pages whose changes set prices are View only: Purchase orders, and a supplier's Products. `highestLevel` in
-  `src/lib/access.ts` has the rules, and saving someone's access clamps their pages to them.
+  `src/lib/access.ts` has the rules. Saving someone's access clamps their pages to them, and every check reads access
+  through `effectiveAccess`, which applies them again, so a grant saved before a rule changed never gives more. So
+  answering a supplier's proposed changes, which needs Purchase orders: Edit, needs prices too.
 - Every other page leaves out prices, costs and totals: a purchase order's costs, totals, landed costs, its PDF and the
   commercial invoice; a shipment's invoice prices; products' prices, and the product export; Restock's costs and
   values; sales orders' amounts; and a supplier's order totals and what each customer spent.
@@ -98,8 +100,9 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
 - A route or page for one kind of workspace calls `requireBuyer` or `requireSupplier` (both `requireKind` in
   `server/authorization.ts`). Another kind throws an `AccessError` too: 403 with "Switch to a buyer workspace" or its
   supplier twin from a route, No access on a page. Switching workspace in another tab is the usual way to get there.
-- Catalog pages, downloads and mutations explicitly require price access as well as their catalog grant. This also
-  protects existing memberships whose saved grants no longer match the team editor's constraints.
+- The workspace session reads a member's access through `effectiveAccess`, so a membership whose saved grant no longer
+  matches the team editor's rules, such as Purchase orders: Edit or Catalogs without prices, gets only what the rules
+  allow, on every page and request. Catalog pages and downloads also check price access themselves.
 - `server/workspace-pages.ts` prepares products, catalogs, customers, inventory, sales and restock data before rendering.
   It rechecks operation permissions, omits internal organization fields, removes unit prices and volume pricing when
   unavailable, and excludes customer order rows unless the member can open orders. Hiding a table in the browser does

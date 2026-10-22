@@ -25,6 +25,7 @@ import { requireBuyer, requireSupplier } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor } from "./connections"
 import { generateInvoice, generatePo } from "./documents"
+import { InvalidRequestError, requestInput } from "./errors"
 import { jobRow } from "./job-payloads"
 import { describeError } from "./log"
 import { checkOrder, prepareOrder } from "./orders"
@@ -156,7 +157,9 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
   requireSupplier(s)
   const parsed = proposalSchema.safeParse(raw)
   if (!parsed.success) {
-    throw parsed.error.issues[0] ? new z.ZodError([parsed.error.issues[0]]) : new LocalizedError("checkChanges")
+    throw parsed.error.issues[0]
+      ? new InvalidRequestError(new z.ZodError([parsed.error.issues[0]]))
+      : new LocalizedError("checkChanges")
   }
   const proposal = parsed.data
   return db().transaction(async (tx) => {
@@ -267,7 +270,7 @@ export async function withdrawProposal(s: Session, proposalId: string) {
 
 export async function declineProposal(s: Session, proposalId: string, reason: string) {
   requireBuyer(s)
-  const why = z.string().trim().max(2000).parse(reason)
+  const why = requestInput(z.string().trim().max(2000), reason)
   await db().transaction(async (tx) => {
     const { proposal } = await pendingFor(tx, s, proposalId)
     await tx

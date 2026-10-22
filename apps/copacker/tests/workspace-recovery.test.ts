@@ -19,12 +19,15 @@ vi.mock("@tanstack/react-start/server", () => ({
 }))
 
 import { ApiSessionError, session } from "../src/server/auth"
-import { POST as action } from "../src/server/http/api/action"
+import { POST as postAction } from "../src/server/http/api/action"
 import { GET as workspaceRoute } from "../src/server/http/api/workspace"
 import { readWorkspacesData, recoverWorkspace as recover } from "../src/server/workspace-recovery"
 import { workspaceCookie } from "../src/server/workspace-session"
 import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 const workspaceStatus = served(workspaceRoute)
 const buyerId = randomUUID(),

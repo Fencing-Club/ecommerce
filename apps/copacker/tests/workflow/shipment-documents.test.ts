@@ -231,6 +231,24 @@ describe("transport configuration", () => {
 })
 
 describe("document upload and packet release", () => {
+  // Finishing packing saves the draft, checks it, then submits the saved draft without sending it again.
+  it("finishes packing through the action route as the packing form does", async () => {
+    const prepared = await preparation()
+    signedIn.actor = supplier
+    const saved = await post("shipment.save", {
+      id: prepared.id,
+      revision: 1,
+      orderRevision: 1,
+      draft: prepared.packing
+    })
+    expect(saved.status).toBe(200)
+    const { revision } = await saved.json()
+    const checked = await post("shipment.check", { id: prepared.id })
+    expect(await checked.json()).toMatchObject({ canSubmit: true })
+    expect((await post("shipment.submit", { id: prepared.id, revision })).status).toBe(200)
+    // Packed for AWD, it waits for the buyer to start the Amazon shipment.
+    expect((await shipmentState(prepared.id)).status).toBe("packed")
+  })
   it("rejects stale generated shipment documents without invalidating the current replacement", async () => {
     const prepared = await preparation()
     await database
@@ -550,7 +568,7 @@ describe("document upload and packet release", () => {
       return (await result.json()).error
     }
     signedIn.actor = actor("buyer", otherId)
-    expect(await refused([label])).toContain("not found")
+    expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(404)
     signedIn.actor = buyer
     expect(await refused([{ ...label, cartonId: "unknown" }])).toBe("Label assignment has an unknown carton or page")
     expect(await refused([label, { ...label, page: 2 }], [2])).toBe("Assign each label page and carton only once")

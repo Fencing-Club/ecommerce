@@ -3,12 +3,16 @@ import { eq } from "drizzle-orm"
 import { describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { generatePo } from "../../src/server/documents"
-import { POST as action } from "../../src/server/http/api/action"
+import { POST as postAction } from "../../src/server/http/api/action"
 import { ownProfile, saveProfile } from "../../src/server/profile"
 import { restockDefaults, restockSettings } from "../../src/server/restock-report"
 import { profileFor } from "../../src/server/workspace-session"
+import { served } from "../served"
 import { database } from "../test-db"
 import { buyer, buyerId, orderId, setUpWorkflowTests, supplier } from "./fixtures"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 vi.mock("../../src/server/connections", async () => (await import("../mocks/providers")).connectionsModule())
 vi.mock("../../src/server/product-fields", async (original) =>

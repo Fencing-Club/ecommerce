@@ -11,10 +11,14 @@ vi.mock("../src/server/connections", () => ({
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("@/db", () => import("./test-db"))
 
-import { POST as action } from "../src/server/http/api/action"
+import { POST as postAction } from "../src/server/http/api/action"
 import { appUrl, hash } from "../src/server/security"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID(),

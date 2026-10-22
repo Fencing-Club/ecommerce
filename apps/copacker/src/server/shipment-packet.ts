@@ -7,12 +7,14 @@ import { shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
+import { effectiveAccess } from "@/lib/access"
+import { releasedStates } from "@/lib/shipment-states"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError, errorText } from "./errors"
 import { pageId } from "./page-id"
 import { hasProductLabels, lineLabels } from "./product-barcodes"
-import { releasedStates, releaseIssues } from "./readiness"
+import { releaseIssues } from "./readiness"
 import { requireMembership, type Session } from "./workspace-session"
 
 // Read a released revision, never the live PO's editable values. No price or storage credential leaves this module.
@@ -57,7 +59,7 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
     throw new StatusError("packetChanged", 409)
   }
   const member = await requireMembership(s.user.id, s.org.id)
-  requireAccess({ ...s, role: member.role, access: member.access }, "shipments")
+  requireAccess({ ...s, role: member.role, access: effectiveAccess(s.org.kind, member.access) }, "shipments")
   return { shipment, order, supplier, docs, labelOrder, labels, version }
 }
 

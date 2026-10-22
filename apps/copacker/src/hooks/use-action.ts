@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { type ActionResult, useActionMutation } from "@/lib/api"
 import { finishSignIn } from "@/lib/auth-navigation"
+import type { ActionInput, ActionName } from "@/server/actions"
 
 // How a successful action's redirect opens: inside the app, or as a new document, which drops every route and API
 // cache from the previous session or workspace.
@@ -24,7 +25,9 @@ export function useActionSettle(navigation: ActionNavigation = "router") {
       finishSignIn(result.redirect)
       return false
     }
-    // The next page loads its data fresh, so it isn't refreshed again.
+    // The next page loads its data fresh, so it isn't refreshed again. The action may have changed pages visited
+    // before, so their cached data goes first rather than showing as it was.
+    router.clearCache()
     await router.navigate({ href: result.redirect })
     return true
   }
@@ -41,16 +44,24 @@ type Options = {
   navigation?: ActionNavigation
 }
 
-// Runs one mutation: an /api/action by name, or another request. `run` never throws; a failure's message is in `error`
-// until the next run or `reset`. Pending lasts until the result shows, or until the next document replaces the page.
-export function useAction(action: string | ActionRequest, { fallback, onSuccess, onError, navigation }: Options = {}) {
+// The data `run` sends: what the action takes, which it can leave out when the action needs none.
+type RunData<K extends ActionName> = {} extends ActionInput<K> ? [data?: ActionInput<K>] : [data: ActionInput<K>]
+
+// Runs one mutation: an /api/action by name, with the data that action takes, or another request. `run` never throws; a
+// failure's message is in `error` until the next run or `reset`. Pending lasts until the result shows, or until the next
+// document replaces the page.
+export function useAction<K extends ActionName>(
+  action: K | ActionRequest,
+  { fallback, onSuccess, onError, navigation }: Options = {}
+) {
   const [mutate] = useActionMutation()
   const settle = useActionSettle(navigation)
   const errorMessage = useErrorMessage()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
-  async function run(data: Record<string, unknown> = {}) {
+  async function run(...[input]: RunData<K>) {
+    const data = input ?? {}
     setPending(true)
     setError("")
     try {

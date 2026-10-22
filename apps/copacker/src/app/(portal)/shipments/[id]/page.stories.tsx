@@ -11,9 +11,10 @@ import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
 import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
+import { canEditPacking, canReopenPacking, releasedLabelKinds, releasedStates } from "@/lib/shipment-states"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { knownPackingGroups, releasedLabelKinds, releasedStates } from "@/server/readiness"
+import { knownPackingGroups } from "@/server/readiness"
 import {
   type ActionRequest,
   buyerContacts,
@@ -158,15 +159,8 @@ async function ShipmentPage({
       ? (knownPackingGroups([...others, shipment], shipment) ?? null)
       : undefined
   const snapshot = shipment.snapshot ?? order.data
-  const editable =
-    editsShipments &&
-    ["packing", "correction"].includes(shipment.status) &&
-    !shipment.amazonOrderId &&
-    shipment.operation === "none" &&
-    !awaitingChanges
-  // Finished packing for Amazon reopens until the buyer starts the Amazon shipment.
-  const canReopenPacking =
-    editsShipments && shipment.status === "packed" && !shipment.amazonOrderId && shipment.operation === "none"
+  const editable = editsShipments && canEditPacking(shipment) && !awaitingChanges
+  const canReopen = editsShipments && canReopenPacking(shipment)
   const isBuyer = kind === "buyer"
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
@@ -255,7 +249,7 @@ async function ShipmentPage({
         addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
         awaitingChanges,
         editable,
-        canReopenPacking,
+        canReopenPacking: canReopen,
         isBuyer,
         amazonLinks,
         visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),

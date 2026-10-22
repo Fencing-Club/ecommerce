@@ -13,7 +13,7 @@ import { selfAuthorizationSchema } from "@/lib/amazon"
 import type { Store } from "@/lib/stores"
 import { amazonReportPolicy } from "./amazon-report-policy"
 import { DemoShopify, demoShopConnection } from "./demo-shopify"
-import { ReconnectRequiredError } from "./errors"
+import { ReconnectRequiredError, requestInput } from "./errors"
 import { requireConnectedAccount } from "./provider-accounts"
 import { decrypt, encrypt } from "./security"
 
@@ -169,7 +169,7 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
   if (!amazonSelfAuthEnabled()) {
     throw new AccessError("forbidden")
   }
-  const input = selfAuthorizationSchema.parse(raw)
+  const input = requestInput(selfAuthorizationSchema, raw)
   const sellerId = sellerIdSchema.safeParse(process.env.AMAZON_MERCHANT_TOKEN?.trim())
   if (!sellerId.success) {
     throw new LocalizedError("requestFailed")

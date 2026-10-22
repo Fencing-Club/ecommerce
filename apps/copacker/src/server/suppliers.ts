@@ -1,9 +1,98 @@
+import { randomUUID } from "node:crypto"
 import { and, eq, isNull, ne } from "drizzle-orm"
+import invariant from "tiny-invariant"
 import { z } from "zod"
-import { db } from "@/db"
-import { orders, suppliers } from "@/db/schema"
+import { db, type Transaction } from "@/db"
+import { jobs, orders, supplierProfiles, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { contactDetailsSchema } from "@/lib/contact-details"
+import { requestInput } from "./errors"
+import { invitationFields, optionalEmail } from "./invitations"
+import { withJobWake } from "./job-delivery"
+import { jobRow } from "./job-payloads"
+import { requestLocale } from "./localization"
+
+type Buyer = { id: string; name: string }
+
+export const newSupplierSchema = z.object({ name: z.string().trim().min(2).max(120), email: optionalEmail })
+
+// Emails a supplier a new invitation link, in the transaction that saved it.
+async function queueInvite(tx: Transaction, supplierId: string, to: string, buyer: Buyer, invitation: string) {
+  // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a reused key
+  // carrying a different invitation.
+  await tx.insert(jobs).values(
+    jobRow("email", `invite:${supplierId}:${randomUUID()}`, {
+      type: "invite",
+      to,
+      name: buyer.name,
+      invitation,
+      locale: await requestLocale()
+    })
+  )
+}
+
+// Adds a supplier, or restores a removed one of that name, so its earlier POs stay together; it joins again by
+// invitation. The email is optional: a supplier can get POs without joining Copacker, and is invited once it has one.
+export async function createSupplier(buyer: Buyer, input: z.output<typeof newSupplierSchema>) {
+  const invite = input.email ? invitationFields() : null
+  const saved = invite?.saved ?? { invitationHash: null, expiresAt: null }
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(suppliers)
+        .where(and(eq(suppliers.buyerOrgId, buyer.id), eq(suppliers.name, input.name)))
+        .for("update")
+      if (existing && !existing.removedAt) {
+        throw new LocalizedError("supplierAlreadyAdded", { name: input.name })
+      }
+      const [supplier] = existing
+        ? await tx
+            .update(suppliers)
+            .set({ email: input.email, ...saved, supplierOrgId: null, removedAt: null })
+            .where(eq(suppliers.id, existing.id))
+            .returning()
+        : await tx
+            .insert(suppliers)
+            .values({ buyerOrgId: buyer.id, ...input, ...saved })
+            .returning()
+      invariant(supplier, "The supplier was saved")
+      if (invite && input.email) {
+        await queueInvite(tx, supplier.id, input.email, buyer, invite.invitation)
+      }
+      return { id: supplier.id }
+    })
+  )
+}
+
+// Invites a supplier that hasn't joined, or sends its invitation again; an email given here replaces the saved one. A
+// fresh link replaces the old one, so earlier invitation links stop working.
+export async function inviteSupplier(buyer: Buyer, id: string, email: string | null) {
+  const { invitation, saved } = invitationFields()
+  await withJobWake(
+    db().transaction(async (tx) => {
+      const [supplier] = await tx
+        .update(suppliers)
+        .set({ ...saved, ...(email && { email }) })
+        .where(
+          and(
+            eq(suppliers.id, id),
+            eq(suppliers.buyerOrgId, buyer.id),
+            isNull(suppliers.supplierOrgId),
+            isNull(suppliers.removedAt)
+          )
+        )
+        .returning()
+      if (!supplier) {
+        throw new LocalizedError("supplierJoinedOrRemoved")
+      }
+      if (!supplier.email) {
+        throw new LocalizedError("enterSupplierEmail")
+      }
+      await queueInvite(tx, supplier.id, supplier.email, buyer, invitation)
+    })
+  )
+}
 
 // Removes a supplier from a buyer's workspace. Its invitation stops working and its workspace loses access to the
 // buyer's POs. A supplier working on a sent PO stays until that PO is closed, so no shipment is left without its packer.
@@ -60,9 +149,23 @@ export const supplierUpdateSchema = z.strictObject({
   ...supplierContactSchema.shape
 })
 
+// A supplier workspace's own contact details, which its buyers see.
+export async function saveSupplierProfile(orgId: string, input: z.output<typeof supplierContactSchema>) {
+  const profile = {
+    website: input.website ?? null,
+    phoneNumber: input.phoneNumber ?? null,
+    contactName: input.contactName ?? null,
+    contactEmail: input.contactEmail ?? null
+  }
+  await db()
+    .insert(supplierProfiles)
+    .values({ orgId, ...profile })
+    .onConflictDoUpdate({ target: supplierProfiles.orgId, set: profile })
+}
+
 // A supplier's name, and how long they take to deliver to the buyer's locations and to Amazon (used by restock).
 export async function updateSupplier(buyerOrgId: string, raw: unknown) {
-  const input = supplierUpdateSchema.parse(raw)
+  const input = requestInput(supplierUpdateSchema, raw)
   const [taken] = await db()
     .select({ id: suppliers.id })
     .from(suppliers)

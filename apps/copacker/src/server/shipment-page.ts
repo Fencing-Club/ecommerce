@@ -6,12 +6,13 @@ import { documents, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
+import { canEditPacking, canReopenPacking, releasedLabelKinds, releasedStates } from "@/lib/shipment-states"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { knownPackingGroups, releasedLabelKinds, releasedStates, reservedPieces } from "@/server/readiness"
+import { knownPackingGroups, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
@@ -59,15 +60,8 @@ export async function shipmentPage(input: { id: string }) {
   // Packing waits while the supplier's changes to the purchase order are with the buyer.
   const { latest } = await proposalState(order.id)
   const awaitingChanges = latest?.status === "pending"
-  const editable =
-    editsShipments &&
-    ["packing", "correction"].includes(shipment.status) &&
-    !shipment.amazonOrderId &&
-    shipment.operation === "none" &&
-    !awaitingChanges
-  // Finished packing for Amazon reopens until the buyer starts the Amazon shipment.
-  const canReopenPacking =
-    editsShipments && shipment.status === "packed" && !shipment.amazonOrderId && shipment.operation === "none"
+  const editable = editsShipments && canEditPacking(shipment) && !awaitingChanges
+  const canReopen = editsShipments && canReopenPacking(shipment)
   const isBuyer = s.org.kind === "buyer"
   // The Amazon shipments are in the buyer's Seller Central, which the supplier can't open, so it reads their IDs.
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
@@ -159,7 +153,7 @@ export async function shipmentPage(input: { id: string }) {
     addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
     awaitingChanges,
     editable,
-    canReopenPacking,
+    canReopenPacking: canReopen,
     isBuyer,
     amazonLinks,
     visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),

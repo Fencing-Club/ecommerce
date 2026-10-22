@@ -1,8 +1,8 @@
 import { and, eq, isNull, ne, type SQL, sql } from "drizzle-orm"
 import { z } from "zod"
-import type { Transaction } from "@/db"
+import type { Executor, Transaction } from "@/db"
 import { db } from "@/db"
-import { forwarders, orders, suppliers } from "@/db/schema"
+import { forwarders, orders, shipments, suppliers } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import type { Session } from "./workspace-session"
 
@@ -37,6 +37,29 @@ export async function accessibleOrder(
 }
 // A PO the workspace can open and its supplier, as accessibleOrder found them.
 export type AccessibleOrder = Awaited<ReturnType<typeof accessibleOrder>>
+
+// A shipment on a PO the workspace can open, with that PO and its supplier; Not found otherwise. With `lock`, inside a
+// transaction, the PO and then the shipment stay locked until it ends: the order every change to a shipment locks them
+// in.
+export async function accessibleShipment(
+  s: Session,
+  id: string,
+  { executor = db(), lock = false }: { executor?: Executor; lock?: boolean } = {}
+) {
+  if (!z.uuid().safeParse(id).success) {
+    throw new NotFoundError()
+  }
+  const [found] = await executor.select().from(shipments).where(eq(shipments.id, id))
+  if (!found) {
+    throw new NotFoundError()
+  }
+  const { order, supplier } = await accessibleOrder(s, found.orderId, executor, lock)
+  const [shipment] = lock ? await executor.select().from(shipments).where(eq(shipments.id, id)).for("update") : [found]
+  if (!shipment) {
+    throw new NotFoundError()
+  }
+  return { order, supplier, shipment }
+}
 export async function visibleOrders(s: Session) {
   return db()
     .select({ order: orders, supplier: suppliers })

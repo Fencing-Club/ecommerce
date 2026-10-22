@@ -11,6 +11,7 @@ import { accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
 import { withJobWake } from "@/server/job-delivery"
 import { requestLocale } from "@/server/localization"
+import { requestInput } from "./errors"
 import { jobRow } from "./job-payloads"
 import { hash, token } from "./security"
 import type { Session } from "./workspace-session"
@@ -29,7 +30,7 @@ type Grant = { role: "admin" | "member"; access: Access }
 // it allows (View for a page with nothing to edit, and without prices, nothing for a page about money and View for one
 // whose changes set prices). A member needs at least one page.
 function grantFor(kind: Session["org"]["kind"], raw: unknown): Grant {
-  const grant = grantSchema.parse(raw)
+  const grant = requestInput(grantSchema, raw)
   if (grant.role === "admin") {
     return { role: "admin", access: {} }
   }
@@ -101,7 +102,7 @@ export async function teamOf(org: Pick<Session["org"], "id" | "timeZone">) {
 // Invites a colleague by email, as an admin or as a member with the pages chosen for them. Inviting someone who's
 // already waiting sends them a new link with what's chosen now, and the old link stops working.
 export async function inviteColleague(org: Pick<Session["org"], "id" | "name" | "kind">, raw: unknown) {
-  const email = emailSchema.parse(raw).email.toLowerCase()
+  const email = requestInput(emailSchema, raw).email.toLowerCase()
   const grant = grantFor(org.kind, raw)
   const [member] = await db()
     .select({ userId: memberships.userId })
@@ -116,7 +117,7 @@ export async function inviteColleague(org: Pick<Session["org"], "id" | "name" | 
 
 // Sends an invitation again with a new link, keeping what it gives.
 export async function resendInvitation(org: Pick<Session["org"], "id" | "name">, raw: unknown) {
-  const email = emailSchema.parse(raw).email.toLowerCase()
+  const email = requestInput(emailSchema, raw).email.toLowerCase()
   await withJobWake(
     db().transaction(async (tx) => {
       const [waiting] = await tx
@@ -155,7 +156,7 @@ async function send(tx: Transaction, org: Pick<Session["org"], "id" | "name">, e
 
 // Withdraws the invitation to an email, so its link stops working.
 export async function cancelInvitation(orgId: string, raw: unknown) {
-  const email = emailSchema.parse(raw).email.toLowerCase()
+  const email = requestInput(emailSchema, raw).email.toLowerCase()
   if (!(await db().transaction((tx) => withdraw(tx, orgId, email)))) {
     throw new LocalizedError("invitationAnswered")
   }
@@ -196,7 +197,7 @@ export async function changeAccess(
     }
     return { ok: true }
   }
-  const { userId } = userSchema.parse(raw)
+  const { userId } = requestInput(userSchema, raw)
   if (userId === s.user.id) {
     throw new LocalizedError("cantChangeOwnAccess")
   }
@@ -218,7 +219,7 @@ export async function transferOwnership(
   s: { org: Pick<Session["org"], "id">; user: Pick<Session["user"], "id"> },
   raw: unknown
 ) {
-  const { userId } = userSchema.parse(raw)
+  const { userId } = requestInput(userSchema, raw)
   if (userId === s.user.id) {
     throw new LocalizedError("alreadyOwner")
   }
@@ -248,7 +249,7 @@ export async function removeColleague(
   s: { org: Pick<Session["org"], "id">; user: Pick<Session["user"], "id"> },
   raw: unknown
 ) {
-  const { userId } = userSchema.parse(raw)
+  const { userId } = requestInput(userSchema, raw)
   if (userId === s.user.id) {
     throw new LocalizedError("cantRemoveYourself")
   }

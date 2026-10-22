@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { startFirstSync } from "../../src/server/first-sync"
-import { POST as action } from "../../src/server/http/api/action"
+import { POST as postAction } from "../../src/server/http/api/action"
 import { POST as demandRoute } from "../../src/server/http/api/inventory/demand"
 import { runNextJob } from "../../src/server/queue"
 import { readSalesDemand } from "../../src/server/sales"
@@ -35,6 +35,9 @@ import {
   setUpWorkflowTests,
   supplier
 } from "./fixtures"
+
+// The action route as Start serves it, through the HTTP boundary that answers its failures.
+const action = served(postAction)
 
 vi.mock("../../src/server/connections", async () => (await import("../mocks/providers")).connectionsModule())
 vi.mock("../../src/server/product-fields", async (original) =>

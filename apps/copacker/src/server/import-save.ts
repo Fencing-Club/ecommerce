@@ -10,6 +10,7 @@ import { importProposalSchema } from "@/lib/import-proposal"
 import { chargeInMinorUnits, importTotals, priceInMinorUnits } from "@/lib/import-totals"
 import { requireBuyer } from "./authorization"
 import { shopifyFor } from "./connections"
+import { requestInput } from "./errors"
 import { prepareOrder, persistOrder } from "./orders"
 import { lineDefaultsFor } from "./product-defaults"
 import { withVariantFields } from "./product-fields"
@@ -33,8 +34,8 @@ const saveSchema = z
 
 export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   requireBuyer(s)
-  z.uuid().parse(id)
-  const input = saveSchema.parse(raw)
+  requestInput(z.uuid(), id)
+  const input = requestInput(saveSchema, raw)
   const scope = and(eq(poImports.id, id), eq(poImports.orgId, s.org.id))
   const [record] = await db().select().from(poImports).where(scope)
   if (!record) {

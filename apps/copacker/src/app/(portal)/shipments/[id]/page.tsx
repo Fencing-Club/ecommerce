@@ -31,7 +31,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { printableLabelTypes } from "@/lib/printable-labels"
-import { finishedStates, packedStates } from "@/server/readiness"
+import { finishedStates, packedStates } from "@/lib/shipment-states"
 import type { shipmentPage } from "@/server/shipment-page"
 
 export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof shipmentPage>> }) {

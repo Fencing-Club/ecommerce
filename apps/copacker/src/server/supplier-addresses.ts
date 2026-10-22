@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { requestInput } from "./errors"
 
 // Reads through the given database or transaction.
 type Reader = Pick<ReturnType<typeof db>, "select">
@@ -71,14 +72,15 @@ async function waitingSupplier(buyerOrgId: string, id: string) {
 
 // Adds or edits a pickup address for a supplier that hasn't joined. Amazon needs its phone number to schedule pickup.
 export async function saveSupplierAddress(buyerOrgId: string, raw: unknown) {
-  const input = z
-    .object({
+  const input = requestInput(
+    z.object({
       supplierId: z.uuid(),
       id: z.uuid().optional(),
       name: z.string().trim().min(1).max(100),
       address: originSchema
-    })
-    .parse(raw)
+    }),
+    raw
+  )
   const supplier = await waitingSupplier(buyerOrgId, input.supplierId)
   const values = { name: input.name, address: input.address }
   if (input.id) {
@@ -100,7 +102,7 @@ export async function saveSupplierAddress(buyerOrgId: string, raw: unknown) {
 }
 
 export async function removeSupplierAddress(buyerOrgId: string, raw: unknown) {
-  const input = z.object({ supplierId: z.uuid(), id: z.uuid() }).parse(raw)
+  const input = requestInput(z.object({ supplierId: z.uuid(), id: z.uuid() }), raw)
   const supplier = await waitingSupplier(buyerOrgId, input.supplierId)
   const removed = await db()
     .delete(contacts)

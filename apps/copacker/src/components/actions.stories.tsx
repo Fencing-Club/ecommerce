@@ -15,7 +15,7 @@ const meta = preview.meta({
   title: "Components/Forms/Actions",
   component: ActionButton,
   args: {
-    action: "shipment.ship",
+    action: "shipment.ship" as const,
     data: { id: "shipment-1" },
     children: "Mark shipped"
   }
@@ -90,11 +90,11 @@ export const WaitsForRefresh = meta.story({
 
 const supplierSchema = z.object({ name: z.string().trim().min(1) })
 
-// A form as pages build them with useActionForm: a supplier's name, saved with supplier.rename.
+// A form as pages build them with useActionForm: a supplier's name, saved with supplier.update.
 function SupplierForm({ dialog = false, onSuccess }: { dialog?: boolean; onSuccess?: () => void }) {
   const { form, submit } = useActionForm({
     schema: supplierSchema,
-    action: "supplier.rename",
+    action: "supplier.update",
     defaultValues: { name: "Lotus Manufacturing" },
     toPayload: (values) => ({ id: "supplier-lotus", name: values.name }),
     keepSaved: true,
@@ -131,7 +131,7 @@ export const Form = meta.story({
     await userEvent.click(save)
     await waitFor(() =>
       expect(posted).toEqual([
-        { action: "supplier.rename", data: { id: "supplier-lotus", name: "Lotus Manufacturing Co." } }
+        { action: "supplier.update", data: { id: "supplier-lotus", name: "Lotus Manufacturing Co." } }
       ])
     )
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
