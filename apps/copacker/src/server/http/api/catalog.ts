@@ -12,20 +12,17 @@ export async function GET(request: Request) {
   requireBuyer(s)
   // Purchase orders' product picker reads it.
   requirePage(s, "orders", "edit")
-  const params = new URL(request.url).searchParams
-  const query = params.get("q")?.slice(0, 200) ?? ""
-  // Variations chosen in the add-products dialog come by ID; a search comes by text.
-  const ids = (params.get("ids") ?? "")
+  // The variations chosen in the add-products dialog, by ID.
+  const ids = (new URL(request.url).searchParams.get("ids") ?? "")
     .split(",")
     .filter((id) => variantIdSchema.safeParse(id).success)
     .slice(0, 250)
+  if (!ids.length) {
+    return Response.json([])
+  }
   const defaultsFor = await lineDefaultsFor(s.org.id)
   const shopify = await shopifyFor(s.org.id)
-  const found = await withVariantFields(
-    s.org.id,
-    shopify.domain,
-    ids.length ? await shopify.variants(ids) : await shopify.search(query)
-  )
+  const found = await withVariantFields(s.org.id, shopify.domain, await shopify.variants(ids))
   const variants = found
     .flatMap((item) => (item ? [item] : []))
     .map((item) => ({

@@ -22,6 +22,10 @@ them, and `orderInputSchema` keeps a PO's lines to one group of receivers.
 The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
 (`orderCurrencies`) and a PO line's field limits (`itemSchema.shape`).
 
+An address has one format everywhere: `addressLines(address)` gives its lines as a document prints them ("1000 Siji
+Road", "Building 3", "Yiwu, Zhejiang 322000", "CN"), and `addressLine(address)` joins them on one line for lists and
+summaries. Both leave out what isn't known.
+
 `orderLine(variant, id, defaults, currency, destination)` is a new PO line for a Shopify variant: its Shopify unit cost
 per piece, and the product's saved defaults (`LineDefaults`) for its instructions, prep category, suffocation warning,
 SKU label and Amazon network, which `receiverFor` in `@repo/copacker-packing-rules` turns into the line's receiver.

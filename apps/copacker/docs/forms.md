@@ -15,7 +15,9 @@ layout, a field's label and error, or a dialog's open state by hand.
   `useFormState`, so the button follows edits however its parent is memoized. A submit never reaches a form further
   up React's tree, such as the packing form a pickup address dialog opens from.
 - **`FormServerError`** (`components/form-feedback.tsx`): the surrounding form's `root.server` error. `ActionForm`
-  shows it; a form laid out another way, such as the order builder, places it itself.
+  shows it; a form laid out another way, such as the order builder, places it itself. `FormError` shows any one
+  message the same way; its `id` lets a field name it in `aria-describedby`, and `className` fits it into a box, as
+  the PO timeline's comment box does.
 - **`FormDialog`** (`components/form-dialog.tsx`): a form in a dialog, from a `trigger` or through `open` and
   `onOpenChange`. Its form mounts inside the open dialog, so every opening starts from its default values with no old
   typing or error, and it closes once the result shows. `size` is `default`, `md` or `lg`; a tall form scrolls.
@@ -24,14 +26,16 @@ layout, a field's label and error, or a dialog's open state by hand.
   control, whose `aria-describedby` lists its description and error by ids that are on the page. `fieldControl`
   gives the same props to a field outside React Hook Form, such as `SelectField`. `FormInput`, `FormNumber`,
   `FormMoney`, `FormTextarea`, `FormCheckbox`, `FormSelect`, the address fields and the auth fields are built on them.
+  `FormMoney` is `MoneyInput` in a field: it stores minor units, reads amounts in the page's language and stores `NaN`
+  for text that isn't an amount, so the schema's number check shows "Enter a number".
 - **`keepEnterFromSubmitting`** (`components/action-form.tsx`): for a form only its button should submit, such as one
   that creates a purchase order.
 
 ## Addresses
 
-- **`addressLine` and `addressLines`** (`src/lib/address.ts`): the one address format, "1000 Siji Road, Building 3,
-  Yiwu, Zhejiang 322000, CN" on a line, or as a document's lines. Lists, summaries, the packet and purchase order PDFs
-  use it. `@repo/copacker-shipments` keeps its own copy for the packet snapshot, since a package can't import the app.
+- **`addressLine` and `addressLines`** (`@repo/copacker-orders`): the one address format, "1000 Siji Road, Building 3,
+  Yiwu, Zhejiang 322000, CN" on a line, or as a document's lines. Lists, summaries, the packet snapshot and the
+  purchase order PDFs all use it.
 - **`AddressFields`** (`components/address-fields.tsx`): an address's fields at a path in the form.
 - **`AddressDialog`** (`components/partner-address.tsx`): the one form for a named address, used for the workspace's
   saved addresses and a partner's. A pickup's phone is required.

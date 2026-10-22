@@ -4,6 +4,9 @@ import { Search } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
+import { SearchField } from "@/components/list/search-field"
+import { NoValue } from "@/components/no-value"
+import { ProductThumb } from "@/components/product-thumb"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -16,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { type CatalogProduct, type ListedVariant, useInventoryProductsQuery, useLazyCatalogQuery } from "@/lib/api"
 
@@ -129,17 +131,7 @@ export function AddProductsDialog({
           <DialogTitle>{title ?? t("title")}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <InputGroup>
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupInput
-            aria-label={t("search")}
-            placeholder={t("search")}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </InputGroup>
+        <SearchField label={t("search")} value={query} onChange={setQuery} />
         <div className="-mx-4 min-h-64 flex-1 overflow-y-auto border-t">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-muted text-xs text-muted-foreground">
@@ -172,15 +164,7 @@ export function AddProductsDialog({
                           }
                           aria-labelledby={titleId}
                         />
-                        {product.imageUrl ? (
-                          <img
-                            src={product.imageUrl}
-                            alt=""
-                            className="hidden size-9 rounded border object-contain sm:block"
-                          />
-                        ) : (
-                          <span className="hidden size-9 rounded border bg-muted sm:block" />
-                        )}
+                        <ProductThumb url={product.imageUrl} className="hidden size-9 sm:flex" />
                         <span id={titleId} className="font-medium">
                           {product.title}
                         </span>
@@ -244,8 +228,8 @@ export function AddProductsDialog({
 function Stock({ variant, at }: { variant: { available: number | null }; at: number | null }) {
   return (
     <>
-      <td className="px-4 py-1.5 text-end tabular-nums">{at ?? "—"}</td>
-      <td className="px-4 py-1.5 text-end tabular-nums">{variant.available ?? "—"}</td>
+      <td className="px-4 py-1.5 text-end tabular-nums">{at ?? <NoValue />}</td>
+      <td className="px-4 py-1.5 text-end tabular-nums">{variant.available ?? <NoValue />}</td>
     </>
   )
 }

@@ -33,7 +33,7 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
           <span className="flex flex-col gap-5">
             <span
               aria-hidden
-              className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
+              className="flex size-12 items-center justify-center rounded-xl bg-primary-soft text-primary"
             >
               <MailCheck className="size-6" />
             </span>

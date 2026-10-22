@@ -1,7 +1,7 @@
 import { Ellipsis } from "lucide-react"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Spinner } from "./ui/spinner"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Spinner } from "@/components/ui/spinner"
 
 // A list row's actions behind its ⋯ button, such as Edit and Remove. While one of them runs, a spinner takes the
 // button's place.

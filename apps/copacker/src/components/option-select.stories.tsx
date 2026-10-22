@@ -16,18 +16,18 @@ const sorts: SelectOption<Sort>[] = [
 const meta = preview.meta({
   title: "Components/Forms/Option select",
   component: OptionSelect,
-  args: { options: sorts, value: "urgency", onChange: fn(), label: "Sort by" }
+  args: { options: sorts, value: "urgency", onValueChange: fn(), label: "Sort by" }
 })
 
-function Controlled({ onChange, ...props }: React.ComponentProps<typeof OptionSelect>) {
+function Controlled({ onValueChange, ...props }: React.ComponentProps<typeof OptionSelect>) {
   const [value, setValue] = useState(props.value)
   return (
     <OptionSelect
       {...props}
       value={value}
-      onChange={(next) => {
+      onValueChange={(next) => {
         setValue(next)
-        onChange(next)
+        onValueChange(next)
       }}
     />
   )
@@ -41,7 +41,7 @@ export const Choose = meta.story({
     await expect(select).toHaveTextContent("Most urgent")
     await userEvent.click(select)
     await userEvent.click(await screen.findByRole("option", { name: "Product name" }))
-    await expect(args.onChange).toHaveBeenCalledWith("name")
+    await expect(args.onValueChange).toHaveBeenCalledWith("name")
     await waitFor(() => expect(select).toHaveTextContent("Product name"))
   }
 })

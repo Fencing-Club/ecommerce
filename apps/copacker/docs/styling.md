@@ -114,8 +114,11 @@ One component per concept, from the redesign's kit ([consistency](specs/app-rede
 Tables use the shadcn `Table`, which frames itself with a rounded border and a muted header band, like shadcn's data
 table. A table that sits inside a card runs edge to edge instead: `<Table framed={false} inset>` in a `<Card flush>`,
 under its `CardHeader`. Never put a framed table inside a card. Numbers are right-aligned with `tabular-nums`, and a
-value that doesn't apply is `—`. A row that opens a record is clickable as a whole (`LinkRow`, or a link stretched over
-the row) while its own link stays for keyboard and screen readers. Per-row actions live in a trailing ⋯ menu. Columns
+value that doesn't apply is `NoValue` (`components/no-value.tsx`): a muted `—` that screen readers hear as "None", or
+as its `reason`. A row that opens a record is clickable as a whole through `LinkRow` (`components/link-row.tsx`), given
+an `href` for a page or `onOpen` for a sheet or dialog, while its own link or button stays for keyboard and screen
+readers. A product's photo is `ProductThumb` (`components/product-thumb.tsx`), 40px unless a `size-*` class says
+otherwise, with an icon when there's no photo. Per-row actions live in a trailing ⋯ menu. Columns
 that only matter on a wide screen hide with container queries (`hidden @4xl:table-cell` inside an `@container`), and on
 a phone a table can stack each row (`@max-md:block` on the table and body, `@max-md:flex` on rows) instead of scrolling
 sideways. See Restock and Orders.

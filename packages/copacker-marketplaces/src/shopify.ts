@@ -274,13 +274,6 @@ export class Shopify {
     }
     throw new Error("Shopify request exhausted throttle retries")
   }
-  async search(query: string) {
-    return z.object({ productVariants: z.object({ nodes: z.array(variant) }) }).parse(
-      await this.graphql(`query Catalog($query:String!){productVariants(first:30,query:$query){nodes{${fields}}}}`, {
-        query
-      })
-    ).productVariants.nodes
-  }
   async catalogPage(after: string | null = null) {
     return z
       .object({

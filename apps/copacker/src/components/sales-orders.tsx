@@ -7,6 +7,7 @@ import { useCan, useIsAdmin } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
@@ -245,14 +246,6 @@ function SalesSyncCard({ source, financial = false }: { source: Store; financial
   )
 }
 
-function Placeholder({ title, children = "—" }: { title?: string; children?: React.ReactNode }) {
-  return (
-    <span title={title} className="whitespace-nowrap text-muted-foreground">
-      {children}
-    </span>
-  )
-}
-
 // Money on an order. Amazon prices an order once it's paid and posts its fees after it ships, so until then an open
 // Amazon order's amount is pending; anything else unknown, such as a cancelled order's, is "—".
 function Amount({
@@ -270,15 +263,19 @@ function Amount({
     return format.number(value.minor / 100, { style: "currency", currency: value.currency })
   }
   if (order.source === "amazon" && !closedStatuses.has(order.status)) {
-    return <Placeholder title={pending}>{t("pending")}</Placeholder>
+    return (
+      <span title={pending} className="whitespace-nowrap text-muted-foreground">
+        {t("pending")}
+      </span>
+    )
   }
-  return <Placeholder />
+  return <NoValue />
 }
 
 function Items({ items }: { items: SalesOrderSummary["items"] }) {
   const t = useTranslations("sales.list")
   if (items.length === 0) {
-    return <Placeholder />
+    return <NoValue />
   }
   const shown = items.slice(0, 3)
   return (
@@ -355,7 +352,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
         <>
           <TableCell className="pe-4 text-end align-top tabular-nums @2xl:pe-2 @max-md:p-0 @max-md:text-start">
             {closedStatuses.has(order.status) ? (
-              <Placeholder />
+              <NoValue />
             ) : (
               <Amount order={order} value={order.sales} pending={t("salesPending")} />
             )}
@@ -480,7 +477,7 @@ function OrderList({
           <OptionSelect
             options={sourceItems}
             value={source}
-            onChange={(value) => {
+            onValueChange={(value) => {
               setSource(value)
               setPage(1)
             }}

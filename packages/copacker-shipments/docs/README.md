@@ -38,8 +38,8 @@ tests check it rather than drawing a document, and the app's tests stub `purchas
 ## Shared values
 
 The app reads these from the package rather than restating them: each Amazon network's name (`amazonNetworkNames`),
-the schemas' field limits (`cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`) and an address
-as documents print it (`addressLines` in `/documents`). The PO's own values are in
+and the schemas' field limits (`cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`). The PO's
+own values, and the address format documents print (`addressLines`), are in
 [`@repo/copacker-orders`](../../copacker-orders/docs/README.md#shared-values).
 
 See [Copacker's product rules](../../../apps/copacker/docs/domain.md) for the purchasing workflow.

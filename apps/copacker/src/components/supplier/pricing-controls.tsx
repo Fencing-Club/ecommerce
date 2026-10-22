@@ -43,12 +43,12 @@ export function useRulesSummary() {
 
 type Draft = { increment: string; minimum: string; maximum: string; breaks: Array<{ minimum: string; price: string }> }
 
-function draftOf(breaks: PriceBreak[], rules: QuantityRules): Draft {
+function draftOf(breaks: PriceBreak[], rules: QuantityRules, locale: string): Draft {
   return {
     increment: String(rules.increment),
     minimum: String(rules.minimum),
     maximum: rules.maximum === null ? "" : String(rules.maximum),
-    breaks: breaks.map((row) => ({ minimum: String(row.minimum), price: moneyText(row.priceMinor) }))
+    breaks: breaks.map((row) => ({ minimum: String(row.minimum), price: moneyText(row.priceMinor, locale) }))
   }
 }
 
@@ -84,25 +84,25 @@ export function PricingRulesDialog({
   // What the product sets, when these are a catalog's own: saving null goes back to them.
   inherited?: { priceBreaks: PriceBreak[]; quantityRules: QuantityRules }
 }) {
-  const [draft, setDraft] = useState(() => draftOf(priceBreaks, quantityRules))
+  const locale = useLocale()
+  const [draft, setDraft] = useState(() => draftOf(priceBreaks, quantityRules, locale))
   const [wasOpen, setWasOpen] = useState(open)
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) {
-      setDraft(draftOf(priceBreaks, quantityRules))
+      setDraft(draftOf(priceBreaks, quantityRules, locale))
     }
   }
   const t = useTranslations("supplier.pricingControls")
   const shared = useTranslations("supplier.shared")
   const pricing = useTranslations("supplier.pricing")
-  const locale = useLocale()
   const money = useMoney()
   const rules = {
     increment: whole(draft.increment),
     minimum: whole(draft.minimum),
     maximum: draft.maximum.trim() ? whole(draft.maximum) : null
   }
-  const breaks = draft.breaks.map((row) => ({ minimum: whole(row.minimum), priceMinor: parseMoney(row.price) }))
+  const breaks = draft.breaks.map((row) => ({ minimum: whole(row.minimum), priceMinor: parseMoney(row.price, locale) }))
   let problem: string | null = null
   if (!rules.increment || !rules.minimum || rules.maximum === undefined) {
     problem = t("wholeQuantities")

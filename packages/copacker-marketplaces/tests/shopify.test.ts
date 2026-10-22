@@ -636,34 +636,32 @@ describe("bundle supplier components", () => {
     const transport = vi.fn<typeof fetch>(async () =>
       Response.json({
         data: {
-          productVariants: {
-            nodes: [
-              {
-                id: "gid://shopify/ProductVariant/10",
-                title: "Two pack",
-                sku: "BUNDLE",
-                product: { id: "gid://shopify/Product/10", title: "Cord bundle" },
-                inventoryItem: { id: "gid://shopify/InventoryItem/10", unitCost: null },
-                requiresComponents: true,
-                productVariantComponents: {
-                  nodes: [
-                    {
-                      quantity: 2,
-                      productVariant: {
-                        id: "gid://shopify/ProductVariant/1",
-                        sku: "CORD"
-                      }
+          nodes: [
+            {
+              id: "gid://shopify/ProductVariant/10",
+              title: "Two pack",
+              sku: "BUNDLE",
+              product: { id: "gid://shopify/Product/10", title: "Cord bundle" },
+              inventoryItem: { id: "gid://shopify/InventoryItem/10", unitCost: null },
+              requiresComponents: true,
+              productVariantComponents: {
+                nodes: [
+                  {
+                    quantity: 2,
+                    productVariant: {
+                      id: "gid://shopify/ProductVariant/1",
+                      sku: "CORD"
                     }
-                  ],
-                  pageInfo: { hasNextPage: false }
-                }
+                  }
+                ],
+                pageInfo: { hasNextPage: false }
               }
-            ]
-          }
+            }
+          ]
         }
       })
     )
-    const [bundle] = await new Shopify(domain, "test", transport).search("BUNDLE")
+    const [bundle] = await new Shopify(domain, "test", transport).variants(["gid://shopify/ProductVariant/10"])
     // Until Copacker adds the components' supplier SKUs, a bundle can't be ordered.
     expect(() => bundleSupplierComponents(bundle!)).toThrow("supplier SKUs")
     const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }

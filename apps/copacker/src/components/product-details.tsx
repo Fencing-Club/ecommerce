@@ -3,13 +3,14 @@ import type { PrepCategory } from "@repo/copacker-orders"
 import { prepCategories } from "@repo/copacker-orders"
 import { amazonNetworks } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
-import { ImageOff, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormServerError, SubmitButton } from "@/components/form-feedback"
+import { ProductThumb } from "@/components/product-thumb"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -27,7 +28,6 @@ import { api, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
 import { prepOptions } from "@/lib/prep"
 import { productLabels } from "@/lib/product-label"
-import { cn } from "@/lib/utils"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormCheckbox, FormInput, FormNumber, FormTextarea } from "./form-controls"
 import { FormSelect } from "./form-select"
@@ -83,34 +83,6 @@ export type EditableProduct = {
   imageUrl: string | null
   defaults: ProductDefaults
   variants: (BarcodeVariation & VariationFields & { sku: string | null })[]
-}
-
-// A product's Shopify photo, or a placeholder. Shopify's CDN already serves a thumbnail.
-export function ProductImage({ url, small = false }: { url: string | null; small?: boolean }) {
-  const size = small ? "size-8" : "size-10"
-  if (!url) {
-    return (
-      <span
-        aria-hidden="true"
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground [&_svg]:size-4",
-          size
-        )}
-      >
-        <ImageOff />
-      </span>
-    )
-  }
-  const pixels = small ? 32 : 40
-  return (
-    <img
-      src={url}
-      alt=""
-      width={pixels}
-      height={pixels}
-      className={cn("shrink-0 rounded-md border bg-muted object-cover", size)}
-    />
-  )
 }
 
 function formValues({ defaults, variants }: EditableProduct): Values {
@@ -310,7 +282,7 @@ function DetailsForm({
     <FormProvider {...form}>
       <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
         <SheetHeader className="flex-row items-center gap-3 border-b pe-12">
-          <ProductImage url={product.imageUrl} />
+          <ProductThumb url={product.imageUrl} />
           <div className="flex min-w-0 flex-col gap-0.5">
             <SheetTitle className="line-clamp-2">{title}</SheetTitle>
             <SheetDescription className="text-xs">

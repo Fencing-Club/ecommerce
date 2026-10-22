@@ -43,7 +43,7 @@ export const AddProducts = meta.story({
       within(napkinRow)
         .getAllByRole("cell")
         .map((cell) => cell.textContent)
-    ).toEqual(["Linen napkin set", "0", "—"])
+    ).toEqual(["Linen napkin set", "0", "—None"])
 
     const add = dialog.getByRole("button", { name: "Add to purchase order" })
     await expect(add).toBeDisabled()
@@ -66,7 +66,7 @@ export const Search = meta.story({
   play: async ({ canvas }) => {
     const dialog = await open(canvas)
     await dialog.findByText("Waffle towel")
-    await userEvent.type(dialog.getByRole("textbox", { name: "Search products" }), "napkin")
+    await userEvent.type(dialog.getByRole("searchbox", { name: "Search products" }), "napkin")
     await waitFor(() => expect(dialog.queryByText("Waffle towel")).toBeNull())
     await expect(dialog.getByText("Linen napkin set")).toBeVisible()
     await expect(requests).toHaveBeenLastCalledWith(
@@ -112,7 +112,7 @@ export const NoLocation = meta.story({
       within(slate)
         .getAllByRole("cell")
         .map((cell) => cell.textContent)
-    ).toEqual(["Slate", "—", "15"])
+    ).toEqual(["Slate", "—None", "15"])
   }
 })
 

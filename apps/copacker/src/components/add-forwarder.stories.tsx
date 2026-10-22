@@ -2,9 +2,9 @@ import { useState } from "react"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { Button } from "@/components/ui/button"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { AddForwarder } from "./add-forwarder"
-import { Button } from "./ui/button"
 
 const sent: ActionRequest[] = []
 

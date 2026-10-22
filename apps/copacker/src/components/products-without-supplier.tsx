@@ -3,8 +3,9 @@ import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { IssuePanel } from "@/components/inventory-products"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { ProductImage } from "@/components/product-details"
+import { ProductThumb } from "@/components/product-thumb"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -66,7 +67,7 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
             <OptionSelect
               options={options}
               value={supplierId}
-              onChange={setSupplierId}
+              onValueChange={setSupplierId}
               placeholder={t("chooseSupplier")}
               label={t("supplierLabel")}
               size="sm"
@@ -143,23 +144,15 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
               </TableCell>
               <TableCell className="whitespace-normal">
                 <span className="flex items-center gap-3">
-                  <ProductImage url={product.imageUrl} small />
+                  <ProductThumb url={product.imageUrl} className="size-8" />
                   <span className="font-medium [overflow-wrap:anywhere]">{product.title}</span>
                 </span>
               </TableCell>
               <TableCell className="pe-4 text-xs whitespace-normal text-muted-foreground">
-                {product.skus.length ? (
-                  <>
-                    {product.skus.length > 3
-                      ? t("moreSkus", { skus: product.skus.slice(0, 3).join(", "), count: product.skus.length - 3 })
-                      : product.skus.join(", ")}
-                  </>
-                ) : (
-                  <>
-                    <span aria-hidden="true">—</span>
-                    <span className="sr-only">{t("noSkus")}</span>
-                  </>
-                )}
+                {product.skus.length === 0 && <NoValue reason={t("noSkus")} />}
+                {product.skus.length > 3
+                  ? t("moreSkus", { skus: product.skus.slice(0, 3).join(", "), count: product.skus.length - 3 })
+                  : product.skus.join(", ")}
               </TableCell>
             </TableRow>
           ))}

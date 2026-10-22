@@ -1,7 +1,6 @@
 import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { orderCurrencies } from "@repo/copacker-orders"
 import { z } from "zod"
-import { LocalizedError } from "@/i18n/errors"
 
 const money = z
   .string()
@@ -83,16 +82,4 @@ export function validateProposal(raw: unknown, knownVariants: ReadonlySet<string
     }
   }
   return proposal
-}
-
-export function priceInMinorUnits(value: string) {
-  if (!/^\d{1,10}(\.\d{1,2})?$/.test(value)) {
-    throw new LocalizedError("enterPrice")
-  }
-  const [whole, fraction = ""] = value.split(".")
-  const result = Number(whole) * 100 + Number(fraction.padEnd(2, "0"))
-  if (!Number.isSafeInteger(result) || result > 100000000) {
-    throw new LocalizedError("priceTooHigh")
-  }
-  return result
 }

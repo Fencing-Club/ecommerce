@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { MoneyInput, moneyText, parseMoney } from "./money-input"
+import { MoneyInput } from "./money-input"
 
 // A price field beside the amount it reports, as the pages that use it keep it.
 function PriceField({ currency }: { currency: string }) {
@@ -63,17 +63,37 @@ export const NotAnAmount = meta.story({
   }
 })
 
-// The symbol is the reader's own for the currency, such as $ for dollars in English.
+// The symbol is the reader's own for the currency, such as $ for dollars in English, and describes the field.
 export const Dollars = meta.story({
   args: { currency: "USD" },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("$")).toBeVisible()
-    await expect([parseMoney(""), parseMoney("78.5"), parseMoney("1,250"), parseMoney("abc")]).toEqual([
-      null,
-      7850,
-      125000,
-      undefined
-    ])
-    await expect([moneyText(null), moneyText(7850)]).toEqual(["", "78.50"])
+    await expect(canvas.getByRole("textbox", { name: "Unit price" })).toHaveAccessibleDescription("$")
+  }
+})
+
+// In German a comma is the decimal mark and a dot groups thousands, so 12,50 is twelve and a half, not 1250.
+export const DecimalComma = meta.story({
+  globals: { locale: "de" },
+  play: async ({ canvas }) => {
+    const field = canvas.getByRole("textbox", { name: "Unit price" })
+    const amount = canvas.getByRole("status", { name: "Amount" })
+    await expect(field).toHaveValue("4,25")
+    await userEvent.clear(field)
+    await userEvent.type(field, "12,50")
+    await expect(amount).toHaveTextContent("1250")
+    await userEvent.tab()
+    await expect(field).toHaveValue("12,50")
+    await userEvent.clear(field)
+    await userEvent.type(field, "1.234,5")
+    await expect(amount).toHaveTextContent("123450")
+    await userEvent.tab()
+    await expect(field).toHaveValue("1234,50")
+    // A dot that can't be grouping, such as a decimal mark typed by habit, is marked rather than read as hundreds: the
+    // last amount reported is the 12 typed before it.
+    await userEvent.clear(field)
+    await userEvent.type(field, "12.50")
+    await expect(field).toHaveAttribute("aria-invalid", "true")
+    await expect(amount).toHaveTextContent("1200")
   }
 })

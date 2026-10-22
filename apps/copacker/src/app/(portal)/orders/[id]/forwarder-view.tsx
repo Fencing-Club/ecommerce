@@ -12,10 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { forwarderPage } from "@/server/forwarder-page"
 
-// The products table runs edge to edge in its card, its first and last columns in line with the route above it and
-// with the other cards' content.
-const edgeTable = "[&_td:first-child]:ps-3 [&_td:last-child]:pe-3 [&_th:first-child]:ps-3 [&_th:last-child]:pe-3"
-
 // What a freight forwarder sees of a PO whose goods pass through it: the route, with the address to ship on to when
 // that's the buyer's own location, what's coming and in how many cartons, and the shipping documents. No prices; the
 // commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
@@ -34,7 +30,9 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
       />
 
       <div className="flex max-w-4xl flex-col gap-4">
-        <Card flush>
+        {/* A small card, so the products table's first and last columns line up with the route above it and with the
+            other cards' content. */}
+        <Card flush size="sm">
           <RouteStops
             className="border-b"
             supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
@@ -52,7 +50,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
             }
           />
           {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
-          <Table framed={false} className={edgeTable}>
+          <Table framed={false} inset>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("detail.columns.products")}</TableHead>
@@ -80,14 +78,14 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
           </Table>
         </Card>
 
-        <Card size="sm" className="gap-0 pb-0">
-          <CardHeader className="pb-3">
+        <Card flush size="sm">
+          <CardHeader>
             <CardTitle>{t("detail.shipments")}</CardTitle>
           </CardHeader>
           {shipmentRows.length ? (
-            <ul>
+            <ul className="divide-y">
               {shipmentRows.map((shipment, index) => (
-                <li key={shipment.id} className="flex items-center gap-3 border-t px-3 py-2.5">
+                <li key={shipment.id} className="flex items-center gap-3 px-3 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-medium">
                       {shipment.amazonNetwork
@@ -110,7 +108,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
               ))}
             </ul>
           ) : (
-            <p className="px-3 pb-3 text-muted-foreground">{t("detail.noShipmentsYet")}</p>
+            <p className="p-3 text-muted-foreground">{t("detail.noShipmentsYet")}</p>
           )}
         </Card>
 

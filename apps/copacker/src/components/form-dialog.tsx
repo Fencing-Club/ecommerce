@@ -1,9 +1,9 @@
 import { useUncontrolled } from "@mantine/hooks"
 import { useState } from "react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { type ActionFormOptions, type FormSchema, useActionForm } from "@/hooks/use-action-form"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./action-form"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 
 // The dialog's width from small screens up: the kit's default, a little wider, or wide enough for an address in two
 // columns.

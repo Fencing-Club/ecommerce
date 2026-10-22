@@ -116,7 +116,7 @@ function VariantForm({
                 id="variant-currency"
                 options={orderCurrencies.map((value) => ({ value, label: value }))}
                 value={draft.currency}
-                onChange={(currency) => change({ currency })}
+                onValueChange={(currency) => change({ currency })}
                 className="w-full"
               />
             </Field>
@@ -126,7 +126,7 @@ function VariantForm({
                 id="variant-basis"
                 options={priceBases.map((value) => ({ value, label: t(`basis.${value}`) }))}
                 value={draft.priceBasis}
-                onChange={(priceBasis) => change({ priceBasis })}
+                onValueChange={(priceBasis) => change({ priceBasis })}
                 className="w-full"
               />
             </Field>

@@ -17,14 +17,7 @@ export function DisconnectButton({ provider, account }: { provider: Store; accou
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <AlertDialogTrigger
-          render={
-            <Button
-              variant="ghost"
-              className="h-11 text-muted-foreground sm:h-[34px] hover:bg-destructive/10 hover:text-destructive aria-expanded:bg-destructive/10 aria-expanded:text-destructive dark:hover:bg-destructive/20"
-            />
-          }
-        >
+        <AlertDialogTrigger render={<Button variant="ghost-destructive" size="responsive" />}>
           <Unplug className="size-4" aria-hidden />
           {t("disconnect")}
         </AlertDialogTrigger>
