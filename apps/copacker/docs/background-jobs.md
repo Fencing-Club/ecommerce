@@ -59,8 +59,10 @@ active handlers heartbeat every 30 seconds. Workflow IDs combine job ID and clai
 that reset the retry counter still create distinct instances. An ambiguous Workflow create keeps its SQL lease until
 recovery rather than dispatching a concurrent attempt. The initial Workflow read rejects stale claim timestamps.
 
-Each delivery acknowledges only after processing and publishing its next wake. Queue failures retry five times, then
-enter the executor DLQ. Monitor `job_failed`, `job_signal_failed`, Workflow errors and executor/AWS DLQs. Native delivery
+`consumeJobSignals` in `src/server/cloudflare-jobs.ts` is the executor queue's handler; `src/server.ts` only supplies
+its bindings. `wakeSignal(queue, delaySeconds)` publishes a wake on a native queue binding, and `wakeForNextJob` publishes
+one for the next due job. Each delivery acknowledges only after processing and publishing its next wake. Queue failures
+retry five times, then enter the executor DLQ. Monitor `job_failed`, `job_signal_failed`, Workflow errors and executor/AWS DLQs. Native delivery
 has a five-second minimum retry wake to avoid busy polling when all SQL slots are occupied.
 
 ## Notification readers
@@ -68,7 +70,22 @@ has a five-second minimum retry wake to avoid busy polling when all SQL slots ar
 The scheduler publishes one read signal per provider each minute. Each handler reads at most ten SQS messages without
 long polling; it deletes each message only after its application handler succeeds. A message that fails stays in its
 queue for another try (and its dead-letter queue after five), the rest of the batch is still handled, and then the read
-fails. A full batch schedules another read one second later. AWS clients receive explicit region and credentials because the Workers browser bundle has no Node
+fails. A full batch schedules another read one second later.
+
+Shopify (`shopify-webhooks.ts`), eBay (`ebay-events.ts`) and Amazon (`amazon-notifications.ts`) share their steps
+through `src/server/provider-events.ts`:
+
+- `readMessage` parses a message with the provider's schema, and logs and drops one that isn't its event. Shopify's
+  privacy webhooks are the exception: one it can't read throws, so it stays in the queue and reaches the DLQ.
+- `queueEventJobs` queues the event job for every workspace connected to the account. Events are gathered into
+  five-minute periods, keyed `<kind>:<orgId>[:<target>]:<period>`, and run three minutes after the period ends. A
+  Shopify uninstall runs right away.
+- `eventWorkspace` is the job's workspace while it's still connected to that account, and `startEventSync` starts the
+  sync, or runs the job again once a sync that's already running finishes.
+- `queueSubscription` queues the daily and on-connect subscription job, and `subscribeTopics` subscribes each topic,
+  naming the topic a provider refused.
+
+AWS clients receive explicit region and credentials because the Workers browser bundle has no Node
 credential-provider chain. Configure `AWS_REGION`, `AWS_NOTIFICATION_ACCESS_KEY_ID`, `AWS_NOTIFICATION_SECRET_ACCESS_KEY` and optional `AWS_NOTIFICATION_SESSION_TOKEN`,
 plus each enabled provider's `AMAZON_NOTIFICATIONS_QUEUE_URL`, `SHOPIFY_EVENTS_QUEUE_URL` or `EBAY_EVENTS_QUEUE_URL`.
 Notification credentials are separate from the web EventBridge publisher credentials, preserving the existing IAM boundaries.

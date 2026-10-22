@@ -105,6 +105,9 @@ describe("Amazon notifications from the queue", () => {
     expect(await receiveAmazonNotification(orderChange(), now + 60000)).toBe(2)
     const jobs = await queued("amazon-event")
     expect(jobs).toHaveLength(2)
+    expect(jobs.map((job) => job.key).toSorted()).toEqual(
+      [buyerId, otherBuyerId].map((orgId) => `amazon-event:${orgId}:sales:${Math.floor(now / 300000)}`).toSorted()
+    )
     expect(jobs[0]).toMatchObject({ payload: { sellerId, target: "sales" }, runAt: new Date("2026-09-25T12:08:00Z") })
     await receiveAmazonNotification(inventoryChange, now)
     expect((await queued("amazon-event")).filter((job) => job.payload.target === "stock")).toHaveLength(2)

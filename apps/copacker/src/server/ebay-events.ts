@@ -3,25 +3,29 @@ import { Ebay, ebaySignatureHeader, verifyEbaySignature } from "@repo/copacker-m
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
-import { withJobWake } from "@/server/job-delivery"
+import { connections, salesOrders, salesSyncs } from "@/db/schema"
 import { ebayApp, ebayFor } from "./connections"
 import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
-import { jobRow, type JobInput } from "./job-payloads"
-import { PollAgain, type JobContext } from "./job-runtime"
+import type { JobInput } from "./job-payloads"
+import type { JobContext } from "./job-runtime"
 import { logEvent } from "./log"
+import { connectedAccount } from "./provider-accounts"
+import {
+  eventWorkspace,
+  queueEventJobs,
+  queueSubscription,
+  readMessage,
+  startEventSync,
+  subscribeTopics
+} from "./provider-events"
 import { rateLimit } from "./rate-limit"
-import { requestSalesSync, SalesSyncError } from "./sales-orders"
+import { requestSalesSync } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue } from "./sqs"
 
 // The order topics each seller is subscribed to. A confirmed order starts the order sync, which also reads the last
 // 30 days again, so shipments and cancellations arrive with the next order or the daily reconciliation.
 export const ebayOrderTopics = ["ORDER_CONFIRMATION"] as const
-// Notifications are gathered into five-minute periods; each period starts one sync three minutes after it ends, when
-// the orders in it have settled (see syncChunks).
-const batchMs = 5 * 60000
-const settleMs = 3 * 60000
 // Events Copacker sends to EventBridge carry this source, which the rule forwarding them to the queue matches.
 export const ebayEventSource = "copacker.ebay"
 
@@ -165,7 +169,7 @@ async function sendToEventBridge(bus: string, notification: EbayNotification) {
   }
 }
 
-// Queues the work a notification calls for. Returns how many workspaces it reached.
+// Queues the work a notification calls for (see queueEventJobs). Returns how many workspaces it reached.
 export async function receiveEbayNotification(notification: EbayNotification, now = Date.now()) {
   const { topic } = notification.metadata
   const seller = sellerOf.safeParse(notification.notification.data)
@@ -179,30 +183,7 @@ export async function receiveEbayNotification(notification: EbayNotification, no
   if (!ebayOrderTopics.some((orderTopic) => orderTopic === topic)) {
     return 0
   }
-  const accounts = await db()
-    .select({ orgId: connections.orgId })
-    .from(connections)
-    .where(and(eq(connections.provider, "ebay"), eq(connections.externalId, seller.data)))
-  if (!accounts.length) {
-    return 0
-  }
-  const batch = Math.floor(now / batchMs)
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(
-        accounts.map(({ orgId }) =>
-          jobRow(
-            "ebay-event",
-            `ebay-event:${orgId}:${batch}`,
-            { orgId, userId: seller.data },
-            { runAt: new Date((batch + 1) * batchMs + settleMs) }
-          )
-        )
-      )
-      .onConflictDoNothing()
-  )
-  return accounts.length
+  return queueEventJobs("ebay-event", seller.data, { payload: (orgId) => ({ orgId, userId: seller.data }), at: now })
 }
 
 // An eBay member closed their account or asked eBay to delete their data. Copacker keeps no buyer details, so only a
@@ -221,39 +202,15 @@ async function eraseEbayAccount(userId: string) {
 
 // Worker job: starts the order sync a period's notifications call for.
 export async function ebayEventJob({ orgId, userId }: JobInput<"ebay-event">) {
-  const [account] = await db()
-    .select({ externalId: connections.externalId, kind: organizations.kind })
-    .from(connections)
-    .innerJoin(organizations, eq(organizations.id, connections.orgId))
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "ebay")))
-  // The workspace disconnected or switched accounts after the notification arrived.
-  if (!account || account.externalId !== userId) {
-    return
-  }
-  let started
-  try {
-    started = await requestSalesSync({ id: orgId, kind: account.kind }, "ebay")
-  } catch (error) {
-    if (error instanceof SalesSyncError) {
-      return
-    }
-    throw error
-  }
-  // A running sync started before these orders, so it may miss them; start another once it finishes.
-  if (started.status === "running") {
-    throw new PollAgain("Waiting for the running eBay sync to finish")
+  const org = await eventWorkspace(orgId, "ebay", userId)
+  if (org) {
+    await startEventSync(() => requestSalesSync(org, "ebay"), "Waiting for the running eBay sync to finish")
   }
 }
 
-// Queues subscribing the workspace's seller to Copacker's order notifications. Runs after connecting and daily, which
-// also turns back on subscriptions eBay disabled after failed deliveries.
+// Queues subscribing the workspace's seller to Copacker's order notifications (see queueSubscription).
 export async function queueEbaySubscription(orgId: string, key: string) {
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(jobRow("ebay-subscribe", `ebay-subscribe:${orgId}:${key}`, { orgId }))
-      .onConflictDoNothing()
-  )
+  await queueSubscription("ebay-subscribe", orgId, key)
 }
 
 // Worker job: makes sure the app's notification destination points at the webhook, then subscribes the seller to each
@@ -276,13 +233,10 @@ export async function ebaySubscribeJob(
     skipped = "no public endpoint"
   }
   if (skipped || !app || !verificationToken) {
-    console.warn(JSON.stringify({ event: "ebay_notifications_skipped", orgId, reason: skipped }))
+    logEvent("warn", "ebay_notifications_skipped", { orgId, reason: skipped })
     return
   }
-  const [account] = await db()
-    .select({ externalId: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "ebay")))
+  const account = await connectedAccount(orgId, "ebay")
   if (!account) {
     return
   }
@@ -294,24 +248,14 @@ export async function ebaySubscribeJob(
   }
   const seller = await ebayFor(orgId, account.externalId)
   const subscriptions = await seller.subscriptions()
-  for (const topic of ebayOrderTopics) {
-    await assertOwned()
+  await subscribeTopics("eBay", ebayOrderTopics, assertOwned, async (topic) => {
     const current = subscriptions.find((subscription) => subscription.topicId === topic)
-    try {
-      if (!current) {
-        await seller.subscribe(topic, destinationId)
-      } else if (current.status !== "ENABLED") {
-        await seller.enableSubscription(current.subscriptionId)
-      }
-    } catch (error) {
-      throw new Error(
-        `eBay ${topic} subscription failed: ${error instanceof Error ? error.message : "unknown error"}`,
-        {
-          cause: error
-        }
-      )
+    if (!current) {
+      await seller.subscribe(topic, destinationId)
+    } else if (current.status !== "ENABLED") {
+      await seller.enableSubscription(current.subscriptionId)
     }
-  }
+  })
 }
 
 // EventBridge wraps each notification the route sent as the event's detail.
@@ -320,18 +264,11 @@ const eventBridgeEvent = z.object({ source: z.literal(ebayEventSource), detail: 
 // Handles one event from the queue. The queue only accepts events from the app's own EventBridge rule, and the route
 // checked eBay's signature before sending it. Returns false for a message it can't use.
 export async function receiveEbayEvent(body: string, now = Date.now()) {
-  let json: unknown
-  try {
-    json = JSON.parse(body)
-  } catch {
-    json = null
-  }
-  const event = eventBridgeEvent.safeParse(json)
-  if (!event.success) {
-    console.warn(JSON.stringify({ event: "ebay_event_ignored", reason: "unrecognized event" }))
+  const event = readMessage(body, eventBridgeEvent, "ebay_event_ignored")
+  if (!event) {
     return false
   }
-  await receiveEbayNotification(event.data.detail, now)
+  await receiveEbayNotification(event.detail, now)
   return true
 }
 
