@@ -34,12 +34,16 @@ export const Theme = meta.story({
     await expect(light).toHaveAttribute("aria-checked", "true")
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Dark" }))
     await waitFor(() => expect(document.documentElement).toHaveClass("dark"))
-    await expect(localStorage.getItem("theme")).toBe("dark")
+    await expect(document.documentElement.style.colorScheme).toBe("dark")
+    await expect(localStorage.getItem("theme")).toBe(JSON.stringify({ theme: "dark" }))
     // System follows the computer and forgets the choice.
     await userEvent.click(screen.getByRole("menuitemradio", { name: "System" }))
     await waitFor(() => expect(localStorage.getItem("theme")).toBeNull())
+    await expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute("aria-checked", "true")
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Light" }))
     await waitFor(() => expect(document.documentElement).not.toHaveClass("dark"))
+    await expect(document.documentElement.style.colorScheme).toBe("light")
+    await expect(localStorage.getItem("theme")).toBe(JSON.stringify({ theme: "light" }))
   }
 })
 

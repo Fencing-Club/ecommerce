@@ -181,11 +181,9 @@ export function PackingForm({
   const formId = useId()
   // Purchase-order values are read-only during packing.
   const prices = useCan("prices")
-  const [savedRevision, setSavedRevision] = useState(revision)
   const toast = Toast.useToastManager()
   const [serverError, setServerError] = useState("")
   const [working, setWorking] = useState<"save" | "submit" | "link" | null>(null)
-  const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const [importing, setImporting] = useState(false)
   const [importingPallets, setImportingPallets] = useState(false)
   const importText = useTranslations("orders.cartonImport")
@@ -286,7 +284,9 @@ export function PackingForm({
   const volume = loads ? loads.reduce((sum, load) => sum + (load.length * load.width * load.height) / 1000000, 0) : null
   const chooserCartons = totals.cartons > 1000 ? [] : palletCartons(cartonValues, order.items)
   const onPallets = pallets.reduce((sum, pallet) => sum + pallet.cartonIds.length, 0)
-  // Drafts save incomplete values; submission runs authoritative checks after field validation.
+  // Drafts save incomplete values; submission runs authoritative checks after field validation. A save moves the
+  // shipment to its next revision, so the page reads the shipment again before anything sends one: the next save, and
+  // the buyer's transport settings beside the form.
   async function saveDraft(draft: Values) {
     if (cartonTotals(draft.cartons).cartons > 1000) {
       throw new Error(importText("errors.limit"))
@@ -296,13 +296,13 @@ export function PackingForm({
         action: "shipment.save",
         data: {
           id: shipmentId,
-          revision: savedRevision,
+          revision,
           orderRevision,
           draft: withoutBlanks(savedPacking(draft))
         }
       }).unwrap()
     )
-    setSavedRevision(saved.revision)
+    await router.invalidate({ sync: true })
     return saved.revision
   }
   async function perform(mode: "save" | "submit", values: Values) {
@@ -340,15 +340,12 @@ export function PackingForm({
     try {
       // Preserve any incomplete packing before changing the link; both writes use the latest revision.
       const nextRevision = await saveDraft(form.getValues())
-      const result = z.object({ revision: z.number() }).parse(
-        await run({
-          action: "shipment.linkExisting",
-          data: { id: shipmentId, revision: nextRevision, amazonShipmentId }
-        }).unwrap()
-      )
-      setSavedRevision(result.revision)
-      setLinkedId(amazonShipmentId)
-      router.invalidate()
+      await run({
+        action: "shipment.linkExisting",
+        data: { id: shipmentId, revision: nextRevision, amazonShipmentId }
+      }).unwrap()
+      // The link shows once the page has read it, with the revision linking moved the shipment to.
+      await router.invalidate({ sync: true })
     } finally {
       setWorking(null)
     }
@@ -420,8 +417,12 @@ export function PackingForm({
           >
             <div className="flex min-w-0 flex-col gap-6">
               {notices}
-              {linkedId !== undefined && (
-                <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
+              {linkedAmazonShipmentId !== undefined && (
+                <LinkExistingShipment
+                  key={linkedAmazonShipmentId ?? "unlinked"}
+                  linkedId={linkedAmazonShipmentId}
+                  onLink={linkShipment}
+                />
               )}
               <PackingDetailsFields
                 addresses={addresses}

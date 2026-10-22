@@ -41,11 +41,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
-import { savedRecord } from "@/lib/response-data"
-import { responseError } from "@/lib/response-data"
+import { useDeleteCatalogMutation, useSaveCatalogMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
@@ -309,9 +309,12 @@ export function CatalogEditor({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [saveCatalog] = useSaveCatalogMutation()
+  const [deleteCatalog] = useDeleteCatalogMutation()
   const anchor = useComboboxAnchor()
   const t = useTranslations("supplier.catalogEditor")
   const shared = useTranslations("supplier.shared")
+  const errorMessage = useErrorMessage()
   const rulesSummary = useRulesSummary()
   const statusOptions = statuses.map((value) => ({ value, label: shared(`status.${value}`) }))
   const directionOptions = directions.map((value) => ({
@@ -390,48 +393,42 @@ export function CatalogEditor({
     setPending(true)
     setError("")
     try {
-      const response = await fetch("/api/catalogs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(catalog && { id: catalog.id, revision: catalog.revision }),
-          title: settings.title.trim(),
-          status: settings.status,
-          adjustmentBasisPoints: bps,
-          includeNewProducts: settings.includeNewProducts,
-          customerIds: settings.customerIds,
-          products: [...entries].map(([productId, entry]) => ({ productId, ...entry }))
-        })
-      })
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(responseError(result, t("saveFailed")))
-      }
+      const { id } = await saveCatalog({
+        ...(catalog && { id: catalog.id, revision: catalog.revision }),
+        title: settings.title.trim(),
+        status: settings.status,
+        adjustmentBasisPoints: bps,
+        includeNewProducts: settings.includeNewProducts,
+        customerIds: settings.customerIds,
+        products: [...entries].map(([productId, entry]) => ({ productId, ...entry }))
+      }).unwrap()
       setSaved({ settings, entries })
       if (catalog) {
         router.invalidate()
       } else {
-        router.navigate({ href: `/catalogs/${savedRecord.parse(result).id}`, replace: true })
+        router.navigate({ href: `/catalogs/${id}`, replace: true })
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("saveFailed"))
+      setError(errorMessage(caught, t("saveFailed")))
     } finally {
       setPending(false)
     }
   }
 
+  // Deleting stays pending until the catalogs list opens. A failure, even one that never reached the server, closes
+  // the dialog and says why beside Save.
   async function remove() {
     if (!catalog) {
       return
     }
     setPending(true)
-    const response = await fetch(`/api/catalogs/${catalog.id}`, { method: "DELETE" })
-    if (response.ok) {
+    try {
+      await deleteCatalog(catalog.id).unwrap()
       setSaved({ settings, entries })
       router.navigate({ href: "/catalogs" })
       router.invalidate()
-    } else {
-      setError(responseError(await response.json(), t("deleteFailed")))
+    } catch (caught) {
+      setError(errorMessage(caught, t("deleteFailed")))
       setPending(false)
       setConfirmDelete(false)
     }

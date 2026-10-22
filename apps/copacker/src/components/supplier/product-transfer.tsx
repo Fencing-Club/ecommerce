@@ -2,7 +2,6 @@ import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
-import { z } from "zod"
 import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +21,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { type ImportPreview, useImportProductsMutation, usePreviewProductImportMutation } from "@/lib/supplier-api"
 
 // The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
 // `?import=true` opens the import, so the top bar's Create menu can link straight to it.
@@ -86,17 +87,6 @@ export function ProductActions({ onImported }: { onImported: () => void }) {
   )
 }
 
-const count = z.number().int().nonnegative()
-const previewSchema = z.object({
-  products: count,
-  createdProducts: count,
-  variants: z.object({ created: count, updated: count, unchanged: count }),
-  sample: z.array(z.object({ handle: z.string(), title: z.string(), variants: count, isNew: z.boolean() })),
-  revisionHash: z.string(),
-  fileHash: z.string()
-})
-type Preview = z.infer<typeof previewSchema>
-
 // Imports the product template, CSV or Excel: pick a file, check what it will change, then import.
 function ProductImportDialog({
   open,
@@ -109,12 +99,15 @@ function ProductImportDialog({
 }) {
   const prices = useCan("prices")
   const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<Preview | null>(null)
-  const [pending, setPending] = useState(false)
+  const [previewImport, previewing] = usePreviewProductImportMutation()
+  const [importProducts, importing] = useImportProductsMutation()
+  const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState("")
   const t = useTranslations("supplier.productTransfer")
   const shared = useTranslations("supplier.shared")
+  const errorMessage = useErrorMessage()
   const locale = useLocale()
+  const pending = previewing.isLoading || importing.isLoading
 
   // Closing, however it's done, starts the next import afresh.
   function close() {
@@ -124,47 +117,39 @@ function ProductImportDialog({
     setError("")
   }
 
-  async function send(mode: "preview" | "commit") {
+  // What the file would change, checked before anything is imported.
+  async function check() {
     if (!file) {
       return
     }
-    setPending(true)
     setError("")
     try {
-      const body = new FormData()
-      body.set("file", file)
-      body.set("mode", mode)
-      if (mode === "commit" && preview) {
-        body.set("revisionHash", preview.revisionHash)
-        body.set("fileHash", preview.fileHash)
-      }
-      const response = await fetch("/api/supplier-catalog/import", { method: "POST", body })
-      const result = await response.json()
-      if (!response.ok) {
-        const failure = z.object({ error: z.string() }).safeParse(result)
-        throw new Error(failure.success ? failure.data.error : t("importFailed"))
-      }
-      if (mode === "preview") {
-        const parsed = previewSchema.safeParse(result)
-        if (!parsed.success) {
-          throw new Error(t("importFailed"))
-        }
-        setPreview(parsed.data)
+      setPreview(await previewImport(file).unwrap())
+    } catch (caught) {
+      setError(errorMessage(caught, t("importFailed")))
+    }
+  }
+
+  // Imports the previewed file, which its hashes guard against changes made since.
+  async function commit() {
+    if (!file || !preview) {
+      return
+    }
+    setError("")
+    try {
+      const { imported } = await importProducts({
+        file,
+        revisionHash: preview.revisionHash,
+        fileHash: preview.fileHash
+      }).unwrap()
+      if (!imported) {
+        setError(t("alreadyImported"))
         return
-      }
-      const committed = z.object({ imported: z.boolean() }).safeParse(result)
-      if (!committed.success) {
-        throw new Error(t("importFailed"))
-      }
-      if (!committed.data.imported) {
-        throw new Error(t("alreadyImported"))
       }
       close()
       onImported()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("importFailed"))
-    } finally {
-      setPending(false)
+      setError(errorMessage(caught, t("importFailed")))
     }
   }
 
@@ -255,11 +240,11 @@ function ProductImportDialog({
             {shared("cancel")}
           </Button>
           {preview ? (
-            <Button disabled={pending || !changes} onClick={() => void send("commit")}>
+            <Button disabled={pending || !changes} onClick={() => void commit()}>
               {changes ? t("importVariants", { count: changes }) : t("nothingToImport")}
             </Button>
           ) : (
-            <Button disabled={pending || !file} onClick={() => void send("preview")}>
+            <Button disabled={pending || !file} onClick={() => void check()}>
               {t("preview")}
             </Button>
           )}

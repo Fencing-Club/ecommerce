@@ -14,8 +14,9 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
-import { responseError } from "@/lib/response-data"
+import { useProposeChangesMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import { MoneyInput } from "./pricing-controls"
 import type { LineChange } from "./proposal-panel"
@@ -84,6 +85,8 @@ export function OrderReviser({
   const t = useTranslations("supplier.orderReviser")
   const shared = useTranslations("supplier.shared")
   const money = useMoney()
+  const errorMessage = useErrorMessage()
+  const [proposeChanges] = useProposeChangesMutation()
   const [lines, setLines] = useState<Line[]>(() =>
     items.map((item) => ({ ...item, key: item.itemId ?? item.supplierSku, removed: item.removed ?? false }))
   )
@@ -133,32 +136,26 @@ export function OrderReviser({
     setPending(true)
     setError("")
     try {
-      const response = await fetch(`/api/orders/${orderId}/proposal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          revision,
-          proposal: {
-            lines: kept.map((line) => ({
-              itemId: line.itemId,
-              supplierSku: line.supplierSku,
-              title: line.name,
-              pieces: line.pieces,
-              unitPrice: line.unitPrice
-            })),
-            paymentTerms,
-            readyDate: readyDate || null,
-            note
-          }
-        })
-      })
-      if (!response.ok) {
-        throw new Error(responseError(await response.json(), t("sendFailed")))
-      }
+      await proposeChanges({
+        orderId,
+        revision,
+        proposal: {
+          lines: kept.map((line) => ({
+            itemId: line.itemId,
+            supplierSku: line.supplierSku,
+            title: line.name,
+            pieces: line.pieces,
+            unitPrice: line.unitPrice
+          })),
+          paymentTerms,
+          readyDate: readyDate || null,
+          note
+        }
+      }).unwrap()
       await router.invalidate()
       await router.navigate({ href: `/orders/${orderId}` })
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("sendFailed"))
+      setError(errorMessage(caught, t("sendFailed")))
       setPending(false)
     }
   }

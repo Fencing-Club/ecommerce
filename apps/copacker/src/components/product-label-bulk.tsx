@@ -1,5 +1,6 @@
 import { ChevronDown, Download, Search, Tags } from "lucide-react"
 import { useState } from "react"
+import invariant from "tiny-invariant"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { FormError } from "@/components/form-feedback"
@@ -12,6 +13,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
+import { downloadBlob, fileOrError } from "@/lib/download"
 import type { ProductLabel } from "@/lib/product-label"
 import { productLabels } from "@/lib/product-label"
 
@@ -23,19 +25,28 @@ const labelsApi = api.injectEndpoints({
     productLabelChoices: build.query<Choice[], void>({ query: () => "inventory/product-labels", keepUnusedDataFor: 0 }),
     assignProductLabel: build.mutation<{ updated: number }, { productIds: string[]; productLabel: ProductLabel }>({
       query: (body) => ({ url: "inventory/product-labels", method: "PATCH", body })
+    }),
+    // Every variation's label of the chosen products as one PDF, saved as `filename`. The PDF goes straight to the
+    // download rather than into the store, which keeps only plain data. The result counts the variations left out
+    // because they have no label yet.
+    downloadProductLabels: build.mutation<{ skipped: number }, { productIds: string[]; filename: string }>({
+      queryFn: async ({ productIds, filename }, _api, _extraOptions, baseQuery) => {
+        const result = await baseQuery({
+          url: "inventory/labels",
+          method: "POST",
+          body: { productIds },
+          responseHandler: fileOrError
+        })
+        if (result.error) {
+          return { error: result.error }
+        }
+        invariant(result.data instanceof Blob, "A label PDF arrives as a Blob")
+        downloadBlob(result.data, filename)
+        return { data: { skipped: Number(result.meta?.response?.headers.get("x-skipped-labels") ?? 0) } }
+      }
     })
   })
 })
-
-// Saves a PDF the browser received, under the name the server gave it.
-function save(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = name
-  link.click()
-  URL.revokeObjectURL(url)
-}
 
 // Chooses several products at once to set their label type, such as marking uniforms as needing uploaded labels, or to
 // download all their labels as one PDF.
@@ -47,9 +58,9 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   const [selected, setSelected] = useState<string[]>([])
   const [status, setStatus] = useState("")
   const [error, setError] = useState("")
-  const [downloading, setDownloading] = useState(false)
   const { data: choices = [], isLoading, refetch } = labelsApi.useProductLabelChoicesQuery(undefined, { skip: !open })
   const [assign, { isLoading: assigning }] = labelsApi.useAssignProductLabelMutation()
+  const [downloadLabels, { isLoading: downloading }] = labelsApi.useDownloadProductLabelsMutation()
   // Downloading labels only reads products; setting their label type changes them.
   const editable = useCan("products", "edit")
   const query = search.trim().toLocaleLowerCase()
@@ -78,28 +89,11 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   async function download() {
     setError("")
     setStatus("")
-    setDownloading(true)
     try {
-      const response = await fetch("/api/inventory/labels", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds: selected })
-      })
-      if (!response.ok) {
-        const body: unknown = await response.json().catch(() => null)
-        throw new Error(
-          typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
-            ? body.error
-            : t("labels.downloadFailed")
-        )
-      }
-      save(await response.blob(), t("labels.fileName"))
-      const skipped = Number(response.headers.get("x-skipped-labels") ?? 0)
+      const { skipped } = await downloadLabels({ productIds: selected, filename: t("labels.fileName") }).unwrap()
       setStatus(skipped ? t("labels.downloadedSkipped", { count: skipped }) : t("labels.downloaded"))
     } catch (e) {
       setError(errorMessage(e, t("labels.downloadFailed")))
-    } finally {
-      setDownloading(false)
     }
   }
 
