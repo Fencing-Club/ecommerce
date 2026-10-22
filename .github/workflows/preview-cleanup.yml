@@ -29,12 +29,12 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     outputs:
       numbers: ${{ steps.plan.outputs.numbers }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: useblacksmith/checkout@v1
         with:
           ref: ${{ github.event.repository.default_branch }}
       - uses: actions/setup-node@v7
@@ -60,7 +60,7 @@ jobs:
     needs: plan
     # A partial inventory failure must not prevent cleanup of independently confirmed closed PRs.
     if: always() && needs.plan.outputs.numbers != '' && needs.plan.outputs.numbers != '[]'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -74,7 +74,7 @@ jobs:
     env:
       PR_NUMBER: ${{ matrix.number }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: useblacksmith/checkout@v1
         with:
           ref: ${{ github.event.repository.default_branch }}
       - uses: actions/setup-node@v7
