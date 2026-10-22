@@ -13,12 +13,12 @@ vi.mock("../src/server/auth", async (original) => ({
 }))
 
 import {
+  cartonGroupLabel,
   defaultDocumentSettings,
   groupShippingCartons,
   type ShippingDocumentData
-} from "../src/documents/shipping-model"
+} from "@repo/copacker-shipments/shipping-model"
 import { ShippingPdf } from "../src/documents/shipping-pdf"
-import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { httpResponse } from "../src/server/http-response"
 import { GET } from "../src/server/http/api/shipments/$id/packing-list"
 import { towelOrder, towelPacking } from "../src/stories/fixtures/packing"

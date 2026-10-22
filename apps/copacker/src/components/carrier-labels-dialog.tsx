@@ -11,6 +11,7 @@ import {
   useSensors
 } from "@dnd-kit/core"
 import type { Packing } from "@repo/copacker-shipments"
+import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { useRouter } from "@tanstack/react-router"
 import {
   ArrowDownToLine,
@@ -35,7 +36,7 @@ import { getTracking } from "ts-tracking-number"
 import { useTranslations } from "use-intl"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
-import { type CartonGroup, cartonGroupLabel, groupCartons } from "@/lib/carton-groups"
+import { type CartonGroup, groupCartons } from "@/lib/carton-groups"
 import { fitsConfiguration, type LabelMeasurements, readLabelMeasurements } from "@/lib/label-measurements"
 import { readPictureText } from "@/lib/label-text"
 import { preloadPdfReading, readPdfPages, type TextLine } from "@/lib/pdf-preview"

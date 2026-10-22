@@ -1,4 +1,4 @@
-import type { ShippingDocumentData } from "@/documents/shipping-model"
+import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 
 const supplier = { name: "Northwind Textiles", address: ["18 Textile Road", "Ningbo, Zhejiang 315800, China"] }
 const forwarder = { name: "Bayline Freight / Ningbo", address: ["88 Logistics Road", "Ningbo, Zhejiang 315800, China"] }

@@ -1,8 +1,5 @@
 import { useLocalStorage } from "@mantine/hooks"
-import { ChevronDown, Download, LoaderCircle, ZoomIn, ZoomOut } from "lucide-react"
-import { useEffect, useId, useState } from "react"
-import { useLocale, useTranslations } from "use-intl"
-import { shippingCopy } from "@/documents/shipping-copy"
+import { shippingCopy } from "@repo/copacker-shipments/shipping-copy"
 import {
   documentSettingsForLocale,
   documentIssues,
@@ -12,7 +9,10 @@ import {
   type DocumentKind,
   type DocumentSettings,
   type ShippingDocumentData
-} from "@/documents/shipping-model"
+} from "@repo/copacker-shipments/shipping-model"
+import { ChevronDown, Download, LoaderCircle, ZoomIn, ZoomOut } from "lucide-react"
+import { useEffect, useId, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
 import { localeNames } from "@/i18n/locales"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"

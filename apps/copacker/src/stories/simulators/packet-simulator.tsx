@@ -1,14 +1,14 @@
-import { Download } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { shippingCopy, shippingMessage } from "@/documents/shipping-copy"
+import { shippingCopy, shippingMessage } from "@repo/copacker-shipments/shipping-copy"
 import {
   type DocumentLanguage,
   documentSettingsSchema,
   groupProductRequirements,
   type DocumentSettings,
   type ShippingDocumentData
-} from "@/documents/shipping-model"
-import { productChecks, shipmentDocumentChecks } from "@/documents/shipping-rules"
+} from "@repo/copacker-shipments/shipping-model"
+import { productChecks, shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
+import { Download } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { renderSupplierPacket } from "@/documents/supplier-packet"
 import { localeNames } from "@/i18n/locales"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"

@@ -7,10 +7,10 @@ import {
   weightLimit
 } from "@repo/copacker-packing-rules/carton-policies"
 import type { AmazonNetwork } from "@repo/copacker-shipments"
+import { shippingMessage } from "@repo/copacker-shipments/shipping-copy"
+import { documentSettingsForLocale } from "@repo/copacker-shipments/shipping-model"
+import { policyChecks } from "@repo/copacker-shipments/shipping-rules"
 import { useLocale } from "use-intl"
-import { shippingMessage } from "@/documents/shipping-copy"
-import { documentSettingsForLocale } from "@/documents/shipping-model"
-import { policyChecks } from "@/documents/shipping-rules"
 import type { CartonGroup } from "@/lib/carton-groups"
 import { type CartonDataSet, cartonGroup, unknownItemId } from "./data"
 

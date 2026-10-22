@@ -1,13 +1,13 @@
 import { Toast } from "@base-ui/react/toast"
 import { useLocalStorage } from "@mantine/hooks"
-import { useState } from "react"
-import { useLocale, useTranslations } from "use-intl"
 import {
   documentSettingsForLocale,
   documentSettingsSchema,
   shippingPdfFilename,
   shippingSettingsKey
-} from "@/documents/shipping-model"
+} from "@repo/copacker-shipments/shipping-model"
+import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useLazyPackingListQuery } from "@/lib/api"
 import { useErrorMessage } from "./use-error-text"
 

@@ -11,6 +11,17 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
 its `receiver`; `orderDestination` reads where the PO goes from them.
 
+## Shipping documents
+
+`shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing
+checklist's data model and rules, with no React: `shippingDocumentSnapshot` and `packingListSnapshot` build the
+document data from a PO, its packing, labels and transport. Copacker's app renders that data with react-pdf; see
+[shipping document templates](../../../apps/copacker/docs/shipping-document-templates.md). `countries` lists the ISO
+countries addresses use.
+
+`documents` draws the purchase order and commercial invoice with pdf-lib, and `combinePdfs` joins PDFs. Packing lists and
+checklists come only from the shipping-document data above.
+
 ## Shared values
 
 The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in

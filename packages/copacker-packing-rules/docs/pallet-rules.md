@@ -27,7 +27,7 @@ cartons, so the pallet editor, readiness checks and the supplier's checklist sta
 | `palletLabels` | Checklist only: one of the four pallet labels on each side                    |                                   |
 
 Rules nothing measures still belong in the policy: the supplier's checklist states each one
-(`palletPolicyChecks` in `apps/copacker/src/documents/shipping-rules.ts`), and a rule type without a checklist line
+(`palletPolicyChecks` in `@repo/copacker-shipments/shipping-rules`), and a rule type without a checklist line
 fails type checks.
 
 The rules every pallet follows wherever it goes are `validatePallets`': each carton on exactly one pallet, every pallet

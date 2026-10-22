@@ -1,10 +1,8 @@
 import { Document, Font, G, Page, Path, StyleSheet, Svg, Text, View, pdf } from "@react-pdf/renderer"
 import { markdownBlocks } from "@repo/copacker-shipments/markdown"
-import { createContext, useContext, type ReactNode } from "react"
-import invariant from "tiny-invariant"
-import { cartonGroupLabel } from "@/lib/carton-groups"
-import { shippingCopy, shippingMessage } from "./shipping-copy"
+import { shippingCopy, shippingMessage } from "@repo/copacker-shipments/shipping-copy"
 import {
+  cartonGroupLabel,
   documentDirection,
   groupProductRequirements,
   groupShippingCartons,
@@ -15,8 +13,10 @@ import {
   type DocumentSettings,
   type ShippingCarton,
   type ShippingDocumentData
-} from "./shipping-model"
-import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "./shipping-rules"
+} from "@repo/copacker-shipments/shipping-model"
+import { productChecks, shipmentDocumentChecks, type ShippingCheck } from "@repo/copacker-shipments/shipping-rules"
+import { createContext, useContext, type ReactNode } from "react"
+import invariant from "tiny-invariant"
 
 // Local assets. Node callers supply their absolute asset directory.
 function registerShippingFonts(base: string) {
