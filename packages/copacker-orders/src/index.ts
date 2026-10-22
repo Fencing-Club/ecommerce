@@ -1,9 +1,18 @@
-import { inventoryItemIdSchema, variantIdSchema, variantName } from "@repo/copacker-marketplaces/shopify"
 import {
+  bundleSupplierComponents,
+  type CatalogVariant,
+  inventoryItemIdSchema,
+  variantIdSchema,
+  variantName,
+  variantUnitCostMinor
+} from "@repo/copacker-marketplaces/shopify"
+import {
+  type AmazonNetwork,
   amazonNetworks,
   groupReceivers,
   orderDestination,
   type ReceiverGroup,
+  receiverFor,
   receiverGroups,
   type ReceiverId,
   receiverIds,
@@ -156,6 +165,53 @@ export const itemSchema = z
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Units must be divisible by units per pack")
 export type OrderItem = z.infer<typeof itemSchema>
+
+export type LineDefaults = {
+  // Looked up on the server when the PO is saved or sent, so often empty here.
+  asin?: string
+  fnsku?: string
+  // From the Shopify bundle (see piecesPerUnit); the server sets it again when the PO is saved.
+  piecesPerSet?: number
+  // The product's saved defaults from Products.
+  description?: string
+  prepCategory?: PrepCategory | null
+  suffocationWarning?: boolean
+  amazonNetwork?: AmazonNetwork
+  skuLabel?: boolean
+}
+
+// A new PO line for a Shopify variant, priced at its Shopify unit cost per piece until a supplier quote or the buyer
+// sets one. It goes to the product's Amazon network on a PO to Amazon, or the buyer's location on one there. Lines added
+// in the PO editor, imported from a supplier's document and added by a supplier's changes all start here.
+export function orderLine(
+  variant: CatalogVariant,
+  id: string,
+  defaults: LineDefaults = {},
+  currency = "USD",
+  destination: Destination = "amazon"
+): OrderItem {
+  const piecesPerSet = defaults.piecesPerSet ?? 1
+  return {
+    id,
+    variantId: variant.id,
+    inventoryItemId: variant.inventoryItem.id,
+    name: variant.product.title,
+    variant: variant.title,
+    buyerSku: variant.sku ?? "",
+    supplierSku: variant.requiresComponents ? "" : (variant.supplierSku?.value ?? ""),
+    components: variant.requiresComponents ? bundleSupplierComponents(variant) : undefined,
+    asin: defaults.asin || variant.asin?.value || "",
+    fnsku: defaults.fnsku ?? "",
+    pieces: piecesPerSet,
+    piecesPerSet,
+    unitPrice: Math.round((variantUnitCostMinor(variant, currency) ?? 0) / piecesPerSet),
+    instructions: defaults.description ?? "",
+    prepCategory: defaults.prepCategory ?? "POLYBAGGING",
+    suffocationWarning: defaults.suffocationWarning ?? false,
+    receiver: receiverFor(destination, defaults.amazonNetwork),
+    skuLabel: defaults.skuLabel ?? true
+  }
+}
 // Payment terms a PO can have, as Shopify offers them. None is an empty string.
 export const commonPaymentTerms = [
   "Net 7",

@@ -6,8 +6,19 @@ import { Spinner } from "@/components/ui/spinner"
 import { useMessageText } from "@/hooks/use-error-text"
 
 // A form's error, such as the server's. A message that is a full key shows in the person's language. `id` lets a field
-// name it in aria-describedby, and `className` fits it into a surrounding box, as the timeline's comment box does.
-export function FormError({ message, id, className }: { message?: string; id?: string; className?: string }) {
+// name it in aria-describedby, `className` fits it into a surrounding box and `action` is an AlertAction, such as the
+// timeline comment box's dismiss button.
+export function FormError({
+  message,
+  id,
+  className,
+  action
+}: {
+  message?: string
+  id?: string
+  className?: string
+  action?: React.ReactNode
+}) {
   const text = useMessageText()
   if (!message) {
     return null
@@ -16,6 +27,7 @@ export function FormError({ message, id, className }: { message?: string; id?: s
     <Alert id={id} variant="destructive" className={className}>
       <AlertCircle aria-hidden />
       <AlertDescription className="whitespace-pre-line">{text(message)}</AlertDescription>
+      {action}
     </Alert>
   )
 }

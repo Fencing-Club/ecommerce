@@ -4,7 +4,7 @@ import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { nextPalletId, type PalletCarton, type PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
@@ -294,11 +294,13 @@ function PalletRow({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[true, false].map((stackable) => (
-                  <SelectItem key={String(stackable)} value={stackable}>
-                    {stacking(stackable)}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {[true, false].map((stackable) => (
+                    <SelectItem key={String(stackable)} value={stackable}>
+                      {stacking(stackable)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>

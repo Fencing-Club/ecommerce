@@ -254,7 +254,8 @@
       "supplierHint": "您的团队和供应商可以查看此消息。",
       "customerHint": "您的团队和客户可以查看此消息。",
       "sharedSupplier": "已与供应商共享",
-      "sharedCustomer": "已与客户共享"
+      "sharedCustomer": "已与客户共享",
+      "dismissError": "关闭"
     },
     "events": {
       "created": "已创建采购订单",

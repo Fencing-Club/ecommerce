@@ -254,7 +254,8 @@
       "supplierHint": "Ihr Team und der Lieferant können diese Nachricht sehen.",
       "customerHint": "Ihr Team und der Kunde können diese Nachricht sehen.",
       "sharedSupplier": "Mit Lieferanten geteilt",
-      "sharedCustomer": "Mit Kunden geteilt"
+      "sharedCustomer": "Mit Kunden geteilt",
+      "dismissError": "Ausblenden"
     },
     "events": {
       "created": "Bestellung erstellt",
