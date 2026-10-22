@@ -5,7 +5,7 @@ import { useTranslations } from "use-intl"
 import { MoneyInput } from "@/components/money-input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { adjustmentKeys, knownName } from "@/lib/order-lines"
 
 type Adjustment = { description: string; amount: number }
@@ -83,11 +83,13 @@ export function CostSummaryDialog({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {types.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {types.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <MoneyInput

@@ -85,6 +85,7 @@ Reach for these before writing the classes they stand for:
 | Something loading                             | `Spinner`, which stops turning for reduced motion                                         |
 | An empty list, a failed page, an empty menu   | `EmptyState` from `@/components/common`: `icon`, an optional `title` (`titleAs` for a heading) and `description`, and its actions as children. `ui/empty`'s pieces carry the same spacing and 40px icon tile |
 | A popover                                     | `PopoverContent`, with its size and padding overridden, not Base UI's parts               |
+| A select's options                            | `SelectItem`s inside a `SelectGroup` in `SelectContent`: the group gives the menu its 4px inset. Items straight in `SelectContent` sit flush against the menu's edge |
 
 ## Page patterns
 

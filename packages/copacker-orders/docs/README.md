@@ -3,8 +3,8 @@
 `@repo/copacker-orders` is what a purchase order is: its schema (`orderInputSchema`, `OrderInput`), its lines
 (`itemSchema`, `OrderItem`), where it goes (`destinationSchema`, `addressSchema`), what it costs and how its prices are
 written (`money`). It depends only on `zod`, [`@repo/copacker-packing-rules`](../../copacker-packing-rules/docs/README.md) for each
-line's receiver, and `@repo/copacker-marketplaces/shopify` for a Shopify variant's ID, so a client or CLI can check a PO
-without the shipping documents.
+line's receiver, and `@repo/copacker-marketplaces/shopify` for a Shopify variant's ID, cost and bundle components, so a
+client or CLI can check a PO without the shipping documents.
 [`@repo/copacker-shipments`](../../copacker-shipments/docs/README.md) packs, labels and ships it.
 
 - The package root: the PO and line schemas, payment terms (`commonPaymentTerms`), the kinds of cost a PO's summary can
@@ -21,6 +21,13 @@ them, and `orderInputSchema` keeps a PO's lines to one group of receivers.
 
 The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
 (`orderCurrencies`) and a PO line's field limits (`itemSchema.shape`).
+
+`orderLine(variant, id, defaults, currency, destination)` is a new PO line for a Shopify variant: its Shopify unit cost
+per piece, and the product's saved defaults (`LineDefaults`) for its instructions, prep category, suffocation warning,
+SKU label and Amazon network, which `receiverFor` in `@repo/copacker-packing-rules` turns into the line's receiver.
+Lines added in the PO editor, imported from a supplier's document and added by a supplier's changes all start there,
+so a product kept at AWD lands at AWD whichever way it joins a PO. An import or a supplier's change then sets the
+line's quantity and price.
 
 A line's product goes by `lineName(name, variant)`, such as "Canvas tote bag / Natural", which leaves out Shopify's
 "Default Title" for a product's only variant. `shipmentGroups(lines)` splits a PO's lines into the shipments they
