@@ -92,8 +92,6 @@
     "rowsPerPage": "فی صفحہ قطاریں",
     "pages": "پروڈکٹ صفحات",
     "pageOf": "صفحہ {page} از {total}",
-    "previousPage": "پچھلا صفحہ",
-    "nextPage": "اگلا صفحہ",
     "duplicateSkus": "{count, plural, one {# SKU ایک سے زیادہ ویریئنٹس میں استعمال ہو رہا ہے} other {# SKUs ایک سے زیادہ ویریئنٹس میں استعمال ہو رہے ہیں}}",
     "duplicateSkusHint": "Shopify میں ہر ویریئنٹ کو اس کا اپنا SKU دیں",
     "productVariant": "{product}، {variant}",

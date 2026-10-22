@@ -6,17 +6,6 @@
       "archived": "Archivado"
     },
     "range": "{low} – {high}",
-    "pager": {
-      "range": "{first, number}–{last, number} de {total, number}",
-      "previous": "Página anterior",
-      "next": "Página siguiente"
-    },
-    "saveBar": {
-      "unsaved": "Cambios sin guardar",
-      "discard": "Descartar",
-      "save": "Guardar",
-      "saving": "Guardando…"
-    },
     "couldNotSave": "No se pudo guardar. Inténtalo de nuevo.",
     "tryAnother": "Prueba otra pestaña u otra búsqueda.",
     "all": "Todos",
@@ -26,7 +15,6 @@
     "noPrice": "Sin precio",
     "moreActions": "Más acciones",
     "exportExcel": "Exportar a Excel",
-    "selected": "{count, number} seleccionados",
     "selectAllOnPage": "Seleccionar todos los productos de esta página",
     "select": "Seleccionar {name}",
     "variantCount": "{count, plural, one {# variante} other {# variantes}}"

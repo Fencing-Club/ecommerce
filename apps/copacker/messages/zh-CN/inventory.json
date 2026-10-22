@@ -92,8 +92,6 @@
     "rowsPerPage": "每页行数",
     "pages": "产品分页",
     "pageOf": "第 {page} 页，共 {total} 页",
-    "previousPage": "上一页",
-    "nextPage": "下一页",
     "duplicateSkus": "{count, plural, other {# 个 SKU 被多个变体使用}}",
     "duplicateSkusHint": "请在 Shopify 中为每个变体设置不同的 SKU",
     "productVariant": "{product}，{variant}",

@@ -308,5 +308,21 @@
         "all": "کوئی شپمنٹ نہیں"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{total, number} میں سے {first, number}–{last, number}",
+      "previous": "پچھلا صفحہ",
+      "next": "اگلا صفحہ",
+      "previousShort": "پچھلا",
+      "nextShort": "اگلا"
+    },
+    "saveBar": {
+      "unsaved": "غیر محفوظ تبدیلیاں",
+      "discard": "رد کریں",
+      "save": "محفوظ کریں",
+      "saving": "محفوظ ہو رہا ہے…"
+    },
+    "selected": "{count, number} منتخب"
   }
 }

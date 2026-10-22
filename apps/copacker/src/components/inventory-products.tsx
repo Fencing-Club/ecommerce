@@ -1,22 +1,14 @@
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
-  Ellipsis,
-  PackagePlus,
-  Pencil,
-  Search,
-  TriangleAlert,
-  X
-} from "lucide-react"
+import { ChevronDown, ChevronRight, CircleAlert, Ellipsis, PackagePlus, Pencil, TriangleAlert, X } from "lucide-react"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
+import { PageButtons } from "@/components/list/pager"
+import { SearchField } from "@/components/list/search-field"
+import { OptionSelect } from "@/components/option-select"
 import { ProductDetails, ProductImage } from "@/components/product-details"
 import { ProductLabelBulk } from "@/components/product-label-bulk"
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
@@ -25,8 +17,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
@@ -524,49 +514,20 @@ function ListFooter({
         {data.totalProducts > pageSizes[0] && (
           <div className="flex items-center gap-2">
             <span id="inventory-page-size">{t("rowsPerPage")}</span>
-            <Select
-              items={sizeItems}
+            <OptionSelect
+              options={sizeItems}
               value={String(pageSize)}
-              onValueChange={(value) => {
-                if (value) {
-                  onPageSize(Number(value))
-                }
-              }}
-            >
-              <SelectTrigger size="sm" aria-labelledby="inventory-page-size" className="tabular-nums">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sizeItems.map((size) => (
-                  <SelectItem key={size.value} value={size.value}>
-                    {size.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => onPageSize(Number(value))}
+              labelledBy="inventory-page-size"
+              size="sm"
+              className="tabular-nums"
+            />
           </div>
         )}
         {data.totalPages > 1 && (
           <nav aria-label={t("pages")} className="flex items-center gap-2">
             <span className="tabular-nums">{t("pageOf", { page: data.page, total: data.totalPages })}</span>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label={t("previousPage")}
-              disabled={data.page <= 1}
-              onClick={() => onPage(data.page - 1)}
-            >
-              <ChevronLeft className="rtl:rotate-180" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label={t("nextPage")}
-              disabled={data.page >= data.totalPages}
-              onClick={() => onPage(data.page + 1)}
-            >
-              <ChevronRight className="rtl:rotate-180" />
-            </Button>
+            <PageButtons page={data.page} pages={data.totalPages} onPage={onPage} />
           </nav>
         )}
       </div>
@@ -658,22 +619,17 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-4">
           {/* A row of its own on a phone, so the filters and actions wrap under it instead of squeezing it. */}
-          <InputGroup className="h-[34px] w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              aria-label={t("search")}
-              placeholder={t("searchPlaceholder")}
-              maxLength={searchLength}
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value)
-                setPage(1)
-              }}
-            />
-          </InputGroup>
+          <SearchField
+            label={t("search")}
+            placeholder={t("searchPlaceholder")}
+            maxLength={searchLength}
+            value={search}
+            onChange={(value) => {
+              setSearch(value)
+              setPage(1)
+            }}
+            className="h-[34px] w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1"
+          />
           {(data.missingBarcodes > 0 || missingBarcode) && (
             <FilterToggle
               pressed={missingBarcode}

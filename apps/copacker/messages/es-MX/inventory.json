@@ -92,8 +92,6 @@
     "rowsPerPage": "Filas por página",
     "pages": "Páginas de productos",
     "pageOf": "Página {page} de {total}",
-    "previousPage": "Página anterior",
-    "nextPage": "Página siguiente",
     "duplicateSkus": "{count, plural, one {# SKU lo usa más de una variante} other {# SKU los usa más de una variante}}",
     "duplicateSkusHint": "Asigna a cada variante su propio SKU en Shopify",
     "productVariant": "{product}, {variant}",

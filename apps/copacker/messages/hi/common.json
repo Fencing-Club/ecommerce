@@ -308,5 +308,21 @@
         "all": "कोई शिपमेंट नहीं"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{total, number} में से {first, number}–{last, number}",
+      "previous": "पिछला पेज",
+      "next": "अगला पेज",
+      "previousShort": "पिछला",
+      "nextShort": "अगला"
+    },
+    "saveBar": {
+      "unsaved": "बदलाव सेव नहीं हुए",
+      "discard": "छोड़ें",
+      "save": "सेव करें",
+      "saving": "सेव हो रहा है…"
+    },
+    "selected": "{count, number} चुने गए"
   }
 }

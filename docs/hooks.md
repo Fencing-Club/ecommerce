@@ -29,6 +29,11 @@ each hook.
   recovery forms pass `navigation: "document"`.
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
+- `useDraft` (`use-draft.ts`): an editor's unsaved changes beside what's saved, on Mantine's `useSetState`. Returns
+  `{ draft, saved, change, dirty, reset, markSaved }`; `dirty` compares Maps by their entries. The supplier catalog,
+  product and variant editors use it with the list kit's `SaveBar`.
+- `usePagedRows` (`components/list/use-paged-rows.ts`): one page of a list filtered in the browser, on Mantine's
+  `usePagination`, with the props its `Pager` takes and `reset` for a change of tab or search.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.

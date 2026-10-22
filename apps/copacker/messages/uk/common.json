@@ -308,5 +308,21 @@
         "all": "Немає відправлень"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} з {total, number}",
+      "previous": "Попередня сторінка",
+      "next": "Наступна сторінка",
+      "previousShort": "Назад",
+      "nextShort": "Далі"
+    },
+    "saveBar": {
+      "unsaved": "Незбережені зміни",
+      "discard": "Відкинути",
+      "save": "Зберегти",
+      "saving": "Збереження…"
+    },
+    "selected": "Вибрано: {count, number}"
   }
 }

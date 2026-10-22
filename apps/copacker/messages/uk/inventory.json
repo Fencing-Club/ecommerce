@@ -92,8 +92,6 @@
     "rowsPerPage": "Рядків на сторінці",
     "pages": "Сторінки товарів",
     "pageOf": "Сторінка {page} з {total}",
-    "previousPage": "Попередня сторінка",
-    "nextPage": "Наступна сторінка",
     "duplicateSkus": "{count, plural, one {# SKU використовується в кількох варіантах} few {# SKU використовуються в кількох варіантах} many {# SKU використовуються в кількох варіантах} other {# SKU використовуються в кількох варіантах}}",
     "duplicateSkusHint": "Призначте кожному варіанту власний SKU в Shopify",
     "productVariant": "{product}, {variant}",
