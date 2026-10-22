@@ -47,11 +47,13 @@ const meta = preview.type<{ args: Args }>().meta({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {suppliers.map((option) => (
-          <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {suppliers.map((option) => (
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )
