@@ -197,6 +197,7 @@ describe("editing variation details", () => {
     })
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
+      stockTargets: { revision: 2, targets: [] },
       supplierSku: "AB-100",
       asin: "B0NEW",
       amazonStockTarget: 5,

@@ -3,6 +3,7 @@ import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import type { LineDefaults, OrderCurrency } from "@repo/copacker-orders"
 import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import { arrayIncludes } from "ts-extras"
+import type { VariationFields } from "@/components/variation-details"
 import type { ActionName } from "@/server/actions"
 import type { AmazonOnlyStock, InventoryProduct, InventoryVariant } from "@/server/inventory-products"
 import type { ProductBarcode } from "@/server/product-barcodes"
@@ -37,6 +38,7 @@ export type SupplierCatalogMatch = ReturnType<typeof matchSupplierCatalog> & { s
 // A product on the Products page, or in a purchase order's product picker, with the details and labels Copacker keeps
 // for it.
 export type ListedVariant = InventoryVariant & {
+  stockTargets?: VariationFields["stockTargets"]
   barcode: ProductBarcode | null
   fnsku: string | null
   supplierSku: string | null

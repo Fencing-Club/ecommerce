@@ -29,12 +29,12 @@ recommendation calculation. Inputs are `days` and `leadTimeDays`; supplier lead 
 imports are returned separately and never cause purchase recommendations. Prices use the existing permission checks.
 The target report is a live calculation, not a retained purchase plan or shipment instruction.
 
-Existing product-field responses retain their shape: one target for a provider projects to its existing scalar field.
-Updating that quantity preserves its membership. Several independent targets project to null; saving unchanged nulls
-with a SKU edit preserves them, and changing the scalar is rejected rather than collapsing those targets. Snapshot
-reads overlay the current mapped quantities. Existing channel reports support exact single-warehouse and FBA/AWD
-member sets. Pools that those channels cannot represent block that channel's recommendation; use the target report
-for their pooled recommendation. This keeps existing screens unchanged without generating duplicate purchases.
+The existing product Edit panel reads target identities and revisions alongside the quantities. Each quantity edit
+preserves its target membership; multiple independent targets remain separate fields in the same panel. Existing
+Amazon and Fencing Club fields retain their labels and placement. The restock channel selector includes saved pools,
+and the existing report, calculations and Reorder action use the pooled recommendation. A member's physical channel
+does not repeat stock or recommendations already represented by its target. Multi-location Reorder links leave the
+receiving location for the existing purchase-order form to choose; a planning pool is not a delivery address.
 
 ## Locations and groups
 
@@ -83,8 +83,7 @@ destination membership; lines for different destinations on the same PO must rem
 ## Existing values
 
 Preserve each existing Amazon quantity on one FBA US + AWD US group scoped to its existing Amazon account. Do not
-associate an unconnected or different account by guessing. Preserve store quantities without distributing or copying
-them across warehouses. When the prior destination is ambiguous, retain the quantity as awaiting destination selection
+associate an unconnected or different account by guessing. Preserve the Fencing Club store quantity on its one enabled Shopify location, never all Shopify locations. When the prior destination is ambiguous, retain the quantity as awaiting destination selection
 and expose it through the target settings and target report. Do not make recommendations from that unresolved
 target. Existing zero values must retain their intentional do-not-stock meaning during conversion.
 
@@ -95,7 +94,7 @@ Shopify metafield import. Never run migrations locally; database tests construct
 
 The existing variant editor is unchanged. The backend accepts a target's selected checkbox values directly as a pool,
 without requiring a separate group-creation step. Locations and groups are workspace scoped; variants also carry
-their catalog account identity. A future target editor can use these services without defining pooling on connections.
+their catalog account identity. The current product form edits mapped quantities without defining pooling on connections.
 
 Pooled stockout-day history is not available: target reports use the full requested sales window rather than treating
 any one member's outage as a pool-wide outage. Existing channel reports retain their established stockout-day adjustment.

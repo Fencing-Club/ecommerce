@@ -105,7 +105,14 @@ export function resolveStockTargets(
       }
       owners.set(key, target.id)
     }
-    return { ...target, name: group?.name ?? available.get([...memberKeys][0] ?? "")?.name ?? null, members }
+    return {
+      ...target,
+      name:
+        group?.name ??
+        (members.map((member) => available.get(inventoryLocationKey(member))?.name ?? member.externalId).join(" + ") ||
+          null),
+      members
+    }
   })
   return {
     targets: resolved.map((target) => ({ ...target, issues: issues.filter((issue) => issue.targetId === target.id) })),

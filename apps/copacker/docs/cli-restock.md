@@ -12,8 +12,8 @@ copacker report restock --state blocked --json
 copacker report restock --format csv --output restock.csv
 ```
 
-Omitted channels select every eligible channel. Use returned channel keys verbatim: `amazon` or
-`shopify:gid://shopify/Location/...`. `--channel` is repeatable; empty, duplicate and inaccessible selections fail.
+Omitted channels select every eligible channel. Use returned channel keys verbatim: `amazon`,
+`shopify:gid://shopify/Location/...`, or `pool:<membership hash>`. `--channel` is repeatable; empty, duplicate and inaccessible selections fail.
 Days and lead time default to workspace settings, with a supplier's lead time taking precedence. SKU filtering is
 exact and case-sensitive. Supplier filtering uses the buyer's active supplier link ID. Unknown suppliers fail rather
 than being confused with an empty result. Status and SKU filters can legitimately return zero rows.
@@ -42,8 +42,9 @@ model. Executable discovery describes the supported shape:
 
 - `identityBasis: "provider"`: product/variant/location fields retain Shopify IDs. Each row's `source` scopes them to
   its Copacker connection and provider account. Channel keys are not canonical UUIDs.
-- `targetBasis: "pooled"`: Amazon uses the existing single pooled target and inbound/open-PO reconciliation.
-  It does not invent separate FBA/AWD target allocations. Missing pools are surfaced as incomplete coverage.
+- `targetBasis: "pooled"`: each configured target pools its selected members before calculating a recommendation.
+  The same saved pools appear in the app's existing selector. Independent targets remain separate; missing selected
+  members are surfaced as incomplete coverage. Amazon inbound/open-PO reconciliation is preserved.
 - There are no canonical product IDs, immutable sales coverage IDs or full dependency validation
   yet. A retained report is not a consumable purchase plan. Plan and create-PO operations remain undiscoverable.
 - JSON envelopes and declared CSV stdout/local output work. `--file-format`/`--export-id` server artifact exports remain

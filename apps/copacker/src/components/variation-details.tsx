@@ -1,5 +1,6 @@
+import { variantStockTargetSchema } from "@repo/copacker-contract"
 import { useId } from "react"
-import { useController } from "react-hook-form"
+import { useController, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Input } from "@/components/ui/input"
@@ -7,10 +8,29 @@ import { Label } from "@/components/ui/label"
 import { useMessageText } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { FormNumber } from "./form-controls"
 
 // What Copacker keeps for a variation: its supplier SKU, ASIN, and the least stock to keep at Amazon and at the buyer's
 // own locations. No minimum means none; an Amazon minimum of 0 means the variation isn't stocked there.
+const stockTargetsSchema = z.object({
+  revision: z.number().int().min(0),
+  targets: z.array(
+    variantStockTargetSchema.extend({
+      quantity: z
+        .number("products.details.enterWholeNumber")
+        .int("products.details.enterWholeNumber")
+        .min(0)
+        .max(1000000)
+        .nullable(),
+      originalQuantity: z.number().nullable().optional(),
+      name: z.string().nullable().optional(),
+      provider: z.enum(["amazon", "store"]).optional()
+    })
+  )
+})
+
 export type VariationFields = {
+  stockTargets?: z.infer<typeof stockTargetsSchema>
   supplierSku: string | null
   asin: string | null
   amazonStockTarget: number | null
@@ -18,6 +38,7 @@ export type VariationFields = {
 }
 // What's sent to save them. Empty text clears a value.
 type VariationInput = {
+  stockTargets?: { revision: number; targets: z.infer<typeof variantStockTargetSchema>[] }
   supplierSku: string
   asin: string
   amazonStockTarget: number | null
@@ -41,6 +62,7 @@ const text = z.string().trim().max(255)
 const wholeNumber = "products.details.enterWholeNumber"
 const minimum = z.number(wholeNumber).int(wholeNumber).min(0).max(1000000).nullable()
 export const variationSchema = z.object({
+  stockTargets: stockTargetsSchema.optional(),
   variantId: z.string(),
   supplierSku: text,
   asin: text,
@@ -52,6 +74,12 @@ type VariationValues = z.output<typeof variationSchema>
 // A variation's saved fields as the product form's values.
 export function variationValues(variation: VariationFields & { variantId: string }): VariationValues {
   return {
+    ...(variation.stockTargets && {
+      stockTargets: {
+        ...variation.stockTargets,
+        targets: variation.stockTargets.targets.map((target) => ({ ...target, originalQuantity: target.quantity }))
+      }
+    }),
     variantId: variation.variantId,
     supplierSku: variation.supplierSku ?? "",
     asin: variation.asin ?? "",
@@ -62,6 +90,24 @@ export function variationValues(variation: VariationFields & { variantId: string
 
 export function variationInput(values: VariationValues): VariationInput {
   return {
+    ...(values.stockTargets && {
+      stockTargets: {
+        revision: values.stockTargets.revision,
+        targets: values.stockTargets.targets.flatMap(
+          ({ id, quantity, stocked, destination, provider, originalQuantity }) =>
+            quantity === null
+              ? []
+              : [
+                  {
+                    id,
+                    quantity,
+                    stocked: provider === "amazon" && quantity !== originalQuantity ? quantity !== 0 : stocked,
+                    destination
+                  }
+                ]
+        )
+      }
+    }),
     supplierSku: values.supplierSku,
     asin: values.asin,
     amazonStockTarget: values.amazonStockTarget,
@@ -71,6 +117,7 @@ export function variationInput(values: VariationValues): VariationInput {
 
 export function sameVariation(a: VariationInput, b: VariationInput) {
   return (
+    JSON.stringify(a.stockTargets) === JSON.stringify(b.stockTargets) &&
     a.supplierSku === b.supplierSku &&
     a.asin === b.asin &&
     a.amazonStockTarget === b.amazonStockTarget &&
@@ -96,12 +143,14 @@ function Cell({
   name,
   label,
   variation,
-  numeric = false
+  numeric = false,
+  showLabel = false
 }: {
   name: string
   label: string
   variation: string
   numeric?: boolean
+  showLabel?: boolean
 }) {
   const t = useTranslations("products.variations")
   const messageText = useMessageText()
@@ -116,7 +165,7 @@ function Cell({
   }
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground @lg:sr-only">
+      <Label htmlFor={id} className={cn("text-xs font-normal text-muted-foreground", !showLabel && "@lg:sr-only")}>
         {t.rich("fieldFor", {
           label,
           variation,
@@ -177,23 +226,77 @@ export function VariationDetails({
               <div className="grid grid-cols-2 gap-2 @lg:contents">
                 <Cell name={`variations.${index}.supplierSku`} label={t("supplierSku")} variation={label} />
                 <Cell name={`variations.${index}.asin`} label="ASIN" variation={label} />
-                <Cell
-                  name={`variations.${index}.amazonStockTarget`}
-                  label={t("amazonMinimum")}
-                  variation={label}
-                  numeric
-                />
-                <Cell
-                  name={`variations.${index}.storeStockTarget`}
-                  label={t("warehouseMinimum")}
-                  variation={label}
-                  numeric
-                />
+                <TargetQuantityFields index={index} provider="amazon" variation={label} compact />
+                <TargetQuantityFields index={index} provider="store" variation={label} compact />
               </div>
             </li>
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+// The existing quantity fields follow target identities. A pool is edited once, even when it contains several locations.
+export function TargetQuantityFields({
+  index,
+  provider,
+  variation,
+  compact = false
+}: {
+  index: number
+  provider: "amazon" | "store"
+  variation?: string
+  compact?: boolean
+}) {
+  const t = useTranslations("products.variations")
+  const targets = useWatch<{ variations: VariationValues[] }, `variations.${number}.stockTargets`>({
+    name: `variations.${index}.stockTargets`
+  })
+  const field = provider === "amazon" ? "amazonStockTarget" : "storeStockTarget"
+  const label = t(provider === "amazon" ? "amazonMinimum" : "warehouseMinimum")
+  const matches =
+    targets?.targets.flatMap((target, targetIndex) =>
+      target.provider === provider ? [{ target, targetIndex }] : []
+    ) ?? []
+  if (!targets || !matches.length) {
+    return compact ? (
+      <Cell name={`variations.${index}.${field}`} label={label} variation={variation ?? ""} numeric />
+    ) : (
+      <FormNumber
+        name={`variations.${index}.${field}`}
+        label={label}
+        description={provider === "amazon" ? t("amazonMinimumHint") : undefined}
+        min={0}
+        step={1}
+      />
+    )
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      {matches.map(({ target, targetIndex }) => {
+        const name = `variations.${index}.stockTargets.targets.${targetIndex}.quantity`
+        const targetLabel = matches.length === 1 ? label : (target.name ?? label)
+        return compact ? (
+          <Cell
+            key={target.id}
+            name={name}
+            label={targetLabel}
+            variation={variation ?? ""}
+            numeric
+            showLabel={matches.length > 1}
+          />
+        ) : (
+          <FormNumber
+            key={target.id}
+            name={name}
+            label={targetLabel}
+            description={provider === "amazon" ? t("amazonMinimumHint") : undefined}
+            min={0}
+            step={1}
+          />
+        )
+      })}
     </div>
   )
 }

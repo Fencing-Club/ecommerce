@@ -229,3 +229,62 @@ export const Closed = meta.story({
     await expect(screen.queryByRole("dialog")).toBeNull()
   }
 })
+
+const targetProduct = editable(1)
+const warehouseRef = {
+  provider: "shopify",
+  accountId: "shop.myshopify.com",
+  scope: "store",
+  externalId: "gid://shopify/Location/1"
+}
+export const MappedTargets = meta.story({
+  args: {
+    product: {
+      ...targetProduct,
+      variants: targetProduct.variants.map((variant) => ({
+        ...variant,
+        stockTargets: {
+          revision: 3,
+          targets: [
+            {
+              id: "00000000-0000-4000-8000-000000000001",
+              quantity: 100,
+              name: "Fencing Club",
+              provider: "store" as const,
+              destination: {
+                kind: "pool" as const,
+                locations: [warehouseRef, { ...warehouseRef, externalId: "gid://shopify/Location/2" }]
+              }
+            },
+            {
+              id: "00000000-0000-4000-8000-000000000002",
+              quantity: 25,
+              name: "Outlet",
+              provider: "store" as const,
+              destination: {
+                kind: "location" as const,
+                location: { ...warehouseRef, externalId: "gid://shopify/Location/3" }
+              }
+            }
+          ]
+        }
+      }))
+    }
+  },
+  play: async ({ args }) => {
+    const details = within(await panel())
+    const field = details.getByRole("spinbutton", { name: "Fencing Club" })
+    await expect(field).toHaveValue(100)
+    await expect(details.getByRole("spinbutton", { name: "Outlet" })).toHaveValue(25)
+    await userEvent.clear(field)
+    await userEvent.type(field, "140")
+    await userEvent.click(details.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(args.onSaved).toHaveBeenCalledOnce())
+    await expect(saved[0]?.body.stockTargets).toEqual({
+      revision: 3,
+      targets: args.product!.variants[0]!.stockTargets!.targets.map(
+        ({ name: _name, provider: _provider, ...target }, index) => ({ ...target, quantity: index ? 25 : 140 })
+      )
+    })
+  }
+})

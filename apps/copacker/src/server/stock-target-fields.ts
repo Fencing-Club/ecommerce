@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import {
   resolveStockTargets,
   type LocationGroup,
+  type TargetLocation,
   type UnassignedStockTarget,
   type VariantStockTarget
 } from "@repo/copacker-contract"
@@ -12,6 +13,26 @@ import { StatusError } from "./errors"
 import { stockTargetContext } from "./stock-targets"
 
 type TargetSet = Pick<typeof variantStockTargetSets.$inferSelect, "targets" | "unassigned">
+export function stockTargetFormValues(
+  set: TargetSet & { revision: number },
+  groups: readonly LocationGroup[],
+  locations: readonly TargetLocation[]
+) {
+  return {
+    revision: set.revision,
+    targets: resolveStockTargets(set.targets, groups, locations).targets.map(
+      ({ id, quantity, stocked, destination, name, members }) => ({
+        id,
+        quantity,
+        stocked,
+        destination,
+        name,
+        provider: members.every((member) => member.provider === "amazon") ? ("amazon" as const) : ("store" as const)
+      })
+    )
+  }
+}
+
 const fields = ["amazonStockTarget", "storeStockTarget"] as const
 type Fields = Record<(typeof fields)[number], number | null>
 

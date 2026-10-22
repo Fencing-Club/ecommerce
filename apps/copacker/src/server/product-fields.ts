@@ -1,3 +1,4 @@
+import { variantStockTargetsSchema, resolveStockTargets } from "@repo/copacker-contract"
 import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
@@ -19,8 +20,8 @@ import {
 import type { ErrorKey } from "@/i18n/errors"
 import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
-import { stockTargetFields, writeStockTargetFields } from "./stock-target-fields"
-import { preserveImportedStockTargets } from "./stock-targets"
+import { stockTargetFields, stockTargetFormValues, writeStockTargetFields } from "./stock-target-fields"
+import { preserveImportedStockTargets, stockTargetContext } from "./stock-targets"
 import { syncShopifySuppliers } from "./suppliers"
 import type { Session } from "./workspace-session"
 
@@ -320,6 +321,7 @@ const text = z
   .regex(/^[^\r\n]*$/)
 const target = z.number().int().min(0).max(1000000).nullable()
 const inputSchema = z.strictObject({
+  stockTargets: z.strictObject({ revision: z.number().int().min(0), targets: variantStockTargetsSchema }).optional(),
   variantId: variantIdSchema,
   // Empty clears a text value. Fields left out are kept.
   supplierSku: text.optional(),
@@ -343,8 +345,8 @@ export async function saveVariantFields(s: Session, raw: unknown) {
     }
     throw new StatusError(messages[String(field)] ?? "checkValues", 400)
   }
-  const { variantId, ...fields } = input.data
-  const { domain, saved } = await db().transaction(async (tx) => {
+  const { variantId, stockTargets, ...fields } = input.data
+  const { domain, saved, savedTargets, targetContext } = await db().transaction(async (tx) => {
     await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, s.org.id)).for("update")
     await tx
       .select({ id: connections.id })
@@ -375,6 +377,42 @@ export async function saveVariantFields(s: Session, raw: unknown) {
       throw new StatusError("productNotSyncedSync", 404)
     }
     const previous = (await readVariantFields(s.org.id, account.domain, [variantId], tx)).get(variantId)
+    if (stockTargets) {
+      const [current] = await tx
+        .select()
+        .from(variantStockTargetSets)
+        .where(
+          and(
+            eq(variantStockTargetSets.orgId, s.org.id),
+            eq(variantStockTargetSets.shopifyDomain, account.domain),
+            eq(variantStockTargetSets.variantId, variantId)
+          )
+        )
+      if ((current?.revision ?? 0) !== stockTargets.revision) {
+        throw new StatusError("checkValues", 409)
+      }
+      const context = await stockTargetContext(s.org.id, tx)
+      if (resolveStockTargets(stockTargets.targets, context.groups, context.locations).issues.length) {
+        throw new StatusError("checkValues", 409)
+      }
+      await tx
+        .insert(variantStockTargetSets)
+        .values({
+          orgId: s.org.id,
+          shopifyDomain: account.domain,
+          variantId,
+          targets: stockTargets.targets,
+          revision: stockTargets.revision + 1
+        })
+        .onConflictDoUpdate({
+          target: [
+            variantStockTargetSets.orgId,
+            variantStockTargetSets.shopifyDomain,
+            variantStockTargetSets.variantId
+          ],
+          set: { targets: stockTargets.targets, revision: stockTargets.revision + 1 }
+        })
+    }
     await writeStockTargetFields(
       s.org.id,
       account.domain,
@@ -402,11 +440,27 @@ export async function saveVariantFields(s: Session, raw: unknown) {
       .returning()
     return {
       domain: account.domain,
+      targetContext: await stockTargetContext(s.org.id, tx),
+      savedTargets: (
+        await tx
+          .select()
+          .from(variantStockTargetSets)
+          .where(
+            and(
+              eq(variantStockTargetSets.orgId, s.org.id),
+              eq(variantStockTargetSets.shopifyDomain, account.domain),
+              eq(variantStockTargetSets.variantId, variantId)
+            )
+          )
+      )[0],
       saved: (await readVariantFields(s.org.id, account.domain, [variantId], tx)).get(variantId)
     }
   })
   await refreshStoredStockFields(s.org.id, domain)
   return {
+    ...(savedTargets && {
+      stockTargets: stockTargetFormValues(savedTargets, targetContext.groups, targetContext.locations)
+    }),
     supplierSku: saved?.supplierSku ?? null,
     asin: saved?.asin ?? null,
     amazonStockTarget: saved?.amazonStockTarget ?? null,

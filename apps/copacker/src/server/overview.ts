@@ -8,6 +8,8 @@ import {
   connections,
   contacts,
   inventoryLocationMappings,
+  inventoryLocationGroups,
+  variantStockTargetSets,
   orders,
   productDefaults,
   salesSyncs,
@@ -725,9 +727,11 @@ async function restockFingerprint(orgId: string) {
       order by ${suppliers.id}) from ${suppliers} where ${suppliers.buyerOrgId} = ${orgId}),
     (select sum(${inventoryLocationMappings.revision})::text || count(*) from ${inventoryLocationMappings}
       where ${inventoryLocationMappings.orgId} = ${orgId}),
+    (select sum(${variantStockTargetSets.revision})::text || count(*) from ${variantStockTargetSets} where ${variantStockTargetSets.orgId} = ${orgId}),
+    (select sum(${inventoryLocationGroups.revision})::text || count(*) from ${inventoryLocationGroups} where ${inventoryLocationGroups.orgId} = ${orgId}),
     (select string_agg(${contacts.id}::text || coalesce(${contacts.shopifyLocationId}, ''), ',' order by ${contacts.id})
       from ${contacts} where ${contacts.orgId} = ${orgId}),
-    (select string_agg(${connections.provider} || ${connections.externalId}, ',' order by ${connections.provider})
+    (select string_agg(${connections.provider} || ${connections.externalId} || ${connections.revision}, ',' order by ${connections.provider})
       from ${connections} where ${connections.orgId} = ${orgId})
   ) as fingerprint`)
   return String((result as unknown as { rows: { fingerprint: unknown }[] }).rows[0]?.fingerprint ?? "")
@@ -802,10 +806,12 @@ export async function overview(
   const marketplaceId = selected?.key.startsWith("amazon:")
     ? (marketplaces.find((marketplace) => `amazon:${marketplace.code}` === selected.key)?.id ?? null)
     : null
+  const targetChannel = restock.channels.find((channel) => channel.key === restockKey)?.channel
+  const poolMembers = targetChannel?.kind === "pool" ? targetChannel.members : null
   let channelSource: Store | null = null
   if (ebaySelected) {
     channelSource = "ebay"
-  } else if (restockKey) {
+  } else if (restockKey && !poolMembers) {
     channelSource = restockKey === "amazon" ? "amazon" : "shopify"
   }
   // A Shopify location shows the Shopify orders shipped from it.
@@ -816,10 +822,18 @@ export async function overview(
   const amazonConnected = accounts.some((account) => account.provider === "amazon")
   const excludedTags = await excludedShopifyTags(orgId)
   const scopedAccounts = accounts
-    .filter((account) => !channelSource || account.provider === channelSource)
+    .filter((account) =>
+      poolMembers
+        ? poolMembers.some((member) => member.provider === account.provider)
+        : !channelSource || account.provider === channelSource
+    )
     .map((account) => ({
       ...account,
       locationId: account.provider === "shopify" ? locationId : null,
+      locationIds:
+        account.provider === "shopify" && poolMembers
+          ? poolMembers.filter((member) => member.provider === "shopify").map((member) => member.externalId)
+          : undefined,
       excludedTags: account.provider === "shopify" ? excludedTags : [],
       withoutAmazon: account.provider === "shopify" && amazonConnected,
       marketplaceId: account.provider === "amazon" ? marketplaceId : null
@@ -909,7 +923,13 @@ export async function overview(
   ])
   // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
   const monthly: ChargeLine[] = monthlyCostShares(
-    costs.filter((cost) => cost.currency === currency && (!channelSource || cost.channel === channelSource)),
+    costs.filter(
+      (cost) =>
+        cost.currency === currency &&
+        (poolMembers
+          ? poolMembers.some((member) => member.provider === cost.channel)
+          : !channelSource || cost.channel === channelSource)
+    ),
     period.range.from,
     addDays(period.range.to, 1)
   ).map((cost) => ({
@@ -1008,6 +1028,13 @@ export async function overview(
     if (!selected) {
       return true
     }
+    if (poolMembers) {
+      return poolMembers.some((member) =>
+        receivingLocations(order.data, deliveryLocations).includes(
+          member.provider === "amazon" ? `amazon:${member.externalId}` : member.externalId
+        )
+      )
+    }
     if (restockKey === "amazon") {
       return orderDestination(order.data) === "amazon"
     }
@@ -1105,7 +1132,11 @@ export async function overview(
         now,
         restock: {
           ...summary,
-          sources: restock.sources.filter((source) => !channelSource || source.source === channelSource)
+          sources: restock.sources.filter((source) =>
+            poolMembers
+              ? poolMembers.some((member) => member.provider === source.source)
+              : !channelSource || source.source === channelSource
+          )
         },
         shipments: {
           waiting: states.filter((state) => state === "approval" || state === "waiting_labels").length,

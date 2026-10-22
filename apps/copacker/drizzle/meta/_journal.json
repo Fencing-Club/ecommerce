@@ -512,6 +512,13 @@
       "when": 1792705359074,
       "tag": "0072_daily_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792707752876,
+      "tag": "0073_preserve_shopify_location_selection",
+      "breakpoints": true
     }
   ]
 }

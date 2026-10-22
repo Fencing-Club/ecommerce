@@ -107,6 +107,7 @@ type Account = {
   provider: Store
   externalId: string
   locationId?: string | null
+  locationIds?: string[]
   excludedTags?: readonly string[]
   withoutAmazon?: boolean
   marketplaceId?: string | null
@@ -117,7 +118,15 @@ export const amazonImport = sql.raw(`(coalesce(o.data->>'sourceName', '') like '
 
 // An order counts for a location when any of its successful fulfillments shipped from there, so unfulfilled orders
 // aren't counted for any location.
-function shippedFrom(locationId: string | null | undefined) {
+function shippedFrom(locationId: string | null | undefined, locationIds?: string[]) {
+  if (locationIds) {
+    return locationIds.length
+      ? sql` and exists (select 1 from jsonb_array_elements(o.data->'fulfillments') f where f->>'status' = 'SUCCESS' and f->'location'->>'id' in (${sql.join(
+          locationIds.map((id) => sql`${id}`),
+          sql`, `
+        )}))`
+      : sql` and false`
+  }
   return locationId
     ? sql` and exists (select 1 from jsonb_array_elements(o.data->'fulfillments') f
         where f->>'status' = 'SUCCESS' and f->'location'->>'id' = ${locationId})`
@@ -128,7 +137,7 @@ function accountFilter(accounts: Account[]) {
   return sql`(${sql.join(
     accounts.map(
       (account) =>
-        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.excludedTags?.length ? sql` and not ${taggedWith(sql.raw("o.data"), account.excludedTags)}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
+        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId, account.locationIds)}${account.excludedTags?.length ? sql` and not ${taggedWith(sql.raw("o.data"), account.excludedTags)}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
     ),
     sql` or `
   )}) and ${countedOrder(sql`o.data`)}`
@@ -764,7 +773,7 @@ export async function platformCharges(
       if (advertising !== null) {
         lines.push({ key: "amazon-ads", label: t("charges.amazonAds"), minor: advertising, currency })
       }
-    } else if (account.provider === "shopify" && !account.locationId) {
+    } else if (account.provider === "shopify" && !account.locationId && !account.locationIds) {
       const result = await db().execute(sql`
         select case when type like 'SHIPPING%' then 'shopify-labels'
             when type like '%BILLING_DEBIT%' then 'shopify-bill'

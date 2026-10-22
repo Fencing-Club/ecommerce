@@ -711,7 +711,7 @@ describe("Restock operations", () => {
     expect(response.body.data.rows[0]).toMatchObject({ available: 40, incoming: 10, purchaseUnits: 50 })
     expect(response.body.data.targetBasis).toBe("pooled")
     expect(response.body.meta.completeness).toBe("partial")
-    expect(response.body.meta.warnings).toContainEqual(expect.objectContaining({ code: "pooled_target" }))
+    expect(response.body.meta.warnings).not.toContainEqual(expect.objectContaining({ code: "pooled_target" }))
     expect(response.body.data.coverage.map((row: { provider: string }) => row.provider)).toEqual(["amazon"])
   })
   it("retains snapshot observation time after a failed refresh and prunes expired reports only in this workspace", async () => {

@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   createPoHref,
+  type RestockReportData,
   type LineEdit,
   type LineEdits,
   lostSales,
@@ -19,7 +20,7 @@ import {
   poLineLimit
 } from "@/lib/restock-selection"
 import { cn } from "@/lib/utils"
-import type { RestockChannel, RestockLine } from "@/server/restock-plan"
+import type { RestockLine } from "@/server/restock-plan"
 import { RestockLineRows, restockColumns, type RestockText, useRestockText } from "./restock-line"
 
 // A selection's size for a meta line: lines and units, then cases, volume and weight when case packs are known.
@@ -89,7 +90,7 @@ export function RestockSupplierGroup({
   // Null for a supplier only in Shopify, ordered outside Copacker, so there's no PO to create.
   supplierId: string | null
   lines: RestockLine[]
-  channel: RestockChannel
+  channel: RestockReportData["channel"]
   edits: LineEdits
   setEdit: (variantId: string, edit: LineEdit) => void
   // Collapsed, the group shows only its header: its totals and Reorder. Its selections still count.

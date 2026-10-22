@@ -10,6 +10,7 @@ import {
 } from "../src/db/schema"
 import { connectionInventory, updateConnectionInventory } from "../src/server/operation-connections"
 import { readVariantFields, saveVariantFields } from "../src/server/product-fields"
+import { restockAllChannels, restockChannels, restockReport } from "../src/server/restock-page"
 import {
   listLocationGroups,
   preserveImportedStockTargets,
@@ -22,6 +23,9 @@ import { database, setUpTestDatabase } from "./test-db"
 import { testSession } from "./test-session"
 
 vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/sales-orders", () => ({
+  restockDemand: async () => ({ shopifySales: { rows: [], gaps: [] }, amazonSales: null, ebaySales: null, sources: [] })
+}))
 setUpTestDatabase({ truncate: true })
 const orgId = randomUUID()
 const s = testSession({ orgId, kind: "buyer" })
@@ -59,6 +63,7 @@ beforeEach(async () => {
           inventoryItemId: "gid://shopify/InventoryItem/1",
           buyerSku: "SKU",
           productTitle: "Product",
+          supplierName: "Outside supplier",
           variantTitle: "Default Title",
           imageUrl: null,
           tracked: true,
@@ -97,6 +102,75 @@ describe("stock target settings", () => {
     await saveVariantFields(s, { variantId, supplierSku: "EDIT", storeStockTarget: null })
     expect((await readStockTargets(s, selection)).targets).toEqual(values)
     await expect(saveVariantFields(s, { variantId, storeStockTarget: 50 })).rejects.toMatchObject({ status: 409 })
+  })
+
+  it("edits independent target quantities from the existing product form with revision protection", async () => {
+    const values = [target(first), target(second)]
+    await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: values })
+    const changed = values.map((value, index) => ({ ...value, quantity: index ? 55 : 125 }))
+    await saveVariantFields(s, { variantId, stockTargets: { revision: 1, targets: changed }, supplierSku: "EDIT" })
+    expect((await readStockTargets(s, selection)).targets).toEqual(changed)
+    await expect(
+      saveVariantFields(s, { variantId, stockTargets: { revision: 1, targets: values } })
+    ).rejects.toMatchObject({ status: 409 })
+    expect((await readStockTargets(s, selection)).targets).toEqual(changed)
+  })
+
+  it("uses a pooled target through the existing app selector and report without duplicate physical recommendations", async () => {
+    await saveStockTargets(s, {
+      ...selection,
+      expectedRevision: 0,
+      targets: [{ id: randomUUID(), quantity: 100, destination: { kind: "pool", locations: [first, second] } }]
+    })
+    const third = { ...first, externalId: "gid://shopify/Location/3" }
+    const [snapshot] = await database.select().from(stockSnapshots)
+    if (snapshot?.data?.source !== "shopify") {
+      throw new Error("Expected catalog")
+    }
+    await database
+      .update(stockSnapshots)
+      .set({
+        data: {
+          ...snapshot.data,
+          rows: snapshot.data.rows.map((row) => ({
+            ...row,
+            levels: [
+              ...row.levels,
+              { ...row.levels[0]!, locationId: third.externalId, locationName: "Third warehouse", available: 300 }
+            ]
+          }))
+        }
+      })
+      .where(eq(stockSnapshots.id, snapshot.id))
+    const saved = await readStockTargets(s, selection)
+    await saveStockTargets(s, {
+      ...selection,
+      expectedRevision: saved.revision,
+      targets: [...saved.targets, { ...target(third), quantity: 350 }]
+    })
+    const options = await restockChannels(orgId)
+    const pool = options.find((option) => option.channel.kind === "pool")!
+    expect(pool.label).toContain(" + ")
+    const report = await restockReport(s, { days: 30, leadTimeDays: 45, channel: pool.channel })
+    expect(report.lines).toHaveLength(1)
+    expect(report.lines[0]).toMatchObject({ targetStock: 100, available: 20, purchaseUnits: 80 })
+    const all = await restockAllChannels(orgId, 30, 45)
+    const allLines = all.channels.flatMap((channel) => channel.lines)
+    expect(allLines).toHaveLength(2)
+    expect(allLines.map((line) => line.purchaseUnits).sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual([50, 80])
+    expect(allLines.reduce((sum, line) => sum + (line.available ?? 0), 0)).toBe(320)
+    // The server resolves the selected identity; supplied members cannot change the pool.
+    if (pool.channel.kind !== "pool") {
+      throw new Error("Expected pool channel")
+    }
+    {
+      const tampered = await restockReport(s, {
+        days: 30,
+        leadTimeDays: 45,
+        channel: { ...pool.channel, members: [first] }
+      })
+      expect(tampered.lines).toEqual(report.lines)
+    }
   })
 
   it("configures connection availability independently of target membership with revision and admin checks", async () => {
