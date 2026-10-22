@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CopackerClient, clientError } from "@repo/copacker-client"
-import { commands, defineOperation, type SuccessEnvelope } from "@repo/copacker-contract"
+import { commands, credentialOperations, defineOperation, type SuccessEnvelope } from "@repo/copacker-contract"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
 import { runCli } from "../src/cli.ts"
@@ -208,6 +208,93 @@ describe("CLI execution", () => {
     ).toBe(2)
     expect(await runCli(["account", "show", "--json"], t.environment)).toBe(0)
     expect(t.stdout.join("") + t.stderr.join("")).not.toContain("never-print-this")
+  })
+  it("allows account schema inspection before selecting a workspace", async () => {
+    const t = await setup()
+    const environment = { ...t.environment, env: { COPACKER_TOKEN: "never-print-this" } }
+    expect(await runCli(["schema", "show", "account.show", "--json"], environment)).toBe(0)
+    expect(t.requests).toHaveLength(1)
+    expect(t.requests[0]?.body).toEqual({ input: { operation: "account.show" } })
+    expect(await runCli(["schema", "show", "po.create", "--json"], environment)).toBe(2)
+    expect(t.requests).toHaveLength(1)
+  })
+  it("ends a stalled secret response with a recoverable receipt and removes the empty protected file", async () => {
+    const t = await setup()
+    const controller = new AbortController()
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal)
+    const path = join(t.environment.store.directory, "secret.txt")
+    const credential = {
+      id: workspace,
+      revision: 1,
+      name: "restock-ci",
+      workspaceId: workspace,
+      principalId: "principal",
+      scopes: ["reports:read"],
+      createdAt: "2026-10-22T00:00:00Z",
+      expiresAt: "2026-11-21T00:00:00Z",
+      lastUsedAt: null,
+      state: "pending_delivery",
+      generation: 1,
+      previousGenerationExpiresAt: null,
+      pendingDeliveryExpiresAt: "2026-10-22T00:10:00Z"
+    }
+    const fetcher: typeof fetch = async (url, init) => {
+      if (String(url).endsWith("/private/delivery")) {
+        const stream = new ReadableStream<Uint8Array>({
+          start(streamController) {
+            init?.signal?.addEventListener("abort", () => streamController.error(new Error("stalled secret bytes")), {
+              once: true
+            })
+            queueMicrotask(() => controller.abort())
+          }
+        })
+        return new Response(stream)
+      }
+      if (String(url).endsWith("/account.credential.create")) {
+        return Response.json(
+          envelope({
+            credential,
+            delivery: {
+              id: workspace,
+              expiresAt: "2026-10-22T00:10:00Z",
+              state: "available",
+              download: { url: "/private/delivery", authentication: "interactive_required" }
+            }
+          })
+        )
+      }
+      if (String(url).endsWith("/schema.show") && String(init?.body).includes("account.credential.create")) {
+        return Response.json(envelope(credentialOperations["account.credential.create"].descriptor))
+      }
+      return t.environment.fetch(url, init)
+    }
+    try {
+      expect(
+        await runCli(
+          [
+            "account",
+            "credential",
+            "create",
+            "--name",
+            "restock-ci",
+            "--scope",
+            "reports:read",
+            "--expires-in",
+            "30d",
+            "--secret-file",
+            path,
+            "--json"
+          ],
+          { ...t.environment, fetch: fetcher }
+        )
+      ).toBe(5)
+      expect(JSON.parse(t.stdout[0]!)).toHaveProperty("error.code", "credential_delivery_failed")
+      expect(JSON.parse(t.stdout[0]!)).toHaveProperty("error.details.credential.id", workspace)
+      expect(t.stdout.join("") + t.stderr.join("")).not.toContain("stalled secret bytes")
+      await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" })
+    } finally {
+      timeout.mockRestore()
+    }
   })
   it("retains one execution identity across reruns and separates explicit new intents", async () => {
     const t = await setup()

@@ -62,6 +62,9 @@ OS-backed test on Windows. Linux/macOS integration still needs native acceptance
 Credential create/rotate requires `--store-as` or an absolute `--secret-file`; files are created without overwrite and
 protected before consuming the one-use delivery. `logout` clears the interactive login and reports failed revocation;
 automation credentials use their explicit revoke operation.
+Secret delivery has a 30-second deadline covering the response body. A stalled/lost delivery retains the credential ID
+in its error receipt so an interactive administrator can inspect, rotate or revoke it; it never requests a new secret
+automatically. `schema show account.show` and `schema show workspace.list` work before workspace selection.
 
 ## Results and recovery
 

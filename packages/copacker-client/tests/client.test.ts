@@ -1,4 +1,11 @@
-import { contractVersion, defineOperation, type JsonObject, type SuccessEnvelope } from "@repo/copacker-contract"
+import {
+  accountShow,
+  contractVersion,
+  defineOperation,
+  jsonObject,
+  type JsonObject,
+  type SuccessEnvelope
+} from "@repo/copacker-contract"
 import { describe, expect, it, vi } from "vitest"
 import { z } from "zod"
 import { apiOrigin, clientError, CopackerClient, delay } from "../src/client.ts"
@@ -122,6 +129,72 @@ describe("operation client", () => {
       throw new Error("private-secret")
     })
     await expect(failing.client.call("order.list", {})).rejects.not.toThrow("private-secret")
+  })
+  it("checks result-schema compatibility and per-operation byte limits before a mutation", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json(envelope({ ok: true })))
+    const client = new CopackerClient({
+      baseUrl: "https://copacker.test",
+      token: "secret",
+      workspaceId: workspace,
+      fetch: fetcher
+    })
+    const descriptor = definition("product.update", true)
+    await expect(
+      client.call(
+        "product.update",
+        {},
+        {
+          descriptor: { ...descriptor, outputSchema: { $ref: "#/$defs/missing" } },
+          idempotencyKey: "unchanged"
+        }
+      )
+    ).rejects.toMatchObject({ envelope: { error: { code: "unsupported_contract" } } })
+    await expect(
+      client.call(
+        "product.update",
+        { mode: "éé" },
+        {
+          descriptor: { ...descriptor, limits: { maxInputBytes: 14 } },
+          idempotencyKey: "unchanged"
+        }
+      )
+    ).rejects.toMatchObject({ envelope: { error: { code: "invalid_input" } } })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it("classifies execution using the validated input, including defaults", async () => {
+    const descriptor = definition("product.update", true)
+    descriptor.inputSchema = jsonObject.parse(
+      z.toJSONSchema(z.strictObject({ mode: z.literal("read").default("read") }), {
+        io: "input"
+      })
+    )
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json(envelope({ ok: true })))
+    const client = new CopackerClient({
+      baseUrl: "https://copacker.test",
+      token: "secret",
+      workspaceId: workspace,
+      fetch: fetcher
+    })
+    await expect(client.call("product.update", {}, { descriptor })).resolves.toHaveProperty("data.ok", true)
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body)).input).toEqual({ mode: "read" })
+    expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).has("Idempotency-Key")).toBe(false)
+  })
+  it("bootstraps schema inspection without recursive discovery or an implicit workspace", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        ...envelope(accountShow.descriptor),
+        meta: { ...envelope({}).meta, workspaceId: null }
+      })
+    )
+    const client = new CopackerClient({ baseUrl: "https://copacker.test", token: "secret", fetch: fetcher })
+    await expect(client.call("schema.show", { operation: "account.show" })).resolves.toHaveProperty(
+      "data.operation",
+      "account.show"
+    )
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({ input: { operation: "account.show" } })
+    await expect(client.call("schema.show", { operation: "po.create" })).rejects.toMatchObject({ status: 400 })
+    expect(fetcher).toHaveBeenCalledTimes(1)
   })
   it("aggregates pages and coverage while rejecting repeated cursors and snapshot changes", async () => {
     const { client } = fixture("order.list", false, (input) =>

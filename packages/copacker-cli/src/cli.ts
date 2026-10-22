@@ -5,10 +5,12 @@ import { CopackerClient, CopackerError, apiOrigin, clientError } from "@repo/cop
 import {
   codeUnitOrder,
   commands,
+  credentialDeliverySchema,
   exitCode,
   isQuery,
   jsonObject,
   parseInput,
+  usesAccountContext,
   type CommandDefinition,
   type JsonObject,
   type SuccessEnvelope
@@ -130,16 +132,7 @@ async function deliverCredential(
   environment: CliEnvironment,
   sink?: Awaited<ReturnType<typeof secretFile>>
 ) {
-  const data = z
-    .object({
-      credential: jsonObject,
-      delivery: z.object({
-        id: z.uuid(),
-        state: z.enum(["available", "consumed", "expired"]),
-        download: z.object({ url: z.string(), authentication: z.literal("interactive_required") })
-      })
-    })
-    .parse(result.data)
+  const data = credentialDeliverySchema.parse(result.data)
   if (data.delivery.state !== "available") {
     throw clientError(
       "credential_delivery_unavailable",
@@ -149,7 +142,8 @@ async function deliverCredential(
     )
   }
   try {
-    const response = await client.transfer(data.delivery.download.url)
+    // Unlike large artifacts, a secret is small. Bound the entire one-use response, including its body.
+    const response = await client.transfer(data.delivery.download.url, { signal: AbortSignal.timeout(30000) })
     const secret = z.object({ token: z.string().min(1).max(8192) }).parse(await response.json())
     if (sink) {
       await sink.write(secret.token)
@@ -192,7 +186,7 @@ async function execute(
     }
   }
   const built = buildInput(definition, options, args, raw)
-  const account = definition.operation === "account.show" || definition.operation === "workspace.list"
+  const account = usesAccountContext(definition.operation, built.input)
   const { client, baseUrl, workspaceId } = await context(options, environment, account)
   const descriptor = await client.describe(definition.operation)
   if (descriptor.cliPath.join(".") !== definition.operation) {

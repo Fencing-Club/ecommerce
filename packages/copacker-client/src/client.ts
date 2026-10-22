@@ -7,7 +7,9 @@ import {
   operationDescriptorSchema,
   operationName,
   pageSchema,
+  schemaShow,
   successEnvelopeSchema,
+  usesAccountContext,
   type ErrorEnvelope,
   type JsonObject,
   type OperationDescriptor,
@@ -273,6 +275,10 @@ export class CopackerClient {
   }
 
   async describe(name: string, signal?: AbortSignal): Promise<OperationDescriptor> {
+    // Discovery cannot discover itself before a workspace has been selected. Its public shape is pinned locally.
+    if (name === "schema.show") {
+      return schemaShow.descriptor
+    }
     const cached = this.descriptors.get(name)
     if (cached) {
       return cached
@@ -280,7 +286,7 @@ export class CopackerClient {
     const response = await this.request(
       "schema.show",
       { operation: name },
-      name === "account.show" || name === "workspace.list",
+      usesAccountContext("schema.show", { operation: name }),
       true,
       { signal }
     )
@@ -305,10 +311,17 @@ export class CopackerClient {
       throw clientError("unsupported_contract", "The operation descriptor does not match the request.", 409)
     }
     let schema: z.ZodType
+    let output: z.ZodType
     try {
       schema = z.fromJSONSchema(descriptor.inputSchema)
     } catch {
       throw clientError("unsupported_contract", "This input schema requires a newer client.", 409)
+    }
+    // Fail before effects if this client cannot validate the receipt it is about to request.
+    try {
+      output = z.fromJSONSchema(descriptor.outputSchema)
+    } catch {
+      throw clientError("unsupported_contract", "This result schema requires a newer client.", 409)
     }
     const validated = schema.safeParse(input)
     if (!validated.success) {
@@ -323,23 +336,21 @@ export class CopackerClient {
       }))
       throw error
     }
-    const query = isQuery(descriptor, input)
+    const parsedInput = jsonObject.parse(validated.data)
+    if (new TextEncoder().encode(JSON.stringify(parsedInput)).length > descriptor.limits.maxInputBytes) {
+      throw clientError("invalid_input", `The operation input exceeds ${descriptor.limits.maxInputBytes} bytes.`)
+    }
+    const query = isQuery(descriptor, parsedInput)
     if (!query && !options.idempotencyKey) {
       throw clientError("invalid_input", "Mutations require an execution key.")
     }
     const result = await this.request(
       name,
-      jsonObject.parse(validated.data),
-      descriptor.context === "account",
+      parsedInput,
+      descriptor.context === "account" || usesAccountContext(name, parsedInput),
       query || descriptor.execution.idempotent,
       options
     )
-    let output: z.ZodType
-    try {
-      output = z.fromJSONSchema(descriptor.outputSchema)
-    } catch {
-      throw clientError("unsupported_contract", "This result schema requires a newer client.", 409)
-    }
     const validatedOutput = output.safeParse(result.data)
     if (!validatedOutput.success) {
       throw clientError("unsupported_contract", "The result did not match the published operation schema.", 409)
