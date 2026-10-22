@@ -141,7 +141,8 @@ export const cartonList = (ids: readonly string[]) => cartonRuns(ids).map(carton
 // too), semicolons, new lines or spaces. A run is two IDs of one sequence joined by a dash, and the second can leave
 // out the letters (A1–6). Text that's an ID of `known`, such as 01-2, stays one ID. Each carton once, in the order
 // written.
-export function readCartonIds(text: string, known: ReadonlySet<string>) {
+export function readCartonIds(text: string, cartonIds: Iterable<string>) {
+  const known = new Set([...cartonIds].map((id) => id.toLowerCase()))
   const ids = new Map<string, string>()
   const read = (token: string) => (known.has(token.toLowerCase()) ? [token] : expandRun(token))
   // A run of IDs with spaces in them (Box 1–Box 3) is one run; other text with spaces is several IDs or runs.

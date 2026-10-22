@@ -36,6 +36,10 @@ describe("carton runs", () => {
     expect(readCartonIds(" ,; ", known)).toEqual([])
   })
 
+  it("knows IDs in any case", () => {
+    expect(readCartonIds("A1-2, a1-3", ["A1-2", "A1-3"])).toEqual(["A1-2", "a1-3"])
+  })
+
   it("reads a carton list back as its IDs", () => {
     const ids = ["A1", "A2", "A3", "A5", "B1", "C1"]
     expect(readCartonIds(cartonList(ids), known)).toEqual(ids)
