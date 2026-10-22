@@ -1295,7 +1295,7 @@ export function PurchaseOrderFlow({
         <div className="grid min-w-0 items-start gap-6 @5xl/po:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="flex min-w-0 flex-col gap-6">
             <div className="flex gap-3">
-              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs text-primary sm:flex">
+              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs text-primary sm:flex">
                 {reviewOwn ? "You" : { buyer: "ML", supplier: "AR" }[viewer]}
               </span>
               <div>
