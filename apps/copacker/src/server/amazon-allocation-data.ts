@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, gte, lt, desc, inArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -67,12 +68,12 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
       const reportTotals = await tx.execute(sql`
         select 'storage:' || kind as source, currency, count(*)::int as rows, count(amount)::int as "knownAmountRows", sum(amount::numeric)::text as amount
         from amazon_storage_fees where "orgId"=${orgId} and "externalAccountId"=${account.externalId}
-          and "marketplaceId"='ATVPDKIKX0DER' and "periodDay">=${input.from}::date and "periodDay"<${input.to}::date
+          and "marketplaceId"=${usMarketplaceId} and "periodDay">=${input.from}::date and "periodDay"<${input.to}::date
         group by kind,currency
         union all
         select 'removals:' || kind, currency, count(*)::int, count("removalFee")::int, sum("removalFee"::numeric)::text
         from amazon_removals where "orgId"=${orgId} and "externalAccountId"=${account.externalId}
-          and "marketplaceId"='ATVPDKIKX0DER'
+          and "marketplaceId"=${usMarketplaceId}
           and (case when kind='orders' then "requestedAt" else "shippedAt" end)>=${`${input.from}T00:00:00Z`}::timestamptz
           and (case when kind='orders' then "requestedAt" else "shippedAt" end)<${`${input.to}T00:00:00Z`}::timestamptz
         group by kind,currency
@@ -107,7 +108,7 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
         linkedPostingsTruncated: linkedTruncated,
         missingLinkedTransactionIds: linkedIds.filter((id) => !accountingRows.some((row) => row.transactionId === id)),
         reportComparison: {
-          marketplaceId: "ATVPDKIKX0DER",
+          marketplaceId: usMarketplaceId,
           from: input.from,
           to: input.to,
           totals: reportTotals.rows,

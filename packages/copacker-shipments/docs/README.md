@@ -11,6 +11,10 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
 its `receiver`; `orderDestination` reads where the PO goes from them.
 
+## Amazon inbound shipments
+
+Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).
+
 ## Shipping documents
 
 `shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing

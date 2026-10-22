@@ -1,4 +1,5 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import type { AdsProfile } from "@repo/copacker-marketplaces/amazon-ads"
 import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import {
@@ -36,7 +37,6 @@ import type { LandedChargeInput, LandedAllocation } from "../lib/landed-allocati
 import type { OperatingCostInput } from "../lib/operating-cost"
 import type { ProductImage } from "../lib/supplier-product"
 import { revisionReasons, type TimelineEvent, type TimelineEventKey } from "../lib/timeline-events"
-import type { AdsProfile } from "../server/amazon-ads-client"
 import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()

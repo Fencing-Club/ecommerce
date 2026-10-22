@@ -36,17 +36,6 @@ export function verifySignature(value: string, scope: string, signature: string)
   const given = Buffer.from(signature)
   return given.length === expected.length && timingSafeEqual(given, expected)
 }
-export function verifyShopifyHmac(params: URLSearchParams, secret: string) {
-  const provided = params.get("hmac") ?? ""
-  if (!/^[a-f0-9]{64}$/.test(provided)) {
-    return false
-  }
-  const entries = [...params]
-    .filter(([key]) => key !== "hmac" && key !== "signature")
-    .sort(([a], [b]) => a.localeCompare(b))
-  const message = entries.map(([key, value]) => `${key}=${value}`).join("&")
-  return timingSafeEqual(Buffer.from(provided, "hex"), createHmac("sha256", secret).update(message).digest())
-}
 export function appUrl() {
   const value = process.env.APP_URL ?? "http://localhost:3000"
   return new URL(value).origin
