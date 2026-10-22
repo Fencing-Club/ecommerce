@@ -1,16 +1,15 @@
 import { shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
-import { and, eq } from "drizzle-orm"
 import { objectEntries, objectKeys } from "ts-extras"
 import { z } from "zod"
-import { db } from "@/db"
-import { connections, jobs, organizations } from "@/db/schema"
-import { withJobWake } from "@/server/job-delivery"
 import { disconnect, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
-import { jobRow, type JobInput } from "./job-payloads"
-import { PollAgain, type JobContext } from "./job-runtime"
-import { requestSalesSync, SalesSyncError } from "./sales-orders"
+import type { JobInput } from "./job-payloads"
+import type { JobContext } from "./job-runtime"
+import { logEvent } from "./log"
+import { connectedAccount } from "./provider-accounts"
+import { eventWorkspace, queueEventJobs, queueSubscription, readMessage, startEventSync } from "./provider-events"
+import { requestSalesSync } from "./sales-orders"
 import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-compliance"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue } from "./sqs"
@@ -57,84 +56,44 @@ const topicScopes = new Map<string, string>([
 const eventTargets = new Map<string, (typeof topicTargets)[keyof typeof topicTargets]>(
   objectEntries(topicTargets).map(([topic, target]) => [topic.toLowerCase().replace(/_(?=[a-z]+$)/, "/"), target])
 )
-// Events are gathered into five-minute periods and each period starts one sync, so a burst of orders reads Shopify
-// once. The sync starts three minutes after its period ends, when the orders in it have settled (see syncChunks).
-const batchMs = 5 * 60000
-const settleMs = 3 * 60000
-
 // Shopify delivers events to the app's Amazon EventBridge source, which forwards them to an SQS queue the worker
 // reads. A queue keeps events through outages that HTTPS webhook retries don't outlast.
 const eventBridgeSource = z
   .string()
   .regex(/^arn:aws:events:[a-z0-9-]+::event-source\/aws\.partner\/shopify\.com\/\d+\/[\w.-]+$/)
 
-// Queues the work a Shopify event calls for, for every workspace connected to the store. Returns how many were.
-export async function receiveShopifyWebhook(topic: string, shop: string, now = Date.now()) {
+// Queues the work a Shopify event calls for, for every workspace connected to the store (see queueEventJobs). An
+// uninstall is handled right away; other events wait for their period.
+async function receiveShopifyWebhook(topic: string, shop: string, now: number) {
   const target = eventTargets.get(topic)
   if (!target || !shopDomainSchema.safeParse(shop).success) {
     return 0
   }
-  const accounts = await db()
-    .select({ orgId: connections.orgId })
-    .from(connections)
-    .where(and(eq(connections.provider, "shopify"), eq(connections.externalId, shop)))
-  if (!accounts.length) {
-    return 0
-  }
-  const batch = Math.floor(now / batchMs)
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(
-        accounts.map(({ orgId }) =>
-          jobRow(
-            "shopify-event",
-            `shopify-event:${orgId}:${target}:${batch}`,
-            { orgId, shop, target },
-            { runAt: new Date(target === "uninstalled" ? now : (batch + 1) * batchMs + settleMs) }
-          )
-        )
-      )
-      .onConflictDoNothing()
-  )
-  return accounts.length
+  return queueEventJobs("shopify-event", shop, {
+    payload: (orgId) => ({ orgId, shop, target }),
+    target,
+    at: now,
+    immediate: target === "uninstalled"
+  })
 }
 
 // Worker job: starts the sync an event calls for, or removes the connection when the store uninstalled the app.
 export async function shopifyEventJob({ orgId, shop, target }: JobInput<"shopify-event">) {
-  const [account] = await db()
-    .select({ externalId: connections.externalId, kind: organizations.kind })
-    .from(connections)
-    .innerJoin(organizations, eq(organizations.id, connections.orgId))
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
-  // The workspace disconnected or switched stores after the event arrived.
-  if (!account || account.externalId !== shop) {
+  const org = await eventWorkspace(orgId, "shopify", shop)
+  if (!org) {
     return
   }
   if (target === "uninstalled") {
     // A store that reinstalls the app right away sends the uninstall late; its new authorization still works.
-    if (!(await authorizationRevoked(orgId))) {
-      return
+    if (await authorizationRevoked(orgId)) {
+      await disconnect(orgId, "shopify")
     }
-    await disconnect(orgId, "shopify")
     return
   }
-  const org = { id: orgId, kind: account.kind }
-  let started
-  try {
-    started =
-      target === "sales" ? await requestSalesSync(org, "shopify") : await refreshStock(org, { source: "shopify" })
-  } catch (error) {
-    // The connection can't sync orders (missing access); Settings already asks the buyer to reconnect.
-    if (error instanceof SalesSyncError) {
-      return
-    }
-    throw error
-  }
-  // A running sync started before these events, so it may miss them; start another once it finishes.
-  if (started?.status === "running") {
-    throw new PollAgain("Waiting for the running Shopify sync to finish")
-  }
+  await startEventSync(
+    () => (target === "sales" ? requestSalesSync(org, "shopify") : refreshStock(org, { source: "shopify" })),
+    "Waiting for the running Shopify sync to finish"
+  )
 }
 
 async function authorizationRevoked(orgId: string) {
@@ -152,15 +111,9 @@ async function authorizationRevoked(orgId: string) {
   }
 }
 
-// Queues subscribing the workspace's store to Copacker's webhooks. Runs after connecting and daily, which also repairs
-// subscriptions Shopify removed after failed deliveries.
+// Queues subscribing the workspace's store to Copacker's webhooks (see queueSubscription).
 export async function queueShopifySubscription(orgId: string, key: string) {
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(jobRow("shopify-subscribe", `shopify-subscribe:${orgId}:${key}`, { orgId }))
-      .onConflictDoNothing()
-  )
+  await queueSubscription("shopify-subscribe", orgId, key)
 }
 
 // Worker job: subscribes the connected store to each topic it isn't subscribed to yet, at the EventBridge source.
@@ -171,14 +124,11 @@ export async function shopifySubscribeJob(
   const configured = process.env.SHOPIFY_EVENTBRIDGE_SOURCE_ARN
   // An app without its own EventBridge source (such as local development) can't subscribe; syncs still copy orders.
   if (!configured) {
-    console.warn(JSON.stringify({ event: "shopify_webhooks_skipped", orgId, reason: "no EventBridge source" }))
+    logEvent("warn", "shopify_webhooks_skipped", { orgId, reason: "no EventBridge source" })
     return
   }
   const source = eventBridgeSource.parse(configured)
-  const [account] = await db()
-    .select({ scopes: connections.scopes })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
+  const account = await connectedAccount(orgId, "shopify")
   if (!account) {
     return
   }
@@ -202,24 +152,17 @@ const eventBridgeEvent = z.object({
 // so there's no signature to check. Returns false for a message that isn't a Shopify event, which is dropped; a privacy
 // webhook it can't read throws instead, so it isn't lost (see receiveShopifyCompliance).
 export async function receiveShopifyEvent(body: string, now = Date.now()) {
-  let json: unknown
-  try {
-    json = JSON.parse(body)
-  } catch {
-    json = null
-  }
-  const event = eventBridgeEvent.safeParse(json)
-  if (!event.success) {
-    console.warn(JSON.stringify({ event: "shopify_event_ignored", reason: "unrecognized event" }))
+  const event = readMessage(body, eventBridgeEvent, "shopify_event_ignored")
+  if (!event) {
     return false
   }
   const headers = new Map(
-    Object.entries(event.data.detail.metadata).map(([name, value]) => [name.toLowerCase(), String(value)])
+    Object.entries(event.detail.metadata).map(([name, value]) => [name.toLowerCase(), String(value)])
   )
   const topic = headers.get("x-shopify-topic") ?? ""
   if (shopifyComplianceTopics.some((compliance) => compliance === topic)) {
-    const deliveryId = headers.get("x-shopify-webhook-id") ?? event.data.id
-    await receiveShopifyCompliance(topic, event.data.detail.payload, deliveryId)
+    const deliveryId = headers.get("x-shopify-webhook-id") ?? event.id
+    await receiveShopifyCompliance(topic, event.detail.payload, deliveryId)
     return true
   }
   await receiveShopifyWebhook(topic, headers.get("x-shopify-shop-domain") ?? "", now)
