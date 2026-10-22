@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { defaultQuantityRules } from "../src/lib/catalog-pricing"
 import { readSheet, sheetCsv, sheetRows, sheetWorkbook } from "../src/server/product-sheet"
 
-const product = {
+const product: Parameters<typeof sheetRows>[0][number] = {
   title: "Épée blade",
   active: true,
   category: "Epee",

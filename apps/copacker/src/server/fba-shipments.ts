@@ -419,8 +419,7 @@ async function advanceFbaPlan(
       // The Amazon shipments the cartons travel in, in the order Amazon placed them.
       amazonShipmentId: [...new Set(labels.map((label) => label.amazonShipmentId))].join(", "),
       operation: "complete",
-      issue: null,
-      updatedAt: new Date()
+      issue: null
     })
     .where(eq(shipments.id, shipment.id))
   await assertOwned()

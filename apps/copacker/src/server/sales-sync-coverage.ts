@@ -1,11 +1,12 @@
 import { and, eq } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { salesSyncs } from "@/db/schema"
-import { connectedAccount, type Provider } from "./provider-accounts"
+import type { Store } from "@/lib/stores"
+import { connectedAccount } from "./provider-accounts"
 
 // The sales sync a background copy belongs to: one revision of one source's sync. With an account, also that account's
 // connection, so a copy for a replaced or disconnected account can't publish.
-export type SyncScope = { orgId: string; source: Provider; revision: number; externalAccountId?: string }
+export type SyncScope = { orgId: string; source: Store; revision: number; externalAccountId?: string }
 type Period = { from: Date; to: Date }
 
 export function salesSyncScope({ orgId, source, revision, externalAccountId }: SyncScope) {

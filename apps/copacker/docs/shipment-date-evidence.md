@@ -4,7 +4,7 @@ Implemented locally. Migration 0053 is generated, not deployed. No live provider
 
 ## Shopify
 
-Regular and bulk order readers retain fulfillment `createdAt` and nullable `inTransitAt`. Stored orders without these fields remain distinguishable from observed null values. Sales data versions 7 (without customers) and 8 (with customers) trigger the existing history backfill. Order-history permissions and retention still limit available history.
+Regular and bulk order readers retain fulfillment `createdAt` and nullable `inTransitAt`. Stored orders without these fields remain distinguishable from observed null values. Newly granted customer access triggers a complete history read. Order-history permissions and retention still limit available history.
 
 A source-linked depletion can omit `occurredAt` when its fulfillment has `inTransitAt`. The server uses that timestamp and rejects a conflicting supplied date. Creation time is retained as evidence only, never substituted for shipment time. If in-transit time is missing, a dated merchant shipping document is still required. See [Shopify's field definitions](https://shopify.dev/docs/api/admin-graphql/2026-07/objects/Fulfillment).
 

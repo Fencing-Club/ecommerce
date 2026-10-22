@@ -30,7 +30,9 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
     db()
       .select()
       .from(documents)
-      .where(and(eq(documents.orderId, order.id), eq(documents.outdated, 0), inArray(documents.kind, documentOrder))),
+      .where(
+        and(eq(documents.orderId, order.id), eq(documents.outdated, false), inArray(documents.kind, documentOrder))
+      ),
     serverTranslator("orders")
   ])
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)

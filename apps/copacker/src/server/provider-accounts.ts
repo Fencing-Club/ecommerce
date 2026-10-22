@@ -2,8 +2,7 @@ import { and, eq, sql } from "drizzle-orm"
 import { db, type Executor } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-
-export type Provider = "amazon" | "shopify" | "ebay"
+import type { Store } from "@/lib/stores"
 
 type AccountOptions = {
   executor?: Executor
@@ -16,7 +15,7 @@ type AccountOptions = {
 // The workspace's connected account for a provider, or null when it isn't connected.
 export async function connectedAccount(
   orgId: string,
-  provider: Provider,
+  provider: Store,
   { executor = db(), externalId, lock }: AccountOptions = {}
 ) {
   const query = executor
@@ -34,7 +33,7 @@ export async function connectedAccount(
 }
 
 // The connected account, or a "Connect … in Settings first" error.
-export async function requireConnectedAccount(orgId: string, provider: Provider, options: AccountOptions = {}) {
+export async function requireConnectedAccount(orgId: string, provider: Store, options: AccountOptions = {}) {
   const account = await connectedAccount(orgId, provider, options)
   if (!account) {
     throw new LocalizedError("connectInSettings", { provider })

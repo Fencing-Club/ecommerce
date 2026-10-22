@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { priceInMinorUnits, validateProposal } from "../src/lib/import-proposal"
 import { runImportAgent, type ImportUsage } from "../src/server/import-agent"
-import { priceInMinorUnits, validateProposal } from "../src/server/import-proposal"
 import type { ImportObservation } from "../src/server/import-trace"
 const id = "gid://shopify/ProductVariant/1"
 const proposal = () => ({

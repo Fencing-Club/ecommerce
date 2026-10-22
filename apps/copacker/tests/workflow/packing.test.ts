@@ -164,7 +164,7 @@ describe("packing and invoice approval", () => {
     const [row] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
     expect(row?.status).toBe("correction")
     expect(row?.revision).toBe(2)
-    expect((await database.select().from(tables.documents))[0]?.outdated).toBe(0)
+    expect((await database.select().from(tables.documents))[0]?.outdated).toBe(false)
     expect((await database.select().from(tables.jobs))[0]?.status).toBe("cancelled")
   })
 })
@@ -231,7 +231,7 @@ describe("fluid packing handoff", () => {
       database
         .select({ id: tables.documents.id })
         .from(tables.documents)
-        .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, 0)))
+        .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, false)))
     const filed = await currentPo()
     expect(filed).toHaveLength(1)
     storage.getFile.mockResolvedValue(new TextEncoder().encode("%PDF-"))

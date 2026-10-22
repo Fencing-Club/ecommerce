@@ -275,7 +275,7 @@ export async function saveSupplierSkus(
       .values({ orgId, shopifyDomain: domain, variantId, supplierSku: value })
       .onConflictDoUpdate({
         target: [variantFields.orgId, variantFields.shopifyDomain, variantFields.variantId],
-        set: { supplierSku: value, updatedAt: new Date() }
+        set: { supplierSku: value }
       })
   }
   await refreshStoredStockFields(orgId, domain)
@@ -344,7 +344,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
     .values({ orgId: s.org.id, shopifyDomain: account.domain, variantId, ...values })
     .onConflictDoUpdate({
       target: [variantFields.orgId, variantFields.shopifyDomain, variantFields.variantId],
-      set: { ...values, updatedAt: new Date() }
+      set: values
     })
     .returning()
   await refreshStoredStockFields(s.org.id, account.domain)
