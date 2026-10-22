@@ -8,6 +8,56 @@ const catalog = [
     snapshot: { observedAt: "2026-10-01T00:00:00Z", rows: [{ variantId: "v1", buyerSku: "SKU" }] }
   }
 ]
+it.each([
+  ["CANCELLED", 0, "inactive_plan"],
+  ["CREATED", 0, "receiving_not_final"],
+  ["CLOSED", 0, "closed_no_receipt_reported"],
+  ["CLOSED", 6, "closed_reported_counts_agree"],
+  ["CLOSED", 5, "closed_reported_counts_differ"],
+  ["CLOSED", null, "quantities_unknown"],
+  ["UNKNOWN", 6, "receiving_not_final"]
+])(
+  "classifies %s receipts of %s without assuming unused plans or units per case",
+  (shipmentStatus, received, receiptOutcome) => {
+    const result = receiptQuantities(
+      "awd_inbound_receipts",
+      {
+        shipmentStatus,
+        shipmentSkuQuantities: [
+          {
+            sku: "generic-sku",
+            expectedQuantity: { quantity: 6, unitOfMeasurement: "CASES" },
+            ...(received !== null ? { receivedQuantity: { quantity: received, unitOfMeasurement: "CASES" } } : {})
+          }
+        ]
+      },
+      []
+    )
+    expect(result).toMatchObject({
+      receiptOutcome,
+      unusedPlanConfirmed: null,
+      transferToFbaConfirmed: false,
+      unitConversion: { status: "not_established" }
+    })
+    expect(result?.rows[0]?.physicalPieces).toBeNull()
+  }
+)
+it("does not classify closed malformed or duplicate receipt rows as balanced", () => {
+  const item = {
+    sku: "SKU",
+    expectedQuantity: { quantity: 1, unitOfMeasurement: "CASES" },
+    receivedQuantity: { quantity: 1, unitOfMeasurement: "CASES" }
+  }
+  for (const shipmentSkuQuantities of [
+    [],
+    [item, item],
+    [{ ...item, receivedQuantity: { quantity: 1, unitOfMeasurement: "UNITS" } }]
+  ]) {
+    expect(
+      receiptQuantities("awd_inbound_receipts", { shipmentStatus: "CLOSED", shipmentSkuQuantities }, [])?.receiptOutcome
+    ).toBe("quantities_unknown")
+  }
+})
 it("compares only like units without fabricating costs, receipt dates or claim eligibility", () => {
   const result = receiptQuantities(
     "awd_inbound_receipts",
