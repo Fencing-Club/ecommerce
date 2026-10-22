@@ -1,4 +1,5 @@
 import type { AmazonPrep } from "@repo/copacker-marketplaces/amazon"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import {
   type AmazonNetwork,
   amazonNetworks,
@@ -523,7 +524,7 @@ export function buildFbaPlan(order: OrderInput, packing: Packing, name: string, 
   const { origin } = packing
   return {
     name,
-    destinationMarketplaces: ["ATVPDKIKX0DER"],
+    destinationMarketplaces: [usMarketplaceId],
     sourceAddress: {
       name: origin.name,
       addressLine1: origin.addressLine1,
