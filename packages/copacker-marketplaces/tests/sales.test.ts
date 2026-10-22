@@ -12,6 +12,7 @@ import {
   collectShopifySalesBulk,
   collectAmazonSales,
   collectAmazonSalesReport,
+  isAmazonFee,
   shopifyOrderWithCustomerQuery,
   shopifySalesQueries,
   transactionFees
@@ -293,6 +294,13 @@ describe("Amazon transactions", () => {
         }
       ])
     ).toBe(250)
+  })
+
+  it("counts only the named fee types, so a type merely named like a fee is not a fee", () => {
+    expect(transactionFees([{ breakdownType: "StorageFee", breakdownAmount: money(-4) }])).toBe(0)
+    expect(isAmazonFee(["Expenses", "AmazonFees", "StorageFee"])).toBe(true)
+    expect(isAmazonFee(["Expenses", "Commission"])).toBe(true)
+    expect(isAmazonFee(["Expenses", "ShippingFee"])).toBe(false)
   })
 
   it("follows next tokens and links each transaction to its order", async () => {
