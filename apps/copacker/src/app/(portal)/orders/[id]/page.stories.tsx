@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-orders"
+import { money, orderSubtotal } from "@repo/copacker-orders"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
@@ -162,7 +162,7 @@ async function OrderPage(args: Args) {
     text.requirement
   )
   const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
-  const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+  const subtotal = orderSubtotal(order.data.items)
   const place = (addressId: string | undefined) => args.places.find((candidate) => candidate.id === addressId)?.name
   const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   let noteLabel = t("detail.noteToSupplier")

@@ -1,26 +1,20 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportCurrency, reportDecimal, reportQuantity, reportRows, reportTimestamp } from "./report-tsv"
 
 export const removalReportTypes = {
   orders: "GET_FBA_FULFILLMENT_REMOVAL_ORDER_DETAIL_DATA",
   shipments: "GET_FBA_FULFILLMENT_REMOVAL_SHIPMENT_DETAIL_DATA"
 } as const
-const timestamp = z.iso.datetime({ offset: true }).transform((value) => new Date(value))
-const quantity = z
-  .string()
-  .regex(/^-?\d+$/)
-  .transform(Number)
-  .pipe(z.number().int().min(-2147483648).max(2147483647))
-  .nullable()
+const quantity = reportQuantity.nullable()
 const item = z.object({
-  requestedAt: timestamp,
+  requestedAt: reportTimestamp,
   orderId: z.string().min(1),
   orderType: z.string().nullable(),
   orderSource: z.string().nullable(),
   serviceSpeed: z.string().nullable(),
   status: z.string().nullable(),
-  updatedAt: timestamp.nullable(),
-  shippedAt: timestamp.nullable(),
+  updatedAt: reportTimestamp.nullable(),
+  shippedAt: reportTimestamp.nullable(),
   sku: z.string().nullable(),
   fnsku: z.string().nullable(),
   disposition: z.string().nullable(),
@@ -29,14 +23,8 @@ const item = z.object({
   disposedQuantity: quantity,
   shippedQuantity: quantity,
   inProcessQuantity: quantity,
-  removalFee: z
-    .string()
-    .regex(/^-?\d+(\.\d+)?$/)
-    .nullable(),
-  currency: z
-    .string()
-    .regex(/^[A-Z]{3}$/)
-    .nullable(),
+  removalFee: reportDecimal.nullable(),
+  currency: reportCurrency.nullable(),
   carrier: z.string().nullable(),
   trackingNumber: z.string().nullable()
 })
@@ -69,7 +57,7 @@ export function parseRemovalReport(text: string, kind: "orders" | "shipments") {
       serviceSpeed: order("service-speed"),
       status: kind === "orders" ? order("order-status") : shipment("shipment-status"),
       updatedAt: order("last-updated-date"),
-      shippedAt: kind === "shipments" ? timestamp.parse(row["shipment-date"]).toISOString() : null,
+      shippedAt: kind === "shipments" ? reportTimestamp.parse(row["shipment-date"]).toISOString() : null,
       sku: optional("sku"),
       fnsku: optional("fnsku"),
       disposition: optional("disposition"),

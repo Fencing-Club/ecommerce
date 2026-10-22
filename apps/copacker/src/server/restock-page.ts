@@ -1,4 +1,5 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -23,7 +24,7 @@ export const restockInputSchema = z.strictObject({
   leadTimeDays: days,
   channel: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("amazon") }),
-    z.strictObject({ kind: z.literal("shopify"), locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/) })
+    z.strictObject({ kind: z.literal("shopify"), locationId: locationIdSchema })
   ]),
   // Every supplier, one supplier's products, or products never ordered from a supplier.
   supplier: z.union([z.literal("all"), z.uuid()]).default("all")

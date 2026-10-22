@@ -1,3 +1,4 @@
+import type { PriceBasis } from "@repo/copacker-orders"
 import type { MessageKeys } from "use-intl"
 import type { NestedKeyOf } from "use-intl"
 import { createTranslator } from "use-intl"
@@ -17,9 +18,6 @@ const quantity = z.number().int().positive().max(10_000_000)
 const money = z.number().int().nonnegative().max(2_147_483_647)
 export const priceBreakSchema = z.object({ minimum: quantity, priceMinor: money })
 export const quantityRulesSchema = z.object({ increment: quantity, minimum: quantity, maximum: quantity.nullable() })
-
-export const priceBases = ["piece", "sellable_pack", "case"] as const
-export type PriceBasis = (typeof priceBases)[number]
 
 type PricingMessages = (typeof supplier)["pricing"]
 // Translates the "supplier.pricing" messages: a page's `useTranslations("supplier.pricing")`, or English by default for
