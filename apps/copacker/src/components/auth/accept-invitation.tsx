@@ -5,8 +5,7 @@ import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
 
 function initials(name: string) {
   return name
@@ -36,30 +35,18 @@ export function AcceptInvitation({
 }) {
   const t = useTranslations("auth.invite")
   const router = useRouter()
-  const [run] = useActionMutation()
-  const errorMessage = useErrorMessage()
+  const join = useAction("onboarding.join")
   const [choice, setChoice] = useState(workspaces[0]?.id ?? "")
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-  async function accept() {
+  const [settingUp, setSettingUp] = useState(false)
+  const pending = settingUp || join.pending
+  const error = join.error
+  function accept() {
     if (setUp && choice === "new") {
-      setPending(true)
-      router.navigate({ href: setUp })
+      setSettingUp(true)
+      void router.navigate({ href: setUp })
       return
     }
-    setPending(true)
-    setError("")
-    try {
-      const result = await run({
-        action: "onboarding.join",
-        data: { kind, token, ...(kind !== "team" && { orgId: choice }) }
-      }).unwrap()
-      router.navigate({ href: result.redirect ?? "/" })
-      router.invalidate()
-    } catch (failure) {
-      setError(errorMessage(failure))
-      setPending(false)
-    }
+    void join.run({ kind, token, ...(kind !== "team" && { orgId: choice }) })
   }
   return (
     <div className="flex flex-col gap-6">
@@ -81,12 +68,7 @@ export function AcceptInvitation({
         </RadioGroup>
       )}
       <FormError message={error} />
-      <SubmitButton
-        className="h-10 w-full"
-        pending={pending}
-        disabled={!choice && kind !== "team"}
-        onClick={() => void accept()}
-      >
+      <SubmitButton className="h-10 w-full" pending={pending} disabled={!choice && kind !== "team"} onClick={accept}>
         {choice === "new" ? t("continue") : label}
       </SubmitButton>
     </div>

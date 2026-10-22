@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { ShopifyPermissionError, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
@@ -17,7 +18,7 @@ import type { Session } from "./workspace-session"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
 export const stockScopes = {
-  fba: { provider: "amazon", scopeKey: "ATVPDKIKX0DER" },
+  fba: { provider: "amazon", scopeKey: usMarketplaceId },
   awd: { provider: "amazon", scopeKey: "us" },
   shopify: { provider: "shopify", scopeKey: "store" }
 } as const
@@ -59,7 +60,7 @@ export function describeError(error: unknown, depth = 0): Record<string, unknown
 export const stockSelection = z
   .strictObject({
     source: stockSource,
-    marketplaceId: z.literal("ATVPDKIKX0DER").optional()
+    marketplaceId: z.literal(usMarketplaceId).optional()
   })
   .refine((input) => (input.source === "fba" ? input.marketplaceId !== undefined : input.marketplaceId === undefined), {
     message: "errors.fbaMarketplaceOnly"

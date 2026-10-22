@@ -1,7 +1,7 @@
 import { useRouter } from "@tanstack/react-router"
-import { useId, useState } from "react"
+import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
-import { FormError } from "@/components/form-feedback"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,11 +14,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
 
 // The kinds of workspace, each of which says what deleting it takes with it. The purchase orders are the buyer's, so a
 // supplier's or forwarder's buyers keep theirs.
@@ -117,77 +112,42 @@ function Confirm({
   blocked?: boolean
 }) {
   const t = useTranslations("settings.delete")
-  const errorMessage = useErrorMessage()
-  const id = useId()
   const router = useRouter()
-  const [run] = useActionMutation()
   const [open, setOpen] = useState(false)
-  const [typed, setTyped] = useState("")
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-  const matches = typed.trim().toLowerCase() === expected.trim().toLowerCase()
+  const trigger = <AlertDialogTrigger render={<Button variant="destructive" />}>{label}</AlertDialogTrigger>
 
-  async function remove(event: React.FormEvent) {
-    event.preventDefault()
-    if (!matches || pending) {
-      return
-    }
-    setPending(true)
-    setError("")
-    try {
-      const result = await run({ action, data: { [field]: typed.trim() } }).unwrap()
-      // A full load, so nothing from the deleted workspace or account stays on screen.
-      window.location.assign(result.redirect ?? "/")
-    } catch (failure) {
-      setError(errorMessage(failure))
-      setPending(false)
-      router.invalidate()
-    }
-  }
-
-  return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        setTyped("")
-        setError("")
-      }}
-    >
-      <AlertDialogTrigger render={<Button variant="destructive" />}>{label}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <form onSubmit={remove} className="contents">
+  if (blocked) {
+    return (
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        {trigger}
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{title}</AlertDialogTitle>
             <AlertDialogDescription>{description}</AlertDialogDescription>
           </AlertDialogHeader>
-          {!blocked && (
-            <Field>
-              <FieldLabel htmlFor={id}>{fieldLabel}</FieldLabel>
-              <Input
-                id={id}
-                value={typed}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={expected}
-                onChange={(event) => setTyped(event.target.value)}
-              />
-            </Field>
-          )}
-          <FormError message={error} />
           <AlertDialogFooter>
-            <AlertDialogCancel type="button" disabled={pending}>
-              {blocked ? t("close") : t("cancel")}
-            </AlertDialogCancel>
-            {!blocked && (
-              <Button type="submit" variant="destructive" disabled={!matches || pending} aria-busy={pending}>
-                {pending && <Spinner data-icon="inline-start" />}
-                {label}
-              </Button>
-            )}
+            <AlertDialogCancel>{t("close")}</AlertDialogCancel>
           </AlertDialogFooter>
-        </form>
-      </AlertDialogContent>
-    </AlertDialog>
+        </AlertDialogContent>
+      </AlertDialog>
+    )
+  }
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={trigger}
+      title={title}
+      description={description}
+      confirmLabel={label}
+      tone="destructive"
+      action={action}
+      data={{}}
+      // A full load, so nothing from the deleted workspace or account stays on screen.
+      navigation="document"
+      confirmText={{ name: field, label: fieldLabel, expected }}
+      // What blocks it may have changed elsewhere, such as a workspace that needs a new owner.
+      onError={() => void router.invalidate()}
+    />
   )
 }

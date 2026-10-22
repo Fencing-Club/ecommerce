@@ -21,7 +21,6 @@
       "closing": "Esci e vieni rimosso da tutti i workspace. {count, plural, one {{workspaces} viene chiuso con il tuo account.} other {{workspaces} vengono chiusi con il tuo account.}}",
       "handOver": "Prima trasferisci la proprietà di {workspaces}."
     },
-    "cancel": "Annulla",
     "close": "Chiudi"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "Trasferisci la proprietà",
     "transferTitle": "Trasferire la proprietà a {name}?",
     "transferDescription": "Diventa proprietario di {workspace} e tu resti amministratore.",
-    "cancel": "Annulla",
     "invitationExpired": "Invito scaduto",
     "invited": "Invitato, scade il {expires}",
     "invitationSent": "Invito inviato, scade il {expires}",

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
+import { orderSales } from "@repo/copacker-marketplaces/sales"
 import type { EbaySale } from "@repo/copacker-marketplaces/sales"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -22,7 +23,6 @@ import { restockPlan } from "../src/server/restock-plan"
 import { attributeEbaySales } from "../src/server/sales-attribution"
 import {
   listSalesOrders,
-  orderSales,
   requestSalesSync,
   restockDemand,
   salesSyncStatus,

@@ -15,43 +15,45 @@ const meta = preview.meta({
   title: "Components/Forms/Actions",
   component: ActionButton,
   args: {
-    action: "order.remind",
-    data: { orderId: "order-1045" },
-    children: "Send reminder",
-    successMessage: "Reminder sent"
+    action: "shipment.ship",
+    data: { id: "shipment-1" },
+    children: "Mark shipped"
   }
 })
 
 export const Succeeds = meta.story({
   play: async ({ canvas, msw }) => {
     const posted = recordActions(msw)
-    await userEvent.click(canvas.getByRole("button", { name: "Send reminder" }))
-    // The outcome shows as a toast, outside the button's row.
-    await expect(await screen.findByText("Reminder sent")).toBeVisible()
-    await expect(posted).toEqual([{ action: "order.remind", data: { orderId: "order-1045" } }])
-    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
+    const button = canvas.getByRole("button", { name: "Mark shipped" })
+    await userEvent.click(button)
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
+    await expect(posted).toEqual([{ action: "shipment.ship", data: { id: "shipment-1" } }])
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
+    await waitFor(() => expect(button).toBeEnabled())
   }
 })
 
+// A redirect opens the next page, which loads its data fresh, so the page isn't refreshed as well.
 export const Redirects = meta.story({
-  args: { action: "order.duplicate", children: "Duplicate", variant: "outline", size: "sm", successMessage: undefined },
+  args: { action: "shipment.create", data: { id: "order-1045" }, children: "Prepare shipment", variant: "outline" },
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ ok: true, redirect: "/orders/order-1047" }))
-    await userEvent.click(canvas.getByRole("button", { name: "Duplicate" }))
-    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-1047" }))
+    recordActions(msw, () => HttpResponse.json({ redirect: "/shipments/shipment-2" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Prepare shipment" }))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/shipments/shipment-2" }))
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
 export const Fails = meta.story({
   args: { variant: "destructive" },
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () => HttpResponse.json({ error: "The supplier has no email address" }, { status: 400 }))
-    await userEvent.click(canvas.getByRole("button", { name: "Send reminder" }))
-    await expect(await screen.findByText("The supplier has no email address")).toBeVisible()
-    await expect(screen.queryByText("Reminder sent")).toBeNull()
-    // Nothing is added beside the button.
+    recordActions(msw, () => HttpResponse.json({ error: "Pack the shipment first" }, { status: 400 }))
+    await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
+    // The failure shows as a toast, outside the button's row.
+    await expect(await screen.findByText("Pack the shipment first")).toBeVisible()
     await expect(canvas.queryByRole("alert")).toBeNull()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
+    await expect(canvas.getByRole("button", { name: "Mark shipped" })).toBeEnabled()
   }
 })
 
@@ -59,7 +61,7 @@ export const Pending = meta.story({
   play: async ({ canvas, msw }) => {
     // The server doesn't answer, so the button stays busy.
     msw.use(http.post("/api/action", held))
-    const button = canvas.getByRole("button", { name: "Send reminder" })
+    const button = canvas.getByRole("button", { name: "Mark shipped" })
     await userEvent.click(button)
     await waitFor(() => expect(button).toBeDisabled())
     await expect(button).toHaveAttribute("aria-busy", "true")
@@ -71,15 +73,15 @@ export const WaitsForRefresh = meta.story({
     recordActions(msw)
     const refresh = Promise.withResolvers<void>()
     getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
-    const button = canvas.getByRole("button", { name: "Send reminder" })
+    const button = canvas.getByRole("button", { name: "Mark shipped" })
     try {
       await userEvent.click(button)
       await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
+      // It stays busy until the page shows the result.
       await expect(button).toBeDisabled()
-      await expect(screen.queryByText("Reminder sent")).toBeNull()
+      await expect(button).toHaveAttribute("aria-busy", "true")
       refresh.resolve()
-      await expect(await screen.findByText("Reminder sent")).toBeVisible()
-      await expect(button).toBeEnabled()
+      await waitFor(() => expect(button).toBeEnabled())
     } finally {
       refresh.resolve()
     }
@@ -162,6 +164,20 @@ export const FormWaitsForRefresh = meta.story({
     } finally {
       refresh.resolve()
     }
+  }
+})
+
+// A form whose action redirects opens the next page, which loads fresh, and then finishes.
+export const FormRedirects = meta.story({
+  render: () => <SupplierForm onSuccess={formSucceeded} />,
+  play: async ({ canvas, msw }) => {
+    recordActions(msw, () => HttpResponse.json({ redirect: "/partners" }))
+    formSucceeded.mockClear()
+    await userEvent.type(canvas.getByLabelText(/Supplier name/), " Ltd")
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(formSucceeded).toHaveBeenCalledOnce())
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/partners" })
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 

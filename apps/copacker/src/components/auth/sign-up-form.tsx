@@ -3,7 +3,7 @@ import { useTranslations } from "use-intl"
 import { FormInput } from "@/components/form-controls"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldGroup } from "@/components/ui/field"
-import { useAuthForm } from "@/hooks/use-auth-form"
+import { useActionForm } from "@/hooks/useActionForm"
 import { signUpSchema } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
 import { PasswordField } from "./password-field"
@@ -23,9 +23,10 @@ export function SignUpForm({
   invitation?: string
 }) {
   const t = useTranslations("auth")
-  const { form, submit } = useAuthForm({
+  const { form, submit } = useActionForm({
     schema: signUpSchema,
     action: "auth.signUp",
+    navigation: "document",
     defaultValues: { email, password: "" },
     toPayload: (values) => ({ ...values, next, ...(invitation ? { invitation } : {}) })
   })

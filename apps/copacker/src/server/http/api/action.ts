@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { addressSchema } from "@repo/copacker-shipments"
+import { amazonReference, fbaPlanName } from "@repo/copacker-shipments/amazon-inbound"
 import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
@@ -20,7 +21,7 @@ import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { deleteAccount, deleteWorkspace } from "@/server/deletion"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
+import { cancelAmazonShipment } from "@/server/fba-shipments"
 import { startFirstSync } from "@/server/first-sync"
 import {
   createForwarder,

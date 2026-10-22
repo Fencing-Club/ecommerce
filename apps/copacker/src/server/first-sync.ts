@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { requestSalesSync } from "./sales-orders"
 import { refreshStock, type stockSelection } from "./stock"
 import type { Session } from "./workspace-session"
@@ -7,7 +8,7 @@ type Selection = import("zod").infer<typeof stockSelection>
 // What a store's Sync now starts: its orders, and each of its stock sources.
 const stockFor: Record<"shopify" | "amazon" | "ebay", Selection[]> = {
   shopify: [{ source: "shopify" }],
-  amazon: [{ source: "fba", marketplaceId: "ATVPDKIKX0DER" }, { source: "awd" }],
+  amazon: [{ source: "fba", marketplaceId: usMarketplaceId }, { source: "awd" }],
   // eBay sells from the stock Shopify tracks, so it has none of its own to copy.
   ebay: []
 }

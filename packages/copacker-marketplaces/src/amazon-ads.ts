@@ -1,7 +1,8 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
-import { isTimeZone } from "@/lib/time-zone"
+import { amazonMarketplaceSchema } from "./amazon-marketplaces"
 
+// The Amazon Ads API: seller profiles, daily ad-spend reports and their signed downloads.
 const api = "https://advertising-api.amazon.com"
 export const adsScope = "advertising::campaign_management"
 const identifier = z
@@ -11,7 +12,13 @@ const profileSchema = z.object({
   profileId: identifier,
   countryCode: z.string(),
   currencyCode: z.string().length(3),
-  timezone: z.string().refine(isTimeZone),
+  timezone: z.string().refine((zone) => {
+    try {
+      return new Intl.DateTimeFormat("en-US", { timeZone: zone }).resolvedOptions().timeZone.length > 0
+    } catch {
+      return false
+    }
+  }),
   accountInfo: z.object({
     id: z.string(),
     type: z.string(),
@@ -60,12 +67,8 @@ function readReport(value: unknown) {
   }
   return report
 }
-export function amazonAdsApp() {
-  const { AMAZON_ADS_CLIENT_ID, AMAZON_ADS_CLIENT_SECRET } = process.env
-  return AMAZON_ADS_CLIENT_ID && AMAZON_ADS_CLIENT_SECRET
-    ? { clientId: AMAZON_ADS_CLIENT_ID, clientSecret: AMAZON_ADS_CLIENT_SECRET }
-    : null
-}
+// The Ads developer app, which is separate from the SP-API app.
+export type AmazonAdsApp = { clientId: string; clientSecret: string }
 export class AdsRequestError extends Error {
   constructor(
     readonly status: number,
@@ -87,15 +90,17 @@ async function adsTransport<T>(stage: "token" | "report" | "download", read: () 
     throw new AdsRequestError(503, stage, failure)
   }
 }
-function adsFetch(input: string | URL, init: RequestInit, stage: "token" | "report" | "download") {
-  return adsTransport(stage, () => fetch(input, init))
+function adsFetch(
+  transport: typeof fetch,
+  input: string | URL,
+  init: RequestInit,
+  stage: "token" | "report" | "download"
+) {
+  return adsTransport(stage, () => transport(input, init))
 }
-export async function adsToken(grant: Record<string, string>) {
-  const app = amazonAdsApp()
-  if (!app) {
-    throw new Error("Amazon Ads application is not configured")
-  }
+export async function adsToken(app: AmazonAdsApp, grant: Record<string, string>, transport: typeof fetch = fetch) {
   const response = await adsFetch(
+    transport,
     "https://api.amazon.com/auth/o2/token",
     {
       method: "POST",
@@ -113,20 +118,21 @@ export async function adsToken(grant: Record<string, string>) {
     .parse(JSON.parse(await adsTransport("token", () => response.text())))
 }
 export class AmazonAds {
-  constructor(private readonly accessToken: string) {}
+  constructor(
+    private readonly app: AmazonAdsApp,
+    private readonly accessToken: string,
+    private readonly transport: typeof fetch = fetch
+  ) {}
   private async request(path: string, body?: unknown, contentType = "application/json"): Promise<unknown> {
-    const app = amazonAdsApp()
-    if (!app) {
-      throw new Error("Amazon Ads application is not configured")
-    }
     const response = await adsFetch(
+      this.transport,
       `${api}${path}`,
       {
         method: body ? "POST" : "GET",
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
-          "Amazon-Advertising-API-ClientId": app.clientId,
-          "Amazon-Ads-ClientId": app.clientId,
+          "Amazon-Advertising-API-ClientId": this.app.clientId,
+          "Amazon-Ads-ClientId": this.app.clientId,
           Accept: contentType,
           ...(body ? { "Content-Type": contentType } : {})
         },
@@ -148,7 +154,7 @@ export class AmazonAds {
         (p) =>
           p.accountInfo.type === "seller" &&
           p.accountInfo.id === sellerId &&
-          ["US", "CA", "MX", "BR"].includes(p.countryCode)
+          amazonMarketplaceSchema.safeParse(p.countryCode).success
       )
     if (!profiles.length) {
       return []
@@ -267,7 +273,7 @@ const reportRows = z.array(
       sku: row["advertisedProductSku.value"] ?? null
     }))
 )
-export async function downloadAdsReport(url: string) {
+export async function downloadAdsReport(url: string, transport: typeof fetch = fetch) {
   const location = new URL(url)
   if (
     location.protocol !== "https:" ||
@@ -279,7 +285,12 @@ export async function downloadAdsReport(url: string) {
   }
   // Signed report downloads must never receive the Ads token or client secret.
   // Workers rejects redirect: "error" before fetching. Manual mode preserves the no-redirect policy.
-  const response = await adsFetch(location, { redirect: "manual", signal: AbortSignal.timeout(60000) }, "download")
+  const response = await adsFetch(
+    transport,
+    location,
+    { redirect: "manual", signal: AbortSignal.timeout(60000) },
+    "download"
+  )
   if (response.status >= 300 && response.status < 400) {
     throw new Error("Unexpected Amazon Ads report redirect")
   }

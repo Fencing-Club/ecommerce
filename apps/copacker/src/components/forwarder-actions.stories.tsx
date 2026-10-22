@@ -129,5 +129,11 @@ export const RemoveFails = meta.story({
     await userEvent.click(screen.getByRole("button", { name: "Remove" }))
     await expect(await screen.findByText("Couldn’t remove Bayline Freight. Try again.")).toBeInTheDocument()
     await expect(screen.getByRole("alertdialog")).toBeInTheDocument()
+    // Opening it again starts without the error.
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
+    await userEvent.click(canvas.getByRole("button", { name: "Remove" }))
+    await screen.findByRole("alertdialog")
+    await expect(screen.queryByText("Couldn’t remove Bayline Freight. Try again.")).toBeNull()
   }
 })

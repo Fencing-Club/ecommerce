@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
 import { expect, userEvent, waitFor } from "storybook/test"
@@ -165,7 +166,7 @@ export const AmazonRow = meta.story({
     await expect(await canvas.findByText(/./, { selector: "time" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Sync Amazon inventory" }))
     await waitFor(() => expect(started).toHaveLength(2))
-    await expect(started).toEqual([{ source: "fba", marketplaceId: "ATVPDKIKX0DER" }, { source: "awd" }])
+    await expect(started).toEqual([{ source: "fba", marketplaceId: usMarketplaceId }, { source: "awd" }])
   }
 })
 

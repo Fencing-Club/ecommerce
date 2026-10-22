@@ -19,6 +19,7 @@ vi.mock("@/server/auth", async (original) => ({
 }))
 import { GET, POST } from "../src/server/http/api/connections/amazon-ads"
 vi.mock("../src/server/exchange-rates", () => ({ syncExchangeRates: vi.fn<() => Promise<void>>() }))
+import { adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
 import {
   adsCharge,
   adsStatus,
@@ -27,10 +28,10 @@ import {
   queueAdsSync,
   saveAdsConnection
 } from "../src/server/amazon-ads"
-import { adsToken, AmazonAds, downloadAdsReport } from "../src/server/amazon-ads-client"
 import { platformCharges } from "../src/server/overview-sales"
 import { encrypt } from "../src/server/security"
 
+const adsApp = { clientId: "ads-client", clientSecret: "ads-secret" }
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
@@ -203,7 +204,7 @@ describe("Amazon Ads authorization and transport", () => {
   })
   it("uses distinct developer credentials and form-encoded grants", async () => {
     fetchMock.mockResolvedValue(Response.json({ access_token: "access", refresh_token: "refresh" }))
-    await adsToken({
+    await adsToken(adsApp, {
       grant_type: "authorization_code",
       code: "code",
       redirect_uri: "https://copacker.ai/api/connections/amazon-ads"
@@ -224,11 +225,13 @@ describe("Amazon Ads authorization and transport", () => {
       ])
     )
     fetchMock.mockResolvedValueOnce(accountsResponse())
-    expect(await new AmazonAds("access").profiles("SELLER1")).toEqual([profile])
+    expect(await new AmazonAds(adsApp, "access").profiles("SELLER1")).toEqual([profile])
   })
   it("does not save an authorization with no matching profiles", async () => {
     fetchMock.mockResolvedValue(Response.json([]))
-    await expect(saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds("access"))).rejects.toThrow("No matching")
+    await expect(saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds(adsApp, "access"))).rejects.toThrow(
+      "No matching"
+    )
     expect(await database.select().from(tables.amazonAdsConnections)).toEqual([])
   })
   it("finds the matching account after a paginated response", async () => {
@@ -236,7 +239,7 @@ describe("Amazon Ads authorization and transport", () => {
       .mockResolvedValueOnce(Response.json([profile]))
       .mockResolvedValueOnce(Response.json({ adsAccounts: [], nextToken: "next" }))
       .mockResolvedValueOnce(accountsResponse())
-    expect(await new AmazonAds("access").profiles("SELLER1")).toEqual([profile])
+    expect(await new AmazonAds(adsApp, "access").profiles("SELLER1")).toEqual([profile])
     expect(fetchMock.mock.calls[2]![1]).toMatchObject({
       headers: { "Content-Type": "application/vnd.listaccountsresource.v1+json" },
       body: JSON.stringify({ maxResults: 100, nextToken: "next" })
@@ -246,10 +249,12 @@ describe("Amazon Ads authorization and transport", () => {
     fetchMock.mockImplementation(async (url) =>
       String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
     )
-    await saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds("access"))
+    await saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds(adsApp, "access"))
     const [grant] = await database.select().from(tables.amazonAdsConnections)
     expect(grant!.encryptedToken).not.toContain("refresh")
-    await expect(saveAdsConnection(orgId, "OTHER", "refresh", new AmazonAds("access"))).rejects.toThrow("No matching")
+    await expect(saveAdsConnection(orgId, "OTHER", "refresh", new AmazonAds(adsApp, "access"))).rejects.toThrow(
+      "No matching"
+    )
   })
   it("downloads bounded gzip without authorization headers", async () => {
     fetchMock.mockResolvedValue(new Response(gzipSync(JSON.stringify([reportRow(1.25)]))))
@@ -287,7 +292,7 @@ describe("Amazon Ads authorization and transport", () => {
   })
   it("scopes current API reports by account, country and sponsored ad products", async () => {
     fetchMock.mockResolvedValue(reportResponse("PENDING"))
-    expect(await new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).toBe("report")
+    expect(await new AmazonAds(adsApp, "access").createReport(profile, "2026-10-01", "2026-10-14")).toBe("report")
     expect(JSON.parse(String(fetchMock.mock.calls[0]![1]!.body))).toMatchObject({
       accessRequestedAccounts: [{ advertiserAccountId: profile.adsAccountId }],
       reports: [
@@ -308,7 +313,7 @@ describe("Amazon Ads authorization and transport", () => {
   })
   it("retries per-report throttling and rejects redacted reports", async () => {
     fetchMock.mockResolvedValueOnce(Response.json({ error: [{ errors: [{ code: "TOO_MANY_REQUESTS" }] }] }))
-    await expect(new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).rejects.toThrow(
+    await expect(new AmazonAds(adsApp, "access").createReport(profile, "2026-10-01", "2026-10-14")).rejects.toThrow(
       "report provider failure (429)"
     )
     fetchMock.mockResolvedValueOnce(
@@ -316,7 +321,7 @@ describe("Amazon Ads authorization and transport", () => {
         success: [{ report: { reportId: "report", status: "COMPLETED", warnings: [{ field: "metric.totalCost" }] } }]
       })
     )
-    await expect(new AmazonAds("access").report("report")).rejects.toThrow("incomplete")
+    await expect(new AmazonAds(adsApp, "access").report("report")).rejects.toThrow("incomplete")
   })
 })
 describe("durable ad spend imports", () => {
@@ -605,8 +610,10 @@ describe("durable ad spend imports", () => {
   )
   it("does not convert invalid JSON into a transport retry", async () => {
     fetchMock.mockImplementation(async () => new Response("not json"))
-    await expect(adsToken({ grant_type: "refresh_token", refresh_token: "test" })).rejects.toBeInstanceOf(SyntaxError)
-    await expect(new AmazonAds("access").report("report")).rejects.toBeInstanceOf(SyntaxError)
+    await expect(adsToken(adsApp, { grant_type: "refresh_token", refresh_token: "test" })).rejects.toBeInstanceOf(
+      SyntaxError
+    )
+    await expect(new AmazonAds(adsApp, "access").report("report")).rejects.toBeInstanceOf(SyntaxError)
     await expect(downloadAdsReport("https://test.s3.amazonaws.com/report")).rejects.toBeInstanceOf(SyntaxError)
   })
 })

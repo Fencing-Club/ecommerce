@@ -1,20 +1,21 @@
 import { randomUUID } from "node:crypto"
-import { sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
+import { exchangeAmazonCode, ProviderError, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
+import { amazonConsentUrl, amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
-import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
+import { normalizeShopDomain, shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
+import { exchangeShopifyCode, verifyShopifyHmac } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
-import { amazonConsentUrl, amazonMarketplaceSchema } from "@/lib/amazon-marketplaces"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
-import { ebayApp, shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
+import { ebayApp, shopifyApp } from "@/server/connections"
 import { queueEbaySubscription } from "@/server/ebay-events"
 import { errorResponse } from "@/server/errors"
 import { startFirstSync } from "@/server/first-sync"
-import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
+import { siteUrlFor, token, hash, encrypt } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
 export async function GET(request: Request, context: { params: { provider: string } }) {
@@ -110,23 +111,21 @@ export async function GET(request: Request, context: { params: { provider: strin
     scopes = ""
   if (provider === "shopify") {
     externalId = shopDomainSchema.parse(state.shop)
-    const response = await fetch(`https://${externalId}/admin/oauth/access_token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        client_id: process.env.SHOPIFY_CLIENT_ID,
-        client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-        expiring: 1,
-        code: z.string().min(1).parse(url.searchParams.get("code"))
-      }),
-      signal: AbortSignal.timeout(30000)
-    })
-    if (!response.ok) {
-      return errorResponse("shopifyConnectionFailed", 400)
+    let result: Awaited<ReturnType<typeof exchangeShopifyCode>>
+    try {
+      result = await exchangeShopifyCode(
+        shopifyApp(),
+        externalId,
+        z.string().min(1).parse(url.searchParams.get("code"))
+      )
+    } catch (error) {
+      if (error instanceof ShopifyRequestError) {
+        return errorResponse("shopifyConnectionFailed", 400)
+      }
+      throw error
     }
-    const result = shopifyTokenResponse.parse(await response.json())
-    credential = storedShopifyToken(result)
-    scopes = result.scope ?? ""
+    credential = result.token
+    scopes = result.scope
   } else if (provider === "ebay") {
     const app = ebayApp()
     if (!app) {
@@ -146,21 +145,21 @@ export async function GET(request: Request, context: { params: { provider: strin
     }
   } else {
     externalId = sellerIdSchema.parse(url.searchParams.get("selling_partner_id"))
-    const response = await fetch("https://api.amazon.com/auth/o2/token", {
-      method: "POST",
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code: z.string().min(1).parse(url.searchParams.get("spapi_oauth_code")),
-        client_id: process.env.AMAZON_CLIENT_ID!,
-        client_secret: process.env.AMAZON_CLIENT_SECRET!,
-        redirect_uri: callback
-      }),
-      signal: AbortSignal.timeout(30000)
-    })
-    if (!response.ok) {
-      return errorResponse("amazonConnectionFailed", 400)
+    const code = z.string().min(1).parse(url.searchParams.get("spapi_oauth_code"))
+    let refreshToken: string
+    try {
+      refreshToken = await exchangeAmazonCode(
+        { clientId: process.env.AMAZON_CLIENT_ID!, clientSecret: process.env.AMAZON_CLIENT_SECRET! },
+        code,
+        callback
+      )
+    } catch (error) {
+      if (error instanceof ProviderError) {
+        return errorResponse("amazonConnectionFailed", 400)
+      }
+      throw error
     }
-    credential = { token: z.object({ refresh_token: z.string() }).parse(await response.json()).refresh_token }
+    credential = { token: refreshToken }
   }
   const encryptedToken = encrypt(JSON.stringify(credential), `${s.org.id}:${provider}`)
   await db()

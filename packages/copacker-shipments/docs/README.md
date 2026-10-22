@@ -11,6 +11,10 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
 its `receiver`; `orderDestination` reads where the PO goes from them.
 
+## Amazon inbound shipments
+
+Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).
+
 ## Shipping documents
 
 `shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing
@@ -20,7 +24,8 @@ document data from a PO, its packing, labels and transport. Copacker's app rende
 countries addresses use.
 
 `documents` draws the purchase order and commercial invoice with pdf-lib, and `combinePdfs` joins PDFs. Packing lists and
-checklists come only from the shipping-document data above.
+checklists come only from the shipping-document data above. `orderLineText` is the text a PO or invoice line prints;
+tests check it rather than drawing a document, and the app's tests stub `purchaseOrderPdf` and `commercialInvoicePdf`.
 
 ## Shared values
 

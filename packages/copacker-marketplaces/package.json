@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     "./amazon": "./src/amazon.ts",
+    "./amazon-ads": "./src/amazon-ads.ts",
+    "./amazon-marketplaces": "./src/amazon-marketplaces.ts",
     "./shopify": "./src/shopify.ts",
+    "./shopify-auth": "./src/shopify-auth.ts",
     "./sales": "./src/sales.ts",
     "./shopify-economics": "./src/shopify-economics.ts",
     "./ledger": "./src/ledger.ts",

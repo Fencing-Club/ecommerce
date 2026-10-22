@@ -21,7 +21,6 @@
       "closing": "You’re signed out and removed from every workspace. {count, plural, one {{workspaces} closes with your account.} other {{workspaces} close with your account.}}",
       "handOver": "Transfer ownership of {workspaces} first."
     },
-    "cancel": "Cancel",
     "close": "Close"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "Transfer ownership",
     "transferTitle": "Transfer ownership to {name}?",
     "transferDescription": "They become the owner of {workspace}, and you stay an admin.",
-    "cancel": "Cancel",
     "invitationExpired": "Invitation expired",
     "invited": "Invited, expires {expires}",
     "invitationSent": "Invitation sent, expires {expires}",
