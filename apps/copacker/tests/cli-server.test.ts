@@ -87,7 +87,12 @@ const request = (token = access, extra: HeadersInit = {}) =>
   new Request("https://copacker.example/api/operations/account.show", {
     headers: { Authorization: `Bearer ${token}`, ...extra }
   })
-async function call(name: string, input: object = {}, workspace: string | null = workspaceId, key?: string) {
+async function call(
+  name: string,
+  input: object = {},
+  workspace: string | null = workspaceId,
+  key: string | undefined = name === "report.restock" ? randomUUID() : undefined
+) {
   const response = await operationResponse(
     new Request(`https://copacker.example/api/operations/${name}`, {
       method: "POST",
@@ -621,6 +626,17 @@ describe("Restock operations", () => {
     expect((await call("product.show", { id: product.id })).status).toBe(404)
     expect((await call("inventory.list")).body.meta.completeness).toBe("partial")
   })
+  it("retains one report and its coverage metadata across replays", async () => {
+    await catalog()
+    const first = await call("report.restock", {}, workspaceId, "same-report")
+    const replay = await call("report.restock", {}, workspaceId, "same-report")
+    expect(first.status).toBe(200)
+    expect(replay.body.data).toEqual(first.body.data)
+    expect(replay.body.meta.sources).toEqual(first.body.meta.sources)
+    expect(replay.body.meta.completeness).toBe(first.body.meta.completeness)
+    expect(await database.select().from(restockReports)).toHaveLength(1)
+    expect((await call("report.restock", { days: 10 }, workspaceId, "same-report")).status).toBe(409)
+  })
   it("uses workspace defaults and the shared planner, retains missing suppliers and immutable report evidence", async () => {
     await catalog()
     const client = new CopackerClient({
@@ -636,7 +652,7 @@ describe("Restock operations", () => {
     expect((await client.call("restock.channel.list", {})).data).toMatchObject({
       items: [{ id: channelId, connectionId, kind: "warehouse", locationId }]
     })
-    const response = await client.call("report.restock", {})
+    const response = await client.call("report.restock", {}, { idempotencyKey: "report-client" })
     const report = (await call("report.restock")).body.data
     const shared = await restockAllChannels(workspaceId, 30, 45)
     expect(report.settings).toEqual({ days: 30, leadTimeDays: 45 })
@@ -849,6 +865,14 @@ describe("Restock operations", () => {
     expect(response.body.meta.completeness).toBe("partial")
     expect(response.body.meta.warnings).toContainEqual(expect.objectContaining({ code: "pooled_target" }))
     expect(response.body.data.coverage.map((row: { provider: string }) => row.provider)).toEqual(["amazon"])
+    await database.delete(stockSnapshots).where(eq(stockSnapshots.source, "shopify"))
+    expect((await call("restock.channel.list")).body.data.items).toContainEqual(
+      expect.objectContaining({
+        id: "amazon",
+        eligible: false,
+        issues: [expect.objectContaining({ code: "source_unavailable" })]
+      })
+    )
   })
   it("retains snapshot observation time after a failed refresh and prunes expired reports only in this workspace", async () => {
     await catalog()
