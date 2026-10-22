@@ -1,6 +1,9 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
 
+// A selling partner's seller ID (merchant token), such as A1B2C3D4E5F6G7.
+export const sellerIdSchema = z.string().regex(/^[A-Z0-9]{8,32}$/)
+
 // How Amazon has a SKU prepared and labeled: its prep category (such as TEXTILE, or NONE), and who may prepare and
 // label it (SELLER_ONLY, AMAZON_ONLY or NONE_ONLY, and MUST_MATCH when one party does both), from Amazon's own record
 // of the SKU.

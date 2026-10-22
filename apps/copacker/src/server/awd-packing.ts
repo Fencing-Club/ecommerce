@@ -1,4 +1,5 @@
 import type { awdInboundShipmentSchema } from "@repo/copacker-marketplaces/amazon"
+import { centimetresPerInch, kilogramsPerPound } from "@repo/copacker-packing-rules"
 import { buildAwdRequest, type OrderInput, type Packing } from "@repo/copacker-shipments"
 import type { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
@@ -12,8 +13,8 @@ function cartonSignature(packages: Package[]) {
   const groups = new Map<string, number>()
   for (const { count, distributionPackage: carton } of packages) {
     const { dimensions, weight } = carton.measurements
-    const lengthScales: Record<string, number> = { CENTIMETERS: 1, INCHES: 2.54 }
-    const weightScales: Record<string, number> = { KILOGRAMS: 1, POUNDS: 0.45359237 }
+    const lengthScales: Record<string, number> = { CENTIMETERS: 1, INCHES: centimetresPerInch }
+    const weightScales: Record<string, number> = { KILOGRAMS: 1, POUNDS: kilogramsPerPound }
     const lengthScale = lengthScales[dimensions.unitOfMeasurement]
     const weightScale = weightScales[weight.unitOfMeasurement]
     if (!lengthScale || !weightScale || carton.type !== "CASE") {

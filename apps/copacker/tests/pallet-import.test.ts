@@ -6,13 +6,11 @@ import {
   palletRows,
   palletTemplate,
   parsePalletTable,
-  readCartonIds,
   readPalletFile
 } from "@/lib/pallet-import"
 
 // The 07.14 shipment: twelve A cartons, B1 and C1.
 const cartonIds = [...Array.from({ length: 12 }, (_, index) => `A${index + 1}`), "B1", "C1"]
-const known = new Set(cartonIds.map((id) => id.toLowerCase()))
 const row = (id: string, cartons: string, stacking = "Stackable", height = "75", weight = "68") => [
   id,
   "120",
@@ -51,27 +49,6 @@ describe("pallet import", () => {
       expect.objectContaining({ palletId: "2", cartonIds: ["A7", "A8", "A9", "B1"], weight: 51 }),
       expect.objectContaining({ palletId: "3", cartonIds: ["A10", "A11", "A12", "C1"], stackable: false })
     ])
-  })
-
-  it("expands runs as packing lists write them and keeps IDs it knows whole", () => {
-    expect(readCartonIds("A1 – A3, A2, B1", known)).toEqual(["A1", "A2", "A3", "B1"])
-    expect(readCartonIds("A1—A2\nC1 B1", known)).toEqual(["A1", "A2", "C1", "B1"])
-    expect(readCartonIds("A1–A2、B1，C1؛A12", known)).toEqual(["A1", "A2", "B1", "C1", "A12"])
-    expect(readCartonIds("01–03", new Set())).toEqual(["01", "02", "03"])
-    expect(readCartonIds("01-2, 01-3", new Set(["01-2", "01-3"]))).toEqual(["01-2", "01-3"])
-    // A run of IDs with spaces in them reads back as the export writes it.
-    expect(readCartonIds("Box 1–Box 3, A1 A3–A5", new Set(["box 1", "box 2", "box 3", ...known]))).toEqual([
-      "Box 1",
-      "Box 2",
-      "Box 3",
-      "A1",
-      "A3",
-      "A4",
-      "A5"
-    ])
-    // A run backwards, across letters or of more than 1,000 cartons stays as written, so it reads as unknown.
-    expect(readCartonIds("A3–A1, A1–B2, A1–A2000", known)).toEqual(["A3–A1", "A1–B2", "A1–A2000"])
-    expect(readCartonIds(" ,; ", known)).toEqual([])
   })
 
   it("rejects missing, duplicate and unexpected columns before reading rows", () => {

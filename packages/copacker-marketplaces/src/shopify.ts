@@ -1,4 +1,6 @@
 import { z } from "zod"
+// A Shopify product variant's ID, such as gid://shopify/ProductVariant/1.
+export const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 export const shopDomainSchema = z.string().regex(/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/)
 // Accepts what merchants paste: an admin URL, a storefront .myshopify.com URL, or the bare store handle.
 export function normalizeShopDomain(input: string) {
@@ -295,7 +297,7 @@ export class Shopify {
           nodes: z
             .array(
               z.object({
-                id: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+                id: variantIdSchema,
                 sku: z.string().nullable(),
                 title: z.string(),
                 price: z
@@ -539,7 +541,7 @@ export class Shopify {
   // usable (a stock target that isn't a whole number, a supplier of "None") come back as null.
   async metafieldValues(assertActive?: () => Promise<void>) {
     const node = z.object({
-      id: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+      id: variantIdSchema,
       supplierSku: field,
       asin: field,
       amazonTarget: field,

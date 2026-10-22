@@ -1,3 +1,4 @@
+import { centimetresPerInch, kilogramsPerPound } from "@repo/copacker-packing-rules"
 // The weight and size a carrier's label prints, read from the page's text, and whether they fit a carton
 // configuration. Carriers print them their own way: FedEx "ACTWGT: 27.40 LB" and "DIMMED: 24 X 16 X 16 IN", USPS
 // "27 lb 6 oz", DHL eCommerce "28 LB", UPS "DWT: 24,16,16". UPS labels bought through Shopify are pictures, with no
@@ -9,8 +10,6 @@ export type LabelMeasurements = {
   dimensions?: [number, number, number]
 }
 
-const kilogramsPerPound = 0.453_592_37
-const centimetresPerInch = 2.54
 const amount = String.raw`(\d+(?:\.\d+)?)`
 
 // The first pattern that matches gives the weight: a carrier's actual weight ahead of any other.

@@ -14,6 +14,7 @@ import { type Receiver, type ReceiverId, receiverIds, receivers } from "./receiv
 // documents and any CLI check packing the same way.
 
 export * from "./receivers"
+export * from "./units"
 
 // A purchase order line as the rules read it: its product, the pieces it orders, how many make a sellable unit, its
 // Amazon identifiers and the receiver it goes to.
@@ -135,6 +136,49 @@ export const cartonRunLabel = (run: readonly string[]) => (run.length > 1 ? `${r
 
 // Carton IDs as a packing list writes them, with runs of a sequence as ranges: "B4, B6, D1, D8–D9, D11".
 export const cartonList = (ids: readonly string[]) => cartonRuns(ids).map(cartonRunLabel).join(", ")
+
+// Carton IDs as a packing list writes them, the inverse of cartonList: IDs and runs (A1–A6, B1), split by commas (Chinese and Urdu ones
+// too), semicolons, new lines or spaces. A run is two IDs of one sequence joined by a dash, and the second can leave
+// out the letters (A1–6). Text that's an ID of `known`, such as 01-2, stays one ID. Each carton once, in the order
+// written.
+export function readCartonIds(text: string, cartonIds: Iterable<string>) {
+  const known = new Set([...cartonIds].map((id) => id.toLowerCase()))
+  const ids = new Map<string, string>()
+  const read = (token: string) => (known.has(token.toLowerCase()) ? [token] : expandRun(token))
+  // A run of IDs with spaces in them (Box 1–Box 3) is one run; other text with spaces is several IDs or runs.
+  const readPart = (whole: string) => {
+    if (known.has(whole.toLowerCase()) || !/\s/.test(whole)) {
+      return read(whole)
+    }
+    const run = expandRun(whole)
+    return run.length > 1 ? run : whole.split(/\s+/).flatMap(read)
+  }
+  for (const part of text.replaceAll(/\s*([–—-])\s*/g, "$1").split(/[,;，；、،؛\n\r]+/)) {
+    for (const id of readPart(part.trim())) {
+      if (id && !ids.has(id.toLowerCase())) {
+        ids.set(id.toLowerCase(), id)
+      }
+    }
+  }
+  return [...ids.values()]
+}
+
+// A run such as A1–A6, B01–B12 or C1–4 as its IDs, or the text itself when it isn't a run of up to 1,000 cartons.
+function expandRun(token: string) {
+  const ends = token.split(/[–—]/).length === 2 ? token.split(/[–—]/) : token.split("-")
+  const first = ends.length === 2 ? ends[0]!.match(/^(.*?)(\d+)$/) : null
+  const last = ends.length === 2 ? ends[1]!.match(/^(.*?)(\d+)$/) : null
+  if (!first || !last || (last[1] && last[1].toLowerCase() !== first[1]!.toLowerCase())) {
+    return [token]
+  }
+  const [, prefix = "", digits = ""] = first
+  const start = Number(digits)
+  const count = Number(last[2]) - start + 1
+  if (count < 2 || count > 1000) {
+    return [token]
+  }
+  return Array.from({ length: count }, (_, index) => `${prefix}${String(start + index).padStart(digits.length, "0")}`)
+}
 
 // Each carton on exactly one pallet, and every pallet holding cartons of this shipment.
 export function validatePallets(packing: {

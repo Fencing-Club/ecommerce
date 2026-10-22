@@ -1,3 +1,4 @@
+import { cartonRunLabel, cartonRuns } from "@repo/copacker-packing-rules"
 import { cartonInputSchema, type PackingDraft, packingSchema, palletInputSchema } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { zonedDay } from "./time-zone"
@@ -189,18 +190,9 @@ export function cartonTotals(groups: CartonGroup[]) {
   )
 }
 
+// A group's carton IDs: one run of a sequence as a range (A1–A6), any other IDs listed in full.
 export function cartonGroupLabel(cartons: { id: string }[]) {
-  const first = cartons[0]?.id
-  const sequence = first?.match(/^(.*?)(\d+)$/)
-  if (sequence && cartons.length > 1) {
-    const prefix = sequence[1]!
-    const digits = sequence[2]!
-    const start = Number(digits)
-    if (
-      cartons.every((carton, index) => carton.id === `${prefix}${String(start + index).padStart(digits.length, "0")}`)
-    ) {
-      return `${first}–${cartons.at(-1)!.id}`
-    }
-  }
-  return cartons.map((carton) => carton.id).join(", ")
+  const ids = cartons.map((carton) => carton.id)
+  const runs = cartonRuns(ids)
+  return runs.length === 1 ? cartonRunLabel(runs[0]!) : ids.join(", ")
 }

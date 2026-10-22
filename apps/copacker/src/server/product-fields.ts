@@ -1,3 +1,4 @@
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import type { ShopifyVariant } from "@repo/copacker-marketplaces/shopify"
@@ -287,7 +288,6 @@ const text = z
   .max(255)
   .regex(/^[^\r\n]*$/)
 const target = z.number().int().min(0).max(1000000).nullable()
-const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 const inputSchema = z.strictObject({
   variantId: variantIdSchema,
   // Empty clears a text value. Fields left out are kept.

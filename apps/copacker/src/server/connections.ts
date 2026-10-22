@@ -1,4 +1,4 @@
-import { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { Amazon, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
 import { Ebay } from "@repo/copacker-marketplaces/ebay"
 import { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
@@ -174,11 +174,7 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
     throw new AccessError("forbidden")
   }
   const input = selfAuthorizationSchema.parse(raw)
-  const sellerId = z
-    .string()
-    .trim()
-    .regex(/^[A-Z0-9]{8,32}$/)
-    .safeParse(process.env.AMAZON_MERCHANT_TOKEN)
+  const sellerId = sellerIdSchema.safeParse(process.env.AMAZON_MERCHANT_TOKEN?.trim())
   if (!sellerId.success) {
     throw new LocalizedError("requestFailed")
   }

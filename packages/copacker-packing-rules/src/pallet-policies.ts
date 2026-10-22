@@ -1,5 +1,6 @@
 import { amazonSources, type CartonField, weightLimit } from "./carton-policies"
 import type { AmazonNetwork } from "./receivers"
+import { centimetresPerInch } from "./units"
 
 // A rule a receiver sets for its pallets, as data, as carton-policies.ts keeps carton rules. A policy is the list of
 // rules one receiver's pallets follow. Rules on what the pallet editor measures have one evaluator each (checkPallet);
@@ -87,7 +88,6 @@ export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
   awd_us: { receiver: "AWD", rules: amazonPallet }
 }
 
-const centimetresPerInch = 2.54
 // Drops floating-point noise from a conversion, and keeps a tenth of a centimetre: 48 in is 121.9 cm.
 const centimetres = (value: number, unit: "cm" | "in") =>
   Number((unit === "cm" ? value : value * centimetresPerInch).toFixed(1))

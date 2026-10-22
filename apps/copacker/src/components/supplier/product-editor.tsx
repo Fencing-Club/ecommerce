@@ -1,3 +1,4 @@
+import { orderCurrencies, type OrderCurrency } from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import { useRef, useState } from "react"
@@ -33,8 +34,6 @@ import { cn } from "@/lib/utils"
 import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
 
-const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
-type Currency = (typeof currencies)[number]
 const bases = ["piece", "sellable_pack", "case"] as const satisfies readonly PriceBasis[]
 
 export type EditorVariant = {
@@ -42,7 +41,7 @@ export type EditorVariant = {
   id?: string
   supplierSku: string
   options: Record<string, string>
-  currency: Currency
+  currency: OrderCurrency
   priceMinor: number | null
   priceBasis: PriceBasis
   piecesPerSellablePack: number
@@ -317,15 +316,15 @@ function VariantSheet({
                 <Field>
                   <FieldLabel htmlFor="variant-currency">{t("currency")}</FieldLabel>
                   <Select
-                    items={currencies.map((value) => ({ value, label: value }))}
+                    items={orderCurrencies.map((value) => ({ value, label: value }))}
                     value={draft.currency}
-                    onValueChange={(value) => value && change({ currency: value as Currency })}
+                    onValueChange={(value) => value && change({ currency: value as OrderCurrency })}
                   >
                     <SelectTrigger id="variant-currency" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {currencies.map((value) => (
+                      {orderCurrencies.map((value) => (
                         <SelectItem key={value} value={value}>
                           {value}
                         </SelectItem>

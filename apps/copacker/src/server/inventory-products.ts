@@ -2,10 +2,11 @@ import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import {
   type AmazonNetwork,
+  amazonNetworkNames,
   type Destination,
   isAmazonNetwork,
-  type OrderInput,
-  orderDestination
+  orderDestination,
+  type OrderInput
 } from "@repo/copacker-shipments"
 import type { LocationClassification } from "./inventory-locations"
 
@@ -148,8 +149,8 @@ function combineOnOrder(items: OnOrder[]): OnOrder {
 
 // Amazon's stock pools, shown alongside Shopify's locations under these ids.
 export const amazonPools = {
-  fba: { id: "amazon:fba", name: "Amazon FBA" },
-  awd: { id: "amazon:awd", name: "Amazon AWD" }
+  fba: { id: "amazon:fba", name: `Amazon ${amazonNetworkNames.fba}` },
+  awd: { id: "amazon:awd", name: `Amazon ${amazonNetworkNames.awd_us}` }
 } as const
 export function isAmazonPool(locationId: string) {
   return locationId === amazonPools.fba.id || locationId === amazonPools.awd.id
