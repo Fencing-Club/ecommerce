@@ -24,8 +24,9 @@ import { requireBuyer, requireSupplier } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor } from "./connections"
 import { generateInvoice, generatePo } from "./documents"
+import { jobRow } from "./job-payloads"
+import { describeError } from "./log"
 import { checkOrder, prepareOrder } from "./orders"
-import { describeError } from "./stock"
 import type { Session } from "./workspace-session"
 
 export const proposalSchema = z.object({
@@ -375,11 +376,14 @@ export async function approveProposal(s: Session, proposalId: string) {
       if (supplier.supplierOrgId && supplier.email) {
         await tx
           .insert(jobs)
-          .values({
-            key: `po:${locked.id}:${revision}`,
-            kind: "email",
-            payload: { type: "po", orderId: locked.id, revision, to: supplier.email }
-          })
+          .values(
+            jobRow("email", `po:${locked.id}:${revision}`, {
+              type: "po",
+              orderId: locked.id,
+              revision,
+              to: supplier.email
+            })
+          )
           .onConflictDoNothing()
       }
       await tx.insert(events).values({

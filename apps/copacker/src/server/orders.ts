@@ -41,11 +41,12 @@ import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { generatePo } from "./documents"
 import { forwarderAddress } from "./forwarders"
+import { jobRow } from "./job-payloads"
+import { describeError } from "./log"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
-import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 import { pricingText, serverText } from "./text"
@@ -376,11 +377,14 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       if (supplier.supplierOrgId && supplier.email) {
         await tx
           .insert(jobs)
-          .values({
-            key: `po:${id}:${order.revision}`,
-            kind: "email",
-            payload: { type: "po", orderId: id, revision: order.revision, to: supplier.email, orgName: s.org.name }
-          })
+          .values(
+            jobRow("email", `po:${id}:${order.revision}`, {
+              type: "po",
+              orderId: id,
+              revision: order.revision,
+              to: supplier.email
+            })
+          )
           .onConflictDoNothing()
       }
       const amazon = order.data.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? [item.receiver] : []))
@@ -620,13 +624,7 @@ async function queueAmazon(
   }
   await tx
     .insert(jobs)
-    .values(
-      queued.map((payload) => ({
-        key: `amazon:${payload.shipmentId}:${payload.revision}`,
-        kind: "amazon" as const,
-        payload
-      }))
-    )
+    .values(queued.map((payload) => jobRow("amazon", `amazon:${payload.shipmentId}:${payload.revision}`, payload)))
     .onConflictDoNothing()
   const names = [first!, ...rest].map((part) => amazonNetworkNames[part.network])
   return rest.length
@@ -677,25 +675,22 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       await tx
         .insert(jobs)
         .values([
-          {
-            key: `shopify:${shipmentId}:${shipment.revision}`,
-            kind: "shopify",
-            payload: {
-              orgId: s.org.id,
-              orderId: order.id,
-              revision,
-              changes: commercialChanges(order.data, shipment.packing),
-              updateCost
-            }
-          },
+          jobRow("shopify", `shopify:${shipmentId}:${shipment.revision}`, {
+            orgId: s.org.id,
+            orderId: order.id,
+            revision,
+            changes: commercialChanges(order.data, shipment.packing),
+            updateCost
+          }),
           // Only a supplier that joined Copacker is emailed the revised PO.
           ...(supplier.supplierOrgId && supplier.email
             ? [
-                {
-                  key: `po:${order.id}:${revision}`,
-                  kind: "email" as const,
-                  payload: { type: "po", orderId: order.id, revision, to: supplier.email }
-                }
+                jobRow("email", `po:${order.id}:${revision}`, {
+                  type: "po",
+                  orderId: order.id,
+                  revision,
+                  to: supplier.email
+                })
               ]
             : [])
         ])

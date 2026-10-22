@@ -18,6 +18,7 @@ import type { Locale } from "@/i18n/locales"
 import { defaultLocale, isLocale } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
 import { withJobWake } from "@/server/job-delivery"
+import { jobRow, type JobInput } from "./job-payloads"
 import { summarizeSalesOrder } from "./sales-orders"
 
 // Shopify's mandatory privacy webhooks. Copacker copies orders for restock planning and sales figures: order numbers,
@@ -72,30 +73,13 @@ export async function receiveShopifyCompliance(topic: string, body: unknown, del
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `shopify-compliance:${deliveryId}`, kind: "shopify-compliance", payload: webhook.data })
+      .values(jobRow("shopify-compliance", `shopify-compliance:${deliveryId}`, webhook.data))
       .onConflictDoNothing()
   )
 }
 
-const compliancePayload = z.discriminatedUnion("topic", [
-  z.object({
-    topic: z.literal("customers/data_request"),
-    shop: shopDomainSchema,
-    orders: orderIds,
-    requestId: z.number().int().positive().safe()
-  }),
-  z.object({ topic: z.literal("shop/redact"), shop: shopDomainSchema }),
-  z.object({
-    topic: z.literal("customers/redact"),
-    shop: shopDomainSchema,
-    customer: z.number().int().positive().safe(),
-    orders: orderIds
-  })
-])
-
 // Worker job: answers a customer data request, or erases a store's data once Shopify says the store is gone.
-export async function shopifyComplianceJob(payload: Record<string, unknown>) {
-  const input = compliancePayload.parse(payload)
+export async function shopifyComplianceJob(input: JobInput<"shopify-compliance">) {
   if (input.topic === "shop/redact") {
     await redactShop(input.shop)
   } else if (input.topic === "customers/redact") {
@@ -139,19 +123,15 @@ async function reportCustomerData(shop: string, orders: number[], requestId: num
     owners.map(async (owner) => {
       const locale = isLocale(owner.locale) ? owner.locale : defaultLocale
       const t = await translatorFor(locale)
-      return {
-        key: `email:data-request:${requestId}:${owner.orgId}:${owner.email}`,
-        kind: "email" as const,
-        payload: {
-          type: "data_request",
-          to: owner.email,
-          shop,
-          requestId,
-          orders: stored
-            .filter((row) => row.orgId === owner.orgId)
-            .map((row) => describeOrder(t, locale, summarizeSalesOrder("shopify", row.orderedAt, row.data, shop)))
-        }
-      }
+      return jobRow("email", `email:data-request:${requestId}:${owner.orgId}:${owner.email}`, {
+        type: "data_request",
+        to: owner.email,
+        shop,
+        requestId,
+        orders: stored
+          .filter((row) => row.orgId === owner.orgId)
+          .map((row) => describeOrder(t, locale, summarizeSalesOrder("shopify", row.orderedAt, row.data, shop)))
+      })
     })
   )
   if (emails.length) {

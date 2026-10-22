@@ -24,7 +24,8 @@ vi.mock("../src/server/analytics-jobs", async (original) => ({
   queueShopifyEconomics: context.economics
 }))
 vi.mock("../src/server/inventory-auto-import", () => ({ syncAutomaticDepletions: context.depletions }))
-import { PollAgain } from "../src/server/job-handlers"
+import { jobPayloads, type JobInput } from "../src/server/job-payloads"
+import { PollAgain } from "../src/server/job-runtime"
 import { salesJob } from "../src/server/sales-orders"
 setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
@@ -38,7 +39,7 @@ it("commits each sales period and resumes each follow-up exactly once", async ()
     .values({ orgId, source: "shopify", externalAccountId: "fixture.myshopify.com", status: "queued", revision: 1 })
   const first = { from: "2026-10-01T00:00:00.000Z", to: "2026-10-15T00:00:00.000Z" }
   const second = { from: "2026-09-17T00:00:00.000Z", to: first.from }
-  let payload: Record<string, unknown> = {
+  let payload: JobInput<"sales"> = {
     orgId,
     source: "shopify",
     revision: 1,
@@ -46,18 +47,18 @@ it("commits each sales period and resumes each follow-up exactly once", async ()
   }
   const owned = vi.fn<() => Promise<void>>().mockResolvedValue()
   for (let index = 0; index < 4; index++) {
-    const error: unknown = await salesJob(payload, owned).catch((error: unknown) => error)
+    const error: unknown = await salesJob(payload, { assertOwned: owned }).catch((error: unknown) => error)
     expect(error).toBeInstanceOf(PollAgain)
     if (!(error instanceof PollAgain) || !error.options.payload) {
       throw new Error("Missing checkpoint")
     }
     expect(error.options.progressed).toBe(true)
-    payload = error.options.payload
+    payload = jobPayloads.sales.parse(error.options.payload)
     expect((await database.select().from(tables.salesSyncs))[0]?.status).toBe("running")
     expect(context.read).toHaveBeenCalledTimes(Math.min(index + 1, 2))
     expect(context.depletions).not.toHaveBeenCalled()
   }
-  await salesJob(payload, owned)
+  await salesJob(payload, { assertOwned: owned })
   expect(context.balance).toHaveBeenCalledOnce()
   expect(context.economics).toHaveBeenCalledOnce()
   expect(context.depletions).toHaveBeenCalledOnce()
@@ -66,6 +67,6 @@ it("commits each sales period and resumes each follow-up exactly once", async ()
     coveredFrom: new Date(second.from),
     coveredTo: new Date(first.to)
   })
-  await salesJob(payload, owned)
+  await salesJob(payload, { assertOwned: owned })
   expect(context.depletions).toHaveBeenCalledOnce()
 })

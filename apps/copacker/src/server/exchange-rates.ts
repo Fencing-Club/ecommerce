@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { exchangeRates } from "@/db/schema"
+import { providerRequest } from "./provider-request"
 
 // The European Central Bank's daily reference rates, through Frankfurter (free, no key). Published on working days.
 const ratesUrl = "https://api.frankfurter.dev/v1"
@@ -32,11 +33,12 @@ export async function syncExchangeRates(orgId: string, now = new Date(), fetcher
   if (!wanted.length) {
     return
   }
-  const published = await fetcher(`${ratesUrl}/currencies`, { signal: AbortSignal.timeout(30000) })
-  if (!published.ok) {
-    throw new Error(`Exchange rates request failed (${published.status})`)
-  }
-  const known = z.record(z.string(), z.string()).parse(await published.json())
+  const known = await providerRequest(
+    "Frankfurter",
+    `${ratesUrl}/currencies`,
+    { timeoutMs: 30000, transport: fetcher },
+    z.record(z.string(), z.string())
+  )
   const currencies = wanted.filter((currency) => currency in known).toSorted()
   if (!currencies.length) {
     return
@@ -65,13 +67,12 @@ export async function syncExchangeRates(orgId: string, now = new Date(), fetcher
   if (from > today) {
     return
   }
-  const response = await fetcher(`${ratesUrl}/${from}..${today}?base=USD&symbols=${currencies.join(",")}`, {
-    signal: AbortSignal.timeout(30000)
-  })
-  if (!response.ok) {
-    throw new Error(`Exchange rates request failed (${response.status})`)
-  }
-  const { rates } = ratesResponse.parse(await response.json())
+  const { rates } = await providerRequest(
+    "Frankfurter",
+    `${ratesUrl}/${from}..${today}?base=USD&symbols=${currencies.join(",")}`,
+    { timeoutMs: 30000, transport: fetcher },
+    ratesResponse
+  )
   const values = Object.entries(rates).flatMap(([date, byCurrency]) =>
     Object.entries(byCurrency).map(([currency, rate]) => ({ currency, day: date, perUsd: String(rate) }))
   )

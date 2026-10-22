@@ -11,6 +11,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { withJobWake } from "@/server/job-delivery"
 import { requestLocale } from "@/server/localization"
+import { jobRow } from "./job-payloads"
 import { hash, token } from "./security"
 
 const week = 7 * 86400000
@@ -111,11 +112,15 @@ async function queueInvite(forwarderId: string, email: string, buyerName: string
         .set({ email, invitationHash: hash(invitation), expiresAt: new Date(Date.now() + week) })
         .where(eq(forwarders.id, forwarderId))
       // Each send is its own job, whose key doubles as the email provider's idempotency key.
-      await tx.insert(jobs).values({
-        key: `forwarder-invite:${forwarderId}:${randomUUID()}`,
-        kind: "email",
-        payload: { type: "forwarder", to: email, name: buyerName, invitation, locale: await requestLocale() }
-      })
+      await tx.insert(jobs).values(
+        jobRow("email", `forwarder-invite:${forwarderId}:${randomUUID()}`, {
+          type: "forwarder",
+          to: email,
+          name: buyerName,
+          invitation,
+          locale: await requestLocale()
+        })
+      )
     })
   )
 }

@@ -51,7 +51,7 @@ describe("Cloudflare background execution", () => {
       Array.from({ length: 3 }, () => ({
         ...eventJob(),
         kind: "import" as const,
-        status: "running",
+        status: "running" as const,
         leaseAt: new Date()
       }))
     )
