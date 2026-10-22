@@ -3,6 +3,7 @@ import { getTableName, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Executor, type Transaction } from "@/db"
 import {
+  amazonInboundShipments,
   amazonFulfillmentShipments,
   amazonInventoryMovements,
   amazonMovementReports,
@@ -53,6 +54,7 @@ const versioned = [
   stockSnapshots,
   salesSyncs,
   salesOrders,
+  amazonInboundShipments,
   amazonFulfillmentShipments,
   amazonShipmentReports,
   inventoryLocationMappings,
