@@ -175,14 +175,14 @@ function ProductImportDialog({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            <a href="/api/supplier-catalog/template?format=xlsx" download className="underline underline-offset-4">
+            <a href="/api/supplier-catalog/template?format=xlsx" download className="text-link">
               {t("excelTemplate")}
             </a>
-            <a href="/api/supplier-catalog/template?format=csv" download className="underline underline-offset-4">
+            <a href="/api/supplier-catalog/template?format=csv" download className="text-link">
               {t("csvTemplate")}
             </a>
             {prices && (
-              <a href="/api/supplier-catalog/export?format=xlsx" download className="underline underline-offset-4">
+              <a href="/api/supplier-catalog/export?format=xlsx" download className="text-link">
                 {t("yourProducts")}
               </a>
             )}

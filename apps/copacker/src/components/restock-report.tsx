@@ -16,7 +16,7 @@ import {
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { WarningNote } from "@/components/common"
+import { EmptyState, WarningNote } from "@/components/common"
 import { SearchField } from "@/components/list/search-field"
 import { OptionSelect } from "@/components/option-select"
 import { Alert, AlertTitle } from "@/components/ui/alert"
@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -47,7 +46,6 @@ import {
   supplierGroups,
   wholeDays
 } from "@/lib/restock-selection"
-import { cn } from "@/lib/utils"
 import type { RestockChannelOption } from "@/server/restock-page"
 import type { RestockLine, RestockStatus } from "@/server/restock-plan"
 import type { SalesSource } from "@/server/sales-orders"
@@ -155,25 +153,15 @@ function EmptyResults({ report, searching }: { report: RestockReportData; search
     title = name ? t("noLinked", { supplier: name }) : t("noLinkedHere")
     Icon = PackageOpen
   }
-  // Styled like EmptyState, which always has a description.
   return (
     <Card>
-      <Empty className="gap-4 py-10">
-        <EmptyHeader className="gap-1">
-          <EmptyMedia variant="icon">
-            <Icon aria-hidden />
-          </EmptyMedia>
-          <EmptyTitle>{title}</EmptyTitle>
-          {searching && <EmptyDescription>{t("onlyWithSupplier")}</EmptyDescription>}
-        </EmptyHeader>
+      <EmptyState icon={<Icon aria-hidden />} title={title} description={searching ? t("onlyWithSupplier") : undefined}>
         {(searching || supplier) && setsSuppliers && (
-          <EmptyContent>
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/products" />}>
-              {t("setSuppliers")}
-            </Button>
-          </EmptyContent>
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/products" />}>
+            {t("setSuppliers")}
+          </Button>
         )}
-      </Empty>
+      </EmptyState>
     </Card>
   )
 }
@@ -187,8 +175,8 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
   }
   return (
     <Collapsible open={open} onOpenChange={setOpen} render={<section aria-labelledby="restock-no-listing" />}>
-      <Card className="gap-0 py-0">
-        <CardHeader className={cn("flex flex-col gap-0.5 py-4", open && "border-b")}>
+      <Card flush>
+        <CardHeader className="flex flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-x-2">
             <h2 id="restock-no-listing" className="font-semibold">
               <GroupTrigger>{t("statuses.noListing")}</GroupTrigger>
@@ -350,7 +338,7 @@ function Results({
 }
 
 const productsLink = (chunks: React.ReactNode) => (
-  <Link to="/products" className="underline underline-offset-4 hover:text-muted-foreground">
+  <Link to="/products" className="text-link hover:text-muted-foreground">
     {chunks}
   </Link>
 )
@@ -398,7 +386,7 @@ function ResultSummary({ report }: { report: RestockReportData }) {
 // Placeholder rows while the suggestions are calculated.
 function Loading() {
   return (
-    <Card className="gap-0 py-0" aria-hidden="true">
+    <Card flush aria-hidden="true">
       <div className="border-b p-4">
         <Skeleton className="h-5 w-48" />
       </div>

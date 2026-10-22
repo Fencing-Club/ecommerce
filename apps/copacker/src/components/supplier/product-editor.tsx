@@ -245,7 +245,7 @@ export function ProductEditor({
 
             <ProductMedia images={product.images} onChange={(images) => change({ images })} />
 
-            <Card className="gap-0 overflow-hidden py-0">
+            <Card flush>
               <div className="flex flex-col gap-3 border-b p-4">
                 <CardHeader className="px-0">
                   <CardTitle>{t("variants")}</CardTitle>

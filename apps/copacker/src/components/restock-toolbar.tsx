@@ -1,7 +1,7 @@
 import { Factory, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { OptionSelect } from "@/components/option-select"
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
+import { InputGroup, InputGroupAddon, InputGroupNumberInput, InputGroupText } from "@/components/ui/input-group"
 import type { SupplierOption } from "@/lib/api"
 import { wholeDays } from "@/lib/restock-selection"
 import type { RestockChannelOption } from "@/server/restock-page"
@@ -29,16 +29,15 @@ function DaysField({
           {label}
         </label>
       </InputGroupAddon>
-      <InputGroupInput
+      <InputGroupNumberInput
         id={id}
-        type="number"
         inputMode="numeric"
         min={dayRange.min}
         max={dayRange.max}
         value={value}
         aria-invalid={wholeDays(value) === null}
         onChange={(event) => onChange(event.target.value)}
-        className="w-10 flex-none text-center tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="w-10 flex-none text-center"
       />
       <InputGroupAddon align="inline-end">
         <InputGroupText>{t("daysUnit")}</InputGroupText>

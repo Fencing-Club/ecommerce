@@ -131,7 +131,7 @@ export function ShipmentPicker({
               <EmptyState
                 title={t("noResults")}
                 description={t("noResultsDescription")}
-                media={<SearchX aria-hidden className="size-5" />}
+                icon={<SearchX aria-hidden />}
               />
             ) : (
               <EmptyState title={t("none")} description={t("noneDescription")} />

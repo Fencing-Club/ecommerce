@@ -56,6 +56,8 @@ export const Default = meta.story({
     const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
     await expect(sheet).toHaveAccessibleDescription("Where purchase orders ship from.")
     await expect(sheet).toHaveAttribute("data-side", "right")
+    // A side sheet casts the dialog's shadow.
+    await expect(getComputedStyle(sheet).boxShadow).toContain("0px 16px 40px")
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true, expect.anything())
 
     const city = within(sheet).getByRole("textbox", { name: "City" })
@@ -115,6 +117,8 @@ export const Sides = meta.story({
       await userEvent.click(canvas.getByRole("button", { name: side }))
       const sheet = await screen.findByRole("dialog", { name: `Opens from the ${side}` })
       await expect(sheet).toHaveAttribute("data-side", side)
+      // A bottom sheet, as phones show one, casts its shadow upward.
+      await expect(getComputedStyle(sheet).boxShadow).toContain(side === "bottom" ? "0px -8px 24px" : "0px 16px 40px")
       await waitFor(() => {
         const box = sheet.getBoundingClientRect()
         const edges = {

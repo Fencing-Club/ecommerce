@@ -1,4 +1,4 @@
-import { Plus, Repeat } from "lucide-react"
+import { CircleAlert, Lock, Plus, Repeat } from "lucide-react"
 import { expect, waitFor, within } from "storybook/test"
 import { useTranslations } from "use-intl"
 import preview from "#.storybook/preview"
@@ -216,12 +216,37 @@ export const EmptyWhileSyncing = meta.story({
     <EmptyState
       title="Copying your products"
       description="Products show here once the first sync finishes"
-      media={<Spinner aria-label="Syncing" />}
+      icon={<Spinner aria-label="Syncing" />}
     />
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("Syncing")).toBeVisible()
     await expect(canvas.queryByRole("button")).toBeNull()
+  }
+})
+
+// A page outside the shell, whose empty state is all there is: its title is the page's heading.
+export const EmptyAsPageHeading = meta.story({
+  render: () => (
+    <EmptyState
+      titleAs="h1"
+      title="This page didn't load"
+      description="Nothing was changed"
+      icon={<CircleAlert aria-hidden />}
+    />
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { level: 1, name: "This page didn't load" })).toBeVisible()
+  }
+})
+
+// Under a page header that already says what happened, the empty state only says what to do.
+export const EmptyWithoutTitle = meta.story({
+  render: () => <EmptyState description="Ask an admin for access" icon={<Lock aria-hidden />} />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByText("Ask an admin for access")).toBeVisible()
+    await expect(canvasElement.querySelector("[data-slot=empty-title]")).toBeNull()
+    await expect(canvas.queryByRole("heading")).toBeNull()
   }
 })
 

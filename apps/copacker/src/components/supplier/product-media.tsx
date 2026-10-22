@@ -101,7 +101,7 @@ export function ProductMedia({
             onClick={() => input.current?.click()}
             disabled={uploading > 0}
             className={cn(
-              "flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+              "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
               !images.length && "col-span-3 aspect-auto py-8 sm:col-span-5"
             )}
           >

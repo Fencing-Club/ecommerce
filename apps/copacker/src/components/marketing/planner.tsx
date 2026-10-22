@@ -280,7 +280,7 @@ export function Planner() {
               type="button"
               aria-pressed={inputs[store.key] === 1}
               onClick={() => toggle(store.key)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-foreground/15 aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/90"
+              className="focus-ring flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition-colors hover:bg-muted aria-pressed:border-foreground/15 aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/90"
             >
               {store.name}
               <span className="tabular-nums opacity-60">{store.perDay}</span>

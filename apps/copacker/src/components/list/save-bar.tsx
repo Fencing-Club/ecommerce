@@ -36,7 +36,7 @@ export function SaveBar({
   return (
     <section
       aria-label={t("unsaved")}
-      className="sticky bottom-4 z-30 mx-auto flex w-full max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-lg"
+      className="sticky bottom-4 z-30 mx-auto flex w-full max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-action-bar"
     >
       <span className={cn("text-sm font-medium", error && "text-destructive")}>{error || message || t("unsaved")}</span>
       <div className="ms-auto flex gap-2">

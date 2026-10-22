@@ -1,7 +1,7 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Input } from "@/components/ui/input"
 import { QuantityDisplay } from "./quantity-display"
-import { Input } from "./ui/input"
 
 const meta = preview.meta({
   title: "Components/Display/Quantity display",

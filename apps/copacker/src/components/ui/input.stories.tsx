@@ -1,6 +1,6 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Input } from "./input"
+import { Input, NumberInput } from "./input"
 
 const meta = preview.meta({
   title: "Foundations/Input",
@@ -18,11 +18,14 @@ export const Default = meta.story({
   }
 })
 
-export const NumberInput = meta.story({
-  args: { "aria-label": "Units", type: "number", min: 0, defaultValue: 24, placeholder: undefined },
+// A number without the browser's up and down buttons, its digits lined up.
+export const Numbers = meta.story({
+  args: { "aria-label": "Units", min: 0, defaultValue: 24, placeholder: undefined },
+  render: (args) => <NumberInput {...args} />,
   play: async ({ canvas }) => {
     const input = canvas.getByRole("spinbutton", { name: "Units" })
     await expect(input).toHaveValue(24)
+    await expect(getComputedStyle(input).appearance).toBe("textfield")
     await userEvent.clear(input)
     await userEvent.type(input, "36")
     await expect(input).toHaveValue(36)

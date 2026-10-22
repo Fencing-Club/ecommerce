@@ -61,7 +61,7 @@ function Reorder({ supplierId, po }: { supplierId: string | null; po: PoLink }) 
 // A group's name as the button that shows or hides its table, after a chevron that turns while it's open.
 export function GroupTrigger({ children }: { children: React.ReactNode }) {
   return (
-    <CollapsibleTrigger className="group/trigger flex items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+    <CollapsibleTrigger className="group/trigger focus-ring flex items-center gap-2 rounded-sm text-start">
       <ChevronRight
         aria-hidden="true"
         className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 in-data-panel-open:rotate-90 rtl:not-in-data-panel-open:rotate-180"
@@ -109,8 +109,8 @@ export function RestockSupplierGroup({
   const leadTime = t("leadTime", { days: text.either(leadTimes.map(text.number)) })
   return (
     <Collapsible open={open} onOpenChange={onOpenChange} render={<section aria-labelledby={headingId} />}>
-      <Card className="gap-0 py-0">
-        <CardHeader className={cn("flex flex-wrap items-center gap-x-6 gap-y-3 py-4", open && "border-b")}>
+      <Card flush>
+        <CardHeader className="flex flex-wrap items-center gap-x-6 gap-y-3">
           {/* The cost and Reorder move under the name when both don't fit on one line. */}
           <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-0.5">
             <div className="flex flex-wrap items-center gap-x-2">

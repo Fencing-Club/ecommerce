@@ -186,8 +186,8 @@ export function OrderReviser({
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="@container gap-0 py-0">
-          <CardHeader className="border-b pt-4">
+        <Card flush className="@container">
+          <CardHeader>
             <CardTitle>{t("products")}</CardTitle>
             <CardAction>
               <Button

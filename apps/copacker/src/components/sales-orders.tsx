@@ -1,15 +1,15 @@
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
-import { ShoppingBag, ReceiptText, ExternalLink, Repeat } from "lucide-react"
+import { ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
+import { EmptyState } from "@/components/common"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
 import { OptionSelect } from "@/components/option-select"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -69,7 +69,7 @@ const pageSize = 50
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
 
 const settingsLink = (chunks: React.ReactNode) => (
-  <Link to="/settings" hash="integrations" className="underline underline-offset-2">
+  <Link to="/settings" hash="integrations" className="text-link">
     {chunks}
   </Link>
 )
@@ -317,7 +317,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
             href={order.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex w-fit items-center gap-1 font-medium whitespace-nowrap underline-offset-4 hover:underline"
+            className="focus-ring inline-flex w-fit items-center gap-1 rounded-sm font-medium whitespace-nowrap underline-offset-4 hover:underline"
           >
             {order.number}
             <ExternalLink
@@ -424,26 +424,14 @@ function OrderList({
   } else if (total === 0 && !q && firstSync) {
     // The first sync is still copying: the orders appear here period by period.
     body = (
-      <Empty className="py-12">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Spinner />
-          </EmptyMedia>
-          <EmptyTitle>{t("syncing")}</EmptyTitle>
-          {typeof firstSync.progress === "number" && (
-            <EmptyDescription>{t("copied", { progress: firstSync.progress })}</EmptyDescription>
-          )}
-        </EmptyHeader>
-      </Empty>
+      <EmptyState
+        icon={<Spinner className="size-5" />}
+        title={t("syncing")}
+        description={typeof firstSync.progress === "number" ? t("copied", { progress: firstSync.progress }) : undefined}
+      />
     )
   } else if (total === 0) {
-    body = (
-      <Empty className="py-12">
-        <EmptyHeader>
-          <EmptyTitle>{q ? t("noMatches") : t("empty")}</EmptyTitle>
-        </EmptyHeader>
-      </Empty>
-    )
+    body = <EmptyState icon={q ? <Search aria-hidden /> : undefined} title={q ? t("noMatches") : t("empty")} />
   } else {
     body = (
       <div
@@ -478,7 +466,7 @@ function OrderList({
     )
   }
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card flush>
       <div className="flex flex-wrap items-center gap-2 border-b p-4">
         <SearchField
           label={t("searchLabel")}
@@ -551,19 +539,17 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   if (currentData.sources.length === 0) {
     return (
       <Card>
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>{admin ? t("connect") : t("noStore")}</EmptyTitle>
-            {!admin && <EmptyDescription>{t("askAdminToConnect")}</EmptyDescription>}
-          </EmptyHeader>
+        <EmptyState
+          icon={<ShoppingBag aria-hidden />}
+          title={admin ? t("connect") : t("noStore")}
+          description={admin ? undefined : t("askAdminToConnect")}
+        >
           {admin && (
-            <EmptyContent>
-              <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
-                {t("goToSettings")}
-              </Button>
-            </EmptyContent>
+            <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
+              {t("goToSettings")}
+            </Button>
           )}
-        </Empty>
+        </EmptyState>
       </Card>
     )
   }
@@ -571,7 +557,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   const syncKey = currentData.sources.map((state) => `${state.coveredTo ?? ""}:${state.orders}`).join("|")
   return (
     <div className="flex flex-col gap-4">
-      <Card className="@container/sources gap-0 py-0">
+      <Card flush className="@container/sources">
         <ul
           aria-label={t("sources")}
           className="grid divide-y @3xl/sources:auto-cols-fr @3xl/sources:grid-flow-col @3xl/sources:divide-x @3xl/sources:divide-y-0"

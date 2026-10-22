@@ -155,9 +155,6 @@
       "contact": "Nous contacter"
     }
   },
-  "banner": {
-    "dismiss": "Ignorer"
-  },
   "actionBar": {
     "label": "Actions",
     "discard": "Abandonner",

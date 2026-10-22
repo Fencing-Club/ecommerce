@@ -45,7 +45,7 @@ export function Maintenance() {
         <div className="absolute inset-x-0 bottom-0 h-3/5 bg-[radial-gradient(ellipse_55%_70%_at_50%_100%,rgb(255_122_46/0.26),rgb(255_122_46/0.07)_55%,transparent)]" />
       </div>
       <header className="flex h-16 shrink-0 items-center px-6">
-        <a href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <a href="/" className="focus-ring rounded-md">
           <BrandMark />
         </a>
       </header>

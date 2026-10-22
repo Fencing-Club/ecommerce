@@ -214,7 +214,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
           <EmptyState
             title={t("syncingProducts")}
             description={t("syncingProductsHint")}
-            media={<Spinner className="size-5" />}
+            icon={<Spinner className="size-5" />}
           />
         </Card>
       )}

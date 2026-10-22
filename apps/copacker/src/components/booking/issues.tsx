@@ -105,7 +105,7 @@ export function IssuesView({
               <span id={`${id}-${index}-where`} className="text-sm font-medium">
                 {issue.where}
               </span>
-              <span id={`${id}-${index}-what`} className="text-[13px] text-muted-foreground">
+              <span id={`${id}-${index}-what`} className="text-meta text-muted-foreground">
                 {issue.what}
               </span>
             </div>
