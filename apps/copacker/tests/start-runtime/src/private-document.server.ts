@@ -12,14 +12,13 @@ import { AccessError, LocalizedError, NotFoundError } from "@/i18n/errors"
 import { authentication } from "@/server/auth-session"
 import { downloadDocument } from "@/server/document-download"
 import { errorTextResponse, failureMessage } from "@/server/errors"
-import { deleteFile, getFile, putFile, readFile, withFileStorage } from "@/server/storage"
+import { deleteFile, getFile, putFile, r2FileStorage, readFile, withFileStorage } from "@/server/storage"
 import { workspaceSession } from "@/server/workspace-session"
-import { r2Storage } from "./r2-storage.server"
 
 export async function storageProbe() {
   const key = `compatibility/${randomUUID()}/round-trip.txt`
   const bytes = new TextEncoder().encode("Private R2 compatibility file")
-  return withFileStorage(r2Storage(env.DOCUMENTS), async () => {
+  return withFileStorage(r2FileStorage(env.DOCUMENTS), async () => {
     try {
       await putFile(key, bytes, "text/plain; charset=utf-8")
       const file = await readFile(key)
@@ -66,7 +65,7 @@ export async function privateDocumentProbe(request: Request) {
   }
   const which = parsed.data
   const key = `compatibility/${randomUUID()}/document.pdf`
-  const files = r2Storage(env.DOCUMENTS)
+  const files = r2FileStorage(env.DOCUMENTS)
   return withFileStorage(files, async () => {
     try {
       const pdf = await PDFDocument.create()

@@ -90,6 +90,19 @@ describe("Shopify events", () => {
     expect(await queued("shopify-event")).toHaveLength(4)
   })
 
+  it("handles an uninstall right away, not after its period", async () => {
+    const now = Date.parse("2026-09-25T12:01:00Z")
+    vi.useFakeTimers({ now, toFake: ["Date"] })
+    expect(await receiveShopifyEvent(event("app/uninstalled"))).toBe(true)
+    expect(await queued("shopify-event")).toMatchObject([
+      {
+        key: `shopify-event:${buyerId}:uninstalled:${Math.floor(now / 300000)}`,
+        payload: { orgId: buyerId, shop, target: "uninstalled" },
+        runAt: new Date(now)
+      }
+    ])
+  })
+
   it("refreshes stock for any change to products, variants, inventory items, stock levels or locations", async () => {
     const topics = [
       "products/update",
