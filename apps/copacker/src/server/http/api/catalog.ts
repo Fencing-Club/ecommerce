@@ -1,3 +1,4 @@
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   // Variations chosen in the add-products dialog come by ID; a search comes by text.
   const ids = (params.get("ids") ?? "")
     .split(",")
-    .filter((id) => /^gid:\/\/shopify\/ProductVariant\/\d+$/.test(id))
+    .filter((id) => variantIdSchema.safeParse(id).success)
     .slice(0, 250)
   const defaultsFor = await lineDefaultsFor(s.org.id)
   const shopify = await shopifyFor(s.org.id)

@@ -1,3 +1,4 @@
+import { orderCurrencies, type OrderCurrency } from "@repo/copacker-shipments"
 import ExcelJS from "exceljs"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
@@ -14,7 +15,6 @@ import { pricingText } from "./text"
 
 // Copacker's product template, for CSV and Excel alike: one row per variant, like Shopify's product CSV. Rows with the
 // same handle are one product, whose details come from its first row. Import matches variants by SKU.
-const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
 const bases: Record<string, PriceBasis> = { unit: "piece", pack: "sellable_pack", case: "case" }
 const basisNames: Record<PriceBasis, string> = { piece: "unit", sellable_pack: "pack", case: "case" }
 const yesNo = ["yes", "no"]
@@ -32,7 +32,7 @@ export const sheetColumns = [
     { key: `option${n}Value`, header: `Option ${n} value`, width: 16, note: `This variant’s value, such as Large.` }
   ]),
   { key: "sku", header: "SKU", width: 18, note: "Unique to each variant. Required." },
-  { key: "currency", header: "Currency", width: 10, list: [...currencies], note: currencies.join(", ") },
+  { key: "currency", header: "Currency", width: 10, list: [...orderCurrencies], note: orderCurrencies.join(", ") },
   { key: "price", header: "Price", width: 11, note: "Per price unit, such as 12.50. Leave blank for none yet." },
   { key: "priceBasis", header: "Price per", width: 10, list: ["unit", "pack", "case"], note: "unit, pack, or case." },
   {
@@ -88,7 +88,7 @@ export type SheetVariant = {
   line: number
   supplierSku: string
   options: Record<string, string>
-  currency: (typeof currencies)[number]
+  currency: OrderCurrency
   priceMinor: number | null
   priceBasis: PriceBasis
   piecesPerSellablePack: number
@@ -493,7 +493,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
       line,
       supplierSku: sku,
       options,
-      currency: choice(get("currency"), currencies, line, "Currency", "USD") as SheetVariant["currency"],
+      currency: choice(get("currency"), orderCurrencies, line, "Currency", "USD") as SheetVariant["currency"],
       priceMinor,
       priceBasis,
       piecesPerSellablePack,

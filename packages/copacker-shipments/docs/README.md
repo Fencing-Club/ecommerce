@@ -11,6 +11,13 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
 its `receiver`; `orderDestination` reads where the PO goes from them.
 
+## Shared values
+
+The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
+(`orderCurrencies`), each Amazon network's name (`amazonNetworkNames`), the schemas' field limits (`itemSchema.shape`,
+`cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`) and an address as documents print it
+(`addressLines` in `/documents`).
+
 ## Supplier service costs
 
 `OrderItem.supplierCharges` stores supplier services assigned to that product. Each charge has a description,

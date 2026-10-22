@@ -4,6 +4,9 @@ Amazon, Shopify and eBay clients, sales collectors and Amazon report parsers for
 `@repo/copacker-marketplaces/<module>`. Orders, packing and documents live in
 [`@repo/copacker-shipments`](../../copacker-shipments/docs/README.md).
 
+Identifiers the app checks against are defined once here: a Shopify variant's ID (`variantIdSchema` in `/shopify`) and
+an Amazon seller ID (`sellerIdSchema` in `/amazon`).
+
 `@repo/copacker-marketplaces/returns` parses Amazon's FBA customer returns report with strict headers, quantities and timezone-bearing
 timestamps, including quoted multiline TSV fields. It preserves source rows and unknown codes, omits customer comments,
 and rejects malformed documents rather than silently dropping records. [Copacker's importer](../../../apps/copacker/docs/amazon-returns.md)

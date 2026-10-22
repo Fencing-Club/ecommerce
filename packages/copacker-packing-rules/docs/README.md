@@ -9,7 +9,8 @@ way, and another receiver (GWD, a 3PL, a special arrangement) is a new policy ra
 - `receivers`: where a PO line's goods end up (see [Receivers](#receivers)).
 - The package root: `validatePacking`, `validatePallets` and `checkPallets`, the issues they report
   (`ValidationIssue`, `PackingRule`), what each rule that holds everywhere asks for (`packingRuleDescriptions`),
-  the receivers, and the carton ID runs packing lists print (`cartonList`).
+  the receivers, the carton ID runs packing lists print (`cartonList`, `cartonRuns`) and read back (`readCartonIds`),
+  and the inch and pound conversion factors (`centimetresPerInch`, `kilogramsPerPound`).
 
 Every rule describes itself (`description`) and names the page that states it (`source`), and each issue carries the
 source, so an error can link to the receiver's own rule. The package reads purchase orders and packings by the few

@@ -1,3 +1,4 @@
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import type { DocumentLanguage } from "./shipping-model"
 
 const en = {
@@ -77,8 +78,8 @@ const en = {
   pickup: "Picks up from the pickup address and arranges shipping to the final destination.",
   dropoff: "Hand the labelled cartons to the booked carrier at the agreed drop-off location.",
   delivery: "Deliver the cartons to the receiving address below.",
-  fba: "Amazon FBA",
-  awd: "Amazon AWD",
+  fba: `Amazon ${amazonNetworkNames.fba}`,
+  awd: `Amazon ${amazonNetworkNames.awd_us}`,
   warehouse: "Warehouse",
   forwarderDestination: "Freight forwarder",
   units: "units",
@@ -259,8 +260,8 @@ const de: ShippingCopy = {
   pickup: "Holt die Ware an der Abholadresse ab und organisiert den Transport zum Endziel.",
   dropoff: "Übergeben Sie die etikettierten Kartons dem gebuchten Transportdienst am vereinbarten Abgabeort.",
   delivery: "Liefern Sie die Kartons an die unten angegebene Empfangsadresse.",
-  fba: "Amazon FBA",
-  awd: "Amazon AWD",
+  fba: `Amazon ${amazonNetworkNames.fba}`,
+  awd: `Amazon ${amazonNetworkNames.awd_us}`,
   warehouse: "Lager",
   forwarderDestination: "Spediteur",
   units: "Einheiten",
@@ -439,8 +440,8 @@ const zh: ShippingCopy = {
   pickup: "从提货地址提货，并安排运输至最终目的地。",
   dropoff: "在约定的交货地点，将贴好标签的纸箱交给已预订的承运商。",
   delivery: "将纸箱送至下方收货地址。",
-  fba: "亚马逊 FBA",
-  awd: "亚马逊 AWD",
+  fba: `亚马逊 ${amazonNetworkNames.fba}`,
+  awd: `亚马逊 ${amazonNetworkNames.awd_us}`,
   warehouse: "仓库",
   forwarderDestination: "货运代理",
   units: "件",
@@ -615,8 +616,8 @@ const ur: ShippingCopy = {
   pickup: "پک اپ کے پتے سے سامان اٹھا کر آخری منزل تک ترسیل کا انتظام کرتا ہے۔",
   dropoff: "لیبل لگے کارٹن طے شدہ مقام پر بک کیے گئے کیریئر کے حوالے کریں۔",
   delivery: "کارٹن نیچے دیے گئے وصولی کے پتے پر پہنچائیں۔",
-  fba: "Amazon FBA",
-  awd: "Amazon AWD",
+  fba: `Amazon ${amazonNetworkNames.fba}`,
+  awd: `Amazon ${amazonNetworkNames.awd_us}`,
   warehouse: "گودام",
   forwarderDestination: "فریٹ فارورڈر",
   units: "یونٹ",

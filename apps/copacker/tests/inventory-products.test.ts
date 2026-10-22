@@ -277,7 +277,7 @@ describe("Amazon stock", () => {
     expect(cord?.variants[0]?.levels.map((level) => [level.locationName, level.available])).toEqual([
       ["Fencing Club", 20],
       ["Amazon FBA", 5],
-      ["Amazon AWD", 30]
+      ["Amazon AWD US", 30]
     ])
     expect(amazonOnly.map((stock) => [stock.sku, stock.resold])).toEqual([
       ["amzn.gr.sku-3-XYZ", true],

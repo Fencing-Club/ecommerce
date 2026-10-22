@@ -1,5 +1,6 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
 import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "@repo/copacker-shipments"
+import { addressLines } from "@repo/copacker-shipments/documents"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import { packingTasks, type ProductTask } from "@repo/copacker-shipments/packing-requirements"
 import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/copacker-shipments/transport"
@@ -204,10 +205,7 @@ function originParty(supplier: string, origin: Packing["origin"]): DocumentParty
   return {
     name: supplier,
     address: [
-      origin.addressLine1,
-      origin.addressLine2,
-      `${origin.city}, ${origin.stateOrRegion} ${origin.postalCode}`,
-      origin.countryCode,
+      ...addressLines(origin),
       [origin.name, origin.phoneNumber].filter(Boolean).join(", "),
       origin.email
     ].filter(Boolean)
