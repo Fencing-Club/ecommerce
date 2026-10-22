@@ -8,7 +8,9 @@
     "offline": "Copacker से कनेक्ट नहीं हो सका। अपना कनेक्शन जांचें और फिर से कोशिश करें।"
   },
   "actions": {
-    "cancel": "रद्द करें"
+    "cancel": "रद्द करें",
+    "save": "सेव करें",
+    "saved": "सेव हो गया"
   },
   "status": {
     "draft": "ड्राफ़्ट",
@@ -89,7 +91,8 @@
     "addressLine2": "पता लाइन 2",
     "city": "शहर",
     "stateOrProvince": "राज्य या प्रांत",
-    "postalCode": "पिन कोड"
+    "postalCode": "पिन कोड",
+    "addressName": "पते का नाम"
   },
   "sync": {
     "actions": "{label} के ऐक्शन",

@@ -8,7 +8,9 @@
     "offline": "无法连接到 Copacker。请检查网络连接后重试。"
   },
   "actions": {
-    "cancel": "取消"
+    "cancel": "取消",
+    "save": "保存",
+    "saved": "已保存"
   },
   "status": {
     "draft": "草稿",
@@ -89,7 +91,8 @@
     "addressLine2": "地址第 2 行",
     "city": "城市",
     "stateOrProvince": "州/省",
-    "postalCode": "邮政编码"
+    "postalCode": "邮政编码",
+    "addressName": "地址名称"
   },
   "sync": {
     "actions": "{label}操作",

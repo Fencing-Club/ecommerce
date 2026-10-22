@@ -14,7 +14,7 @@ const meta = preview.meta({
       { value: "net60", label: "Net 60", disabled: true }
     ],
     placeholder: "Choose terms",
-    onChange: fn()
+    onValueChange: fn()
   },
   decorators: [(Story) => <div className="max-w-xs">{Story()}</div>]
 })
@@ -26,14 +26,14 @@ export const Optional = meta.story({
     await userEvent.click(select)
     await expect(await screen.findByRole("option", { name: "Net 60" })).toHaveAttribute("aria-disabled", "true")
     await userEvent.click(screen.getByRole("option", { name: "Net 30" }))
-    await expect(args.onChange).toHaveBeenCalledWith({ target: { value: "net30" } })
+    await expect(args.onValueChange).toHaveBeenCalledWith("net30")
     await expect(select).toHaveTextContent("Net 30")
     // Reopening while the list is still closing would find its options, which no longer take clicks.
     await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
     // An optional field's placeholder is a choice too, which empties it.
     await userEvent.click(select)
     await userEvent.click(await screen.findByRole("option", { name: "Choose terms" }))
-    await expect(args.onChange).toHaveBeenLastCalledWith({ target: { value: "" } })
+    await expect(args.onValueChange).toHaveBeenLastCalledWith("")
     await waitFor(() => expect(select).toHaveTextContent("Choose terms"))
   }
 })
@@ -48,6 +48,16 @@ export const Required = meta.story({
     // A required field has no empty choice.
     await expect(screen.queryByRole("option", { name: "Choose terms" })).toBeNull()
     await userEvent.keyboard("{Escape}")
+  }
+})
+
+// The form's check failed: the field reads as invalid, described by its hint and then its error.
+export const Invalid = meta.story({
+  args: { required: true, description: "As agreed with your supplier", error: "Choose payment terms" },
+  play: async ({ canvas }) => {
+    const select = canvas.getByRole("combobox", { name: /Payment terms/ })
+    await expect(select).toHaveAttribute("aria-invalid", "true")
+    await expect(select).toHaveAccessibleDescription("As agreed with your supplier Choose payment terms")
   }
 })
 

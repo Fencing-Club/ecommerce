@@ -1,20 +1,9 @@
-import { useState } from "react"
-import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { DialogTrigger } from "@/components/ui/dialog"
 import { FormInput, FormMoney } from "./form-controls"
+import { FormDialog } from "./form-dialog"
 
 const schema = z.object({
   carrier: z.string().trim().min(1, "shipments.forward.enterCarrier").max(100),
@@ -31,50 +20,28 @@ const schema = z.object({
 // for a forwarder that isn't on Copacker.
 export function ForwardShipment({ shipmentId, currency }: { shipmentId: string; currency: string }) {
   const t = useTranslations("shipments.forward")
-  const [open, setOpen] = useState(false)
-  const { form, submit } = useActionForm({
-    schema,
-    action: "shipment.forward",
-    defaultValues: { carrier: "", reference: "" },
-    toPayload: (values) => ({
-      id: shipmentId,
-      carrier: values.carrier,
-      reference: values.reference,
-      freight: { amountMinor: values.amount, currency }
-    }),
-    onSuccess: () => setOpen(false)
-  })
   return (
-    <>
-      <Button type="button" size="sm" onClick={() => setOpen(true)}>
-        {t("markShipped")}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <FormProvider {...form}>
-            <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-              <DialogHeader>
-                <DialogTitle>{t("title")}</DialogTitle>
-                <DialogDescription>{t("description")}</DialogDescription>
-              </DialogHeader>
-              <FieldGroup className="gap-4">
-                <FormMoney name="amount" required label={t("freightCost")} currency={currency} />
-                <FormInput name="carrier" required label={t("carrier")} placeholder="Maersk" />
-                <FormInput name="reference" required label={t("reference")} />
-              </FieldGroup>
-              <FormError message={form.formState.errors.root?.server?.message} />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  {t("cancel")}
-                </Button>
-                <SubmitButton type="submit" pending={form.formState.isSubmitting}>
-                  {t("markShipped")}
-                </SubmitButton>
-              </DialogFooter>
-            </form>
-          </FormProvider>
-        </DialogContent>
-      </Dialog>
-    </>
+    <FormDialog
+      trigger={<DialogTrigger render={<Button type="button" size="sm" />}>{t("markShipped")}</DialogTrigger>}
+      title={t("title")}
+      description={t("description")}
+      size="md"
+      submitLabel={t("markShipped")}
+      form={{
+        schema,
+        action: "shipment.forward",
+        defaultValues: { carrier: "", reference: "" },
+        toPayload: (values) => ({
+          id: shipmentId,
+          carrier: values.carrier,
+          reference: values.reference,
+          freight: { amountMinor: values.amount, currency }
+        })
+      }}
+    >
+      <FormMoney name="amount" required label={t("freightCost")} currency={currency} />
+      <FormInput name="carrier" required label={t("carrier")} placeholder="Maersk" />
+      <FormInput name="reference" required label={t("reference")} />
+    </FormDialog>
   )
 }

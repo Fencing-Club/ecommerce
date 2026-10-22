@@ -1,14 +1,13 @@
 import { useInterval } from "@mantine/hooks"
 import { useState } from "react"
-import { FormProvider } from "react-hook-form"
+import { useFormState } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { ActionForm } from "@/components/action-form"
 import { Button } from "@/components/ui/button"
 import { useAction } from "@/hooks/use-action"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { codeSchema } from "@/lib/sign-in"
 import { CodeField } from "./code-field"
-import { leaving } from "./sign-in-form"
 
 // Seconds before another code can be sent. The page opens just after one was.
 const cooldown = 30
@@ -20,36 +19,31 @@ export function VerifyEmailForm() {
     schema: codeSchema,
     action: "auth.verifyEmail",
     navigation: "document",
-    defaultValues: { code: "" }
-  })
-  async function send() {
-    if (form.formState.isSubmitting) {
-      return
-    }
-    await submit()
-    if (form.formState.errors.root) {
+    defaultValues: { code: "" },
+    onError: () => {
       form.setValue("code", "")
       form.setFocus("code")
+    }
+  })
+  const { isSubmitting } = useFormState({ control: form.control })
+  async function send() {
+    if (!isSubmitting) {
+      await submit()
     }
   }
   return (
     <div className="flex flex-col gap-6">
-      <FormProvider {...form}>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void send()
-          }}
-          noValidate
-          className="flex flex-col gap-6"
-        >
-          <CodeField name="code" label={t("fields.verificationCode")} onComplete={() => void send()} />
-          <FormError message={form.formState.errors.root?.server?.message} />
-          <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-            {t("verifyEmail.submit")}
-          </SubmitButton>
-        </form>
-      </FormProvider>
+      <ActionForm
+        form={form}
+        onSubmit={(event) => {
+          event?.preventDefault()
+          void send()
+        }}
+        label={t("verifyEmail.submit")}
+        layout="auth"
+      >
+        <CodeField name="code" label={t("fields.verificationCode")} onComplete={() => void send()} />
+      </ActionForm>
       <ResendCode />
     </div>
   )

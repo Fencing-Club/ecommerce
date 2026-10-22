@@ -40,9 +40,7 @@
     "none": "无",
     "edit": "编辑",
     "editLabel": "编辑库存地点",
-    "cancel": "取消",
     "save": "保存",
-    "saving": "正在保存…",
     "saveFailed": "无法保存地点，请重试。"
   },
   "list": {

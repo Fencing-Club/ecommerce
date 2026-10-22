@@ -28,6 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useCartonTemplate, usePalletTemplate } from "@/hooks/use-import-templates"
+import { addressLine } from "@/lib/address"
 import { useActionMutation } from "@/lib/api"
 import {
   cartonTotals,
@@ -44,6 +45,7 @@ import { formatPhone, phoneHref } from "@/lib/phone"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { zonedDay } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
+import { keepEnterFromSubmitting } from "./action-form"
 import { emptyAddress } from "./address-fields"
 import { CartonImportDialog } from "./carton-import-dialog"
 import { CartonTable } from "./carton-table"
@@ -90,19 +92,6 @@ const checkResult = z.object({
 // Which saved address a pickup address is, while it's unchanged.
 const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
   addresses.find(({ address }) => objectKeys(emptyAddress).every((key) => (address[key] ?? "") === (origin[key] ?? "")))
-// Enter in a field must not finish packing, so only the Finish packing button
-// submits. Buttons still press and text areas still start a new line, and a dialog opened from here keeps its own
-// Enter: its fields belong to its own form.
-function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
-  if (
-    event.key === "Enter" &&
-    !event.nativeEvent.isComposing &&
-    event.target instanceof HTMLInputElement &&
-    event.target.form === event.currentTarget
-  ) {
-    event.preventDefault()
-  }
-}
 export function PackingForm({
   shipmentId,
   revision,
@@ -906,16 +895,7 @@ export function PackingDetailsFields({
               readOnly
               label={t("shipFrom")}
               name={chosen?.name ?? origin.name ?? ""}
-              address={[
-                origin.addressLine1,
-                origin.addressLine2,
-                origin.city,
-                origin.stateOrRegion,
-                origin.postalCode,
-                origin.countryCode
-              ]
-                .filter(Boolean)
-                .join(", ")}
+              address={addressLine(origin)}
               contact={
                 (origin.name || origin.phoneNumber) && (
                   <>
