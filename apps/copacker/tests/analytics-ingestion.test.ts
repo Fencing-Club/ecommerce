@@ -560,7 +560,7 @@ it("stops receipt requests when the sync revision changes before a checkpoint", 
       },
       async () => undefined
     )
-  ).rejects.toThrow("Analytics account changed")
+  ).rejects.toThrow("superseded")
   expect(receipt).toHaveBeenCalledTimes(1)
   expect(awdShipments).not.toHaveBeenCalled()
   expect(await database.select().from(tables.analyticsEvidence)).toEqual([])

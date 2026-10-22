@@ -78,10 +78,6 @@ function tasks(counts: Data["attention"], t: TaskText) {
   return items
 }
 
-// A table that runs edge to edge inside its card, as on the buyer Overview: the first and last columns line up with the
-// card's padding.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-
 // The change against the comparison period as the buyer Overview's pill, such as +12% vs previous period. The comparison
 // shows beside the pill when the tile has room for it, and is always read out.
 function Delta({ change, comparison }: { change: number | null; comparison: string | null }) {
@@ -396,15 +392,15 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
         </Card>
       </div>
 
-      <Card className="gap-0 py-0">
-        <CardHeader className="border-b pt-4">
+      <Card flush>
+        <CardHeader>
           <CardTitle>{t("recentOrders")}</CardTitle>
           <CardAction>
             <CardLink href="/orders">{t("viewAll")}</CardLink>
           </CardAction>
         </CardHeader>
         {data.recent.length ? (
-          <Table framed={false} className={edgeTable}>
+          <Table framed={false} inset>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("columns.order")}</TableHead>
@@ -418,7 +414,10 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
               {data.recent.map((order) => (
                 <LinkRow key={order.id} href={`/orders/${order.id}`}>
                   <TableCell>
-                    <PageLink href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
+                    <PageLink
+                      href={`/orders/${order.id}`}
+                      className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
+                    >
                       {order.reference}
                     </PageLink>
                     <p className="text-xs text-muted-foreground">{formatDate(order.sentAt, locale, timeZone)}</p>

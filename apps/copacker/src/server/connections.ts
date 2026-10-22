@@ -13,6 +13,7 @@ import { selfAuthorizationSchema } from "@/lib/amazon"
 import { amazonReportPolicy } from "./amazon-report-policy"
 import { DemoShopify, demoShopConnection } from "./demo-shopify"
 import { ReconnectRequiredError } from "./errors"
+import { type Provider, requireConnectedAccount } from "./provider-accounts"
 import { decrypt, encrypt } from "./security"
 
 // Copacker's Shopify app's keys.
@@ -25,27 +26,40 @@ const savedToken = z.object({
   expiresAt: z.number().optional(),
   refreshExpiresAt: z.number().optional()
 })
+type Account = typeof connections.$inferSelect
 
-export type Provider = "amazon" | "shopify" | "ebay"
+const readToken = (account: Account) =>
+  savedToken.parse(JSON.parse(decrypt(account.encryptedToken, `${account.orgId}:${account.provider}`)))
 
+// Shopify's access tokens expire; renew one that has less than a minute left. The demo store's never does.
+const shopifyTokenExpiring = (account: Account, stored: z.infer<typeof savedToken>) =>
+  !demoShopConnection(account.externalId, stored.token) && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)
+
+// The connected account and its access token. Only renewing a Shopify token locks the row, so concurrent jobs renew
+// it once: one that waited for the lock finds the token already renewed.
 export async function connection(orgId: string, provider: Provider) {
+  const account = await requireConnectedAccount(orgId, provider)
+  const stored = readToken(account)
+  if (provider === "shopify" && shopifyTokenExpiring(account, stored)) {
+    return renewShopifyToken(orgId)
+  }
+  // An eBay refresh token lasts about 18 months; after that only signing in again renews it.
+  if (provider === "ebay" && stored.refreshExpiresAt && stored.refreshExpiresAt < Date.now()) {
+    throw new ReconnectRequiredError("Reconnect eBay to renew seller authorization")
+  }
+  return { ...account, token: stored.token }
+}
+
+async function renewShopifyToken(orgId: string) {
   return db().transaction(async (tx) => {
-    const [row] = await tx
-      .select()
-      .from(connections)
-      .where(and(eq(connections.orgId, orgId), eq(connections.provider, provider)))
-      .for("update")
-    if (!row) {
-      throw new LocalizedError("connectInSettings", { provider })
-    }
-    let stored = savedToken.parse(JSON.parse(decrypt(row.encryptedToken, `${orgId}:${provider}`)))
-    const demo = provider === "shopify" && demoShopConnection(row.externalId, stored.token)
-    if (provider === "shopify" && !demo && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)) {
+    const account = await requireConnectedAccount(orgId, "shopify", { executor: tx, lock: "update" })
+    let stored = readToken(account)
+    if (shopifyTokenExpiring(account, stored)) {
       if (!stored.refreshToken || !stored.refreshExpiresAt || stored.refreshExpiresAt < Date.now()) {
         throw new ReconnectRequiredError("Reconnect Shopify to renew merchant authorization")
       }
       try {
-        stored = await refreshShopifyToken(shopifyApp(), row.externalId, stored.refreshToken)
+        stored = await refreshShopifyToken(shopifyApp(), account.externalId, stored.refreshToken)
       } catch (error) {
         if (error instanceof ShopifyRequestError) {
           throw new ReconnectRequiredError(`Shopify token renewal failed (${error.status}). Reconnect in Settings`)
@@ -54,14 +68,10 @@ export async function connection(orgId: string, provider: Provider) {
       }
       await tx
         .update(connections)
-        .set({ encryptedToken: encrypt(JSON.stringify(stored), `${orgId}:${provider}`) })
-        .where(eq(connections.id, row.id))
+        .set({ encryptedToken: encrypt(JSON.stringify(stored), `${orgId}:shopify`) })
+        .where(eq(connections.id, account.id))
     }
-    // An eBay refresh token lasts about 18 months; after that only signing in again renews it.
-    if (provider === "ebay" && stored.refreshExpiresAt && stored.refreshExpiresAt < Date.now()) {
-      throw new ReconnectRequiredError("Reconnect eBay to renew seller authorization")
-    }
-    return { ...row, token: stored.token }
+    return { ...account, token: stored.token }
   })
 }
 export async function shopifyFor(orgId: string, expectedDomain?: string) {

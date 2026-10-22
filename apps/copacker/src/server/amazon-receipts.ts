@@ -13,6 +13,7 @@ export async function syncAmazonReceipts(
   },
   assertOwned: () => Promise<void>
 ) {
+  const feed = { ...input, source: "amazon" as const }
   for (const network of ["fba", "awd"] as const) {
     const dataset = `${network}_inbound_receipts`
     let stage = "list"
@@ -81,10 +82,10 @@ export async function syncAmazonReceipts(
         }
         // Persistence failures stop both networks; they are not malformed provider documents.
         stage = "publish"
-        await publishAnalyticsFeed(input, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
+        await publishAnalyticsFeed(feed, dataset, rows, { error: failed ? "collection_failed" : null }, assertOwned)
       }
       stage = "publish"
-      await publishAnalyticsFeed(input, dataset, [], { error: failed ? "collection_failed" : null }, assertOwned)
+      await publishAnalyticsFeed(feed, dataset, [], { error: failed ? "collection_failed" : null }, assertOwned)
     } catch (error) {
       console.warn("Amazon receipt collection failed", { network, stage, ...amazonFailureDetails(error) })
       const [prior] = await db()
@@ -98,7 +99,7 @@ export async function syncAmazonReceipts(
             eq(analyticsFeeds.dataset, dataset)
           )
         )
-      await publishAnalyticsFeed(input, dataset, [], { ...prior?.state, error: "collection_failed" }, assertOwned)
+      await publishAnalyticsFeed(feed, dataset, [], { ...prior?.state, error: "collection_failed" }, assertOwned)
       if (stage === "publish") {
         return
       }

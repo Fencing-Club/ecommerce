@@ -1,8 +1,8 @@
 import type { Address } from "@repo/copacker-orders"
 import { useTranslations } from "use-intl"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddressSummary } from "./partner-address"
 import { ShipmentAddress } from "./shipment-packing-details"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
 export function ShipmentDestination({
   addresses,
