@@ -1,10 +1,11 @@
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+// The route renders the sign-in screen itself.
+import { AuthScreen as PageView } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { errors } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
-import PageView from "./page"
 
 const sent: ActionRequest[] = []
 

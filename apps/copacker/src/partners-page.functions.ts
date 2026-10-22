@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
-import { z } from "zod"
-import { urlQuery } from "@/lib/url-query"
-import { localizedPage } from "@/server/page-result"
+import { partnersSearch } from "@/lib/page-search"
+import { pageResult } from "@/server/page-result"
 import { partnersPage } from "@/server/partners-page"
 export const readPartners = createServerFn()
-  .validator(z.object({ query: urlQuery }))
-  .handler(({ data }) => localizedPage(() => partnersPage(data), "partners.page.title"))
+  .validator(partnersSearch.pick({ type: true, q: true }))
+  .handler(({ data }) => pageResult(() => partnersPage(data), "partners.page.title"))

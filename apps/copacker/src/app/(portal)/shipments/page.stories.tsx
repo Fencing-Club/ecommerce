@@ -2,6 +2,7 @@ import { type OrderInput } from "@repo/copacker-orders"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { can, type Permissions } from "@/lib/access"
+import type { ShipmentsSearch } from "@/lib/page-search"
 import type { AmazonShipment } from "@/server/amazon-shipments"
 import { shipmentListRows } from "@/server/logistics-rows"
 import {
@@ -21,7 +22,7 @@ type Args = {
   kind: "buyer" | "supplier"
   permissions: Permissions
   // The ?view= tab.
-  view?: string
+  view?: ShipmentsSearch["view"]
   // The purchase orders the person can see, and their shipments, newest first.
   rows: OrderRow[]
   list: ShipmentRow[]
@@ -42,7 +43,6 @@ async function ShipmentsPage({ kind, permissions, view, rows, list, customers, a
         viewer: kind,
         seesOrders: can(permissions, "orders"),
         amazonFailed: isBuyer && Boolean(amazonFails),
-        view,
         rows: await shipmentListRows({
           isBuyer,
           rows,
@@ -51,6 +51,7 @@ async function ShipmentsPage({ kind, permissions, view, rows, list, customers, a
           amazon: isBuyer && !amazonFails ? (amazonShipments ?? []) : []
         })
       }}
+      search={{ view }}
     />
   )
 }

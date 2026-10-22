@@ -148,11 +148,7 @@ export const SearchAndSort = meta.story({
 
 // Opened from an Overview link: a channel, a days-of-cover group and only the items to reorder.
 export const FromOverview = meta.story({
-  parameters: {
-    router: {
-      navigation: { pathname: "/restock", query: { channel: "shopify:81234", cover: "out", status: "order" } }
-    }
-  },
+  args: { link: { channel: "shopify:81234", cover: "out", status: "order" } },
   play: async ({ canvas }) => {
     await lotusGroup()
     await expect(plans).toEqual([

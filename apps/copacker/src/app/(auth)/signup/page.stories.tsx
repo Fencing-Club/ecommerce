@@ -1,9 +1,10 @@
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
+// The route renders the sign-in screen itself.
+import { AuthScreen as PageView } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
-import PageView from "./page"
 
 const sent: ActionRequest[] = []
 

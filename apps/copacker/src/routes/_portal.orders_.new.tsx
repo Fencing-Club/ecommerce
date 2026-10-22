@@ -1,27 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/orders/new/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { newOrderSearch } from "@/lib/page-search"
 import { readNewOrder } from "@/new-order-page.functions"
+import { PortalPage, PortalRouteError, pageHead } from "./-page-route"
+
+// The URL's variants, supplier and destination start the new purchase order.
 export const Route = createFileRoute("/_portal/orders_/new")({
-  validateSearch: urlQuery,
+  validateSearch: newOrderSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => readNewOrder({ data: deps }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} />}</PortalPage>
 }

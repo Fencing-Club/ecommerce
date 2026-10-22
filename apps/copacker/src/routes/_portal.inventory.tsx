@@ -1,28 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/inventory/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { inventorySearch } from "@/lib/page-search"
 import { readInventory } from "@/workspace.functions"
+import { PortalPage, PortalRouteError, pageHead, reloadOnEnter } from "./-page-route"
 
+// The tab the URL names opens first.
 export const Route = createFileRoute("/_portal/inventory")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => ({ query: search }),
-  loader: ({ deps }) => readInventory({ data: { ...deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: inventorySearch,
+  loader: () => readInventory(),
+  shouldReload: reloadOnEnter,
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} search={search} />}</PortalPage>
 }

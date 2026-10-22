@@ -7,16 +7,13 @@ import { requirePage, session } from "@/server/auth"
 import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 import { serverTranslator } from "@/server/translation"
 import { orderListRows } from "./order-list"
-export async function ordersPage(input: { query: Record<string, string | string[]> }) {
+// The purchase order list. The view or tab it opens on is the URL's, which the page reads itself.
+export async function ordersPage() {
   const [s, t] = await Promise.all([session(), serverTranslator("orders.index")])
   requirePage(s, "orders")
   if (s.org.kind === "supplier") {
-    const [orders, { tab }] = await Promise.all([supplierOrders(s.org.id), input.query])
-    return {
-      view: "supplier" as const,
-      orders: can(s, "prices") ? orders : withoutTotals(orders),
-      tab: typeof tab === "string" ? tab : undefined
-    }
+    const orders = await supplierOrders(s.org.id)
+    return { view: "supplier" as const, orders: can(s, "prices") ? orders : withoutTotals(orders) }
   }
   // A forwarder sees the POs whose goods pass through it, without their prices.
   const rows = (s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)).reverse()
@@ -70,21 +67,6 @@ export async function ordersPage(input: { query: Record<string, string | string[
     creates,
     nextStep,
     guided,
-    kind: s.org.kind,
-    listView: orderView(input.query)
+    kind: s.org.kind
   }
-}
-
-// The list's view from the URL. Links from before the views, such as /orders?status=draft, open the view that holds
-// the same orders.
-function orderView(query: Record<string, string | string[]>) {
-  if (typeof query.view === "string") {
-    return query.view
-  }
-  const legacy = new Map([
-    ["draft", "draft"],
-    ["submitted", "active"],
-    ["closed", "closed"]
-  ])
-  return typeof query.status === "string" ? legacy.get(query.status) : undefined
 }

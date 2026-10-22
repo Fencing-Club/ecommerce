@@ -9,9 +9,9 @@ const meta = preview.meta({
     label: "Status",
     tabs: [
       { label: "All", href: "/orders", current: true, count: 1250 },
-      { label: "Drafts", href: "/orders?status=draft", current: false, count: 1 },
-      { label: "With supplier", href: "/orders?status=submitted", current: false, count: 2 },
-      { label: "Closed", href: "/orders?status=closed", current: false, count: 0 }
+      { label: "Drafts", href: "/orders?view=draft", current: false, count: 1 },
+      { label: "With supplier", href: "/orders?view=active", current: false, count: 2 },
+      { label: "Closed", href: "/orders?view=closed", current: false, count: 0 }
     ]
   }
 })
@@ -20,7 +20,7 @@ export const Controlled = meta.story({
   args: { onSelect: fn() },
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("link", { name: /Drafts/ }))
-    await expect(args.onSelect).toHaveBeenCalledWith("/orders?status=draft")
+    await expect(args.onSelect).toHaveBeenCalledWith("/orders?view=draft")
   }
 })
 
@@ -35,7 +35,7 @@ export const Default = meta.story({
     await expect(within(nav).getByRole("link", { name: /Drafts/ })).not.toHaveAttribute("aria-current")
     await expect(within(nav).getByRole("link", { name: /With supplier/ })).toHaveAttribute(
       "href",
-      "/orders?status=submitted"
+      "/orders?view=active"
     )
   }
 })
@@ -70,8 +70,8 @@ export const NeedsYou = meta.story({
   args: {
     label: "Views",
     tabs: [
-      { label: "Needs you", href: "/orders?view=needs-you", current: true, count: 4, attention: true },
-      { label: "Drafts", href: "/orders?view=drafts", current: false, count: 2 }
+      { label: "Needs you", href: "/orders?view=needsYou", current: true, count: 4, attention: true },
+      { label: "Drafts", href: "/orders?view=draft", current: false, count: 2 }
     ]
   },
   play: async ({ canvas }) => {
@@ -88,8 +88,8 @@ export const OnAPhone = meta.story({
   args: {
     label: "Views",
     tabs: [
-      { label: "Needs you", href: "/orders?view=needs-you", current: false, count: 4 },
-      { label: "Drafts", href: "/orders?view=drafts", current: false, count: 2 },
+      { label: "Needs you", href: "/orders?view=needsYou", current: false, count: 4 },
+      { label: "Drafts", href: "/orders?view=draft", current: false, count: 2 },
       { label: "With supplier", href: "/orders?view=with-supplier", current: false, count: 3 },
       { label: "In transit", href: "/orders?view=in-transit", current: false, count: 5 },
       { label: "Closed", href: "/orders?view=closed", current: true, count: 118 },

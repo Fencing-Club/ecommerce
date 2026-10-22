@@ -8,7 +8,7 @@ import { pageStory } from "@/stories/server"
 import PageView from "./page"
 
 function InventoryPage({ rows, tab }: { rows: InventoryRow[]; tab?: string }) {
-  return <PageView page={{ rows: rows, tab: tab }} />
+  return <PageView page={{ rows: rows }} search={{ tab }} />
 }
 
 // The counts each story saved.
