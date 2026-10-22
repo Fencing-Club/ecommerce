@@ -1,4 +1,4 @@
-import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import { inventoryItemIdSchema, variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import {
   orderDestination,
   type ReceiverGroup,

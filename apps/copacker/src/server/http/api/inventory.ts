@@ -1,4 +1,5 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -15,10 +16,7 @@ const cursorSchema = z.strictObject({
 })
 const querySchema = z.strictObject({
   source: stockSource,
-  locationId: z
-    .string()
-    .regex(/^gid:\/\/shopify\/Location\/\d+$/)
-    .optional(),
+  locationId: locationIdSchema.optional(),
   marketplaceId: z.literal(usMarketplaceId).optional(),
   limit: z
     .string()

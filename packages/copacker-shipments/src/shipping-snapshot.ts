@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { type OrderInput } from "@repo/copacker-orders"
 import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
 import { validatePacking } from "@repo/copacker-packing-rules"
@@ -218,7 +219,7 @@ function documentProduct(item: Item, tasks: ProductTask[], supplierSku: string):
     id: item.id,
     supplierSku,
     description: item.name,
-    variant: item.variant === "Default Title" ? undefined : item.variant,
+    variant: variantName(item.variant) ?? undefined,
     piecesPerPack: item.piecesPerSet,
     tasks,
     countryCode: item.packingRequirements?.countryCode || undefined

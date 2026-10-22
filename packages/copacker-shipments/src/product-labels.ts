@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { PDFDocument, StandardFonts, type PDFFont, rgb } from "pdf-lib"
 import { countryName } from "./countries"
 import { drawableText } from "./documents"
@@ -322,8 +323,6 @@ export async function suffocationWarningLabels() {
 // The title printed on a label: the product's Shopify title, with its variant's options in parentheses unless it's the
 // only variant, such as "Pro-Grip Fencing Glove (10, Left)".
 export function labelTitle(product: string, variant: string | null) {
-  if (!variant || variant === "Default Title") {
-    return product
-  }
-  return `${product} (${variant.split(" / ").join(", ")})`
+  const options = variantName(variant)
+  return options ? `${product} (${options.split(" / ").join(", ")})` : product
 }

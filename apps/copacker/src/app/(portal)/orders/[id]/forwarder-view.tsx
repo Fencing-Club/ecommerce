@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { amazonNetworkNames, orderDestination, receivers } from "@repo/copacker-shipments"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
@@ -64,7 +65,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
                 <TableRow key={item.id}>
                   <TableCell className="py-2.5 align-top whitespace-normal">
                     <p className="leading-snug font-medium">{item.name}</p>
-                    {item.variant && item.variant !== "Default Title" && (
+                    {variantName(item.variant) && (
                       <Badge variant="secondary" className="mt-1">
                         {item.variant}
                       </Badge>

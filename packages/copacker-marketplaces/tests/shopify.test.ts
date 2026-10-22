@@ -8,7 +8,8 @@ import {
   ShopifyRequestError,
   piecesPerUnit,
   bundleSupplierComponents,
-  shopifyLocationKind
+  shopifyLocationKind,
+  variantName
 } from "../src/shopify"
 import { exchangeShopifyCode, refreshShopifyToken, revokeShopifyToken, verifyShopifyHmac } from "../src/shopify-auth"
 
@@ -545,6 +546,15 @@ it("classifies denied inventory access without exposing provider diagnostics", a
     Response.json({ errors: [{ message: "private detail", extensions: { code: "ACCESS_DENIED" } }] })
   )
   await expect(new Shopify(domain, "test", transport).stockPage()).rejects.toThrow(ShopifyPermissionError)
+})
+
+describe("variantName", () => {
+  it("leaves out the name Shopify gives a product's only variant", () => {
+    expect(variantName("Red / Large")).toBe("Red / Large")
+    expect(variantName("Default Title")).toBeNull()
+    expect(variantName("")).toBeNull()
+    expect(variantName(null)).toBeNull()
+  })
 })
 
 describe("shopifyLocationKind", () => {

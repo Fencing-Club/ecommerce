@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
+import { variantIdSchema, variantName } from "@repo/copacker-marketplaces/shopify"
 import { type Destination, type OrderInput } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
@@ -213,7 +213,7 @@ export async function saveProductBarcode(s: Session, form: FormData) {
       variantId: row.variantId,
       sku: row.buyerSku,
       product: row.productTitle,
-      variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
+      variant: variantName(row.variantTitle)
     } satisfies BarcodeTarget,
     // The job that sends any packets the barcode completed, for the caller to send straight away.
     labels

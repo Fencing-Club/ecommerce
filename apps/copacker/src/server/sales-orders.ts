@@ -13,6 +13,7 @@ import {
   orderSales,
   shopifyOrderFees
 } from "@repo/copacker-marketplaces/sales"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
@@ -861,10 +862,8 @@ async function productNames(orgId: string, domain: string, orders: SalesOrderSum
     if (typeof row.product !== "string") {
       continue
     }
-    const name =
-      typeof row.variant === "string" && row.variant !== "Default Title"
-        ? `${row.product}, ${row.variant}`
-        : row.product
+    const variant = typeof row.variant === "string" ? variantName(row.variant) : null
+    const name = variant ? `${row.product}, ${variant}` : row.product
     if (typeof row.variantId === "string") {
       byVariant.set(row.variantId, name)
     }

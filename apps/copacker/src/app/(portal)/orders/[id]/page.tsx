@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderItem } from "@repo/copacker-orders"
 import { itemTotal, money, orderCharges, orderTotal } from "@repo/copacker-orders"
 import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
@@ -282,9 +283,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                             <LineMenu
                               orderId={id}
                               itemId={item.id}
-                              name={[item.name, item.variant === "Default Title" ? "" : item.variant]
-                                .filter(Boolean)
-                                .join(" / ")}
+                              name={[item.name, variantName(item.variant)].filter(Boolean).join(" / ")}
                               label={labelFor(item.id)}
                               warning={item.suffocationWarning}
                               editable={order.status === "draft" && buyer && editsOrder}

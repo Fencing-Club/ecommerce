@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import {
   adjustmentTypes,
   commonPaymentTerms,
@@ -581,7 +582,7 @@ export function OrderBuilder({
                                   <td className="px-3 py-4">
                                     <Checkbox
                                       aria-label={tb("selectProduct", {
-                                        name: `${line.name}${line.variant && line.variant !== "Default Title" ? `, ${line.variant}` : ""}`
+                                        name: [line.name, variantName(line.variant)].filter(Boolean).join(", ")
                                       })}
                                       checked={selectedLines.has(line.id)}
                                       onCheckedChange={(checked) => selectLines([line.id], checked)}
@@ -590,7 +591,7 @@ export function OrderBuilder({
                                 )}
                                 <td className="px-3 py-2.5">
                                   <p className="leading-snug font-medium">{line.name}</p>
-                                  {line.variant && line.variant !== "Default Title" && (
+                                  {variantName(line.variant) && (
                                     <Badge variant="secondary" className="mt-1">
                                       {line.variant}
                                     </Badge>
