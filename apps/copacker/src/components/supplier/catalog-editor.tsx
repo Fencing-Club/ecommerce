@@ -700,7 +700,7 @@ export function CatalogEditor({
           </Card>
         </fieldset>
 
-        <Card className="@container gap-0 py-0">
+        <Card flush className="@container">
           <div className="flex flex-col gap-3 border-b p-4">
             {/* The switch moves under the title when the two don't fit on one line, instead of squeezing its label. */}
             <CardHeader className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-0">

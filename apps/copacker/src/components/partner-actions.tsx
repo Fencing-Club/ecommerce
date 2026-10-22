@@ -93,7 +93,7 @@ function PartnerRow({
             <button
               type="button"
               onClick={onOpen}
-              className="max-w-full truncate rounded-sm text-start font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="focus-ring max-w-full truncate rounded-sm text-start font-medium underline-offset-4 hover:underline"
             >
               {name}
             </button>

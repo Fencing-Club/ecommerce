@@ -40,7 +40,7 @@ import {
   receiveEbayNotification
 } from "../src/server/ebay-events"
 import { POST } from "../src/server/http/api/webhooks/ebay"
-import { PollAgain } from "../src/server/job-handlers"
+import { PollAgain } from "../src/server/job-runtime"
 import { reconcileJob } from "../src/server/reconcile"
 import { database, pg, setUpTestDatabase } from "./test-db"
 
@@ -228,7 +228,7 @@ describe("eBay notification subscriptions", () => {
     ebay.app.destinations.mockResolvedValue([])
     ebay.app.createDestination.mockResolvedValue("dest-1")
     ebay.seller.subscriptions.mockResolvedValue([])
-    await ebaySubscribeJob({ orgId: buyerId }, owned)
+    await ebaySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(ebay.app.createDestination).toHaveBeenCalledWith(
       "Copacker",
       endpoint,
@@ -244,7 +244,7 @@ describe("eBay notification subscriptions", () => {
     ebay.seller.subscriptions.mockResolvedValue([
       { subscriptionId: "sub-1", topicId: "ORDER_CONFIRMATION", status: "DISABLED", destinationId: "dest-1" }
     ])
-    await ebaySubscribeJob({ orgId: buyerId }, owned)
+    await ebaySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(ebay.app.createDestination).not.toHaveBeenCalled()
     expect(ebay.seller.subscribe).not.toHaveBeenCalled()
     expect(ebay.seller.enableSubscription).toHaveBeenCalledWith("sub-1")
@@ -257,7 +257,7 @@ describe("eBay notification subscriptions", () => {
     ebay.seller.subscriptions.mockResolvedValue([
       { subscriptionId: "sub-1", topicId: "ORDER_CONFIRMATION", status: "ENABLED" }
     ])
-    await ebaySubscribeJob({ orgId: buyerId }, owned)
+    await ebaySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(ebay.app.updateDestination).toHaveBeenCalledWith(
       "dest-1",
       "Copacker",
@@ -271,19 +271,19 @@ describe("eBay notification subscriptions", () => {
     ebay.app.createDestination.mockResolvedValue("dest-1")
     ebay.seller.subscriptions.mockResolvedValue([])
     ebay.seller.subscribe.mockRejectedValue(new Error("eBay request failed (403)"))
-    await expect(ebaySubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow(
+    await expect(ebaySubscribeJob({ orgId: buyerId }, { assertOwned: owned })).rejects.toThrow(
       "eBay ORDER_CONFIRMATION subscription failed: eBay request failed (403)"
     )
   })
 
   it("skips subscribing where eBay can't deliver, such as local development", async () => {
     vi.stubEnv("APP_URL", "http://localhost:3000")
-    await ebaySubscribeJob({ orgId: buyerId }, owned)
+    await ebaySubscribeJob({ orgId: buyerId }, { assertOwned: owned })
     expect(ebay.app.destinations).not.toHaveBeenCalled()
   })
 
   it("renews subscriptions in the daily reconciliation", async () => {
-    await reconcileJob({ date: "2026-09-28" }, owned)
+    await reconcileJob({ date: "2026-09-28" }, { assertOwned: owned })
     expect(await queued("ebay-subscribe")).toMatchObject([
       { key: `ebay-subscribe:${buyerId}:2026-09-28`, payload: { orgId: buyerId } }
     ])

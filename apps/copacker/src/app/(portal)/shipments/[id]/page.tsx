@@ -3,7 +3,7 @@ import { money } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"
+import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"
 import { Fragment } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
+import { Spinner } from "@/components/ui/spinner"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { printableLabelTypes } from "@/lib/printable-labels"
 import { finishedStates, packedStates } from "@/server/readiness"
@@ -265,7 +266,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         href={link.url}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
+        className="focus-ring inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
       >
         {link.id}
         <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
@@ -397,7 +398,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
 
           {["queued", "creating"].includes(shipment.status) && (
             <Alert role="note">
-              <Loader2 className="animate-spin" />
+              <Spinner />
               <AlertTitle>{t("creating.title")}</AlertTitle>
               <AlertDescription>{t("creating.description")}</AlertDescription>
             </Alert>

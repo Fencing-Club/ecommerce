@@ -49,9 +49,9 @@ const lastCell = "pe-4"
 // A problem with some products, as a card that opens to list them.
 export function IssuePanel({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card flush>
       <Collapsible>
-        <CollapsibleTrigger className="group flex w-full items-center gap-3 px-4 py-3 text-start text-sm outline-none hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset">
+        <CollapsibleTrigger className="focus-ring group flex w-full items-center gap-3 px-4 py-3 text-start text-sm hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-inset">
           <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
           <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
             <span className="font-medium">{title}</span>
@@ -220,7 +220,7 @@ function Quantities({
                 {index > 0 && ", "}
                 <PageLink
                   href={`/orders/${order.id}`}
-                  className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  className="focus-ring rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   {order.reference}
                 </PageLink>
@@ -361,7 +361,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
               <button
                 type="button"
                 onClick={edit}
-                className="w-fit rounded-sm text-start font-medium [overflow-wrap:anywhere] underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="focus-ring w-fit rounded-sm text-start font-medium [overflow-wrap:anywhere] underline-offset-4 hover:underline"
               >
                 {product.title}
               </button>
@@ -526,7 +526,7 @@ function ListFooter({
 export function ProductsSkeleton() {
   const t = useTranslations("inventory.list")
   return (
-    <Card className="gap-0 overflow-hidden py-0" aria-busy="true">
+    <Card flush aria-busy="true">
       <span className="sr-only">{t("loading")}</span>
       <div className="border-b p-4">
         <Skeleton className="h-8 w-full max-w-sm" />
@@ -603,7 +603,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
   const shown = editing ? (data.products.find((product) => product.productId === editing.productId) ?? editing) : null
   return (
     <>
-      <Card className="gap-0 overflow-hidden py-0">
+      <Card flush>
         <div className="flex flex-wrap items-center gap-2 border-b p-4">
           {/* A row of its own on a phone, so the filters and actions wrap under it instead of squeezing it. */}
           <InputGroup className="h-[34px] w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1">

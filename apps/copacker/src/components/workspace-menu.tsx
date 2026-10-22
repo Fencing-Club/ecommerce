@@ -78,7 +78,7 @@ export function WorkspaceMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+        className="focus-ring flex h-11 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-sm font-semibold hover:bg-muted aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
         aria-label={t("label", { name: current })}
       >
         <span

@@ -10,7 +10,7 @@ Current HTTP handlers are under `src/app/api`; the packet branch moves them to `
 
 ## Shared delivery and localization
 
-[emailJob](../../../src/server/job-handlers.ts) recognizes `invite`, `forwarder`, `team`, `po`, `ready` and
+[emailJob](../../../src/server/job-email.ts) recognizes `invite`, `forwarder`, `team`, `po`, `ready` and
 `data_request`. All queued messages use [sendEmail](../../../src/server/email.ts): direct Resend HTTP delivery,
 `EMAIL_API_KEY`, `EMAIL_FROM`, the supplied key as `Idempotency-Key`, and a 30-second timeout. Non-success throws.
 Provider message IDs and final delivery are not persisted by this sender; acceptance is not proof of inbox delivery.

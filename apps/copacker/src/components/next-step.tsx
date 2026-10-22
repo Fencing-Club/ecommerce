@@ -75,7 +75,7 @@ export function NextStepCard({
         <h2 id={titleId} className="text-[15px] font-semibold">
           {title}
         </h2>
-        {detail && <p className="text-[13px] leading-[1.45] text-muted-foreground">{detail}</p>}
+        {detail && <p className="text-meta leading-[1.45] text-muted-foreground">{detail}</p>}
         {alert && (
           <p className="flex items-center gap-1.5 pt-1 text-xs font-medium text-warning-foreground">
             <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
@@ -85,7 +85,7 @@ export function NextStepCard({
       </div>
       {meta && (
         <div className="flex shrink-0 flex-col items-end gap-0.5 text-end max-md:items-start max-md:text-start">
-          <span className="text-[13px] font-semibold">{meta}</span>
+          <span className="text-meta font-semibold">{meta}</span>
           {metaDetail && <span className="text-xs text-muted-foreground">{metaDetail}</span>}
         </div>
       )}

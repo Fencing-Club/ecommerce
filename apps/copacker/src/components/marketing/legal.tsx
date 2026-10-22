@@ -51,7 +51,7 @@ function Contents({ sections }: { sections: Section[] }) {
         <li key={section.id}>
           <a
             href={`#${section.id}`}
-            className="rounded-sm text-foreground/65 transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring rounded-sm text-foreground/65 transition-colors hover:text-foreground"
           >
             {section.title}
           </a>
@@ -103,7 +103,7 @@ export function Legal({
             {lead}
           </p>
           <details className="group mt-10 rounded-2xl border border-foreground/10 bg-background/60 lg:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 text-base font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+            <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 text-base font-medium [&::-webkit-details-marker]:hidden">
               {t("contents")}
               <ChevronDown
                 aria-hidden

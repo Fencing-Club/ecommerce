@@ -8,6 +8,7 @@ import { setWorkspace } from "./auth"
 import { acceptForwarderInvitation } from "./forwarders"
 import type { InvitationKind } from "./invitations"
 import { acceptSupplierInvitation, acceptTeamInvitation, findInvitation } from "./invitations"
+import { describeError, logEvent } from "./log"
 import { writeProfile } from "./profile"
 import { workos } from "./workos"
 
@@ -30,7 +31,7 @@ async function nameAccount(userId: string, person: { firstName: string; lastName
   try {
     await workos().userManagement.updateUser({ userId, firstName: person.firstName, lastName: person.lastName })
   } catch (error) {
-    console.error("Couldn’t save the person’s name in WorkOS", error)
+    logEvent("error", "workos_name_failed", { userId, error: describeError(error) })
   }
 }
 

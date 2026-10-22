@@ -163,7 +163,9 @@ export function IssueReport({
             key={code}
             className={cn(
               "rounded-md border px-2 py-0.5 font-mono text-xs",
-              seen.has(code) ? "border-destructive/40 bg-destructive/10 text-destructive" : "text-muted-foreground"
+              seen.has(code)
+                ? "border-destructive-border bg-destructive-soft text-destructive"
+                : "text-muted-foreground"
             )}
           >
             {seen.has(code) ? `${code} ✓` : code}

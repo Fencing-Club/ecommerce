@@ -38,7 +38,7 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={t("label", { name })}
-          className="flex w-full min-w-0 items-center gap-2.5 rounded-md p-2 text-start outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0"
+          className="focus-ring flex w-full min-w-0 items-center gap-2.5 rounded-md p-2 text-start hover:bg-muted aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0"
         >
           <span
             aria-hidden

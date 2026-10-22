@@ -6,8 +6,8 @@ import * as tables from "../src/db/schema"
 import { monthlyStorageReport, agedStorageReport } from "./fixtures/amazon-storage-fees"
 import { database, setUpTestDatabase } from "./test-db"
 vi.mock("@/db", () => import("./test-db"))
+import { amazonMonthlyReports } from "../src/server/amazon-monthly-reports"
 import { monthlyReportWindows } from "../src/server/amazon-report-sync"
-import { amazonStorageFeesStatus, syncAmazonStorageFees } from "../src/server/amazon-storage-fees"
 
 const orgId = randomUUID(),
   otherId = randomUUID()
@@ -38,8 +38,10 @@ beforeEach(async () => {
       : agedStorageReport(request.dataStartTime.startsWith("2026-09") ? [{}, { "surcharge-age-tier": "365+" }] : [])
   )
 })
-const sync = (kind: "monthly" | "aged", date = now) => syncAmazonStorageFees(input, kind, owned, date)
-const status = (kind: "monthly" | "aged", date = now) => amazonStorageFeesStatus(orgId, "SELLER1", kind, date)
+const family = (kind: "monthly" | "aged") =>
+  kind === "monthly" ? amazonMonthlyReports.monthlyStorageFees : amazonMonthlyReports.agedStorageFees
+const sync = (kind: "monthly" | "aged", date = now) => family(kind).sync(input, owned, date)
+const status = (kind: "monthly" | "aged", date = now) => family(kind).status(orgId, "SELLER1", date)
 describe("Amazon storage acquisition", () => {
   it("retries recent unavailable months weekly and older months every thirty days", async () => {
     report.mockResolvedValue(null)
@@ -191,9 +193,7 @@ describe("Amazon storage acquisition", () => {
     expect((await status("monthly")).windows[0]).toMatchObject({ complete: true, rows: 0 })
     expect((await status("aged")).windows[0]).toMatchObject({ complete: true, rows: 2 })
     expect(
-      (await amazonStorageFeesStatus(otherId, "SELLER1", "monthly", now)).windows.every(
-        (window) => window.rows === null
-      )
+      (await family("monthly").status(otherId, "SELLER1", now)).windows.every((window) => window.rows === null)
     ).toBe(true)
   })
   it("preserves previous evidence on cancellation, malformed values and out-of-period rows", async () => {

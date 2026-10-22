@@ -48,3 +48,5 @@ export function withTransaction<T>(transaction: Transaction, run: () => Promise<
 }
 export type Database = ReturnType<typeof createDatabase>
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0]
+// What a query helper runs on: the database, or the caller's transaction. Pass it explicitly.
+export type Executor = Database | Transaction

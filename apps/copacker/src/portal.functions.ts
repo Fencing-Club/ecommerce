@@ -2,6 +2,7 @@ import { redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getCookie } from "@tanstack/react-start/server"
 import { z } from "zod"
+import { sidebarCookie } from "@/components/ui/sidebar"
 import { identity } from "@/server/auth"
 import { portalSession, portalShell } from "@/server/portal-session"
 import { workspaceCookie } from "@/server/workspace-session"
@@ -13,5 +14,5 @@ export const readPortal = createServerFn()
     if (result.redirect) {
       throw redirect({ href: result.redirect })
     }
-    return portalShell(result.session, getCookie("sidebar_state"))
+    return portalShell(result.session, getCookie(sidebarCookie))
   })

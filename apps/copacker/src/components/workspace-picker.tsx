@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router"
-import { ArrowRight, LoaderCircle } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { type Workspace, WorkspaceIdentity } from "@/components/workspace-menu"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
 
@@ -19,7 +20,7 @@ export function WorkspacePicker({
   return (
     <div className="flex min-h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center border-b px-4">
-        <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link to="/" className="focus-ring rounded-md">
           <BrandMark flat />
         </Link>
       </header>
@@ -40,7 +41,7 @@ export function WorkspacePicker({
               >
                 <WorkspaceIdentity workspace={workspace} />
                 {switching === workspace.id ? (
-                  <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" />
+                  <Spinner />
                 ) : (
                   <ArrowRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
                 )}

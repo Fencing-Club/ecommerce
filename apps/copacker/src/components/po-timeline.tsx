@@ -251,7 +251,7 @@ function EventText({
   }
   return (
     <Collapsible className="min-w-0 flex-1">
-      <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+      <CollapsibleTrigger className="focus-ring group flex items-center gap-1 rounded-sm text-start">
         {text}
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-panel-open:rotate-180" />
       </CollapsibleTrigger>

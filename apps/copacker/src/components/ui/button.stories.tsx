@@ -4,7 +4,7 @@ import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "./button"
 
-const variants = ["default", "outline", "secondary", "ghost", "destructive", "link"] as const
+const variants = ["default", "outline", "secondary", "ghost", "destructive", "ghost-destructive", "link"] as const
 const sizes = ["xs", "sm", "default", "lg"] as const
 const iconSizes = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const
 
@@ -113,6 +113,62 @@ export const Invalid = meta.story({
   args: { "aria-invalid": true, variant: "outline" },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button")).toHaveAttribute("aria-invalid", "true")
+  }
+})
+
+// 44px to touch on a phone, the kit's 34px from the small breakpoint up.
+function ResponsiveButtons(args: React.ComponentProps<typeof Button>) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button {...args} size="responsive">
+        Edit
+      </Button>
+      <Button {...args} size="icon-responsive" variant="outline" aria-label="Remove">
+        <Trash2 />
+      </Button>
+    </div>
+  )
+}
+
+export const Responsive = meta.story({
+  render: (args) => <ResponsiveButtons {...args} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Edit" }).getBoundingClientRect().height).toBe(34)
+    const remove = canvas.getByRole("button", { name: "Remove" }).getBoundingClientRect()
+    await expect([remove.width, remove.height]).toEqual([34, 34])
+  }
+})
+
+export const ResponsiveOnAPhone = meta.story({
+  globals: { viewport: { value: "iphone12", isRotated: false } },
+  render: (args) => <ResponsiveButtons {...args} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Edit" }).getBoundingClientRect().height).toBe(44)
+    const remove = canvas.getByRole("button", { name: "Remove" }).getBoundingClientRect()
+    await expect([remove.width, remove.height]).toEqual([44, 44])
+  }
+})
+
+// Quiet beside other actions until pointed at, then red: a remove or disconnect. It stays red while the confirmation it
+// opened is showing.
+export const GhostDestructive = meta.story({
+  args: { variant: "ghost-destructive" },
+  render: (args) => (
+    <div className="flex items-center gap-2">
+      <Button {...args}>Disconnect</Button>
+      <Button {...args} aria-expanded aria-haspopup="dialog">
+        Remove
+      </Button>
+      <span className="text-destructive">Reference</span>
+    </div>
+  ),
+  play: async ({ canvas, args }) => {
+    const red = getComputedStyle(canvas.getByText("Reference")).color
+    const resting = canvas.getByRole("button", { name: "Disconnect" })
+    await expect(getComputedStyle(resting).color).not.toBe(red)
+    await expect(getComputedStyle(canvas.getByRole("button", { name: "Remove" })).color).toBe(red)
+    await userEvent.click(resting)
+    await expect(args.onClick).toHaveBeenCalledOnce()
   }
 })
 

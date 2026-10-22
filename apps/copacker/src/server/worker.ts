@@ -1,7 +1,7 @@
 import { setTimeout as wait } from "node:timers/promises"
 import { closeDatabase } from "@/db"
 import { drainPendingJobs, jobConcurrency, limitJobConcurrency } from "./job-runner"
-import { logLine } from "./log"
+import { describeError, logEvent } from "./log"
 import { nextJobDelay, runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
 
@@ -17,7 +17,7 @@ process.on("SIGINT", () => {
   stopped = true
 })
 const runNext = limitJobConcurrency(() => (stopped ? Promise.resolve(false) : runNextJob("local")))
-logLine(`Local worker started with ${jobConcurrency} job slots`)
+logEvent("info", "local_worker_started", { slots: jobConcurrency })
 try {
   while (!stopped) {
     try {
@@ -28,8 +28,9 @@ try {
         signal: async () => undefined,
         stopped: () => stopped
       })
-    } catch {
-      console.error("Local job processing unavailable; retrying shortly")
+    } catch (error) {
+      // Retried shortly, such as once the local database is back.
+      logEvent("error", "local_jobs_unavailable", { error: describeError(error) })
     }
     await wait(2000)
   }

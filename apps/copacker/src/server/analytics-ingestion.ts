@@ -13,7 +13,7 @@ import {
 } from "@/db/schema"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
-import { analyticsSnapshot } from "./analytics-snapshot"
+import { analyticsPage } from "./analytics-snapshot"
 import { reconcileReceiptMovements } from "./receipt-movement-reconciliation"
 import { receiptQuantities } from "./receipt-quantities"
 import { shopifyBalanceComparison } from "./shopify-balance-comparison"
@@ -33,14 +33,11 @@ export const ingestionQuery = z.strictObject({
   ])
 })
 export async function listIngestionEvidence(orgId: string, input: z.infer<typeof ingestionQuery>) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(
-        tx,
-        orgId,
-        input,
-        JSON.stringify([input.source, input.externalAccountId, input.dataset])
-      )
+  return analyticsPage(
+    orgId,
+    input,
+    JSON.stringify([input.source, input.externalAccountId, input.dataset]),
+    async (tx, snapshot) => {
       const [org] = await tx
         .select({ tags: organizations.excludedShopifyTags })
         .from(organizations)
@@ -133,8 +130,7 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
         nextPage: rows.length > 100 ? input.page + 1 : null,
         basis: "source_evidence_not_additional_postings"
       }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
+    }
   )
 }
 export async function ingestionStatus(orgId: string) {
@@ -184,19 +180,15 @@ export async function ingestionStatus(orgId: string) {
   }
 }
 export async function listOperatingCosts(orgId: string, input: z.infer<typeof costQuery>) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(tx, orgId, input, "operating_costs")
-      const rows = await tx
-        .select()
-        .from(operatingCosts)
-        .where(and(eq(operatingCosts.orgId, orgId), isNull(operatingCosts.retiredAt)))
-        .orderBy(operatingCosts.id)
-        .limit(101)
-        .offset(input.page * 100)
-      return { rows: rows.slice(0, 100), snapshot, nextPage: rows.length > 100 ? input.page + 1 : null }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
-  )
+  return analyticsPage(orgId, input, "operating_costs", async (tx, snapshot) => {
+    const rows = await tx
+      .select()
+      .from(operatingCosts)
+      .where(and(eq(operatingCosts.orgId, orgId), isNull(operatingCosts.retiredAt)))
+      .orderBy(operatingCosts.id)
+      .limit(101)
+      .offset(input.page * 100)
+    return { rows: rows.slice(0, 100), snapshot, nextPage: rows.length > 100 ? input.page + 1 : null }
+  })
 }
 export const costQuery = z.strictObject(analyticsPagination)

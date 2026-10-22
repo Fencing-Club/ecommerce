@@ -21,7 +21,11 @@ import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useCartonTemplate, usePalletTemplate } from "@/hooks/use-import-templates"
 import { useActionMutation } from "@/lib/api"
@@ -54,10 +58,6 @@ import { PickupAddressSelect } from "./pickup-address-select"
 import { ProductIdentity } from "./product-identity"
 import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentAddress, ShipmentPackingDetails } from "./shipment-packing-details"
-import { Checkbox } from "./ui/checkbox"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Label } from "./ui/label"
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
 type EditorSchema = ReturnType<typeof packingEditorSchema>
 type Values = z.input<EditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
@@ -87,8 +87,6 @@ const checkResult = z.object({
   requiresApproval: z.boolean(),
   issues: z.array(z.object({ message: z.string(), field: z.string().optional(), cartonId: z.string().optional() }))
 })
-// The product table's first and last columns line up with the card's header.
-const edgeCells = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 // Which saved address a pickup address is, while it's unchanged.
 const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
   addresses.find(({ address }) => objectKeys(emptyAddress).every((key) => (address[key] ?? "") === (origin[key] ?? "")))
@@ -458,7 +456,7 @@ export function PackingForm({
                       {/* The PO's lines as the carton cards show products: name and variation, supplier SKU, then how many
                         are packed. Below 32rem each line stacks, with its column names above the values. */}
                       <div className="@container/products border-t">
-                        <Table framed={false} className={cn("table-fixed @max-lg/products:block", edgeCells)}>
+                        <Table framed={false} inset className="table-fixed @max-lg/products:block">
                           <TableHeader className="bg-muted/60 @max-lg/products:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
                             <TableRow className="hover:bg-transparent">
                               <TableHead>{t("product")}</TableHead>
@@ -620,7 +618,7 @@ export function PackingForm({
                     <Alert role="note" className="p-4 has-[>svg]:gap-x-3 *:[svg]:text-muted-foreground">
                       <Clock3 aria-hidden className="size-4.5" />
                       <AlertTitle>{t("groupsUnchecked.title")}</AlertTitle>
-                      <AlertDescription className="text-[13px]">{t("groupsUnchecked.description")}</AlertDescription>
+                      <AlertDescription className="text-meta">{t("groupsUnchecked.description")}</AlertDescription>
                     </Alert>
                   )}
                   {cartons.fields.length > 0 && (
@@ -752,7 +750,7 @@ export function PackingForm({
                       <EmptyState title={palletText("noPallets")} description={palletText("noPalletsDescription")} />
                     )}
                     {palletIssues.some((issue) => !issue.palletId) && (
-                      <ul aria-live="polite" className="flex flex-col gap-2 text-[13px] text-destructive">
+                      <ul aria-live="polite" className="flex flex-col gap-2 text-meta text-destructive">
                         {palletIssueErrors(palletIssues.filter((issue) => !issue.palletId)).map((error) => (
                           <li key={error.message} className="flex items-start gap-2">
                             <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
@@ -786,7 +784,7 @@ export function PackingForm({
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                     {/* The sidebar has the totals, so a phone, where it sits below, gets only the counts above the button. */}
                     {renderSidebar && (
-                      <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-[13px] tabular-nums sm:hidden">
+                      <p className="mb-3 flex w-full items-baseline justify-between gap-3 text-meta tabular-nums sm:hidden">
                         <span className="font-medium">{importText("cartonCount", { count: totals.cartons })}</span>
                         <span className="text-muted-foreground">
                           {t("packedUnits", { count: totals.pieces, available: availableUnits })}

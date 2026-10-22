@@ -27,6 +27,7 @@ import {
   signUpSchema
 } from "@/lib/sign-in"
 import { sendEmail } from "./email"
+import { describeError, logEvent } from "./log"
 import { appUrl, decrypt, encrypt, returnPath, siteUrlFor } from "./security"
 import { workos, workosClientId } from "./workos"
 import { workspaceCookie } from "./workspace-session"
@@ -154,7 +155,7 @@ function explain(error: unknown) {
   ) {
     return new LocalizedError(messages[error.code]!)
   }
-  console.error("Sign-in failed", error)
+  logEvent("error", "sign_in_failed", { error: describeError(error) })
   return new LocalizedError("signInFailed")
 }
 
@@ -370,7 +371,7 @@ export async function requestPasswordReset(request: SignInRequest, raw: unknown)
       }))
     })
   } catch (error) {
-    console.error("Couldn’t send the password reset email", error)
+    logEvent("error", "password_reset_email_failed", { error: describeError(error) })
   }
   return { ok: true }
 }

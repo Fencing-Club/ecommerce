@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { Globe, Mail, Phone, User } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useLocale, useTimeZone } from "use-intl"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
@@ -11,7 +12,6 @@ import { StatCard, StatGrid } from "./stat-card"
 import { CatalogPicker } from "./supplier/customers"
 import { SupplierOrderIndex } from "./supplier/order-index"
 import { AmountsStat } from "./supplier/shared"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
 export function CustomerPageView({
   customer,

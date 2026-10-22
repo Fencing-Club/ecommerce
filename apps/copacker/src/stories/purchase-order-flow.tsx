@@ -54,8 +54,14 @@ import {
   DialogTitle
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
+import { Input, NumberInput } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupNumberInput
+} from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -89,14 +95,13 @@ function QuantityInput({
 }) {
   const [value, setValue] = useState(String(item.pieces))
   return (
-    <Input
-      type="number"
+    <NumberInput
       min={item.piecesPerSet}
       step={item.piecesPerSet}
       aria-invalid={!!quantityError(item)}
       aria-describedby={quantityError(item) ? `quantity-error-${shipmentId}-${item.id}` : undefined}
       aria-label={`${item.buyerSku} quantity`}
-      className="px-2 text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      className="px-2 text-end"
       value={value}
       onChange={(event) => {
         setValue(event.target.value)
@@ -119,10 +124,9 @@ function TaxInput({
   const [value, setValue] = useState(String(taxRate))
   return (
     <InputGroup>
-      <InputGroupInput
+      <InputGroupNumberInput
         id={id}
         aria-label={label}
-        type="number"
         min={0}
         max={100}
         step="any"
@@ -132,7 +136,7 @@ function TaxInput({
           setValue(event.target.value)
           onChange(Math.min(100, Math.max(0, event.target.valueAsNumber || 0)))
         }}
-        className="min-w-0 px-2 text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="min-w-0 px-2 text-end"
       />
       <InputGroupAddon align="inline-end" className="pe-2">
         %
@@ -1026,9 +1030,9 @@ export function PurchaseOrderFlow({
   if (packing) {
     return (
       <div className={pageLayout}>
-        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-meta text-muted-foreground">
           <button
-            className="rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring rounded-sm hover:text-foreground"
             aria-label="Back to order"
             onClick={() => setPacking(null)}
           >
@@ -1160,7 +1164,7 @@ export function PurchaseOrderFlow({
       <header className="flex flex-col gap-3">
         <a
           href={reviewing || proposing ? "/orders/po38" : "/orders"}
-          className="flex w-fit items-center gap-2 rounded-sm text-[13px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="focus-ring flex w-fit items-center gap-2 rounded-sm text-meta text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft aria-hidden className="size-4 rtl:rotate-180" />
           {reviewing || proposing ? "PO38" : { supplier: "Orders", buyer: "Purchase orders" }[viewer]}
@@ -1290,7 +1294,7 @@ export function PurchaseOrderFlow({
         <div className="grid min-w-0 items-start gap-6 @5xl/po:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="flex min-w-0 flex-col gap-6">
             <div className="flex gap-3">
-              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs text-primary sm:flex">
+              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs text-primary sm:flex">
                 {reviewOwn ? "You" : { buyer: "ML", supplier: "AR" }[viewer]}
               </span>
               <div>
@@ -2799,10 +2803,9 @@ export function PurchaseOrderFlow({
                 </Combobox>
                 <InputGroup>
                   <InputGroupAddon>$</InputGroupAddon>
-                  <InputGroupInput
-                    type="number"
+                  <InputGroupNumberInput
                     step="0.01"
-                    className="text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="text-end"
                     aria-label={`${row.name || "Adjustment"} amount`}
                     value={row.amount / 100}
                     onChange={(event) =>

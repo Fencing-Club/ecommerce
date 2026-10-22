@@ -1,21 +1,19 @@
 import { and, eq, sql, lt, lte, inArray } from "drizzle-orm"
-import { db } from "../db/index"
-import { jobs, shipments } from "../db/schema"
-import { amazonAdsJob } from "./amazon-ads"
-import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
-import { analyticsJob } from "./analytics-jobs"
-import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
-import { importJob } from "./import-job"
-import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
-import { jobNeedsWorkflow, lockJobClaims, type JobExecutor } from "./job-ownership"
+import invariant from "tiny-invariant"
+import { db, type Transaction } from "../db/index"
+import { jobs } from "../db/schema"
+import { jobDefinition } from "./job-registry"
 import { jobConcurrency } from "./job-runner"
-import { labelsJob } from "./label-release"
-import { logLine } from "./log"
-import { reconcileJob } from "./reconcile"
-import { salesJob } from "./sales-orders"
-import { shopifyComplianceJob } from "./shopify-compliance"
-import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
-import { describeError, stockJob } from "./stock"
+import { PollAgain } from "./job-runtime"
+import { describeError, logEvent } from "./log"
+
+// Where a claimed job runs: in a Cloudflare queue consumer or Workflow, or in the local Node worker.
+type JobRuntime = "cloudflare" | "local"
+
+// Queue consumers and Workflows share the same SQL job slots.
+async function lockJobClaims(tx: Transaction) {
+  await tx.execute(sql`select pg_advisory_xact_lock(1616879723)`)
+}
 
 // Read once after draining, then let the external queue wake us when the next retry or abandoned lease is due.
 export async function nextJobDelay() {
@@ -32,7 +30,7 @@ export async function nextJobDelay() {
 
 export type JobClaim = { id: string; attempt: number; leaseAt: string }
 
-export async function runNextJob(runtime: JobExecutor = "local", dispatch?: (claim: JobClaim) => Promise<void>) {
+export async function runNextJob(runtime: JobRuntime = "local", dispatch?: (claim: JobClaim) => Promise<void>) {
   const job = await db().transaction(async (tx) => {
     await lockJobClaims(tx)
     await tx
@@ -67,7 +65,8 @@ export async function runNextJob(runtime: JobExecutor = "local", dispatch?: (cla
     return false
   }
 
-  if (dispatch && jobNeedsWorkflow(job.kind)) {
+  // A kind nothing runs goes to a Workflow too, which marks it failed.
+  if (dispatch && jobDefinition(job.kind)?.executor !== "queue") {
     // Keep the lease if dispatch fails: a timed-out create may have succeeded. Recovery fences a later attempt.
     await dispatch({ id: job.id, attempt: job.attempts, leaseAt: job.leaseAt!.toISOString() })
   } else {
@@ -93,13 +92,15 @@ export async function runClaimedJob(claim: JobClaim) {
   }
 }
 
-async function executeJob(job: typeof jobs.$inferSelect, runtime: JobExecutor) {
-  // One line when a job starts and one when it ends, so the worker's output shows what it's doing.
+async function executeJob(job: typeof jobs.$inferSelect, runtime: JobRuntime) {
+  // One event when a job starts and one when it ends, so the logs show what the worker is doing.
   const started = Date.now()
-  logLine(`Started ${job.kind} job ${job.key} on ${runtime} (attempt ${job.attempts})`)
-  const took = () => Math.round((Date.now() - started) / 1000)
+  const attempt = { kind: job.kind, key: job.key, executor: runtime, attempt: job.attempts }
+  logEvent("info", "job_started", attempt)
+  const seconds = () => Math.round((Date.now() - started) / 1000)
   // Attempt numbers prevent a worker with an expired lease from changing a newer attempt.
   const owned = and(eq(jobs.id, job.id), eq(jobs.attempts, job.attempts), eq(jobs.status, "running"))
+  invariant(owned)
   const assertOwned = async () => {
     const rows = await db().update(jobs).set({ leaseAt: new Date() }).where(owned).returning({ id: jobs.id })
     if (rows.length !== 1) {
@@ -123,64 +124,28 @@ async function executeJob(job: typeof jobs.$inferSelect, runtime: JobExecutor) {
   let timer = setTimeout(() => {
     pendingHeartbeat = heartbeat()
   }, 30000)
+  const definition = jobDefinition(job.kind)
   try {
-    if (job.kind === "amazon-ads") {
-      await amazonAdsJob(job.payload, assertOwned)
-    } else if (job.kind === "stock") {
-      await stockJob(job.payload, assertOwned, job)
-    } else if (job.kind === "analytics") {
-      await analyticsJob(job.payload, assertOwned)
-    } else if (job.kind === "sales") {
-      await salesJob(job.payload, assertOwned)
-    } else if (job.kind === "import") {
-      await importJob(job.payload, assertOwned)
-    } else if (job.kind === "amazon") {
-      await amazonJob(job.payload, assertOwned)
-    } else if (job.kind === "email") {
-      await emailJob(job.payload, job.key, assertOwned)
-    } else if (job.kind === "shopify") {
-      await shopifyJob(job.payload, assertOwned)
-    } else if (job.kind === "shopify-event") {
-      await shopifyEventJob(job.payload)
-    } else if (job.kind === "shopify-subscribe") {
-      await shopifySubscribeJob(job.payload, assertOwned)
-    } else if (job.kind === "shopify-compliance") {
-      await shopifyComplianceJob(job.payload)
-    } else if (job.kind === "amazon-event") {
-      await amazonEventJob(job.payload, assertOwned)
-    } else if (job.kind === "amazon-subscribe") {
-      await amazonSubscribeJob(job.payload, assertOwned)
-    } else if (job.kind === "ebay-event") {
-      await ebayEventJob(job.payload)
-    } else if (job.kind === "ebay-subscribe") {
-      await ebaySubscribeJob(job.payload, assertOwned)
-    } else if (job.kind === "reconcile") {
-      await reconcileJob(job.payload, assertOwned)
-    } else if (job.kind === "labels") {
-      await labelsJob(job.payload)
-    } else {
+    if (!definition) {
       throw new Error("Unknown job type")
     }
+    await definition.run(definition.payload.parse(job.payload), {
+      key: job.key,
+      attempt: job.attempts,
+      assertOwned,
+      owned
+    })
     await db().update(jobs).set({ status: "complete", error: null }).where(owned)
-    logLine(`Finished ${job.kind} job ${job.key} in ${took()}s`)
+    logEvent("info", "job_finished", { ...attempt, seconds: seconds() })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job failed"
     const poll = error instanceof PollAgain ? error.options : null
     const polling = error instanceof PollAgain && (poll?.progressed || job.attempts < 60)
     // The error is also stored on the job; logging it shows failures in the service logs without a database read.
     if (polling) {
-      logLine(`Paused ${job.kind} job ${job.key} after ${took()}s: ${message}`)
+      logEvent("info", "job_paused", { ...attempt, seconds: seconds(), reason: message })
     } else {
-      console.error(
-        JSON.stringify({
-          event: "job_failed",
-          executor: runtime,
-          kind: job.kind,
-          key: job.key,
-          attempt: job.attempts,
-          error: describeError(error)
-        })
-      )
+      logEvent("error", "job_failed", { ...attempt, error: describeError(error) })
     }
     await db().transaction(async (tx) => {
       const updated = await tx
@@ -194,23 +159,9 @@ async function executeJob(job: typeof jobs.$inferSelect, runtime: JobExecutor) {
         })
         .where(owned)
         .returning({ id: jobs.id })
-      if (
-        updated.length &&
-        !polling &&
-        job.kind === "amazon" &&
-        typeof job.payload.shipmentId === "string" &&
-        typeof job.payload.revision === "number"
-      ) {
-        await tx
-          .update(shipments)
-          .set({ status: "needs_attention", issue: message })
-          .where(
-            and(
-              eq(shipments.id, job.payload.shipmentId),
-              eq(shipments.revision, job.payload.revision),
-              inArray(shipments.status, ["queued", "creating"])
-            )
-          )
+      const input = definition?.payload.safeParse(job.payload)
+      if (updated.length && !polling && definition?.onFailure && input?.success) {
+        await definition.onFailure(tx, input.data, message)
       }
     })
   } finally {

@@ -8,6 +8,7 @@ import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
 import { importProposalSchema } from "@/server/import-proposal"
 import { withJobWake } from "@/server/job-delivery"
+import { jobRow } from "@/server/job-payloads"
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const s = await session()
@@ -150,7 +151,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
         // that attempt still use the version pinned by importJob.
         .set({ status: "queued", error: null, promptVersion: null, revision, updatedAt: new Date() })
         .where(eq(poImports.id, id))
-      await tx.insert(jobs).values({ key: `import:${id}:${revision}`, kind: "import", payload: { id, revision } })
+      await tx.insert(jobs).values(jobRow("import", `import:${id}:${revision}`, { id, revision }))
       return { id, revision, status: "queued" }
     })
   )
