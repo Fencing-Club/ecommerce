@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { Amazon, ReportDeferredError, type ReportRequestPolicy } from "../src/amazon"
+import { Amazon, ReportDeferredError, type ReportRequestPolicy, retryAfterMs } from "../src/amazon"
 
 function client(responses: unknown[], policy?: ReportRequestPolicy) {
   const calls: URL[] = []
@@ -27,6 +27,19 @@ const listing = (sku: string, marketplaceId = "ATVPDKIKX0DER") => ({
   sku,
   summaries: [{ marketplaceId, asin: "B000000001", fnSku: "X000000001" }]
 })
+describe("retryAfterMs", () => {
+  const after = (value?: string) =>
+    retryAfterMs(new Response(null, value === undefined ? {} : { headers: { "retry-after": value } }))
+
+  it("reads Retry-After as seconds or a date, and never as a wait in the past", () => {
+    expect(after("120")).toBe(120000)
+    expect(after(new Date(Date.now() - 60000).toUTCString())).toBe(0)
+    expect(after(new Date(Date.now() + 600000).toUTCString())).toBeGreaterThan(590000)
+    expect(after()).toBeNull()
+    expect(after("soon")).toBeNull()
+  })
+})
+
 describe("AWD current stock", () => {
   beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 500 }))
   afterEach(() => {

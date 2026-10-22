@@ -1,3 +1,5 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import type { SupplierCatalogStatus } from "@repo/copacker-orders"
 import {
   adjustmentTypes,
   commonPaymentTerms,
@@ -10,14 +12,8 @@ import {
   type OrderInput,
   orderInputSchema
 } from "@repo/copacker-orders"
-import {
-  amazonNetworkNames,
-  amazonNetworks,
-  orderDestination,
-  type ReceiverId,
-  receiverFor,
-  receivers
-} from "@repo/copacker-shipments"
+import { amazonNetworks, orderDestination, receiverFor, type ReceiverId, receivers } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { countriesIn } from "@repo/copacker-shipments/countries"
 import { Link, useRouter } from "@tanstack/react-router"
 import {
@@ -61,7 +57,6 @@ import { Separator } from "@/components/ui/separator"
 import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { CatalogProduct } from "@/lib/api"
-import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
@@ -104,7 +99,7 @@ function matchNote(status: string) {
 
 type Match = {
   sku: string
-  status: BundleQuoteStatus
+  status: SupplierCatalogStatus
   unitPriceMinor: number | null
   product: { title?: string } | null
   // Pieces the supplier can still sell, or null when there's no limit.
@@ -581,7 +576,7 @@ export function OrderBuilder({
                                   <td className="px-3 py-4">
                                     <Checkbox
                                       aria-label={tb("selectProduct", {
-                                        name: `${line.name}${line.variant && line.variant !== "Default Title" ? `, ${line.variant}` : ""}`
+                                        name: [line.name, variantName(line.variant)].filter(Boolean).join(", ")
                                       })}
                                       checked={selectedLines.has(line.id)}
                                       onCheckedChange={(checked) => selectLines([line.id], checked)}
@@ -590,7 +585,7 @@ export function OrderBuilder({
                                 )}
                                 <td className="px-3 py-2.5">
                                   <p className="leading-snug font-medium">{line.name}</p>
-                                  {line.variant && line.variant !== "Default Title" && (
+                                  {variantName(line.variant) && (
                                     <Badge variant="secondary" className="mt-1">
                                       {line.variant}
                                     </Badge>

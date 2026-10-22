@@ -8,7 +8,8 @@ import type {
   FbaTransportationOption
 } from "@repo/copacker-marketplaces/amazon"
 import { type OrderInput } from "@repo/copacker-orders"
-import { type AmazonNetwork, cartonsValue, fbaBoxes, fbaPallets, type Packing } from "./index"
+import { type AmazonNetwork } from "@repo/copacker-packing-rules"
+import { cartonsValue, fbaBoxes, fbaPallets, type Packing } from "./index"
 
 // Amazon inbound shipments: naming and finding them, the choices an FBA inbound plan asks for, and spreading Amazon's
 // inbound freight over what each shipment carried. Nothing here reads a database or depends on a web framework.
@@ -162,6 +163,11 @@ export function matchBoxes(
     return { cartonId, boxId: match.box.boxId!, shipmentId: match.shipmentId }
   })
 }
+
+// The ID Amazon gives an AWD inbound shipment, such as STAR-ABC123, and an FBA inbound plan, such as
+// wf0a1b2c3d-0000-4000-8000-0123456789ab.
+export const awdShipmentIdPattern = /^STAR-[A-Z0-9]+$/
+export const fbaInboundPlanIdPattern = /^wf[0-9a-f-]{36}$/
 
 // The inbound shipment a freight charge names: an FBA shipment (FBA15ABC12) or an AWD shipment (STAR-ABC123, sometimes
 // with a date before it). Transfers from AWD to FBA (repl-...) and other references name no inbound shipment.

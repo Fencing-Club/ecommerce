@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
@@ -86,11 +87,6 @@ export type ReviewProduct = { title: string; variant: string; sku: string | null
 
 function reviewProduct(variant: CatalogVariant): ReviewProduct {
   return { title: variant.product.title, variant: variant.title, sku: variant.sku }
-}
-
-// Shopify names a product's only variant "Default Title", which says nothing.
-function variantName(product: ReviewProduct) {
-  return product.variant === "Default Title" ? null : product.variant
 }
 
 // The currencies an import can be in, named as the purchase order editor names them, under orders.currencies.
@@ -205,7 +201,7 @@ function LineProduct({
 }) {
   const t = useTranslations("orders.review")
   if (product) {
-    const variant = variantName(product)
+    const variant = variantName(product.variant)
     return (
       <>
         <span className="leading-snug font-medium">{product.title}</span>
@@ -342,7 +338,7 @@ export function ImportReview({
       line.reason = selectedReason
       // A line added during review has no document text; it takes the product's name.
       if (!line.description.trim()) {
-        line.description = [product.title, variantName(product)].filter(Boolean).join(" ")
+        line.description = [product.title, variantName(product.variant)].filter(Boolean).join(" ")
       }
     })
     setSearchRow(null)
@@ -746,7 +742,7 @@ export function ImportReview({
                                   {results.results.map((result) => {
                                     const option = reviewProduct(result)
                                     const details = [
-                                      variantName(option),
+                                      variantName(option.variant),
                                       option.sku,
                                       result.supplierSku && tr("supplierSku", { sku: result.supplierSku.value })
                                     ]

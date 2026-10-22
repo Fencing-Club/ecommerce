@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportCount, reportRows, reportTimestamp } from "./report-tsv"
 
 export const fbaReturnsReportType = "GET_FBA_FULFILLMENT_CUSTOMER_RETURNS_DATA"
 
@@ -17,16 +17,12 @@ const required = [
   "license-plate-number"
 ]
 const item = z.object({
-  returnedAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value)),
+  returnedAt: reportTimestamp,
   orderId: z.string().min(1),
   sku: z.string().min(1),
   asin: z.string().nullable(),
   fnsku: z.string().nullable(),
-  quantity: z
-    .string()
-    .regex(/^[1-9]\d*$/)
-    .transform(Number)
-    .pipe(z.number().int().max(2147483647)),
+  quantity: reportCount,
   fulfillmentCenterId: z.string().nullable(),
   disposition: z.string().nullable(),
   reason: z.string().nullable(),

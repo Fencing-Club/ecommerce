@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { destinationSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
-import { receiverFor } from "@repo/copacker-shipments"
+import { receiverFor } from "@repo/copacker-packing-rules"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

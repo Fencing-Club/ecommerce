@@ -6,6 +6,7 @@ How the monorepo is built: the conventions and tools every app and package share
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
 - [Preferred stack](tech-stack.md)
+- [Copacker packages: what goes where](packages.md)
 
 ## Where docs live
 

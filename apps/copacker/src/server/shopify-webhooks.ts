@@ -1,4 +1,5 @@
 import { shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
+import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq } from "drizzle-orm"
 import { objectEntries, objectKeys } from "ts-extras"
 import { z } from "zod"
@@ -185,7 +186,7 @@ export async function shopifySubscribeJob(payload: Record<string, unknown>, asse
   }
   const shopify = await shopifyFor(orgId)
   await assertOwned()
-  const granted = new Set(account.scopes.split(/[,\s]+/))
+  const granted = grantedScopes(account.scopes)
   const topics = shopifyWebhookTopics.filter((topic) => {
     const scope = topicScopes.get(topic)
     return !scope || granted.has(scope)

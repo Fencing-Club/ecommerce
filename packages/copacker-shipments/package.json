@@ -16,7 +16,9 @@
     "./shipping-model": "./src/shipping-model.ts",
     "./shipping-rules": "./src/shipping-rules.ts",
     "./shipping-snapshot": "./src/shipping-snapshot.ts",
-    "./shipping-copy": "./src/shipping-copy.ts"
+    "./shipping-copy": "./src/shipping-copy.ts",
+    "./label-measurements": "./src/label-measurements.ts",
+    "./tracking-numbers": "./src/tracking-numbers.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
@@ -33,7 +35,8 @@
     "pdfjs-dist": "6.4.299",
     "yauzl": "3.4.0",
     "remark-parse": "^11.0.0",
-    "unified": "^11.0.5"
+    "unified": "^11.0.5",
+    "ts-tracking-number": "^1.0.17"
   },
   "devDependencies": {
     "@repo/oxlint-config": "workspace:*",

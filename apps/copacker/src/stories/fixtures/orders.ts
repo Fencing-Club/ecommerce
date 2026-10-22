@@ -1,5 +1,5 @@
 import { type Destination, type OrderInput, type OrderItem } from "@repo/copacker-orders"
-import { receiverFor } from "@repo/copacker-shipments"
+import { receiverFor } from "@repo/copacker-packing-rules"
 
 // Purchase orders as the database keeps them, for stories.
 
