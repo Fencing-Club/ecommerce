@@ -16,6 +16,7 @@ vi.mock("../src/server/connections", () => ({
 }))
 import {
   attentionItems,
+  overview,
   paymentDue,
   purchasing,
   setupSteps,
@@ -85,7 +86,11 @@ function line(overrides: Partial<RestockLine>): RestockLine {
   }
 }
 
-function order(items: { pieces: number; unitPrice: number }[], currency = "USD", dueDate = "2026-10-01"): OrderInput {
+function order(
+  items: { variantId?: string; receiver?: "fba"; pieces: number; unitPrice: number }[],
+  currency = "USD",
+  dueDate = "2026-10-01"
+): OrderInput {
   return { currency, items, adjustments: [], dueDate } as unknown as OrderInput
 }
 
@@ -1054,5 +1059,68 @@ describe("sales queries", () => {
       "USD"
     )
     expect(atLocation).toEqual([])
+  })
+})
+
+describe("the Overview's purchase orders", () => {
+  const pg = new PGlite()
+  const database = drizzle(pg, { schema: tables })
+  const org = { id: randomUUID(), timeZone: "UTC" }
+  const po = (variantId: string, status: "draft" | "submitted") => ({
+    buyerOrgId: org.id,
+    shopifyDomain: "club.myshopify.com",
+    status,
+    // Net terms date the payment, not the date the goods are asked for by.
+    data: {
+      ...order([{ variantId, receiver: "fba", pieces: 10, unitPrice: 1000 }], "USD", "2026-12-15"),
+      paymentTerms: "Net 30"
+    }
+  })
+
+  beforeAll(async () => {
+    context.current = database
+    await applySchema(pg)
+    await database.insert(tables.organizations).values({ id: org.id, name: "Fencing Club", kind: "buyer" })
+    // A supplier that isn't on Copacker: the buyer shares the PO's documents with it.
+    const [supplier] = await database
+      .insert(tables.suppliers)
+      .values({ buyerOrgId: org.id, name: "Ok Fencing", email: "ok@example.com" })
+      .returning()
+    const [sent, draft] = await database
+      .insert(tables.orders)
+      .values([
+        { ...po("va", "submitted"), supplierId: supplier!.id },
+        { ...po("vb", "draft"), supplierId: supplier!.id }
+      ])
+      .returning()
+    await database
+      .insert(tables.events)
+      .values({ orderId: sent!.id, actor: "user-1", messageKey: "sent", createdAt: new Date("2026-09-01T12:00:00Z") })
+    // Freight on both, but a draft's doesn't mark its products up.
+    await database.insert(tables.landedCosts).values(
+      [sent!, draft!].map((row) => ({
+        orderId: row.id,
+        kind: "freight" as const,
+        description: "Freight",
+        amountMinor: 1000,
+        createdBy: "user-1"
+      }))
+    )
+  })
+  afterAll(async () => {
+    await pg.close()
+  })
+
+  it("dates a Net 30 PO sent to a supplier not on Copacker from when it was sent", async () => {
+    const due = async (now: string) =>
+      (await overview(org, { now: new Date(now) })).upcoming.purchaseOrders.find((bucket) => bucket.orders)?.key
+    // Sent on September 1, so due October 1, and overdue the day after.
+    expect(await due("2026-09-15T12:00:00Z")).toBe("next30")
+    expect(await due("2026-10-01T12:00:00Z")).toBe("next30")
+    expect(await due("2026-10-02T12:00:00Z")).toBe("overdue")
+  })
+
+  it("marks up the products of sent POs with landed costs", async () => {
+    expect((await overview(org, { now: new Date("2026-09-15T12:00:00Z") })).restock.landedProducts).toBe(1)
   })
 })
