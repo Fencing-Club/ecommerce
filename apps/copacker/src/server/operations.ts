@@ -21,7 +21,7 @@ import {
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, withTransaction, type Executor } from "@/db"
-import { cliGrants, memberships, operationReceipts } from "@/db/schema"
+import { cliGrants, memberships, operationReceipts, restockReports } from "@/db/schema"
 import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
 import { boundedBody } from "./cli-http"
@@ -480,7 +480,10 @@ async function mutation(
     if (!fresh || !found?.allowed(fresh)) {
       throw new CliError("forbidden", "Workspace access changed.", 403)
     }
-    const fingerprint = hash(canonicalJson({ input, role: fresh.session.role, access: fresh.session.access }))
+    const retainedReport = context.operation === "report.restock"
+    const fingerprint = hash(
+      canonicalJson(retainedReport ? { input, role: fresh.session.role, access: fresh.session.access } : input)
+    )
     const where = and(
       eq(operationReceipts.userId, s.user.id),
       eq(operationReceipts.orgId, s.org.id),
@@ -500,15 +503,35 @@ async function mutation(
       if (saved.createdAt.getTime() + 7 * 86400_000 <= Date.now()) {
         throw new CliError("idempotency_expired", "This execution expired. Review before starting a new one.", 409)
       }
-      const replay = z.object({ data: z.unknown(), metadata: metaSchema.partial() }).parse(saved.result)
-      context.responseMeta = replay.metadata
-      return replay.data
+      if (!retainedReport) {
+        return saved.result
+      }
+      const reference = z.object({ reportId: z.uuid() }).parse(saved.result)
+      const [report] = await tx
+        .select()
+        .from(restockReports)
+        .where(
+          and(
+            eq(restockReports.id, reference.reportId),
+            eq(restockReports.orgId, s.org.id),
+            eq(restockReports.userId, s.user.id)
+          )
+        )
+      if (!report || report.expiresAt.getTime() <= Date.now()) {
+        throw new CliError(
+          "idempotency_expired",
+          "This report expired. Request a new report with a new execution key.",
+          409
+        )
+      }
+      context.responseMeta = metaSchema.partial().parse(report.metadata)
+      return report.data
     }
     const result = await withTransaction(tx, () => run(fresh))
     context.responseMeta = fresh.responseMeta
     await tx
       .update(operationReceipts)
-      .set({ result: { data: result, metadata: fresh.responseMeta } })
+      .set({ result: retainedReport ? z.object({ reportId: z.uuid() }).parse(result) : result })
       .where(where)
     return result
   })

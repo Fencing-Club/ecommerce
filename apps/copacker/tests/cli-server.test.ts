@@ -636,6 +636,12 @@ describe("Restock operations", () => {
     expect(replay.body.meta.completeness).toBe(first.body.meta.completeness)
     expect(await database.select().from(restockReports)).toHaveLength(1)
     expect((await call("report.restock", { days: 10 }, workspaceId, "same-report")).status).toBe(409)
+    const [receipt] = await database.select().from(operationReceipts)
+    expect(receipt?.result).toEqual({ reportId: first.body.data.reportId })
+    await database.update(restockReports).set({ expiresAt: new Date(0) })
+    expect((await call("report.restock", {}, workspaceId, "same-report")).body.error.code).toBe("idempotency_expired")
+    await database.delete(restockReports)
+    expect((await call("report.restock", {}, workspaceId, "same-report")).body.error.code).toBe("idempotency_expired")
   })
   it("uses workspace defaults and the shared planner, retains missing suppliers and immutable report evidence", async () => {
     await catalog()
