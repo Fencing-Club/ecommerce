@@ -131,7 +131,7 @@ describe("private document streaming", () => {
         orderRevision: 1,
         shipmentRevision: 1,
         uploadedBy: "test",
-        outdated: 1
+        outdated: true
       }
     ])
     context.readFile.mockImplementation(async (key) => {
@@ -214,7 +214,7 @@ describe("private document streaming", () => {
     expect(context.readFile).not.toHaveBeenCalled()
   })
   it("returns localized absence without opening storage for an outdated document", async () => {
-    await database.update(tables.documents).set({ outdated: 1 })
+    await database.update(tables.documents).set({ outdated: true })
     const config = await resolveLocalization({ preferredLocale: "ur", acceptLanguage: null })
     const response = await withLocalization(
       async () => config,
@@ -231,7 +231,7 @@ describe("private document streaming", () => {
       } else {
         await database
           .update(tables.documents)
-          .set(change === "replacement" ? { objectKey: "replacement.pdf" } : { outdated: 1 })
+          .set(change === "replacement" ? { objectKey: "replacement.pdf" } : { outdated: true })
       }
       return storedFile()
     })

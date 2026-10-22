@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { z } from "zod"
+import { stores } from "@/lib/stores"
 import { jobQueueConfig } from "./integration-config"
 import { describeError, logEvent } from "./log"
 import { providerRequest } from "./provider-request"
@@ -8,7 +9,7 @@ const envelope = z.object({ success: z.literal(true) })
 export const jobSignal = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("wake") }),
   z.object({ kind: z.literal("reconcile") }),
-  z.object({ kind: z.literal("notifications"), provider: z.enum(["amazon", "shopify", "ebay"]) })
+  z.object({ kind: z.literal("notifications"), provider: z.enum(stores) })
 ])
 const publisher = new AsyncLocalStorage<(delaySeconds: number) => Promise<void>>()
 

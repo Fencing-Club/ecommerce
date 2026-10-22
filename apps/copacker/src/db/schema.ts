@@ -2,7 +2,7 @@ import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import type { AdsProfile } from "@repo/copacker-marketplaces/amazon-ads"
 import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
-import { type Address, type OrderInput, prepCategories } from "@repo/copacker-orders"
+import { type Address, type OrderInput, prepCategories, priceBases } from "@repo/copacker-orders"
 import { amazonNetworks } from "@repo/copacker-packing-rules"
 import { type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
@@ -27,14 +27,46 @@ import type { Access } from "../lib/access"
 import type { CasePack } from "../lib/case-packs"
 import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../lib/catalog-pricing"
 import { contactKinds } from "../lib/contacts"
+import type { ImportProposal } from "../lib/import-proposal"
+import type { InventoryBasisData, InventoryBasisInput } from "../lib/inventory-basis"
 import type { UnitMappingInput } from "../lib/inventory-unit-mapping"
 import type { LandedChargeInput, LandedAllocation } from "../lib/landed-allocation"
 import type { OperatingCostInput } from "../lib/operating-cost"
+import { stores } from "../lib/stores"
 import type { ProductImage } from "../lib/supplier-product"
 import { revisionReasons, type TimelineEvent, type TimelineEventKey } from "../lib/timeline-events"
-import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+// When the row last changed. Every drizzle update and upsert sets it, so a write never needs to.
+const updatedAt = () =>
+  timestamp({ withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+// The workspace a row belongs to.
+const orgRef = (options: { onDelete?: "cascade" } = {}) =>
+  uuid()
+    .notNull()
+    .references(() => organizations.id, options)
+// Who retired a row and when. A retired row stays as evidence; a correction adds a new one.
+const retirement = () => ({
+  retiredAt: timestamp({ withTimezone: true }),
+  retiredBy: text()
+})
+// A monthly Amazon report's coverage of one marketplace from `from`: imported up to `coveredTo`, unavailable or failed.
+const reportCoverage = () => ({
+  orgId: orgRef({ onDelete: "cascade" }),
+  externalAccountId: text().notNull(),
+  marketplaceId: text().notNull(),
+  from: timestamp({ withTimezone: true }).notNull(),
+  requestedTo: timestamp({ withTimezone: true }).notNull(),
+  coveredTo: timestamp({ withTimezone: true }),
+  status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
+  errorCode: text(),
+  rowCount: integer(),
+  checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  importedAt: timestamp({ withTimezone: true })
+})
 export const organizations = pgTable("organizations", {
   id: uuid().defaultRandom().primaryKey(),
   name: text().notNull(),
@@ -54,9 +86,7 @@ export const organizations = pgTable("organizations", {
 export const memberships = pgTable(
   "memberships",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     userId: text().notNull(),
     email: text().notNull(),
     // The owner made the workspace. Owners and admins can do everything; members only what `access` gives them.
@@ -72,9 +102,7 @@ export const suppliers = pgTable(
   "suppliers",
   {
     id: uuid().defaultRandom().primaryKey(),
-    buyerOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    buyerOrgId: orgRef(),
     supplierOrgId: uuid().references(() => organizations.id),
     name: text().notNull(),
     // Where invitations and PO notifications go; null until the buyer invites the supplier.
@@ -86,8 +114,6 @@ export const suppliers = pgTable(
     // Days from ordering to stock arriving at the buyer's own locations, and at Amazon. Restock orders enough to last
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
-    // Retained stored terms; purchase orders own the terms used by the application.
-    paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
     shopifySupplierName: text(),
@@ -110,9 +136,7 @@ export const forwarders = pgTable(
   "forwarders",
   {
     id: uuid().defaultRandom().primaryKey(),
-    buyerOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    buyerOrgId: orgRef(),
     forwarderOrgId: uuid().references(() => organizations.id),
     name: text().notNull(),
     // Where its invitation goes; null until the buyer invites it.
@@ -134,7 +158,7 @@ export const supplierProfiles = pgTable("supplier_profiles", {
   phoneNumber: text(),
   contactName: text(),
   contactEmail: text(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  updatedAt: updatedAt()
 })
 // A product a supplier sells, like a Shopify product: its name, photos, and the options its variants differ by. Its
 // variants are the supplier_products rows, one per SKU, which hold the price and stock POs order from.
@@ -142,9 +166,7 @@ export const supplierProductGroups = pgTable(
   "supplier_product_groups",
   {
     id: uuid().defaultRandom().primaryKey(),
-    supplierOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    supplierOrgId: orgRef(),
     title: text().notNull(),
     // Where the supplier files it, such as "Epee", its own product code, and its page in the supplier's store.
     category: text(),
@@ -158,7 +180,7 @@ export const supplierProductGroups = pgTable(
     images: jsonb().$type<ProductImage[]>().notNull().default([]),
     revision: integer().notNull().default(1),
     createdAt: createdAt(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [index("supplier_product_group_org").on(t.supplierOrgId)]
 )
@@ -168,9 +190,7 @@ export const supplierProducts = pgTable(
   "supplier_products",
   {
     id: uuid().defaultRandom().primaryKey(),
-    supplierOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    supplierOrgId: orgRef(),
     groupId: uuid()
       .notNull()
       .references(() => supplierProductGroups.id),
@@ -179,11 +199,11 @@ export const supplierProducts = pgTable(
     position: integer().notNull().default(0),
     supplierSku: text().notNull(),
     title: text().notNull(),
-    active: integer().notNull().default(1),
+    active: boolean().notNull().default(true),
     revision: integer().notNull().default(1),
     currency: text().notNull(),
     priceMinor: integer(),
-    priceBasis: text().notNull().default("piece"),
+    priceBasis: text({ enum: priceBases }).notNull().default("piece"),
     piecesPerSellablePack: integer().notNull().default(1),
     sellablePacksPerCase: integer(),
     notes: text(),
@@ -197,7 +217,7 @@ export const supplierProducts = pgTable(
     priceBreaks: jsonb().$type<PriceBreak[]>().notNull().default([]),
     quantityRules: jsonb().$type<QuantityRules>().notNull().default(defaultQuantityRules),
     createdAt: createdAt(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [
     uniqueIndex("supplier_product_sku").on(t.supplierOrgId, t.supplierSku),
@@ -210,9 +230,7 @@ export const catalogs = pgTable(
   "catalogs",
   {
     id: uuid().defaultRandom().primaryKey(),
-    supplierOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    supplierOrgId: orgRef(),
     title: text().notNull(),
     status: text({ enum: ["active", "draft", "archived"] })
       .notNull()
@@ -223,7 +241,7 @@ export const catalogs = pgTable(
     includeNewProducts: boolean().notNull().default(true),
     revision: integer().notNull().default(1),
     createdAt: createdAt(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [uniqueIndex("catalog_supplier_title").on(t.supplierOrgId, t.title)]
 )
@@ -247,9 +265,7 @@ export const catalogProducts = pgTable(
 )
 export const supplierCatalogImports = pgTable("supplier_catalog_imports", {
   id: uuid().defaultRandom().primaryKey(),
-  supplierOrgId: uuid()
-    .notNull()
-    .references(() => organizations.id),
+  supplierOrgId: orgRef(),
   objectKey: text().notNull().unique(),
   filename: text().notNull(),
   createdBy: text().notNull(),
@@ -258,9 +274,7 @@ export const supplierCatalogImports = pgTable("supplier_catalog_imports", {
 })
 export const contacts = pgTable("contacts", {
   id: uuid().defaultRandom().primaryKey(),
-  orgId: uuid()
-    .notNull()
-    .references(() => organizations.id),
+  orgId: orgRef(),
   name: text().notNull(),
   kind: text({ enum: contactKinds }).notNull(),
   address: jsonb().$type<Address>().notNull(),
@@ -276,10 +290,8 @@ export const connections = pgTable(
   "connections",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
-    provider: text({ enum: ["amazon", "shopify", "ebay"] }).notNull(),
+    orgId: orgRef(),
+    provider: text({ enum: stores }).notNull(),
     externalId: text().notNull(),
     encryptedToken: text().notNull(),
     scopes: text().notNull().default(""),
@@ -296,18 +308,17 @@ export const amazonReportQuotas = pgTable(
     nextRequestAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     intervalMs: integer().notNull().default(120000),
     throttleCount: integer().notNull().default(0),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [primaryKey({ columns: [t.scope, t.reportType] })]
 )
 
 export const oauthStates = pgTable("oauth_states", {
   hash: text().primaryKey(),
-  orgId: uuid()
-    .notNull()
-    .references(() => organizations.id),
+  orgId: orgRef(),
   userId: text().notNull(),
-  provider: text().notNull(),
+  // A store being connected, or Amazon Ads.
+  provider: text({ enum: [...stores, "amazon-ads"] }).notNull(),
   shop: text(),
   expiresAt: timestamp({ withTimezone: true }).notNull()
 })
@@ -326,9 +337,7 @@ export const amazonAdsConnections = pgTable("amazon_ads_connections", {
 export const amazonAdsDays = pgTable(
   "amazon_ads_days",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     sellerId: text().notNull(),
     profileId: text().notNull(),
     marketplaceId: text().notNull(),
@@ -341,9 +350,7 @@ export const amazonAdsDays = pgTable(
 )
 export const teamInvitations = pgTable("team_invitations", {
   id: uuid().defaultRandom().primaryKey(),
-  orgId: uuid()
-    .notNull()
-    .references(() => organizations.id),
+  orgId: orgRef(),
   email: text().notNull(),
   // What the colleague can do once they join, as their membership will have it.
   role: text({ enum: ["admin", "member"] })
@@ -358,9 +365,7 @@ export const orders = pgTable(
   "orders",
   {
     id: uuid().defaultRandom().primaryKey(),
-    buyerOrgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    buyerOrgId: orgRef(),
     supplierId: uuid()
       .notNull()
       .references(() => suppliers.id),
@@ -373,7 +378,7 @@ export const orders = pgTable(
     revision: integer().notNull().default(1),
     data: jsonb().$type<OrderInput>().notNull(),
     createdAt: createdAt(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [index("orders_buyer").on(t.buyerOrgId), index("orders_supplier").on(t.supplierId)]
 )
@@ -472,7 +477,10 @@ export const shipments = pgTable(
     // option's, or, when none keeps each carton to one group, the option the job would have chosen. The packing checks
     // read them (see knownPackingGroups).
     packingGroups: jsonb().$type<Record<string, string>>(),
-    operation: text().notNull().default("none"),
+    // How far creating the shipment at Amazon got. "sending" means the create request is out and its result unknown.
+    operation: text({ enum: ["none", "sending", "created", "confirmed", "complete"] })
+      .notNull()
+      .default("none"),
     labels: jsonb().$type<CartonLabel[]>().notNull().default([]),
     // Pieces this shipment took from the supplier's stock, by supplier product, once its commercial invoice was
     // accepted. A correction puts them back.
@@ -484,7 +492,7 @@ export const shipments = pgTable(
     forwarderReference: text(),
     issue: text(),
     createdAt: createdAt(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [index("shipments_order").on(t.orderId)]
 )
@@ -521,7 +529,7 @@ export const documents = pgTable(
     bytes: integer().notNull(),
     orderRevision: integer().notNull(),
     shipmentRevision: integer(),
-    outdated: integer().notNull().default(0),
+    outdated: boolean().notNull().default(false),
     uploadedBy: text().notNull(),
     createdAt: createdAt()
   },
@@ -536,7 +544,7 @@ export const profiles = pgTable("profiles", {
   company: text().notNull().default(""),
   // The language chosen in Settings, such as "de"; null follows the computer's language.
   locale: text(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  updatedAt: updatedAt()
 })
 export const events = pgTable(
   "events",
@@ -605,9 +613,7 @@ export const jobs = pgTable(
 )
 export const poImports = pgTable("po_imports", {
   id: uuid().defaultRandom().primaryKey(),
-  orgId: uuid()
-    .notNull()
-    .references(() => organizations.id),
+  orgId: orgRef(),
   createdBy: text().notNull(),
   objectKey: text().notNull().unique(),
   filename: text().notNull(),
@@ -624,16 +630,14 @@ export const poImports = pgTable("po_imports", {
   error: text(),
   orderId: uuid().references(() => orders.id),
   createdAt: createdAt(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  updatedAt: updatedAt()
 })
 
 export const stockSnapshots = pgTable(
   "stock_snapshots",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     source: text({ enum: ["awd", "shopify", "fba"] }).notNull(),
     externalAccountId: text().notNull(),
     scopeKey: text().notNull(),
@@ -655,9 +659,7 @@ export const stockSnapshots = pgTable(
 export const inventoryLocationMappings = pgTable(
   "inventory_location_mappings",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     shopifyDomain: text().notNull(),
     locationId: text().notNull(),
     classification: text({ enum: ["merchant", "amazon_mirror", "excluded", "unresolved"] }).notNull(),
@@ -669,9 +671,7 @@ export const inventoryLocationMappings = pgTable(
 export const productDefaults = pgTable(
   "product_defaults",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     shopifyDomain: text().notNull(),
     productId: text().notNull(),
     description: text().notNull().default(""),
@@ -696,7 +696,7 @@ export const productDefaults = pgTable(
     // The Amazon network new PO lines to Amazon for the product go to: FBA, or AWD US for bulk stock.
     amazonNetwork: text({ enum: amazonNetworks }).notNull().default("fba"),
     revision: integer().notNull().default(1),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.productId] })]
 )
@@ -707,9 +707,7 @@ export const productDefaults = pgTable(
 export const variantFields = pgTable(
   "variant_fields",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     shopifyDomain: text().notNull(),
     variantId: text().notNull(),
     // The product's SKU in its supplier's catalog; supplier catalogs and PO lines match on it.
@@ -718,7 +716,7 @@ export const variantFields = pgTable(
     // The least to keep at Amazon (0: not stocked there) and at the store's own locations, in sellable units.
     amazonStockTarget: integer(),
     storeStockTarget: integer(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    updatedAt: updatedAt()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.variantId] })]
 )
@@ -726,9 +724,7 @@ export const variantFields = pgTable(
 export const shopifyFieldImports = pgTable(
   "shopify_field_imports",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     shopifyDomain: text().notNull(),
     importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -737,9 +733,7 @@ export const shopifyFieldImports = pgTable(
 export const productBarcodes = pgTable(
   "product_barcodes",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     shopifyDomain: text().notNull(),
     variantId: text().notNull(),
     productId: text().notNull(),
@@ -756,10 +750,8 @@ export const salesOrders = pgTable(
   "sales_orders",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
-    source: text({ enum: ["shopify", "amazon", "ebay"] }).notNull(),
+    orgId: orgRef(),
+    source: text({ enum: stores }).notNull(),
     externalAccountId: text().notNull(),
     orderId: text().notNull(),
     orderedAt: timestamp({ withTimezone: true }).notNull(),
@@ -775,10 +767,8 @@ export const salesOrders = pgTable(
 export const salesSyncs = pgTable(
   "sales_syncs",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
-    source: text({ enum: ["shopify", "amazon", "ebay"] }).notNull(),
+    orgId: orgRef(),
+    source: text({ enum: stores }).notNull(),
     externalAccountId: text().notNull(),
     status: text({ enum: ["idle", "queued", "running", "failed"] })
       .notNull()
@@ -793,8 +783,6 @@ export const salesSyncs = pgTable(
     stockCoveredFrom: timestamp({ withTimezone: true }),
     stockCoveredTo: timestamp({ withTimezone: true }),
     stockErrorCode: text(),
-    // Retained sync metadata; runtime decisions use coverage and customersIncluded.
-    dataVersion: integer().notNull().default(0),
     // Whether the complete allowed Shopify history was read with customer access.
     customersIncluded: boolean().notNull().default(false),
     // The unbroken period of the platform's money movements copied after its orders, and why that copy last failed:
@@ -811,9 +799,7 @@ export const salesSyncs = pgTable(
 export const stockDays = pgTable(
   "stock_days",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     externalAccountId: text().notNull(),
     pool: text({ enum: ["fba", "shopify"] }).notNull(),
     // The Shopify location, or the Amazon marketplace.
@@ -831,9 +817,7 @@ export const amazonReturns = pgTable(
   "amazon_returns",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     // Report request scope, not proof of the order's sales marketplace.
     marketplaceId: text().notNull(),
@@ -857,33 +841,15 @@ export const amazonReturns = pgTable(
 )
 
 // Per-month evidence: an unavailable report must never turn into a verified zero-return month.
-export const amazonReturnReports = pgTable(
-  "amazon_return_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
-  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })]
-)
+export const amazonReturnReports = pgTable("amazon_return_reports", reportCoverage(), (t) => [
+  primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })
+])
 
 // Shipment events are evidence, not additional sales or inventory postings.
 export const amazonFulfillmentShipments = pgTable(
   "amazon_fulfillment_shipments",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     shipmentId: text().notNull(),
@@ -907,42 +873,22 @@ export const amazonShipmentRequests = pgTable(
   "amazon_shipment_requests",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     requestedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (t) => [index("amazon_shipment_request_period").on(t.orgId, t.externalAccountId, t.requestedAt)]
 )
-export const amazonShipmentReports = pgTable(
-  "amazon_shipment_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
-  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })]
-)
+export const amazonShipmentReports = pgTable("amazon_shipment_reports", reportCoverage(), (t) => [
+  primaryKey({ columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from] })
+])
 
 // Itemized recovery evidence, kept separate from the financial ledger to avoid recognizing the same money twice.
 export const amazonReimbursements = pgTable(
   "amazon_reimbursements",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     approvedAt: timestamp({ withTimezone: true }).notNull(),
@@ -973,39 +919,19 @@ export const amazonReimbursements = pgTable(
   ]
 )
 
-export const amazonReimbursementReports = pgTable(
-  "amazon_reimbursement_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
-  (t) => [
-    primaryKey({
-      name: "amazon_reimbursement_reports_identity",
-      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
-    })
-  ]
-)
+export const amazonReimbursementReports = pgTable("amazon_reimbursement_reports", reportCoverage(), (t) => [
+  primaryKey({
+    name: "amazon_reimbursement_reports_identity",
+    columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
+  })
+])
 
 // Detailed FBA movements are reconciliation evidence, separate from the stock snapshots used for availability.
 export const amazonInventoryMovements = pgTable(
   "amazon_inventory_movements",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     eventDay: date({ mode: "string" }).notNull(),
@@ -1032,39 +958,19 @@ export const amazonInventoryMovements = pgTable(
   ]
 )
 
-export const amazonMovementReports = pgTable(
-  "amazon_movement_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
-  (t) => [
-    primaryKey({
-      name: "amazon_movement_reports_identity",
-      columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
-    })
-  ]
-)
+export const amazonMovementReports = pgTable("amazon_movement_reports", reportCoverage(), (t) => [
+  primaryKey({
+    name: "amazon_movement_reports_identity",
+    columns: [t.orgId, t.externalAccountId, t.marketplaceId, t.from]
+  })
+])
 
 // Removal order totals and shipment evidence are separate, overlapping sources, not additive stock or money postings.
 export const amazonRemovals = pgTable(
   "amazon_removals",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     kind: text({ enum: ["orders", "shipments"] }).notNull(),
@@ -1099,22 +1005,7 @@ export const amazonRemovals = pgTable(
 
 export const amazonRemovalReports = pgTable(
   "amazon_removal_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    kind: text({ enum: ["orders", "shipments"] }).notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
+  { ...reportCoverage(), kind: text({ enum: ["orders", "shipments"] }).notNull() },
   (t) => [
     primaryKey({
       name: "amazon_removal_reports_identity",
@@ -1128,9 +1019,7 @@ export const amazonProductMappings = pgTable(
   "amazon_product_mappings",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     sku: text().notNull(),
@@ -1143,8 +1032,7 @@ export const amazonProductMappings = pgTable(
     evidence: text().notNull(),
     createdBy: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    retiredAt: timestamp({ withTimezone: true }),
-    retiredBy: text(),
+    ...retirement(),
     supersedes: uuid()
   },
   (t) => [
@@ -1158,9 +1046,7 @@ export const amazonStorageFees = pgTable(
   "amazon_storage_fees",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     externalAccountId: text().notNull(),
     marketplaceId: text().notNull(),
     kind: text({ enum: ["monthly", "aged"] }).notNull(),
@@ -1189,22 +1075,7 @@ export const amazonStorageFees = pgTable(
 
 export const amazonStorageFeeReports = pgTable(
   "amazon_storage_fee_reports",
-  {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    externalAccountId: text().notNull(),
-    marketplaceId: text().notNull(),
-    kind: text({ enum: ["monthly", "aged"] }).notNull(),
-    from: timestamp({ withTimezone: true }).notNull(),
-    requestedTo: timestamp({ withTimezone: true }).notNull(),
-    coveredTo: timestamp({ withTimezone: true }),
-    status: text({ enum: ["imported", "unavailable", "failed"] }).notNull(),
-    errorCode: text(),
-    rowCount: integer(),
-    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true })
-  },
+  { ...reportCoverage(), kind: text({ enum: ["monthly", "aged"] }).notNull() },
   (t) => [
     primaryKey({
       name: "amazon_storage_fee_reports_identity",
@@ -1217,9 +1088,7 @@ export const amazonStorageFeeReports = pgTable(
 export const amazonTransactions = pgTable(
   "amazon_transactions",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     externalAccountId: text().notNull(),
     transactionId: text().notNull(),
     orderId: text(),
@@ -1261,9 +1130,7 @@ export const landedCosts = pgTable(
 export const shopifyBalanceTransactions = pgTable(
   "shopify_balance_transactions",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     externalAccountId: text().notNull(),
     transactionId: text().notNull(),
     type: text().notNull(),
@@ -1288,14 +1155,12 @@ export const monthlyCosts = pgTable(
   "monthly_costs",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     name: text().notNull(),
     amountMinor: integer().notNull(),
     currency: text().notNull(),
     // The channel it's paid for, or null for the whole business.
-    channel: text({ enum: ["amazon", "shopify", "ebay"] }),
+    channel: text({ enum: stores }),
     // The first and last days it's paid; null for since before the sales history and for ongoing.
     startsOn: date({ mode: "string" }),
     endsOn: date({ mode: "string" }),
@@ -1320,9 +1185,7 @@ export const exchangeRates = pgTable(
 export const amazonInboundShipments = pgTable(
   "amazon_inbound_shipments",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id),
+    orgId: orgRef(),
     externalAccountId: text().notNull(),
     shipmentId: text().notNull(),
     network: text({ enum: ["fba", "awd"] }).notNull(),
@@ -1338,9 +1201,7 @@ export const inventoryBasisRecords = pgTable(
   "inventory_basis_records",
   {
     id: uuid().defaultRandom().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     kind: text({ enum: ["purchase", "opening", "receipt", "depletion"] }).notNull(),
     shopifyDomain: text().notNull(),
     variantId: text().notNull(),
@@ -1350,12 +1211,11 @@ export const inventoryBasisRecords = pgTable(
     piecesPerUnit: integer().notNull(),
     purchaseId: uuid(),
     location: text(),
-    data: jsonb().$type<import("../lib/inventory-basis").InventoryBasisData>().notNull(),
-    request: jsonb().$type<import("../lib/inventory-basis").InventoryBasisInput>().notNull(),
+    data: jsonb().$type<InventoryBasisData>().notNull(),
+    request: jsonb().$type<InventoryBasisInput>().notNull(),
     createdBy: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    retiredAt: timestamp({ withTimezone: true }),
-    retiredBy: text(),
+    ...retirement(),
     supersedes: uuid()
   },
   (t) => [
@@ -1376,17 +1236,14 @@ export const inventoryLandedCharges = pgTable(
   "inventory_landed_charges",
   {
     id: uuid().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     sourceKey: text().notNull(),
     occurredAt: timestamp({ withTimezone: true }).notNull(),
     data: jsonb().$type<LandedChargeInput>().notNull(),
     allocations: jsonb().$type<LandedAllocation[]>().notNull(),
     createdBy: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    retiredAt: timestamp({ withTimezone: true }),
-    retiredBy: text(),
+    ...retirement(),
     supersedes: uuid()
   },
   (t) => [
@@ -1402,9 +1259,7 @@ export const inventoryUnitMappings = pgTable(
   "inventory_unit_mappings",
   {
     id: uuid().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     source: text({ enum: ["shopify", "amazon"] }).notNull(),
     externalAccountId: text().notNull(),
     sourceProductId: text().notNull(),
@@ -1418,8 +1273,7 @@ export const inventoryUnitMappings = pgTable(
     request: jsonb().$type<UnitMappingInput>().notNull(),
     createdBy: text().notNull(),
     createdAt: createdAt(),
-    retiredAt: timestamp({ withTimezone: true }),
-    retiredBy: text(),
+    ...retirement(),
     supersedes: uuid()
   },
   (t) => [index("inventory_unit_mapping_scope").on(t.orgId, t.source, t.externalAccountId, t.sourceProductId)]
@@ -1427,9 +1281,7 @@ export const inventoryUnitMappings = pgTable(
 export const inventoryImportCursors = pgTable(
   "inventory_import_cursors",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     source: text({ enum: ["shopify", "amazon"] }).notNull(),
     externalAccountId: text().notNull(),
     afterOrderId: text(),
@@ -1440,9 +1292,7 @@ export const inventoryImportCursors = pgTable(
 export const inventoryImportResults = pgTable(
   "inventory_import_results",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     source: text({ enum: ["shopify", "amazon"] }).notNull(),
     externalAccountId: text().notNull(),
     orderId: text().notNull(),
@@ -1460,9 +1310,7 @@ export const inventoryImportResults = pgTable(
 
 export const analyticsCostImports = pgTable("analytics_cost_imports", {
   id: uuid().primaryKey(),
-  orgId: uuid()
-    .notNull()
-    .references(() => organizations.id, { onDelete: "cascade" }),
+  orgId: orgRef({ onDelete: "cascade" }),
   createdBy: text().notNull(),
   createdAt: createdAt(),
   request: jsonb().$type<unknown>().notNull(),
@@ -1472,16 +1320,13 @@ export const operatingCosts = pgTable(
   "operating_costs",
   {
     id: uuid().primaryKey(),
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: orgRef({ onDelete: "cascade" }),
     sourceReference: text().notNull(),
     sourceLine: text().notNull(),
     data: jsonb().$type<OperatingCostInput>().notNull(),
     createdBy: text().notNull(),
     createdAt: createdAt(),
-    retiredAt: timestamp({ withTimezone: true }),
-    retiredBy: text()
+    ...retirement()
   },
   (t) => [index("operating_cost_scope").on(t.orgId, t.sourceReference, t.sourceLine)]
 )
@@ -1489,10 +1334,8 @@ export const operatingCosts = pgTable(
 export const analyticsFeeds = pgTable(
   "analytics_feeds",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    source: text().notNull(),
+    orgId: orgRef({ onDelete: "cascade" }),
+    source: text({ enum: stores }).notNull(),
     externalAccountId: text().notNull(),
     dataset: text().notNull(),
     state: jsonb()
@@ -1514,10 +1357,8 @@ export const analyticsFeeds = pgTable(
 export const analyticsEvidence = pgTable(
   "analytics_evidence",
   {
-    orgId: uuid()
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    source: text().notNull(),
+    orgId: orgRef({ onDelete: "cascade" }),
+    source: text({ enum: stores }).notNull(),
     externalAccountId: text().notNull(),
     dataset: text().notNull(),
     sourceId: text().notNull(),

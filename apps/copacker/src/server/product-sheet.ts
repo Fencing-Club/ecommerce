@@ -136,7 +136,7 @@ type ExportGroup = {
     options: Record<string, string>
     currency: string
     priceMinor: number | null
-    priceBasis: string
+    priceBasis: PriceBasis
     piecesPerSellablePack: number
     sellablePacksPerCase: number | null
     trackInventory: boolean
@@ -179,7 +179,7 @@ export function sheetRows(groups: ExportGroup[]): SheetRow[] {
         sku: variant.supplierSku,
         currency: variant.currency,
         price: amount(variant.priceMinor),
-        priceBasis: basisNames[variant.priceBasis as PriceBasis] ?? variant.priceBasis,
+        priceBasis: basisNames[variant.priceBasis],
         piecesPerPack: String(variant.piecesPerSellablePack),
         packsPerCase: variant.sellablePacksPerCase === null ? "" : String(variant.sellablePacksPerCase),
         trackInventory: variant.trackInventory ? "yes" : "no",

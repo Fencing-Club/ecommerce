@@ -74,7 +74,7 @@ describe("supplier proposals", () => {
       .select()
       .from(tables.documents)
       .where(and(eq(tables.documents.orderId, orderId), eq(tables.documents.kind, "invoice")))
-    expect(invoices).toMatchObject([{ orderRevision: 2, shipmentId: null, outdated: 0, uploadedBy: "system" }])
+    expect(invoices).toMatchObject([{ orderRevision: 2, shipmentId: null, outdated: false, uploadedBy: "system" }])
     await expect(approveProposal(buyer, proposal!.id)).rejects.toThrow("already answered")
   })
 

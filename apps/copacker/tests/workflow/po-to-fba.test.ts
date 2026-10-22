@@ -630,7 +630,7 @@ describe("PO to a released FBA shipment", () => {
     signedIn.actor = supplier
     expect(await (await post("shipment.ship", { id: awd!.id })).json()).toEqual({ ok: true })
     const invoices = await database.select().from(tables.documents).where(eq(tables.documents.kind, "invoice"))
-    expect(invoices).toMatchObject([{ shipmentId: null, name: "Labels.pdf", outdated: 0 }])
+    expect(invoices).toMatchObject([{ shipmentId: null, name: "Labels.pdf", outdated: false }])
     expect(invoices).toHaveLength(1)
     const invoice = invoices[0]!
     await database

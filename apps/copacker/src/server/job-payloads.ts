@@ -2,6 +2,7 @@ import { shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { packingSchema } from "@repo/copacker-shipments"
 import { z } from "zod"
 import type { jobs } from "@/db/schema"
+import { stores } from "@/lib/stores"
 
 // What each kind of job carries. This module imports only zod and the packages, so every producer and handler can use
 // it without an import cycle. A job's payload is checked against its schema when it runs.
@@ -50,7 +51,7 @@ export const jobPayloads = {
   stock: z.object({ id: z.uuid(), revision: positive }),
   sales: z.object({
     orgId,
-    source: z.enum(["shopify", "amazon", "ebay"]),
+    source: z.enum(stores),
     revision: positive,
     // Where a paused sync picks up: the periods still to read, and the unbroken period stored so far in this sync.
     resume: z

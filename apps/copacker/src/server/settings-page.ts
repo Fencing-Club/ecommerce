@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
 import { negotiateLocale } from "@/i18n/locales"
 import { can, isAdmin } from "@/lib/access"
+import { storeNames } from "@/lib/stores"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
 import { amazonAdsApp, amazonSelfAuthEnabled } from "@/server/connections"
@@ -13,7 +14,7 @@ import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { localization } from "@/server/localization"
 import type { MonthlyCost } from "@/server/monthly-costs"
-import { listMonthlyCosts, monthlyCostChannels } from "@/server/monthly-costs"
+import { listMonthlyCosts } from "@/server/monthly-costs"
 import { reportingCurrency } from "@/server/overview-sales"
 import { restockSettings } from "@/server/restock-report"
 import { shopifyOrderTags } from "@/server/shopify-tags"
@@ -141,7 +142,7 @@ function costDetails(
   t: Awaited<ReturnType<typeof serverTranslator<"settings">>>,
   date: (day: string) => string
 ) {
-  const channel = cost.channel ? monthlyCostChannels[cost.channel] : t("monthlyCosts.allChannels")
+  const channel = cost.channel ? storeNames[cost.channel] : t("monthlyCosts.allChannels")
   if (cost.startsOn && cost.endsOn) {
     return t("monthlyCosts.between", { channel, start: date(cost.startsOn), end: date(cost.endsOn) })
   }

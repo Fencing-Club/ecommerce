@@ -195,8 +195,7 @@ export async function takeSupplierStock(
       .update(supplierProducts)
       .set({
         onHand: sql`${supplierProducts.onHand} - ${count}`,
-        revision: sql`${supplierProducts.revision} + 1`,
-        updatedAt: new Date()
+        revision: sql`${supplierProducts.revision} + 1`
       })
       .where(eq(supplierProducts.id, product.id))
   }
@@ -220,8 +219,7 @@ export async function returnSupplierStock(
       .update(supplierProducts)
       .set({
         onHand: sql`${supplierProducts.onHand} + ${pieces}`,
-        revision: sql`${supplierProducts.revision} + 1`,
-        updatedAt: new Date()
+        revision: sql`${supplierProducts.revision} + 1`
       })
       .where(eq(supplierProducts.id, productId))
   }

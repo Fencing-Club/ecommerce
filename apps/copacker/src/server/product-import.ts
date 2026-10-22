@@ -58,7 +58,7 @@ function groupFields(product: SheetProduct) {
 
 function variantFields(product: SheetProduct, variant: SheetVariant) {
   const { line: _line, onHand: _onHand, ...fields } = variant
-  return { ...fields, active: product.active ? 1 : 0 }
+  return { ...fields, active: product.active }
 }
 
 function sameGroup(group: GroupRow, product: SheetProduct) {
@@ -143,7 +143,7 @@ export async function commitImport(tx: Transaction, orgId: string, products: She
     } else if (!sameGroup(group, product)) {
       await tx
         .update(supplierProductGroups)
-        .set({ ...groupFields(product), revision: sql`${supplierProductGroups.revision} + 1`, updatedAt: new Date() })
+        .set({ ...groupFields(product), revision: sql`${supplierProductGroups.revision} + 1` })
         .where(eq(supplierProductGroups.id, group.id))
     }
     const id = groupId!
@@ -170,8 +170,7 @@ export async function commitImport(tx: Transaction, orgId: string, products: She
           .set({
             ...fields,
             onHand: variant.onHand ?? row.onHand,
-            revision: sql`${supplierProducts.revision} + 1`,
-            updatedAt: new Date()
+            revision: sql`${supplierProducts.revision} + 1`
           })
           .where(eq(supplierProducts.id, row.id))
       }

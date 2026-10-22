@@ -190,6 +190,17 @@ describe("durable shipment worker recovery", () => {
     expect(provider.api.create).toHaveBeenCalledOnce()
     expect((await database.select().from(tables.jobs))[0]?.error).toContain("outcome is unknown")
   })
+  // The Overview keeps restock while the latest shipment updatedAt stays the same, so every status change moves it.
+  it("moves the shipment's updatedAt when the worker changes its status", async () => {
+    await queuedShipment()
+    const before = new Date("2026-01-01T00:00:00Z")
+    await database.update(tables.shipments).set({ updatedAt: before })
+    provider.api.create.mockRejectedValue(new Error("Connection lost after request sent"))
+    await runNextJob()
+    const [row] = await database.select().from(tables.shipments)
+    expect(row?.status).toBe("needs_attention")
+    expect(row!.updatedAt.getTime()).toBeGreaterThan(before.getTime())
+  })
   it("dispatches creation only once when overlapping workers reach the checkpoint", async () => {
     const shipment = await queuedShipment()
     let arrived = 0
@@ -332,7 +343,9 @@ describe("PO to a released Amazon shipment", () => {
     // Sending the PO keeps its document with it and opens the first shipment.
     const { shipmentId } = await submitOrder(buyer, orderId, 1)
     const kinds = async () =>
-      (await database.select().from(tables.documents).where(eq(tables.documents.outdated, 0))).map((doc) => doc.kind)
+      (await database.select().from(tables.documents).where(eq(tables.documents.outdated, false))).map(
+        (doc) => doc.kind
+      )
     expect(await kinds()).toEqual(["purchase_order"])
 
     // The supplier uploads its invoice and submits the cartons.

@@ -6,8 +6,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { importProposalSchema, priceInMinorUnits } from "@/lib/import-proposal"
 import { requireBuyer } from "./authorization"
-import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
 import type { Session } from "./workspace-session"
 
@@ -104,7 +104,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
     const order = await persistOrder(tx, s, prepared)
     await tx
       .update(poImports)
-      .set({ status: "saved", orderId: order.id, revision: current.revision + 1, updatedAt: new Date() })
+      .set({ status: "saved", orderId: order.id, revision: current.revision + 1 })
       .where(scope)
     return { id: order.id }
   })

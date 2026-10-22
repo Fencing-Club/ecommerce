@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       // The new file replaces the order's invoice, or the line's product label.
       await tx
         .update(documents)
-        .set({ outdated: 1 })
+        .set({ outdated: true })
         .where(
           and(
             eq(documents.orderId, orderId),

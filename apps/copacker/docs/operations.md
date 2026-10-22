@@ -166,10 +166,11 @@ migrations rather than replacing deployed history with a fresh baseline. `db:mig
 to existing databases and builds the full schema on empty databases. Never clear migration bookkeeping or reset a
 database during deployment. Preview branches inherit staging's history and follow the same incremental path.
 
-The compatibility cleanup adds customer-coverage tracking without deleting orders, connections, supplier terms or
-stored sync metadata. Numeric sync versions no longer drive runtime behavior. Removing unused stored fields is a
-separate data-retention decision, not a prerequisite for simplifying the application. Resets of disposable local,
-preview or staging data require explicit authorization; production must be upgraded in place with a verified backup.
+The compatibility cleanup added customer-coverage tracking without deleting orders or connections. Migration
+`0068_schema_tidy` later dropped two stored fields nothing read: each supplier's payment terms (every PO keeps its own)
+and each sales sync's numeric data version. It also converts `supplier_products.active` and `documents.outdated` from
+0/1 integers to booleans in place, so every stored value keeps its meaning. Resets of disposable local, preview or
+staging data require explicit authorization; production must be upgraded in place with a verified backup.
 
 Migration `0059_customer_coverage` refuses to proceed if stored Shopify orders or stock snapshots lack fields now
 required by the runtime. Refresh those records using the previous release and retry; do not fabricate prices or delete
@@ -186,7 +187,10 @@ allocation. Amounts must be decimal strings and currency codes must be three-cha
 previously deployed migrations unchanged and blocks deployment on invalid data without rewriting or deleting records.
 
 Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the SQL and metadata under
-`drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them;
+`drizzle/`. Read the generated SQL: a type change that must keep stored values needs a hand-written `USING` clause.
+The schema's column factories keep repeated columns the same: `orgRef()`, `updatedAt()`, `retirement()` and
+`reportCoverage()`. `updatedAt()` sets itself on every Drizzle update and upsert, so writes never set it; a raw SQL
+update would have to. Provider columns take their values from `stores` in `src/lib/stores.ts`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them;
 copy a changed one into `tests/database-schema.ts` too. Tests never run, replay, hash or inspect migrations: suites
 that do grow without bound and slow every run. The unit project's global setup builds the schema's SQL from
 `src/db/schema.ts` once per run. Each database test file calls `setUpTestDatabase` (`tests/test-db.ts`), which creates
