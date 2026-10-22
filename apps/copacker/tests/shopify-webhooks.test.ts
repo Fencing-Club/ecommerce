@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { sql } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 const shopify = vi.hoisted(() => ({
   graphql: vi.fn<(...args: never[]) => Promise<unknown>>(),
   subscribeWebhooks: vi.fn<(...args: never[]) => Promise<string[]>>()
@@ -26,10 +23,8 @@ import {
   shopifySubscribeJob,
   shopifyWebhookTopics
 } from "../src/server/shopify-webhooks"
-import { applySchema } from "./database"
+import { database, pg, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID()
 const shop = "test.myshopify.com"
@@ -65,20 +60,13 @@ const queued = (kind: string) =>
     .from(tables.jobs)
     .then((rows) => rows.filter((row) => row.kind === kind))
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 beforeEach(async () => {
   vi.resetAllMocks()
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" }

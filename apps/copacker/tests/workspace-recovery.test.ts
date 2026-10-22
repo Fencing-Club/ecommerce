@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown, signedIn: true }))
+const context = vi.hoisted(() => ({ signedIn: true }))
 const jar = vi.hoisted(() => new Map<string, string>())
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth-session", () => ({
   authentication: async () => ({
     user: context.signedIn ? { id: "user_alex", email: "alex@example.com", emailVerified: true } : null
@@ -25,10 +23,8 @@ import { POST as action } from "../src/server/http/api/action"
 import { GET as workspaceStatus } from "../src/server/http/api/workspace"
 import { readWorkspacesData, recoverWorkspace as recover } from "../src/server/workspace-recovery"
 import { workspaceCookie } from "../src/server/workspace-session"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   supplierId = randomUUID(),
   outsiderId = randomUUID(),
@@ -43,20 +39,13 @@ const post = (name: string, data: Record<string, unknown>) =>
     })
   )
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles] })
 afterEach(() => vi.unstubAllEnvs())
 beforeEach(async () => {
   vi.stubEnv("WORKOS_CLIENT_ID", "client_test")
   context.signedIn = true
   jar.clear()
   jar.set(workspaceCookie, deletedId)
-  await pg.exec("TRUNCATE organizations, profiles CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Harbor Goods", kind: "buyer" },
     { id: supplierId, name: "Lotus Manufacturing", kind: "supplier" },

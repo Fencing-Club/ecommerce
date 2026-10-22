@@ -1,11 +1,9 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown, role: "owner", kind: "buyer", orgId: "" }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+const context = vi.hoisted(() => ({ role: "owner", kind: "buyer", orgId: "" }))
+vi.mock("@/db", () => import("./test-db"))
 
 vi.mock("@/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
@@ -21,21 +19,15 @@ import { AccessError } from "../src/i18n/errors"
 import { connection, disconnect } from "../src/server/connections"
 import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt, hash } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
 const fetchMock = vi.fn<typeof fetch>()
 const params = { params: { provider: "ebay" } }
 
-beforeAll(async () => {
-  context.current = database
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
+beforeAll(() => {
   context.orgId = orgId
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
 })
 beforeEach(async () => {
   context.role = "owner"
@@ -47,7 +39,6 @@ beforeEach(async () => {
   vi.stubEnv("EBAY_RU_NAME", "Copacker-RuName")
   fetchMock.mockReset()
   vi.stubGlobal("fetch", fetchMock)
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
 })
 afterEach(() => {

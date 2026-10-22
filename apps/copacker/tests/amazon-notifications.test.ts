@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
+// One test swaps in a database whose reads fail.
+const context: { current: unknown } = vi.hoisted(() => ({ current: null }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 const amazon = vi.hoisted(() => ({
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
@@ -29,10 +28,8 @@ import {
 import { PollAgain } from "../src/server/job-handlers"
 import { runNextJob } from "../src/server/queue"
 import { queueArn } from "../src/server/sqs"
-import { applySchema } from "./database"
+import { database, pg, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID()
 const sellerId = "A123456789"
@@ -85,19 +82,15 @@ const queued = (kind: string) =>
     .from(tables.jobs)
     .then((rows) => rows.filter((row) => row.kind === kind))
 
-beforeAll(async () => {
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
+beforeAll(() => {
   context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
 })
 afterEach(() => {
   vi.unstubAllEnvs()
 })
 beforeEach(async () => {
   vi.resetAllMocks()
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" }

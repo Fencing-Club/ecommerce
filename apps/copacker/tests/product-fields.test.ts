@@ -1,52 +1,24 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import type { ShopifyVariant } from "@repo/copacker-marketplaces/shopify"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 
 import { PATCH } from "../src/server/http/api/inventory/variant-fields"
 import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID()
 const supplierOrgId = randomUUID()
 const domain = "shop.myshopify.com"
 const variant = (id: number) => `gid://shopify/ProductVariant/${id}`
 const product = (id: number) => `gid://shopify/Product/${id}`
-
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 function save(body: unknown, origin = appUrl()) {
   return PATCH(
@@ -103,9 +75,8 @@ const metafields = [
   }
 ]
 
+setUpTestDatabase()
 beforeAll(async () => {
-  await applySchema(pg)
-  context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: supplierOrgId, name: "Supplier", kind: "supplier" }
@@ -139,11 +110,7 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  context.actor = actor(buyerId, "buyer")
-})
-
-afterAll(async () => {
-  await pg.close()
+  signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
 })
 
 describe("copying Shopify's metafields", () => {
@@ -261,13 +228,16 @@ describe("editing variation details", () => {
       error: "Enter a whole number of units, or leave it empty"
     })
     expect((await save({ variantId: variant(1), asin: "B0" }, "https://evil.example")).status).toBe(403)
-    context.actor = actor(supplierOrgId, "supplier")
+    signedIn.actor = testSession({ orgId: supplierOrgId, kind: "supplier" })
     expect((await save({ variantId: variant(1), asin: "B0" })).status).toBe(403)
   })
 
   it("shows a product's new supplier in the stored stock right away", async () => {
     const [other] = await database.insert(tables.suppliers).values({ buyerOrgId: buyerId, name: "Unic" }).returning()
-    await assignProductSupplier(actor(buyerId, "buyer"), { productIds: [product(1)], supplierId: other!.id })
+    await assignProductSupplier(testSession({ orgId: buyerId, kind: "buyer" }), {
+      productIds: [product(1)],
+      supplierId: other!.id
+    })
     expect((await storedRows())[variant(2)]).toMatchObject({ supplierName: "Unic", supplierSku: "KEEP-2" })
   })
 })

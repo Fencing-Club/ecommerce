@@ -9,15 +9,12 @@ vi.mock("../src/server/auth-session", () => ({
   }
 }))
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema } from "@repo/copacker-shipments"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 const remote = vi.hoisted(() => ({
   deleteUser: vi.fn<(userId: string) => Promise<void>>(),
   deleteOrganization: vi.fn<(id: string) => Promise<void>>(),
@@ -35,10 +32,8 @@ vi.mock("../src/server/storage", () => ({ deleteFile: remote.deleteFile }))
 vi.mock("../src/server/connections", () => ({ disconnect: remote.disconnect }))
 
 import { deleteAccount, deleteWorkspace, ownedWorkspaces } from "../src/server/deletion"
-import { applySchema } from "./database"
+import { database, pg, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   supplierId = randomUUID(),
   otherBuyerId = randomUUID()
@@ -74,13 +69,7 @@ const data = orderInputSchema.parse({
   ]
 })
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles, tables.jobs] })
 beforeEach(async () => {
   vi.resetAllMocks()
   remote.deleteUser.mockResolvedValue()
@@ -91,7 +80,6 @@ beforeEach(async () => {
     ["wos-session", "session"],
     ["copacker-workspace", buyerId]
   ])
-  await pg.exec("TRUNCATE organizations, profiles, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Fencing Club", kind: "buyer", workosId: "org_club" },
     { id: supplierId, name: "Unic", kind: "supplier" },

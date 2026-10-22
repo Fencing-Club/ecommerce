@@ -1,11 +1,8 @@
 import { createSign, generateKeyPairSync, randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 // eBay as the app sees it (destinations, signing keys) and as a seller sees it (subscriptions).
 const ebay = vi.hoisted(() => ({
   app: {
@@ -45,10 +42,8 @@ import {
 import { POST } from "../src/server/http/api/webhooks/ebay"
 import { PollAgain } from "../src/server/job-handlers"
 import { reconcileJob } from "../src/server/reconcile"
-import { applySchema } from "./database"
+import { database, pg, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID()
 const seller = "vWvOsUq8KJk"
@@ -81,13 +76,7 @@ const queued = (kind: string) =>
     .from(tables.jobs)
     .then((rows) => rows.filter((row) => row.kind === kind))
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.jobs] })
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.useRealTimers()
@@ -96,7 +85,6 @@ beforeEach(async () => {
   vi.resetAllMocks()
   vi.spyOn(console, "log").mockImplementation(() => undefined)
   vi.spyOn(console, "warn").mockImplementation(() => undefined)
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" }
