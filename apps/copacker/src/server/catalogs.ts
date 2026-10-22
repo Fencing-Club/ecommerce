@@ -14,6 +14,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { catalogPricing, priceBreakSchema, pricingProblem, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
 import { requireSupplier } from "./authorization"
+import { requestInput } from "./errors"
 import { pricingText } from "./text"
 import type { Session } from "./workspace-session"
 
@@ -167,7 +168,7 @@ export const catalogInputSchema = z.object({
 // Products archived since keep their place in it. A customer moves here from any catalog it had.
 export async function saveCatalog(s: Session, raw: unknown) {
   requireSupplier(s)
-  const input = catalogInputSchema.parse(raw)
+  const input = requestInput(catalogInputSchema, raw)
   const pricingT = await pricingText()
   const productIds = input.products.map((entry) => entry.productId)
   if (new Set(productIds).size !== productIds.length) {

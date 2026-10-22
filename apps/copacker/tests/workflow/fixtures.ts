@@ -6,17 +6,23 @@ import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterEach, beforeEach, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { acceptForwarderInvitation } from "../../src/server/forwarders"
-import { POST as action } from "../../src/server/http/api/action"
-import { POST as upload } from "../../src/server/http/api/documents"
-import { POST as postCarrierLabels } from "../../src/server/http/api/shipments/$id/carrier-labels"
+import { POST as postAction } from "../../src/server/http/api/action"
+import { POST as postDocument } from "../../src/server/http/api/documents"
+import { POST as postCarrierLabelsHandler } from "../../src/server/http/api/shipments/$id/carrier-labels"
 import { importProposalSchema } from "../../src/server/import-proposal"
 import { prepareAmazonShipment, submitPacking } from "../../src/server/orders"
 import { hash } from "../../src/server/security"
 import { orderWorkflow } from "../../src/server/workflow"
 import type { Session } from "../../src/server/workspace-session"
 import { provider } from "../mocks/providers"
+import { served } from "../served"
 import { database, setUpTestDatabase } from "../test-db"
 import { signedIn, testSession } from "../test-session"
+
+// The routes as Start serves them, through the HTTP boundary that answers their failures.
+const action = served(postAction)
+const upload = served(postDocument)
+const postCarrierLabels = served(postCarrierLabelsHandler)
 
 // What the workflow tests share: the workspaces and PO each test starts from, and builders for the shipments, imports,
 // uploads and labels they work with. The mocked modules they use are in tests/mocks/providers.ts.

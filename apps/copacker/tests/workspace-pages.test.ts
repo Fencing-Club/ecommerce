@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { AccessError, LocalizedError, NotFoundError } from "../src/i18n/errors"
-import type { Access } from "../src/lib/access"
-import { POST as saveCatalog } from "../src/server/http/api/catalogs"
-import { DELETE as deleteCatalog } from "../src/server/http/api/catalogs/$id"
+import { type Access, effectiveAccess } from "../src/lib/access"
+import { POST as saveCatalogHandler } from "../src/server/http/api/catalogs"
+import { DELETE as deleteCatalogHandler } from "../src/server/http/api/catalogs/$id"
 import {
   catalogPageData,
   catalogsPageData,
@@ -16,7 +16,11 @@ import {
   salesPageData
 } from "../src/server/workspace-pages"
 import { orderData } from "../src/stories/fixtures/orders"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
+
+const saveCatalog = served(saveCatalogHandler)
+const deleteCatalog = served(deleteCatalogHandler)
 
 const context: { actor: unknown } = vi.hoisted(() => ({ actor: null }))
 vi.mock("@/db", () => import("./test-db"))
@@ -29,9 +33,10 @@ const supplier = id(1),
   variant = id(5),
   catalog = id(6),
   customer = id(7)
+// A member's session as the workspace session reads it, with no more access than the rules allow.
 const session = (access: Access, kind: "supplier" | "buyer" | "forwarder" = "supplier") => ({
   role: "member" as const,
-  access,
+  access: effectiveAccess(kind, access),
   org: { id: kind === "buyer" ? buyer : supplier, kind, restockSalesDays: 90, restockLeadTimeDays: 30 }
 })
 const owner = { ...session({}), role: "owner" as const }

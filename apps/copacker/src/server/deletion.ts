@@ -6,6 +6,7 @@ import { connections, memberships, oauthStates, organizations, profiles } from "
 import { LocalizedError } from "@/i18n/errors"
 import { clearAuthentication } from "./auth-session"
 import { disconnect } from "./connections"
+import { requestInput } from "./errors"
 import { describeError, logEvent } from "./log"
 import { deleteFile } from "./storage"
 import { workos } from "./workos"
@@ -51,7 +52,7 @@ export async function ownedWorkspaces(userId: string) {
 // unlinked, and its records stay, as its partners' purchase orders refer to them. Their comments and uploads stay with
 // the purchase orders they're on.
 export async function deleteAccount(user: { id: string; email: string }, raw: unknown) {
-  const { email } = z.object({ email: z.string().trim() }).parse(raw)
+  const { email } = requestInput(z.object({ email: z.string().trim() }), raw)
   if (email.toLowerCase() !== user.email.toLowerCase()) {
     throw new LocalizedError("enterEmailToConfirm")
   }
@@ -82,7 +83,7 @@ export async function deleteAccount(user: { id: string; email: string }, raw: un
 // Copacker again, and a buyer's suppliers keep the purchase orders it sent them only until it's deleted. The owner
 // confirms by typing its name.
 export async function deleteWorkspace(org: Pick<Session["org"], "id" | "name" | "workosId">, raw: unknown) {
-  const { name } = z.object({ name: z.string().trim() }).parse(raw)
+  const { name } = requestInput(z.object({ name: z.string().trim() }), raw)
   if (name.toLowerCase() !== org.name.trim().toLowerCase()) {
     throw new LocalizedError("enterWorkspaceNameToConfirm")
   }

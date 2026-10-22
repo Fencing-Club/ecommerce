@@ -3,6 +3,7 @@ import type { Address } from "@repo/copacker-orders"
 import { addressSchema } from "@repo/copacker-orders"
 import type { AnyColumn } from "drizzle-orm"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
+import invariant from "tiny-invariant"
 import { z } from "zod"
 import type { Transaction } from "@/db"
 import { db } from "@/db"
@@ -11,17 +12,13 @@ import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { withJobWake } from "@/server/job-delivery"
 import { requestLocale } from "@/server/localization"
+import { invitationFields, optionalEmail } from "./invitations"
 import { jobRow } from "./job-payloads"
-import { hash, token } from "./security"
-
-const week = 7 * 86400000
+import { hash } from "./security"
 
 export const forwarderInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z
-    .union([z.email().max(254), z.literal("")])
-    .optional()
-    .transform((value) => value?.toLowerCase() || null)
+  email: optionalEmail
 })
 
 // One place a buyer can ship a PO to at a forwarder: the forwarder, and one of its addresses.
@@ -103,53 +100,57 @@ export async function forwarderAddress(
   )
 }
 
-async function queueInvite(forwarderId: string, email: string, buyerName: string) {
-  const invitation = token()
-  await withJobWake(
-    db().transaction(async (tx) => {
-      await tx
-        .update(forwarders)
-        .set({ email, invitationHash: hash(invitation), expiresAt: new Date(Date.now() + week) })
-        .where(eq(forwarders.id, forwarderId))
-      // Each send is its own job, whose key doubles as the email provider's idempotency key.
-      await tx.insert(jobs).values(
-        jobRow("email", `forwarder-invite:${forwarderId}:${randomUUID()}`, {
-          type: "forwarder",
-          to: email,
-          name: buyerName,
-          invitation,
-          locale: await requestLocale()
-        })
-      )
+// Invites a forwarder at this email with a new link, which replaces any earlier one, in the transaction that decided to.
+async function queueInvite(tx: Transaction, forwarderId: string, email: string, buyerName: string) {
+  const { invitation, saved } = invitationFields()
+  await tx
+    .update(forwarders)
+    .set({ email, ...saved })
+    .where(eq(forwarders.id, forwarderId))
+  // Each send is its own job, whose key doubles as the email provider's idempotency key.
+  await tx.insert(jobs).values(
+    jobRow("email", `forwarder-invite:${forwarderId}:${randomUUID()}`, {
+      type: "forwarder",
+      to: email,
+      name: buyerName,
+      invitation,
+      locale: await requestLocale()
     })
   )
 }
 
-// Adds a forwarder, or restores one the buyer removed. With an email, it's invited to join.
-export async function createForwarder(buyer: { id: string; name: string }, raw: unknown) {
-  const input = forwarderInputSchema.parse(raw)
-  const [existing] = await db()
-    .select()
-    .from(forwarders)
-    .where(and(eq(forwarders.buyerOrgId, buyer.id), eq(forwarders.name, input.name)))
-  if (existing && !existing.removedAt) {
-    throw new LocalizedError("forwarderAlreadyAdded", { name: input.name })
-  }
-  const [row] = existing
-    ? await db()
-        .update(forwarders)
-        .set({ email: input.email, removedAt: null, forwarderOrgId: null, invitationHash: null, expiresAt: null })
-        .where(eq(forwarders.id, existing.id))
-        .returning()
-    : await db().insert(forwarders).values({ buyerOrgId: buyer.id, name: input.name, email: input.email }).returning()
-  if (input.email) {
-    await queueInvite(row!.id, input.email, buyer.name)
-  }
-  return row!
+// Adds a forwarder, or restores one the buyer removed. With an email, it's invited to join, in the same transaction.
+export async function createForwarder(
+  buyer: { id: string; name: string },
+  input: z.output<typeof forwarderInputSchema>
+) {
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(forwarders)
+        .where(and(eq(forwarders.buyerOrgId, buyer.id), eq(forwarders.name, input.name)))
+        .for("update")
+      if (existing && !existing.removedAt) {
+        throw new LocalizedError("forwarderAlreadyAdded", { name: input.name })
+      }
+      const [row] = existing
+        ? await tx
+            .update(forwarders)
+            .set({ email: input.email, removedAt: null, forwarderOrgId: null, invitationHash: null, expiresAt: null })
+            .where(eq(forwarders.id, existing.id))
+            .returning()
+        : await tx.insert(forwarders).values({ buyerOrgId: buyer.id, name: input.name, email: input.email }).returning()
+      invariant(row, "The forwarder was saved")
+      if (input.email) {
+        await queueInvite(tx, row.id, input.email, buyer.name)
+      }
+      return row
+    })
+  )
 }
 
-export async function renameForwarder(buyerOrgId: string, id: string, raw: unknown) {
-  const { name } = forwarderInputSchema.pick({ name: true }).parse(raw)
+export async function renameForwarder(buyerOrgId: string, id: string, name: string) {
   const [taken] = await db()
     .select({ id: forwarders.id })
     .from(forwarders)
@@ -179,43 +180,42 @@ export async function removeForwarder(buyerOrgId: string, id: string) {
 }
 
 // Invites a forwarder that hasn't joined, or sends its invitation again. A new email replaces the saved one.
-export async function inviteForwarder(buyer: { id: string; name: string }, id: string, rawEmail: unknown) {
-  const email = z
-    .union([z.email().max(254), z.literal("")])
-    .optional()
-    .transform((value) => value?.toLowerCase() || null)
-    .parse(rawEmail)
-  const [row] = await db()
-    .select()
-    .from(forwarders)
-    .where(
-      and(
-        eq(forwarders.id, id),
-        eq(forwarders.buyerOrgId, buyer.id),
-        isNull(forwarders.forwarderOrgId),
-        isNull(forwarders.removedAt)
-      )
-    )
-  if (!row) {
-    throw new LocalizedError("forwarderJoinedOrRemoved")
-  }
-  const to = email ?? row.email
-  if (!to) {
-    throw new LocalizedError("enterForwarderEmail")
-  }
-  await queueInvite(row.id, to, buyer.name)
+export async function inviteForwarder(buyer: { id: string; name: string }, id: string, email: string | null) {
+  await withJobWake(
+    db().transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(forwarders)
+        .where(
+          and(
+            eq(forwarders.id, id),
+            eq(forwarders.buyerOrgId, buyer.id),
+            isNull(forwarders.forwarderOrgId),
+            isNull(forwarders.removedAt)
+          )
+        )
+        .for("update")
+      if (!row) {
+        throw new LocalizedError("forwarderJoinedOrRemoved")
+      }
+      const to = email ?? row.email
+      if (!to) {
+        throw new LocalizedError("enterForwarderEmail")
+      }
+      await queueInvite(tx, row.id, to, buyer.name)
+    })
+  )
 }
 
+export const forwarderAddressSchema = z.object({
+  forwarderId: z.uuid(),
+  id: z.uuid().optional(),
+  name: z.string().trim().min(1).max(100),
+  address: addressSchema
+})
+
 // Saves an address for a forwarder that hasn't joined. Once it joins, it keeps its own addresses.
-export async function saveForwarderAddress(buyerOrgId: string, raw: unknown) {
-  const input = z
-    .object({
-      forwarderId: z.uuid(),
-      id: z.uuid().optional(),
-      name: z.string().trim().min(1).max(100),
-      address: addressSchema
-    })
-    .parse(raw)
+export async function saveForwarderAddress(buyerOrgId: string, input: z.output<typeof forwarderAddressSchema>) {
   const [forwarder] = await db()
     .select()
     .from(forwarders)

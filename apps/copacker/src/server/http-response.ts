@@ -1,7 +1,7 @@
 import { isNotFound, isRedirect } from "@tanstack/react-router"
 import type { CsrfMiddlewareOptions } from "@tanstack/react-start"
 import { z } from "zod"
-import { AccessError, NotFoundError, type ErrorKey } from "@/i18n/errors"
+import { AccessError, LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
 import { errorResponse, failureMessage, InvalidRequestError, StatusError } from "./errors"
 import { describeError, logEvent } from "./log"
 import { isAppOrigin } from "./security"
@@ -19,8 +19,9 @@ function mappedStatus(error: unknown) {
   if (error instanceof StatusError) {
     return error.status
   }
-  // The request's body, query or path didn't parse.
-  if (error instanceof InvalidRequestError) {
+  // The request's body, query or path didn't parse, or the domain refused it with a message for the person, such as a
+  // PO that changed meanwhile.
+  if (error instanceof InvalidRequestError || error instanceof LocalizedError) {
     return 400
   }
   return null

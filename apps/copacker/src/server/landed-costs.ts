@@ -6,6 +6,7 @@ import { landedCosts, orders } from "@/db/schema"
 import { AccessError, LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
+import { requestInput } from "./errors"
 import { sentDates } from "./sent-dates"
 import type { Session } from "./workspace-session"
 
@@ -30,7 +31,7 @@ export const landedCostInputSchema = z.strictObject({
 // Records a freight, duty or other bill against a PO. Buyers only: the supplier never sees landed costs.
 export async function addLandedCost(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = landedCostInputSchema.parse(raw)
+  const input = requestInput(landedCostInputSchema, raw)
   const { order } = await accessibleOrder(s, input.orderId)
   const [row] = await db()
     .insert(landedCosts)
@@ -51,7 +52,7 @@ export async function removeLandedCost(s: Session, id: string) {
     .select({ id: landedCosts.id })
     .from(landedCosts)
     .innerJoin(orders, eq(orders.id, landedCosts.orderId))
-    .where(and(eq(landedCosts.id, z.uuid().parse(id)), eq(orders.buyerOrgId, s.org.id)))
+    .where(and(eq(landedCosts.id, requestInput(z.uuid(), id)), eq(orders.buyerOrgId, s.org.id)))
   if (!row) {
     throw new LocalizedError("landedCostNotFound")
   }

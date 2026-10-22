@@ -1,6 +1,6 @@
 import { getCookie, setCookie } from "@tanstack/react-start/server"
 import { z } from "zod"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { errorResponse, requestInput } from "@/server/errors"
 import { portalSession } from "@/server/portal-session"
 import { salesOrderList } from "@/server/sales-order-list"
 import { searchIndex } from "@/server/search"
@@ -30,18 +30,15 @@ export function portalHttp(request: Request, operation: "workspace" | "switch" |
     if (!isAppOrigin(request.headers.get("origin"))) {
       return errorResponse("forbidden", 403)
     }
-    try {
-      const { id } = z.object({ id: z.uuid() }).parse(data)
-      await requireMembership(session.user.id, id)
-      setCookie(workspaceCookie, id, {
-        httpOnly: true,
-        secure: appUrl().startsWith("https:"),
-        sameSite: "lax",
-        path: "/"
-      })
-      return Response.json({ redirect: "/" })
-    } catch (error) {
-      return Response.json({ error: await failureMessage(error) }, { status: failureStatus(error) })
-    }
+    // Its failures are answered by the action route's httpResponse.
+    const { id } = requestInput(z.object({ id: z.uuid() }), data)
+    await requireMembership(session.user.id, id)
+    setCookie(workspaceCookie, id, {
+      httpOnly: true,
+      secure: appUrl().startsWith("https:"),
+      sameSite: "lax",
+      path: "/"
+    })
+    return Response.json({ redirect: "/" })
   })
 }

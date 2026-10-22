@@ -548,7 +548,7 @@ describe("document upload and packet release", () => {
       return (await result.json()).error
     }
     signedIn.actor = actor("buyer", otherId)
-    expect(await refused([label])).toContain("not found")
+    expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(404)
     signedIn.actor = buyer
     expect(await refused([{ ...label, cartonId: "unknown" }])).toBe("Label assignment has an unknown carton or page")
     expect(await refused([label, { ...label, page: 2 }], [2])).toBe("Assign each label page and carton only once")

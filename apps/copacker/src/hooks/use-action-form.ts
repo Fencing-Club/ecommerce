@@ -6,6 +6,7 @@ import type { z } from "zod"
 import { type ActionNavigation, useActionSettle } from "@/hooks/use-action"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { type ActionResult, useActionMutation } from "@/lib/api"
+import type { ActionName } from "@/server/actions"
 
 // A form's Zod schema: what the fields hold, and what they validate to.
 export type FormSchema = z.ZodType<FieldValues, FieldValues>
@@ -29,7 +30,7 @@ export type ActionFormOptions<S extends FormSchema> = {
 } & (
   | {
       // Posts to /api/action, then opens the redirect or reloads the page's data, as useAction does.
-      action: string
+      action: ActionName
       run?: never
     }
   | {

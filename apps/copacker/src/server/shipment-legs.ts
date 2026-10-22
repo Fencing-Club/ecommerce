@@ -2,9 +2,9 @@ import type { OrderInput } from "@repo/copacker-orders"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
-import { events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
-import { LocalizedError } from "@/i18n/errors"
-import { eventMessage } from "@/lib/timeline-events"
+import { forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
+import { LocalizedError, NotFoundError } from "@/i18n/errors"
+import { recordEvent } from "./order-history"
 import type { Session } from "./workspace-session"
 
 // The forwarder a PO's goods pass through, if any: its stop on the way to Amazon or the buyer's location. Its leg comes
@@ -13,11 +13,12 @@ export function forwarderLeg(order: Pick<OrderInput, "via">) {
   return order.via?.forwarderId ?? null
 }
 
-// A shipment and its PO, locked, for a leg holder to move on.
+// A shipment and its PO, locked, for a leg holder to move on. Each leg checks who holds it, which accessibleShipment
+// can't: a forwarder never opens the PO itself.
 async function lockedShipment(tx: Transaction, shipmentId: string) {
   const [initial] = await tx.select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, shipmentId))
   if (!initial) {
-    throw new LocalizedError("shipmentNotFound")
+    throw new NotFoundError()
   }
   const [row] = await tx
     .select({ order: orders, supplier: suppliers })
@@ -26,7 +27,10 @@ async function lockedShipment(tx: Transaction, shipmentId: string) {
     .where(eq(orders.id, initial.orderId))
     .for("update", { of: orders })
   const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-  return { ...row!, shipment: shipment! }
+  if (!row || !shipment) {
+    throw new NotFoundError()
+  }
+  return { ...row, shipment }
 }
 
 // Marks a released shipment's goods shipped by the supplier: the supplier itself, or the buyer for a supplier that
@@ -45,9 +49,7 @@ export async function shipShipment(s: Session, shipmentId: string) {
       throw new LocalizedError("onlyReleasedShipped")
     }
     await tx.update(shipments).set({ status: "shipped", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
-    await tx
-      .insert(events)
-      .values({ orderId: order.id, actor: s.user.id, ...eventMessage({ key: "supplierShipped", values: null }) })
+    await recordEvent(tx, order.id, s.user.id, { key: "supplierShipped", values: null })
   })
 }
 
@@ -66,8 +68,7 @@ export const forwardInputSchema = z.strictObject({
 // Marks shipped goods shipped on by the forwarder they passed through: the forwarder itself, or the buyer for a
 // forwarder that isn't on Copacker. Its freight is recorded as the PO's landed cost, and its carrier and tracking on the
 // shipment.
-export async function forwardShipment(s: Session, raw: unknown) {
-  const input = forwardInputSchema.parse(raw)
+export async function forwardShipment(s: Session, input: z.output<typeof forwardInputSchema>) {
   await db().transaction(async (tx) => {
     const { order, shipment } = await lockedShipment(tx, input.id)
     const forwarderId = forwarderLeg(order.data)
@@ -113,13 +114,9 @@ export async function forwardShipment(s: Session, raw: unknown) {
         createdBy: s.user.id
       })
     }
-    await tx.insert(events).values({
-      orderId: order.id,
-      actor: s.user.id,
-      ...eventMessage({
-        key: "forwarderShipped",
-        values: { forwarder: forwarder.name, tracking: `${input.carrier} ${input.reference}` }
-      })
+    await recordEvent(tx, order.id, s.user.id, {
+      key: "forwarderShipped",
+      values: { forwarder: forwarder.name, tracking: `${input.carrier} ${input.reference}` }
     })
   })
 }

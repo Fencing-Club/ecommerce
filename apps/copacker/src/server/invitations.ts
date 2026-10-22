@@ -1,5 +1,6 @@
 import type { Address } from "@repo/copacker-orders"
 import { and, eq, isNull, sql } from "drizzle-orm"
+import { z } from "zod"
 import type { Transaction } from "@/db"
 import { db } from "@/db"
 import {
@@ -13,11 +14,29 @@ import {
 } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
-import { hash } from "./security"
+import { hash, token } from "./security"
 
 // Who an invitation is for: a colleague joining a workspace, or a buyer's supplier or freight forwarder joining with a
 // workspace of its own.
 export type InvitationKind = "team" | "supplier" | "forwarder"
+
+// The email a supplier or forwarder is invited at, which can be left empty: one can get POs without joining Copacker.
+export const optionalEmail = z
+  .union([z.email().max(254), z.literal("")])
+  .optional()
+  .transform((value) => value?.toLowerCase() || null)
+
+const invitationLifetime = 7 * 86400000
+
+// A new invitation link for a supplier or forwarder: the token its email carries, and what's saved of it, which stops
+// every earlier link working. It works for a week.
+export function invitationFields() {
+  const invitation = token()
+  return {
+    invitation,
+    saved: { invitationHash: hash(invitation), expiresAt: new Date(Date.now() + invitationLifetime) }
+  }
+}
 
 // The `kind` in an invitation link. Supplier invitations came first, and their links say "invite".
 export function invitationKind(value: string | null | undefined): InvitationKind {

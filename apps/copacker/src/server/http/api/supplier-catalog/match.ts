@@ -6,7 +6,7 @@ import { suppliers } from "@/db/schema"
 import { session } from "@/server/auth"
 import { requireAccess, requireBuyer } from "@/server/authorization"
 import { customerProducts } from "@/server/catalogs"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { errorResponse, requestInput, requestJson } from "@/server/errors"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
 
@@ -18,45 +18,38 @@ const inputSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  try {
-    const s = await session()
-    requireBuyer(s)
-    // Purchase orders match their lines to the supplier's catalog.
-    requireAccess(s, "orders", "edit")
-    const input = inputSchema.parse(await request.json())
-    const [supplier] = await db()
-      .select({ supplierOrgId: suppliers.supplierOrgId, catalogId: suppliers.catalogId })
-      .from(suppliers)
-      .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
-    if (!supplier) {
-      return errorResponse("supplierNotLinked", 404)
-    }
-    const skus = [...new Set(input.supplierSkus.filter(Boolean))]
-    // Only what the supplier offers this buyer, at its catalog prices.
-    const products = await customerProducts(db(), supplier, skus)
-    const { supplierOrgId } = supplier
-    const available = supplierOrgId
-      ? await db().transaction((tx) => availableStock(tx, supplierOrgId, skus))
-      : new Map<string, number>()
-    return Response.json(
-      input.supplierSkus.map((sku) => ({
-        sku,
-        // Pieces the supplier can still sell; null when the product has no stock limit.
-        available: available.get(sku) ?? null,
-        ...matchSupplierCatalog(
-          {
-            supplierOrgId: supplier.supplierOrgId,
-            supplierSku: sku,
-            currency: input.currency
-          },
-          products
-        )
-      }))
-    )
-  } catch (error) {
-    return Response.json(
-      { error: await failureMessage(error, "catalogLookupFailed") },
-      { status: failureStatus(error) }
-    )
+  const s = await session()
+  requireBuyer(s)
+  // Purchase orders match their lines to the supplier's catalog.
+  requireAccess(s, "orders", "edit")
+  const input = requestInput(inputSchema, await requestJson(request))
+  const [supplier] = await db()
+    .select({ supplierOrgId: suppliers.supplierOrgId, catalogId: suppliers.catalogId })
+    .from(suppliers)
+    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
+  if (!supplier) {
+    return errorResponse("supplierNotLinked", 404)
   }
+  const skus = [...new Set(input.supplierSkus.filter(Boolean))]
+  // Only what the supplier offers this buyer, at its catalog prices.
+  const products = await customerProducts(db(), supplier, skus)
+  const { supplierOrgId } = supplier
+  const available = supplierOrgId
+    ? await db().transaction((tx) => availableStock(tx, supplierOrgId, skus))
+    : new Map<string, number>()
+  return Response.json(
+    input.supplierSkus.map((sku) => ({
+      sku,
+      // Pieces the supplier can still sell; null when the product has no stock limit.
+      available: available.get(sku) ?? null,
+      ...matchSupplierCatalog(
+        {
+          supplierOrgId: supplier.supplierOrgId,
+          supplierSku: sku,
+          currency: input.currency
+        },
+        products
+      )
+    }))
+  )
 }

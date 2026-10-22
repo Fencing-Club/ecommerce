@@ -6,10 +6,11 @@ import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { documents, shipments } from "@/db/schema"
-import { LocalizedError, NotFoundError } from "@/i18n/errors"
-import { accessibleOrder } from "./access"
+import { documents } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import { accessibleShipment } from "./access"
 import { requireAccess, requireBuyer } from "./authorization"
+import { InvalidRequestError, requestInput } from "./errors"
 import { queueLabels, sendQueuedLabels, type QueuedLabels } from "./label-release"
 import { deleteFile, putFile, validatePdf } from "./storage"
 import type { Session } from "./workspace-session"
@@ -31,6 +32,15 @@ const labelsSchema = z
   )
   .max(1000)
 
+// A form field that holds JSON, which a request that isn't the dialog's may get wrong.
+function formJson(form: FormData, name: string): unknown {
+  try {
+    return JSON.parse(requestInput(z.string(), form.get(name)))
+  } catch (error) {
+    throw error instanceof SyntaxError ? new InvalidRequestError(error) : error
+  }
+}
+
 // The documents route takes one PDF of up to 32 MB; one save takes several, up to 64 MB in all.
 const maxFileBytes = 32 * 1024 * 1024
 export const maxCarrierLabelBytes = 64 * 1024 * 1024
@@ -40,14 +50,10 @@ export const maxCarrierLabelBytes = 64 * 1024 * 1024
 export async function saveCarrierLabels(s: Session, shipmentId: string, form: FormData) {
   requireBuyer(s)
   requireAccess(s, "shipments", "edit")
-  const revision = z.coerce.number().int().parse(form.get("revision"))
-  const labels = labelsSchema.parse(JSON.parse(z.string().parse(form.get("labels"))))
+  const revision = requestInput(z.coerce.number().int(), form.get("revision"))
+  const labels = requestInput(labelsSchema, formJson(form, "labels"))
   const files = form.getAll("file")
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
-  if (!shipment) {
-    throw new NotFoundError()
-  }
-  const { order } = await accessibleOrder(s, shipment.orderId)
+  const { order, shipment } = await accessibleShipment(s, shipmentId)
   if (shipment.status !== "waiting_labels" || shipment.revision !== revision) {
     throw new LocalizedError("shipmentNotWaitingForLabels")
   }
@@ -116,9 +122,8 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
       })
     }
     queued = await db().transaction(async (tx) => {
-      await accessibleOrder(s, shipment.orderId, tx, true)
-      const [fresh] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-      if (fresh?.status !== "waiting_labels" || fresh.revision !== shipment.revision) {
+      const { shipment: fresh } = await accessibleShipment(s, shipmentId, { executor: tx, lock: true })
+      if (fresh.status !== "waiting_labels" || fresh.revision !== shipment.revision) {
         throw new LocalizedError("shipmentChangedDuringUpload")
       }
       const current = await tx

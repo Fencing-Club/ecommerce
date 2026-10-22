@@ -31,7 +31,8 @@ request and `{ params }`. Its file in `src/routes` is only `server: { handlers: 
 each exported method through `httpResponse` in `server/http-response.ts`. A response is `private, no-store` unless the
 route set its own `Cache-Control` (product photos are immutable), and always `nosniff`. Failures a route throws are
 answered there too, with `{ error }` in the person's language: an `AccessError` is 403, a missing record 404, a
-`StatusError` its own status, and request input that doesn't parse 400. Request input is the body, query or path, read
+`StatusError` its own status, and request input that doesn't parse or a refusal with a message for the person (a
+`LocalizedError`, such as a PO that changed meanwhile) 400. Routes don't catch these themselves. Request input is the body, query or path, read
 with `requestJson` and `requestInput` from `server/errors.ts`, which throw `InvalidRequestError`. Any other `ZodError`
 or `SyntaxError`, such as stored data or a provider's answer that no longer fits its schema, is a bug: it's logged as
 one JSON line with `event: "api_request_failed"`, the method, the path and the error, and answered 500. Anything else
@@ -42,10 +43,19 @@ A page's record id comes from its URL, so its server function accepts any string
 `pageId` (`server/page-id.ts`). A malformed id, such as `/shipments/abc/packet`, is a record that doesn't exist, so the
 page shows Not found rather than an error.
 
-`POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`,
-`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role, page
-access or kind of workspace doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
-form. Refresh server data after successful mutations. Unexpected errors never show raw database queries or tokens.
+`POST /api/action`, content-type application/json, body `{ action, data }`. Each command is one entry in
+`src/server/actions`, one file per area below, made with `defineAction` (`define.ts`): its `input` schema, a `guard`
+naming who can run it (owner, admin, kind of workspace, page and level, prices), the function that `run`s it, and the
+caches it `invalidates`. The route checks the guard before it reads `data`. `ActionName`, `ActionInput<K>` and
+`ActionOutput<K>` type the pages' calls through `useAction` and `useActionForm`.
+
+Success returns `{ ok: true }`, `{ id }`, `{ redirect }` or the command's own result. A command whose success changes a
+cached list answers with `X-Invalidates` naming its RTK Query tags (`src/lib/api-tags.ts`), which the browser loads
+again. Failure returns `{ error }`: 400 when the data doesn't parse or the command refuses it with a reason; 403 when
+the person's role, page access or kind of workspace doesn't allow it ([Roles and page access](permissions.md)); 404
+when the record doesn't exist or isn't the workspace's; and 500 for anything unexpected. Show multiline validation
+errors in the relevant form. Refresh server data after successful mutations. Unexpected errors never show raw database
+queries or tokens.
 
 Send the last displayed numeric revision with every PO or shipment mutation. A revision conflict requires a refresh,
 never a silent overwrite.
@@ -66,7 +76,9 @@ return URL. The originating app performs all authorization and single-use checks
 ## Commands
 
 Permissions below name the checks the route makes: _buyer_, _supplier_ and _forwarder_ are the workspace kind;
-_admin_ means the owner or an admin; _Page: Edit_ is a member's page access; _prices_ is price access.
+_admin_ means the owner or an admin; _Page: Edit_ is a member's page access; _prices_ is price access. Page access is
+read through `effectiveAccess`, so Orders: Edit, and a supplier's Products: Edit, include prices
+([Prices and costs](permissions.md#prices-and-costs)).
 
 ### Sign-in and getting started
 
@@ -116,12 +128,12 @@ kept with that partner and change through the partner's commands.
 
 | Action | Data | Permission / result |
 | --- | --- | --- |
-| supplier.create | name, optional email | Buyer, Partners: Edit. Adds the supplier, or restores a removed one of that name; with an email, invites it; returns id |
+| supplier.create | name, optional email | Buyer, Partners: Edit. Adds the supplier, or restores a removed one of that name; with an email, invites it in the same transaction; returns id |
 | supplier.invite, supplier.resend | id, optional email | Buyer, Partners: Edit. Supplier not yet joined; a fresh token replaces earlier links |
 | supplier.update | id, name, shopifySupplierName, leadTimeDays, contact details | Buyer, Partners: Edit. Contact details stay the supplier's own once it joins |
 | supplier.remove | id | Buyer, Partners: Edit. Refused while it has open POs |
 | supplier.address | supplierId, optional id, name, address, or `remove: true` | Buyer, Partners: Edit. Pickup addresses of a supplier not yet joined |
-| forwarder.create | name, optional email | Buyer, Partners: Edit. Adds or restores a forwarder, inviting it with an email; returns id |
+| forwarder.create | name, optional email | Buyer, Partners: Edit. Adds or restores a forwarder, inviting it with an email in the same transaction; returns id |
 | forwarder.rename | id, name | Buyer, Partners: Edit |
 | forwarder.invite | id, optional email | Buyer, Partners: Edit. Invites or re-invites a forwarder not yet joined |
 | forwarder.address | forwarderId, optional id, name, address | Buyer, Partners: Edit. Addresses of a forwarder not yet joined |
@@ -168,7 +180,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
-| shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
+| shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities. The shipment cancels, and its timeline says so, only if it hasn't changed meanwhile |
 | shipment.transport | id, revision, transport, expected | Buyer, Shipments: Edit. Saves how the cartons travel; a shipment that was waiting only on it goes to its supplier |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |

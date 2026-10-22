@@ -2,7 +2,7 @@ import { isNotFound, isRedirect } from "@tanstack/react-router"
 import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
 import type { ErrorKey } from "@/i18n/errors"
-import { AccessError, LocalizedError } from "@/i18n/errors"
+import { LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
 import { localization } from "@/server/localization"
 
@@ -22,11 +22,12 @@ export class StatusError extends LocalizedError {
   }
 }
 
-// The request's own input didn't parse: its body isn't JSON, or a body, query or path value fails its schema. A route
-// answers it 400. A ZodError or SyntaxError from anywhere else, such as stored data or a provider's answer, is a bug.
+// The request's own input didn't parse: its body isn't JSON or a form, or a body, query or path value fails its schema.
+// A route answers it 400. A ZodError or SyntaxError from anywhere else, such as stored data or a provider's answer, is a
+// bug.
 export class InvalidRequestError extends Error {
-  declare readonly cause: z.ZodError | SyntaxError
-  constructor(cause: z.ZodError | SyntaxError) {
+  declare readonly cause: z.ZodError | SyntaxError | TypeError
+  constructor(cause: z.ZodError | SyntaxError | TypeError) {
     super(cause.message, { cause })
   }
 }
@@ -49,9 +50,13 @@ export async function requestJson(request: Request): Promise<unknown> {
   }
 }
 
-// The status for a request that failed: 403 when access was refused, and otherwise 400.
-export function failureStatus(error: unknown) {
-  return error instanceof AccessError ? 403 : 400
+// A request's multipart or URL-encoded form, such as an upload's.
+export async function requestForm(request: Request) {
+  try {
+    return await request.formData()
+  } catch (error) {
+    throw error instanceof TypeError ? new InvalidRequestError(error) : error
+  }
 }
 
 type MessageKey = MessageKeys<Messages, NestedKeyOf<Messages>>

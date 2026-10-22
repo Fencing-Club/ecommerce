@@ -9,11 +9,12 @@ import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
 import { requireBuyer } from "./authorization"
 import { amazonFor } from "./connections"
+import { requestInput } from "./errors"
 import type { Session } from "./workspace-session"
 
 export async function linkExistingAwd(s: Session, id: string, revision: number, raw: unknown) {
   requireBuyer(s)
-  const shipmentId = z.string().trim().toUpperCase().regex(awdShipmentIdPattern).nullable().parse(raw)
+  const shipmentId = requestInput(z.string().trim().toUpperCase().regex(awdShipmentIdPattern).nullable(), raw)
   const [initial] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!initial) {
     throw new LocalizedError("shipmentNotFound")

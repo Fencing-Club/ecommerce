@@ -1,3 +1,4 @@
+import { effectiveAccess } from "../src/lib/access"
 import type * as Auth from "../src/server/auth"
 import type { Session } from "../src/server/workspace-session"
 
@@ -30,7 +31,8 @@ export function testSession({
       createdAt: new Date()
     },
     role,
-    access,
+    // As workspaceSession reads a membership's saved access.
+    access: effectiveAccess(kind, access),
     workspaces: []
   }
 }

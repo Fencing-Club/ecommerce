@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { monthlyCosts } from "@/db/schema"
 import { AccessError, LocalizedError } from "@/i18n/errors"
+import { requestInput } from "./errors"
 import type { Session } from "./workspace-session"
 
 // authorization.ts's requireBuyer, kept here so the worker can load this module without the app's navigation.
@@ -33,7 +34,7 @@ export const monthlyCostInputSchema = z
 // Records a cost paid every month that no connected platform reports, such as an app billed to a card.
 export async function addMonthlyCost(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = monthlyCostInputSchema.parse(raw)
+  const input = requestInput(monthlyCostInputSchema, raw)
   const [row] = await db()
     .insert(monthlyCosts)
     .values({
@@ -54,7 +55,7 @@ export async function removeMonthlyCost(s: Session, id: string) {
   requireBuyer(s)
   const removed = await db()
     .delete(monthlyCosts)
-    .where(and(eq(monthlyCosts.id, z.uuid().parse(id)), eq(monthlyCosts.orgId, s.org.id)))
+    .where(and(eq(monthlyCosts.id, requestInput(z.uuid(), id)), eq(monthlyCosts.orgId, s.org.id)))
     .returning({ id: monthlyCosts.id })
   if (!removed.length) {
     throw new LocalizedError("monthlyCostNotFound")

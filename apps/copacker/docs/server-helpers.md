@@ -23,6 +23,18 @@ writing the query again.
 `connection()` (`src/server/connections.ts`) adds the access token. It locks the row only to renew an expiring
 Shopify token, so concurrent jobs renew it once.
 
+## Purchase orders and shipments
+
+- `accessibleShipment(s, id, { executor, lock })` (`src/server/access.ts`): a shipment on a PO the workspace can open,
+  with that PO and its supplier, or a `NotFoundError` (404). `lock` reads the PO and then the shipment again `for
+  update` in the caller's transaction, the order every shipment change locks them in.
+- `src/server/order-history.ts`: `recordEvent(executor, orderId, actor, event)` adds to a PO's timeline;
+  `reviseOrder(tx, order, data, { actor, reason, set })` saves the PO's next revision with its history row; and
+  `queuePoEmail(tx, order, supplier)` emails a revision to a supplier that has joined, once per revision.
+- `src/lib/shipment-states.ts`: the shipment state groups (released, packed, finished) and `canEditPacking` and
+  `canReopenPacking`, shared by the server and the pages. `refusePendingChanges` (`src/server/orders.ts`) keeps
+  packing waiting while a supplier's proposed changes are with the buyer.
+
 ## Sales sync copies
 
 `src/server/sales-sync-coverage.ts`:

@@ -14,6 +14,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { type ActionNavigation, type ActionRequest, useAction } from "@/hooks/use-action"
 import type { ActionResult } from "@/lib/api"
+import type { ActionName } from "@/server/actions"
 
 type Confirmation = {
   title: React.ReactNode
@@ -22,7 +23,7 @@ type Confirmation = {
   // A destructive confirmation, such as deleting, has a red button.
   tone: "default" | "destructive"
   // The action to run, by its /api/action name, or another request.
-  action: string | ActionRequest
+  action: ActionName | ActionRequest
   data: Record<string, unknown>
   // The message for a failure without one of its own.
   fallback?: string

@@ -9,17 +9,25 @@ vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("../src/server/storage", () => ({ putFile: storage.putFile }))
 
-import { POST as saveCatalogRoute } from "../src/server/http/api/catalogs"
-import { POST as assignCatalogRoute } from "../src/server/http/api/customers/$id/catalog"
+import { POST as saveCatalogHandler } from "../src/server/http/api/catalogs"
+import { POST as assignCatalogHandler } from "../src/server/http/api/customers/$id/catalog"
 import { GET as exportCatalog } from "../src/server/http/api/supplier-catalog/export"
-import { POST as importCatalog } from "../src/server/http/api/supplier-catalog/import"
-import { POST as matchCatalog } from "../src/server/http/api/supplier-catalog/match"
-import { POST as saveProduct } from "../src/server/http/api/supplier-catalog/products"
-import { POST as saveStock } from "../src/server/http/api/supplier-catalog/stock"
+import { POST as importCatalogHandler } from "../src/server/http/api/supplier-catalog/import"
+import { POST as matchCatalogHandler } from "../src/server/http/api/supplier-catalog/match"
+import { POST as saveProductHandler } from "../src/server/http/api/supplier-catalog/products"
+import { POST as saveStockHandler } from "../src/server/http/api/supplier-catalog/stock"
 import { GET as downloadTemplate } from "../src/server/http/api/supplier-catalog/template"
 import { appUrl } from "../src/server/security"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
+
+const saveCatalogRoute = served(saveCatalogHandler)
+const assignCatalogRoute = served(assignCatalogHandler)
+const importCatalog = served(importCatalogHandler)
+const matchCatalog = served(matchCatalogHandler)
+const saveProduct = served(saveProductHandler)
+const saveStock = served(saveStockHandler)
 
 const buyerId = randomUUID()
 const supplierA = randomUUID()

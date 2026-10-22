@@ -9,6 +9,7 @@ import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema } from "@/l
 import { imageTypes, variantsProblem, variantTitle } from "@/lib/supplier-product"
 import { requireSupplier } from "./authorization"
 import { addToCatalogs } from "./catalogs"
+import { requestInput, StatusError } from "./errors"
 import { pricingText } from "./text"
 import type { Session } from "./workspace-session"
 
@@ -49,10 +50,10 @@ export const productInputSchema = z.object({
 // records keep them; adding one back by its SKU restores it.
 export async function saveProduct(s: Session, raw: unknown) {
   requireSupplier(s)
-  const input = productInputSchema.parse(raw)
+  const input = requestInput(productInputSchema, raw)
   const problem = variantsProblem(input, await pricingText())
   if (problem) {
-    throw new Error(problem)
+    throw new LocalizedError("problems", { problems: problem })
   }
   const orgId = s.org.id
   const imagePrefix = `supplier-images/${orgId}/`
@@ -85,7 +86,8 @@ export async function saveProduct(s: Session, raw: unknown) {
         )
         .returning({ revision: supplierProductGroups.revision })
       if (!updated) {
-        throw new LocalizedError("productChangedRefresh")
+        // Someone else saved it meanwhile.
+        throw new StatusError("productChangedRefresh", 409)
       }
       revision = updated.revision
     } else {
@@ -131,7 +133,7 @@ export async function saveProduct(s: Session, raw: unknown) {
           .where(and(eq(supplierProducts.id, targetId), eq(supplierProducts.groupId, id)))
           .returning({ id: supplierProducts.id })
         if (!updated) {
-          throw new LocalizedError("variantChangedRefresh")
+          throw new StatusError("variantChangedRefresh", 409)
         }
         kept.push(targetId)
       } else {
