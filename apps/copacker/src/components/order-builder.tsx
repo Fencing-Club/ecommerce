@@ -16,6 +16,7 @@ import {
   receiverFor,
   receivers
 } from "@repo/copacker-shipments"
+import { countriesIn } from "@repo/copacker-shipments/countries"
 import { Link, useRouter } from "@tanstack/react-router"
 import {
   ArrowRight,
@@ -62,7 +63,6 @@ import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
-import { countriesIn } from "@/lib/countries"
 import { currencySymbol } from "@/lib/currency"
 import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { cn } from "@/lib/utils"

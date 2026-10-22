@@ -1,4 +1,5 @@
 import { amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { countriesIn } from "@repo/copacker-shipments/countries"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,6 @@ import {
 import { Field } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
 import { selfAuthorizationSchema } from "@/lib/amazon"
-import { countriesIn } from "@/lib/countries"
 import { ActionForm } from "./action-form"
 import { FormInput, FormLabel } from "./form-controls"
 import { FormSelect, SelectControl } from "./form-select"

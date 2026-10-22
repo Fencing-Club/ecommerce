@@ -5,6 +5,8 @@ import {
   type OrderItem,
   orderDestination
 } from "@repo/copacker-shipments"
+import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
+import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
@@ -12,8 +14,6 @@ import invariant from "tiny-invariant"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
-import { shippingSettingsKey } from "@/documents/shipping-model"
-import { packingListSnapshot } from "@/documents/shipping-snapshot"
 import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"

@@ -93,13 +93,12 @@ vi.mock("../src/server/storage", async (original) => ({
   deleteFile: storage.deleteFile,
   readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
-// Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
+// Documents are drawn as usual; tests can read the ship-to the purchase order was given.
 vi.mock("@repo/copacker-shipments/documents", async (original) => {
   const documents = await original<typeof import("@repo/copacker-shipments/documents")>()
   return {
     ...documents,
-    purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(documents.purchaseOrderPdf),
-    packingListPdf: vi.fn<typeof documents.packingListPdf>(documents.packingListPdf)
+    purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(documents.purchaseOrderPdf)
   }
 })
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))

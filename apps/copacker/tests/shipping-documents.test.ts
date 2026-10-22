@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import {
+  cartonGroupLabel,
   defaultDocumentSettings,
   documentDirection,
   documentIssues,
@@ -7,10 +7,10 @@ import {
   groupShippingCartons,
   groupProductRequirements,
   shippingPdfFilename
-} from "../src/documents/shipping-model"
+} from "@repo/copacker-shipments/shipping-model"
+import { shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
+import { describe, expect, it } from "vitest"
 import { ShippingPdf } from "../src/documents/shipping-pdf"
-import { shipmentDocumentChecks } from "../src/documents/shipping-rules"
-import { cartonGroupLabel } from "../src/lib/carton-groups"
 import { shippingOverview, shippingScenarios } from "../src/stories/fixtures/shipping-documents"
 
 const data = shippingOverview[0]!

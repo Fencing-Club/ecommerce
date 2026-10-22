@@ -1,6 +1,6 @@
+import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { expect, within } from "storybook/test"
 import { ShippingDocumentPreview } from "@/components/shipping-document-preview"
-import { shippingSettingsKey } from "@/documents/shipping-model"
 import { shippingOverview, shippingScenarios } from "./fixtures/shipping-documents"
 
 export function scenario(id: string) {

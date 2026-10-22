@@ -1,9 +1,9 @@
 import { packingSchema } from "@repo/copacker-shipments"
 import { packingRequirementsSchema } from "@repo/copacker-shipments/packing-requirements"
+import { shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
+import { packingListSnapshot, shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { transportSchema } from "@repo/copacker-shipments/transport"
 import { describe, expect, it } from "vitest"
-import { shipmentDocumentChecks } from "../src/documents/shipping-rules"
-import { packingListSnapshot, shippingDocumentSnapshot } from "../src/documents/shipping-snapshot"
 import { pickupAddress } from "../src/stories/fixtures/logistics"
 import { orderData, orderItem } from "../src/stories/fixtures/orders"
 
