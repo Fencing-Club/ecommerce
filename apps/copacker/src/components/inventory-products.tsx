@@ -6,11 +6,14 @@ import { useFormatter, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
+import { LinkRow } from "@/components/link-row"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { ProductDetails, ProductImage } from "@/components/product-details"
+import { ProductDetails } from "@/components/product-details"
 import { ProductLabelBulk } from "@/components/product-label-bulk"
+import { ProductThumb } from "@/components/product-thumb"
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -96,16 +99,6 @@ function DuplicateSkus({ duplicates }: { duplicates: DuplicateSku[] }) {
   )
 }
 
-// A quantity that's missing or doesn't apply: a dash on screen, the reason for screen readers.
-function Dash({ reason }: { reason: string }) {
-  return (
-    <span className="text-muted-foreground">
-      <span aria-hidden="true">—</span>
-      <span className="sr-only">{reason}</span>
-    </span>
-  )
-}
-
 // Amazon seller SKUs that don't match a single Shopify variant, such as listings with a different SKU.
 function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
   const t = useTranslations("inventory.list")
@@ -114,7 +107,7 @@ function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
     return null
   }
   const amount = (value: number | null | undefined) =>
-    value === null || value === undefined ? <Dash reason={t("reasons.none")} /> : format.number(value)
+    value === null || value === undefined ? <NoValue reason={t("reasons.none")} /> : format.number(value)
   return (
     <IssuePanel title={t("amazonOnly", { count: stock.length })} hint={t("amazonOnlyHint")}>
       <Table framed={false}>
@@ -147,7 +140,7 @@ function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
 function Count({ value, reason, className }: { value: number | null; reason?: string; className?: string }) {
   const t = useTranslations("inventory.list")
   const format = useFormatter()
-  let shown = <Dash reason={reason ?? t("reasons.unknown")} />
+  let shown = <NoValue reason={reason ?? t("reasons.unknown")} />
   if (!reason && value !== null) {
     shown = <span className={cn(value < 0 && "text-destructive")}>{format.number(value)}</span>
   }
@@ -174,7 +167,7 @@ function Locations({ variant }: { variant: InventoryVariant }) {
         <Badge key={level.locationId} variant="outline" className="font-normal text-muted-foreground">
           {level.locationName}
           <span className="text-foreground tabular-nums">
-            {level.available === null ? "—" : format.number(level.available)}
+            {level.available === null ? <NoValue /> : format.number(level.available)}
           </span>
         </Badge>
       ))}
@@ -251,17 +244,6 @@ function reorderHref(variants: InventoryVariant[]) {
   return `/orders/new?${params}`
 }
 
-// A click on the row itself, not on a control inside it, a menu it opened, or text being selected.
-function isRowClick(event: React.MouseEvent<HTMLTableRowElement>) {
-  const { target, currentTarget } = event
-  return (
-    target instanceof Element &&
-    currentTarget.contains(target) &&
-    !target.closest("a, button, input, label, [role=menuitem]") &&
-    !window.getSelection()?.toString()
-  )
-}
-
 // Reorder for someone who can make purchase orders, and Edit for someone who can change products.
 function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => void }) {
   const t = useTranslations("inventory.list")
@@ -317,14 +299,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
   const detail = only ? detailLine.variant(only, true) : detailLine.product(product, count)
   return (
     <>
-      <TableRow
-        className="cursor-pointer"
-        onClick={(event) => {
-          if (isRowClick(event)) {
-            edit()
-          }
-        }}
-      >
+      <LinkRow onOpen={edit}>
         <TableCell className="w-10 pe-0 ps-3">
           {!only && (
             <Button
@@ -346,7 +321,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
         </TableCell>
         <TableCell className="py-2.5 whitespace-normal">
           <div className="flex items-start gap-3">
-            <ProductImage url={product.imageUrl} />
+            <ProductThumb url={product.imageUrl} />
             <div className="flex min-w-0 flex-col gap-0.5">
               <button
                 type="button"
@@ -372,23 +347,19 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
         <TableCell className="w-12 pe-3 ps-0 text-end">
           <RowMenu product={product} onEdit={edit} />
         </TableCell>
-      </TableRow>
+      </LinkRow>
       {open &&
         product.variants.map((variant, index) => (
-          <TableRow
+          <LinkRow
             key={variant.variantId}
             id={index === 0 ? variationsId : undefined}
-            className="cursor-pointer bg-muted/30"
-            onClick={(event) => {
-              if (isRowClick(event)) {
-                edit()
-              }
-            }}
+            className="bg-muted/30"
+            onOpen={edit}
           >
             <TableCell className="w-10 pe-0 ps-3" />
             <TableCell className="py-2 whitespace-normal">
               <div className="flex items-start gap-3 ps-6">
-                <ProductImage url={variant.imageUrl} small />
+                <ProductThumb url={variant.imageUrl} className="size-8" />
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="[overflow-wrap:anywhere]">{variant.title ?? product.title}</span>
                   <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
@@ -402,7 +373,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
             </TableCell>
             <Quantities item={variant} />
             <TableCell className="w-12 pe-3 ps-0" />
-          </TableRow>
+          </LinkRow>
         ))}
     </>
   )
@@ -465,7 +436,7 @@ function ListFooter({
             <OptionSelect
               options={sizeItems}
               value={String(pageSize)}
-              onChange={(value) => onPageSize(Number(value))}
+              onValueChange={(value) => onPageSize(Number(value))}
               labelledBy="inventory-page-size"
               size="sm"
               className="tabular-nums"

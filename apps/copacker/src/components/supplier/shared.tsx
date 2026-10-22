@@ -1,47 +1,13 @@
-import { ImageIcon } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
+import { NoValue } from "@/components/no-value"
 import { StatCard } from "@/components/stat-card"
 import { useMoney } from "@/hooks/use-money"
-import type { ProductImage } from "@/lib/supplier-product"
-import { imageUrl } from "@/lib/supplier-product"
-import { cn } from "@/lib/utils"
-
-// A product's main photo, or a placeholder in the same frame so rows line up.
-export function ProductThumb({
-  image,
-  className
-}: {
-  image: Pick<ProductImage, "key" | "name"> | null
-  className?: string
-}) {
-  return (
-    <span
-      className={cn(
-        "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40",
-        className
-      )}
-    >
-      {image ? (
-        // Stored photos come from our own authenticated route using the browser's session cookie.
-        <img src={imageUrl(image)} alt="" className="size-full object-contain" loading="lazy" />
-      ) : (
-        <ImageIcon className="size-4 text-muted-foreground" aria-hidden />
-      )}
-    </span>
-  )
-}
-
-// A row's link, stretched over the whole row (which needs `relative`) so a click anywhere on it opens the record, as a
-// link: a middle click or Ctrl opens a new tab. Keyboard focus rings the row. Controls in the row sit above it with
-// `relative z-10`.
-export const rowLink =
-  "underline-offset-4 outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
 
 // Amounts in each currency, one under another, or a dash for none.
 export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount: number }> }) {
   const money = useMoney()
   if (!amounts.length) {
-    return <span className="text-muted-foreground">—</span>
+    return <NoValue />
   }
   return (
     <span className="inline-flex flex-col items-end tabular-nums">

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 import { ChevronRight } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { NoValue } from "@/components/no-value"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -19,7 +20,7 @@ import {
 } from "@/lib/restock-selection"
 import { cn } from "@/lib/utils"
 import type { RestockChannel, RestockLine } from "@/server/restock-plan"
-import { Blank, RestockLineRows, restockColumns, type RestockText, useRestockText } from "./restock-line"
+import { RestockLineRows, restockColumns, type RestockText, useRestockText } from "./restock-line"
 
 // A selection's size for a meta line: lines and units, then cases, volume and weight when case packs are known.
 export function sizeParts(totals: OrderTotals, { t, volume, weight }: RestockText) {
@@ -129,7 +130,7 @@ export function RestockSupplierGroup({
             {prices && (
               <div className="flex flex-col items-end">
                 <span className="text-xs text-muted-foreground">{t("estimatedCost")}</span>
-                <span className="font-semibold tabular-nums">{cost ?? <Blank reason={t("noUnitCosts")} />}</span>
+                <span className="font-semibold tabular-nums">{cost ?? <NoValue reason={t("noUnitCosts")} />}</span>
               </div>
             )}
             <Reorder supplierId={supplierId} po={po} />

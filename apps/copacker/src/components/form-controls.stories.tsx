@@ -81,7 +81,7 @@ export const FillIn = meta.story({
     await expect(units).toHaveAttribute("inputmode", "numeric")
     await userEvent.type(units, "240")
     const price = canvas.getByLabelText(/Unit price/)
-    await expect(price).toHaveAccessibleDescription("USD")
+    await expect(price).toHaveAccessibleDescription("$")
     await userEvent.type(price, "1,250.5")
     await userEvent.tab()
     // Money shows with its cents once it's typed.
@@ -137,25 +137,32 @@ export const ClearSaved = meta.story({
     await expect(price).toHaveValue("")
     await userEvent.click(canvas.getByRole("button", { name: "Save line" }))
     await waitFor(() => expect(units).toHaveAccessibleDescription("Enter a number"))
-    await expect(price).toHaveAccessibleDescription("USD Enter a number")
+    await expect(price).toHaveAccessibleDescription("$ Enter a number")
     await expect(args.onSubmit).not.toHaveBeenCalled()
   }
 })
 
-// A decimal comma reads as cents; text that isn't an amount stays in view to fix.
+// Money reads in the page's language: in German a comma is the decimal mark and a dot groups thousands. Text that isn't
+// an amount stays in view to fix.
 export const MoneyTyping = meta.story({
-  play: async ({ canvas }) => {
+  globals: { locale: "de" },
+  play: async ({ canvas, args }) => {
     const price = canvas.getByLabelText(/Unit price/)
     await userEvent.type(price, "78,5")
     await userEvent.tab()
-    await expect(price).toHaveValue("78.50")
+    await expect(price).toHaveValue("78,50")
+    await userEvent.clear(price)
+    await userEvent.type(price, "1.250,5")
+    await userEvent.tab()
+    await expect(price).toHaveValue("1250,50")
     await userEvent.clear(price)
     await userEvent.type(price, "about 8")
     await userEvent.tab()
     await expect(price).toHaveValue("about 8")
     await userEvent.click(canvas.getByRole("button", { name: "Save line" }))
     await waitFor(() => expect(price).toHaveAttribute("aria-invalid", "true"))
-    await expect(price).toHaveAccessibleDescription("USD Enter a number")
+    await expect(price).toHaveAccessibleDescription("$ Geben Sie eine Zahl ein")
+    await expect(args.onSubmit).not.toHaveBeenCalled()
   }
 })
 

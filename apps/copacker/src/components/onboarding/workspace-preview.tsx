@@ -17,6 +17,7 @@ import {
 import { useWatch } from "react-hook-form"
 import { useLocale, useTranslations } from "use-intl"
 import type { Messages } from "@/i18n/messages"
+import { initials } from "@/lib/initials"
 import type { WorkspaceKind } from "@/lib/onboarding"
 import { isPosition, positionKeys } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
@@ -73,16 +74,6 @@ const pages: Record<WorkspaceKind, Array<{ label: GroupKey | null; pages: Page[]
 const settingsGroup: { label: GroupKey | null; pages: Page[] } = {
   label: null,
   pages: [{ label: "settings", icon: Settings }]
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "")

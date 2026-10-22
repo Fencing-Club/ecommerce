@@ -9,14 +9,16 @@ import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
 import { SaveBar } from "@/components/list/save-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
+import { NoValue } from "@/components/no-value"
+import { ProductThumb } from "@/components/product-thumb"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveStockMutation, useSetTrackingMutation } from "@/lib/supplier-api"
+import { imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import type { InventoryRow } from "@/server/supplier-workspace"
-import { ProductThumb } from "./shared"
 
 // A typed count as a whole number, or null for anything else.
 function count(text: string) {
@@ -215,7 +217,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                   {/* Long titles wrap, so the counts keep their place beside an open sidebar. */}
                   <TableCell className="whitespace-normal">
                     <div className="flex items-center gap-3">
-                      <ProductThumb image={row.image} className="hidden size-9 @sm:flex" />
+                      <ProductThumb url={row.image && imageUrl(row.image)} className="hidden size-9 @sm:flex" />
                       <div className="min-w-0">
                         <PageLink
                           href={`/products/${row.groupId}`}
@@ -257,7 +259,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                       row.trackInventory && available < 0 && "font-medium text-destructive"
                     )}
                   >
-                    {row.trackInventory ? available.toLocaleString(locale) : "—"}
+                    {row.trackInventory ? available.toLocaleString(locale) : <NoValue />}
                   </TableCell>
                   <TableCell className="text-end">
                     {row.trackInventory && editable && (

@@ -11,13 +11,16 @@ export const Errors = meta.story({
       <FormError message="orders.timeline.comment.required" />
       <FormError message={"Line 2 has no SKU\nLine 3 has no quantity"} />
       <FormError />
+      {/* An id lets a field point at it with aria-describedby. */}
+      <FormError id="comment-error" message="Something went wrong. Try again." />
     </div>
   ),
   play: async ({ canvas }) => {
     const alerts = canvas.getAllByRole("alert")
-    await expect(alerts).toHaveLength(2)
+    await expect(alerts).toHaveLength(3)
     await expect(alerts[0]).toHaveTextContent("Write a comment")
     await expect(alerts[1]).toHaveTextContent("Line 2 has no SKU")
+    await expect(alerts[2]).toHaveAttribute("id", "comment-error")
   }
 })
 

@@ -11,6 +11,7 @@ import { CostSummaryCard } from "@/components/cost-summary-card"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { LandedCosts } from "@/components/landed-costs"
 import { Markdown } from "@/components/markdown"
+import { NoValue } from "@/components/no-value"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
 import { PoTimeline } from "@/components/po-timeline"
 import { ProductIdentity } from "@/components/product-identity"
@@ -261,12 +262,12 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
             </Card>
           )}
 
-          <Card size="sm" className="gap-0 pb-0">
-            <CardHeader className="pb-3">
+          <Card flush size="sm">
+            <CardHeader>
               <CardTitle>{t("detail.shipments")}</CardTitle>
             </CardHeader>
             {shipmentRows.length ? (
-              <ul>
+              <ul className="divide-y">
                 {shipmentRows.map((shipment, index) => {
                   const summary = (
                     <>
@@ -290,7 +291,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                     </>
                   )
                   return (
-                    <li key={shipment.id} className="flex items-center gap-3 border-t pe-3">
+                    <li key={shipment.id} className="flex items-center gap-3 pe-3">
                       {seesShipments ? (
                         <Link
                           to="/shipments/$id"
@@ -315,7 +316,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 })}
               </ul>
             ) : (
-              <p className="px-3 pb-3 text-muted-foreground">
+              <p className="p-3 text-muted-foreground">
                 {order.status === "draft" ? t("detail.shipmentsStartOnSend") : t("detail.noShipments")}
               </p>
             )}
@@ -376,7 +377,10 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 />
                 {order.data.readyDate && <Detail label={t("detail.ready")} value={day(order.data.readyDate)} />}
                 <Detail label={t("detail.currency")} value={currency} />
-                <Detail label={noteLabel} value={order.data.notes ? <Markdown>{order.data.notes}</Markdown> : "—"} />
+                <Detail
+                  label={noteLabel}
+                  value={order.data.notes ? <Markdown>{order.data.notes}</Markdown> : <NoValue />}
+                />
               </dl>
             </CardContent>
           </Card>

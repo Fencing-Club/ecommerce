@@ -1,8 +1,7 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
-import { type OrderInput } from "@repo/copacker-orders"
+import { addressLines, type OrderInput } from "@repo/copacker-orders"
 import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
 import { orderDestination, validatePacking } from "@repo/copacker-packing-rules"
-import { addressLines } from "./documents"
 import { packedItemIds, palletLabels, type Packing, type Pallet } from "./index"
 import type { CartonLabel } from "./labels"
 import {

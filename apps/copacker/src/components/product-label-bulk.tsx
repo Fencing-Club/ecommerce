@@ -1,15 +1,16 @@
-import { ChevronDown, Download, Search, Tags } from "lucide-react"
+import { ChevronDown, Download, Tags } from "lucide-react"
 import { useState } from "react"
 import invariant from "tiny-invariant"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { FormError } from "@/components/form-feedback"
+import { matches } from "@/components/list/matches"
+import { SearchField } from "@/components/list/search-field"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
@@ -63,8 +64,8 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   const [downloadLabels, { isLoading: downloading }] = labelsApi.useDownloadProductLabelsMutation()
   // Downloading labels only reads products; setting their label type changes them.
   const editable = useCan("products", "edit")
-  const query = search.trim().toLocaleLowerCase()
-  const shown = query ? choices.filter((choice) => choice.title.toLocaleLowerCase().includes(query)) : choices
+  const query = search.trim()
+  const shown = choices.filter((choice) => matches(search, choice.title))
   const allShown = shown.length > 0 && shown.every((choice) => selected.includes(choice.productId))
   const someShown = shown.some((choice) => selected.includes(choice.productId))
   const busy = assigning || downloading
@@ -119,18 +120,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
           <SheetTitle>{t("labels.manage")}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-3 border-b p-4">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              aria-label={t("labels.search")}
-              placeholder={t("labels.search")}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </InputGroup>
+          <SearchField label={t("labels.search")} value={search} onChange={setSearch} />
           <Field orientation="horizontal">
             <Checkbox
               id="label-products-all"

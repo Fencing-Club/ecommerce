@@ -3,6 +3,7 @@
   "skipToContent": "कंटेंट पर जाएं",
   "breadcrumb": "ब्रेडक्रंब",
   "about": "{label} के बारे में",
+  "noValue": "कोई नहीं",
   "errors": {
     "generic": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
     "offline": "Copacker से कनेक्ट नहीं हो सका। अपना कनेक्शन जांचें और फिर से कोशिश करें।"
@@ -265,8 +266,6 @@
     "viewPurchaseOrder": "खरीद ऑर्डर देखें",
     "viewOrder": "खरीद ऑर्डर देखें",
     "noMatchesDescription": "कोई दूसरी खोज आज़माएं या अपने फ़िल्टर बदलें।",
-    "previousPage": "पिछला पृष्ठ",
-    "nextPage": "अगला पृष्ठ",
     "orders": {
       "title": "खरीद ऑर्डर",
       "reference": "खरीद ऑर्डर",

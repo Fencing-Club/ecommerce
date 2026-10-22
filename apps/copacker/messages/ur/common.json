@@ -3,6 +3,7 @@
   "skipToContent": "مواد پر جائیں",
   "breadcrumb": "بریڈکرمب",
   "about": "{label} کے بارے میں",
+  "noValue": "کوئی نہیں",
   "errors": {
     "generic": "کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔",
     "offline": "Copacker تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
@@ -265,8 +266,6 @@
     "viewPurchaseOrder": "خریداری آرڈر دیکھیں",
     "viewOrder": "خریداری آرڈر دیکھیں",
     "noMatchesDescription": "کوئی اور تلاش آزمائیں یا اپنے فلٹرز تبدیل کریں۔",
-    "previousPage": "پچھلا صفحہ",
-    "nextPage": "اگلا صفحہ",
     "orders": {
       "title": "خریداری آرڈرز",
       "reference": "خریداری آرڈر",

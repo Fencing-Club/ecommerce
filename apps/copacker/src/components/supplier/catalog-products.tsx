@@ -8,17 +8,19 @@ import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
 import { SelectionBar } from "@/components/list/selection-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
+import { NoValue } from "@/components/no-value"
+import { ProductThumb } from "@/components/product-thumb"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
+import { imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { CatalogPriceCell, type CatalogVariant } from "./catalog-price-cell"
 import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
-import { ProductThumb } from "./shared"
 
 type Product = CatalogEditorData["products"][number]
 // A catalog's entries by variant: a variant it includes, with any price, volume pricing or rules of its own.
@@ -146,7 +148,7 @@ export function CatalogProducts({
     const own = !!entry && (entry.priceBreaks !== null || entry.quantityRules !== null)
     const name = variant.label ? `${product.title}, ${variant.label}` : product.title
     if (readOnly) {
-      return <span className="text-muted-foreground">{summary || "—"}</span>
+      return summary ? <span className="text-muted-foreground">{summary}</span> : <NoValue />
     }
     return (
       <Button
@@ -269,7 +271,7 @@ export function CatalogProducts({
                   <TableCell className={cn("whitespace-normal", readOnly && "ps-4")}>
                     <div className="flex items-center gap-3">
                       <ProductThumb
-                        image={product.image}
+                        url={product.image && imageUrl(product.image)}
                         className={cn("hidden @sm:flex", !isIncluded && "opacity-50")}
                       />
                       <div className="min-w-0">

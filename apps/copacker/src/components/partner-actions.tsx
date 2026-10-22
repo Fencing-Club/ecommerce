@@ -11,12 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { TableCell, TableRow } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
 import { useAction } from "@/hooks/use-action"
 import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
-import { isRowClick } from "./link-row"
+import { LinkRow } from "./link-row"
 import type { PartnerAddress } from "./partner-address"
 import { PartnerAddressSheet } from "./partner-address"
 import { EditSupplier, InviteSupplierByEmail } from "./supplier-actions"
@@ -74,13 +74,9 @@ function PartnerRow({
   const t = useTranslations("partners.row")
   return (
     // On a phone the row stacks: the name and menu, then the status under the name.
-    <TableRow
-      className="cursor-pointer @max-md:flex @max-md:flex-wrap @max-md:items-center @max-md:gap-x-3 @max-md:gap-y-1 @max-md:px-4 @max-md:py-3"
-      onClick={(event) => {
-        if (isRowClick(event)) {
-          onOpen()
-        }
-      }}
+    <LinkRow
+      onOpen={onOpen}
+      className="@max-md:flex @max-md:flex-wrap @max-md:items-center @max-md:gap-x-3 @max-md:gap-y-1 @max-md:px-4 @max-md:py-3"
     >
       {/* Takes the room the other columns leave, and truncates to it, so a long contact line never pushes the other
           columns off the screen. */}
@@ -125,7 +121,7 @@ function PartnerRow({
         </DropdownMenu>
         {children}
       </TableCell>
-    </TableRow>
+    </LinkRow>
   )
 }
 

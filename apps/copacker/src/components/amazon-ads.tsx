@@ -1,8 +1,10 @@
 import { ArrowRight, CircleCheck, CircleDashed, Unplug, Wallet } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { api } from "@/lib/api"
-import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"
 import { ConfirmDialog } from "./confirm-dialog"
 import { IntegrationCard } from "./integration-card"
@@ -10,9 +12,6 @@ import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./
 import type { IntegrationSyncState } from "./integration-sync-card"
 import { IntegrationSyncCard } from "./integration-sync-card"
 import { SyncProgress } from "./sync-status"
-import { AlertDialogTrigger } from "./ui/alert-dialog"
-import { Button, buttonVariants } from "./ui/button"
-import { Dialog, DialogTrigger } from "./ui/dialog"
 
 const adsApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -81,16 +80,13 @@ export function AmazonAdsCard({
       action={
         canManage &&
         (data.connected ? (
-          <DialogTrigger render={<Button variant="outline" className="h-11 sm:h-[34px]" />}>
+          <DialogTrigger render={<Button variant="outline" size="responsive" />}>
             {integrations("manage")}
             <span className="sr-only"> {t("title")}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
           </DialogTrigger>
         ) : (
-          <a
-            href="/api/connections/amazon-ads"
-            className={cn(buttonVariants({ variant: "outline", className: "h-11 sm:h-[34px]" }))}
-          >
+          <a href="/api/connections/amazon-ads" className={buttonVariants({ variant: "outline", size: "responsive" })}>
             {integrations("connect")}
             <span className="sr-only"> {t("title")}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
@@ -186,7 +182,7 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
                   <p className="text-sm text-muted-foreground">{t("description")}</p>
                   <a
                     href="/api/connections/amazon-ads"
-                    className={cn(buttonVariants({ variant: "outline", className: "h-11 sm:h-[34px]" }))}
+                    className={buttonVariants({ variant: "outline", size: "responsive" })}
                   >
                     {t("connect")}
                   </a>
@@ -200,7 +196,7 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
           <a
             href="/api/connections/amazon-ads"
             aria-label={t("reconnect")}
-            className={cn(buttonVariants({ variant: "ghost", className: "h-11 text-muted-foreground sm:h-[34px]" }))}
+            className={buttonVariants({ variant: "ghost", size: "responsive", className: "text-muted-foreground" })}
           >
             {syncCopy("reconnect")}
           </a>
@@ -211,8 +207,8 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
               <AlertDialogTrigger
                 render={
                   <Button
-                    variant="ghost"
-                    className="h-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:h-[34px]"
+                    variant="ghost-destructive"
+                    size="responsive"
                     disabled={action.isLoading}
                     aria-label={t("disconnect")}
                   />

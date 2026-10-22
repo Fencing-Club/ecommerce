@@ -6,6 +6,7 @@ import { IntegrationSection, IntegrationSyncSection } from "@/components/integra
 import { Integrations } from "@/components/integrations"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { MonthlyCosts } from "@/components/monthly-costs"
+import { NoValue } from "@/components/no-value"
 import { ProfileForm } from "@/components/profile-form"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
@@ -183,10 +184,10 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
             ) : (
               <Values
                 values={[
-                  { label: t("supplierProfile.contactName"), value: profile?.contactName || "—" },
-                  { label: t("supplierProfile.contactEmail"), value: profile?.contactEmail || "—" },
-                  { label: t("supplierProfile.phone"), value: profile?.phoneNumber || "—" },
-                  { label: t("supplierProfile.website"), value: profile?.website || "—" }
+                  { label: t("supplierProfile.contactName"), value: profile?.contactName || <NoValue /> },
+                  { label: t("supplierProfile.contactEmail"), value: profile?.contactEmail || <NoValue /> },
+                  { label: t("supplierProfile.phone"), value: profile?.phoneNumber || <NoValue /> },
+                  { label: t("supplierProfile.website"), value: profile?.website || <NoValue /> }
                 ]}
               />
             )}
@@ -245,7 +246,7 @@ function Section({
 }
 
 // Settings only owners and admins change, as the rest of the team sees them.
-function Values({ values }: { values: Array<{ label: string; value: string }> }) {
+function Values({ values }: { values: Array<{ label: string; value: React.ReactNode }> }) {
   return (
     <Card>
       <CardContent>

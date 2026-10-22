@@ -86,7 +86,7 @@ export function CatalogPriceCell({
     included.flatMap((variant) => (variant.priceMinor === null ? [] : [adjustPrice(variant.priceMinor, adjustment)])),
     currency
   )
-  const typed = parseMoney(text)
+  const typed = parseMoney(text, locale)
   if (readOnly) {
     return (
       <span className="tabular-nums">
@@ -111,7 +111,7 @@ export function CatalogPriceCell({
         setOpen(next)
         if (next) {
           // A fixed price every variant here shares fills the field; mixed or no fixed prices leave it blank.
-          setText(allFixed && new Set(fixed).size === 1 ? moneyText(fixed[0]) : "")
+          setText(allFixed && new Set(fixed).size === 1 ? moneyText(fixed[0], locale) : "")
         }
       }}
     >

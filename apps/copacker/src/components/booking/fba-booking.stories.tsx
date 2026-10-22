@@ -35,7 +35,7 @@ export const ChooseHowToShip = meta.story({
     await expect(hagerstown).toHaveAttribute("aria-checked", "true")
     await expect(hagerstown).toHaveAccessibleDescription("Lowest total HGR6, includes a $40.20 placement fee $144.12")
     await expect(dialog.getByRole("radio", { name: "5 warehouses" })).toHaveAccessibleDescription(
-      "BJC1, IAH3, RDU2, SWF2, MCC1, includes a $0.00 placement fee $184.78"
+      "BJC1, IAH3, RDU2, SWF2, MCC1, includes a $0 placement fee $184.78"
     )
     await expect(dialog.getByText("Amass standard truck")).toBeVisible()
     await expect(dialog.getByText("Cheapest carrier for Hagerstown, MD")).toBeVisible()
@@ -231,7 +231,7 @@ export const FiveWarehouses = meta.story({
     await expect(dialog.getByText("Warehouses")).toBeVisible()
     await expect(dialog.getByText("BJC1, IAH3, RDU2, SWF2, MCC1")).toBeVisible()
     await expect(dialog.getByText("Amass standard courier")).toBeVisible()
-    await expect(dialog.getByText("$0.00")).toBeVisible()
+    await expect(dialog.getByText("$0")).toBeVisible()
     await userEvent.click(dialog.getByRole("button", { name: "Book for $184.78" }))
     await expect(args.onBook).toHaveBeenCalledWith({ placementId: "split", quoteId: "amass-courier" })
   }

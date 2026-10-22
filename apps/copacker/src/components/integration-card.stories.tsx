@@ -1,9 +1,9 @@
 import { CircleCheck } from "lucide-react"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
 import { StatusBadge } from "./common"
 import { IntegrationCard } from "./integration-card"
-import { Button } from "./ui/button"
 
 const manage = fn()
 const meta = preview.meta({

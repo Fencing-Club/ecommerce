@@ -46,6 +46,16 @@ export const LabelAsPlaceholder = meta.story({
   }
 })
 
+// Keys reach the caller, so Enter can search a server instead of submitting the form around the field.
+export const EnterSearches = meta.story({
+  args: { onKeyDown: fn() },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ args, canvas }) => {
+    await userEvent.type(canvas.getByRole("searchbox"), "tote{Enter}")
+    await expect(args.onKeyDown).toHaveBeenLastCalledWith(expect.objectContaining({ key: "Enter" }))
+  }
+})
+
 export const MaxLength = meta.story({
   args: { maxLength: 5 },
   render: (args) => <Controlled {...args} />,

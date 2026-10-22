@@ -19,7 +19,8 @@ yet, and the shipment page still books through its earlier actions.
 
 `AglBookingDialog` and `FbaBookingDialog` take the booking as the server knows it (`AglBooking`, `FbaBooking`), `open`
 and `onOpenChange`, the step to reopen on, and one callback per action. Every button does one thing; single choices are
-radios. Their copy is in the `booking` message namespace.
+radios. Their copy is in the `booking` message namespace. An FBA booking's fees are in its currency's minor
+units, as Copacker keeps all money, and show through `useMoney`.
 
 ## Stories
 

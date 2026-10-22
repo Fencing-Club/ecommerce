@@ -120,7 +120,7 @@ export function CatalogSettings({
                 id="catalog-status"
                 options={statuses.map((value) => ({ value, label: shared(`status.${value}`) }))}
                 value={settings.status}
-                onChange={(status) => onChange({ status })}
+                onValueChange={(status) => onChange({ status })}
                 className="w-full"
               />
             </Field>
@@ -194,7 +194,7 @@ export function CatalogSettings({
                   label: value === "decrease" ? t("decreaseBy") : t("increaseBy")
                 }))}
                 value={settings.direction}
-                onChange={(direction) => onChange({ direction })}
+                onValueChange={(direction) => onChange({ direction })}
                 label={t("adjustmentDirection")}
                 className="w-32"
               />

@@ -39,7 +39,7 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
     <FormDialog
       trigger={
         <DialogTrigger
-          render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+          render={<Button variant="outline" size="responsive" className="shrink-0" aria-label={t("editLabel")} />}
         >
           {t("edit")}
         </DialogTrigger>

@@ -1,7 +1,8 @@
-import { ArrowDownUp, Columns3, PlusCircle, Search, SlidersHorizontal } from "lucide-react"
+import { ArrowDownUp, Columns3, PlusCircle, SlidersHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { SelectControl } from "@/components/form-select"
+import { SearchField } from "@/components/list/search-field"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -107,17 +108,13 @@ export function LogisticsToolbar({
   const [first] = columnKeys[kind]
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative w-full @min-[760px]/list:w-80">
-        <Search className="pointer-events-none absolute start-3 top-2.5 size-3.5 text-muted-foreground" />
-        <Input
-          type="search"
-          aria-label={k("search")}
-          placeholder={k("searchPlaceholder")}
-          value={state.query}
-          onChange={(event) => dispatch({ type: "search", query: event.target.value })}
-          className="h-[34px] ps-8 text-xs md:text-xs"
-        />
-      </div>
+      <SearchField
+        label={k("search")}
+        placeholder={k("searchPlaceholder")}
+        value={state.query}
+        onChange={(query) => dispatch({ type: "search", query })}
+        className="h-[34px] w-full @min-[760px]/list:w-80"
+      />
       <FilterMenu
         label={text.partnerLabel}
         allLabel={viewer === "supplier" ? t("filters.allCustomers") : t("filters.allSuppliers")}
