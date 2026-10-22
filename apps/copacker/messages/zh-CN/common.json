@@ -56,7 +56,8 @@
     "declined": "已拒绝",
     "atForwarder": "在货代处",
     "packed": "已装箱",
-    "changesProposed": "已提出修改"
+    "changesProposed": "已提出修改",
+    "unknown": "未知"
   },
   "destinations": {
     "amazon": "Amazon",

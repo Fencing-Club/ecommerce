@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "سیلز، {period}",
-    "about": "{label} کے بارے میں",
     "versus": "{comparison, select, previousYear {پچھلے سال کے مقابلے میں} other {پچھلی مدت کے مقابلے میں}}",
     "noPrices": "ابھی کوئی قیمت نہیں",
     "noOrders": "کوئی آرڈر سنک نہیں ہوا",

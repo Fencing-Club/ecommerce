@@ -1,15 +1,4 @@
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  ChevronRight,
-  Circle,
-  CircleAlert,
-  CircleCheck,
-  Info,
-  Minus,
-  Package,
-  TriangleAlert
-} from "lucide-react"
+import { ChevronRight, Circle, CircleAlert, CircleCheck, Info, Package, TriangleAlert } from "lucide-react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Status } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +7,7 @@ import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useRefreshWhile } from "@/hooks/use-refresh-while"
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -28,7 +18,7 @@ import type { SetupStep } from "@/server/overview"
 import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
-import { RefreshWhile } from "./refresh-while"
+import { DeltaPill } from "./stat-card"
 
 type MoneyList = readonly { currency: string; minor: number }[]
 
@@ -64,13 +54,7 @@ export function useFigures() {
             )
           })
         : null,
-    percent: (value: number) => format.number(value, { style: "percent", maximumFractionDigits: 1 }),
-    change: (value: number) =>
-      format.number(value, {
-        style: "percent",
-        maximumFractionDigits: Math.abs(value) < 0.1 ? 1 : 0,
-        signDisplay: "exceptZero"
-      })
+    percent: (value: number) => format.number(value, { style: "percent", maximumFractionDigits: 1 })
   }
 }
 
@@ -112,42 +96,6 @@ export function Dash({ reason }: { reason?: string }) {
     <span className="text-muted-foreground" title={why}>
       <span aria-hidden>—</span>
       <span className="sr-only">{why}</span>
-    </span>
-  )
-}
-
-const deltaTones = {
-  up: { icon: ArrowUpRight, className: "bg-success-soft text-success" },
-  down: { icon: ArrowDownRight, className: "bg-destructive-soft text-destructive" },
-  flat: { icon: Minus, className: "bg-muted text-muted-foreground" }
-}
-
-function deltaTone(value: number | null) {
-  if (value === null) {
-    return "up"
-  }
-  if (Math.abs(value) < 0.005) {
-    return "flat"
-  }
-  return value > 0 ? "up" : "down"
-}
-
-// A change as a small pill: green up, red down, grey under half a percent either way. Null reads as new, for something
-// that had nothing before.
-export function DeltaPill({ value, title }: { value: number | null; title?: string }) {
-  const t = useTranslations("overview")
-  const figures = useFigures()
-  const { icon: Icon, className } = deltaTones[deltaTone(value)]
-  return (
-    <span
-      title={title}
-      className={cn(
-        "inline-flex h-5 shrink-0 items-center gap-0.5 rounded-full px-1.5 text-xs font-medium tabular-nums",
-        className
-      )}
-    >
-      <Icon className="size-3" aria-hidden />
-      {value === null ? t("new") : figures.change(value)}
     </span>
   )
 }
@@ -242,10 +190,13 @@ export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh
   const t = useTranslations("overview.setup")
   const tSync = useTranslations("common.sync")
   const done = steps.filter((step) => step.done).length
+  // A first sync ticks its step off when it finishes, so the page reloads while one runs.
+  useRefreshWhile(
+    steps.some((step) => step.syncing),
+    refresh
+  )
   return (
     <Card>
-      {/* A first sync ticks its step off when it finishes, so the page reloads while one runs. */}
-      <RefreshWhile active={steps.some((step) => step.syncing)} refresh={refresh} />
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction className="text-sm text-muted-foreground tabular-nums">

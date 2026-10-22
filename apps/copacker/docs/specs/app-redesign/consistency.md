@@ -75,14 +75,15 @@ failed or is lost.
 
 | Tone        | Labels                                                                                                         |
 | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| Neutral     | Draft, Closed, Archived, Received, Expected, Paused, Not invited, Not connected, Coming soon, Unchanged        |
-| Info        | With supplier, Awaiting acceptance, Accepted, Packing, In transit, At the forwarder, Waiting for labels, Receiving, Shipped onward, In progress, Invited, Unfulfilled, Updated |
+| Neutral     | Draft, Closed, Archived, Received, Expected, Paused, Not invited, Not connected, Coming soon, Unchanged, Pending, Unknown |
+| Info        | With supplier, Awaiting acceptance, Accepted, Packing, In transit, At the forwarder, Waiting for labels, Receiving, Shipped, Shipped onward, In progress, Invited, Unfulfilled, Updated |
 | Success     | Ready for pickup, Delivered, Fulfilled, Active, In stock, On Copacker, Connected, Up to date, New, Added       |
 | Warning     | To accept, To pack, Approval needed, Approve invoice, Changes proposed, Changes declined, Declined, Needs booking, Needs delivery request, Needs shipping labels, At warehouse, Needs label, Awaiting price, Reorder soon, Invitation expired, Needs reconnecting, Changed |
 | Destructive | Needs attention, Cancelled, Out of stock, Out of stock on Amazon, Reorder now, Authorization expired, Removed   |
 
 "To pack" moved from info to warning in this audit: it's the supplier's own move. "Declined" is warning because the
-buyer has to choose what to do next.
+buyer has to choose what to do next. A sales order's "Shipped" is info like a shipment's, as the design draws it, and
+its "Pending" (waiting for Amazon's price) is neutral.
 
 Progress indicators use the same meanings: lifecycle stages and step lists are **green** when done, **blue** when
 current, **amber** when they need the viewer and **gray** when upcoming. Black is never a state. Categories, such as the

@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "Продажі, {period}",
-    "about": "Про показник «{label}»",
     "versus": "{comparison, select, previousYear {порівняно з попереднім роком} other {порівняно з попереднім періодом}}",
     "noPrices": "Цін ще немає",
     "noOrders": "Замовлення не синхронізовано",
