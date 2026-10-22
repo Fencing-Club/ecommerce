@@ -163,7 +163,7 @@ export async function privateDocumentProbe(request: Request) {
             orderRevision: 1,
             shipmentRevision: 1,
             uploadedBy: "probe",
-            outdated: which === "outdated" ? 1 : 0
+            outdated: which === "outdated"
           })
           const session = await workspaceSession(user, active, tx)
           invariant(session, "Probe membership is missing")

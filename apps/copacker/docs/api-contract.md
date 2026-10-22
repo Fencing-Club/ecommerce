@@ -628,7 +628,7 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
   re-fetches Shopify and Amazon identities and rejects changed store connections. The import and the new draft PO are
   linked in one transaction; saving again returns the same PO. Saving sends no email and creates no Amazon shipment.
 
-The proposal schema is `src/server/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
+The proposal schema is `src/lib/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
 values and non-product charges. `src/lib/import-totals.ts` adds a proposal up (`importTotals`), so the review page and
 the save's document-total check agree. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
 SKU. Processing runs in the worker with the prompt's `production` label.

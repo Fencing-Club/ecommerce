@@ -47,9 +47,9 @@ import {
   supplierGroups,
   wholeDays
 } from "@/lib/restock-selection"
+import { storeNames } from "@/lib/stores"
 import type { RestockChannelOption } from "@/server/restock-page"
 import type { RestockLine, RestockStatus } from "@/server/restock-plan"
-import type { SalesSource } from "@/server/sales-orders"
 import { InfoTip } from "./info-tip"
 import { Count, LineName, useRestockText } from "./restock-line"
 import { GroupTrigger, RestockSupplierGroup } from "./restock-supplier-group"
@@ -80,8 +80,6 @@ const restockApi = api.injectEndpoints({
     })
   })
 })
-
-const sourceNames: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -351,7 +349,7 @@ function ResultSummary({ report }: { report: RestockReportData }) {
   const prices = useCan("prices")
   const { t, list } = useRestockText()
   const errors = report.sources.flatMap(({ source, error }) =>
-    error ? [t("sourceError", { source: sourceNames[source], error })] : []
+    error ? [t("sourceError", { source: storeNames[source], error })] : []
   )
   const count = (statuses: RestockStatus[]) => report.lines.filter((line) => statuses.includes(line.status)).length
   const blocked = count(["blocked"])

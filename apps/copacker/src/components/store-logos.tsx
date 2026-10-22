@@ -1,7 +1,8 @@
+import type { Store } from "@/lib/stores"
 import { cn } from "@/lib/utils"
 
 // Each store's mark in its brand colors, on a white tile in both themes, for the integrations cards.
-export function StoreLogo({ store, className }: { store: "shopify" | "amazon" | "ebay"; className?: string }) {
+export function StoreLogo({ store, className }: { store: Store; className?: string }) {
   return (
     <span
       aria-hidden="true"

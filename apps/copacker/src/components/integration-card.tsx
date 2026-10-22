@@ -1,3 +1,4 @@
+import type { Store } from "@/lib/stores"
 import { StoreLogo } from "./store-logos"
 
 // Store and advertising connections share one hierarchy: provider, account, then status and action.
@@ -9,7 +10,7 @@ export function IntegrationCard({
   action,
   children
 }: {
-  store: "shopify" | "amazon" | "ebay"
+  store: Store
   title: string
   description: string
   status: React.ReactNode

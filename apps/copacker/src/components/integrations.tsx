@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { storeNames, type Store } from "@/lib/stores"
 import { AmazonAdsCard } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
@@ -27,16 +28,12 @@ import { useStockSync } from "./inventory-sync"
 import { useOrderSync } from "./sales-orders"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
-type Store = "shopify" | "amazon" | "ebay"
 type Connection = {
   account: string
   externalId: string
   marketplaces?: string[] | null
   health?: AmazonConnectionHealth
 }
-
-// Each store's name. What connecting it brings is under settings.integrations.stores.
-const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
 
 const cardAction = buttonVariants({ variant: "outline", size: "responsive" })
 

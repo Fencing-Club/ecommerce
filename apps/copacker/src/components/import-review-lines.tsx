@@ -16,8 +16,8 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
 import { currencySymbol } from "@/lib/currency"
+import type { ImportProposal } from "@/lib/import-proposal"
 import { lineTotals } from "@/lib/import-totals"
-import type { ImportProposal } from "@/server/import-proposal"
 import { WarningNote } from "./common"
 
 const linesApi = api.injectEndpoints({

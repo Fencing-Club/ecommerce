@@ -1,5 +1,5 @@
 import { LocalizedError } from "@/i18n/errors"
-import type { ImportProposal } from "@/server/import-proposal"
+import type { ImportProposal } from "@/lib/import-proposal"
 
 // The money an imported purchase order adds up to, the same way in the review and when it saves, so what the review
 // shows is what saving checks.

@@ -16,9 +16,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
+import { storeNames, type Store } from "@/lib/stores"
 import { cn } from "@/lib/utils"
 import type { SalesOrderSummary } from "@/server/sales-orders"
-import type { SalesSource } from "@/server/sales-orders"
 import type { IntegrationSyncState } from "./integration-sync-card"
 import { IntegrationSyncCard } from "./integration-sync-card"
 import { SyncedAt, SyncProgress } from "./sync-status"
@@ -31,7 +31,7 @@ type SyncState = {
   reimbursements?: ReportCoverage | null
   storageFees?: { monthly: ReportCoverage; aged: ReportCoverage } | null
   removals?: { orders: ReportCoverage; shipments: ReportCoverage } | null
-  source: SalesSource
+  source: Store
   externalAccountId: string
   status: "idle" | "queued" | "running" | "failed"
   errorCode: string | null
@@ -49,20 +49,19 @@ const salesApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
     salesStatus: build.query<{ sources: SyncState[] }, void>({ query: () => "sales", keepUnusedDataFor: 0 }),
-    salesOrders: build.query<OrdersPage, { source?: SalesSource; page: number; q: string; syncKey: string }>({
+    salesOrders: build.query<OrdersPage, { source?: Store; page: number; q: string; syncKey: string }>({
       query: ({ source, page, q }) => ({
         url: "sales/orders",
         params: { ...(source ? { source } : {}), ...(q ? { q } : {}), page }
       }),
       keepUnusedDataFor: 0
     }),
-    syncSales: build.mutation<{ status: string }, { source: SalesSource }>({
+    syncSales: build.mutation<{ status: string }, { source: Store }>({
       query: (body) => ({ url: "sales/sync", method: "POST", body })
     })
   })
 })
 
-const titles: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 const pageSize = 50
 
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
@@ -92,7 +91,7 @@ function Failure({ errorCode, title, admin }: { errorCode: string | null; title:
 // now is in the store's Settings.
 function SourceSummary({ state }: { state: SyncState }) {
   const t = useTranslations("sales.sync")
-  const title = titles[state.source]
+  const title = storeNames[state.source]
   const admin = useIsAdmin()
   const active = state.status === "queued" || state.status === "running"
   const syncedAt = state.finishedAt ?? state.coveredTo
@@ -134,7 +133,7 @@ function SourceSummary({ state }: { state: SyncState }) {
 }
 
 // A store's order sync, polled while its page is open.
-export function useOrderSync(source: SalesSource) {
+export function useOrderSync(source: Store) {
   const { currentData } = salesApi.useSalesStatusQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
@@ -143,7 +142,7 @@ export function useOrderSync(source: SalesSource) {
 }
 
 // A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
-export function OrdersSyncRow({ source }: { source: SalesSource }) {
+export function OrdersSyncRow({ source }: { source: Store }) {
   return <SalesSyncCard source={source} />
 }
 
@@ -151,7 +150,7 @@ export function FinancialDataSyncCard() {
   return <SalesSyncCard source="amazon" financial />
 }
 
-function SalesSyncCard({ source, financial = false }: { source: SalesSource; financial?: boolean }) {
+function SalesSyncCard({ source, financial = false }: { source: Store; financial?: boolean }) {
   const t = useTranslations("sales.sync")
   const panel = useTranslations("settings.integrations.panel")
   const errorMessage = useErrorMessage()
@@ -161,7 +160,7 @@ function SalesSyncCard({ source, financial = false }: { source: SalesSource; fin
   })
   const [sync, mutation] = salesApi.useSyncSalesMutation()
   const state = currentData?.sources.find((item) => item.source === source)
-  const title = titles[source]
+  const title = storeNames[source]
   const syncing = mutation.isLoading || state?.status === "queued" || state?.status === "running"
   async function startSync() {
     try {
@@ -320,7 +319,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
               aria-hidden="true"
               className="size-3 text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 pointer-coarse:opacity-100"
             />
-            <span className="sr-only"> {t("opensIn", { source: titles[order.source] })}</span>
+            <span className="sr-only"> {t("opensIn", { source: storeNames[order.source] })}</span>
           </a>
           <time dateTime={order.orderedAt} className="text-xs text-muted-foreground">
             {format.dateTime(new Date(order.orderedAt), { dateStyle: "medium", timeStyle: "short" })}
@@ -379,7 +378,7 @@ function OrderList({
   const t = useTranslations("sales.list")
   const pager = useTranslations("common.list.pager")
   const errorMessage = useErrorMessage()
-  const [source, setSource] = useState<SalesSource | "all">("all")
+  const [source, setSource] = useState<Store | "all">("all")
   // The page shown, counting from 1.
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState(initialSearch)
@@ -399,7 +398,7 @@ function OrderList({
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const sourceItems = [
     { value: "all" as const, label: t("allSources") },
-    ...sources.map((state) => ({ value: state.source, label: titles[state.source] }))
+    ...sources.map((state) => ({ value: state.source, label: storeNames[state.source] }))
   ]
   let body: React.ReactNode
   if (isError) {

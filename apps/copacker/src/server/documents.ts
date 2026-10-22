@@ -34,7 +34,7 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     if (!order) {
       throw new Error("Purchase order is unavailable")
     }
-    let outdated = input.outdated ?? 0
+    let outdated = input.outdated ?? false
     if (input.shipmentId) {
       const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, input.shipmentId)).for("update")
       if (
@@ -47,13 +47,13 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
         throw new Error("Shipment changed while generating documents")
       }
     } else if (input.orderRevision !== order.revision) {
-      outdated = 1
+      outdated = true
     }
     // A late copy for an older revision leaves the current one in place.
     if (input.shipmentId || !outdated) {
       await tx
         .update(documents)
-        .set({ outdated: 1 })
+        .set({ outdated: true })
         .where(
           and(
             eq(documents.orderId, input.orderId),
@@ -187,7 +187,7 @@ export async function filedPo(orderId: string, revision?: number) {
         eq(documents.kind, "purchase_order"),
         isNull(documents.shipmentId),
         eq(documents.orderRevision, targetRevision),
-        eq(documents.outdated, 0)
+        eq(documents.outdated, false)
       )
     )
   if (!doc) {
@@ -211,7 +211,7 @@ export async function generatePo(orderId: string, revision?: number) {
       kind: "purchase_order",
       name: `${order.data.reference}.pdf`,
       orderRevision: targetRevision,
-      outdated: targetRevision === order.revision ? 0 : 1,
+      outdated: targetRevision !== order.revision,
       uploadedBy: "system"
     },
     bytes
@@ -310,7 +310,7 @@ export async function generateInvoice(orderId: string, revision: number) {
     }
     await tx
       .update(documents)
-      .set({ outdated: 1 })
+      .set({ outdated: true })
       .where(and(eq(documents.orderId, orderId), eq(documents.kind, "invoice")))
     await tx.insert(documents).values({
       id,

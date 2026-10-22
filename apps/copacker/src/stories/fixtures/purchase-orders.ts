@@ -9,8 +9,8 @@ import type { orderRevisions } from "@/db/schema"
 import type { contacts, documents, orders, shipments, suppliers } from "@/db/schema"
 import type { CatalogProduct } from "@/lib/api"
 import type { QuantityRules } from "@/lib/catalog-pricing"
+import type { ImportProposal } from "@/lib/import-proposal"
 import type { ForwarderAddress } from "@/server/forwarders"
-import type { ImportProposal } from "@/server/import-proposal"
 import type { ListedOrder } from "@/server/supplier-workspace"
 import { workspaces } from "../workspace"
 import { daysAgo, deliveryId, orderData, orderItem, supplierId } from "./orders"
@@ -193,7 +193,7 @@ export function documentRecord(overrides: Partial<Document> = {}): Document {
     bytes: 48_000,
     orderRevision: 1,
     shipmentRevision: null,
-    outdated: 0,
+    outdated: false,
     uploadedBy: "user_story",
     createdAt: daysAgo(10),
     ...overrides

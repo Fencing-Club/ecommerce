@@ -8,19 +8,19 @@ import { useFormatter, useLocale, useTranslations } from "use-intl"
 import type { Comparison } from "@/lib/date-range"
 import type { SeriesStep } from "@/lib/series"
 import { buckets, seriesStep } from "@/lib/series"
+import type { Store } from "@/lib/stores"
 import { cn } from "@/lib/utils"
 import type { DailySales } from "@/server/overview-sales"
 import type { SourceDay } from "@/server/overview-sales"
-import type { SalesSource } from "@/server/sales-orders"
 import { vars } from "@/styles/theme.css"
 
 // Each source keeps its color everywhere: Amazon first, then Shopify, then eBay.
-export const sourceSeries: Record<SalesSource, { label: string; color: string }> = {
+export const sourceSeries: Record<Store, { label: string; color: string }> = {
   amazon: { label: "Amazon", color: vars.color.chart1 },
   shopify: { label: "Shopify", color: vars.color.chart2 },
   ebay: { label: "eBay", color: vars.color.chart3 }
 }
-const sourceOrder: SalesSource[] = ["amazon", "shopify", "ebay"]
+const sourceOrder: Store[] = ["amazon", "shopify", "ebay"]
 
 // Every chart's axes, recessive: no rules or tick marks, small muted labels.
 export const chartAxis = {
@@ -112,7 +112,7 @@ const pointTitle = (first: string, step: SeriesStep, dates: Dates, weekOf: (date
 function points(
   daily: DailySales[],
   previous: DailySales[] | null,
-  sources: SalesSource[],
+  sources: Store[],
   metric: Metric,
   step: SeriesStep,
   dates: Dates,
@@ -196,7 +196,7 @@ export function SalesTrend({
   previous: DailySales[] | null
   // What the period is compared with, for the dashed lines' names.
   comparison: Comparison
-  sources: SalesSource[]
+  sources: Store[]
   currency: string | null
 }) {
   const t = useTranslations("overview.salesChart")

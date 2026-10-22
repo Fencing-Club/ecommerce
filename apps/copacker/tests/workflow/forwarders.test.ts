@@ -207,7 +207,7 @@ describe("leg holders shipping the goods on", () => {
 
   it("ships independently of the PO invoice", async () => {
     const id = await released()
-    await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "invoice"))
+    await database.update(tables.documents).set({ outdated: true }).where(eq(tables.documents.kind, "invoice"))
     signedIn.actor = supplier
     expect(await (await post("shipment.ship", { id })).json()).toEqual({ ok: true })
   })

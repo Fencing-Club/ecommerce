@@ -2,11 +2,11 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { jobs, poImports } from "@/db/schema"
+import { importProposalSchema } from "@/lib/import-proposal"
 import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
-import { importProposalSchema } from "@/server/import-proposal"
 import { withJobWake } from "@/server/job-delivery"
 import { jobRow } from "@/server/job-payloads"
 
@@ -53,7 +53,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     }
     await tx
       .update(poImports)
-      .set({ status: "cancelled", revision: row.revision + 1, updatedAt: new Date() })
+      .set({ status: "cancelled", revision: row.revision + 1 })
       .where(eq(poImports.id, id))
     return true
   })
@@ -113,7 +113,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
   const updated = await db()
     .update(poImports)
-    .set({ proposal: input.data.proposal, revision: input.data.revision + 1, updatedAt: new Date() })
+    .set({ proposal: input.data.proposal, revision: input.data.revision + 1 })
     .where(
       and(
         eq(poImports.id, id),
@@ -149,7 +149,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
         .update(poImports)
         // A buyer retry is a new attempt and should pick up a corrected production prompt. Worker retries within
         // that attempt still use the version pinned by importJob.
-        .set({ status: "queued", error: null, promptVersion: null, revision, updatedAt: new Date() })
+        .set({ status: "queued", error: null, promptVersion: null, revision })
         .where(eq(poImports.id, id))
       await tx.insert(jobs).values(jobRow("import", `import:${id}:${revision}`, { id, revision }))
       return { id, revision, status: "queued" }

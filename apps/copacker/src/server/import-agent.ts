@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { importProposalSchema, validateProposal } from "./import-proposal"
+import { importProposalSchema, validateProposal } from "@/lib/import-proposal"
 import type { ImportObservation } from "./import-trace"
 import { observeImportOperation } from "./import-trace"
 import { openRouterConfig } from "./integration-config"
