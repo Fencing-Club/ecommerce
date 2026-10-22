@@ -1,7 +1,7 @@
 import { AmazonAuthorizationError, type AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
+import { amazonMarketplaces } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { z } from "zod"
 import { amazonFor, ebayFor, shopifyFor } from "./connections"
-import { amazonMarketplaces } from "./overview-sales"
 
 // What Settings shows about each connected account. Read live, kept for a few hours, and never enough to stop
 // Settings loading: each falls back to what Copacker already stores.

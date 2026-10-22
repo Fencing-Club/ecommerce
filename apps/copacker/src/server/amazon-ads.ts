@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto"
+import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "@repo/copacker-marketplaces/amazon-ads"
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonAdsConnections, amazonAdsDays, connections, jobs, analyticsEvidence } from "@/db/schema"
 import { addDays, zonedDay } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
-import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "./amazon-ads-client"
+import { amazonAdsApp } from "./connections"
 import { syncExchangeRates } from "./exchange-rates"
 import { PollAgain } from "./job-handlers"
 import { decrypt, encrypt } from "./security"
@@ -120,7 +121,11 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
     throw new Error("Amazon Ads profile changed")
   }
   try {
-    const token = await adsToken({
+    const app = amazonAdsApp()
+    if (!app) {
+      throw new Error("Amazon Ads application is not configured")
+    }
+    const token = await adsToken(app, {
       grant_type: "refresh_token",
       refresh_token: decrypt(grant.encryptedToken, `${orgId}:amazon-ads`)
     })
@@ -130,7 +135,7 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
         .set({ encryptedToken: encrypt(token.refresh_token, `${orgId}:amazon-ads`) })
         .where(scope)
     }
-    const ads = new AmazonAds(token.access_token)
+    const ads = new AmazonAds(app, token.access_token)
     if (!input.reportId) {
       const reportId = await ads.createReport(profile, from, to, input.productDetail)
       throw new PollAgain("Amazon Ads report requested", {

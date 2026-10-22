@@ -1,20 +1,9 @@
-import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Mail, UserPlus } from "lucide-react"
 import { useId, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError } from "@/components/form-feedback"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,13 +20,12 @@ import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/f
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
-import { useErrorMessage } from "@/hooks/use-error-text"
+import { useAction } from "@/hooks/use-action"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { Access } from "@/lib/access"
 import type { Area } from "@/lib/access"
 import type { Role } from "@/lib/access"
 import { highestLevel } from "@/lib/access"
-import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
 import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
@@ -414,30 +402,6 @@ function ChangeAccessForm({
   )
 }
 
-// Runs a row's action and refreshes the page, keeping its error for the row to show.
-function useRowAction() {
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-  async function perform(action: string, data: Record<string, unknown>) {
-    setPending(true)
-    setError("")
-    try {
-      await run({ action, data }).unwrap()
-      router.invalidate()
-      return true
-    } catch (failure) {
-      setError(errorMessage(failure))
-      return false
-    } finally {
-      setPending(false)
-    }
-  }
-  return { perform, pending, error }
-}
-
 function MemberRow({
   member,
   you,
@@ -459,7 +423,6 @@ function MemberRow({
   kind: string
 }) {
   const t = useTranslations("settings.team")
-  const { perform, pending, error } = useRowAction()
   const [open, setOpen] = useState<"access" | "remove" | "transfer" | null>(null)
   const initials = member.name
     .split(/[\s@.]+/)
@@ -507,30 +470,16 @@ function MemberRow({
       )}
       {admin && !manageable && !transferable && <span aria-hidden className="size-7 shrink-0" />}
       {transferable && (
-        <AlertDialog open={open === "transfer"} onOpenChange={(next) => setOpen(next ? "transfer" : null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("transferTitle", { name: member.name })}</AlertDialogTitle>
-              <AlertDialogDescription>{t("transferDescription", { workspace })}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <FormError message={error} />
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={pending}
-                aria-busy={pending}
-                onClick={async () => {
-                  if (await perform("team.transfer", { userId: member.userId })) {
-                    setOpen(null)
-                  }
-                }}
-              >
-                {pending && <Spinner data-icon="inline-start" />}
-                {t("transferOwnership")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          open={open === "transfer"}
+          onOpenChange={(next) => setOpen(next ? "transfer" : null)}
+          title={t("transferTitle", { name: member.name })}
+          description={t("transferDescription", { workspace })}
+          confirmLabel={t("transferOwnership")}
+          tone="default"
+          action="team.transfer"
+          data={{ userId: member.userId }}
+        />
       )}
       {manageable && (
         <>
@@ -543,31 +492,16 @@ function MemberRow({
             open={open === "access"}
             onOpenChange={(next) => setOpen(next ? "access" : null)}
           />
-          <AlertDialog open={open === "remove"} onOpenChange={(next) => setOpen(next ? "remove" : null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("removeTitle", { name: member.name })}</AlertDialogTitle>
-                <AlertDialogDescription>{t("removeDescription", { workspace })}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <FormError message={error} />
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  disabled={pending}
-                  aria-busy={pending}
-                  onClick={async () => {
-                    if (await perform("team.remove", { userId: member.userId })) {
-                      setOpen(null)
-                    }
-                  }}
-                >
-                  {pending && <Spinner data-icon="inline-start" />}
-                  {t("remove")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={open === "remove"}
+            onOpenChange={(next) => setOpen(next ? "remove" : null)}
+            title={t("removeTitle", { name: member.name })}
+            description={t("removeDescription", { workspace })}
+            confirmLabel={t("remove")}
+            tone="destructive"
+            action="team.remove"
+            data={{ userId: member.userId }}
+          />
         </>
       )}
     </li>
@@ -588,7 +522,11 @@ function InvitationRow({
   onSent: (email: string) => void
 }) {
   const t = useTranslations("settings.team")
-  const { perform, pending, error } = useRowAction()
+  const resend = useAction("team.resend", { onSuccess: () => onSent(invitation.email) })
+  const cancel = useAction("team.cancel")
+  const pending = resend.pending || cancel.pending
+  // The row shows what went wrong with the last of its actions.
+  const error = resend.error || cancel.error
   const [changing, setChanging] = useState(false)
   let status = invitation.expired ? t("invitationExpired") : t("invited", { expires: invitation.expires })
   if (sent) {
@@ -633,10 +571,9 @@ function InvitationRow({
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={() => setChanging(true)}>{t("changeAccess")}</DropdownMenuItem>
               <DropdownMenuItem
-                onClick={async () => {
-                  if (await perform("team.resend", { email: invitation.email })) {
-                    onSent(invitation.email)
-                  }
+                onClick={() => {
+                  cancel.reset()
+                  void resend.run({ email: invitation.email })
                 }}
               >
                 {t("sendAgain")}
@@ -644,7 +581,10 @@ function InvitationRow({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onClick={() => void perform("team.cancel", { email: invitation.email })}
+                onClick={() => {
+                  resend.reset()
+                  void cancel.run({ email: invitation.email })
+                }}
               >
                 {t("cancelInvitation")}
               </DropdownMenuItem>

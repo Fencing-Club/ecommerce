@@ -1,3 +1,4 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -193,7 +194,7 @@ async function channelStockouts(
     orgId,
     externalAccountId: account.externalId,
     pool: "fba",
-    scope: "ATVPDKIKX0DER",
+    scope: usMarketplaceId,
     itemKeys: [...new Set(catalog.flatMap((row) => (row.buyerSku ? [row.buyerSku] : [])))],
     ...range,
     saleDays: sales?.saleDays,

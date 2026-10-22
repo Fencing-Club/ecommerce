@@ -1,8 +1,8 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, isNull, lt, gt, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonProductMappings, connections } from "@/db/schema"
-import { fbaReportMarketplace } from "./amazon-report-sync"
 import { analyticsSnapshot } from "./analytics-snapshot"
 import { hasInventoryProduct } from "./inventory-product"
 
@@ -104,7 +104,7 @@ export async function saveAmazonProductMapping(
     const scope = and(
       eq(amazonProductMappings.orgId, orgId),
       eq(amazonProductMappings.externalAccountId, account.externalId),
-      eq(amazonProductMappings.marketplaceId, fbaReportMarketplace)
+      eq(amazonProductMappings.marketplaceId, usMarketplaceId)
     )
     if (!(await hasInventoryProduct(tx, orgId, input.shopifyDomain, input.variantId))) {
       return { ok: false as const, reason: "target_not_in_workspace" }
@@ -151,7 +151,7 @@ export async function saveAmazonProductMapping(
         validTo: new Date(input.validTo),
         orgId,
         externalAccountId: account.externalId,
-        marketplaceId: fbaReportMarketplace,
+        marketplaceId: usMarketplaceId,
         createdBy: userId
       })
       .returning()
@@ -176,7 +176,7 @@ export async function listAmazonProductMappings(orgId: string, input: { page: nu
           and(
             eq(amazonProductMappings.orgId, orgId),
             eq(amazonProductMappings.externalAccountId, account.externalId),
-            eq(amazonProductMappings.marketplaceId, fbaReportMarketplace)
+            eq(amazonProductMappings.marketplaceId, usMarketplaceId)
           )
         )
         .orderBy(amazonProductMappings.validFrom, amazonProductMappings.id)
@@ -203,7 +203,7 @@ export async function getAmazonProductMapping(orgId: string, id: string) {
       and(
         eq(amazonProductMappings.orgId, orgId),
         eq(amazonProductMappings.id, id),
-        eq(amazonProductMappings.marketplaceId, fbaReportMarketplace)
+        eq(amazonProductMappings.marketplaceId, usMarketplaceId)
       )
     )
   return row?.mapping
@@ -227,7 +227,7 @@ export async function retireAmazonProductMapping(orgId: string, userId: string, 
           eq(amazonProductMappings.id, id),
           eq(amazonProductMappings.orgId, orgId),
           eq(amazonProductMappings.externalAccountId, account.externalId),
-          eq(amazonProductMappings.marketplaceId, fbaReportMarketplace)
+          eq(amazonProductMappings.marketplaceId, usMarketplaceId)
         )
       )
     if (!existing) {

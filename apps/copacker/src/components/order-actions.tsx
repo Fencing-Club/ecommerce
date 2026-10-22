@@ -3,17 +3,7 @@ import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "luci
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { FormError } from "@/components/form-feedback"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,100 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
 
-// Opened from the PO's actions menu.
-type Controlled = { id: string; reference: string; open: boolean; onOpenChange: (open: boolean) => void }
-
-export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
-  const t = useTranslations("orders.actions")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-
-  async function close() {
-    setPending(true)
-    setError("")
-    try {
-      await run({ action: "order.close", data: { id } }).unwrap()
-      setOpen(false)
-      router.invalidate()
-    } catch (e) {
-      setError(errorMessage(e, t("closeFailed", { reference })))
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("closeTitle", { reference })}</AlertDialogTitle>
-          <AlertDialogDescription>{t("closeDescription")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <FormError message={error} />
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
-          <AlertDialogAction disabled={pending} aria-busy={pending} onClick={close}>
-            {pending && <Spinner data-icon="inline-start" />}
-            {t("close")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
-// Deletes a draft PO the supplier hasn't seen, then returns to the list.
-export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
-  const t = useTranslations("orders.actions")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-
-  async function remove() {
-    setPending(true)
-    setError("")
-    try {
-      const result = await run({ action: "order.delete", data: { id } }).unwrap()
-      await router.navigate({ href: result.redirect ?? "/orders" })
-      await router.invalidate({ sync: true })
-      setOpen(false)
-    } catch (e) {
-      setError(errorMessage(e, t("deleteFailed", { reference })))
-      setPending(false)
-    }
-  }
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("deleteTitle", { reference })}</AlertDialogTitle>
-          <AlertDialogDescription>{t("deleteDescription")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <FormError message={error} />
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending} aria-busy={pending} onClick={remove}>
-            {pending && <Spinner data-icon="inline-start" />}
-            {t("deleteDraft")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
-// A PO's less common actions: edit, downloads, closing and deleting.
+// A PO's less common actions: edit, downloads, closing and deleting. Deleting a draft returns to the list.
 export function OrderMenu({
   id,
   reference,
@@ -184,8 +83,32 @@ export function OrderMenu({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      {closable && <ClosePurchaseOrder id={id} reference={reference} open={closing} onOpenChange={setClosing} />}
-      {draft && <DeleteDraftOrder id={id} reference={reference} open={deleting} onOpenChange={setDeleting} />}
+      {closable && (
+        <ConfirmDialog
+          open={closing}
+          onOpenChange={setClosing}
+          title={t("closeTitle", { reference })}
+          description={t("closeDescription")}
+          confirmLabel={t("close")}
+          tone="default"
+          action="order.close"
+          data={{ id }}
+          fallback={t("closeFailed", { reference })}
+        />
+      )}
+      {draft && (
+        <ConfirmDialog
+          open={deleting}
+          onOpenChange={setDeleting}
+          title={t("deleteTitle", { reference })}
+          description={t("deleteDescription")}
+          confirmLabel={t("deleteDraft")}
+          tone="destructive"
+          action="order.delete"
+          data={{ id }}
+          fallback={t("deleteFailed", { reference })}
+        />
+      )}
     </>
   )
 }

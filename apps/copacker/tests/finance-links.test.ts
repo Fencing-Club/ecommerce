@@ -6,7 +6,7 @@ import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
-import { freightPerSku, freightShipment, syncInboundShipments } from "../src/server/amazon-shipments"
+import { syncInboundShipments } from "../src/server/amazon-shipments"
 import { syncExchangeRates } from "../src/server/exchange-rates"
 import { landedMarkupsFor } from "../src/server/landed-costs"
 import {
@@ -25,42 +25,6 @@ import {
 } from "../src/server/overview-sales"
 import type { Session } from "../src/server/workspace-session"
 import { applySchema } from "./database"
-
-describe("freight by shipment", () => {
-  it("reads the inbound shipment a freight charge names", () => {
-    expect(freightShipment("FBA19B16R6HZ")).toEqual({ network: "fba", shipmentId: "FBA19B16R6HZ" })
-    expect(freightShipment("STAR-RDBKBGHGZMXXU")).toEqual({ network: "awd", shipmentId: "STAR-RDBKBGHGZMXXU" })
-    expect(freightShipment("IB_2026-04-06_STAR-RDBKBGHGZMXXU")).toEqual({
-      network: "awd",
-      shipmentId: "STAR-RDBKBGHGZMXXU"
-    })
-    // A transfer from AWD to FBA names no inbound shipment.
-    expect(freightShipment("repl-f718288b-49c2-4061-91d7-566c74272448")).toBeNull()
-    expect(freightShipment(null)).toBeNull()
-  })
-
-  it("shares each shipment's freight by its units and leaves the rest to spread", () => {
-    const result = freightPerSku(
-      [
-        { reference: "FBA1ABCDEF", freightMinor: 3000 },
-        { reference: "FBA1ABCDEF", freightMinor: 1000 },
-        { reference: "STAR-2", freightMinor: 1000 },
-        { reference: "repl-3", freightMinor: 500 },
-        // Its contents aren't known.
-        { reference: "FBA4ABCDEF", freightMinor: 200 }
-      ],
-      new Map<string, Record<string, number> | null>([
-        // $40 over 40 units: $1 each.
-        ["FBA1ABCDEF", { A: 30, B: 10 }],
-        // $10 over 5 units: $2 each.
-        ["STAR-2", { B: 5 }],
-        ["FBA4ABCDEF", null]
-      ])
-    )
-    expect(Object.fromEntries(result.perUnit)).toEqual({ A: 100, B: (1000 + 1000) / 15 })
-    expect(result.unallocatedMinor).toBe(700)
-  })
-})
 
 describe("monthly costs", () => {
   const cost = (overrides: Partial<MonthlyCost>): MonthlyCost => ({

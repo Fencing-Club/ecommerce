@@ -106,8 +106,7 @@
     "shopifyEffect": "Copacker smette di sincronizzare prodotti, giacenze, vendite e costi con {account}. Gli ordini di acquisto restano invariati.",
     "amazonEffect": "Copacker smette di leggere vendite e giacenze da {account} e non può creare spedizioni FBA o AWD. Gli ordini di acquisto restano invariati.",
     "ebayEffect": "Copacker smette di leggere le vendite da {account}. Gli ordini di acquisto restano invariati.",
-    "failed": "Impossibile scollegare {name}",
-    "cancel": "Annulla"
+    "failed": "Impossibile scollegare {name}"
   },
   "fileDropzone": {
     "wrongType": "{type, select, pdf {Scegli un PDF} csv {Scegli un CSV} other {Scegli un file supportato}}",

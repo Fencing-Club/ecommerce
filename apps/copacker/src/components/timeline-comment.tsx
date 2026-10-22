@@ -1,5 +1,5 @@
 import { CircleAlert, Lock, Users } from "lucide-react"
-import { useId, useRef } from "react"
+import { useId } from "react"
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
@@ -32,21 +32,13 @@ export function TimelineComment({
   const hintId = useId(),
     errorId = useId()
   const messageText = useMessageText()
-  const posted = useRef<PostedComment | null>(null)
   const t = useTranslations("orders.timeline.comment")
-  const { form, submit } = useActionForm<typeof schema>({
+  const { form, submit } = useActionForm({
     schema,
     action: "order.comment",
     defaultValues: { message: "", visibility: "internal" },
-    toPayload: (values) => {
-      posted.current = values
-      return { orderId, ...values }
-    },
-    onSuccess: () => {
-      if (posted.current) {
-        onPosted?.(posted.current)
-      }
-    }
+    toPayload: (values) => ({ orderId, ...values }),
+    onSuccess: (_, comment) => onPosted?.(comment)
   })
   const { field } = useController({ control: form.control, name: "message" })
   const { field: visibility } = useController({ control: form.control, name: "visibility" })

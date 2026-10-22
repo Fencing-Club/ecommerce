@@ -86,7 +86,6 @@
       "trigger": "Retirer",
       "title": "Retirer {name} ?",
       "description": "Les nouveaux bons de commande ne pourront plus lui être expédiés. Les bons de commande déjà envoyés conservent leur adresse.",
-      "cancel": "Annuler",
       "confirm": "Retirer",
       "failed": "Impossible de retirer {name}. Réessayez."
     }

@@ -1,13 +1,9 @@
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { fbaShipmentsReportType, parseFbaShipments } from "@repo/copacker-marketplaces/fulfillment-shipments"
 import { and, eq, gte, lt, inArray, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { amazonShipmentReports, amazonFulfillmentShipments, amazonShipmentRequests, connections } from "@/db/schema"
-import {
-  type AmazonReportInput,
-  fbaReportMarketplace,
-  monthlyReportStatus,
-  syncMonthlyAmazonReport
-} from "./amazon-report-sync"
+import { type AmazonReportInput, monthlyReportStatus, syncMonthlyAmazonReport } from "./amazon-report-sync"
 
 export async function syncAmazonFulfillmentShipments(
   input: AmazonReportInput,
@@ -16,7 +12,7 @@ export async function syncAmazonFulfillmentShipments(
 ) {
   const { orgId, externalAccountId } = input
   const startedAt = Date.now()
-  const marketplaceId = fbaReportMarketplace
+  const marketplaceId = usMarketplaceId
   const reports = await db()
     .select()
     .from(amazonShipmentReports)
@@ -175,7 +171,7 @@ export async function amazonFulfillmentShipmentsStatus(
       and(
         eq(amazonShipmentReports.orgId, orgId),
         eq(amazonShipmentReports.externalAccountId, externalAccountId),
-        eq(amazonShipmentReports.marketplaceId, fbaReportMarketplace)
+        eq(amazonShipmentReports.marketplaceId, usMarketplaceId)
       )
     )
   return monthlyReportStatus(reports, now)

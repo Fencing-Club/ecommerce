@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAction } from "@/hooks/use-action"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
@@ -161,39 +162,34 @@ export function InventoryLocations() {
 // Ticks are kept in the dialog until Save, which saves each location whose tick changed.
 function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]; snapshotId: string }) {
   const t = useTranslations("inventory.locations")
-  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [ticked, setTicked] = useState(new Set<string>())
-  const [error, setError] = useState<string>()
-  const [save, saving] = locationsApi.useSaveInventoryLocationMutation()
+  const [saveLocation] = locationsApi.useSaveInventoryLocationMutation()
   const saved = new Set(
     locations.filter((location) => location.classification === "merchant").map((location) => location.locationId)
   )
   const changed = locations.filter((location) => ticked.has(location.locationId) !== saved.has(location.locationId))
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setError(undefined)
-    try {
+  // Each changed location saves through its own endpoint, whose cache tags refresh the settings and restock.
+  const save = useAction(
+    async () => {
       for (const location of changed) {
-        await save({
+        await saveLocation({
           locationId: location.locationId,
           classification: ticked.has(location.locationId) ? "merchant" : leftOut(location.kind),
           snapshotId,
           expectedRevision: location.revision
         }).unwrap()
       }
-      setOpen(false)
-    } catch (saveError) {
-      setError(errorMessage(saveError, t("saveFailed")))
-    }
-  }
+    },
+    { fallback: t("saveFailed"), onSuccess: () => setOpen(false) }
+  )
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         if (next) {
           setTicked(saved)
-          setError(undefined)
+          save.reset()
         }
         setOpen(next)
       }}
@@ -204,7 +200,13 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
         {t("edit")}
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={submit} className="flex flex-col gap-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save.run()
+          }}
+          className="flex flex-col gap-4"
+        >
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>{t("description")}</DialogDescription>
@@ -232,11 +234,11 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
                 />
               ))}
           </div>
-          <FormError message={error} />
+          <FormError message={save.error} />
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
-            <Button type="submit" disabled={saving.isLoading || changed.length === 0}>
-              {saving.isLoading ? t("saving") : t("save")}
+            <Button type="submit" disabled={save.pending || changed.length === 0}>
+              {save.pending ? t("saving") : t("save")}
             </Button>
           </DialogFooter>
         </form>

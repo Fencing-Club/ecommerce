@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, isNull } from "drizzle-orm"
 import type { db } from "@/db"
 import {
@@ -239,7 +240,7 @@ export async function resolveSaleEvidence(tx: Reader, orgId: string, input: Depl
       )
     }
     if (
-      sale.salesChannel.marketplaceId !== "ATVPDKIKX0DER" ||
+      sale.salesChannel.marketplaceId !== usMarketplaceId ||
       input.location !== `amazon:${order.externalAccountId}:US:FBA`
     ) {
       reject("location_unresolved", "Only explicitly identified US FBA stock is supported.")
