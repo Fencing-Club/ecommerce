@@ -25,7 +25,9 @@ export function useActionSettle(navigation: ActionNavigation = "router") {
       finishSignIn(result.redirect)
       return false
     }
-    // The next page loads its data fresh, so it isn't refreshed again.
+    // The next page loads its data fresh, so it isn't refreshed again. The action may have changed pages visited
+    // before, so their cached data goes first rather than showing as it was.
+    router.clearCache()
     await router.navigate({ href: result.redirect })
     return true
   }

@@ -3,15 +3,18 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { profiles } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { locales } from "@/i18n/locales"
 import { stores } from "@/lib/stores"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
+import { requireAdmin } from "@/server/authorization"
 import { connectAmazonSelfAuthorized, disconnect } from "@/server/connections"
 import { contactSchema, createContact, deleteContact, updateContact } from "@/server/contacts"
 import { startFirstSync } from "@/server/first-sync"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
 import { saveProfile } from "@/server/profile"
 import { saveSupplierProfile, supplierContactSchema } from "@/server/suppliers"
+import type { Session } from "@/server/workspace-session"
 import {
   excludedTagsSchema,
   restockDefaultsSchema,
@@ -25,6 +28,13 @@ import { defineAction, fields, type Guard } from "./define"
 // Settings: the person's own profile, and what admins keep for the workspace (its settings, addresses, store
 // connections and monthly costs). See permissions.md.
 const admins: Guard = { admin: true }
+// A setting only one kind of workspace has: its admins, and another kind is told which workspace it needs.
+const adminsOf = (kind: "buyer" | "supplier") => (s: Session) => {
+  requireAdmin(s)
+  if (s.org.kind !== kind) {
+    throw new LocalizedError(kind === "buyer" ? "buyerWorkspaceRequired" : "supplierWorkspaceRequired")
+  }
+}
 const record = z.object({ id: z.uuid() })
 const ok = { ok: true } as const
 
@@ -58,7 +68,7 @@ export const settingsActions = {
     }
   }),
   "workspace.excludedShopifyTags": defineAction({
-    guard: { admin: true, kind: "buyer" },
+    guard: adminsOf("buyer"),
     input: excludedTagsSchema,
     run: async ({ tags }, s) => {
       await setExcludedShopifyTags(s.org.id, tags)
@@ -67,7 +77,7 @@ export const settingsActions = {
   }),
   // The supplier's own contact details, which its buyers see.
   "supplier.profile": defineAction({
-    guard: { admin: true, kind: "supplier" },
+    guard: adminsOf("supplier"),
     input: supplierContactSchema,
     run: async (input, s) => {
       await saveSupplierProfile(s.org.id, input)

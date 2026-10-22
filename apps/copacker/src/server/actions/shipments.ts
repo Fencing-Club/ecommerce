@@ -40,17 +40,17 @@ export const shipmentActions = {
   }),
   "shipment.save": defineAction({
     guard: editsShipments,
-    input: z.object({ id: z.uuid(), revision, orderRevision: revision, draft: z.unknown() }),
+    input: z.object({ id: z.uuid(), revision, orderRevision: revision, draft: z.unknown().optional() }),
     run: ({ id, revision, orderRevision, draft }, s) => savePacking(s, id, draft, revision, orderRevision)
   }),
   "shipment.check": defineAction({
     guard: editsShipments,
-    input: z.object({ id: z.uuid(), packing: z.unknown() }),
+    input: z.object({ id: z.uuid(), packing: z.unknown().optional() }),
     run: ({ id, packing }, s) => checkPacking(s, id, packing)
   }),
   "shipment.submit": defineAction({
     guard: editsShipments,
-    input: z.object({ id: z.uuid(), revision, packing: z.unknown() }),
+    input: z.object({ id: z.uuid(), revision, packing: z.unknown().optional() }),
     run: ({ id, revision, packing }, s) => submitPacking(s, id, packing, revision)
   }),
   // Approving a supplier's invoice accepts its prices.
@@ -88,7 +88,7 @@ export const shipmentActions = {
   }),
   "shipment.linkExisting": defineAction({
     guard: editsShipments,
-    input: revised.extend({ amazonShipmentId: z.unknown() }),
+    input: revised.extend({ amazonShipmentId: z.unknown().optional() }),
     run: ({ id, revision, amazonShipmentId }, s) => linkExistingAwd(s, id, revision, amazonShipmentId)
   }),
   "shipment.retry": defineAction({
