@@ -76,6 +76,10 @@ automatically. `schema show account.show` and `schema show workspace.list` work 
 
 ## Results and recovery
 
+Protected credentials include their API origin. Linux/macOS keychain entries are scoped to the canonical configuration
+directory as well as the profile, matching file-lock scope. Credentials without origin binding require a new login;
+the CLI does not reuse old global keychain entries. Native Linux/macOS keychain acceptance remains a release check.
+
 `--json` writes exactly one success/error envelope to stdout. Progress and execution keys go to stderr. Human detail
 output includes nested field destinations. CSV stdout requires the operation's declared tabular projection. Artifact
 `--file-format` is independent of stdout `--format`. `--output` writes a temporary sibling, verifies artifact bytes and

@@ -13,9 +13,10 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
   Call `setupOperations(accessSchema)` with the application's existing access schema; page grants are not copied here.
   Credential result schemas reject secret fields, and credential administration has no MCP tool name.
 
-The registry is a framework, not a deployed catalog. Ten setup operations have executable schemas; their application
-handlers and the remaining domain schemas from [the spec](../../../apps/copacker/docs/specs/cli/operations/README.md)
-still need implementation and registration. The credential handlers must enforce current interactive-admin authority,
+The registry is a framework, not a deployed catalog. Ten setup and four connection operations have executable schemas.
+The application registers account, workspace, discovery and connection handlers. Credential handlers and the remaining
+domain schemas from [the spec](../../../apps/copacker/docs/specs/cli/operations/README.md) still need implementation and
+registration. The credential handlers must enforce current interactive-admin authority,
 workspace-supported scopes, the one-hour/90-day expiry window, rotation state and protected delivery transactions;
 validating a schema alone grants no authority and creates no credential.
 The CLI vocabulary includes the planned initial surface but does not assert server availability. Publish only
