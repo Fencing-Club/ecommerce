@@ -291,7 +291,7 @@ export const buyerOverview: Overview = {
       tone: "info",
       title: "1 draft purchase order",
       detail: "Not sent yet",
-      href: "/orders?status=draft",
+      href: "/orders?view=draft",
       action: "Open"
     }
   ]

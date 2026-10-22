@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { expandCartonGroups, groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { palletColumns } from "@/lib/pallet-import"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
 
@@ -235,7 +235,7 @@ export const Loading = meta.story({
   play: async () => {
     const dialog = await upload(valid())
     await userEvent.click(dialog.getByRole("button", { name: "Import pallets" }))
-    const loading = within(await screen.findByRole("dialog", { name: "Import pallets" }))
+    const loading = await shownDialog("Import pallets")
     await expect(loading.getByRole("status")).toHaveTextContent("Importing pallets…")
     await expect(loading.getByRole("button", { name: "Importing…" })).toBeDisabled()
   }

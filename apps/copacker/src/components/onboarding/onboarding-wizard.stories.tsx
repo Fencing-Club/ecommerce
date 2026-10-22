@@ -1,23 +1,15 @@
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import {
-  actionRecorder,
-  blankWizard,
-  errors,
-  failWith,
-  invitation,
-  invitationToken,
-  redirectTo,
-  savedProfile,
-  skipAnimations
-} from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { blankWizard, errors, invitation, invitationToken, savedProfile } from "@/stories/fixtures/auth"
+import { chooseOption } from "@/stories/play"
 import { OnboardingWizard } from "./onboarding-wizard"
 import { SignedInAs } from "./signed-in-as"
 
 type Canvas = ReturnType<typeof within>
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 const supplierInvitation = invitation("supplier")
 
 async function continueTo(canvas: Canvas, title: string) {
@@ -28,8 +20,7 @@ async function continueTo(canvas: Canvas, title: string) {
 }
 
 async function choose(canvas: Canvas, field: RegExp, option: string) {
-  await userEvent.click(canvas.getByRole("combobox", { name: field }))
-  await userEvent.click(await screen.findByRole("option", { name: option }))
+  await chooseOption(canvas.getByRole("combobox", { name: field }), option)
 }
 
 async function fillAbout(canvas: Canvas) {
@@ -62,8 +53,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen" },
   args: newAccount,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/overview")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/overview")))
   }
 })
 
@@ -122,14 +112,14 @@ export const NewBuyer = meta.story({
     // Street, city, state and postal code are still empty.
     await expect(await canvas.findAllByText("Fill in this field")).toHaveLength(4)
     await expect(canvas.getByLabelText(/Street address/)).toHaveFocus()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
     await fillStreet(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     // The new workspace's page loads fresh on the way there, so nothing is refreshed again.
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
-    await expect(actions.sent).toHaveLength(1)
-    await expect(actions.sent[0]).toMatchObject({
+    await expect(sent).toHaveLength(1)
+    await expect(sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: {
         person: { firstName: "Alex", lastName: "Rivera", position: "Operations manager" },
@@ -166,7 +156,7 @@ export const SkipAddress = meta.story({
     await continueTo(canvas, "Warehouse address")
     await userEvent.click(canvas.getByRole("button", { name: "Skip for now" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent[0]).toMatchObject({
+    await expect(sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: { kind: "forwarder", company: { name: "Bayline Freight" }, address: null, invitation: null }
     })
@@ -194,11 +184,11 @@ export const Supplier = meta.story({
       await canvas.findByText("Add a pickup phone number. Amazon needs it to schedule pickup.")
     ).toBeVisible()
     await expect(canvas.getByLabelText(/Phone number/)).toHaveFocus()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
     await userEvent.type(canvas.getByLabelText(/Phone number/), "+1 425 260 2501")
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toMatchObject({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toMatchObject({
       kind: "supplier",
       company: { name: "Lotus Manufacturing", phone: "+86 188 6161 3263" },
       address: { name: "Factory", address: { phoneNumber: "+1 (425) 260-2501" } }
@@ -235,8 +225,8 @@ export const InvitedSupplier = meta.story({
     await expect(canvas.getByLabelText(/Street address/)).toHaveValue("88 Industrial Road")
     await expect(canvas.getByRole("combobox", { name: /Country/ })).toHaveTextContent("China")
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]).toMatchObject({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: {
         kind: "supplier",
@@ -267,7 +257,7 @@ export const JoinTeam = meta.story({
     await choose(canvas, /Position/, "Buyer")
     await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       {
         action: "onboarding.join",
         data: {
@@ -288,13 +278,13 @@ export const ProfileOnly = meta.story({
     finish: { type: "profile", company: savedProfile.company, next: "/orders" }
   },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler())
+    msw.use(recordActions(sent))
   },
   play: async ({ canvas }) => {
     await fillAbout(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       {
         action: "profile.update",
         data: { firstName: "Alex", lastName: "Rivera", position: "Operations manager", company: "Harbor Goods" }
@@ -310,7 +300,7 @@ export const Fails = meta.story({
     initial: blankWizard({ firstName: "Jordan", lastName: "Lee", position: "Buyer" })
   },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.invitationInvalid)))
+    msw.use(recordActions(sent, failWith(errors.invitationInvalid)))
   },
   play: async ({ canvas }) => {
     const join = canvas.getByRole("button", { name: "Join Harbor Goods" })

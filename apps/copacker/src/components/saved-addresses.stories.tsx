@@ -1,16 +1,11 @@
 import { HttpResponse } from "msw/http"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import {
-  type ActionRequest,
-  buyerContacts,
-  recordActions,
-  serverError,
-  shopifyLocations,
-  supplierContacts,
-  warehouseAddress
-} from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { buyerContacts, shopifyLocations, supplierContacts } from "@/stories/fixtures/logistics"
+import { harborWarehouse } from "@/stories/fixtures/parties"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { SavedAddresses } from "./saved-addresses"
 
 const sent: ActionRequest[] = []
@@ -21,7 +16,6 @@ const meta = preview.meta({
   component: SavedAddresses,
   args: { contacts: buyerContacts, locations: shopifyLocations, admin: true },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -54,23 +48,20 @@ export const Add = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("No addresses")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Add address" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add address" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
-    await expect((await within(dialog).findAllByText("Fill in this field")).length).toBeGreaterThan(3)
+    const dialog = await shownDialog("Add address")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
+    await expect((await dialog.findAllByText("Fill in this field")).length).toBeGreaterThan(3)
     await expect(sent).toHaveLength(0)
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Portland warehouse")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Address name" }), "Portland warehouse")
     // A delivery address can be linked to a Shopify location.
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Shopify location" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Portland warehouse" }))
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Contact name" }), "Jordan Lee")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Street address" }), "2400 NW Front Ave")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "City" }), "Portland")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Postal code" }), "97209")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Country" }))
-    await userEvent.click(await screen.findByRole("option", { name: "United States" }))
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "State or province" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Oregon" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Shopify location" }), "Portland warehouse")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Contact name" }), "Jordan Lee")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Street address" }), "2400 NW Front Ave")
+    await userEvent.type(dialog.getByRole("textbox", { name: "City" }), "Portland")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Postal code" }), "97209")
+    await chooseOption(dialog.getByRole("combobox", { name: "Country" }), "United States")
+    await chooseOption(dialog.getByRole("combobox", { name: "State or province" }), "Oregon")
+    await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toEqual({
       action: "contact.create",
@@ -101,16 +92,13 @@ export const Edit = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    const dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await expect(within(dialog).getByRole("combobox", { name: "Shopify location" })).toHaveTextContent(
-      "Portland warehouse"
-    )
+    const dialog = await shownDialog("Edit address")
+    await expect(dialog.getByRole("combobox", { name: "Shopify location" })).toHaveTextContent("Portland warehouse")
     // Unlinking the location sends none.
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Shopify location" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Not linked" }))
-    await userEvent.clear(within(dialog).getByRole("textbox", { name: "Postal code" }))
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Postal code" }), "97210")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Shopify location" }), "Not linked")
+    await userEvent.clear(dialog.getByRole("textbox", { name: "Postal code" }))
+    await userEvent.type(dialog.getByRole("textbox", { name: "Postal code" }), "97210")
+    await userEvent.click(dialog.getByRole("button", { name: "Save changes" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toEqual({
       action: "contact.update",
@@ -119,7 +107,7 @@ export const Edit = meta.story({
         name: "Portland warehouse",
         kind: "delivery",
         shopifyLocationId: null,
-        address: { ...warehouseAddress, postalCode: "97210" }
+        address: { ...harborWarehouse, postalCode: "97210" }
       }
     })
   }
@@ -128,16 +116,14 @@ export const Edit = meta.story({
 export const EditFails = meta.story({
   args: { contacts: [warehouse!] },
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Another address is already named Portland warehouse.")))
+    msw.use(recordActions(sent, failWith("Another address is already named Portland warehouse.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    const dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
-    await expect(
-      await within(dialog).findByText("Another address is already named Portland warehouse.")
-    ).toBeInTheDocument()
+    const dialog = await shownDialog("Edit address")
+    await userEvent.click(dialog.getByRole("button", { name: "Save changes" }))
+    await expect(await dialog.findByText("Another address is already named Portland warehouse.")).toBeInTheDocument()
   }
 })
 
@@ -172,9 +158,9 @@ export const Supplier = meta.story({
     await expect(canvas.queryByText("Pickup address")).toBeNull()
     await expect(canvas.getAllByText("Add a phone number to use it on shipments")).toHaveLength(1)
     await userEvent.click(canvas.getByRole("button", { name: "Add address" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add address" })
-    await expect(within(dialog).queryByRole("combobox", { name: "Shopify location" })).toBeNull()
-    await expect(within(dialog).getByRole("textbox", { name: "Address name" })).toHaveAttribute(
+    const dialog = await shownDialog("Add address")
+    await expect(dialog.queryByRole("combobox", { name: "Shopify location" })).toBeNull()
+    await expect(dialog.getByRole("textbox", { name: "Address name" })).toHaveAttribute(
       "placeholder",
       "Shenzhen warehouse"
     )
@@ -187,10 +173,10 @@ export const SupplierEditPickup = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Factory" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    const dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await expect(within(dialog).queryByRole("combobox", { name: "Shopify location" })).toBeNull()
-    await expect(within(dialog).getByRole("combobox", { name: "Country" })).toHaveTextContent("China")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save changes" }))
+    const dialog = await shownDialog("Edit address")
+    await expect(dialog.queryByRole("combobox", { name: "Shopify location" })).toBeNull()
+    await expect(dialog.getByRole("combobox", { name: "Country" })).toHaveTextContent("China")
+    await userEvent.click(dialog.getByRole("button", { name: "Save changes" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toMatchObject({
       action: "contact.update",
@@ -205,14 +191,14 @@ export const EditCancelled = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    let dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await userEvent.clear(within(dialog).getByRole("textbox", { name: "City" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    let dialog = await shownDialog("Edit address")
+    await userEvent.clear(dialog.getByRole("textbox", { name: "City" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
-    dialog = await screen.findByRole("dialog", { name: "Edit address" })
-    await expect(within(dialog).getByRole("textbox", { name: "City" })).toHaveValue("Portland")
+    dialog = await shownDialog("Edit address")
+    await expect(dialog.getByRole("textbox", { name: "City" })).toHaveValue("Portland")
     await expect(sent).toHaveLength(0)
   }
 })

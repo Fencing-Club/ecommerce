@@ -1,6 +1,7 @@
 import { Info } from "lucide-react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Label } from "./label"
@@ -36,12 +37,12 @@ export const Default = meta.story({
     const trigger = canvas.getByRole("button", { name: "Carton size" })
     await expect(trigger).toHaveAttribute("aria-expanded", "false")
     await userEvent.click(trigger)
-    const popover = await screen.findByRole("dialog", { name: "Carton size" })
-    await expect(popover).toHaveAccessibleDescription("How many units Lotus Manufacturing packs in a carton.")
+    const popover = await shownDialog("Carton size")
+    await expect(popover.element).toHaveAccessibleDescription("How many units Lotus Manufacturing packs in a carton.")
     await expect(trigger).toHaveAttribute("aria-expanded", "true")
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true, expect.anything())
 
-    const input = within(popover).getByRole("spinbutton", { name: "Units per carton" })
+    const input = popover.getByRole("spinbutton", { name: "Units per carton" })
     await userEvent.clear(input)
     await userEvent.type(input, "36")
     await expect(input).toHaveValue(36)
@@ -56,7 +57,7 @@ export const Default = meta.story({
 export const OutsideClickCloses = meta.story({
   args: { defaultOpen: true },
   play: async ({ canvasElement }) => {
-    await screen.findByRole("dialog", { name: "Carton size" })
+    await shownDialog("Carton size")
     await userEvent.click(canvasElement)
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
   }
@@ -66,7 +67,7 @@ export const EscapeCloses = meta.story({
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("button", { name: "Carton size" })
     await userEvent.click(trigger)
-    await screen.findByRole("dialog")
+    await shownDialog()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(trigger).toHaveFocus()
@@ -88,11 +89,11 @@ export const Aligned = meta.story({
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("button", { name: "About lead time" })
     await userEvent.click(trigger)
-    const popover = await screen.findByRole("dialog")
-    await expect(popover).toHaveAttribute("data-side", "right")
-    await expect(popover).toHaveAttribute("data-align", "start")
+    const popover = await shownDialog()
+    await expect(popover.element).toHaveAttribute("data-side", "right")
+    await expect(popover.element).toHaveAttribute("data-align", "start")
     await waitFor(() =>
-      expect(popover.getBoundingClientRect().left).toBeGreaterThanOrEqual(trigger.getBoundingClientRect().right)
+      expect(popover.element.getBoundingClientRect().left).toBeGreaterThanOrEqual(trigger.getBoundingClientRect().right)
     )
   }
 })

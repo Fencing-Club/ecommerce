@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import type { Permissions } from "@/lib/access"
+import { shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ProductActions } from "./product-transfer"
 
@@ -50,7 +51,7 @@ const spreadsheet = new File(["handle,title,sku\ncanvas-tote-bag,Canvas tote bag
 async function openImport(canvas: ReturnType<typeof within>) {
   await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
   await userEvent.click(await screen.findByRole("menuitem", { name: "Import products" }))
-  return within(await screen.findByRole("dialog", { name: "Import products" }))
+  return shownDialog("Import products")
 }
 
 export const Menu = meta.story({
@@ -76,8 +77,7 @@ export const Menu = meta.story({
 export const OpenedFromCreate = meta.story({
   parameters: { router: { navigation: { pathname: "/products", query: { import: "true" } } } },
   play: async () => {
-    const dialog = await screen.findByRole("dialog", { name: "Import products" })
-    await waitFor(() => expect(dialog).toBeVisible())
+    await shownDialog("Import products")
   }
 })
 
@@ -227,7 +227,7 @@ export const EditorWithoutPrices = meta.story({
     const importItem = await screen.findByRole("menuitem", { name: "Import products" })
     await expect(screen.queryByRole("menuitem", { name: "Export to Excel" })).toBeNull()
     await userEvent.click(importItem)
-    const dialog = within(await screen.findByRole("dialog", { name: "Import products" }))
+    const dialog = await shownDialog("Import products")
     await expect(dialog.getByRole("link", { name: "CSV template" })).toBeInTheDocument()
     await expect(dialog.queryByRole("link", { name: "Your products in Excel" })).toBeNull()
   }

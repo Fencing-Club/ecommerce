@@ -3,6 +3,7 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { EmptyState, PageHeader } from "@/components/common"
 import { Button } from "@/components/ui/button"
+import { shownDialog } from "@/stories/play"
 import { serverStory } from "@/stories/server"
 import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { Shell } from "./shell"
@@ -172,7 +173,7 @@ export const Phone = meta.story({
       Math.abs(within(main).getByRole("button", { name: "Import" }).getBoundingClientRect().left - edge)
     ).toBeLessThanOrEqual(1)
     await userEvent.click(within(canvas.getByRole("banner")).getByRole("button", { name: "Toggle sidebar" }))
-    const sheet = await screen.findByRole("dialog")
-    await waitFor(() => expect(within(sheet).getByRole("link", { name: "Shipments" })).toBeVisible())
+    const sheet = await shownDialog()
+    await waitFor(() => expect(sheet.getByRole("link", { name: "Shipments" })).toBeVisible())
   }
 })

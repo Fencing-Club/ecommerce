@@ -1,8 +1,8 @@
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { forwarderPage } from "@/server/forwarder-page"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  actionHandler,
   amazonOrder,
   documentRecord,
   forwarderId,
@@ -11,18 +11,18 @@ import {
   orderRecord,
   packed,
   shipmentRecord,
-  shownDialog,
   stopId,
   supplierRecord,
   warehouse
 } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { serverStory } from "@/stories/server"
 import { workspaces } from "@/stories/workspace"
 import { ForwarderView } from "./forwarder-view"
 
 type Props = { row: Parameters<typeof forwarderPage>[0]; editable: boolean }
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const via = { forwarderId, addressId: stopId }
 const forwarder = { id: forwarderId, name: "Bayline Freight", buyerOrgId: workspaces.buyer.id }
 
@@ -68,7 +68,7 @@ const meta = preview.meta({
     }
   },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions))
+    msw.use(recordActions(sent))
   }
 })
 
@@ -112,7 +112,7 @@ export const MarkShipped = meta.story({
     await userEvent.type(dialog.getByRole("textbox", { name: "Tracking or booking number" }), "MAEU 204113")
     await userEvent.click(dialog.getByRole("button", { name: "Mark shipped" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "shipment.forward",
       data: {
         id: shipped.id,

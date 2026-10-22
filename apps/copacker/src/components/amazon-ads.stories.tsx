@@ -1,7 +1,8 @@
 import { http, HttpResponse } from "msw/http"
-import { expect, screen, userEvent, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Dialog } from "@/components/ui/dialog"
+import { shownAlertDialog } from "@/stories/play"
 import { AmazonAdsSettings } from "./amazon-ads"
 
 const meta = preview.meta({
@@ -47,11 +48,14 @@ export const Connected = meta.story({
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Daily sync enabled")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect Ads" }))
-    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect Amazon Ads?" })
-    await userEvent.click(within(confirm).getByRole("button", { name: "Cancel" }))
+    const confirm = await shownAlertDialog("Disconnect Amazon Ads?")
+    await userEvent.click(confirm.getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(canvas.getByText("Daily sync enabled")).toBeVisible()
+    // Asking again opens a new confirmation.
     await userEvent.click(canvas.getByRole("button", { name: "Disconnect Ads" }))
-    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect Ads" }))
+    const again = await shownAlertDialog("Disconnect Amazon Ads?")
+    await userEvent.click(again.getByRole("button", { name: "Disconnect Ads" }))
     await expect(await canvas.findByRole("link", { name: "Connect Amazon Ads" })).toBeVisible()
   }
 })
@@ -87,10 +91,10 @@ export const DisconnectFailed = meta.story({
     ),
   play: async ({ canvas }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Disconnect Ads" }))
-    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect Amazon Ads?" })
-    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect Ads" }))
-    await expect(await within(confirm).findByRole("alert")).toHaveTextContent("Could not update Amazon Ads. Try again.")
-    await expect(within(confirm).getByRole("button", { name: "Disconnect Ads" })).toBeEnabled()
+    const confirm = await shownAlertDialog("Disconnect Amazon Ads?")
+    await userEvent.click(confirm.getByRole("button", { name: "Disconnect Ads" }))
+    await expect(await confirm.findByRole("alert")).toHaveTextContent("Could not update Amazon Ads. Try again.")
+    await expect(confirm.getByRole("button", { name: "Disconnect Ads" })).toBeEnabled()
   }
 })
 export const Syncing = meta.story({

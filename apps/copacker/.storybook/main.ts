@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url"
+import babel from "@rolldown/plugin-babel"
 import type { StorybookConfig } from "@storybook/react-vite"
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin"
+import { reactCompilerPreset } from "@vitejs/plugin-react"
 import { mergeConfig } from "vite"
 import { tesseract } from "../scripts/vite-tesseract.ts"
 
@@ -33,7 +35,17 @@ const config: StorybookConfig = {
             }
           })
       },
-      plugins: [vanillaExtractPlugin(), tesseract()],
+      // The app's components compile through the React Compiler, as they do in the app (vite.config.ts), so stories and
+      // their play tests run the memoized code people get. Story files stay as written: their pages' server halves run
+      // in loaders, outside React, where compiled code can't run.
+      plugins: [
+        vanillaExtractPlugin(),
+        tesseract(),
+        babel({
+          presets: [reactCompilerPreset()],
+          exclude: [/[/\\]node_modules[/\\]/, /^\0/, /\.stories\.tsx(?:$|\?)/]
+        })
+      ],
       resolve: {
         // The server's side of what server components use: messages from the story's language, a database that
         // answers with each story's rows. Components use the story's real locale and router providers.

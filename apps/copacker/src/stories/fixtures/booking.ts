@@ -1,5 +1,5 @@
-import type { AglBooking, AglShipment, AglTemplateIssue } from "./agl-booking"
-import type { FbaBooking, FbaPlacement } from "./fba-booking"
+import type { AglBooking, AglShipment, AglTemplateIssue } from "@/components/booking/agl-booking"
+import type { FbaBooking, FbaPlacement } from "@/components/booking/fba-booking"
 
 // The Amazon booking dialogs' data, as copacker.pen draws it in 10 / Amazon booking (10.02 FBA, 10.03 AGL): the second
 // shipment of purchase order 36, 100 chest protectors in 5 cartons, from Zhangjiagang. Every state the designs draw is

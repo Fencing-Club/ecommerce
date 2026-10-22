@@ -38,7 +38,7 @@ export const AttentionItems = meta.story({
     )
     await expect(canvas.getByRole("link", { name: /1 draft purchase order/ })).toHaveAttribute(
       "href",
-      "/orders?status=draft"
+      "/orders?view=draft"
     )
   }
 })

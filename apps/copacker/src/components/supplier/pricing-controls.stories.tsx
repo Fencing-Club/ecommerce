@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react"
-import { expect, fn, screen, userEvent, within } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { defaultQuantityRules } from "@/lib/catalog-pricing"
+import { shownDialog } from "@/stories/play"
 import { PricingRulesDialog } from "./pricing-controls"
 
 const meta = preview.meta({
@@ -20,7 +21,7 @@ const meta = preview.meta({
   } satisfies ComponentProps<typeof PricingRulesDialog>
 })
 
-const dialog = async () => within(await screen.findByRole("dialog", { name: "Quantity rules and volume pricing" }))
+const dialog = async () => shownDialog("Quantity rules and volume pricing")
 
 export const SetRules = meta.story({
   play: async ({ args }) => {

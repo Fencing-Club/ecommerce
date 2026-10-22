@@ -1,12 +1,13 @@
 import { HttpResponse } from "msw/http"
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { shownAlertDialog } from "@/stories/play"
 import { ConfirmDialog } from "./confirm-dialog"
 
 const sent: ActionRequest[] = []
@@ -61,7 +62,6 @@ const meta = preview.meta({
   title: "Components/Forms/Confirm dialog",
   render: () => <FromMenu />,
   beforeEach: ({ msw }) => {
-    sent.length = 0
     done.mockClear()
     msw.use(recordActions(sent))
   }
@@ -70,9 +70,9 @@ const meta = preview.meta({
 export const Confirms = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Close PO-1042?" })
-    await expect(dialog).toHaveTextContent("Nothing more is expected for it.")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Close purchase order" }))
+    const dialog = await shownAlertDialog("Close PO-1042?")
+    await expect(dialog.element).toHaveTextContent("Nothing more is expected for it.")
+    await userEvent.click(dialog.getByRole("button", { name: "Close purchase order" }))
     await waitFor(() => expect(sent).toEqual([{ action: "order.close", data: { id: "order-1042" } }]))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true })
@@ -87,12 +87,12 @@ export const WaitsForRefresh = meta.story({
     getStoryRouter().invalidate.mockImplementationOnce(() => refresh.promise)
     try {
       await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-      const dialog = await screen.findByRole("alertdialog")
-      const confirm = within(dialog).getByRole("button", { name: "Close purchase order" })
+      const dialog = await shownAlertDialog()
+      const confirm = dialog.getByRole("button", { name: "Close purchase order" })
       await userEvent.click(confirm)
       await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
       await expect(confirm).toHaveAttribute("aria-busy", "true")
-      await expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled()
+      await expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled()
       await expect(done).not.toHaveBeenCalled()
       refresh.resolve()
       await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
@@ -106,21 +106,21 @@ export const WaitsForRefresh = meta.story({
 // A failure stays in the dialog to try again, and opening it again starts without it.
 export const Fails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("PO-1042 has a shipment on its way.")))
+    msw.use(recordActions(sent, failWith("PO-1042 has a shipment on its way.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-    const dialog = await screen.findByRole("alertdialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Close purchase order" }))
-    await expect(await within(dialog).findByRole("alert")).toHaveTextContent("PO-1042 has a shipment on its way.")
-    await expect(within(dialog).getByRole("button", { name: "Close purchase order" })).toBeEnabled()
+    const dialog = await shownAlertDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Close purchase order" }))
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("PO-1042 has a shipment on its way.")
+    await expect(dialog.getByRole("button", { name: "Close purchase order" })).toBeEnabled()
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
     await expect(done).not.toHaveBeenCalled()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-    const reopened = await screen.findByRole("alertdialog")
-    await expect(within(reopened).queryByRole("alert")).toBeNull()
+    const reopened = await shownAlertDialog()
+    await expect(reopened.queryByRole("alert")).toBeNull()
   }
 })
 
@@ -131,9 +131,9 @@ export const FailsWithoutReason = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-    const dialog = await screen.findByRole("alertdialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Close purchase order" }))
-    await expect(await within(dialog).findByRole("alert")).toHaveTextContent("Couldn’t close PO-1042")
+    const dialog = await shownAlertDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Close purchase order" }))
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn’t close PO-1042")
   }
 })
 
@@ -151,8 +151,8 @@ export const Destructive = meta.story({
   ),
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Remove Sam Okafor?" })
-    const remove = within(dialog).getByRole("button", { name: "Remove" })
+    const dialog = await shownAlertDialog("Remove Sam Okafor?")
+    const remove = dialog.getByRole("button", { name: "Remove" })
     await expect(remove).toHaveClass("text-destructive")
     await userEvent.click(remove)
     await waitFor(() => expect(sent).toEqual([{ action: "team.remove", data: { userId: "user_sam" } }]))
@@ -163,13 +163,13 @@ export const Destructive = meta.story({
 export const TypeToConfirmDeletes = meta.story({
   render: () => <TypeToConfirm />,
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => HttpResponse.json({ redirect: "/" })))
+    msw.use(recordActions(sent, redirectTo("/")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Delete workspace" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Delete Harbor Goods?" })
-    const field = within(dialog).getByLabelText("Workspace name")
-    const confirm = within(dialog).getByRole("button", { name: "Delete workspace" })
+    const dialog = await shownAlertDialog("Delete Harbor Goods?")
+    const field = dialog.getByLabelText("Workspace name")
+    const confirm = dialog.getByRole("button", { name: "Delete workspace" })
     await expect(field).toHaveAttribute("placeholder", "Harbor Goods")
     await expect(confirm).toBeDisabled()
     await userEvent.type(field, " harbor goods ")
@@ -189,12 +189,12 @@ export const TypeToConfirmCancels = meta.story({
   render: () => <TypeToConfirm />,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Delete workspace" }))
-    const dialog = await screen.findByRole("alertdialog")
-    await userEvent.type(within(dialog).getByLabelText("Workspace name"), "Harbor Goods")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    const dialog = await shownAlertDialog()
+    await userEvent.type(dialog.getByLabelText("Workspace name"), "Harbor Goods")
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await userEvent.click(canvas.getByRole("button", { name: "Delete workspace" }))
-    await expect(within(await screen.findByRole("alertdialog")).getByLabelText("Workspace name")).toHaveValue("")
+    await expect((await shownAlertDialog()).getByLabelText("Workspace name")).toHaveValue("")
     await expect(sent).toEqual([])
   }
 })

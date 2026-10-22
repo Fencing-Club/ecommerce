@@ -1,7 +1,7 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { controlled, dialogWidth } from "@/stories/booking"
-import { agl, chestProtectors, differingShipment } from "./fixtures"
+import { agl, chestProtectors, differingShipment } from "@/stories/fixtures/booking"
 import { ShipmentPicker } from "./shipment-picker"
 
 // The picker with its parent keeping the chosen shipment, as the link step does.

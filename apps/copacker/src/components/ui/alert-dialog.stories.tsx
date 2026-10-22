@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownAlertDialog } from "@/stories/play"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,9 +60,11 @@ const meta = preview.type<{ args: { onAction: () => void; onToggle: (open: boole
 export const Default = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Delete draft" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Delete this draft?" })
-    await expect(dialog).toHaveAccessibleDescription("The purchase order for Lotus Manufacturing goes away for good.")
-    await expect(dialog).toHaveAttribute("data-size", "default")
+    const dialog = await shownAlertDialog("Delete this draft?")
+    await expect(dialog.element).toHaveAccessibleDescription(
+      "The purchase order for Lotus Manufacturing goes away for good."
+    )
+    await expect(dialog.element).toHaveAttribute("data-size", "default")
     await expect(args.onToggle).toHaveBeenLastCalledWith(true)
 
     // Cancel closes it without deleting.
@@ -84,7 +87,7 @@ export const Confirm = meta.story({
 export const EscapeCloses = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Delete draft" }))
-    await screen.findByRole("alertdialog")
+    await shownAlertDialog()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument())
     await expect(canvas.getByRole("button", { name: "Delete draft" })).toHaveFocus()
@@ -114,9 +117,9 @@ export const SmallWithMedia = meta.story({
     </AlertDialog>
   ),
   play: async ({ args }) => {
-    const dialog = await screen.findByRole("alertdialog", { name: "Disconnect Shopify?" })
-    await expect(dialog).toHaveAttribute("data-size", "sm")
-    await expect(dialog.querySelector("[data-slot=alert-dialog-media] svg")).toBeInTheDocument()
+    const dialog = await shownAlertDialog("Disconnect Shopify?")
+    await expect(dialog.element).toHaveAttribute("data-size", "sm")
+    await expect(dialog.element.querySelector("[data-slot=alert-dialog-media] svg")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Disconnect" }))
     await expect(args.onAction).toHaveBeenCalledOnce()
   }

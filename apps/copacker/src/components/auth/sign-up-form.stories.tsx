@@ -1,17 +1,17 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { actionRecorder, failWith, redirectTo } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
 import { SignUpForm } from "./sign-up-form"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Auth/Sign up form",
   component: SignUpForm,
   args: { next: "/" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/verify-email")))
+    msw.use(recordActions(sent, redirectTo("/verify-email")))
   }
 })
 
@@ -23,7 +23,7 @@ export const Empty = meta.story({
     await expect(canvas.getByText("Use at least 10 characters")).toBeVisible()
     // The error restates the rule, so the rule steps aside.
     await expect(canvas.queryByText("At least 10 characters")).toBeNull()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -34,7 +34,7 @@ export const ShortPassword = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
     await expect(await canvas.findByText("Use at least 10 characters")).toBeVisible()
     await expect(canvas.queryByText("Enter an email address")).toBeNull()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -58,7 +58,7 @@ export const CreatesAccount = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/verify-email"))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       {
         action: "auth.signUp",
         data: { email: "alex@example.com", password: "a long enough password", next: "/orders/new" }
@@ -71,7 +71,7 @@ export const CreatesAccount = meta.story({
 // WorkOS turns down a common password.
 export const ServerError = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith("This password is too common. Choose another.")))
+    msw.use(recordActions(sent, failWith("This password is too common. Choose another.")))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Work email"), "alex@example.com")
@@ -104,7 +104,7 @@ export const LockedEmail = meta.story({
     await expect(email).toHaveAttribute("readonly")
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toMatchObject({ email: "jordan@example.com" })
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toMatchObject({ email: "jordan@example.com" })
   }
 })

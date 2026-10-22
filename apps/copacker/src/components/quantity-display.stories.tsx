@@ -1,19 +1,14 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Input } from "@/components/ui/input"
+import { width } from "@/stories/play"
 import { QuantityDisplay } from "./quantity-display"
 
 const meta = preview.meta({
   title: "Components/Display/Quantity display",
   component: QuantityDisplay,
   args: { pieces: 60, packSize: 2, children: <Input aria-label="Quantity" defaultValue={60} className="text-end" /> },
-  decorators: [
-    (Story) => (
-      <div className="w-24">
-        <Story />
-      </div>
-    )
-  ]
+  decorators: [width("w-24")]
 })
 export const Units = meta.story({
   play: async ({ canvas }) => {

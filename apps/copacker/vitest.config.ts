@@ -42,8 +42,8 @@ export default defineConfig({
         test: {
           name: "storybook",
           sequence: { groupOrder: 1 },
-          // A story that waits on an animation or a mocked response can miss its moment on a busy machine.
-          retry: 2,
+          // Animations and transitions end at once under test, so no play function races a fading popup.
+          setupFiles: [".storybook/vitest.setup.ts"],
           // The longest stories, such as getting started typed through or the landing's journey, take 30 seconds on a
           // machine running the whole suite.
           testTimeout: 60000,

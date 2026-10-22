@@ -1,6 +1,7 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { shownDialog } from "@/stories/play"
 import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { AppSidebar } from "./app-sidebar"
 
@@ -169,13 +170,13 @@ export const Phone = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
-    const sheet = await screen.findByRole("dialog")
-    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
-    await expect(sheet.getBoundingClientRect().width).toBe(240)
-    await expect(within(sheet).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
-    await expect(within(sheet).queryByRole("button", { name: "Create" })).toBeNull()
-    await expect(within(sheet).getByText("alex@example.com")).toBeVisible()
-    const shipments = within(sheet).getByRole("link", { name: "Shipments" })
+    const sheet = await shownDialog()
+    await waitFor(() => expect(sheet.getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
+    await expect(sheet.element.getBoundingClientRect().width).toBe(240)
+    await expect(sheet.getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    await expect(sheet.queryByRole("button", { name: "Create" })).toBeNull()
+    await expect(sheet.getByText("alex@example.com")).toBeVisible()
+    const shipments = sheet.getByRole("link", { name: "Shipments" })
     await expect(shipments).toHaveAttribute("href", "/shipments")
     await userEvent.click(shipments)
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())

@@ -1,5 +1,6 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { chooseOption, width } from "@/stories/play"
 import { SelectField } from "./form-fields"
 
 const meta = preview.meta({
@@ -16,7 +17,7 @@ const meta = preview.meta({
     placeholder: "Choose terms",
     onValueChange: fn()
   },
-  decorators: [(Story) => <div className="max-w-xs">{Story()}</div>]
+  decorators: [width("max-w-xs")]
 })
 
 export const Optional = meta.story({
@@ -31,8 +32,7 @@ export const Optional = meta.story({
     // Reopening while the list is still closing would find its options, which no longer take clicks.
     await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
     // An optional field's placeholder is a choice too, which empties it.
-    await userEvent.click(select)
-    await userEvent.click(await screen.findByRole("option", { name: "Choose terms" }))
+    await chooseOption(select, "Choose terms")
     await expect(args.onValueChange).toHaveBeenLastCalledWith("")
     await waitFor(() => expect(select).toHaveTextContent("Choose terms"))
   }
@@ -76,8 +76,7 @@ export const InNativeForm = meta.story({
     }
     await expect(canvas.getByRole("combobox", { name: "Payment terms" })).toHaveTextContent("Prepaid")
     await expect(new FormData(form).get("terms")).toBe("prepaid")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Payment terms" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Net 30" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Payment terms" }), "Net 30")
     await waitFor(() => expect(new FormData(form).get("terms")).toBe("net30"))
   }
 })

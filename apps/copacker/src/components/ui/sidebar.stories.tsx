@@ -3,6 +3,7 @@ import { Boxes, FileText, LayoutDashboard, MoreHorizontal, Plus, Settings, Truck
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import {
   Sidebar,
   SidebarContent,
@@ -362,10 +363,10 @@ export const Mobile = meta.story({
     await expect(screen.queryByRole("link", { name: "Overview" })).not.toBeInTheDocument()
 
     await userEvent.click(triggerOf(canvasElement))
-    const sheet = await screen.findByRole("dialog", { name: "Sidebar" })
-    await expect(sheet).toHaveAccessibleDescription("Displays the mobile sidebar.")
-    await expect(sheet).toHaveAttribute("data-mobile", "true")
-    await waitFor(() => expect(within(sheet).getByRole("link", { name: "Purchase orders" })).toBeVisible())
+    const sheet = await shownDialog("Sidebar")
+    await expect(sheet.element).toHaveAccessibleDescription("Displays the mobile sidebar.")
+    await expect(sheet.element).toHaveAttribute("data-mobile", "true")
+    await waitFor(() => expect(sheet.getByRole("link", { name: "Purchase orders" })).toBeVisible())
     await expect(canvas.getByTestId("sidebar-state")).toHaveTextContent("mobile true")
 
     await userEvent.keyboard("{Escape}")

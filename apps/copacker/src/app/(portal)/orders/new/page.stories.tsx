@@ -1,14 +1,13 @@
 import type { OrderItem } from "@repo/copacker-orders"
-import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { suppliers } from "@/db/schema"
 import type { ForwarderAddress } from "@/server/forwarders"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
 import { deliveryId, supplierId } from "@/stories/fixtures/orders"
 import {
-  actionHandler,
   catalogMatches,
   deliveries,
   forwarding,
@@ -17,6 +16,7 @@ import {
   productHandlers,
   supplierRecord
 } from "@/stories/fixtures/purchase-orders"
+import { chooseOption } from "@/stories/play"
 import { pageStory } from "@/stories/server"
 import PageView from "./page"
 
@@ -67,7 +67,7 @@ async function NewOrder({
   )
 }
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const [tote, apron] = order.items
 
 const meta = preview.meta({
@@ -85,11 +85,7 @@ const meta = preview.meta({
     deliveries
   },
   beforeEach: ({ msw }) => {
-    msw.use(
-      ...productHandlers(),
-      catalogMatches(),
-      actionHandler(actions, () => HttpResponse.json({ ok: true, redirect: `/orders/${orderId}` }))
-    )
+    msw.use(...productHandlers(), catalogMatches(), recordActions(sent, redirectTo(`/orders/${orderId}`)))
   }
 })
 
@@ -120,7 +116,7 @@ export const FromRestock = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1047")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "order.create",
       data: expect.objectContaining({
         reference: "PO-1047",
@@ -144,8 +140,7 @@ export const UnknownLinks = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveTextContent("Choose supplier")
     await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Choose address")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Delivery address" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Portland studio" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Delivery address" }), "Portland studio")
     await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Portland studio")
   }
 })

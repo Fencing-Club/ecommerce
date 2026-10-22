@@ -1,7 +1,8 @@
-import { expect, fn, screen, userEvent } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { order, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { order } from "@/stories/fixtures/purchase-orders"
 import { OrderFormStory } from "@/stories/order-form"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { PackingRequirementsDialog } from "./packing-requirements-dialog"
 
 const meta = preview.meta({
@@ -36,8 +37,7 @@ export const Edit = meta.story({
     await expect(dialog.getByText("X001PACK01", { exact: true })).toBeVisible()
     await expect(dialog.queryByRole("combobox", { name: "Country code" })).toBeNull()
     await userEvent.click(dialog.getByRole("checkbox", { name: "Country of origin label" }))
-    await userEvent.click(dialog.getByRole("combobox", { name: "Country code" }))
-    await userEvent.click(await screen.findByRole("option", { name: /^China$/ }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Country code" }), /^China$/)
     await expect(dialog.getByRole("combobox", { name: "Country code" })).toHaveTextContent("China")
     await userEvent.click(dialog.getByRole("checkbox", { name: "FNSKU label" }))
     await expect(dialog.getByRole("checkbox", { name: "FNSKU label" })).not.toBeChecked()

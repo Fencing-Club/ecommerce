@@ -59,8 +59,8 @@ export const Phone = meta.story({
 export const ReducedMotion = meta.story({
   beforeEach: reduceMotion,
   play: async ({ canvas }) => {
-    // The steps hold on the first.
-    await new Promise((resolve) => setTimeout(resolve, 3300))
+    // The steps hold on the first. They're a Ticker, whose own ReducedMotion story checks that it stays there as time
+    // passes.
     await expect(shown(canvas.getByText(firstStep))).toBe(true)
     await expect(shown(canvas.getByText(secondStep))).toBe(false)
   }

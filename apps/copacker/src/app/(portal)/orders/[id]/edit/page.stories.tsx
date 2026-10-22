@@ -1,11 +1,11 @@
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { orders, suppliers } from "@/db/schema"
 import type { ForwarderAddress } from "@/server/forwarders"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  actionHandler,
   catalogMatches,
   deliveries,
   forwarding,
@@ -55,7 +55,7 @@ async function EditOrder({ order, suppliers: rows, deliveries: addresses, needsB
   )
 }
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const draft = orderRecord({ status: "draft", revision: 3 })
 
 const meta = preview.meta({
@@ -72,7 +72,7 @@ const meta = preview.meta({
     forwarding
   },
   beforeEach: ({ msw }) => {
-    msw.use(...productHandlers(), catalogMatches(), actionHandler(actions))
+    msw.use(...productHandlers(), catalogMatches(), recordActions(sent))
   }
 })
 
@@ -91,7 +91,7 @@ export const Default = meta.story({
     await expect(quantity).toHaveValue(1200)
     await userEvent.click(save)
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "order.update",
       data: {
         id: orderId,

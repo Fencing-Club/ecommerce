@@ -1,7 +1,10 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { held, salesOrders, searchIndex } from "@/stories/fixtures/shared"
+import { held } from "@/stories/actions"
+import { salesOrders } from "@/stories/fixtures/catalog"
+import { searchIndex } from "@/stories/fixtures/shared"
+import { shownDialog, width } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { SearchCommand } from "./search-command"
 
@@ -12,7 +15,7 @@ const meta = preview.meta({
   title: "Components/App shell/Search command",
   component: SearchCommand,
   args: { kind: "buyer", navigate: fn() },
-  decorators: [(Story) => <div className="mx-auto max-w-xl">{Story()}</div>],
+  decorators: [width("mx-auto max-w-xl")],
   beforeEach: ({ msw }) => {
     salesSearched.mockClear()
     msw.use(
@@ -73,12 +76,12 @@ export const Open = meta.story({
 export const KeyboardShortcut = meta.story({
   play: async () => {
     await userEvent.keyboard("{Control>}k{/Control}")
-    const panel = await screen.findByRole("dialog", { name: "Search" })
-    await expect(within(panel).getByRole("combobox")).toHaveFocus()
+    const panel = await shownDialog("Search")
+    await expect(panel.getByRole("combobox")).toHaveFocus()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await userEvent.keyboard("{Control>}k{/Control}")
-    await screen.findByRole("dialog", { name: "Search" })
+    await shownDialog("Search")
     await userEvent.keyboard("{Control>}k{/Control}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
@@ -144,9 +147,9 @@ export const FindSalesOrder = meta.story({
       within(orders)
         .getAllByRole("option")
         .map((option) => option.textContent)
-    ).toEqual(["#1042Online StoreFulfilled", "#1017Online StoreUnfulfilled"])
-    await userEvent.click(within(orders).getByRole("option", { name: /#1017/ }))
-    await expect(args.navigate).toHaveBeenCalledWith("/sales?q=%231017")
+    ).toEqual(["#1042Online StoreFulfilled", "#1041Online StoreUnfulfilled", "#1039Online StoreCanceled"])
+    await userEvent.click(within(orders).getByRole("option", { name: /#1041/ }))
+    await expect(args.navigate).toHaveBeenCalledWith("/sales?q=%231041")
   }
 })
 
@@ -176,7 +179,8 @@ export const Supplier = meta.story({
     ])
     await userEvent.type(within(panel).getByRole("combobox"), "cata")
     await expect(await within(panel).findByRole("option", { name: "Catalogs" })).toBeInTheDocument()
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    // Sales orders would show as loading at once, before typing pauses, if they were searched.
+    await expect(within(panel).queryByRole("progressbar", { name: "Loading sales orders" })).toBeNull()
     await expect(salesSearched).not.toHaveBeenCalled()
   }
 })
@@ -188,7 +192,9 @@ export const Member = meta.story({
     const panel = await openSearch(canvas)
     await expect(groupNames(panel, "Pages")).toEqual(["Products", "Purchase orders", "Shipments", "Settings"])
     await userEvent.type(within(panel).getByRole("combobox"), "#10")
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    // Nothing matches, and nothing is on its way: sales orders would show as loading at once, before typing pauses.
+    await expect(await within(panel).findByText("No results for “#10”")).toBeInTheDocument()
+    await expect(within(panel).queryByRole("progressbar", { name: "Loading sales orders" })).toBeNull()
     await expect(salesSearched).not.toHaveBeenCalled()
   }
 })

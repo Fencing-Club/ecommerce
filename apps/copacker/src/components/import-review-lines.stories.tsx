@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { catalogProducts, importedProducts, importId, importProposal } from "@/stories/fixtures/purchase-orders"
+import { catalogVariants, importedProducts, importId, importProposal } from "@/stories/fixtures/purchase-orders"
 import { ImportLines } from "./import-review-lines"
 
 const lines = importProposal.items.map((item, index) => ({ ...item, key: `line-${index}` }))
@@ -25,7 +25,7 @@ const meta = preview.meta({
   beforeEach: ({ msw }) => {
     msw.use(
       http.get("/api/imports/:id/catalog", () =>
-        HttpResponse.json({ results: [catalogProducts[0]], nextCursor: null, complete: true })
+        HttpResponse.json({ results: [catalogVariants[0]], nextCursor: null, complete: true })
       )
     )
   }
@@ -61,7 +61,7 @@ export const FindProduct = meta.story({
     await expect(search).toHaveValue("LM-BASKET-L")
     await expect(search).toHaveFocus()
     await userEvent.click(await canvas.findByRole("button", { name: /Waffle towel/ }))
-    await expect(args.onChoose).toHaveBeenCalledWith(1, catalogProducts[0])
+    await expect(args.onChoose).toHaveBeenCalledWith(1, catalogVariants[0])
     await expect(canvas.queryByRole("searchbox")).toBeNull()
   }
 })

@@ -4,6 +4,7 @@ import { delay } from "msw/utils/delay"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { amazonOnlyStock, listedProducts, productsPage } from "@/stories/fixtures/catalog"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { InventoryProducts, IssuePanel, ProductsSkeleton } from "./inventory-products"
 
@@ -71,8 +72,8 @@ export const RowActions = meta.story({
       `/orders/new?${variants}`
     )
     await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }))
-    const details = await screen.findByRole("dialog", { name: "Canvas tote bag" })
-    await waitFor(() => expect(within(details).getByText("2 variations")).toBeVisible())
+    const details = await shownDialog("Canvas tote bag")
+    await waitFor(() => expect(details.getByText("2 variations")).toBeVisible())
   }
 })
 
@@ -80,9 +81,9 @@ export const RowActions = meta.story({
 export const OpenDetails = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Linen apron" }))
-    const details = await screen.findByRole("dialog", { name: "Linen apron" })
-    await waitFor(() => expect(within(details).getByText("APRON-CHR")).toBeVisible())
-    await userEvent.click(within(details).getByRole("button", { name: "Cancel" }))
+    const details = await shownDialog("Linen apron")
+    await waitFor(() => expect(details.getByText("APRON-CHR")).toBeVisible())
+    await userEvent.click(details.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })
@@ -160,8 +161,7 @@ export const Pages = meta.story({
     await expect(queries.at(-1)).toEqual({ page: "2", pageSize: "25" })
 
     // A new page size starts again at the first page.
-    await userEvent.click(canvas.getByRole("combobox", { name: "Rows per page" }))
-    await userEvent.click(await screen.findByRole("option", { name: "50" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Rows per page" }), "50")
     await waitFor(() => expect(queries.at(-1)).toEqual({ page: "1", pageSize: "50" }))
   }
 })

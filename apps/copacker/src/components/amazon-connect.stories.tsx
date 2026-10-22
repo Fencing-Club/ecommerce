@@ -1,7 +1,8 @@
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Dialog } from "@/components/ui/dialog"
-import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { AmazonConnect } from "./amazon-connect"
 
 const submitted = fn<(marketplace: FormDataEntryValue | null) => void>()
@@ -24,10 +25,10 @@ const meta = preview.meta({
 export const Default = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Connect Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await expect(within(dialog).getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
-    await expect(within(dialog).queryByLabelText(/token/i)).toBeNull()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Continue to Amazon" }))
+    const dialog = await shownDialog("Connect Amazon")
+    await expect(dialog.getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
+    await expect(dialog.queryByLabelText(/token/i)).toBeNull()
+    await userEvent.click(dialog.getByRole("button", { name: "Continue to Amazon" }))
     await expect(submitted).toHaveBeenCalledWith("US")
   }
 })
@@ -35,10 +36,9 @@ export const Default = meta.story({
 export const Canada = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Connect Amazon" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Marketplace" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Continue to Amazon" }))
+    const dialog = await shownDialog()
+    await chooseOption(dialog.getByRole("combobox", { name: "Marketplace" }), "Canada")
+    await userEvent.click(dialog.getByRole("button", { name: "Continue to Amazon" }))
     await expect(submitted).toHaveBeenCalledWith("CA")
   }
 })
@@ -52,13 +52,12 @@ export const PrivateAuthorization = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Connect Amazon" }))
-    const dialog = await screen.findByRole("dialog")
-    await expect(within(dialog).queryByLabelText(/merchant token/i)).toBeNull()
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Marketplace" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
-    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
-    await userEvent.type(within(dialog).getByLabelText(/^Refresh token/), "Atzr|exampleRefreshToken0123456789")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    const dialog = await shownDialog()
+    await expect(dialog.queryByLabelText(/merchant token/i)).toBeNull()
+    await chooseOption(dialog.getByRole("combobox", { name: "Marketplace" }), "Canada")
+    await expect(dialog.getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await userEvent.type(dialog.getByLabelText(/^Refresh token/), "Atzr|exampleRefreshToken0123456789")
+    await userEvent.click(dialog.getByRole("button", { name: "Connect" }))
     await waitFor(() =>
       expect(privateRequests).toEqual([
         {
@@ -78,9 +77,9 @@ export const ConnectionModal = meta.story({
     </Dialog>
   ),
   play: async () => {
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
-    await expect(within(dialog).queryByLabelText(/Refresh token/)).toBeNull()
+    const dialog = await shownDialog("Connect Amazon")
+    await waitFor(() => expect(dialog.getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
+    await expect(dialog.queryByLabelText(/Refresh token/)).toBeNull()
   }
 })
 
@@ -92,9 +91,9 @@ export const SelfAuthorizationModal = meta.story({
     </Dialog>
   ),
   play: async () => {
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
-    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveValue("")
-    await waitFor(() => expect(within(dialog).getByRole("button", { name: /^Connect$/ })).toBeVisible())
+    const dialog = await shownDialog("Connect Amazon")
+    await expect(dialog.getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(dialog.getByLabelText(/^Refresh token/)).toHaveValue("")
+    await waitFor(() => expect(dialog.getByRole("button", { name: /^Connect$/ })).toBeVisible())
   }
 })

@@ -1,14 +1,12 @@
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
-import { skipAnimations } from "@/stories/fixtures/auth"
 import { AuthPage, AuthShell, AuthSwitch } from "./auth-shell"
 
 const meta = preview.meta({
   title: "Components/Auth/Auth shell",
   component: AuthShell,
   parameters: { layout: "fullscreen" },
-  beforeEach: skipAnimations,
   args: {
     children: (
       <AuthPage title="Sign in to Copacker" description="Pick up where you left off.">

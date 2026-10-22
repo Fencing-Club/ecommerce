@@ -5,6 +5,7 @@ import { z } from "zod"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { useFormErrorMap } from "@/hooks/use-error-text"
+import { chooseOption } from "@/stories/play"
 import { FormSelect, SelectControl } from "./form-select"
 
 const suppliers = [
@@ -97,8 +98,7 @@ export const ClearOptional = meta.story({
     await expect(forwarder).toHaveTextContent("Bayline Freight")
     // Its hint describes it.
     await expect(forwarder).toHaveAccessibleDescription("Ships the goods on from the supplier")
-    await userEvent.click(forwarder)
-    await userEvent.click(await screen.findByRole("option", { name: "No forwarder" }))
+    await chooseOption(forwarder, "No forwarder")
     await waitFor(() => expect(forwarder).toHaveTextContent("No forwarder"))
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
@@ -125,8 +125,7 @@ export const Control = meta.story({
   play: async ({ canvas }) => {
     const currency = canvas.getByRole("combobox", { name: "Currency" })
     await expect(currency).toHaveTextContent("US dollar")
-    await userEvent.click(currency)
-    await userEvent.click(await screen.findByRole("option", { name: "Euro" }))
+    await chooseOption(currency, "Euro")
     await expect(currency).toHaveTextContent("Euro")
   }
 })

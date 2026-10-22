@@ -4,7 +4,7 @@ import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { expandCartonGroups, groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { PalletTable } from "./pallet-table"
 
 // The table with its pallets kept in state, as the packing form keeps them, and their issues worked out from them.
@@ -71,8 +71,7 @@ export const Editing = meta.story({
     const third = within(canvas.getByRole("region", { name: "Pallet 3" }))
     await expect(third.getByText("No cartons on this pallet yet")).toBeVisible()
     await expect(third.getByRole("spinbutton", { name: "Pallet 3: Height (cm)" })).not.toHaveAttribute("aria-invalid")
-    await userEvent.click(third.getByRole("combobox", { name: "Pallet 3: Stacking" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Not stackable" }))
+    await chooseOption(third.getByRole("combobox", { name: "Pallet 3: Stacking" }), "Not stackable")
     await expect(args.onChange).toHaveBeenLastCalledWith(
       expect.arrayContaining([expect.objectContaining({ palletId: "3", stackable: false })])
     )

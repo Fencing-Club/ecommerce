@@ -5,7 +5,7 @@ import {
   type ShipmentTransport
 } from "@repo/copacker-shipments/transport"
 import { useId } from "react"
-import { FormProvider } from "react-hook-form"
+import { FormProvider, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,7 +41,7 @@ export function ShipmentTransportSettings({
     keepSaved: true,
     toPayload: (transport) => ({ id, revision, expected: initial, transport })
   })
-  const service = form.watch("service")
+  const service = useWatch({ control: form.control, name: "service" })
   if (compact && initial) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">

@@ -15,30 +15,23 @@ import { canEditPacking, canReopenPacking, releasedLabelKinds, releasedStates } 
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { knownPackingGroups } from "@/server/readiness"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  type ActionRequest,
   buyerContacts,
   documentRow,
   type DocumentRow,
   orderRecords,
   packingFor,
   partnerAddresses,
-  recordActions,
   shipmentId,
   shipmentRow,
   type ShipmentRow,
   supplierRecordId
 } from "@/stories/fixtures/logistics"
 import { daysAgo } from "@/stories/fixtures/orders"
-import {
-  bagOrder,
-  bagPacking,
-  baylineWarehouse,
-  northwindFactory,
-  towelOrder,
-  towelPacking,
-  towelPackingDraft
-} from "@/stories/fixtures/packing"
+import { bagOrder, bagPacking, towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
+import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
+import { shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
 import { shipmentDestinations } from "../destination"
@@ -336,7 +329,6 @@ const meta = preview.meta({
   } satisfies Args,
   parameters: { db: { contacts: buyerContacts.map(({ id, name }) => ({ id, name })) } },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -478,7 +470,7 @@ export const DraftPacking = meta.story({
       "aria-disabled",
       "true"
     )
-    // The menu fades in, so its text is visible only once the animation ends.
+    // The menu shows from the frame after it opens.
     await waitFor(() => expect(teaTowelMenu.getByText("Label not provided")).toBeVisible())
     await userEvent.keyboard("{Escape}")
   }
@@ -745,7 +737,7 @@ export const DraftPackingMissingLabel = meta.story({
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
     const menu = within(await screen.findByRole("menu"))
     await expect(menu.getByRole("menuitem", { name: /FNSKU labels/ })).toHaveAttribute("aria-disabled", "true")
-    // The menu fades in, so its text is visible only once the animation ends.
+    // The menu shows from the frame after it opens.
     await waitFor(() => expect(menu.getByText("Its FNSKU is looked up when the purchase order is sent")).toBeVisible())
     await expect(menu.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
       "href",
@@ -974,13 +966,12 @@ export const WaitingForCarrierLabels = meta.story({
     await expect(canvas.queryByText("Before the labels go to the supplier")).toBeNull()
     await expect(canvas.queryByText("Add a carrier label for carton C2")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Upload labels" }))
-    const dialog = await screen.findByRole("dialog", { name: "Upload carrier labels" })
-    await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText("1Z4F7E210393821041")).toBeVisible()
-    await expect(within(dialog).getByText("ups-labels.pdf, page 1")).toBeVisible()
-    await expect(within(dialog).getAllByText("Drag a label here")).toHaveLength(1)
-    await expect(within(dialog).getByText("1 of 2 have a label")).toBeVisible()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    const dialog = await shownDialog("Upload carrier labels")
+    await expect(dialog.getByText("1Z4F7E210393821041")).toBeVisible()
+    await expect(dialog.getByText("ups-labels.pdf, page 1")).toBeVisible()
+    await expect(dialog.getAllByText("Drag a label here")).toHaveLength(1)
+    await expect(dialog.getByText("1 of 2 have a label")).toBeVisible()
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })

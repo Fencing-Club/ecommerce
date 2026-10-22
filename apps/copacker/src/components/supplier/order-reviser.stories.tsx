@@ -3,6 +3,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { reviserItems, reviserProducts } from "@/stories/fixtures/supplier"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { OrderReviser } from "./order-reviser"
 
 // Each proposal the page sent: the order and its body.
@@ -111,7 +112,7 @@ export const RemoveAndRestore = meta.story({
 export const AddProduct = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add products" }))
-    const dialog = within(await screen.findByRole("dialog", { name: "Add products" }))
+    const dialog = await shownDialog("Add products")
     await expect(dialog.getByText("At Harbor Goods’s prices")).toBeInTheDocument()
     // The tote is on the order already.
     await expect(dialog.queryByText("Canvas tote bag, Natural")).toBeNull()
@@ -162,8 +163,7 @@ export const ReadyDateOnly = meta.story({
 
 export const PaymentTerms = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Payment terms" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Payment in advance" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Payment terms" }), "Payment in advance")
     await expect(canvas.getByRole("button", { name: "Send for approval" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Send for approval" }))
     await waitFor(() =>

@@ -1,7 +1,7 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { towelOrder } from "@/stories/fixtures/packing"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { CartonProductsDialog } from "./carton-products-dialog"
 
 const [natural, sage, teaTowel] = towelOrder.items

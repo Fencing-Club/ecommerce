@@ -7,7 +7,8 @@ import { orderListRows } from "@/server/order-list"
 import type { ListedOrder } from "@/server/supplier-workspace"
 import { packingFor, shipmentRow } from "@/stories/fixtures/logistics"
 import { orderRows } from "@/stories/fixtures/orders"
-import { supplierOrders, warehouse } from "@/stories/fixtures/purchase-orders"
+import { warehouse } from "@/stories/fixtures/purchase-orders"
+import { supplierOrders } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { member, owner, type WorkspaceKind } from "@/stories/workspace"
 import PageView from "./page"
@@ -241,11 +242,14 @@ export const Supplier = meta.story({
   args: { kind: "supplier", orders: supplierOrders, tab: "pack" },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Orders" })).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "PO-1045" })).toHaveAttribute("href", "/orders/order-PO-1045")
+    await expect(canvas.getByRole("link", { name: "PO-2051" })).toHaveAttribute(
+      "href",
+      `/orders/${supplierOrders[0]!.id}`
+    )
     // The URL's tab opens.
-    await expect(canvas.queryByRole("link", { name: "PO-1044" })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: "PO-2048" })).toBeNull()
     await expect(canvas.getByRole("columnheader", { name: "Total" })).toBeVisible()
-    await expect(canvas.getByText("$2,958")).toBeVisible()
+    await expect(canvas.getByText("$1,030")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: /Create purchase order/ })).toBeNull()
   }
 })
@@ -254,9 +258,9 @@ export const SupplierWithoutPrices = meta.story({
   ...page("supplier", member),
   args: { kind: "supplier", orders: supplierOrders, permissions: member },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "PO-1044" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "PO-2048" })).toBeVisible()
     await expect(canvas.queryByRole("columnheader", { name: "Total" })).toBeNull()
-    await expect(canvas.queryByText("$2,958")).toBeNull()
+    await expect(canvas.queryByText("$1,030")).toBeNull()
   }
 })
 

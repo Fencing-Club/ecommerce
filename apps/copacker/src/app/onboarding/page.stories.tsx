@@ -1,23 +1,17 @@
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type WizardValues } from "@/components/onboarding/onboarding-wizard"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
 import type { Invitation } from "@/server/invitations"
-import {
-  actionRecorder,
-  invitation,
-  invitationToken,
-  ownedWorkspaces,
-  redirectTo,
-  savedProfile,
-  skipAnimations
-} from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
+import { invitation, invitationToken, ownedWorkspaces, savedProfile } from "@/stories/fixtures/auth"
+import { chooseOption } from "@/stories/play"
 import { serverStory } from "@/stories/server"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 type Args = {
   // The signed-in person, as WorkOS knows them.
@@ -120,8 +114,7 @@ const meta = preview.meta({
     workspaces: []
   },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/overview")))
-    return skipAnimations()
+    msw.use(recordActions(sent, redirectTo("/overview")))
   }
 })
 
@@ -175,7 +168,7 @@ export const InvitedSupplierWithProfile = meta.story({
     await expect(canvas.getByLabelText(/Street address/)).toHaveValue("88 Industrial Road")
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent[0]).toMatchObject({
+    await expect(sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: { kind: "supplier", invitation: { kind: "supplier", token: invitationToken } }
     })
@@ -219,7 +212,7 @@ export const ProfileOnly = meta.story({
     profile: { ...savedProfile, position: "", company: "" }
   },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler())
+    msw.use(recordActions(sent))
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Step 1 of/)).toBeNull()
@@ -227,13 +220,12 @@ export const ProfileOnly = meta.story({
     await expect(canvas.getByLabelText(/Last name/)).toHaveValue("Rivera")
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByText("Choose your position")).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: /Position/ }))
-    await userEvent.click(await screen.findByRole("option", { name: "Owner" }))
+    await chooseOption(canvas.getByRole("combobox", { name: /Position/ }), "Owner")
     await waitFor(() => expect(canvas.getByRole("combobox", { name: /Position/ })).toHaveTextContent("Owner"))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     // With the profile complete, the page's refresh sends them on to /orders.
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
-    await expect(actions.sent[0]).toEqual({
+    await expect(sent[0]).toEqual({
       action: "profile.update",
       data: { firstName: "Alex", lastName: "Rivera", position: "Owner", company: "Lotus Packaging Co" }
     })

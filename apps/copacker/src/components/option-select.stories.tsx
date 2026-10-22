@@ -3,6 +3,7 @@ import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { chooseOption } from "@/stories/play"
 import { OptionSelect, type SelectOption } from "./option-select"
 
 type Sort = "urgency" | "quantity" | "name"
@@ -39,8 +40,7 @@ export const Choose = meta.story({
   play: async ({ args, canvas }) => {
     const select = canvas.getByRole("combobox", { name: "Sort by" })
     await expect(select).toHaveTextContent("Most urgent")
-    await userEvent.click(select)
-    await userEvent.click(await screen.findByRole("option", { name: "Product name" }))
+    await chooseOption(select, "Product name")
     await expect(args.onValueChange).toHaveBeenCalledWith("name")
     await waitFor(() => expect(select).toHaveTextContent("Product name"))
   }

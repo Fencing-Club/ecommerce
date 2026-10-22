@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { pickupAddress, pickupLocations } from "@/stories/fixtures/purchase-orders"
+import { northwindFactory } from "@/stories/fixtures/parties"
+import { pickupLocations } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { PackingDetailsFields } from "./packing-form"
 import {
   ShipmentAddress,
@@ -22,7 +24,7 @@ function Example({
   amazonPickup?: boolean
   buyerWarehouse?: boolean
 }) {
-  const form = useForm({ defaultValues: { origin: pickupAddress, readyDate: "2026-10-21" } })
+  const form = useForm({ defaultValues: { origin: northwindFactory, readyDate: "2026-10-21" } })
   const destination = buyerWarehouse ? "Harbor Goods / Portland warehouse" : "Amazon FBA US"
   let destinationAddress = "Amazon assigns the receiving warehouse when the shipment is confirmed."
   if (forwarder) {
@@ -57,7 +59,7 @@ function Example({
       {readOnly ? (
         <ShipmentPackingDetails
           {...details}
-          shipFrom={<ShipmentOrigin origin={pickupAddress} addresses={pickupLocations} />}
+          shipFrom={<ShipmentOrigin origin={northwindFactory} addresses={pickupLocations} />}
         />
       ) : (
         <FormProvider {...form}>
@@ -72,7 +74,7 @@ const meta = preview.meta({ title: "Components/Shipments/Shipment packing detail
 
 export const Editing = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(pickupAddress.addressLine1)
+    await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(northwindFactory.addressLine1)
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeRequired()
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toHaveValue("2026-10-21")
   }
@@ -113,18 +115,16 @@ export const AddressMenu = meta.story({
 })
 export const AddAddress = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
-    const dialog = await screen.findByRole("dialog", { name: "Add new address" })
-    await waitFor(() => expect(within(dialog).getByRole("textbox", { name: "Street address" })).toBeVisible())
+    await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
+    const dialog = await shownDialog("Add new address")
+    await waitFor(() => expect(dialog.getByRole("textbox", { name: "Street address" })).toBeVisible())
   }
 })
 
 export const SaveNewAddress = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Add new address" }))
-    const dialog = within(await screen.findByRole("dialog", { name: "Add new address" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
+    const dialog = await shownDialog("Add new address")
     for (const { label, value } of [
       { label: "Address name", value: "Warehouse 2" },
       { label: "Contact name", value: "Mei Chen" },
@@ -135,10 +135,8 @@ export const SaveNewAddress = meta.story({
     ]) {
       await userEvent.type(dialog.getByRole("textbox", { name: label }), value)
     }
-    await userEvent.click(dialog.getByRole("combobox", { name: "Country" }))
-    await userEvent.click(await screen.findByRole("option", { name: /^China$/ }))
-    await userEvent.click(dialog.getByRole("combobox", { name: "State or province" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Zhejiang Sheng" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Country" }), /^China$/)
+    await chooseOption(dialog.getByRole("combobox", { name: "State or province" }), "Zhejiang Sheng")
     await userEvent.click(dialog.getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent("Warehouse 2")

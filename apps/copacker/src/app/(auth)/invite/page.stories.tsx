@@ -3,19 +3,12 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { AuthShell } from "@/components/auth/auth-shell"
 import type { Invitation, InvitationKind } from "@/server/invitations"
-import {
-  actionRecorder,
-  invitation,
-  invitationPath,
-  invitationToken,
-  ownedWorkspaces,
-  redirectTo,
-  skipAnimations
-} from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
+import { invitation, invitationPath, invitationToken, ownedWorkspaces } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
 import PageView from "./page"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 type Args = {
   kind: InvitationKind
@@ -78,13 +71,8 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/invite" } } },
   args: signedOut,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/overview")))
-    const release = catchSubmit()
-    const animate = skipAnimations()
-    return () => {
-      release()
-      animate()
-    }
+    msw.use(recordActions(sent, redirectTo("/overview")))
+    return catchSubmit()
   }
 })
 
@@ -106,8 +94,8 @@ export const NewToCopacker = meta.story({
     await expect(google.searchParams.get("next")).toBe(here)
     await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]).toEqual({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]).toEqual({
       action: "auth.signUp",
       data: { email: "jordan@example.com", password: "a long enough password", next: here }
     })
@@ -126,7 +114,7 @@ export const HasAccount = meta.story({
     )
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
-    await waitFor(() => expect(actions.sent[0]?.action).toBe("auth.signIn"))
+    await waitFor(() => expect(sent[0]?.action).toBe("auth.signIn"))
   }
 })
 
@@ -211,7 +199,7 @@ export const JoinTeam = meta.story({
     await expect(canvas.getByRole("heading", { level: 1, name: "Harbor Goods invited you" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
+    await expect(sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
   }
 })
 
@@ -227,8 +215,8 @@ export const ChooseWorkspace = meta.story({
     await expect(canvas.getByText("Choose the workspace that supplies them.")).toBeVisible()
     await expect(canvas.getAllByRole("radio")).toHaveLength(3)
     await userEvent.click(canvas.getByRole("button", { name: "Accept invitation" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toEqual({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toEqual({
       kind: "supplier",
       token: invitationToken,
       orgId: ownedWorkspaces[0]?.id

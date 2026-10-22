@@ -1,5 +1,6 @@
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { Button } from "./button"
 import { Field, FieldLabel } from "./field"
 import { Input } from "./input"
@@ -53,20 +54,20 @@ export const Default = meta.story({
   play: async ({ canvas, args }) => {
     const trigger = canvas.getByRole("button", { name: "Edit address" })
     await userEvent.click(trigger)
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await expect(sheet).toHaveAccessibleDescription("Where purchase orders ship from.")
-    await expect(sheet).toHaveAttribute("data-side", "right")
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.element).toHaveAccessibleDescription("Where purchase orders ship from.")
+    await expect(sheet.element).toHaveAttribute("data-side", "right")
     // A side sheet casts the dialog's shadow.
-    await expect(getComputedStyle(sheet).boxShadow).toContain("0px 16px 40px")
+    await expect(getComputedStyle(sheet.element).boxShadow).toContain("0px 16px 40px")
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true, expect.anything())
 
-    const city = within(sheet).getByRole("textbox", { name: "City" })
+    const city = sheet.getByRole("textbox", { name: "City" })
     await userEvent.clear(city)
     await userEvent.type(city, "Shenzhen")
-    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }))
+    await userEvent.click(sheet.getByRole("button", { name: "Save" }))
     await expect(args.onSave).toHaveBeenCalledOnce()
 
-    await userEvent.click(within(sheet).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(sheet.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false, expect.anything())
     await expect(trigger).toHaveFocus()
@@ -76,8 +77,8 @@ export const Default = meta.story({
 export const CloseButton = meta.story({
   args: { defaultOpen: true },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await userEvent.click(within(sheet).getByRole("button", { name: "Close" }))
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await userEvent.click(sheet.getByRole("button", { name: "Close" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
   }
 })
@@ -85,8 +86,8 @@ export const CloseButton = meta.story({
 export const WithoutCloseButton = meta.story({
   args: { defaultOpen: true, showCloseButton: false },
   play: async () => {
-    const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
-    await expect(within(sheet).queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
   }
@@ -115,12 +116,14 @@ export const Sides = meta.story({
   play: async ({ canvas }) => {
     for (const side of sides) {
       await userEvent.click(canvas.getByRole("button", { name: side }))
-      const sheet = await screen.findByRole("dialog", { name: `Opens from the ${side}` })
-      await expect(sheet).toHaveAttribute("data-side", side)
+      const sheet = await shownDialog(`Opens from the ${side}`)
+      await expect(sheet.element).toHaveAttribute("data-side", side)
       // A bottom sheet, as phones show one, casts its shadow upward.
-      await expect(getComputedStyle(sheet).boxShadow).toContain(side === "bottom" ? "0px -8px 24px" : "0px 16px 40px")
+      await expect(getComputedStyle(sheet.element).boxShadow).toContain(
+        side === "bottom" ? "0px -8px 24px" : "0px 16px 40px"
+      )
       await waitFor(() => {
-        const box = sheet.getBoundingClientRect()
+        const box = sheet.element.getBoundingClientRect()
         const edges = {
           top: box.top,
           left: box.left,

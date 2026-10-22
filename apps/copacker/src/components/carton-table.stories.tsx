@@ -12,7 +12,7 @@ import {
   towelPacking,
   towelPackingDraft
 } from "@/stories/fixtures/packing"
-import { shownDialog } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, width } from "@/stories/play"
 import { CartonTable } from "./carton-table"
 
 // The table with its rows kept in state, as the packing form keeps them.
@@ -419,13 +419,7 @@ export const LongSku = meta.story({
       supplierSku: `${item.supplierSku}-LONG-SUPPLIER-REFERENCE-1234567890`
     }))
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: 400, maxWidth: "100%" }}>
-        <Story />
-      </div>
-    )
-  ],
+  decorators: [width("w-100 max-w-full")],
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Products in A1–A10" }))
     const sku = canvas.getByText(/LONG-SUPPLIER-REFERENCE/)

@@ -1,8 +1,9 @@
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, fn, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { bookingDialog } from "@/stories/booking"
+import { fba } from "@/stories/fixtures/booking"
+import { chooseOption } from "@/stories/play"
 import { FbaBookingDialog } from "./fba-booking"
-import { fba } from "./fixtures"
 
 // Booking FBA transport through Amazon, as copacker.pen's 10.02 draws it: every step and every problem, each in the one
 // dialog height AGL's booking keeps. Each story is a booking from the fixtures and the step it opens on, in a dialog
@@ -189,8 +190,7 @@ export const OwnCarrierBooking = meta.story({
     await userEvent.click(carriers.getByRole("radio", { name: "Your own carrier" }))
     await userEvent.click(carriers.getByRole("button", { name: "Use this carrier" }))
     const own = await bookingDialog("Use your own carrier")
-    await userEvent.click(own.getByRole("combobox", { name: "Amazon delivery window" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Oct 28 – Nov 3" }))
+    await chooseOption(own.getByRole("combobox", { name: "Amazon delivery window" }), "Oct 28 – Nov 3")
     await userEvent.click(own.getByRole("button", { name: "Continue" }))
     const dialog = await bookingDialog("Review and book")
     await expect(dialog.getByText("Your own carrier")).toBeVisible()

@@ -1,7 +1,8 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { timeZoneLabel } from "@/lib/time-zone"
-import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { chooseOption } from "@/stories/play"
 import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "./settings-forms"
 
 const sent: ActionRequest[] = []
@@ -15,7 +16,6 @@ const meta = preview.meta({
   component: RestockSettingsForm,
   args: { salesDays: 60, leadTimeDays: 45 },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -65,7 +65,7 @@ export const RestockValidation = meta.story({
 
 export const RestockFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Only owners and admins change Restock's settings.")))
+    msw.use(recordActions(sent, failWith("Only owners and admins change Restock's settings.")))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("spinbutton", { name: "Lead time (days)" }), "30", {
@@ -126,8 +126,7 @@ export const Language = meta.story({
   play: async ({ canvas }) => {
     const language = canvas.getByRole("combobox", { name: "Language" })
     await expect(language).toHaveTextContent("System (English)")
-    await userEvent.click(language)
-    await userEvent.click(await screen.findByRole("option", { name: "Deutsch" }))
+    await chooseOption(language, "Deutsch")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent).toEqual([{ action: "profile.locale", data: { locale: "de" } }]))
   }
@@ -139,8 +138,7 @@ export const LanguageBackToSystem = meta.story({
   play: async ({ canvas }) => {
     const language = canvas.getByRole("combobox", { name: "Language" })
     await expect(language).toHaveTextContent("Français")
-    await userEvent.click(language)
-    await userEvent.click(await screen.findByRole("option", { name: "System (Deutsch)" }))
+    await chooseOption(language, "System (Deutsch)")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent).toEqual([{ action: "profile.locale", data: { locale: "" } }]))
   }
@@ -170,8 +168,7 @@ export const TimeZoneSavedAlias = meta.story({
   play: async ({ canvas }) => {
     const zone = canvas.getByRole("combobox", { name: "Store time zone" })
     await expect(zone).toHaveTextContent(timeZoneLabel("Asia/Calcutta"))
-    await userEvent.click(zone)
-    await userEvent.click(await screen.findByRole("option", { name: /^Automatic/ }))
+    await chooseOption(zone, /^Automatic/)
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent).toEqual([{ action: "workspace.timeZone", data: { timeZone: "" } }]))
   }

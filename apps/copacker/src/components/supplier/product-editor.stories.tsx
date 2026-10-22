@@ -3,6 +3,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { productCatalogs, toteProduct } from "@/stories/fixtures/supplier"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ProductEditor } from "./product-editor"
 
@@ -81,8 +82,7 @@ export const EditAndSave = meta.story({
     await userEvent.clear(price)
     await userEvent.type(price, "4.40")
     await userEvent.tab()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Archived" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Status" }), "Archived")
     await expect(canvas.getByText("Customers can’t order archived products.")).toBeVisible()
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveBeenCalledOnce())
@@ -204,7 +204,7 @@ export const EditVariant = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Black" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit variant" }))
-    const sheet = within(await screen.findByRole("dialog", { name: "Black" }))
+    const sheet = await shownDialog("Black")
     await expect(sheet.getByText("Canvas tote bag")).toBeInTheDocument()
     await expect(sheet.getByRole("button", { name: "1 price break" })).toBeInTheDocument()
     await userEvent.clear(sheet.getByRole("textbox", { name: "Color" }))
@@ -233,11 +233,10 @@ export const VariantPricing = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Natural" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit variant" }))
-    const sheet = within(await screen.findByRole("dialog", { name: "Natural" }))
-    await userEvent.click(sheet.getByRole("combobox", { name: "Price per" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Case" }))
+    const sheet = await shownDialog("Natural")
+    await chooseOption(sheet.getByRole("combobox", { name: "Price per" }), "Case")
     await userEvent.click(sheet.getByRole("button", { name: "Add rules" }))
-    const rules = within(await screen.findByRole("dialog", { name: "Quantity rules and volume pricing" }))
+    const rules = await shownDialog("Quantity rules and volume pricing")
     await expect(rules.getByText("Canvas tote bag, Natural")).toBeInTheDocument()
     await userEvent.clear(rules.getByRole("spinbutton", { name: "Minimum" }))
     await userEvent.type(rules.getByRole("spinbutton", { name: "Minimum" }), "5")
@@ -261,7 +260,7 @@ export const CancelVariantEdit = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Natural" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit variant" }))
-    const sheet = within(await screen.findByRole("dialog", { name: "Natural" }))
+    const sheet = await shownDialog("Natural")
     await userEvent.clear(sheet.getByRole("textbox", { name: "SKU" }))
     // A variant needs its SKU.
     await expect(sheet.getByRole("button", { name: "Done" })).toBeDisabled()
@@ -276,7 +275,7 @@ export const AddAndRemoveVariants = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add variant" }))
     // The new variant opens to fill in, with the last one's price.
-    const sheet = within(await screen.findByRole("dialog", { name: "Variant" }))
+    const sheet = await shownDialog("Variant")
     await expect(sheet.getByRole("textbox", { name: "Price" })).toHaveValue("4.50")
     await userEvent.type(sheet.getByRole("textbox", { name: "Color" }), "Olive")
     await userEvent.type(sheet.getByRole("textbox", { name: "SKU" }), "LM-TOTE-OLV")

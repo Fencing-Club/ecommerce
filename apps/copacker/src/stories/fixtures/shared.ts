@@ -1,32 +1,4 @@
-import type { SetupWorker } from "msw/browser"
-import { http, HttpResponse } from "msw/http"
-import { delay } from "msw/utils/delay"
-import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
-import { daysAgo } from "./orders"
-
-// Answers the app's changes (POST /api/action) with `answer`, and keeps each request's body for the play function to
-// check. The default answer is a success.
-export function recordActions(
-  msw: SetupWorker,
-  answer: () => Response | Promise<Response> = () => HttpResponse.json({ ok: true })
-) {
-  const bodies: unknown[] = []
-  msw.use(
-    http.post("/api/action", async ({ request }) => {
-      bodies.push(await request.json())
-      return answer()
-    })
-  )
-  return bodies
-}
-
-// An answer that never comes, for a story that stays on what shows while a request is on its way, or that would
-// otherwise leave the page (such as after deleting a workspace).
-export async function held(): Promise<Response> {
-  await delay("infinite")
-  return HttpResponse.json({ ok: true })
-}
 
 // What the header's search looks through for a buyer: purchase orders (newest first), their shipments, products and
 // partners.
@@ -64,25 +36,3 @@ export const searchIndex: SearchIndex = {
     { id: "partner-bayline", name: "Bayline Freight", type: "forwarder", keywords: ["Jordan Blake"] }
   ]
 }
-
-function salesOrder(number: string, channel: string, status: string, days: number): SalesOrderSummary {
-  return {
-    source: "shopify",
-    orderId: `gid://shopify/Order/${number.replace("#", "")}`,
-    number,
-    orderedAt: daysAgo(days).toISOString(),
-    units: 2,
-    items: [{ sku: "TOTE-001", name: "Canvas tote bag / Natural", quantity: 2 }],
-    channel,
-    status,
-    url: `https://admin.shopify.com/store/harbor-goods/orders/${number.replace("#", "")}`,
-    sales: { minor: 5800, currency: "USD" },
-    fees: null
-  }
-}
-
-// Sales orders the Orders page's search finds for "#10".
-export const salesOrders = [
-  salesOrder("#1042", "Online Store", "Fulfilled", 2),
-  salesOrder("#1017", "Online Store", "Unfulfilled", 5)
-]

@@ -1,34 +1,12 @@
-import type { Address, OrderInput } from "@repo/copacker-orders"
+import type { OrderInput } from "@repo/copacker-orders"
 import type { AmazonNetwork } from "@repo/copacker-packing-rules"
 import type { Packing, PackingDraft } from "@repo/copacker-shipments"
 import type { CartonGroup } from "@/lib/carton-groups"
 import { orderData, orderItem } from "./orders"
+import { northwindFactory } from "./parties"
 
 // Shipment 1 of PO38 from the 06 packing boards: Northwind Textiles packs three towels for Amazon AWD US, by way of
-// Bayline Freight's Ningbo warehouse. Mei Chen is the factory's contact.
-export const northwindFactory: Address = {
-  name: "Mei Chen",
-  phoneNumber: "+8657455550100",
-  email: "",
-  addressLine1: "88 Harbour Road",
-  addressLine2: "",
-  city: "Ningbo",
-  stateOrRegion: "Zhejiang",
-  postalCode: "315000",
-  countryCode: "CN"
-}
-
-export const baylineWarehouse: Address = {
-  name: "Bayline Freight",
-  phoneNumber: "+865745550188",
-  email: "",
-  addressLine1: "18 Gangqiao Road",
-  addressLine2: "Beilun",
-  city: "Ningbo",
-  stateOrRegion: "Zhejiang",
-  postalCode: "315800",
-  countryCode: "CN"
-}
+// Bayline Freight's Ningbo warehouse (parties.ts has both).
 
 const towel = (variant: string, sku: string, pieces: number) =>
   orderItem({

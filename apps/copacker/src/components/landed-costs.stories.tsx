@@ -1,11 +1,13 @@
 import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { actionHandler, landedCosts, orderId, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { landedCosts, orderId } from "@/stories/fixtures/purchase-orders"
+import { shownDialog } from "@/stories/play"
 import { LandedCosts } from "./landed-costs"
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const freight = [{ reference: "FBA17XK2", amount: 31_000 }]
 
 const meta = preview.meta({
@@ -21,7 +23,7 @@ const meta = preview.meta({
     costs: landedCosts
   },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions))
+    msw.use(recordActions(sent))
   }
 })
 
@@ -51,13 +53,13 @@ export const AddCost = meta.story({
     // The amount is required.
     await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
     await expect(await dialog.findByText("Enter the amount")).toBeVisible()
-    await expect(actions).not.toHaveBeenCalled()
+    await expect(sent).toEqual([])
 
     await userEvent.type(dialog.getByRole("textbox", { name: "Amount" }), "125")
     await userEvent.type(dialog.getByRole("textbox", { name: "Description" }), "Customs broker")
     await userEvent.click(dialog.getByRole("button", { name: "Add cost" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await expect(actions).toHaveBeenCalledWith({
+    await expect(sent).toContainEqual({
       action: "landedCost.create",
       data: { kind: "freight", description: "Customs broker", amount: 12_500, orderId }
     })
@@ -68,18 +70,14 @@ export const RemoveCost = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions for Duty cost" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    await waitFor(() =>
-      expect(actions).toHaveBeenCalledWith({ action: "landedCost.delete", data: { id: landedCosts[1]!.id } })
-    )
+    await waitFor(() => expect(sent).toContainEqual({ action: "landedCost.delete", data: { id: landedCosts[1]!.id } }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
 export const RemoveFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(
-      actionHandler(actions, () => HttpResponse.json({ error: "This cost was already removed" }, { status: 409 }))
-    )
+    msw.use(recordActions(sent, () => HttpResponse.json({ error: "This cost was already removed" }, { status: 409 })))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions for Freight cost" }))

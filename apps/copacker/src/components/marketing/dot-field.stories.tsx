@@ -2,6 +2,7 @@ import { expect, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { withoutWebGL } from "@/stories/fixtures/marketing"
 import { DotField } from "./dot-field"
+import { whenPageIdle } from "./use-page-idle"
 
 // The field fills the dark stage it's set in, as the hero's backdrop.
 const meta = preview.meta({
@@ -55,7 +56,8 @@ export const WithoutWebGL = meta.story({
   beforeEach: withoutWebGL,
   play: async ({ canvasElement }) => {
     const canvas = field(canvasElement)
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // The field starts once the page is idle; by the time it is for the story too, the field has tried.
+    await new Promise<void>((resolve) => whenPageIdle(resolve))
     await expect(canvas).toBeInTheDocument()
     // Never laid out for drawing: a canvas's own size.
     await expect(canvas.width).toBe(300)

@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { editable, productDefaults, suppliers } from "@/stories/fixtures/catalog"
+import { chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ProductDetails } from "./product-details"
 
@@ -43,8 +44,7 @@ export const OneVariation = meta.story({
     await expect(details.getByText("APRON-CHR")).toBeInTheDocument()
     await expect(details.getByRole("button", { name: "Save" })).toBeDisabled()
 
-    await userEvent.click(details.getByRole("combobox", { name: "Supplier" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Lotus Manufacturing" }))
+    await chooseOption(details.getByRole("combobox", { name: "Supplier" }), "Lotus Manufacturing")
     await userEvent.type(details.getByRole("spinbutton", { name: "Minimum order quantity" }), "50")
     await userEvent.type(details.getByRole("textbox", { name: "ASIN" }), "B0APRON001")
     await userEvent.click(details.getByRole("checkbox", { name: "Suffocation warning label" }))

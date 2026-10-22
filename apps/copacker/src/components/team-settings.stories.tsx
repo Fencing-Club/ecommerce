@@ -1,8 +1,10 @@
 import { HttpResponse } from "msw/http"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type ActionRequest, recordActions, serverError, team } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { team } from "@/stories/fixtures/logistics"
+import { shownDialog, chooseOption, shownAlertDialog } from "@/stories/play"
 import { person } from "@/stories/workspace"
 import { TeamSettings } from "./team-settings"
 
@@ -20,17 +22,13 @@ const meta = preview.meta({
     kind: "buyer"
   },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
 
 // Picks a page's access in the open access dialog.
-async function choose(dialog: HTMLElement, page: string, level: string) {
-  await userEvent.click(within(dialog).getByRole("combobox", { name: page }))
-  await userEvent.click(await screen.findByRole("option", { name: level }))
-  // The menu closes before the next one opens.
-  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+async function choose(dialog: Awaited<ReturnType<typeof shownDialog>>, page: string, level: string) {
+  await chooseOption(dialog.getByRole("combobox", { name: page }), level)
 }
 
 // The owner's own row has no menu; everyone else's has what the owner can do to them.
@@ -59,23 +57,23 @@ export const InviteMember = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
-    const dialog = await screen.findByRole("dialog", { name: "Invite to Harbor Goods" })
+    const dialog = await shownDialog("Invite to Harbor Goods")
     // A member starts with no pages, so one has to be chosen.
-    await userEvent.click(within(dialog).getByRole("button", { name: "Send invitation" }))
-    await expect(await within(dialog).findByText("Enter an email address")).toBeInTheDocument()
-    await expect(within(dialog).getByText("Choose at least one page")).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Send invitation" }))
+    await expect(await dialog.findByText("Enter an email address")).toBeInTheDocument()
+    await expect(dialog.getByText("Choose at least one page")).toBeInTheDocument()
     await expect(sent).toHaveLength(0)
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "jordan@harbor.example.com")
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "jordan@harbor.example.com")
     await choose(dialog, "Shipments", "Edit")
-    await expect(within(dialog).queryByText("Choose at least one page")).toBeNull()
+    await expect(dialog.queryByText("Choose at least one page")).toBeNull()
     await choose(dialog, "Purchase orders", "View")
     // The Overview is about money, so it offers view at most.
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Overview" }))
+    await userEvent.click(dialog.getByRole("combobox", { name: "Overview" }))
     await expect(await screen.findByRole("option", { name: "View" })).toBeInTheDocument()
     await expect(screen.queryByRole("option", { name: "Edit" })).toBeNull()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
-    await userEvent.click(within(dialog).getByRole("button", { name: "Send invitation" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Send invitation" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -98,23 +96,23 @@ export const InviteMember = meta.story({
 export const InviteWithoutPrices = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "lee@harbor.example.com")
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "lee@harbor.example.com")
     await choose(dialog, "Overview", "View")
     await choose(dialog, "Partners", "Edit")
     await choose(dialog, "Purchase orders", "Edit")
-    await userEvent.click(within(dialog).getByRole("switch", { name: "See prices and costs" }))
-    await expect(within(dialog).getByRole("combobox", { name: "Overview" })).toBeDisabled()
-    await expect(within(dialog).getByRole("combobox", { name: "Overview" })).toHaveTextContent("No access")
-    await expect(within(dialog).getByRole("combobox", { name: "Partners" })).toHaveTextContent("Edit")
+    await userEvent.click(dialog.getByRole("switch", { name: "See prices and costs" }))
+    await expect(dialog.getByRole("combobox", { name: "Overview" })).toBeDisabled()
+    await expect(dialog.getByRole("combobox", { name: "Overview" })).toHaveTextContent("No access")
+    await expect(dialog.getByRole("combobox", { name: "Partners" })).toHaveTextContent("Edit")
     // Editing purchase orders sets prices, so it drops to viewing them.
-    await expect(within(dialog).getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("View")
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Purchase orders" }))
+    await expect(dialog.getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("View")
+    await userEvent.click(dialog.getByRole("combobox", { name: "Purchase orders" }))
     await expect(await screen.findByRole("option", { name: "View" })).toBeInTheDocument()
     await expect(screen.queryByRole("option", { name: "Edit" })).toBeNull()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
-    await userEvent.click(within(dialog).getByRole("button", { name: "Send invitation" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Send invitation" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -130,12 +128,12 @@ export const InviteWithoutPrices = meta.story({
 export const InviteAdmin = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "morgan@harbor.example.com")
-    await userEvent.click(within(dialog).getByRole("radio", { name: "Admin" }))
-    await expect(within(dialog).queryByText("Pages")).toBeNull()
-    await expect(within(dialog).queryByRole("switch")).toBeNull()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Send invitation" }))
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "morgan@harbor.example.com")
+    await userEvent.click(dialog.getByRole("radio", { name: "Admin" }))
+    await expect(dialog.queryByText("Pages")).toBeNull()
+    await expect(dialog.queryByRole("switch")).toBeNull()
+    await userEvent.click(dialog.getByRole("button", { name: "Send invitation" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toMatchObject({
       action: "team.invite",
@@ -146,15 +144,15 @@ export const InviteAdmin = meta.story({
 
 export const InviteFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Priya Shah is already in Harbor Goods.")))
+    msw.use(recordActions(sent, failWith("Priya Shah is already in Harbor Goods.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "priya@harbor.example.com")
-    await userEvent.click(within(dialog).getByRole("radio", { name: "Admin" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Send invitation" }))
-    await expect(await within(dialog).findByText("Priya Shah is already in Harbor Goods.")).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Email" }), "priya@harbor.example.com")
+    await userEvent.click(dialog.getByRole("radio", { name: "Admin" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Send invitation" }))
+    await expect(await dialog.findByText("Priya Shah is already in Harbor Goods.")).toBeInTheDocument()
   }
 })
 
@@ -162,16 +160,16 @@ export const ChangeMemberAccess = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Change access" }))
-    const dialog = await screen.findByRole("dialog", { name: "Change access for Sam Okafor" })
+    const dialog = await shownDialog("Change access for Sam Okafor")
     // It starts from what they have now.
-    await expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked()
-    await expect(within(dialog).getByRole("switch", { name: "See prices and costs" })).toBeChecked()
-    await expect(within(dialog).getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("Edit")
-    await expect(within(dialog).getByRole("combobox", { name: "Shipments" })).toHaveTextContent("View")
-    await userEvent.click(within(dialog).getByRole("switch", { name: "See prices and costs" }))
-    await expect(within(dialog).getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("View")
-    await expect(within(dialog).getByRole("combobox", { name: "Overview" })).toBeDisabled()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await expect(dialog.getByRole("radio", { name: "Member" })).toBeChecked()
+    await expect(dialog.getByRole("switch", { name: "See prices and costs" })).toBeChecked()
+    await expect(dialog.getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("Edit")
+    await expect(dialog.getByRole("combobox", { name: "Shipments" })).toHaveTextContent("View")
+    await userEvent.click(dialog.getByRole("switch", { name: "See prices and costs" }))
+    await expect(dialog.getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("View")
+    await expect(dialog.getByRole("combobox", { name: "Overview" })).toBeDisabled()
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -190,9 +188,9 @@ export const PromoteToAdmin = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Change access" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("radio", { name: "Admin" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    const dialog = await shownDialog()
+    await userEvent.click(dialog.getByRole("radio", { name: "Admin" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toMatchObject({ action: "team.access", data: { userId: "user_sam", role: "admin" } })
   }
@@ -202,9 +200,9 @@ export const RemoveMember = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Remove Sam Okafor?" })
-    await expect(dialog).toHaveTextContent("They lose access to Harbor Goods right away.")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Remove" }))
+    const dialog = await shownAlertDialog("Remove Sam Okafor?")
+    await expect(dialog.element).toHaveTextContent("They lose access to Harbor Goods right away.")
+    await userEvent.click(dialog.getByRole("button", { name: "Remove" }))
     await waitFor(() => expect(sent).toEqual([{ action: "team.remove", data: { userId: "user_sam" } }]))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
   }
@@ -212,22 +210,22 @@ export const RemoveMember = meta.story({
 
 export const RemoveFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Sam Okafor already left Harbor Goods.")))
+    msw.use(recordActions(sent, failWith("Sam Okafor already left Harbor Goods.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    const dialog = await screen.findByRole("alertdialog")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Remove" }))
-    await expect(await within(dialog).findByText("Sam Okafor already left Harbor Goods.")).toBeInTheDocument()
+    const dialog = await shownAlertDialog()
+    await userEvent.click(dialog.getByRole("button", { name: "Remove" }))
+    await expect(await dialog.findByText("Sam Okafor already left Harbor Goods.")).toBeInTheDocument()
     // Cancel closes it with nothing removed.
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     // The error was the removal's own: transferring to them starts without it.
     await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Transfer ownership" }))
-    const transfer = await screen.findByRole("alertdialog", { name: "Transfer ownership to Sam Okafor?" })
-    await expect(within(transfer).queryByText("Sam Okafor already left Harbor Goods.")).toBeNull()
+    const transfer = await shownAlertDialog("Transfer ownership to Sam Okafor?")
+    await expect(transfer.queryByText("Sam Okafor already left Harbor Goods.")).toBeNull()
   }
 })
 
@@ -235,9 +233,9 @@ export const TransferOwnership = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Priya Shah" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Transfer ownership" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Transfer ownership to Priya Shah?" })
-    await expect(dialog).toHaveTextContent("They become the owner of Harbor Goods, and you stay an admin.")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Transfer ownership" }))
+    const dialog = await shownAlertDialog("Transfer ownership to Priya Shah?")
+    await expect(dialog.element).toHaveTextContent("They become the owner of Harbor Goods, and you stay an admin.")
+    await userEvent.click(dialog.getByRole("button", { name: "Transfer ownership" }))
     await waitFor(() => expect(sent).toEqual([{ action: "team.transfer", data: { userId: "user_priya" } }]))
   }
 })
@@ -284,7 +282,7 @@ export const CancelInvitation = meta.story({
 
 export const InvitationFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("That invitation was already accepted.")))
+    msw.use(recordActions(sent, failWith("That invitation was already accepted.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for jordan@harbor.example.com" }))
@@ -298,15 +296,15 @@ export const ChangeInvitationAccess = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for jordan@harbor.example.com" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Change access" }))
-    const dialog = await screen.findByRole("dialog", { name: "Change access for jordan@harbor.example.com" })
-    await expect(within(dialog).getByRole("combobox", { name: "Shipments" })).toHaveTextContent("Edit")
+    const dialog = await shownDialog("Change access for jordan@harbor.example.com")
+    await expect(dialog.getByRole("combobox", { name: "Shipments" })).toHaveTextContent("Edit")
     // An invitation made without prices keeps them off.
-    await expect(within(dialog).getByRole("switch", { name: "See prices and costs" })).not.toBeChecked()
+    await expect(dialog.getByRole("switch", { name: "See prices and costs" })).not.toBeChecked()
     await choose(dialog, "Shipments", "No access")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
-    await expect(await within(dialog).findByText("Choose at least one page")).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
+    await expect(await dialog.findByText("Choose at least one page")).toBeInTheDocument()
     await choose(dialog, "Partners", "View")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(sent).toEqual([
         {
@@ -323,9 +321,9 @@ export const Forwarder = meta.story({
   args: { workspace: "Bayline Freight", kind: "forwarder", invitations: [] },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
-    const dialog = await screen.findByRole("dialog", { name: "Invite to Bayline Freight" })
-    await expect(within(dialog).queryByRole("switch")).toBeNull()
-    await expect(within(dialog).getByRole("combobox", { name: "Purchase orders" })).toBeInTheDocument()
-    await expect(within(dialog).queryByRole("combobox", { name: "Shipments" })).toBeNull()
+    const dialog = await shownDialog("Invite to Bayline Freight")
+    await expect(dialog.queryByRole("switch")).toBeNull()
+    await expect(dialog.getByRole("combobox", { name: "Purchase orders" })).toBeInTheDocument()
+    await expect(dialog.queryByRole("combobox", { name: "Shipments" })).toBeNull()
   }
 })
