@@ -180,21 +180,21 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
       const presentmentValues = linked.map((row) =>
         money(object.safeParse(canonical.get(row.transactionId)!.payment.amountSet).data?.presentmentMoney)
       )
-      const available =
+      const shopAvailable = totalsAvailable && shopValues.every((v) => v !== null)
+      const presentmentAvailable =
         totalsAvailable &&
-        shopValues.every((v) => v !== null) &&
         presentmentValues.every((v) => v !== null && v.integer >= 0n) &&
         parentPresentment !== null &&
         parentPresentment.integer >= 0n
       const shopCheck = compare(
         parentShop,
         shopValues.filter((v) => v !== null),
-        available
+        shopAvailable
       )
       const presentmentCheck = compare(
         parentPresentment,
         presentmentValues.filter((v) => v !== null),
-        available
+        presentmentAvailable
       )
       let classification = "unresolved_linked_refund_amounts"
       if (
@@ -216,12 +216,12 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
           shopDifference: difference(
             parentShop,
             shopValues.filter((v) => v !== null),
-            available
+            shopAvailable
           ),
           presentmentDifference: difference(
             parentPresentment,
             presentmentValues.filter((v) => v !== null),
-            available
+            presentmentAvailable
           ),
           differenceMeaning: "successful_linked_refunds_minus_parent_payment",
           accountingEffect: "not_determined"

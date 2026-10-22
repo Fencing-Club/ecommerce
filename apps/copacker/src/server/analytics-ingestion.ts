@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import {
+  amazonInboundShipments,
   analyticsEvidence,
   analyticsFeeds,
   operatingCosts,
@@ -15,6 +16,7 @@ import {
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
 import { analyticsPage } from "./analytics-snapshot"
+import { declaredShipmentUnits } from "./declared-shipment-units"
 import { reconcileReceiptMovements } from "./receipt-movement-reconciliation"
 import { receiptQuantities } from "./receipt-quantities"
 import { shopifyBalanceComparison } from "./shopify-balance-comparison"
@@ -88,6 +90,30 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
             .orderBy(amazonInventoryMovements.eventDay, amazonInventoryMovements.id)
             .limit(5001)
         : []
+      let receiptNetwork: "awd" | "fba" | null = null
+      if (input.source === "amazon" && input.dataset === "awd_inbound_receipts") {
+        receiptNetwork = "awd"
+      } else if (input.source === "amazon" && input.dataset === "fba_inbound_receipts") {
+        receiptNetwork = "fba"
+      }
+      const savedShipments =
+        receiptNetwork && rows.length
+          ? await tx
+              .select()
+              .from(amazonInboundShipments)
+              .where(
+                and(
+                  eq(amazonInboundShipments.orgId, orgId),
+                  eq(amazonInboundShipments.externalAccountId, input.externalAccountId),
+                  eq(amazonInboundShipments.network, receiptNetwork),
+                  inArray(
+                    amazonInboundShipments.shipmentId,
+                    rows.slice(0, 100).map((row) => row.sourceId)
+                  )
+                )
+              )
+          : []
+      const savedByShipment = new Map(savedShipments.map((shipment) => [shipment.shipmentId, shipment]))
       const balances = orderIds.length
         ? await tx
             .select()
@@ -132,6 +158,7 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
             : null,
         rows: rows.slice(0, 100).map((row) => ({
           ...row,
+          declaredShipmentUnits: receiptNetwork ? declaredShipmentUnits(savedByShipment.get(row.sourceId)) : null,
           receiptQuantities: receiptQuantities(input.dataset, row.data, catalogs),
           receiptReconciliation:
             input.source === "amazon"

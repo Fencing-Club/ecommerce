@@ -116,3 +116,17 @@ diagnostics without starting a sync or backfill; see the dated results and remai
 [analytics data backlog](specs/analytics/analytics-data-backlog.md#pr-71-acceptance-october-19-2026-pacific).
 External gateway fees, refund duty components, payout matching, historical product identity and return-to-stock lot
 restoration remain separate data/accounting gaps.
+
+## Saved shipment contents and stronger payment candidates
+
+Receipt evidence includes `declaredShipmentUnits` from the saved inbound shipment cache, matched by workspace,
+seller, network and shipment ID. The source and fetch timestamp are retained. Quantities are declared saleable units,
+not independently confirmed received units or physical pieces. Missing/invalid contents and omitted SKUs remain unknown;
+no case conversion is inferred. Changes to this cache invalidate continuation snapshots.
+
+Reimbursement candidates include `strongerPaymentCandidate` when order, nonempty SKU, marketplace, stored and payload
+currency, signed whole-transaction amount and reimbursement transaction type agree. These candidates rank first within
+the current 5,000-transaction search page, before 20-candidate pagination. The matching summary exposes their count.
+Search-page counts do not establish global uniqueness; competing reimbursement rows across report pages are explicitly
+not assessed. Existing release, total, allocation and reversal checks still apply. No candidate confirms payment or adds
+income, even when only one candidate is visible. These changes read saved data only and schedule no acquisition.

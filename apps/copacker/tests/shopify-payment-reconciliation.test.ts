@@ -226,3 +226,20 @@ it("checks balance arithmetic while keeping charge and refund fees separate from
   ])
   expect(result).toMatchObject({ truncated: true, settlementReconciled: false, additionalRecognizedAmount: null })
 })
+
+it("retains shop-currency comparisons when linked refund presentment is missing", () => {
+  const sale = payment("S", "SALE", "10")
+  const returned = {
+    ...payment("R", "REFUND", "11"),
+    parentTransaction: { id: "S" },
+    amountSet: { shopMoney: money("11") }
+  }
+  const result = reconcileShopifyPayments({ transactions: [sale, returned], refunds: [] })
+  expect(result.orderComparison.linkedRefundComparisons[0]).toMatchObject({
+    shopCheck: "amount_mismatch",
+    shopDifference: { amount: "1", currency: "USD" },
+    presentmentCheck: "unavailable",
+    presentmentDifference: null,
+    classification: "unresolved_linked_refund_amounts"
+  })
+})
