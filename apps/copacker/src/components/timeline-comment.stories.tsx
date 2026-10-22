@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { held, type ActionRequest, recordActions } from "@/stories/actions"
+import { chooseOption } from "@/stories/play"
 import { TimelineComment } from "./timeline-comment"
 
 const sent: ActionRequest[] = []
@@ -14,13 +15,10 @@ const meta = preview.meta({
 })
 
 export const SharedMessage = meta.story({
-  play: async ({ canvas, canvasElement, msw }) => {
+  play: async ({ canvas, msw }) => {
     msw.use(recordActions(sent))
     await expect(canvas.getByText("Only your team can see this comment.")).toBeVisible()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
-    await userEvent.click(
-      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message supplier" })
-    )
+    await chooseOption(canvas.getByRole("combobox", { name: "Comment visibility" }), "Message supplier")
     await expect(canvas.getByText("Your team and the supplier can see this message.")).toBeVisible()
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Please check the labels")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
@@ -112,14 +110,27 @@ export const Fails = meta.story({
   }
 })
 
+// Dismissing a failure hides it and goes back to the comment, which stays to post again.
+export const DismissError = meta.story({
+  play: async ({ canvas, msw }) => {
+    msw.use(recordActions(sent, () => new HttpResponse(null, { status: 500 })))
+    const textbox = canvas.getByRole("textbox", { name: "Comment" })
+    await userEvent.type(textbox, "Cartons ship Friday")
+    await userEvent.click(canvas.getByRole("button", { name: "Post" }))
+    await canvas.findByRole("alert")
+    await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }))
+    await expect(canvas.queryByRole("alert")).toBeNull()
+    await expect(textbox).toHaveFocus()
+    await expect(textbox).toHaveValue("Cartons ship Friday")
+    await expect(textbox).toHaveAccessibleDescription("Only your team can see this comment.")
+  }
+})
+
 export const SupplierMessage = meta.story({
   args: { counterparty: "customer" },
-  play: async ({ canvas, canvasElement, msw }) => {
+  play: async ({ canvas, msw }) => {
     msw.use(recordActions(sent))
-    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
-    await userEvent.click(
-      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message customer" })
-    )
+    await chooseOption(canvas.getByRole("combobox", { name: "Comment visibility" }), "Message customer")
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "Ready for collection")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     await waitFor(() =>

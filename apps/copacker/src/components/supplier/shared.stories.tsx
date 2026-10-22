@@ -1,9 +1,10 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { photo } from "@/stories/fixtures/supplier"
-import { Amounts, ProductThumb, StatusBadge } from "./shared"
+import { Amounts, ProductThumb } from "./shared"
 
-// The pieces the supplier pages share: a product's photo, status badges and amounts.
+// The pieces the supplier pages share: a product's photo and amounts. Product and catalog statuses are the app's
+// `Status`.
 const meta = preview.meta({
   title: "Components/Supplier workspace/Shared",
   component: ProductThumb,
@@ -21,21 +22,6 @@ export const Thumbnails = meta.story({
     const image = canvas.getByTestId("thumbs").querySelector("img")
     await expect(image).toHaveAttribute("src", `/api/product-images?key=${encodeURIComponent(photo.key)}`)
     await expect(canvas.getByTestId("thumbs").querySelectorAll("svg")).toHaveLength(1)
-  }
-})
-
-export const Statuses = meta.story({
-  render: () => (
-    <div className="flex gap-2">
-      <StatusBadge status="active" />
-      <StatusBadge status="draft" />
-      <StatusBadge status="archived" />
-    </div>
-  ),
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Active")).toBeVisible()
-    await expect(canvas.getByText("Draft")).toBeVisible()
-    await expect(canvas.getByText("Archived")).toBeVisible()
   }
 })
 

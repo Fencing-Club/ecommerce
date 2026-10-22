@@ -1,10 +1,13 @@
 import type { TooltipContentProps } from "recharts"
 import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from "recharts"
 import { useLocale, useTranslations } from "use-intl"
+import { ChartTooltipFrame, ChartTooltipRow, chartAxis } from "@/components/overview-charts"
 import { useMoney } from "@/hooks/use-money"
 import type { Comparison } from "@/lib/date-range"
 import { compactMoney } from "@/lib/format"
+import { buckets, seriesStep } from "@/lib/series"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
+import { vars } from "@/styles/theme.css"
 
 type Point = { key: string; label: string; title: string; value: number; orders: number; previous: number | null }
 
@@ -12,34 +15,23 @@ type Point = { key: string; label: string; title: string; value: number; orders:
 const dayLabel = (day: string, locale: string, options: Intl.DateTimeFormatOptions) =>
   new Date(`${day}T00:00:00Z`).toLocaleDateString(locale, { ...options, timeZone: "UTC" })
 
-function bucketSize(days: number) {
-  if (days <= 45) {
-    return 1
-  }
-  return days <= 190 ? 7 : 30
-}
-
-// Days for a month or so, then weeks, then months, so bars stay readable. `range` writes a week's first and last day
-// as one span.
-function buckets(
+// A bar for each day, week or calendar month, as the buyer's Overview draws its periods. A bar of several days is
+// titled by its first and last, which `range` writes as one span.
+function points(
   series: SupplierOverviewData["series"],
   locale: string,
   range: (low: string, high: string) => string
 ): Point[] {
-  const size = bucketSize(series.length)
-  const points: Point[] = []
-  for (let start = 0; start < series.length; start += size) {
-    const group = series.slice(start, start + size)
+  const step = seriesStep(series.length)
+  return buckets(series, step, (day) => day.day).map(({ start, end }) => {
+    const group = series.slice(start, end)
     const first = group[0]!.day
     const last = group.at(-1)!.day
-    const previous = group.every((day) => day.previous === null)
-      ? null
-      : group.reduce((sum, day) => sum + (day.previous ?? 0), 0)
-    points.push({
+    return {
       key: first,
-      label: dayLabel(first, locale, size === 30 ? { month: "short" } : { month: "short", day: "numeric" }),
+      label: dayLabel(first, locale, step === "month" ? { month: "short" } : { month: "short", day: "numeric" }),
       title:
-        size === 1
+        first === last
           ? dayLabel(first, locale, { weekday: "short", month: "short", day: "numeric" })
           : range(
               dayLabel(first, locale, { month: "short", day: "numeric" }),
@@ -47,49 +39,48 @@ function buckets(
             ),
       value: group.reduce((sum, day) => sum + day.value, 0),
       orders: group.reduce((sum, day) => sum + day.orders, 0),
-      previous
-    })
-  }
-  return points
+      previous: group.every((day) => day.previous === null)
+        ? null
+        : group.reduce((sum, day) => sum + (day.previous ?? 0), 0)
+    }
+  })
 }
 
+// Recharts fills in `active` and `activeIndex` when it renders the tooltip.
 function ChartTooltip({
   active,
-  payload,
+  activeIndex,
+  points,
   currency,
   previousLabel
-}: Partial<TooltipContentProps> & { currency: string; previousLabel: string | null }) {
+}: Partial<Pick<TooltipContentProps, "active" | "activeIndex">> & {
+  points: Point[]
+  currency: string
+  previousLabel: string | null
+}) {
   const t = useTranslations("supplier.chart")
   const locale = useLocale()
   const money = useMoney()
-  const point = payload?.[0]?.payload as Point | undefined
+  const point = activeIndex === null || activeIndex === undefined ? undefined : points[Number(activeIndex)]
   if (!active || !point) {
     return null
   }
   return (
-    <div className="min-w-44 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
-      <p className="mb-1.5 font-medium">{point.title}</p>
-      <div className="flex items-center justify-between gap-4">
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          <span className="size-2 rounded-[2px] bg-chart-1" aria-hidden />
-          {t("ordered")}
-        </span>
-        <span className="font-medium tabular-nums">{money(point.value, currency)}</span>
-      </div>
-      <div className="flex justify-between gap-4 text-muted-foreground">
-        <span className="ps-3.5">{t("orders")}</span>
-        <span className="tabular-nums">{point.orders.toLocaleString(locale)}</span>
-      </div>
+    <ChartTooltipFrame title={point.title}>
+      <ChartTooltipRow
+        mark={<span className="size-2 rounded-[2px] bg-chart-1" />}
+        label={t("ordered")}
+        value={money(point.value, currency)}
+      />
+      <ChartTooltipRow label={t("orders")} value={point.orders.toLocaleString(locale)} />
       {point.previous !== null && previousLabel && (
-        <div className="mt-1 flex justify-between gap-4 text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="h-0 w-2 border-t-2 border-dashed border-muted-foreground" aria-hidden />
-            {previousLabel}
-          </span>
-          <span className="tabular-nums">{money(point.previous, currency)}</span>
-        </div>
+        <ChartTooltipRow
+          mark={<span className="w-3 border-t-2 border-dashed border-muted-foreground" />}
+          label={previousLabel}
+          value={money(point.previous, currency)}
+        />
       )}
-    </div>
+    </ChartTooltipFrame>
   )
 }
 
@@ -110,7 +101,7 @@ export function OrdersChart({
   const shared = useTranslations("supplier.shared")
   const locale = useLocale()
   const money = useMoney()
-  const data = buckets(series, locale, (low, high) => shared("range", { low, high }))
+  const data = points(series, locale, (low, high) => shared("range", { low, high }))
   const compared = previousLabel !== null && data.some((point) => point.previous !== null)
   return (
     <div className="flex flex-col gap-3">
@@ -132,35 +123,33 @@ export function OrdersChart({
           responsive
           style={{ width: "100%", height: "100%" }}
           margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
-          barCategoryGap={2}
+          barCategoryGap="10%"
           aria-hidden
         >
-          <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            minTickGap={20}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-          />
+          <CartesianGrid vertical={false} stroke={vars.color.border} strokeDasharray="3 3" />
+          <XAxis dataKey="label" {...chartAxis} minTickGap={20} />
           <YAxis
+            {...chartAxis}
             width={52}
-            tickLine={false}
-            axisLine={false}
             allowDecimals={false}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             tickFormatter={(value: number) => compactMoney(value, currency, locale)}
           />
           <Tooltip
-            cursor={{ fill: "var(--muted)", opacity: 0.6 }}
-            content={<ChartTooltip currency={currency} previousLabel={previousLabel} />}
+            cursor={{ fill: vars.color.muted, opacity: 0.6 }}
+            content={<ChartTooltip points={data} currency={currency} previousLabel={previousLabel} />}
           />
-          <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+          <Bar
+            dataKey="value"
+            fill={vars.color.chart1}
+            radius={[4, 4, 0, 0]}
+            maxBarSize={28}
+            isAnimationActive={false}
+          />
           {compared && (
             <Line
               type="monotone"
               dataKey="previous"
-              stroke="var(--muted-foreground)"
+              stroke={vars.color.mutedForeground}
               strokeWidth={2}
               strokeDasharray="4 4"
               dot={false}

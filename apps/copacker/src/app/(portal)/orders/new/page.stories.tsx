@@ -1,12 +1,11 @@
-import { HttpResponse } from "msw/http"
+import type { OrderItem } from "@repo/copacker-orders"
 import { expect, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { suppliers } from "@/db/schema"
-import type { orderLine } from "@/lib/order-lines"
 import type { ForwarderAddress } from "@/server/forwarders"
-import { type ActionRequest, recordActions } from "@/stories/actions"
+import { type ActionRequest, recordActions, redirectTo } from "@/stories/actions"
 import { deliveryId, supplierId } from "@/stories/fixtures/orders"
 import {
   catalogMatches,
@@ -27,7 +26,7 @@ type Args = {
   // What the page reads: the buyer's suppliers, the lines made from ?variant=…, the variations that still need a label,
   // the forwarders' addresses and the delivery addresses.
   suppliers: Array<typeof suppliers.$inferSelect>
-  initialItems: Array<ReturnType<typeof orderLine>>
+  initialItems: OrderItem[]
   needsBarcode: string[]
   forwarding: ForwarderAddress[]
   deliveries: typeof deliveries
@@ -86,11 +85,7 @@ const meta = preview.meta({
     deliveries
   },
   beforeEach: ({ msw }) => {
-    msw.use(
-      ...productHandlers(),
-      catalogMatches(),
-      recordActions(sent, () => HttpResponse.json({ ok: true, redirect: `/orders/${orderId}` }))
-    )
+    msw.use(...productHandlers(), catalogMatches(), recordActions(sent, redirectTo(`/orders/${orderId}`)))
   }
 })
 

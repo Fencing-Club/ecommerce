@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import { createdTimelineEntry, orderId, timelineEntries } from "@/stories/fixtures/purchase-orders"
+import { chooseOption } from "@/stories/play"
 import { serverStory } from "@/stories/server"
 import { PoTimeline } from "./po-timeline"
 
@@ -38,8 +39,17 @@ export const Default = meta.story({
     await expect(canvas.getByText("Purchase order emailed to Lotus Manufacturing")).toBeVisible()
     // Only comments have avatars: the comment box spans the timeline.
     await expect(canvas.getAllByText("AR")).toHaveLength(1)
+    // Revisions start collapsed.
+    for (const name of ["Revision 2: Approved supplier changes", "Purchase order created"]) {
+      await expect(canvas.getByRole("button", { name })).toHaveAttribute("aria-expanded", "false")
+    }
+    await expect(canvas.queryByText(/TOTE-NAT/)).toBeNull()
+  }
+})
 
-    // A revision opens to show its lines, with prices and supplier SKUs.
+// A revision opens to show its lines, with prices and supplier SKUs.
+export const RevisionLines = meta.story({
+  play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Revision 2: Approved supplier changes" }))
     await expect(await canvas.findByText("TOTE-NAT: 300 units at $4.25, supplier SKU LM-TOTE")).toBeVisible()
     // The first revision is the purchase order being created, without a number.
@@ -81,16 +91,13 @@ export const WithoutPrices = meta.story({
 // messages are with the customer.
 export const Supplier = meta.story({
   args: { viewerOrg: "Lotus Manufacturing", counterparty: "customer" },
-  play: async ({ canvas, canvasElement }) => {
+  play: async ({ canvas }) => {
     await expect(canvas.getByText("Alex Rivera")).toHaveTextContent("Alex Rivera at Harbor Goods")
     await expect(canvas.getByText("Mei Chen")).toHaveTextContent(/^Mei Chen$/)
     await expect(canvas.queryByText("at Lotus Manufacturing")).toBeNull()
     await expect(canvas.getAllByText("Shared with customer")).toHaveLength(2)
     await expect(canvas.queryByText("Shared with supplier")).toBeNull()
-    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
-    await userEvent.click(
-      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message customer" })
-    )
+    await chooseOption(canvas.getByRole("combobox", { name: "Comment visibility" }), "Message customer")
     await expect(canvas.getByRole("combobox", { name: "Comment visibility" })).toHaveTextContent("Message customer")
     await expect(canvas.getByText("Your team and the customer can see this message.")).toBeVisible()
   }

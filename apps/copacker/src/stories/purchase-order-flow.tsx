@@ -1,5 +1,5 @@
 import { Toast } from "@base-ui/react/toast"
-import { type OrderInput, orderSubtotal } from "@repo/copacker-orders"
+import { type OrderInput, orderLine, orderSubtotal } from "@repo/copacker-orders"
 import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
 import { packingSchema, type Packing, type PackingDraft } from "@repo/copacker-shipments"
@@ -73,12 +73,11 @@ import {
 } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMoney } from "@/hooks/use-money"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
-import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
 import { northwindFactory } from "@/stories/fixtures/parties"
@@ -305,11 +304,13 @@ function SelectChoice({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option} value={option}>
-            {option}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )

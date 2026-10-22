@@ -5,12 +5,21 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { chunked, excluded } from "@/db/helpers"
-import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
-import { withJobWake } from "@/server/job-delivery"
+import { salesOrders, salesSyncs } from "@/db/schema"
 import { amazonApp, amazonFor } from "./connections"
-import { jobRow, type JobInput } from "./job-payloads"
+import type { JobInput } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
+import { logEvent } from "./log"
 import { connectedAccount } from "./provider-accounts"
+import {
+  eventWorkspace,
+  queueEventJobs,
+  queueSubscription,
+  readMessage,
+  settleMs,
+  startEventSync,
+  subscribeTopics
+} from "./provider-events"
 import { amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue, queueArn } from "./sqs"
@@ -26,10 +35,6 @@ const processingDirectives: Partial<Record<(typeof amazonNotificationTypes)[numb
     eventFilter: { eventFilterType: "ORDER_CHANGE", orderChangeTypes: ["OrderStatusChange", "BuyerRequestedChange"] }
   }
 }
-// Notifications are gathered into five-minute periods, and each period's work starts three minutes after it ends, when
-// the orders in it have settled (see syncChunks).
-const batchMs = 5 * 60000
-const settleMs = 3 * 60000
 // How far before the stored orders' end each read starts, for changes Amazon records a little late.
 const overlapMs = 5 * 60000
 // Stored orders older than this are brought up to date by a full sync instead.
@@ -56,49 +61,23 @@ const notificationSchema = z.discriminatedUnion("NotificationType", [
   })
 ])
 
-// Queues the work a notification calls for, for every workspace connected to the seller. Returns how many were.
+// Queues the work a notification calls for, for every workspace connected to the seller (see queueEventJobs). Returns
+// how many were.
 export async function receiveAmazonNotification(body: string, now = Date.now()) {
-  let json: unknown
-  try {
-    json = JSON.parse(body)
-  } catch {
-    json = null
-  }
-  const notification = notificationSchema.safeParse(json)
-  if (!notification.success) {
-    console.warn(JSON.stringify({ event: "amazon_notification_ignored", reason: "unrecognized notification" }))
+  const data = readMessage(body, notificationSchema, "amazon_notification_ignored")
+  if (!data) {
     return 0
   }
-  const { data } = notification
   const target = data.NotificationType === "ORDER_CHANGE" ? "sales" : "stock"
   const sellerId =
     data.NotificationType === "ORDER_CHANGE"
       ? data.Payload.OrderChangeNotification.SellerId
       : data.Payload.FBAInventoryAvailabilityChangeNotification.SellerId
-  const accounts = await db()
-    .select({ orgId: connections.orgId })
-    .from(connections)
-    .where(and(eq(connections.provider, "amazon"), eq(connections.externalId, sellerId)))
-  if (!accounts.length) {
-    return 0
-  }
-  const batch = Math.floor(now / batchMs)
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(
-        accounts.map(({ orgId }) =>
-          jobRow(
-            "amazon-event",
-            `amazon-event:${orgId}:${target}:${batch}`,
-            { orgId, sellerId, target },
-            { runAt: new Date((batch + 1) * batchMs + settleMs) }
-          )
-        )
-      )
-      .onConflictDoNothing()
-  )
-  return accounts.length
+  return queueEventJobs("amazon-event", sellerId, {
+    payload: (orgId) => ({ orgId, sellerId, target }),
+    target,
+    at: now
+  })
 }
 
 // Worker job: brings the stored orders up to date, or starts an FBA stock refresh.
@@ -107,22 +86,15 @@ export async function amazonEventJob(
   { assertOwned }: Pick<JobContext, "assertOwned">,
   now = Date.now()
 ) {
-  const [account] = await db()
-    .select({ externalId: connections.externalId, kind: organizations.kind })
-    .from(connections)
-    .innerJoin(organizations, eq(organizations.id, connections.orgId))
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-  // The workspace disconnected or switched sellers after the notification arrived.
-  if (!account || account.externalId !== sellerId) {
+  const org = await eventWorkspace(orgId, "amazon", sellerId)
+  if (!org) {
     return
   }
-  const org = { id: orgId, kind: account.kind }
   if (target === "stock") {
-    const started = await refreshStock(org, { source: "fba", marketplaceId: usMarketplaceId })
-    // A running refresh started before this change; refresh again once it finishes.
-    if (started?.status === "running") {
-      throw new PollAgain("Waiting for the running FBA stock refresh to finish")
-    }
+    await startEventSync(
+      () => refreshStock(org, { source: "fba", marketplaceId: usMarketplaceId }),
+      "Waiting for the running FBA stock refresh to finish"
+    )
     return
   }
   await updateStoredOrders(org, sellerId, assertOwned, now)
@@ -209,14 +181,9 @@ async function updateStoredOrders(
   })
 }
 
-// Queues subscribing the workspace's seller to Copacker's notifications. Runs after connecting and daily.
+// Queues subscribing the workspace's seller to Copacker's notifications (see queueSubscription).
 export async function queueAmazonSubscription(orgId: string, key: string) {
-  await withJobWake(
-    db()
-      .insert(jobs)
-      .values(jobRow("amazon-subscribe", `amazon-subscribe:${orgId}:${key}`, { orgId }))
-      .onConflictDoNothing()
-  )
+  await queueSubscription("amazon-subscribe", orgId, key)
 }
 
 // Worker job: makes sure Copacker's queue is a notification destination and the seller is subscribed to it.
@@ -226,7 +193,7 @@ export async function amazonSubscribeJob(
 ) {
   const queueUrl = process.env.AMAZON_NOTIFICATIONS_QUEUE_URL
   if (!queueUrl) {
-    console.warn(JSON.stringify({ event: "amazon_notifications_skipped", orgId, reason: "no queue configured" }))
+    logEvent("warn", "amazon_notifications_skipped", { orgId, reason: "no queue configured" })
     return
   }
   const account = await connectedAccount(orgId, "amazon")
@@ -238,15 +205,7 @@ export async function amazonSubscribeJob(
     "copacker"
   )
   const seller = await amazonFor(orgId, account.externalId)
-  for (const type of amazonNotificationTypes) {
-    await assertOwned()
-    try {
-      await seller.subscribeNotifications(type, destinationId, processingDirectives[type])
-    } catch (error) {
-      throw new Error(
-        `Amazon ${type} subscription failed: ${error instanceof Error ? error.message : "unknown error"}`,
-        { cause: error }
-      )
-    }
-  }
+  await subscribeTopics("Amazon", amazonNotificationTypes, assertOwned, (type) =>
+    seller.subscribeNotifications(type, destinationId, processingDirectives[type])
+  )
 }
