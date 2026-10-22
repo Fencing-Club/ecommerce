@@ -1,5 +1,5 @@
+import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
-import type { OrderInput } from "@repo/copacker-shipments"
 
 type Product = Pick<OrderInput["items"][number], "buyerSku" | "supplierSku" | "name" | "variant">
 

@@ -1,4 +1,5 @@
-import { money, orderDestination } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-shipments"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"

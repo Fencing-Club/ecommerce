@@ -3,16 +3,13 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, inventoryLocationMappings, stockSnapshots } from "@/db/schema"
+import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
 import { automaticClassification, locationClassifications, locationMappingSchema } from "./inventory-locations"
 import type { Session } from "./workspace-session"
 
-export class LocationSettingsError extends StatusError {}
-
 export async function readLocationMappings(s: Session) {
-  if (s.org.kind !== "buyer") {
-    throw new LocationSettingsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   return db().transaction(
     async (tx) => {
       const [account] = await tx
@@ -91,9 +88,7 @@ const inputSchema = locationMappingSchema
   .strict()
 
 export async function saveLocationMapping(s: Session, input: unknown) {
-  if (s.org.kind !== "buyer") {
-    throw new LocationSettingsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const data = inputSchema.parse(input)
   return db().transaction(async (tx) => {
     // Serialize mapping saves and reconnects on the tenant's existing connection.
@@ -103,7 +98,7 @@ export async function saveLocationMapping(s: Session, input: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("update")
     if (!account) {
-      throw new LocationSettingsError("connectShopifyBeforeLocations", 409)
+      throw new StatusError("connectShopifyBeforeLocations", 409)
     }
     const [stock] = await tx
       .select()
@@ -118,10 +113,10 @@ export async function saveLocationMapping(s: Session, input: unknown) {
       )
       .for("update")
     if (!stock || stock.snapshotId !== data.snapshotId || stock.data?.source !== "shopify") {
-      throw new LocationSettingsError("inventoryChangedReload", 409)
+      throw new StatusError("inventoryChangedReload", 409)
     }
     if (!stock.data.rows.some((row) => row.levels.some((level) => level.locationId === data.locationId))) {
-      throw new LocationSettingsError("locationNotInStore", 400)
+      throw new StatusError("locationNotInStore", 400)
     }
     const scope = and(
       eq(inventoryLocationMappings.orgId, s.org.id),
@@ -130,7 +125,7 @@ export async function saveLocationMapping(s: Session, input: unknown) {
     )
     const [previous] = await tx.select().from(inventoryLocationMappings).where(scope)
     if ((previous?.revision ?? 0) !== data.expectedRevision) {
-      throw new LocationSettingsError("locationSettingsChanged", 409)
+      throw new StatusError("locationSettingsChanged", 409)
     }
     const value = {
       orgId: s.org.id,

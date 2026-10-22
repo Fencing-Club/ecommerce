@@ -1,9 +1,11 @@
-import { destinationSchema, orderDestination, groupReceivers } from "@repo/copacker-shipments"
+import { destinationSchema } from "@repo/copacker-orders"
+import { orderDestination, groupReceivers } from "@repo/copacker-shipments"
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { orders, shipments, suppliers } from "@/db/schema"
 import { requirePage, session } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
 import { orderCoverage } from "@/server/readiness"
 
@@ -18,18 +20,15 @@ const querySchema = z.strictObject({
     .pipe(z.number().max(50))
     .default(20)
 })
-const headers = { "Cache-Control": "private, no-store" }
 
 export async function GET(request: Request) {
   const s = await session()
-  if (s.org.kind !== "buyer") {
-    return errorResponse("buyerWorkspaceRequired", 403, headers)
-  }
+  requireBuyer(s)
   requirePage(s, "orders")
   const search = new URL(request.url).searchParams
   const parsed = querySchema.safeParse(Object.fromEntries(search))
   if (!parsed.success || [...search.keys()].some((key) => search.getAll(key).length !== 1)) {
-    return errorResponse("invalidCoverageFilters", 400, headers)
+    return errorResponse("invalidCoverageFilters", 400)
   }
   const { supplierId, destination, cursor, limit } = parsed.data
   const result = await db().transaction(
@@ -98,5 +97,5 @@ export async function GET(request: Request) {
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   )
-  return Response.json(result, { headers })
+  return Response.json(result)
 }

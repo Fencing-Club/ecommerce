@@ -1,4 +1,4 @@
-import type { OrderItem } from "@repo/copacker-shipments"
+import type { OrderItem } from "@repo/copacker-orders"
 import { needsWarningLabel } from "@repo/copacker-shipments/requirements"
 import type { LineLabel } from "@/server/product-barcodes"
 

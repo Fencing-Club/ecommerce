@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"

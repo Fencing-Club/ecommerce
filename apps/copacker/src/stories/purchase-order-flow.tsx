@@ -1,7 +1,8 @@
 import { Toast } from "@base-ui/react/toast"
+import { type OrderInput } from "@repo/copacker-orders"
+import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing, type OrderInput } from "@repo/copacker-shipments"
-import { packingTasks } from "@repo/copacker-shipments/packing-requirements"
+import { packingSchema, type Packing } from "@repo/copacker-shipments"
 import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
@@ -2236,7 +2237,6 @@ export function PurchaseOrderFlow({
             <div className="flex flex-col gap-4 border-t pt-6 [grid-area:timeline]">
               <PoTimeline
                 orderId={orderId}
-                viewer={viewer === "buyer" ? "Alex Rivera" : "Maya Liu"}
                 viewerOrg={viewer === "buyer" ? "Harbor Goods" : "Northwind Textiles"}
                 counterparty={viewer === "buyer" ? "supplier" : "customer"}
                 timeZone="UTC"

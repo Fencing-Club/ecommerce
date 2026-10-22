@@ -1,41 +1,30 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import type { ShopifySale } from "@repo/copacker-marketplaces/sales"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { GET as inventory } from "../src/server/http/api/inventory"
-import { GET as status } from "../src/server/http/api/inventory/status"
+import { GET as statusRoute } from "../src/server/http/api/inventory/status"
 import { salesSyncStatus } from "../src/server/sales-orders"
-import { applySchema } from "./database"
+import { served } from "./served"
+import { database, pg, setUpTestDatabase } from "./test-db"
+import { signedIn } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
+const status = served(statusRoute)
 const orgId = randomUUID()
 const domain = "status-test.myshopify.com"
 const observedAt = "2026-10-16T10:00:00.000Z"
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => pg.close())
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
   vi.restoreAllMocks()
-  await pg.exec("TRUNCATE organizations CASCADE")
   const [org] = await database
     .insert(tables.organizations)
     .values({ id: orgId, name: "Buyer", kind: "buyer" })
     .returning()
-  context.actor = {
+  signedIn.actor = {
     user: { id: "user-test", email: "test@example.com", emailVerified: true, name: "Test" },
     org: org!,
     role: "owner",
@@ -113,13 +102,13 @@ it("isolates the connected account, workspace and stock scope", async () => {
     refresh: { status: "idle", errorCode: null }
   })
   const [other] = await database.insert(tables.organizations).values({ name: "Other", kind: "buyer" }).returning()
-  context.actor = { ...context.actor!, org: other! }
+  signedIn.actor = { ...signedIn.actor!, org: other! }
   expect(await (await status(request())).json()).toEqual({
     externalAccountId: null,
     observedAt: null,
     refresh: { status: "idle", errorCode: "not_connected" }
   })
-  context.actor = { ...context.actor, org: { ...other!, kind: "supplier" } }
+  signedIn.actor = { ...signedIn.actor, org: { ...other!, kind: "supplier" } }
   expect((await status(request())).status).toBe(403)
 })
 

@@ -50,7 +50,7 @@ under the existing order constraint; updates retain existing line IDs. Warehouse
 Creation captures parent/supplier/address/product dependency revisions in `expectedDependencies:Dependency[]`.
 
 The server supplies title, buyer SKU, inventory-item ID, ASIN/FNSKU, piecesPerSet and component/catalog snapshots using
-the authoritative resolver. All current [orderInputSchema](../../../../../../packages/copacker-shipments/src/index.ts) refinements
+the authoritative resolver. All current [orderInputSchema](../../../../../../packages/copacker-orders/src/index.ts) refinements
 still apply, including valid pack multiples and nonnegative safe totals. `Po = {id,revision,state:"draft"|"sent"|"closed",
 data:PoDraft,lines:PoLine[],shipmentIds:Id[],allowedActions:string[],documents:Artifact[],createdAt,sentAt:Instant|null}`.
 `PoLine` is the normalized public `OrderItem` from that schema, with source IDs grouped into SourceRef, canonical

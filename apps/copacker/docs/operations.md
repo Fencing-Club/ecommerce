@@ -189,9 +189,10 @@ Schema changes: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate
 `drizzle/`. Custom SQL functions are maintained in migrations because Drizzle's schema snapshots do not describe them;
 copy a changed one into `tests/database-schema.ts` too. Tests never run, replay, hash or inspect migrations: suites
 that do grow without bound and slow every run. The unit project's global setup builds the schema's SQL from
-`src/db/schema.ts` once per run, and each database test creates it with `applySchema` (`tests/database.ts`). The one
-exception is CI's `worker` job, which applies every migration to an empty Postgres once per run as a release gate;
-don't add to it.
+`src/db/schema.ts` once per run. Each database test file calls `setUpTestDatabase` (`tests/test-db.ts`), which creates
+it in the file's own PGlite database with `applySchema` (`tests/database.ts`), and mocks `@/db` with
+`vi.mock("@/db", () => import("./test-db"))`. The one exception is CI's `worker` job, which applies every migration to
+an empty Postgres once per run as a release gate; don't add to it.
 The serialized release runner applies migrations through a direct connection with an advisory lock; keep one migration owner.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)

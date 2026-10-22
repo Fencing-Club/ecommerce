@@ -1,7 +1,7 @@
+import type { ProductTask } from "@repo/copacker-orders/packing-requirements"
 import { cartonRunLabel, cartonRuns } from "@repo/copacker-packing-rules"
 import { z } from "zod"
 import { countries } from "./countries"
-import type { ProductTask } from "./packing-requirements"
 
 export const documentSettingsSchema = z.object({
   language: z.enum(["en", "de", "zh-CN", "ur"]).default("en"),

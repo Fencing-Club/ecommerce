@@ -8,7 +8,6 @@ import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
 import { withJobWake } from "@/server/job-delivery"
-import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function GET() {
@@ -30,9 +29,6 @@ export async function GET() {
   return Response.json({ items })
 }
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")

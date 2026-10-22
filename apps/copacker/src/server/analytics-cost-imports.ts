@@ -13,7 +13,8 @@ const item = z.discriminatedUnion("kind", [
   z.strictObject({ id: z.uuid(), kind: z.literal("landed"), data: landedChargeInput }),
   z.strictObject({ id: z.uuid(), kind: z.literal("expense"), data: operatingCostInput })
 ])
-const batch = z
+// A cost import's rows, as the request sends them.
+export const costImportBatch = z
   .strictObject({ rows: z.array(item).min(1).max(100) })
   .refine((v) => new Set(v.rows.map((r) => r.id)).size === v.rows.length)
 async function saveExpense(
@@ -97,7 +98,7 @@ async function lockWorkspace(tx: Transaction, orgId: string) {
     throw new AnalyticsProblem(403, "workspace_unavailable", "Workspace unavailable.")
   }
 }
-async function saveRows(tx: Transaction, orgId: string, userId: string, input: z.infer<typeof batch>) {
+async function saveRows(tx: Transaction, orgId: string, userId: string, input: z.infer<typeof costImportBatch>) {
   for (const row of input.rows) {
     if (row.kind === "inventory") {
       await saveInventoryBasisInTransaction(tx, orgId, userId, row.id, row.data)
@@ -111,7 +112,7 @@ async function saveRows(tx: Transaction, orgId: string, userId: string, input: z
 // Throwing through the transaction boundary rolls back inserts and corrections alike.
 // Use an invocation-specific sentinel so database and validation errors cannot become successes.
 export async function previewAnalyticsCosts(orgId: string, userId: string, raw: unknown) {
-  const input = batch.parse(raw)
+  const input = costImportBatch.parse(raw)
   const rollback = new Error("Cost import preview rollback")
   try {
     await db().transaction(async (tx) => {
@@ -128,7 +129,7 @@ export async function previewAnalyticsCosts(orgId: string, userId: string, raw: 
   throw new Error("Cost import preview did not roll back")
 }
 export async function importAnalyticsCosts(orgId: string, userId: string, key: string, raw: unknown) {
-  const input = batch.parse(raw)
+  const input = costImportBatch.parse(raw)
   return db().transaction(async (tx) => {
     await lockWorkspace(tx, orgId)
     const [prior] = await tx.select().from(analyticsCostImports).where(eq(analyticsCostImports.id, key))
@@ -136,7 +137,7 @@ export async function importAnalyticsCosts(orgId: string, userId: string, key: s
       if (
         prior.orgId !== orgId ||
         prior.createdBy !== userId ||
-        JSON.stringify(batch.parse(prior.request)) !== JSON.stringify(input)
+        JSON.stringify(costImportBatch.parse(prior.request)) !== JSON.stringify(input)
       ) {
         throw new AnalyticsProblem(409, "idempotency_key_reused", "This key belongs to another import.")
       }

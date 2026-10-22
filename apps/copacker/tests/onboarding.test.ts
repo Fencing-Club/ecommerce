@@ -8,15 +8,12 @@ vi.mock("@tanstack/react-start/server", () => ({
   }
 }))
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
 const jar = vi.hoisted(() => new Map<string, string>())
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 
 const remote = vi.hoisted(() => ({
   createOrganization: vi.fn<(...args: unknown[]) => Promise<{ id: string }>>(),
@@ -36,10 +33,8 @@ vi.mock("../src/server/workos", () => ({
 import { findInvitation } from "../src/server/invitations"
 import { joinWorkspace, setUpWorkspace } from "../src/server/onboarding"
 import { hash } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID()
 const person = { firstName: "Wei", lastName: "Chen", position: "Sales manager" }
 const user = { id: "user_wei", email: "wei@supplier.example", emailVerified: true }
@@ -56,18 +51,11 @@ const address = {
 }
 const week = () => new Date(Date.now() + 7 * 86400000)
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles, tables.teamInvitations] })
 beforeEach(async () => {
   vi.resetAllMocks()
   remote.createOrganization.mockResolvedValue({ id: `org_${randomUUID()}` })
   jar.clear()
-  await pg.exec("TRUNCATE organizations, profiles, team_invitations CASCADE")
   await database.insert(tables.organizations).values({ id: buyerId, name: "Fencing Club", kind: "buyer" })
 })
 

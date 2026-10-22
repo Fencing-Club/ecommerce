@@ -12,7 +12,6 @@
     "./requirements": "./src/requirements.ts",
     "./markdown": "./src/markdown.ts",
     "./transport": "./src/transport.ts",
-    "./packing-requirements": "./src/packing-requirements.ts",
     "./countries": "./src/countries.ts",
     "./shipping-model": "./src/shipping-model.ts",
     "./shipping-rules": "./src/shipping-rules.ts",
@@ -27,6 +26,7 @@
   },
   "dependencies": {
     "@repo/copacker-marketplaces": "workspace:*",
+    "@repo/copacker-orders": "workspace:*",
     "@repo/copacker-packing-rules": "workspace:*",
     "zod": "^4.6.7",
     "pdf-lib": "1.17.1",

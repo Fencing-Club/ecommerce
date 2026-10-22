@@ -1,4 +1,4 @@
-import { orderCurrencies } from "@repo/copacker-shipments"
+import { orderCurrencies } from "@repo/copacker-orders"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 import type { EditorProduct } from "@/components/supplier/product-editor"

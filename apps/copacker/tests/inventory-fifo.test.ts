@@ -1,51 +1,18 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { orderInputSchema } from "@repo/copacker-shipments"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
+import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => {
-    if (!context.actor) {
-      throw new ApiSessionError(401)
-    }
-    return context.actor
-  }
-}))
-import { ApiSessionError } from "../src/server/auth"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
 import { DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
 import { appUrl } from "../src/server/security"
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
   otherId = randomUUID()
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const purchase = {
   kind: "purchase",
@@ -98,15 +65,8 @@ const request = (body: unknown, key = randomUUID(), origin = appUrl()) =>
   })
 const resource = (id: string) => ({ params: { id } })
 const save = (body: unknown = purchase, key = randomUUID()) => saveInventoryBasis(orgId, `user-${orgId}`, key, body)
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }
@@ -115,7 +75,7 @@ beforeEach(async () => {
     { orgId, shopifyDomain: "store", variantId: "v1" },
     { orgId: otherId, shopifyDomain: "secret", variantId: "secret" }
   ])
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
 import { inventoryMicros } from "../src/lib/inventory-money"
 import { allocateLandedCharge } from "../src/lib/landed-allocation"
@@ -337,11 +297,11 @@ it("replays bills, rejects duplicate sources, and scopes bill access to its work
   expect((await landedPost(request(body, key))).status).toBe(200)
   expect((await landedPost(request({ ...body, amount: "11" }, key))).status).toBe(409)
   expect((await landedPost(request(body))).status).toBe(409)
-  context.actor = actor(otherId, "buyer")
+  signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
   expect((await landedGet(request(null), resource(charge.id))).status).toBe(404)
   expect((await landedDelete(request(null), resource(charge.id))).status).toBe(404)
   expect((await landedPost(request(body))).status).toBe(404)
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
   expect((await landedDelete(request(null), resource(charge.id))).status).toBe(204)
   expect((await landedDelete(request(null), resource(charge.id))).status).toBe(204)
   expect((await landedPost(request(body, key))).status).toBe(200)
@@ -354,7 +314,7 @@ it("requires an explicit opening balance and preserves analytics permission and 
   await save(depletion(1))
   expect((await fifoGet(new Request(`${url}&page=1&snapshot=${initial.snapshot}`))).status).toBe(409)
   expect((await fifoGet(new Request(`${url}&page=1`))).status).toBe(400)
-  context.actor = { ...actor(orgId, "buyer"), role: "member", access: { sales: "view" } }
+  signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { sales: "view" } })
   expect((await fifoGet(new Request(url))).status).toBe(403)
   expect((await landedList(new Request(`${appUrl()}/api/analytics/landed-charges`))).status).toBe(403)
 })

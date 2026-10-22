@@ -68,6 +68,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@reduxjs/toolkit": "^2.13.0",
     "@repo/copacker-marketplaces": "workspace:*",
+    "@repo/copacker-orders": "workspace:*",
     "@repo/copacker-shipments": "workspace:*",
     "@repo/copacker-emails": "workspace:*",
     "@repo/copacker-packing-rules": "workspace:*",

@@ -1,24 +1,9 @@
 import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
-import type { ErrorKey } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
-import { errorResponse, failureMessage } from "@/server/errors"
+import { errorResponse, StatusError } from "@/server/errors"
+import { fallbackResponse, fileResponse } from "@/server/http-response"
 import { sendQueuedLabels } from "@/server/label-release"
-import {
-  ProductBarcodeError,
-  productLabelFile,
-  removeProductBarcode,
-  saveProductBarcode
-} from "@/server/product-barcodes"
-import { isAppOrigin } from "@/server/security"
-
-const headers = { "Cache-Control": "private, no-store" }
-
-async function failure(error: unknown, fallback: ErrorKey) {
-  if (error instanceof ProductBarcodeError) {
-    return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
-  }
-  return errorResponse(fallback, 500, headers)
-}
+import { productLabelFile, removeProductBarcode, saveProductBarcode } from "@/server/product-barcodes"
 
 function variantFrom(request: Request) {
   return variantIdSchema.safeParse(new URL(request.url).searchParams.get("variantId"))
@@ -26,23 +11,20 @@ function variantFrom(request: Request) {
 
 // Uploads a variation's barcode label: form fields variantId and file, a one-page PDF.
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403, headers)
-  }
   const s = await session()
   requirePage(s, "products", "edit")
   if (Number(request.headers.get("content-length") ?? 0) > 34 * 1024 * 1024) {
-    return errorResponse("choosePdfUnder32", 400, headers)
+    return errorResponse("choosePdfUnder32", 400)
   }
   try {
     const form = await request.formData().catch(() => {
-      throw new ProductBarcodeError("choosePdfToUpload", 400)
+      throw new StatusError("choosePdfToUpload", 400)
     })
     const { labels, ...saved } = await saveProductBarcode(s, form)
     await sendQueuedLabels(labels)
-    return Response.json(saved, { headers })
+    return Response.json(saved)
   } catch (error) {
-    return failure(error, "barcodeNotUploaded")
+    return fallbackResponse(error, "barcodeNotUploaded")
   }
 }
 
@@ -51,40 +33,29 @@ export async function GET(request: Request) {
   requirePage(s, "products")
   const variantId = variantFrom(request)
   if (!variantId.success) {
-    return errorResponse("chooseVariation", 400, headers)
+    return errorResponse("chooseVariation", 400)
   }
   try {
     const file = await productLabelFile(s, variantId.data)
     // "view=inline" shows the label in the browser, such as in the product's preview.
     const disposition = new URL(request.url).searchParams.get("view") === "inline" ? "inline" : "attachment"
-    return new Response(Buffer.from(file.bytes), {
-      headers: {
-        ...headers,
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "sandbox"
-      }
-    })
+    return fileResponse(Buffer.from(file.bytes), { filename: file.name, contentType: "application/pdf", disposition })
   } catch (error) {
-    return failure(error, "barcodeNotDownloaded")
+    return fallbackResponse(error, "barcodeNotDownloaded")
   }
 }
 
 export async function DELETE(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403, headers)
-  }
   const s = await session()
   requirePage(s, "products", "edit")
   const variantId = variantFrom(request)
   if (!variantId.success) {
-    return errorResponse("chooseVariation", 400, headers)
+    return errorResponse("chooseVariation", 400)
   }
   try {
     await removeProductBarcode(s, variantId.data)
-    return Response.json({ ok: true }, { headers })
+    return Response.json({ ok: true })
   } catch (error) {
-    return failure(error, "barcodeNotRemoved")
+    return fallbackResponse(error, "barcodeNotRemoved")
   }
 }

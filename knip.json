@@ -65,6 +65,9 @@
     "packages/copacker-shipments": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
+    "packages/copacker-orders": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
     "packages/copacker-packing-rules": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },

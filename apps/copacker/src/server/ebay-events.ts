@@ -9,6 +9,7 @@ import { ebayApp, ebayFor } from "./connections"
 import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
+import { rateLimit } from "./rate-limit"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue } from "./sqs"
@@ -37,32 +38,34 @@ const sellerOf = z.union([
   z.object({ userId: z.string().min(1) }).transform((data) => data.userId)
 ])
 
-// eBay's signing keys, by ID. eBay rarely rotates them, so each is kept for an hour.
-const keys = new Map<string, { key: string; at: number }>()
-async function signingKey(keyId: string, now = Date.now()) {
-  const cached = keys.get(keyId)
-  if (cached && now - cached.at < 3600000) {
-    return cached.key
-  }
+// The app's own eBay client, kept for the process so its token is reused until it expires. Other keys (in tests) make
+// another.
+let appClient: { clientId: string; clientSecret: string; ebay: Ebay } | null = null
+function ebayAppClient() {
   const app = ebayApp()
   if (!app) {
-    throw new Error("eBay developer credentials are not configured")
+    return null
   }
-  const { key } = await new Ebay({ clientId: app.clientId, clientSecret: app.clientSecret }).publicKey(keyId)
-  keys.set(keyId, { key, at: now })
-  return key
+  if (appClient?.clientId !== app.clientId || appClient.clientSecret !== app.clientSecret) {
+    const credentials = { clientId: app.clientId, clientSecret: app.clientSecret }
+    appClient = { ...credentials, ebay: new Ebay(credentials) }
+  }
+  return appClient.ebay
 }
 
-// Whether eBay signed the body: true, false, or null when the signature couldn't be checked (no app keys, or eBay
-// didn't hand over its key).
-export async function ebaySigned(body: string, header: string | null) {
-  const signature = ebaySignatureHeader.safeParse(header ?? "")
-  if (!signature.success) {
-    return false
-  }
-  let key: string
+// eBay's signing keys, by ID. eBay rarely rotates them, so each is kept for an hour. An ID eBay didn't hand a key over
+// for is kept as a miss for five minutes, and each address may look up only ten keys that aren't kept in ten minutes,
+// so forged signatures can't make Copacker call eBay again and again.
+const keys = new Map<string, { key: string | null; until: number }>()
+const keyMs = 3600000
+const missMs = 5 * 60000
+const keyLookups = rateLimit({ period: 10 * 60000, allowed: 10 })
+
+async function lookUpKey(app: Ebay, keyId: string) {
+  let entry: { key: string | null; until: number }
   try {
-    key = await signingKey(signature.data.kid)
+    const { key } = await app.publicKey(keyId)
+    entry = { key, until: Date.now() + keyMs }
   } catch (error) {
     console.error(
       JSON.stringify({
@@ -70,12 +73,53 @@ export async function ebaySigned(body: string, header: string | null) {
         error: error instanceof Error ? error.message : "unknown error"
       })
     )
-    return null
+    entry = { key: null, until: Date.now() + missMs }
+  }
+  // Past a thousand IDs, the expired ones and the misses are dropped. eBay's own keys are few, and stay.
+  if (keys.size >= 1000) {
+    for (const [other, { key, until }] of keys) {
+      if (!key || until <= Date.now()) {
+        keys.delete(other)
+      }
+    }
+  }
+  keys.set(keyId, entry)
+  return entry.key
+}
+
+// Whether eBay signed the body: "signed", "bad signature", "unchecked" when it couldn't be checked (no app keys, or eBay
+// didn't hand over its key), or "rate limited" when the client asked for too many keys Copacker doesn't keep. The
+// client is the address the request came from.
+export async function ebaySigned(body: string, header: string | null, client: string) {
+  const signature = ebaySignatureHeader.safeParse(header ?? "")
+  if (!signature.success) {
+    return "bad signature"
+  }
+  const { kid } = signature.data
+  const cached = keys.get(kid)
+  let key: string | null
+  if (cached && Date.now() < cached.until) {
+    key = cached.key
+  } else {
+    const app = ebayAppClient()
+    if (!app) {
+      console.error(
+        JSON.stringify({ event: "ebay_signing_key_failed", error: "eBay developer credentials are not configured" })
+      )
+      return "unchecked"
+    }
+    if (keyLookups(client)) {
+      return "rate limited"
+    }
+    key = await lookUpKey(app, kid)
+  }
+  if (!key) {
+    return "unchecked"
   }
   try {
-    return verifyEbaySignature(body, signature.data.signature, key)
+    return verifyEbaySignature(body, signature.data.signature, key) ? "signed" : "bad signature"
   } catch {
-    return false
+    return "bad signature"
   }
 }
 
@@ -214,7 +258,7 @@ export async function queueEbaySubscription(orgId: string, key: string) {
 // order topic.
 export async function ebaySubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
-  const app = ebayApp()
+  const app = ebayAppClient()
   const verificationToken = ebayVerificationToken()
   const endpoint = ebayEndpoint()
   // eBay only delivers to public HTTPS addresses, so local development can't subscribe, and an environment without the
@@ -238,14 +282,11 @@ export async function ebaySubscribeJob(payload: Record<string, unknown>, assertO
   if (!account) {
     return
   }
-  const appClient = new Ebay({ clientId: app.clientId, clientSecret: app.clientSecret })
-  const existing = (await appClient.destinations()).find(
-    (destination) => destination.deliveryConfig?.endpoint === endpoint
-  )
+  const existing = (await app.destinations()).find((destination) => destination.deliveryConfig?.endpoint === endpoint)
   const destinationId =
-    existing?.destinationId ?? (await appClient.createDestination("Copacker", endpoint, verificationToken))
+    existing?.destinationId ?? (await app.createDestination("Copacker", endpoint, verificationToken))
   if (existing && existing.status !== "ENABLED") {
-    await appClient.updateDestination(destinationId, "Copacker", endpoint, verificationToken)
+    await app.updateDestination(destinationId, "Copacker", endpoint, verificationToken)
   }
   const seller = await ebayFor(orgId, account.externalId)
   const subscriptions = await seller.subscriptions()

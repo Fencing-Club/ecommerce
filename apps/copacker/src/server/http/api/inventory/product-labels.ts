@@ -1,42 +1,31 @@
 import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
-import { errorResponse, failureMessage } from "@/server/errors"
-import { ProductBarcodeError, productLabelChoices } from "@/server/product-barcodes"
-import { ProductDefaultsError, assignProductLabel } from "@/server/product-defaults"
-import { isAppOrigin } from "@/server/security"
-
-const headers = { "Cache-Control": "private, no-store" }
+import { errorResponse } from "@/server/errors"
+import { fallbackResponse } from "@/server/http-response"
+import { productLabelChoices } from "@/server/product-barcodes"
+import { assignProductLabel } from "@/server/product-defaults"
 
 // Every product with its label type, for choosing several at once.
 export async function GET() {
   const s = await session()
   requirePage(s, "products")
   try {
-    return Response.json(await productLabelChoices(s), { headers })
+    return Response.json(await productLabelChoices(s))
   } catch (error) {
-    if (error instanceof ProductBarcodeError) {
-      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
-    }
-    return errorResponse("productsNotLoaded", 500, headers)
+    return fallbackResponse(error, "productsNotLoaded")
   }
 }
 
 // Sets the label type for several products at once: { productIds, productLabel: "standard" | "uploaded" }.
 export async function PATCH(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403, headers)
-  }
   const s = await session()
   requirePage(s, "products", "edit")
   try {
-    return Response.json(await assignProductLabel(s, await request.json()), { headers })
+    return Response.json(await assignProductLabel(s, await request.json()))
   } catch (error) {
-    if (error instanceof ProductDefaultsError) {
-      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
-    }
     if (error instanceof ZodError || error instanceof SyntaxError) {
-      return errorResponse("chooseProductsAndLabelType", 400, headers)
+      return errorResponse("chooseProductsAndLabelType", 400)
     }
-    return errorResponse("labelTypeNotSaved", 500, headers)
+    return fallbackResponse(error, "labelTypeNotSaved")
   }
 }

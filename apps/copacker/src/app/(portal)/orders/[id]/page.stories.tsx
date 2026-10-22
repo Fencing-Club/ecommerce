@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
@@ -105,16 +105,18 @@ async function OrderPage(args: Args) {
     landed.reduce((sum, cost) => sum + cost.amountMinor, 0) + freight.reduce((sum, row) => sum + row.freightMinor, 0)
   const markup = landedMarkup(order.data, landedTotal)
   const timeline = [
-    ...args.history.map((event) => ({
-      key: event.id,
-      at: event.createdAt,
-      content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
-      comment: event.kind === "comment",
-      author: event.author,
-      authorOrg: event.authorOrg,
-      revision: null,
-      revisionNumber: null
-    })),
+    ...args.history
+      .filter((event) => order.status !== "closed" || event.kind !== "comment")
+      .map((event) => ({
+        key: event.id,
+        at: event.createdAt,
+        content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
+        comment: event.kind === "comment",
+        author: event.author,
+        authorOrg: event.authorOrg,
+        revision: null,
+        revisionNumber: null
+      })),
     ...args.revisions.map((r) => ({
       key: r.id,
       at: r.createdAt,
@@ -597,6 +599,11 @@ export const Closed = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText("Closed").length).toBeGreaterThan(0)
     await expect(canvas.getByText("Received")).toBeVisible()
+    // A closed PO shows no comments and takes none; its events still show.
+    const timeline = within(canvas.getByRole("region", { name: "Timeline" }))
+    await expect(timeline.queryByRole("textbox", { name: "Comment" })).toBeNull()
+    await expect(timeline.queryByText("Cartons ship Friday.")).toBeNull()
+    await expect(timeline.getAllByRole("listitem").length).toBeGreaterThan(0)
     await expect(canvas.queryByRole("button", { name: /Continue packing|Prepare next shipment/ })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "More actions for PO-1042" }))
     await expect(screen.queryByRole("menuitem", { name: "Close purchase order" })).toBeNull()

@@ -1,5 +1,6 @@
-import type { Address } from "@repo/copacker-shipments"
-import { addressSchema, originSchema } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
+import { addressSchema } from "@repo/copacker-orders"
+import { originSchema } from "@repo/copacker-shipments"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

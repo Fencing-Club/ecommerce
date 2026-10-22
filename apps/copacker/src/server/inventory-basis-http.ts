@@ -1,6 +1,5 @@
-import { z } from "zod"
 import { inventoryBasisSchemas, type InventoryBasisKind } from "@/lib/inventory-basis"
-import { analyticsHeaders, analyticsJson, analyticsRoute } from "./analytics-http"
+import { analyticsId, analyticsJson, analyticsQuery, analyticsRoute } from "./analytics-http"
 import {
   inventoryBasisQuery,
   saveInventoryBasis,
@@ -17,20 +16,19 @@ const paths = {
 export function inventoryBasisCollection(kind: InventoryBasisKind) {
   return {
     GET: (request: Request) =>
-      analyticsRoute(request, false, async (s) => {
-        const input = inventoryBasisQuery.parse(Object.fromEntries(new URL(request.url).searchParams))
-        return Response.json(await listInventoryBasis(s.org.id, kind, input), { headers: analyticsHeaders })
-      }),
+      analyticsRoute(request, false, async (s) =>
+        Response.json(await listInventoryBasis(s.org.id, kind, analyticsQuery(request, inventoryBasisQuery)))
+      ),
     POST: (request: Request) =>
       analyticsRoute(request, true, async (s) => {
-        const key = z.uuid().parse(request.headers.get("Idempotency-Key"))
-        const input = inventoryBasisSchemas[kind].parse(await analyticsJson(request))
+        const key = analyticsId(request.headers.get("Idempotency-Key"))
+        const input = await analyticsJson(request, inventoryBasisSchemas[kind])
         const result = await saveInventoryBasis(s.org.id, s.user.id, key, input)
         return Response.json(
           { record: result.record },
           {
             status: result.replayed ? 200 : 201,
-            headers: { ...analyticsHeaders, Location: `/api/analytics/${paths[kind]}/${result.record.id}` }
+            headers: { Location: `/api/analytics/${paths[kind]}/${result.record.id}` }
           }
         )
       })
@@ -39,15 +37,13 @@ export function inventoryBasisCollection(kind: InventoryBasisKind) {
 export function inventoryBasisResource(kind: InventoryBasisKind) {
   return {
     GET: (request: Request, context: { params: { id: string } }) =>
-      analyticsRoute(request, false, async (s) => {
-        const id = z.uuid().parse((await context.params).id)
-        return Response.json({ record: await getInventoryBasis(s.org.id, kind, id) }, { headers: analyticsHeaders })
-      }),
+      analyticsRoute(request, false, async (s) =>
+        Response.json({ record: await getInventoryBasis(s.org.id, kind, analyticsId((await context.params).id)) })
+      ),
     DELETE: (request: Request, context: { params: { id: string } }) =>
       analyticsRoute(request, true, async (s) => {
-        const id = z.uuid().parse((await context.params).id)
-        await retireInventoryBasis(s.org.id, s.user.id, kind, id)
-        return new Response(null, { status: 204, headers: analyticsHeaders })
+        await retireInventoryBasis(s.org.id, s.user.id, kind, analyticsId((await context.params).id))
+        return new Response(null, { status: 204 })
       })
   }
 }

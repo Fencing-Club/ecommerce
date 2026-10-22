@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { type Amazon, ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { sql } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { beforeAll, beforeEach, afterAll, it, expect, vi } from "vitest"
+import { beforeEach, it, expect, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown, graphql: vi.fn<(query: string) => Promise<unknown>>() }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+import { database, setUpTestDatabase } from "./test-db"
+const context = vi.hoisted(() => ({ graphql: vi.fn<(query: string) => Promise<unknown>>() }))
+vi.mock("@/db", () => import("./test-db"))
 import { syncAmazonExtraEvidence } from "../src/server/amazon-extra-evidence"
 import { syncAmazonReceipts } from "../src/server/amazon-receipts"
 import { analyticsJob, queueShopifyEconomics } from "../src/server/analytics-jobs"
@@ -16,19 +14,10 @@ import { economicsQueries } from "@repo/copacker-marketplaces/shopify-economics"
 import { importAnalyticsCosts, getCostImport, previewAnalyticsCosts } from "../src/server/analytics-cost-imports"
 import { ingestionStatus, listIngestionEvidence } from "../src/server/analytics-ingestion"
 import { syncShopifyEconomics } from "../src/server/shopify-economics"
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables }),
-  orgId = randomUUID(),
+const orgId = randomUUID(),
   otherId = randomUUID()
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.delete(tables.jobs)
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },

@@ -1,18 +1,13 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import type { OrderInput } from "@repo/copacker-shipments"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import type { OrderInput } from "@repo/copacker-orders"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 import { searchIndex } from "../src/server/search"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+import { testSession } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID(),
   otherBuyerId = randomUUID(),
   supplierOrgId = randomUUID(),
@@ -22,8 +17,7 @@ const buyerId = randomUUID(),
   forwarderId = randomUUID()
 const domain = "fencing-club.myshopify.com"
 
-const actor = (id: string, kind: "buyer" | "supplier" | "forwarder") =>
-  ({ user: { id: `user-${id}` }, org: { id, kind }, role: "owner" }) as unknown as Session
+const actor = (id: string, kind: "buyer" | "supplier" | "forwarder") => testSession({ orgId: id, kind })
 
 async function order(
   reference: string,
@@ -40,9 +34,8 @@ async function order(
   return row!
 }
 
+setUpTestDatabase()
 beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Fencing Club", kind: "buyer" },
     { id: otherBuyerId, name: "Other buyer", kind: "buyer" },
@@ -88,10 +81,6 @@ beforeAll(async () => {
     scopeKey: "store",
     data: { source: "shopify", rows } as unknown as typeof tables.stockSnapshots.$inferInsert.data
   })
-})
-
-afterAll(async () => {
-  await pg.close()
 })
 
 describe("search index", () => {

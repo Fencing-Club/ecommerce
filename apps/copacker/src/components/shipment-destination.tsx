@@ -1,4 +1,4 @@
-import type { Address } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
 import { useTranslations } from "use-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddressSummary } from "./partner-address"

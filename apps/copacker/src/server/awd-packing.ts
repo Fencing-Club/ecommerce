@@ -1,6 +1,7 @@
 import type { awdInboundShipmentSchema } from "@repo/copacker-marketplaces/amazon"
+import { type OrderInput } from "@repo/copacker-orders"
 import { centimetresPerInch, kilogramsPerPound } from "@repo/copacker-packing-rules"
-import { buildAwdRequest, type OrderInput, type Packing } from "@repo/copacker-shipments"
+import { buildAwdRequest, type Packing } from "@repo/copacker-shipments"
 import type { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
 

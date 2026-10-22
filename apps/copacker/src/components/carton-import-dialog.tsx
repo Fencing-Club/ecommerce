@@ -1,5 +1,5 @@
+import { type OrderInput } from "@repo/copacker-orders"
 import { validatePacking } from "@repo/copacker-packing-rules"
-import { type OrderInput } from "@repo/copacker-shipments"
 import { useFormatter, useTranslations } from "use-intl"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCartonTemplate } from "@/hooks/use-import-templates"

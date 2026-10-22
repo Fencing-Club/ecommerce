@@ -1,12 +1,6 @@
-import type { OrderItem } from "@repo/copacker-shipments"
-import {
-  amazonNetworkNames,
-  itemTotal,
-  money,
-  orderCharges,
-  orderTotal,
-  orderDestination
-} from "@repo/copacker-shipments"
+import type { OrderItem } from "@repo/copacker-orders"
+import { itemTotal, money, orderCharges, orderTotal } from "@repo/copacker-orders"
+import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
 import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
 import {
@@ -399,11 +393,11 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
           )}
           <PoTimeline
             orderId={id}
-            viewer={s.user.name ?? s.user.email}
             viewerOrg={s.org.name}
             timeZone={timeZone}
             entries={timeline}
             prices={prices}
+            commentable={order.status !== "closed"}
             counterparty={buyer ? "supplier" : "customer"}
           />
         </div>

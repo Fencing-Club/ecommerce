@@ -37,7 +37,7 @@ relationships. A future deployed customer creation branch would require its own 
 `PartnerPatch` is discriminated by the existing type: supplier permits name, shopifySupplierName, leadTimeDays
 (integer 1..730|null) and nullable contact fields; forwarder permits local relationship name. Joined supplier contact
 fields belong to that supplier and are rejected here. No update changes relationship type.
-`PostalAddress` reuses [addressSchema](../../../../../../packages/copacker-shipments/src/index.ts).
+`PostalAddress` reuses [addressSchema](../../../../../../packages/copacker-orders/src/index.ts).
 `Address = {id,revision,name,kind:"delivery"|"forwarder"|"pickup",owner:{kind:"workspace"|"partner",id},
 address:PostalAddress,shopifyLocation:SourceRef|null}`. A Shopify location link is valid only on buyer delivery addresses.
 

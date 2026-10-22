@@ -87,19 +87,22 @@ export async function orderPage(input: { id: string; query: Record<string, strin
   // Each line's label, from its product's current barcode and label setting.
   const labels = await lineLabels(order)
 
-  // What happened to the PO, newest first: its events, and each revision, which opens to show its lines.
+  // What happened to the PO, newest first: its events, and each revision, which opens to show its lines. A closed PO
+  // shows no comments.
   const timeline = [
-    ...history.map((event) => ({
-      key: event.id,
-      at: event.createdAt,
-      content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
-      comment: event.kind === "comment",
-      author: event.author,
-      authorOrg: event.authorOrg,
-      visibility: event.internalOrgId ? ("internal" as const) : ("shared" as const),
-      revision: null,
-      revisionNumber: null
-    })),
+    ...history
+      .filter((event) => order.status !== "closed" || event.kind !== "comment")
+      .map((event) => ({
+        key: event.id,
+        at: event.createdAt,
+        content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
+        comment: event.kind === "comment",
+        author: event.author,
+        authorOrg: event.authorOrg,
+        visibility: event.internalOrgId ? ("internal" as const) : ("shared" as const),
+        revision: null,
+        revisionNumber: null
+      })),
     ...revisions.map((r) => ({
       key: r.id,
       at: r.createdAt,

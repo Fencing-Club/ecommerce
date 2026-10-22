@@ -2,6 +2,7 @@ import { z } from "zod"
 import { AccessError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { session } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
 import { inventoryContext } from "@/server/inventory-context"
 import type { AmazonOnlyStock } from "@/server/inventory-products"
@@ -57,17 +58,14 @@ function duplicateSkus(rows: Awaited<ReturnType<typeof inventoryContext>>["rows"
 // Inventory across Shopify's counted locations and Amazon's FBA and AWD, grouped by product, one page at a time.
 export async function GET(request: Request) {
   const s = await session()
-  const headers = { "Cache-Control": "private, no-store" }
-  if (s.org.kind !== "buyer") {
-    return errorResponse("buyerWorkspaceRequired", 403, headers)
-  }
+  requireBuyer(s)
   // The Products page, and purchase orders' product picker.
   if (!can(s, "products") && !can(s, "orders", "edit")) {
     throw new AccessError("forbidden")
   }
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
   if (!query.success) {
-    return errorResponse("invalidInventoryQuery", 400, headers)
+    return errorResponse("invalidInventoryQuery", 400)
   }
   const { page, pageSize, q, barcode, country } = query.data
   const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly, fbaRows } =
@@ -120,39 +118,36 @@ export async function GET(request: Request) {
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
   const supplierSkus = new Map(rows.map((row) => [row.variantId, row.supplierSku ?? null]))
-  return Response.json(
-    {
-      observedAt: data?.observedAt ?? null,
-      // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
-      // listings Amazon still reports with nothing on hand or inbound, are left out.
-      amazonOnly: amazonOnly.filter((stock) => !stock.resold && holdsStock(stock)),
-      page: pageNumber,
-      pageSize,
-      totalPages,
-      totalProducts: products.length,
-      totalVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
-      // Variations in this selection that need an uploaded label and don't have one.
-      missingBarcodes: grouped.reduce((sum, product) => sum + unlabelled(product), 0),
-      missingCountries: grouped.reduce((sum, product) => sum + withoutCountry(product), 0),
-      duplicateSkus: duplicateSkus(rows.filter((row) => !isCollective(row))),
-      products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map((product) => ({
-        ...product,
-        defaults: defaults.get(product.productId) ?? noDefaults,
-        variants: product.variants.map((variant) => ({
-          ...variant,
-          barcode: barcodes.get(variant.variantId) ?? null,
-          // For the standard label; null until Amazon's FBA sync reports exactly one for the SKU.
-          fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null,
-          // Kept in Copacker and edited from the product's Edit panel.
-          supplierSku: supplierSkus.get(variant.variantId) ?? null,
-          asin: fields.get(variant.variantId)?.asin ?? null,
-          storeStockTarget: fields.get(variant.variantId)?.storeStockTarget ?? null,
-          // ISO codes from Shopify (a bundle's come from its components), null when none is recorded, or left out
-          // before a sync collects it.
-          countryOfOrigin: countries.get(variant.variantId)
-        }))
+  return Response.json({
+    observedAt: data?.observedAt ?? null,
+    // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
+    // listings Amazon still reports with nothing on hand or inbound, are left out.
+    amazonOnly: amazonOnly.filter((stock) => !stock.resold && holdsStock(stock)),
+    page: pageNumber,
+    pageSize,
+    totalPages,
+    totalProducts: products.length,
+    totalVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
+    // Variations in this selection that need an uploaded label and don't have one.
+    missingBarcodes: grouped.reduce((sum, product) => sum + unlabelled(product), 0),
+    missingCountries: grouped.reduce((sum, product) => sum + withoutCountry(product), 0),
+    duplicateSkus: duplicateSkus(rows.filter((row) => !isCollective(row))),
+    products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map((product) => ({
+      ...product,
+      defaults: defaults.get(product.productId) ?? noDefaults,
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        barcode: barcodes.get(variant.variantId) ?? null,
+        // For the standard label; null until Amazon's FBA sync reports exactly one for the SKU.
+        fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null,
+        // Kept in Copacker and edited from the product's Edit panel.
+        supplierSku: supplierSkus.get(variant.variantId) ?? null,
+        asin: fields.get(variant.variantId)?.asin ?? null,
+        storeStockTarget: fields.get(variant.variantId)?.storeStockTarget ?? null,
+        // ISO codes from Shopify (a bundle's come from its components), null when none is recorded, or left out
+        // before a sync collects it.
+        countryOfOrigin: countries.get(variant.variantId)
       }))
-    },
-    { headers }
-  )
+    }))
+  })
 }

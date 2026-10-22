@@ -3,7 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { salesOrders } from "@/db/schema"
 import { analyticsPagination } from "@/server/analytics-contract"
-import { analyticsHeaders, analyticsRoute } from "@/server/analytics-http"
+import { analyticsQuery, analyticsRoute } from "@/server/analytics-http"
 import { analyticsSnapshot } from "@/server/analytics-snapshot"
 const query = z
   .object({
@@ -20,7 +20,7 @@ const query = z
   )
 export async function GET(request: Request) {
   return analyticsRoute(request, false, async (s) => {
-    const input = query.parse(Object.fromEntries(new URL(request.url).searchParams))
+    const input = analyticsQuery(request, query)
     const result = await db().transaction(
       async (tx) => {
         const snapshot = await analyticsSnapshot(
@@ -58,6 +58,6 @@ export async function GET(request: Request) {
       },
       { isolationLevel: "repeatable read", accessMode: "read only" }
     )
-    return Response.json(result, { headers: analyticsHeaders })
+    return Response.json(result)
   })
 }

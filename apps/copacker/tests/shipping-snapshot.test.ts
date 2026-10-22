@@ -1,5 +1,4 @@
 import { packingSchema } from "@repo/copacker-shipments"
-import { packingRequirementsSchema } from "@repo/copacker-shipments/packing-requirements"
 import { shipmentDocumentChecks } from "@repo/copacker-shipments/shipping-rules"
 import { packingListSnapshot, shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { transportSchema } from "@repo/copacker-shipments/transport"
@@ -176,15 +175,5 @@ describe("accepted shipment document snapshot", () => {
     expect(() =>
       shippingDocumentSnapshot({ ...input, transport: { ...input.transport, handoff: "forwarder" } })
     ).toThrow(/handoff/)
-  })
-
-  it("validates independent label tasks and origin information", () => {
-    const config = { preparation: "none", labels: ["sku", "fnsku"], countryCode: "", instructions: "" }
-    expect(packingRequirementsSchema.safeParse(config).success).toBe(true)
-    expect(packingRequirementsSchema.safeParse({ ...config, labels: ["sku", "sku"] }).success).toBe(false)
-    expect(packingRequirementsSchema.safeParse({ ...config, labels: ["countryOfOrigin"] }).success).toBe(false)
-    expect(
-      packingRequirementsSchema.safeParse({ ...config, labels: ["countryOfOrigin"], countryCode: "CN" }).success
-    ).toBe(true)
   })
 })

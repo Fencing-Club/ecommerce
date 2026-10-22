@@ -1,5 +1,5 @@
-import type { Address } from "@repo/copacker-shipments"
-import { addressSchema } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
+import { addressSchema } from "@repo/copacker-orders"
 import { Check } from "lucide-react"
 import { useId, useSyncExternalStore } from "react"
 import type { UseFormReturn } from "react-hook-form"

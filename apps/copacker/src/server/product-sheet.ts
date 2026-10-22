@@ -1,4 +1,4 @@
-import { orderCurrencies, type OrderCurrency } from "@repo/copacker-shipments"
+import { orderCurrencies, type OrderCurrency } from "@repo/copacker-orders"
 import ExcelJS from "exceljs"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"

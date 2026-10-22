@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { addressSchema } from "@repo/copacker-shipments"
+import { addressSchema } from "@repo/copacker-orders"
 import { amazonReference, fbaPlanName } from "@repo/copacker-shipments/amazon-inbound"
 import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"

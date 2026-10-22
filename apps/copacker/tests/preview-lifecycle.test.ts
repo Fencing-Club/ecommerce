@@ -76,18 +76,22 @@ describe("Neon preview lifecycle", () => {
   })
 
   it("tolerates cleanup after automatic expiration", async () => {
+    vi.stubEnv("GITHUB_OUTPUT", "test-output")
     respond({ branches: [] })
     respond({ state: "closed" })
     await run("remove")
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(child.execFileSync).not.toHaveBeenCalled()
+    expect(output.appendFileSync).toHaveBeenCalledWith("test-output", "removed=true\n")
   })
 
   it("preserves a reopened PR database even when hosted previews are disabled", async () => {
+    vi.stubEnv("GITHUB_OUTPUT", "test-output")
     respond({ branches: [branch] })
     respond({ state: "open" })
     await run("remove")
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
+    expect(output.appendFileSync).not.toHaveBeenCalledWith("test-output", "removed=true\n")
   })
 
   it("discovers every page and emits only confirmed closed previews without deleting anything", async () => {
