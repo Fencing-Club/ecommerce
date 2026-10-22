@@ -34,17 +34,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (page.pageInfo.hasNextPage && (!page.pageInfo.endCursor || page.pageInfo.endCursor === input.data.cursor)) {
       throw new Error("Stalled catalog")
     }
-    return Response.json(
-      {
-        results: catalogMatches(
-          (await withVariantFields(s.org.id, shop.domain, page.nodes)).flatMap((variant) => (variant ? [variant] : [])),
-          input.data.query
-        ),
-        nextCursor: page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null,
-        complete: !page.pageInfo.hasNextPage
-      },
-      { headers: { "Cache-Control": "no-store" } }
-    )
+    return Response.json({
+      results: catalogMatches(
+        (await withVariantFields(s.org.id, shop.domain, page.nodes)).flatMap((variant) => (variant ? [variant] : [])),
+        input.data.query
+      ),
+      nextCursor: page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null,
+      complete: !page.pageInfo.hasNextPage
+    })
   } catch {
     return errorResponse("catalogSearchUnavailable", 503)
   }

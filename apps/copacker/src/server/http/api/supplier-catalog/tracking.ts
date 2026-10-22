@@ -3,9 +3,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
 import { session } from "@/server/auth"
-import { requireAccess } from "@/server/authorization"
+import { requireAccess, requireSupplier } from "@/server/authorization"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
 
 const trackingInput = z.strictObject({
   id: z.uuid(),
@@ -15,14 +14,9 @@ const trackingInput = z.strictObject({
 
 // Turns stock counting on or off for a product, or lets POs order it past what's on hand, from the Inventory page.
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const s = await session()
-    if (s.org.kind !== "supplier") {
-      return errorResponse("supplierWorkspaceRequired", 403)
-    }
+    requireSupplier(s)
     requireAccess(s, "inventory", "edit")
     const { id, ...changes } = trackingInput.parse(await request.json())
     const [updated] = await db()

@@ -1,9 +1,8 @@
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { failureMessage, failureStatus } from "@/server/errors"
 import { approveProposal, declineProposal, withdrawProposal } from "@/server/order-proposals"
-import { isAppOrigin } from "@/server/security"
 
 const input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("approve") }),
@@ -13,9 +12,6 @@ const input = z.discriminatedUnion("action", [
 
 // The buyer approves or declines a supplier's changes to a PO, or the supplier withdraws them.
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const body = input.parse(await request.json())
     const id = z.uuid().parse((await params).id)

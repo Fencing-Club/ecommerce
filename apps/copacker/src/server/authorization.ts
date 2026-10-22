@@ -1,4 +1,4 @@
-import { AccessError, LocalizedError } from "@/i18n/errors"
+import { AccessError } from "@/i18n/errors"
 import type { AccessLevel } from "@/lib/access"
 import type { Grant } from "@/lib/access"
 import type { Permissions } from "@/lib/access"
@@ -7,16 +7,22 @@ import { areaLabelKey } from "@/lib/navigation"
 
 type Workspace = { org: { kind: string } }
 
-export function requireBuyer(s: Workspace) {
-  if (s.org.kind !== "buyer") {
-    throw new LocalizedError("buyerWorkspaceRequired")
+const kindRequired = { buyer: "buyerWorkspaceRequired", supplier: "supplierWorkspaceRequired" } as const
+
+// The workspace must be a buyer's or a supplier's. Switching workspace in another tab makes any other kind a refused
+// request: a 403 from a route, and No access on a page.
+export function requireKind(s: Workspace, kind: keyof typeof kindRequired) {
+  if (s.org.kind !== kind) {
+    throw new AccessError(kindRequired[kind])
   }
 }
 
+export function requireBuyer(s: Workspace) {
+  requireKind(s, "buyer")
+}
+
 export function requireSupplier(s: Workspace) {
-  if (s.org.kind !== "supplier") {
-    throw new LocalizedError("supplierWorkspaceRequired")
-  }
+  requireKind(s, "supplier")
 }
 
 export function requireAdmin(s: Pick<Permissions, "role">) {

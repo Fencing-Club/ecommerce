@@ -8,7 +8,6 @@ import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
 import { importProposalSchema } from "@/server/import-proposal"
 import { withJobWake } from "@/server/job-delivery"
-import { isAppOrigin } from "@/server/security"
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const s = await session()
@@ -34,10 +33,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   return row ? Response.json(row) : errorResponse("importNotFound", 404)
 }
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -64,9 +60,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -132,10 +125,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   return updated[0] ? Response.json(updated[0]) : errorResponse("importChangedCorrections", 409)
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
+export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")

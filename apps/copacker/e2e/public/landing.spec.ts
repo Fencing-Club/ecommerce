@@ -87,8 +87,12 @@ test.describe("landing page", () => {
     expect(signups).toEqual([])
   })
 
-  test("the waitlist endpoint turns down a malformed email", { tag: "@smoke" }, async ({ request }) => {
-    const response = await request.post("/api/mailing-list", { data: { email: "not-an-email" } })
+  test("the waitlist endpoint turns down a malformed email", { tag: "@smoke" }, async ({ request, baseURL }) => {
+    // The page's own form sends its origin; a request without one is refused before the email is read.
+    const response = await request.post("/api/mailing-list", {
+      data: { email: "not-an-email" },
+      headers: { Origin: new URL(baseURL ?? "http://127.0.0.1").origin }
+    })
     expect(response.status()).toBe(400)
     expect(await response.json()).toMatchObject({ error: "Enter a valid email address." })
   })

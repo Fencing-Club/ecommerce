@@ -4,9 +4,8 @@ import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { session } from "@/server/auth"
-import { requireAccess } from "@/server/authorization"
+import { requireAccess, requireSupplier } from "@/server/authorization"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
 
 const stockInput = z.strictObject({
   counts: z
@@ -18,14 +17,9 @@ const stockInput = z.strictObject({
 // Saves the on hand counts changed on the Inventory page, all or none. A count replaces what was there, so it needs no
 // revision: the supplier counted what's on the shelf now.
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const s = await session()
-    if (s.org.kind !== "supplier") {
-      return errorResponse("supplierWorkspaceRequired", 403)
-    }
+    requireSupplier(s)
     requireAccess(s, "inventory", "edit")
     const { counts } = stockInput.parse(await request.json())
     const ids = counts.map((count) => count.id)
