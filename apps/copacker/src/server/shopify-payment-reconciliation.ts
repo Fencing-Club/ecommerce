@@ -94,6 +94,7 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
       processedAt: payment.processedAt ?? null,
       // Compare semantic values, not JSON object-key ordering or decimal scale.
       amount: moneySignature(shopMoney(payment.amountSet)),
+      presentmentAmount: moneySignature(money(object.safeParse(payment.amountSet).data?.presentmentMoney)),
       fees: payment.fees
         .map((fee) => JSON.stringify([moneySignature(money(fee.amount)), moneySignature(money(fee.taxAmount))]))
         .sort()
@@ -165,6 +166,68 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
     outflows = values("refund")
   const net = [...inflows, ...outflows.map((value) => ({ ...value, integer: -value.integer }))]
   const totalsAvailable = blockers.size === 0
+  const linkedRefundComparisons = included
+    .filter((row) => ["SALE", "CAPTURE"].includes(row.kind))
+    .flatMap((parent) => {
+      const linked = included.filter((row) => row.kind === "REFUND" && row.parentTransactionId === parent.transactionId)
+      if (!linked.length) {
+        return []
+      }
+      const parentPayment = canonical.get(parent.transactionId)!.payment
+      const parentShop = shopMoney(parentPayment.amountSet)
+      const parentPresentment = money(object.safeParse(parentPayment.amountSet).data?.presentmentMoney)
+      const shopValues = linked.map((row) => shopMoney(canonical.get(row.transactionId)!.payment.amountSet))
+      const presentmentValues = linked.map((row) =>
+        money(object.safeParse(canonical.get(row.transactionId)!.payment.amountSet).data?.presentmentMoney)
+      )
+      const available =
+        totalsAvailable &&
+        shopValues.every((v) => v !== null) &&
+        presentmentValues.every((v) => v !== null && v.integer >= 0n) &&
+        parentPresentment !== null &&
+        parentPresentment.integer >= 0n
+      const shopCheck = compare(
+        parentShop,
+        shopValues.filter((v) => v !== null),
+        available
+      )
+      const presentmentCheck = compare(
+        parentPresentment,
+        presentmentValues.filter((v) => v !== null),
+        available
+      )
+      let classification = "unresolved_linked_refund_amounts"
+      if (
+        presentmentCheck === "balanced" &&
+        shopCheck === "amount_mismatch" &&
+        parentShop?.currency !== parentPresentment?.currency
+      ) {
+        classification = "equal_presentment_different_shop_amounts"
+      } else if (presentmentCheck === "balanced" && shopCheck === "balanced") {
+        classification = "equal_linked_payment_and_refunds"
+      }
+      return [
+        {
+          parentTransactionId: parent.transactionId,
+          refundTransactionIds: linked.map((row) => row.transactionId),
+          classification,
+          shopCheck,
+          presentmentCheck,
+          shopDifference: difference(
+            parentShop,
+            shopValues.filter((v) => v !== null),
+            available
+          ),
+          presentmentDifference: difference(
+            parentPresentment,
+            presentmentValues.filter((v) => v !== null),
+            available
+          ),
+          differenceMeaning: "successful_linked_refunds_minus_parent_payment",
+          accountingEffect: "not_determined"
+        }
+      ]
+    })
   const refundResults = (refunds.data ?? []).map((refund) => {
     const payments = objects.safeParse(refund.payments)
     const ids = new Set((payments.data ?? []).flatMap((r) => (typeof r.id === "string" ? [r.id] : [])))
@@ -233,6 +296,21 @@ export function reconcileShopifyPayments(data: Record<string, unknown>) {
         .map((r) => r.transactionId),
       observationMeaning: "context_not_proof_of_difference_cause",
       cause: "not_determined",
+      linkedRefundComparisons,
+      paymentStateObservations: rows
+        .filter(
+          (row) =>
+            ["SALE", "CAPTURE", "REFUND"].includes(row.kind) &&
+            ["PENDING", "AWAITING_RESPONSE", "FAILURE", "ERROR"].includes(row.status)
+        )
+        .map((row) => ({
+          transactionId: row.transactionId,
+          direction: row.kind === "REFUND" ? "refund" : "receipt",
+          state: ["PENDING", "AWAITING_RESPONSE"].includes(row.status) ? "pending" : "failed",
+          amount: row.amount,
+          parentTransactionId: row.parentTransactionId,
+          conflictingCopies: row.exclusion === "conflicting_copies"
+        })),
       roundingApplied: false
     },
     orderTotalMeaning: "current_order_total_comparison_not_revenue",

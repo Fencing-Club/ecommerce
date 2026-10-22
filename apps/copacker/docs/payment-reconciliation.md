@@ -25,6 +25,15 @@ pagination apply. These are lifetime events for each saved order, not a financia
   The collector does not retain a direct payment-transaction link, so an order reference cannot certify settlement.
   The 5,000-balance-row cap applies to the current evidence page and is disclosed on every affected comparison.
 
+`orderComparison.linkedRefundComparisons` groups successful refunds by their explicit parent SALE/CAPTURE transaction.
+It compares their sum with that payment in shop and presentment currency independently. Equal foreign-presentment
+amounts with unequal shop amounts are classified as `equal_presentment_different_shop_amounts`; this is an observation,
+not an FX gain, settlement, or explanation of the entire order difference. Split refunds are summed once after
+transaction deduplication. Missing parents are not inferred from amounts. Conflicting presentment copies block totals,
+and missing, negative or mixed-currency presentment values cannot establish that classification.
+`paymentStateObservations` retains the direction, amount and parent reference of pending/failed payment events.
+These observations never add unsuccessful payments to totals or infer that a failed refund explains the full difference.
+
 Missing or conflicting evidence yields null/unavailable, not zero. An empty totals list means no included observed
 events in that collection. It does not establish complete source history. Existing ingestion-status coverage still
 describes updated-order collection; it is not coverage by transaction processing date. Balance changes invalidate
@@ -89,7 +98,12 @@ amount equality nor a unique candidate proves a reimbursement link, allocation, 
 
 Receipt evidence adds `receiptReconciliation` using stored FBA `Receipts` movements with the exact shipment reference
 and SKU. The query is seller/workspace/US-marketplace scoped and capped at 5,000 rows per page; truncation withholds
-comparison totals. Signed movement quantities may agree or differ from shipment-received units; neither confirms
+observation totals. `observedMovementQuantity`, `observedDifference` and `observationStatus` describe retained movements
+only. Full reconciliation `difference` remains null and status is `requires_review` with `receipt_period_unknown`:
+neither a shipment name nor the earliest retained movement establishes when receiving began. Agreement is subject to
+the same limitation as disagreement. Page-level `receiptMovementCoverage.windows` exposes actual report status,
+requested bounds and imported bounds for that seller and marketplace; it does not bridge missing windows or assume
+unavailable reports cover receiving. Coverage changes invalidate pagination snapshots. These observations never confirm
 acquisition, losses, a receipt date or a lot. Missing movement history remains unknown. AWD case quantities require
 explicit network/reference and unit mappings and are not compared to FBA movements.
 

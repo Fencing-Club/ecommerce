@@ -68,12 +68,38 @@ it("reconciles receipt movements only within the seller, workspace and marketpla
     dataset: "fba_inbound_receipts" as const,
     page: 0
   }
+  const coverage = {
+    orgId,
+    externalAccountId: "seller",
+    marketplaceId: "ATVPDKIKX0DER",
+    from: new Date("2026-09-01"),
+    requestedTo: new Date("2026-10-01"),
+    coveredTo: new Date("2026-09-15"),
+    status: "imported" as const
+  }
+  await database
+    .insert(tables.amazonMovementReports)
+    .values([
+      coverage,
+      { ...coverage, orgId: otherId },
+      { ...coverage, externalAccountId: "other" },
+      { ...coverage, marketplaceId: "other" }
+    ])
   const result = await listIngestionEvidence(orgId, query)
-  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
-    status: "quantity_agrees",
-    movementQuantity: 8
+  expect(result.receiptMovementCoverage).toMatchObject({
+    status: "receipt_period_unknown",
+    receiptPeriod: null,
+    windows: [
+      { from: coverage.from, requestedTo: coverage.requestedTo, coveredTo: coverage.coveredTo, status: "imported" }
+    ]
   })
-  await database.insert(tables.amazonInventoryMovements).values({ ...movement, quantity: 1 })
+  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
+    status: "requires_review",
+    observationStatus: "quantity_agrees",
+    observedMovementQuantity: 8,
+    difference: null
+  })
+  await database.update(tables.amazonMovementReports).set({ coveredTo: new Date("2026-10-01") })
   await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toThrow(
     "Data changed"
   )

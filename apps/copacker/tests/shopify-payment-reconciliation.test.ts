@@ -22,6 +22,77 @@ const refund = (payments: unknown[]) => ({
   totalRefundedSet: bag("20"),
   shipping: [{ subtotalAmountSet: bag("5"), taxAmountSet: bag("1") }]
 })
+it("classifies linked equal presentment refunds without recognizing an FX gain or changing totals", () => {
+  const sale = {
+    ...payment("S", "SALE", "15.63"),
+    amountSet: { shopMoney: money("15.63"), presentmentMoney: money("21", "CAD") }
+  }
+  const returned = {
+    ...payment("R", "REFUND", "15.69"),
+    parentTransaction: { id: "S" },
+    amountSet: { shopMoney: money("15.69"), presentmentMoney: money("21.00", "CAD") }
+  }
+  const result = reconcileShopifyPayments({
+    currentTotalPriceSet: bag("0"),
+    transactions: [sale, returned],
+    refunds: [refund([returned])]
+  })
+  expect(result.orderComparison.linkedRefundComparisons).toEqual([
+    expect.objectContaining({
+      parentTransactionId: "S",
+      refundTransactionIds: ["R"],
+      classification: "equal_presentment_different_shop_amounts",
+      shopDifference: { amount: "0.06", currency: "USD" },
+      presentmentDifference: { amount: "0.00", currency: "CAD" },
+      accountingEffect: "not_determined"
+    })
+  ])
+  expect(result.orderComparison.difference).toEqual({ amount: "-0.06", currency: "USD" })
+  expect(result.orderComparison.cause).toBe("not_determined")
+  expect(result.duplicateCopiesRemoved).toBe(1)
+  expect(result.settlementReconciled).toBe(false)
+})
+it("groups split linked refunds once and does not pair by amount alone", () => {
+  const first = {
+    ...payment("R1", "REFUND", "4"),
+    parentTransaction: { id: "S" },
+    amountSet: { shopMoney: money("4"), presentmentMoney: money("5", "CAD") }
+  }
+  const second = { ...first, id: "R2" }
+  const sale = {
+    ...payment("S", "SALE", "8"),
+    amountSet: { shopMoney: money("8"), presentmentMoney: money("10", "CAD") }
+  }
+  const result = reconcileShopifyPayments({
+    transactions: [sale, first, second, payment("unlinked", "REFUND", "8")],
+    refunds: []
+  })
+  expect(result.orderComparison.linkedRefundComparisons).toEqual([
+    expect.objectContaining({ classification: "equal_linked_payment_and_refunds", refundTransactionIds: ["R1", "R2"] })
+  ])
+  const missing = reconcileShopifyPayments({ transactions: [first], refunds: [] })
+  expect(missing.orderComparison.linkedRefundComparisons).toEqual([])
+})
+it("withholds linked comparisons for conflicting presentment copies and missing or mixed currencies", () => {
+  const sale = payment("S", "SALE", "10")
+  const returned = { ...payment("R", "REFUND", "11"), parentTransaction: { id: "S" } }
+  for (const presentmentMoney of [undefined, money("999", "EUR"), money("-999", "CAD")]) {
+    const result = reconcileShopifyPayments({
+      transactions: [sale, { ...returned, amountSet: { shopMoney: money("11"), presentmentMoney } }],
+      refunds: []
+    })
+    expect(result.orderComparison.linkedRefundComparisons[0]?.classification).toBe("unresolved_linked_refund_amounts")
+  }
+  const conflicting = { ...returned, amountSet: { ...returned.amountSet, presentmentMoney: money("998", "CAD") } }
+  for (const copies of [
+    [returned, conflicting],
+    [conflicting, returned]
+  ]) {
+    const result = reconcileShopifyPayments({ transactions: [sale, ...copies], refunds: [] })
+    expect(result.totals).toBeNull()
+    expect(result.orderComparison.linkedRefundComparisons).toEqual([])
+  }
+})
 it("explains observed payment states and exact differences without inventing refunds or an FX cause", () => {
   const result = reconcileShopifyPayments({
     currentTotalPriceSet: bag("0"),
@@ -40,6 +111,10 @@ it("explains observed payment states and exact differences without inventing ref
     roundingApplied: false
   })
   expect(result.totals?.refunded).toEqual([])
+  expect(result.orderComparison.paymentStateObservations).toEqual([
+    expect.objectContaining({ transactionId: "F", direction: "refund", state: "failed" }),
+    expect.objectContaining({ transactionId: "R", direction: "refund", state: "pending" })
+  ])
   const cents = reconcileShopifyPayments({
     currentTotalPriceSet: bag("6.81"),
     transactions: [payment("S", "SALE", "6.80")],
