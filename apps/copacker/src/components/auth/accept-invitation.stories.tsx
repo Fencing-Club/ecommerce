@@ -1,10 +1,11 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { actionRecorder, errors, failWith, invitationToken, ownedWorkspaces, redirectTo } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors, invitationToken, ownedWorkspaces } from "@/stories/fixtures/auth"
 import { AcceptInvitation } from "./accept-invitation"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 const setUp = `/onboarding?invite=${invitationToken}&kind=invite`
 const bayline = { id: "8c1d4e2f-6a3b-4d9c-9e7f-1b2a3c4d5e61", name: "Bayline Freight" }
 
@@ -20,7 +21,7 @@ const meta = preview.meta({
   component: AcceptInvitation,
   args: team,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/overview")))
+    msw.use(recordActions(sent, redirectTo("/overview")))
   }
 })
 
@@ -32,7 +33,7 @@ export const Team = meta.story({
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     // The workspace's page loads fresh on the way there, so nothing is refreshed again.
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
-    await expect(actions.sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
+    await expect(sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
   }
 })
 
@@ -49,7 +50,7 @@ export const ChooseWorkspace = meta.story({
     await expect(canvas.getByRole("radio", { name: /Lotus Packaging Co/ })).toBeChecked()
     await userEvent.click(canvas.getByRole("button", { name: "Accept invitation" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       { action: "onboarding.join", data: { kind: "supplier", token: invitationToken, orgId: ownedWorkspaces[1]?.id } }
     ])
   }
@@ -65,7 +66,7 @@ export const NewWorkspace = meta.story({
     await userEvent.click(next)
     await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: setUp })
     await expect(next).toBeDisabled()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -76,8 +77,8 @@ export const Forwarder = meta.story({
     await expect(canvas.getAllByRole("radio")).toHaveLength(1)
     await expect(canvas.queryByText("New workspace")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Accept invitation" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toEqual({ kind: "forwarder", token: invitationToken, orgId: bayline.id })
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toEqual({ kind: "forwarder", token: invitationToken, orgId: bayline.id })
   }
 })
 
@@ -91,7 +92,7 @@ export const NothingToChoose = meta.story({
 
 export const Fails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.invitationInvalid)))
+    msw.use(recordActions(sent, failWith(errors.invitationInvalid)))
   },
   play: async ({ canvas }) => {
     const join = canvas.getByRole("button", { name: "Join Harbor Goods" })

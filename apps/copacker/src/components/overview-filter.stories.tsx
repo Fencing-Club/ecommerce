@@ -1,5 +1,6 @@
 import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { chooseOption } from "@/stories/play"
 import { ChannelFilter } from "./overview-filter"
 
 const meta = preview.meta({
@@ -36,8 +37,7 @@ export const BackToAllChannels = meta.story({
   play: async ({ canvas, args }) => {
     const trigger = canvas.getByRole("combobox", { name: "Channel" })
     await expect(trigger).toHaveTextContent("Amazon")
-    await userEvent.click(trigger)
-    await userEvent.click(await screen.findByRole("option", { name: "All channels" }))
+    await chooseOption(trigger, "All channels")
     await expect(args.onChange).toHaveBeenCalledWith(null)
   }
 })

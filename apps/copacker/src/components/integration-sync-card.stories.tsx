@@ -1,19 +1,14 @@
 import { ShoppingBag } from "lucide-react"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { width } from "@/stories/play"
 import { IntegrationSyncCard } from "./integration-sync-card"
 
 const meta = preview.meta({
   title: "Components/Integrations/Integration sync card",
   component: IntegrationSyncCard,
   args: { title: "Orders", label: "Amazon orders", icon: <ShoppingBag />, status: "synced" as const, onSync: fn() },
-  decorators: [
-    (Story) => (
-      <div className="max-w-72">
-        <Story />
-      </div>
-    )
-  ]
+  decorators: [width("max-w-72")]
 })
 
 export const Synced = meta.story({

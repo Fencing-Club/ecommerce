@@ -1,11 +1,11 @@
-import { HttpResponse } from "msw/http"
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { actionRecorder, errors, failWith, redirectTo } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import { VerifyEmailForm } from "./verify-email-form"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 // Runs the resend button's one-second countdown twenty times faster, so a story sees it end.
 function fastCountdown() {
@@ -22,7 +22,7 @@ const meta = preview.meta({
   title: "Components/Auth/Verify email form",
   component: VerifyEmailForm,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/onboarding")))
+    msw.use(recordActions(sent, redirectTo("/onboarding")))
   }
 })
 
@@ -31,7 +31,7 @@ export const SendsWhenComplete = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Verification code"), "123456")
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/onboarding"))
-    await expect(actions.sent).toEqual([{ action: "auth.verifyEmail", data: { code: "123456" } }])
+    await expect(sent).toEqual([{ action: "auth.verifyEmail", data: { code: "123456" } }])
     await expect(canvas.getByRole("button", { name: "Verify email" })).toBeDisabled()
   }
 })
@@ -41,14 +41,14 @@ export const Incomplete = meta.story({
     await userEvent.type(canvas.getByLabelText("Verification code"), "12")
     await userEvent.click(canvas.getByRole("button", { name: "Verify email" }))
     await expect(await canvas.findByText("Enter the 6-digit code")).toBeVisible()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
 // A wrong code says so and clears for another try.
 export const WrongCode = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.wrongCode)))
+    msw.use(recordActions(sent, failWith(errors.wrongCode)))
   },
   play: async ({ canvas }) => {
     const input = canvas.getByLabelText("Verification code")
@@ -59,14 +59,14 @@ export const WrongCode = meta.story({
     await expect(finishSignIn).not.toHaveBeenCalled()
     // The next code goes out as the last did.
     await userEvent.type(input, "111111")
-    await waitFor(() => expect(actions.sent).toHaveLength(2))
-    await expect(actions.sent[1]).toEqual({ action: "auth.verifyEmail", data: { code: "111111" } })
+    await waitFor(() => expect(sent).toHaveLength(2))
+    await expect(sent[1]).toEqual({ action: "auth.verifyEmail", data: { code: "111111" } })
   }
 })
 
 export const ExpiredCode = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.codeExpired)))
+    msw.use(recordActions(sent, failWith(errors.codeExpired)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Verification code"), "123456")
@@ -90,7 +90,7 @@ export const Resend = meta.story({
     await expect(resend).toBeEnabled()
     await userEvent.click(resend)
     await expect(await canvas.findByText("New code sent")).toBeVisible()
-    await expect(actions.sent).toEqual([{ action: "auth.resendCode", data: {} }])
+    await expect(sent).toEqual([{ action: "auth.resendCode", data: {} }])
     // The countdown starts over.
     await expect(canvas.getByRole("button", { name: /Send again in \d+s/ })).toBeDisabled()
   }
@@ -98,7 +98,7 @@ export const Resend = meta.story({
 
 export const ResendFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(() => HttpResponse.json({ error: "Too many requests. Try again later." }, { status: 429 })))
+    msw.use(recordActions(sent, failWith("Too many requests. Try again later.", 429)))
     return fastCountdown()
   },
   play: async ({ canvas }) => {

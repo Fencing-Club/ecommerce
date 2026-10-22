@@ -5,6 +5,7 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { Permissions } from "@/lib/access"
 import { proposedChanges } from "@/stories/fixtures/supplier"
+import { shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { ChangeBadge, ProposalPanel } from "./proposal-panel"
 
@@ -98,7 +99,7 @@ export const ApproveFails = meta.story({
 export const Decline = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Decline" }))
-    const dialog = within(await screen.findByRole("dialog", { name: "Decline the changes?" }))
+    const dialog = await shownDialog("Decline the changes?")
     await expect(
       dialog.getByText("The purchase order stays as it is. Lotus Manufacturing sees your reason.")
     ).toBeInTheDocument()
@@ -118,7 +119,7 @@ export const DeclineFails = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Decline" }))
-    const dialog = within(await screen.findByRole("dialog"))
+    const dialog = await shownDialog()
     await userEvent.click(dialog.getByRole("button", { name: "Decline changes" }))
     // The error shows in the dialog, which stays open to try again.
     await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn’t save. Try again.")

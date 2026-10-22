@@ -1,9 +1,13 @@
 import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { actionHandler, orderId, productHandlers, shownDialog } from "@/stories/fixtures/purchase-orders"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { orderId, productHandlers } from "@/stories/fixtures/purchase-orders"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { portalPage } from "@/stories/server"
 import { PurchaseOrderFlow } from "./purchase-order-flow"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({ title: "Prototypes/Purchase order flow", component: PurchaseOrderFlow })
 
@@ -19,7 +23,7 @@ function flow(props: React.ComponentProps<typeof PurchaseOrderFlow>) {
     beforeEach: ({ msw }: { msw: { use: (...handlers: ReturnType<typeof productHandlers>) => void } }) => {
       msw.use(
         ...productHandlers(),
-        actionHandler(fn(), (body) => {
+        recordActions(sent, (body) => {
           if (body.action === "shipment.save") {
             return HttpResponse.json({ ok: true, revision: 2 })
           }
@@ -373,8 +377,7 @@ export const TimelineComments = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     await expect(await canvas.findByText("Please confirm the final carton weights.", { selector: "p" })).toBeVisible()
     await waitFor(() => expect(canvas.getByRole("textbox", { name: "Comment" })).toHaveValue(""))
-    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Message supplier" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Comment visibility" }), "Message supplier")
     await userEvent.type(canvas.getByRole("textbox", { name: "Comment" }), "The packing instructions are confirmed.")
     await userEvent.click(canvas.getByRole("button", { name: "Post" }))
     const timeline = within(canvas.getByRole("region", { name: "Timeline" }))
@@ -418,8 +421,7 @@ export const PackingRequirements = meta.story({
     )
     await userEvent.click(canvas.getAllByRole("button", { name: "Packing details" })[0]!)
     const details = await shownDialog("Packing details")
-    await userEvent.click(details.getByRole("combobox", { name: "Preparation" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Polybag" }))
+    await chooseOption(details.getByRole("combobox", { name: "Preparation" }), "Polybag")
     await expect(details.getByRole("combobox", { name: "Preparation" })).toHaveTextContent("Polybag")
     await userEvent.click(details.getByRole("checkbox", { name: "FNSKU label" }))
     await userEvent.click(details.getByRole("checkbox", { name: "SKU label" }))
@@ -599,8 +601,7 @@ export const ReceivingAddressStop = meta.story({
     await userEvent.click(shipment.getByRole("button", { name: "Shipment 1 actions" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit stop" }))
     const dialog = await shownDialog("Edit stop")
-    await userEvent.click(dialog.getByRole("combobox", { name: "Stop type" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Receiving address" }))
+    await chooseOption(dialog.getByRole("combobox", { name: "Stop type" }), "Receiving address")
     await expect(dialog.getByRole("combobox", { name: "Receiving location" })).toHaveTextContent("Ningbo receiving")
     await expect(dialog.getByText(/120 Port Road/)).toBeVisible()
     await userEvent.click(dialog.getByRole("button", { name: "Done" }))

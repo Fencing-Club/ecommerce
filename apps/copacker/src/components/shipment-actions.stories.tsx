@@ -1,7 +1,8 @@
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { shipmentId } from "@/stories/fixtures/logistics"
 import { ApproveInvoice, CorrectionForm, ReconcileShipment, LinkExistingShipment } from "./shipment-actions"
 
 const sent: ActionRequest[] = []
@@ -12,7 +13,6 @@ const meta = preview.meta({
   component: ApproveInvoice,
   args: { id: shipmentId, revision: 3 },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
@@ -84,7 +84,7 @@ export const ApproveWithoutCosts = meta.story({
 
 export const ApproveFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("The invoice changed. Reload to see the latest version.")))
+    msw.use(recordActions(sent, failWith("The invoice changed. Reload to see the latest version.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
@@ -116,7 +116,7 @@ export const Correction = meta.story({
 export const CorrectionFails = meta.story({
   render: () => <CorrectionForm id={shipmentId} />,
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("This shipment was already picked up.")))
+    msw.use(recordActions(sent, failWith("This shipment was already picked up.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Request a correction" }))
@@ -167,7 +167,7 @@ export const ReconcileFba = meta.story({
 export const ReconcileFails = meta.story({
   render: () => <ReconcileShipment id={shipmentId} fba={false} />,
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Amazon has no order STAR-8KQ2M7.")))
+    msw.use(recordActions(sent, failWith("Amazon has no order STAR-8KQ2M7.")))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("textbox", { name: "Existing Amazon AWD order ID" }), "STAR-8KQ2M7")

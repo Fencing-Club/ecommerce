@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent, within } from "storybook/test"
+import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import type { CatalogEntry } from "@/lib/catalog-pricing"
 import { catalogProducts, catalogViewer, manyCatalogProducts, wholesaleCatalog } from "@/stories/fixtures/supplier"
+import { shownDialog } from "@/stories/play"
 import { type CatalogEntries, CatalogProducts, emptyEntry } from "./catalog-products"
 
 const entries: CatalogEntries = new Map<string, CatalogEntry>(
@@ -86,7 +87,7 @@ export const ExpandVariants = meta.story({
 export const Rules = meta.story({
   play: async ({ args, canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /Quantity rules and volume pricing for Linen apron/ }))
-    const dialog = within(await screen.findByRole("dialog"))
+    const dialog = await shownDialog()
     await userEvent.click(dialog.getByRole("button", { name: "Use product settings" }))
     await expect(args.onEntriesChange).toHaveBeenCalled()
     await expect(

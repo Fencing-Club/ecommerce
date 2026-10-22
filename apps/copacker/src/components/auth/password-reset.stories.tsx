@@ -1,17 +1,17 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import { ForgotPassword, ResetPasswordForm } from "./password-reset"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Auth/Password reset",
   component: ForgotPassword,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler())
-    return skipAnimations()
+    msw.use(recordActions(sent))
   }
 })
 
@@ -25,7 +25,7 @@ export const Forgot = meta.story({
     await userEvent.type(canvas.getByLabelText("Email"), "not an email")
     await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))
     await expect(canvas.getByText("Enter an email address")).toBeVisible()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -35,7 +35,7 @@ export const Sent = meta.story({
     await userEvent.type(canvas.getByLabelText("Email"), "alex@example.com")
     await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))
     await expect(await canvas.findByRole("heading", { name: "Check your email" })).toBeVisible()
-    await expect(actions.sent).toEqual([{ action: "auth.forgotPassword", data: { email: "alex@example.com" } }])
+    await expect(sent).toEqual([{ action: "auth.forgotPassword", data: { email: "alex@example.com" } }])
     await expect(canvas.getByText("alex@example.com")).toHaveClass("font-medium")
     await expect(canvas.getByText(/has an account, a reset link is on its way/)).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Back to sign in" })).toHaveAttribute("href", "/login")
@@ -55,7 +55,7 @@ export const Prefilled = meta.story({
 
 export const ForgotFails = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.generic)))
+    msw.use(recordActions(sent, failWith(errors.generic)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Email"), "alex@example.com")
@@ -71,7 +71,7 @@ const token = "reset_9fK2mQ7xLp3Zt8Wn"
 export const Reset = meta.story({
   render: () => <ResetPasswordForm token={token} />,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/orders")))
+    msw.use(recordActions(sent, redirectTo("/orders")))
   },
   play: async ({ canvas }) => {
     const password = canvas.getByLabelText("New password")
@@ -79,22 +79,20 @@ export const Reset = meta.story({
     await userEvent.type(password, "too short")
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
     await expect(await canvas.findByText("Use at least 10 characters")).toBeVisible()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
     await userEvent.type(password, " no longer")
     await userEvent.click(canvas.getByRole("button", { name: "Show password" }))
     await expect(password).toHaveAttribute("type", "text")
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders"))
-    await expect(actions.sent).toEqual([
-      { action: "auth.resetPassword", data: { password: "too short no longer", token } }
-    ])
+    await expect(sent).toEqual([{ action: "auth.resetPassword", data: { password: "too short no longer", token } }])
   }
 })
 
 export const ResetLinkExpired = meta.story({
   render: () => <ResetPasswordForm token={token} />,
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.linkExpired)))
+    msw.use(recordActions(sent, failWith(errors.linkExpired)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("New password"), "a brand new password")

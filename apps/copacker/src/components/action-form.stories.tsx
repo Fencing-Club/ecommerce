@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { shownDialog } from "@/stories/play"
 import { ActionForm, keepEnterFromSubmitting } from "./action-form"
 import { FormInput } from "./form-controls"
 
@@ -121,12 +122,12 @@ export const InDialog = meta.story({
   play: async ({ canvas }) => {
     outerSubmitted.mockClear()
     await userEvent.click(canvas.getByRole("button", { name: "Rename" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Harbor Goods")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    const dialog = await shownDialog()
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), "Harbor Goods")
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(submitted).toHaveBeenCalledWith({ name: "Harbor Goods" }))
     await expect(outerSubmitted).not.toHaveBeenCalled()
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })

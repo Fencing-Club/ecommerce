@@ -1,8 +1,9 @@
 import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { salesOrders, syncState } from "@/stories/fixtures/catalog"
+import { chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { FinancialDataSyncCard, OrdersSyncRow, SalesOrders } from "./sales-orders"
 
@@ -133,8 +134,7 @@ export const StartedFromSearch = meta.story({
 export const FilterBySource = meta.story({
   play: async ({ canvas }) => {
     await canvas.findByRole("table", { name: "Orders" })
-    await userEvent.click(canvas.getByRole("combobox", { name: "Source" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Amazon" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Source" }), "Amazon")
     await waitFor(() => expect(lastQuery()).toEqual({ source: "amazon", page: "0" }))
     await expect(canvas.getByRole("combobox", { name: "Source" })).toHaveTextContent("Amazon")
   }

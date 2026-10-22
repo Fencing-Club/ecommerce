@@ -1,9 +1,10 @@
 import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { inventoryLocations } from "@/stories/fixtures/logistics"
+import { shownDialog } from "@/stories/play"
 import { DetailRow, InventoryLocations } from "./inventory-locations"
 
 // The locations each save sent, in order.
@@ -36,22 +37,22 @@ export const Locations = meta.story({
 export const Edit = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Edit inventory locations" }))
-    const dialog = await screen.findByRole("dialog", { name: "Inventory locations" })
-    await expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled()
+    const dialog = await shownDialog("Inventory locations")
+    await expect(dialog.getByRole("button", { name: "Save" })).toBeDisabled()
     // The store's own locations come first, then those run by apps, with why they're usually left out.
-    await expect([...dialog.querySelectorAll("label")].map((label) => label.textContent)).toEqual([
+    await expect([...dialog.element.querySelectorAll("label")].map((label) => label.textContent)).toEqual([
       "Portland warehouse",
       "Reno overflow",
       "ShipBob Reno",
       "Amazon FBA"
     ])
-    await expect(dialog).toHaveTextContent("Amazon FBA stock, read from Amazon directly")
-    await expect(dialog).toHaveTextContent("Run by an app, such as a third-party warehouse")
-    await expect(within(dialog).getByRole("checkbox", { name: "Portland warehouse" })).toBeChecked()
-    await userEvent.click(within(dialog).getByRole("checkbox", { name: "Portland warehouse" }))
-    await userEvent.click(within(dialog).getByRole("checkbox", { name: "Reno overflow" }))
-    await userEvent.click(within(dialog).getByRole("checkbox", { name: "ShipBob Reno" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await expect(dialog.element).toHaveTextContent("Amazon FBA stock, read from Amazon directly")
+    await expect(dialog.element).toHaveTextContent("Run by an app, such as a third-party warehouse")
+    await expect(dialog.getByRole("checkbox", { name: "Portland warehouse" })).toBeChecked()
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Portland warehouse" }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Reno overflow" }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "ShipBob Reno" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveLength(3))
     await expect(saved).toEqual([
       {
@@ -94,9 +95,9 @@ export const LeaveOutAmazon = meta.story({
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Portland warehouse, Amazon FBA")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Edit inventory locations" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("checkbox", { name: "Amazon FBA" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    const dialog = await shownDialog()
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Amazon FBA" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveLength(1))
     await expect(saved[0]).toMatchObject({ locationId: "gid://shopify/Location/7003", classification: "amazon_mirror" })
   }
@@ -112,12 +113,10 @@ export const SaveFails = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Edit inventory locations" }))
-    const dialog = await screen.findByRole("dialog")
-    await userEvent.click(within(dialog).getByRole("checkbox", { name: "Reno overflow" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
-    await expect(
-      await within(dialog).findByText("Shopify's locations changed. Reopen to see them.")
-    ).toBeInTheDocument()
+    const dialog = await shownDialog()
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Reno overflow" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }))
+    await expect(await dialog.findByText("Shopify's locations changed. Reopen to see them.")).toBeInTheDocument()
   }
 })
 

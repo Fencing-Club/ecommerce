@@ -1,7 +1,8 @@
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { builderSuppliers, deliveries, stops } from "@/stories/fixtures/purchase-orders"
 import { OrderFormStory } from "@/stories/order-form"
+import { chooseOption } from "@/stories/play"
 import { RouteCard } from "./route-card"
 
 const meta = preview.meta({
@@ -16,9 +17,7 @@ const meta = preview.meta({
 })
 
 async function choose(pill: string, option: string) {
-  await userEvent.click(screen.getByRole("combobox", { name: pill }))
-  await userEvent.click(await screen.findByRole("option", { name: option }))
-  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+  await chooseOption(screen.getByRole("combobox", { name: pill }), option)
 }
 
 // The supplier, then where the goods go: the buyer's location asks for its address, and the editor hears of the change.

@@ -1,4 +1,3 @@
-import { http, HttpResponse } from "msw/http"
 import type { WizardValues } from "@/components/onboarding/onboarding-wizard"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
@@ -6,55 +5,6 @@ import type { Invitation } from "@/server/invitations"
 import type { InvitationKind } from "@/server/invitations"
 
 // Sign-in, invitations and getting started, for stories.
-
-// Ends every entrance animation at once, so a story sees pages that fade in as they end up. For a story's
-// beforeEach; it returns the cleanup.
-export function skipAnimations() {
-  const style = document.createElement("style")
-  style.textContent = "*, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; }"
-  document.head.appendChild(style)
-  return () => style.remove()
-}
-
-type ActionBody = { action: string; data: Record<string, unknown> }
-type Reply = (body: ActionBody) => Response
-
-function isActionBody(value: unknown): value is ActionBody {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "action" in value &&
-    typeof value.action === "string" &&
-    "data" in value &&
-    typeof value.data === "object"
-  )
-}
-
-// The /api/action requests a story sends, oldest first. `handler` answers them with `reply` for one story and
-// forgets the last story's requests.
-export function actionRecorder() {
-  const sent: ActionBody[] = []
-  return {
-    sent,
-    handler(reply: Reply = () => HttpResponse.json({ ok: true })) {
-      sent.length = 0
-      return http.post("/api/action", async ({ request }) => {
-        const body: unknown = await request.json()
-        if (!isActionBody(body)) {
-          return HttpResponse.json({ error: "Bad request" }, { status: 400 })
-        }
-        sent.push(body)
-        return reply(body)
-      })
-    }
-  }
-}
-
-// A change that succeeds and moves on to `path`.
-export const redirectTo = (path: string) => () => HttpResponse.json({ ok: true, redirect: path })
-
-// A change the server turns down with `message`, already in the person's language.
-export const failWith = (message: string) => () => HttpResponse.json({ error: message }, { status: 400 })
 
 // The English messages of the server errors the sign-in pages meet (messages/en/errors.json).
 export const errors = {

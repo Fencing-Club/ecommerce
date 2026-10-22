@@ -1,7 +1,6 @@
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { skipAnimations } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
 import AuthError from "./error"
 
@@ -14,8 +13,7 @@ const meta = preview.meta({
     </AuthShell>
   )),
   args: { retry: fn() },
-  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/login" } } },
-  beforeEach: () => skipAnimations()
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/login" } } }
 })
 
 export const Default = meta.story({

@@ -3,10 +3,11 @@ import preview from "#.storybook/preview"
 // The route renders the sign-in screen itself.
 import { AuthScreen as PageView } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { actionRecorder, errors, failWith, skipAnimations } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 // The forgot-password page (page.tsx) in the auth layout, with the query's `email`. The layout's AppProviders is the
 // story frame's own providers.
@@ -23,8 +24,7 @@ const meta = preview.meta({
   ...serverStory(ForgotPasswordPage),
   parameters: { layout: "fullscreen", router: { navigation: { pathname: "/forgot-password" } } },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler())
-    return skipAnimations()
+    msw.use(recordActions(sent))
   }
 })
 
@@ -37,7 +37,7 @@ export const Default = meta.story({
     await userEvent.type(main.getByLabelText("Email"), "alex@example")
     await userEvent.click(main.getByRole("button", { name: "Send reset link" }))
     await expect(await main.findByText("Enter an email address")).toBeVisible()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -48,7 +48,7 @@ export const WithEmail = meta.story({
     await expect(canvas.getByLabelText("Email")).toHaveValue("alex@example.com")
     await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))
     await expect(await canvas.findByRole("heading", { level: 1, name: "Check your email" })).toBeVisible()
-    await expect(actions.sent).toEqual([{ action: "auth.forgotPassword", data: { email: "alex@example.com" } }])
+    await expect(sent).toEqual([{ action: "auth.forgotPassword", data: { email: "alex@example.com" } }])
     await expect(canvas.getByRole("button", { name: "Back to sign in" })).toHaveAttribute("href", "/login")
   }
 })
@@ -56,7 +56,7 @@ export const WithEmail = meta.story({
 export const Fails = meta.story({
   args: { email: "alex@example.com" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.generic)))
+    msw.use(recordActions(sent, failWith(errors.generic)))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))

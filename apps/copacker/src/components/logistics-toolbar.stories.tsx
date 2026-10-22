@@ -1,8 +1,9 @@
 import { useReducer, useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ListColumn, listReducer, startList } from "@/lib/logistics-list"
 import { purchaseOrderListRows, shipmentListRows } from "@/stories/fixtures/logistics-lists"
+import { shownDialog } from "@/stories/play"
 import { LogisticsToolbar } from "./logistics-toolbar"
 
 type Props = Omit<React.ComponentProps<typeof LogisticsToolbar>, "state" | "hidden" | "onHiddenChange">
@@ -52,9 +53,8 @@ export const ShipmentFilters = meta.story({
   args: { kind: "shipments", rows: shipmentListRows },
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Filters" }))
-    const panel = within(await screen.findByRole("dialog", { name: "List filters" }))
-    // The panel fades in, so wait until it has finished opening.
-    await waitFor(() => expect(panel.getByText("Source")).toBeVisible())
+    const panel = await shownDialog("List filters")
+    await expect(panel.getByText("Source")).toBeVisible()
     await userEvent.type(panel.getByLabelText("From"), "2026-10-01")
     await expect(args.dispatch).toHaveBeenLastCalledWith({ type: "ready", from: "2026-10-01" })
     await userEvent.click(panel.getByRole("button", { name: "Done" }))

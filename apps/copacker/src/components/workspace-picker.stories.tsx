@@ -1,9 +1,10 @@
-import { HttpResponse } from "msw/http"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { held, recordActions } from "@/stories/fixtures/shared"
+import { held, type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { workspaces } from "@/stories/workspace"
 import { WorkspacePicker } from "./workspace-picker"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/App shell/Workspace picker",
@@ -23,12 +24,12 @@ export const Unavailable = meta.story({
 
 export const ChooseWithKeyboard = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw, held)
+    msw.use(recordActions(sent, held))
     canvas.getByRole("button", { name: "Harbor Goods Buyer workspace" }).focus()
     await userEvent.tab()
     await expect(canvas.getByRole("button", { name: "Lotus Manufacturing Supplier workspace" })).toHaveFocus()
     await userEvent.keyboard("{Enter}")
-    await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
+    await waitFor(() => expect(sent).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
     await expect(canvas.getByRole("button", { name: /Lotus Manufacturing/ })).toHaveAttribute("aria-busy", "true")
     for (const button of canvas.getAllByRole("button")) {
       await expect(button).toBeDisabled()
@@ -38,9 +39,7 @@ export const ChooseWithKeyboard = meta.story({
 
 export const AccessChanged = meta.story({
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () =>
-      HttpResponse.json({ error: "You no longer have access to this workspace." }, { status: 403 })
-    )
+    msw.use(recordActions(sent, failWith("You no longer have access to this workspace.", 403)))
     await userEvent.click(canvas.getByRole("button", { name: /Harbor Goods/ }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("You no longer have access to this workspace.")
     await expect(canvas.getByRole("button", { name: /Lotus Manufacturing/ })).toBeEnabled()

@@ -1,7 +1,8 @@
-import { expect, screen, userEvent, within } from "storybook/test"
+import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { buyerOverview } from "@/stories/fixtures/overview"
+import { shownDialog } from "@/stories/play"
 import { OverviewContent } from "./content"
 
 const meta = preview.meta({
@@ -17,9 +18,9 @@ const meta = preview.meta({
 export const ChangePeriod = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Last 30 days" }))
-    const dialog = await screen.findByRole("dialog", { name: "Choose a period" })
-    await userEvent.click(within(dialog).getByRole("button", { name: "Today" }))
-    await userEvent.click(within(dialog).getByRole("button", { name: "Apply" }))
+    const dialog = await shownDialog("Choose a period")
+    await userEvent.click(dialog.getByRole("button", { name: "Today" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Apply" }))
     await expect(getStoryRouter().navigate).toHaveBeenCalledWith({
       to: "/overview",
       search: { channel: "amazon", period: "today" }

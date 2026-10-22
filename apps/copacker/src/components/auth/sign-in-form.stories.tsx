@@ -1,17 +1,18 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { actionRecorder, errors, failWith, redirectTo } from "@/stories/fixtures/auth"
+import { type ActionRequest, recordActions, failWith, redirectTo } from "@/stories/actions"
+import { errors } from "@/stories/fixtures/auth"
 import { SignInForm } from "./sign-in-form"
 
-const actions = actionRecorder()
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/Auth/Sign in form",
   component: SignInForm,
   args: { next: "/orders" },
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(redirectTo("/orders")))
+    msw.use(recordActions(sent, redirectTo("/orders")))
   }
 })
 
@@ -21,7 +22,7 @@ export const Empty = meta.story({
     await expect(await canvas.findByText("Enter an email address")).toBeVisible()
     await expect(canvas.getByText("Enter your password")).toBeVisible()
     await expect(canvas.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -32,7 +33,7 @@ export const InvalidEmail = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
     await expect(await canvas.findByText("Enter an email address")).toBeVisible()
     await expect(canvas.queryByText("Enter your password")).toBeNull()
-    await expect(actions.sent).toHaveLength(0)
+    await expect(sent).toHaveLength(0)
   }
 })
 
@@ -52,7 +53,7 @@ export const SignsIn = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
     await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders"))
-    await expect(actions.sent).toEqual([
+    await expect(sent).toEqual([
       {
         action: "auth.signIn",
         data: { email: "alex@example.com", password: "correct horse battery", next: "/orders" }
@@ -66,7 +67,7 @@ export const SignsIn = meta.story({
 
 export const WrongPassword = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actions.handler(failWith(errors.incorrectCredentials)))
+    msw.use(recordActions(sent, failWith(errors.incorrectCredentials)))
   },
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Email"), "alex@example.com")
@@ -106,8 +107,8 @@ export const LockedEmail = meta.story({
     )
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
-    await waitFor(() => expect(actions.sent).toHaveLength(1))
-    await expect(actions.sent[0]?.data).toMatchObject({
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]?.data).toMatchObject({
       email: "jordan@example.com",
       next: "/invite?token=inv_7Hq2kR9sLm4Xw8Zp3Tn6Vb&kind=team"
     })

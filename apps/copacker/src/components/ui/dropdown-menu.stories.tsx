@@ -77,7 +77,7 @@ const meta = preview.type<{ args: Args }>().meta({
 async function openMenu(canvas: { getByRole: typeof screen.getByRole }) {
   await userEvent.click(canvas.getByRole("button", { name: "Purchase order actions" }))
   const menu = await screen.findByRole("menu")
-  // Wait out the opening animation.
+  // It shows from the frame after it opens.
   await waitFor(() => expect(menu).toBeVisible())
   return menu
 }

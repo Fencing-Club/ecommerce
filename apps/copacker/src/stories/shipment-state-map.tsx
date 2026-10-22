@@ -1,6 +1,6 @@
 import { transportProfiles } from "@repo/copacker-shipments/transport"
 import { Status, StatusBadge } from "@/components/common"
-import { shipmentActionFeedback } from "@/lib/shipment-action-feedback"
+import { shipmentActionFeedback } from "@/stories/fixtures/shipment-action-feedback"
 
 type Arrangement = {
   id: string

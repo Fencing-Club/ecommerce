@@ -75,8 +75,9 @@ export const Sent = meta.story({
     const sent = await canvas.findByRole("heading", { name: "Message sent." })
     await waitFor(() => expect(sent).toHaveFocus())
     await expect(canvas.getByText("We’ll write back to alex@example.com.")).toBeVisible()
-    // The form stays in its place, hidden, so the card keeps its height.
-    await expect(canvas.getByRole("button", { name: "Send message", hidden: true })).not.toBeVisible()
+    // The form stays in its place, hidden, so the card keeps its height. Its button is ready again once the send ends;
+    // hidden, it has no accessible name, so it's found by its text.
+    await expect(await canvas.findByText("Send message")).not.toBeVisible()
     // The topic goes in English, the address trimmed and lowercased, and the field for bots empty.
     await expect(received).toHaveBeenCalledOnce()
     await expect(received).toHaveBeenCalledWith({

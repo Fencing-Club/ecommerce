@@ -1,16 +1,16 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
-  type ActionRequest,
   amazonAccount,
   ebayAccount,
-  recordActions,
   salesSync,
   shopifyAccount,
   stockSync,
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
+import { shownDialog, shownAlertDialog } from "@/stories/play"
 import { IntegrationSyncSection } from "./integration-panel"
 import { Integrations } from "./integrations"
 
@@ -40,7 +40,6 @@ const meta = preview.meta({
     ebaySettings: <IntegrationSyncSection store="ebay" />
   },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent), ...storeSyncHandlers())
     // A form that passed its checks goes to Shopify; the story keeps it here instead.
     const submitted = (event: SubmitEvent) => {
@@ -78,9 +77,9 @@ export const AmazonAdsConnected = meta.story({
     await expect(await within(card).findByRole("heading", { name: "Amazon Ads" })).toBeVisible()
     await waitFor(() => expect(within(card).getAllByText("Connected")).toHaveLength(1))
     await userEvent.click(within(card).getByRole("button", { name: "Manage Amazon Ads" }))
-    const sheet = await screen.findByRole("dialog", { name: "Amazon Ads" })
-    await waitFor(() => expect(within(sheet).getByRole("heading", { name: "Ad spend" })).toBeVisible())
-    await expect(within(sheet).getByRole("button", { name: "Sync ad spend" })).toBeEnabled()
+    const sheet = await shownDialog("Amazon Ads")
+    await waitFor(() => expect(sheet.getByRole("heading", { name: "Ad spend" })).toBeVisible())
+    await expect(sheet.getByRole("button", { name: "Sync ad spend" })).toBeEnabled()
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(within(card).getByRole("button", { name: "Manage Amazon Ads" })).toHaveFocus())
   }
@@ -124,12 +123,12 @@ export const EbayConnected = meta.story({
     await expect(canvas.getByText(ebayAccount)).toBeVisible()
     await expect(await canvas.findByText(/^Synced/)).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Manage eBay" }))
-    const sheet = await screen.findByRole("dialog", { name: "eBay" })
-    await expect(within(sheet).getByRole("button", { name: "Sync eBay orders" })).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
-    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect eBay?" })
-    await expect(confirm).toHaveTextContent(`Copacker stops reading sales from ${ebayAccount}.`)
-    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect" }))
+    const sheet = await shownDialog("eBay")
+    await expect(sheet.getByRole("button", { name: "Sync eBay orders" })).toBeInTheDocument()
+    await userEvent.click(sheet.getByRole("button", { name: "Disconnect" }))
+    const confirm = await shownAlertDialog("Disconnect eBay?")
+    await expect(confirm.element).toHaveTextContent(`Copacker stops reading sales from ${ebayAccount}.`)
+    await userEvent.click(confirm.getByRole("button", { name: "Disconnect" }))
     await waitFor(() => expect(sent).toEqual([{ action: "connection.delete", data: { provider: "ebay" } }]))
   }
 })
@@ -187,14 +186,14 @@ export const ShopifySignInExpired = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Shopify" }))
-    const sheet = await screen.findByRole("dialog", { name: "Shopify" })
-    await waitFor(() => expect(within(sheet).getAllByRole("link", { name: "Reconnect" })).toHaveLength(2))
-    for (const link of within(sheet).getAllByRole("link", { name: "Reconnect" })) {
+    const sheet = await shownDialog("Shopify")
+    await waitFor(() => expect(sheet.getAllByRole("link", { name: "Reconnect" })).toHaveLength(2))
+    for (const link of sheet.getAllByRole("link", { name: "Reconnect" })) {
       await expect(link).toHaveAttribute("href", `/api/connections/shopify?shop=${shopifyAccount}`)
     }
-    await expect(within(sheet).queryByRole("button", { name: "Sync Shopify orders" })).toBeNull()
-    await expect(within(sheet).queryByRole("button", { name: "Sync Shopify inventory" })).toBeNull()
-    await expect(within(sheet).getAllByText("Reconnect to resume syncing.")).toHaveLength(2)
+    await expect(sheet.queryByRole("button", { name: "Sync Shopify orders" })).toBeNull()
+    await expect(sheet.queryByRole("button", { name: "Sync Shopify inventory" })).toBeNull()
+    await expect(sheet.getAllByText("Reconnect to resume syncing.")).toHaveLength(2)
   }
 })
 
@@ -202,22 +201,20 @@ export const ShopifySignInExpired = meta.story({
 export const ConnectShopify = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Connect Shopify" }))
-    const dialog = await screen.findByRole("dialog", { name: "Connect Shopify" })
-    await expect(dialog).toHaveTextContent("Admin link or myshopify.com domain")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
-    await expect(
-      await within(dialog).findByText("Enter your store’s admin link or myshopify.com domain")
-    ).toBeInTheDocument()
-    const store = within(dialog).getByRole("textbox", { name: "Store" })
+    const dialog = await shownDialog("Connect Shopify")
+    await expect(dialog.element).toHaveTextContent("Admin link or myshopify.com domain")
+    await userEvent.click(dialog.getByRole("button", { name: "Connect" }))
+    await expect(await dialog.findByText("Enter your store’s admin link or myshopify.com domain")).toBeInTheDocument()
+    const store = dialog.getByRole("textbox", { name: "Store" })
     await userEvent.type(store, "harbor goods")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
-    await expect(within(dialog).getByRole("textbox", { name: "Store" })).toHaveAttribute("aria-invalid", "true")
+    await userEvent.click(dialog.getByRole("button", { name: "Connect" }))
+    await expect(dialog.getByRole("textbox", { name: "Store" })).toHaveAttribute("aria-invalid", "true")
     await expect(connectShopify).not.toHaveBeenCalled()
     // Typing clears the error; an admin link is read as its store.
     await userEvent.clear(store)
-    await expect(within(dialog).queryByText(/Enter your store/)).toBeNull()
+    await expect(dialog.queryByText(/Enter your store/)).toBeNull()
     await userEvent.type(store, "https://admin.shopify.com/store/harbor-goods/products")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Connect" }))
     await expect(connectShopify).toHaveBeenCalledWith(
       expect.stringMatching(/\/api\/connections\/shopify$/),
       "https://admin.shopify.com/store/harbor-goods/products"
@@ -230,8 +227,8 @@ export const ConnectAmazon = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Connect Amazon" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Connect Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await expect(dialog).toHaveTextContent("Choose your marketplace")
+    const dialog = await shownDialog("Connect Amazon")
+    await expect(dialog.element).toHaveTextContent("Choose your marketplace")
   }
 })
 
@@ -255,9 +252,9 @@ export const Connected = meta.story({
     await expect(canvas.getByRole("button", { name: "Manage Shopify" })).toHaveTextContent("Manage")
     await expect(await canvas.findAllByText(/^Synced/)).toHaveLength(2)
     await userEvent.click(canvas.getByRole("button", { name: "Manage Shopify" }))
-    const sheet = await screen.findByRole("dialog", { name: "Shopify" })
-    await expect(within(sheet).getByRole("button", { name: "Sync Shopify orders" })).toBeInTheDocument()
-    await expect(within(sheet).queryByRole("button", { name: "Sync Amazon orders" })).toBeNull()
+    const sheet = await shownDialog("Shopify")
+    await expect(sheet.getByRole("button", { name: "Sync Shopify orders" })).toBeInTheDocument()
+    await expect(sheet.queryByRole("button", { name: "Sync Amazon orders" })).toBeNull()
   }
 })
 
@@ -293,9 +290,9 @@ export const ManyMarketplaces = meta.story({
     await expect(within(card).getByText("4 marketplaces")).toBeVisible()
     await expect(within(card).queryByText("Brazil")).toBeNull()
     await userEvent.click(within(card).getByRole("button", { name: "Manage Amazon" }))
-    const sheet = await screen.findByRole("dialog", { name: "Amazon" })
+    const sheet = await shownDialog("Amazon")
     for (const marketplace of ["United States", "Canada", "Mexico", "Brazil"]) {
-      await waitFor(() => expect(within(sheet).getByText(marketplace)).toBeVisible())
+      await waitFor(() => expect(sheet.getByText(marketplace)).toBeVisible())
     }
   }
 })
@@ -317,11 +314,11 @@ export const Disconnect = meta.story({
   args: { shopify, amazon },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const sheet = await screen.findByRole("dialog", { name: "Amazon" })
-    await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
-    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect Amazon?" })
-    await expect(confirm).toHaveTextContent(`Copacker stops reading sales and stock from ${amazon.account}`)
-    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect" }))
+    const sheet = await shownDialog("Amazon")
+    await userEvent.click(sheet.getByRole("button", { name: "Disconnect" }))
+    const confirm = await shownAlertDialog("Disconnect Amazon?")
+    await expect(confirm.element).toHaveTextContent(`Copacker stops reading sales and stock from ${amazon.account}`)
+    await userEvent.click(confirm.getByRole("button", { name: "Disconnect" }))
     await waitFor(() => expect(sent).toEqual([{ action: "connection.delete", data: { provider: "amazon" } }]))
   }
 })
@@ -371,9 +368,9 @@ export const AmazonPrivateAuthorization = meta.story({
   args: { amazonSelfAuth: true },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Connect Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
-    await expect(within(dialog).getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
+    const dialog = await shownDialog("Connect Amazon")
+    await expect(dialog.getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(dialog.getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
   }
 })
 
@@ -415,12 +412,12 @@ export const AmazonReconnectRequired = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Reconnect required")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const panel = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(within(panel).queryByText("Connected")).toBeNull()
-    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
-    const reconnect = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    const panel = await shownDialog("Amazon")
+    await expect(panel.queryByText("Connected")).toBeNull()
+    await userEvent.click(panel.getByRole("button", { name: "Reconnect Amazon" }))
+    const reconnect = await shownDialog("Connect Amazon")
     await expect(screen.getAllByRole("dialog")).toHaveLength(1)
-    await expect(within(reconnect).getByLabelText(/Refresh token/i)).toHaveAttribute("type", "password")
+    await expect(reconnect.getByLabelText(/Refresh token/i)).toHaveAttribute("type", "password")
   }
 })
 export const AmazonConfigurationIssue = meta.story({
@@ -428,9 +425,9 @@ export const AmazonConfigurationIssue = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Configuration issue")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const panel = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(within(panel).queryByRole("button", { name: "Reconnect Amazon" })).toBeNull()
-    await waitFor(() => expect(within(panel).getByText(/Contact support/)).toBeVisible())
+    const panel = await shownDialog("Amazon")
+    await expect(panel.queryByRole("button", { name: "Reconnect Amazon" })).toBeNull()
+    await waitFor(() => expect(panel.getByText(/Contact support/)).toBeVisible())
   }
 })
 
@@ -438,12 +435,12 @@ export const AmazonReconnectOAuth = meta.story({
   args: { amazon: { ...amazon, marketplaces: null, health: "reconnect" }, amazonSelfAuth: false },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const panel = await screen.findByRole("dialog", { name: "Amazon" })
-    await userEvent.click(within(panel).getByRole("button", { name: "Reconnect Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    const panel = await shownDialog("Amazon")
+    await userEvent.click(panel.getByRole("button", { name: "Reconnect Amazon" }))
+    const dialog = await shownDialog("Connect Amazon")
     await expect(screen.getAllByRole("dialog")).toHaveLength(1)
-    await expect(within(dialog).queryByLabelText(/Refresh token/)).toBeNull()
-    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
+    await expect(dialog.queryByLabelText(/Refresh token/)).toBeNull()
+    await waitFor(() => expect(dialog.getByRole("button", { name: "Continue to Amazon" })).toBeVisible())
   }
 })
 
@@ -454,10 +451,10 @@ export const AmazonConnectionStatus = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
-    await waitFor(() => expect(within(dialog).getByText("Connected", { exact: true })).toBeVisible())
-    await expect(within(dialog).getByText("Harbor Goods US")).toBeVisible()
-    await expect(within(dialog).getByText("United States")).toBeVisible()
+    const dialog = await shownDialog("Amazon")
+    await waitFor(() => expect(dialog.getByText("Connected", { exact: true })).toBeVisible())
+    await expect(dialog.getByText("Harbor Goods US")).toBeVisible()
+    await expect(dialog.getByText("United States")).toBeVisible()
   }
 })
 
@@ -469,9 +466,9 @@ export const AmazonReconnectStatus = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
-    const dialog = await screen.findByRole("dialog", { name: "Amazon" })
-    await waitFor(() => expect(within(dialog).getByText("Reconnect required", { exact: true })).toBeVisible())
-    await expect(within(dialog).getByRole("button", { name: "Reconnect Amazon" })).toBeVisible()
+    const dialog = await shownDialog("Amazon")
+    await waitFor(() => expect(dialog.getByText("Reconnect required", { exact: true })).toBeVisible())
+    await expect(dialog.getByRole("button", { name: "Reconnect Amazon" })).toBeVisible()
     await expect(screen.getAllByRole("dialog")).toHaveLength(1)
   }
 })

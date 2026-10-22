@@ -141,12 +141,15 @@ describe("story titles", () => {
     expect(existsSync(`${app}${file}`)).toBe(true)
   })
 
-  // A page story renders the route itself, with fixtures, so a change to the page changes the story.
+  // A page story renders the route itself, with fixtures, so a change to the page changes the story. Its play function
+  // may use the shared play helpers and action recorder.
   it.each(stories.filter(({ title }) => title?.startsWith("Pages/")))("$file renders the real page", ({ file }) => {
     expect(file).toMatch(/^src\/app\//)
     const storyModules = (imports.get(file) ?? []).filter((target) => target.startsWith("src/stories/"))
     expect(
-      storyModules.filter((target) => !/^src\/stories\/(fixtures\/|server|workspace|shipping-documents)/.test(target))
+      storyModules.filter(
+        (target) => !/^src\/stories\/(fixtures\/|server|workspace|shipping-documents|play|actions)/.test(target)
+      )
     ).toEqual([])
   })
 

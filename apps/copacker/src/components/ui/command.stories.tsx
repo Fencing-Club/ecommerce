@@ -1,7 +1,8 @@
 import { FileText, Package, Truck } from "lucide-react"
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { shownDialog } from "@/stories/play"
 import { Button } from "./button"
 import {
   Command,
@@ -154,9 +155,9 @@ export const Dialog = meta.story({
   render: ({ onSelect }) => <PaletteDialog onSelect={onSelect} />,
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Search" }))
-    const dialog = await screen.findByRole("dialog", { name: "Command Palette" })
-    await expect(dialog).toHaveAccessibleDescription("Search for a command to run...")
-    await userEvent.type(within(dialog).getByRole("combobox"), "purchase")
+    const dialog = await shownDialog("Command Palette")
+    await expect(dialog.element).toHaveAccessibleDescription("Search for a command to run...")
+    await userEvent.type(dialog.getByRole("combobox"), "purchase")
     await userEvent.keyboard("{Enter}")
     await expect(args.onSelect).toHaveBeenLastCalledWith("Purchase orders")
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())

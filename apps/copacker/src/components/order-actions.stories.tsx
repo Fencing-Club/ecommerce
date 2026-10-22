@@ -1,12 +1,14 @@
 import { HttpResponse } from "msw/http"
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { actionHandler, order, orderId } from "@/stories/fixtures/purchase-orders"
+import { type ActionRequest, recordActions } from "@/stories/actions"
+import { order, orderId } from "@/stories/fixtures/purchase-orders"
+import { shownAlertDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { LineMenu, OrderMenu } from "./order-actions"
 
-const actions = fn()
+const sent: ActionRequest[] = []
 const [tote, apron] = order.items
 
 const meta = preview.meta({
@@ -14,7 +16,7 @@ const meta = preview.meta({
   component: OrderMenu,
   args: { id: orderId, reference: "PO-1042", draft: true, closable: false, labels: true },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions))
+    msw.use(recordActions(sent))
   }
 })
 
@@ -43,16 +45,16 @@ export const Draft = meta.story({
 
 export const DeleteDraft = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, () => HttpResponse.json({ redirect: "/orders" })))
+    msw.use(recordActions(sent, () => HttpResponse.json({ redirect: "/orders" })))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions for PO-1042" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete draft" }))
-    const dialog = await screen.findByRole("alertdialog", { name: "Delete PO-1042?" })
-    await expect(dialog).toHaveTextContent("Your supplier hasn’t seen it.")
+    const dialog = await shownAlertDialog("Delete PO-1042?")
+    await expect(dialog.element).toHaveTextContent("Your supplier hasn’t seen it.")
     await userEvent.click(screen.getByRole("button", { name: "Delete draft" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
-    await expect(actions).toHaveBeenCalledWith({ action: "order.delete", data: { id: orderId } })
+    await expect(sent).toContainEqual({ action: "order.delete", data: { id: orderId } })
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     // The list loads fresh on the way there, so it isn't refreshed again.
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
@@ -67,10 +69,10 @@ export const Close = meta.story({
     const items = await screen.findAllByRole("menuitem")
     await expect(items.map((item) => item.textContent)).toEqual(["Download purchase order", "Close purchase order"])
     await userEvent.click(screen.getByRole("menuitem", { name: "Close purchase order" }))
-    await screen.findByRole("alertdialog", { name: "Close PO-1042?" })
+    await shownAlertDialog("Close PO-1042?")
     await userEvent.click(screen.getByRole("button", { name: "Close purchase order" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
-    await expect(actions).toHaveBeenCalledWith({ action: "order.close", data: { id: orderId } })
+    await expect(sent).toContainEqual({ action: "order.close", data: { id: orderId } })
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
@@ -78,7 +80,7 @@ export const Close = meta.story({
 export const CloseFails = meta.story({
   args: { draft: false, closable: true, labels: false },
   beforeEach: ({ msw }) => {
-    msw.use(actionHandler(actions, () => HttpResponse.json({}, { status: 500 })))
+    msw.use(recordActions(sent, () => HttpResponse.json({}, { status: 500 })))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions for PO-1042" }))

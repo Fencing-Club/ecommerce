@@ -1,7 +1,6 @@
-import type { Address, SupplierCatalogStatus } from "@repo/copacker-orders"
+import type { SupplierCatalogStatus } from "@repo/copacker-orders"
 import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
-import { expect, screen, waitFor, within } from "storybook/test"
 import { z } from "zod"
 import type { TimelineEntry } from "@/components/po-timeline"
 import type { events } from "@/db/schema"
@@ -11,31 +10,12 @@ import type { CatalogProduct } from "@/lib/api"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import type { ImportProposal } from "@/lib/import-proposal"
 import type { ForwarderAddress } from "@/server/forwarders"
-import type { ListedOrder } from "@/server/supplier-workspace"
 import { workspaces } from "../workspace"
 import { daysAgo, deliveryId, orderData, orderItem, supplierId } from "./orders"
-
-// A dialog once it has opened: its content fades in, so it counts as shown only once it's visible.
-export async function shownDialog(name: string, role: "dialog" | "alertdialog" = "dialog") {
-  const dialog = await screen.findByRole(role, { name })
-  await waitFor(() => expect(dialog).toBeVisible())
-  return within(dialog)
-}
+import { baylineWarehouse, northwindFactory } from "./parties"
 
 // A purchase order's page and what hangs off it (its supplier, shipments, documents and timeline) as the database
 // keeps them, and the products, suppliers and addresses its editor offers.
-
-const actionBody = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
-type Action = z.infer<typeof actionBody>
-
-// The app's /api/action, which reports each action it's sent to `seen` and answers with `respond`'s reply, or success.
-export function actionHandler(seen: (body: Action) => void, respond?: (body: Action) => Response | undefined) {
-  return http.post("/api/action", async ({ request }) => {
-    const body = actionBody.parse(await request.json())
-    seen(body)
-    return respond?.(body) ?? HttpResponse.json({ ok: true })
-  })
-}
 
 export const orderId = "3c9e2b1a-6d4f-4a8b-9c2e-1f0a5b7d9e01"
 export const forwarderId = "3c9e2b1a-6d4f-4a8b-9c2e-1f0a5b7d9e02"
@@ -130,30 +110,23 @@ export function shipmentRecord(overrides: Partial<Shipment> = {}): Shipment {
   }
 }
 
-// The address the supplier ships from, which a packed shipment keeps as its origin.
-export const pickupAddress: Address = {
-  name: "Mei Chen",
-  addressLine1: "88 Harbour Road",
-  addressLine2: "",
-  city: "Ningbo",
-  stateOrRegion: "Zhejiang",
-  postalCode: "315000",
-  countryCode: "CN",
-  phoneNumber: "+86 574 5555 0100",
-  email: ""
-}
-
+// The places the supplier ships from. A packed shipment keeps the one it left as its origin, its factory.
 export const pickupLocations = [
-  { id: "supplier-origin", name: "Northwind Textiles / Main factory", address: pickupAddress },
+  { id: "supplier-origin", name: "Northwind Textiles / Main factory", address: northwindFactory },
   {
     id: "supplier-warehouse",
     name: "Northwind Textiles / Ningbo warehouse",
-    address: { ...pickupAddress, addressLine1: "26 Yongjiang Road", addressLine2: "Building 2", postalCode: "315020" }
+    address: {
+      ...northwindFactory,
+      addressLine1: "26 Yongjiang Road",
+      addressLine2: "Building 2",
+      postalCode: "315020"
+    }
   },
   {
     id: "supplier-hangzhou",
     name: "Northwind Textiles / Hangzhou factory",
-    address: { ...pickupAddress, addressLine1: "118 Binsheng Road", city: "Hangzhou", postalCode: "310051" }
+    address: { ...northwindFactory, addressLine1: "118 Binsheng Road", city: "Hangzhou", postalCode: "310051" }
   }
 ]
 
@@ -161,7 +134,7 @@ export const pickupLocations = [
 export function packed(cartons: number) {
   return {
     readyDate: "2026-10-05",
-    origin: pickupAddress,
+    origin: northwindFactory,
     cartons: Array.from({ length: cartons }, (_, index) => ({
       cartonId: `C${index + 1}`,
       length: 60,
@@ -234,7 +207,7 @@ export const forwarderWarehouse = contact({
   name: "Ningbo warehouse",
   kind: "delivery",
   forwarderId,
-  address: { ...pickupAddress, name: "Bayline Ningbo", addressLine1: "12 Port Avenue" }
+  address: baylineWarehouse
 })
 
 // The editor's choices: the buyer's suppliers, its delivery addresses, and the forwarders' addresses a PO can stop at.
@@ -335,7 +308,9 @@ function catalogProduct(variantId: string, product: string, title: string, sku: 
   }
 }
 
-export const catalogProducts = [
+// The store's variations as /api/catalog details them for the editor. A supplier's own catalog products are
+// fixtures/supplier.ts's catalogProducts.
+export const catalogVariants = [
   catalogProduct("gid://shopify/ProductVariant/300011", "Waffle towel", "Sand", "TOWEL-SAND", "6.50"),
   catalogProduct("gid://shopify/ProductVariant/300012", "Waffle towel", "Slate", "TOWEL-SLATE", "6.50"),
   catalogProduct("gid://shopify/ProductVariant/300021", "Linen napkin set", "Default Title", "NAPKIN-SET", "12.00")
@@ -357,7 +332,7 @@ export function productHandlers(seen: (url: URL) => void = () => undefined) {
       const url = new URL(request.url)
       seen(url)
       const ids = url.searchParams.get("ids")?.split(",") ?? []
-      return HttpResponse.json(catalogProducts.filter((product) => ids.includes(product.id)))
+      return HttpResponse.json(catalogVariants.filter((product) => ids.includes(product.id)))
     })
   ]
 }
@@ -511,38 +486,6 @@ export const revisions: Array<typeof orderRevisions.$inferSelect> = [
     reason: "created",
     createdAt: daysAgo(12)
   }
-]
-
-// A supplier's orders, as its Orders page lists them.
-function supplierOrder(
-  reference: string,
-  stage: ListedOrder["stage"],
-  status: string,
-  customer: string,
-  days: number
-): ListedOrder {
-  return {
-    id: `order-${reference}`,
-    reference,
-    customerId: `customer-${customer}`,
-    customer,
-    sentAt: daysAgo(days),
-    orderStatus: stage === "closed" ? "closed" : "submitted",
-    status,
-    stage,
-    shipmentId: null,
-    currency: "USD",
-    total: 295_800,
-    pieces: 420,
-    lines: 3,
-    firstItem: "Canvas tote bag"
-  }
-}
-
-export const supplierOrders = [
-  supplierOrder("PO-1045", "pack", "packing", "Harbor Goods", 2),
-  supplierOrder("PO-1044", "ship", "ready", "Harbor Goods", 6),
-  supplierOrder("PO-1031", "closed", "closed", "Juniper Home", 40)
 ]
 
 // A purchase order read from a PDF, waiting for review: one line matched to a product, one the reader couldn't match,

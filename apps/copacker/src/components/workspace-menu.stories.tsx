@@ -1,10 +1,11 @@
-import { HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { held, recordActions } from "@/stories/fixtures/shared"
+import { held, type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { workspaces } from "@/stories/workspace"
 import { WorkspaceMenu } from "./workspace-menu"
+
+const sent: ActionRequest[] = []
 
 const meta = preview.meta({
   title: "Components/App shell/Workspace menu",
@@ -60,20 +61,18 @@ export const Open = meta.story({
 export const Switch = meta.story({
   play: async ({ canvas, msw }) => {
     // Switching loads the new workspace's home, so the server holds its answer and the story stays here.
-    const posted = recordActions(msw, held)
+    msw.use(recordActions(sent, held))
     await userEvent.click(canvas.getByRole("button", { name: /switch workspace/ }))
     const menu = await screen.findByRole("menu")
     await userEvent.click(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ }))
-    await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
+    await waitFor(() => expect(sent).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
   }
 })
 
 // The menu has closed by then, so a failed switch shows as a toast and the page stays as it was.
 export const SwitchFails = meta.story({
   play: async ({ canvas, msw }) => {
-    recordActions(msw, () =>
-      HttpResponse.json({ error: "You no longer have access to this workspace." }, { status: 403 })
-    )
+    msw.use(recordActions(sent, failWith("You no longer have access to this workspace.", 403)))
     await userEvent.click(canvas.getByRole("button", { name: /switch workspace/ }))
     const menu = await screen.findByRole("menu")
     await userEvent.click(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ }))
@@ -86,11 +85,11 @@ export const SwitchFails = meta.story({
 // Choosing the displayed default must persist it too, so later requests do not fall back to another workspace.
 export const SelectCurrentWorkspace = meta.story({
   play: async ({ canvas, msw }) => {
-    const posted = recordActions(msw, held)
+    msw.use(recordActions(sent, held))
     await userEvent.click(canvas.getByRole("button", { name: /switch workspace/ }))
     const menu = await screen.findByRole("menu")
     await userEvent.click(within(menu).getByRole("menuitem", { name: /Harbor Goods/ }))
-    await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_buyer" } }]))
+    await waitFor(() => expect(sent).toEqual([{ action: "workspace.switch", data: { id: "org_buyer" } }]))
   }
 })
 

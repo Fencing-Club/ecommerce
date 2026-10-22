@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { toteProduct } from "@/stories/fixtures/supplier"
+import { shownDialog, chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { type EditorVariant, VariantSheet } from "./variant-sheet"
 
@@ -42,15 +43,14 @@ const meta = preview.meta({
 
 export const Edit = meta.story({
   play: async ({ args }) => {
-    const sheet = within(await screen.findByRole("dialog", { name: "Black" }))
+    const sheet = await shownDialog("Black")
     await expect(sheet.getByText("Canvas tote bag")).toBeInTheDocument()
     await expect(sheet.getByRole("button", { name: "1 price break" })).toBeInTheDocument()
     await userEvent.clear(sheet.getByRole("textbox", { name: "Color" }))
     await userEvent.type(sheet.getByRole("textbox", { name: "Color" }), "Charcoal")
     // The title follows the options as they're typed.
     await expect(await screen.findByRole("dialog", { name: "Charcoal" })).toBeInTheDocument()
-    await userEvent.click(sheet.getByRole("combobox", { name: "Currency" }))
-    await userEvent.click(await screen.findByRole("option", { name: "EUR" }))
+    await chooseOption(sheet.getByRole("combobox", { name: "Currency" }), "EUR")
     await userEvent.click(sheet.getByRole("switch", { name: "Continue selling when out of stock" }))
     await userEvent.click(sheet.getByRole("button", { name: "Done" }))
     await expect(args.onSave).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ export const Edit = meta.story({
 // Cancel drops the changes: opened again, the sheet starts from the variant.
 export const CancelThenReopen = meta.story({
   play: async ({ args, canvas }) => {
-    let sheet = within(await screen.findByRole("dialog", { name: "Black" }))
+    let sheet = await shownDialog("Black")
     await userEvent.clear(sheet.getByRole("textbox", { name: "SKU" }))
     // A variant needs its SKU.
     await expect(sheet.getByRole("button", { name: "Done" })).toBeDisabled()
@@ -75,7 +75,7 @@ export const CancelThenReopen = meta.story({
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await expect(args.onClose).toHaveBeenCalledOnce()
     await userEvent.click(canvas.getByRole("button", { name: "Edit LM-TOTE-BLK" }))
-    sheet = within(await screen.findByRole("dialog", { name: "Black" }))
+    sheet = await shownDialog("Black")
     await expect(sheet.getByRole("textbox", { name: "SKU" })).toHaveValue("LM-TOTE-BLK")
   }
 })
@@ -84,7 +84,7 @@ export const CancelThenReopen = meta.story({
 export const Tracking = meta.story({
   args: { variant: natural! },
   play: async () => {
-    const sheet = within(await screen.findByRole("dialog", { name: "Natural" }))
+    const sheet = await shownDialog("Natural")
     await expect(sheet.getByRole("spinbutton", { name: "On hand" })).toHaveValue(120)
     await userEvent.click(sheet.getByRole("switch", { name: "Track inventory" }))
     await expect(sheet.queryByRole("spinbutton", { name: "On hand" })).toBeNull()
@@ -95,7 +95,7 @@ export const Tracking = meta.story({
 export const NewVariant = meta.story({
   args: { variant: { ...natural!, key: "new-1", id: undefined, supplierSku: "", options: {} } },
   play: async () => {
-    const sheet = within(await screen.findByRole("dialog", { name: "Variant" }))
+    const sheet = await shownDialog("Variant")
     await expect(sheet.getByRole("button", { name: "Done" })).toBeDisabled()
     await userEvent.type(sheet.getByRole("textbox", { name: "SKU" }), "LM-TOTE-OLV")
     await expect(sheet.getByRole("button", { name: "Done" })).toBeEnabled()
@@ -106,7 +106,7 @@ export const NewVariant = meta.story({
 export const WithoutPrices = meta.story({
   parameters: { permissions: member },
   play: async () => {
-    const sheet = within(await screen.findByRole("dialog", { name: "Black" }))
+    const sheet = await shownDialog("Black")
     await expect(sheet.queryByRole("textbox", { name: "Price" })).toBeNull()
     await expect(sheet.queryByRole("combobox", { name: "Currency" })).toBeNull()
   }

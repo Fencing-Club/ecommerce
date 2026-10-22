@@ -3,7 +3,8 @@ import type { AmazonNetwork } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
-import { northwindFactory, towelOrder } from "@/stories/fixtures/packing"
+import { towelOrder } from "@/stories/fixtures/packing"
+import { northwindFactory } from "@/stories/fixtures/parties"
 
 // Sample data for the simulators: one PO's products, sent wherever the simulator says, and the carton and pallet sets
 // that put the real rules to work. The rules themselves come from @repo/copacker-shipments; nothing here restates a limit.

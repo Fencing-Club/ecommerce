@@ -31,11 +31,15 @@ export const Default = meta.story({
   }
 })
 
+// A quick turn, so a few of them pass in a moment.
+const quick = 20
+
 export const ReducedMotion = meta.story({
+  args: { every: quick },
   beforeEach: reduceMotion,
   play: async ({ canvas }) => {
     const first = canvas.getByText("Checked restock")
-    await new Promise((resolve) => setTimeout(resolve, 700))
+    await new Promise((resolve) => setTimeout(resolve, quick * 5))
     // The first line stays.
     await expect(shown(first)).toBe(true)
     await expect(shown(canvas.getByText("Created purchase order 1043"))).toBe(false)

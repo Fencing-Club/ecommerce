@@ -1,6 +1,8 @@
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
+import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
+import { shipmentId } from "@/stories/fixtures/logistics"
+import { chooseOption } from "@/stories/play"
 import { ShipmentTransportSettings } from "./shipment-transport"
 
 const sent: ActionRequest[] = []
@@ -16,15 +18,13 @@ const meta = preview.meta({
   component: ShipmentTransportSettings,
   args: { id: shipmentId, revision: 1, initial: null, hasForwarder: false },
   beforeEach: ({ msw }) => {
-    sent.length = 0
     msw.use(recordActions(sent))
   }
 })
 
 export const ConfigureAgl = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Service" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Amazon Global Logistics (AGL)" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Service" }), "Amazon Global Logistics (AGL)")
     await expect(canvas.getByRole("combobox", { name: "Carrier labels" })).toHaveTextContent("Not required")
     await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))
     await waitFor(() =>
@@ -39,8 +39,7 @@ export const ForwarderPickup = meta.story({
   args: { initial: { ...agl, handoff: "forwarder" }, hasForwarder: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("combobox", { name: "Handoff location" })).toHaveTextContent("Freight forwarder")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Carrier labels" }))
-    await userEvent.click(await screen.findByRole("option", { name: "One per carton" }))
+    await chooseOption(canvas.getByRole("combobox", { name: "Carrier labels" }), "One per carton")
     await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))
     await waitFor(() =>
       expect(sent[0]?.data.transport).toMatchObject({
@@ -62,7 +61,7 @@ export const Released = meta.story({
 
 export const SaveFailure = meta.story({
   beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("Transport changed or is already released. Reload the shipment.")))
+    msw.use(recordActions(sent, failWith("Transport changed or is already released. Reload the shipment.")))
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))

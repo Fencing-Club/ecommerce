@@ -35,6 +35,16 @@ pnpm --filter copacker storybook
 pnpm --filter copacker exec vitest run --project storybook
 ```
 
+Test runs turn animations and transitions off (`.storybook/vitest.setup.ts`, loaded only by Vitest), so no play
+function sees a popup, menu or dialog halfway through fading in or out. Storybook itself keeps them for people looking
+at the stories. A popup still shows from the frame after it opens, so check it with `waitFor`, or open it through
+`shownDialog` or `chooseOption`, which wait for it. The stories don't retry: one that fails has a problem to fix, not a
+moment it missed.
+
+Components compile through the React Compiler in Storybook too (`.storybook/main.ts`), as they do in the app, so play
+tests run the memoized code people get. Story files themselves stay uncompiled: a page story's server half is an async
+function its loader calls outside React.
+
 Stories that render a real PDF, such as the shipping document previews, the supplier packet page and the packing list
 download, carry the `documents` tag: they're there to look at, and Vitest leaves them out (`tags: { exclude:
 ["documents"] }` in `vitest.config.ts`), so neither `pnpm verify` nor CI renders a document. Write the tag in the
@@ -62,9 +72,9 @@ Component areas are App shell, Forms, Display, Purchase orders, Shipments, Booki
 costs, Integrations, Partners, Settings, Shipping documents, Supplier workspace, Auth, Onboarding and Marketing. Pages
 are grouped by route, not by workspace kind: buyer and supplier views of a route are stories of the same page.
 
-A `Pages/` story must live in `src/app` and render the route itself. Apart from fixtures and the `server`, `workspace`
-and `shipping-documents` helpers, it may not import from `src/stories`, so a page story can't quietly show a copy of
-the page. Every other story in `src/app` must be a `Pages/` story too, unless the test lists it as a route prototype.
+A `Pages/` story must live in `src/app` and render the route itself. Apart from fixtures, the `server`, `workspace`
+and `shipping-documents` helpers, and the `play` and `actions` helpers its play function uses, it may not import from
+`src/stories`, so a page story can't quietly show a copy of the page. Every other story in `src/app` must be a `Pages/` story too, unless the test lists it as a route prototype.
 
 `Unused` is computed, not curated. The test follows imports from every route, server module and library, and a
 component's stories belong in `Unused` exactly when nothing reaches the component. Wiring a component into the app
@@ -152,12 +162,34 @@ export const Default = meta.story({
 
 - **API calls** go through Mock Service Worker. `.storybook/mocks/handlers.ts` has the defaults (changes succeed, lists
   are empty); a story overrides them in `beforeEach({ msw })` with `msw.use(http.get(...))`.
+- **Changes** (`POST /api/action`) are recorded with `recordActions(sent, answer?)` from `@/stories/actions`, for
+  `msw.use` in a `beforeEach` or play function. It keeps each change in the story's `sent` list (a module-level
+  `ActionRequest[]` it starts over each time) and answers with `answer`, or success. `failWith(message, status?)`,
+  `redirectTo(path)` and `held` are the common answers.
 - **Permissions**: stories run as the workspace owner. Set `parameters: { permissions: member }` (from
   `@/stories/workspace`) to see what a member sees.
-- **Fixtures** live in `src/stories/fixtures/<area>.ts`, typed with the app's own types.
+- **Fixtures** live in `src/stories/fixtures/<area>.ts`, typed with the app's own types. The companies and addresses
+  several areas share are in `fixtures/parties.ts`.
 - **Navigation**: `.storybook/router.tsx` creates a real TanStack memory router per story. Set
   `parameters: { router: { navigation: { pathname, query } } }` for components that read the URL.
   `getStoryRouter()` exposes recorded navigate/invalidate calls for assertions.
+
+### Play helpers
+
+`@/stories/play` has what play functions share:
+
+- `shownDialog(name?)` and `shownAlertDialog(name?)` wait for a dialog, sheet, popover or confirmation to show, and
+  give queries for what's inside it, with the dialog itself as `element`.
+- `chooseOption(control, option)` opens a select or combobox, picks an option and waits for the list to close, so the
+  next step never meets a list that's going away. For a list that stays open, such as a multiple choice, click the
+  options directly.
+- `settled()` waits a couple of frames for what a component schedules as it mounts. `chooseOption` calls it; call it
+  before a play function's first typing or click when that comes before anything else.
+- `width(className)` is a decorator that shows a story in a column of a Tailwind width (`"w-72"`, `"max-w-lg"`): the
+  room the component has in the app.
+
+Wait for what the story is about, not for time: `findBy…`, `waitFor`, or a callback's own signal. A story that checks
+that nothing happens shows the reason it can't, such as a form the browser refuses to submit.
 
 A play function that types needs the document focused. Vitest's browser is; a fresh load in the desktop app's browser
 pane may not be, and its typing then never reaches React. Click the page before rerunning such a story there.
@@ -198,8 +230,9 @@ and actor toast. Email mappings follow the Notifications session's shipment acti
 and routine background processing send no email. Physical pickup is distinct from dispatch.
 
 `Components/toast-provider` covers saved drafts, shipment-action confirmations, and save failures using the shared
-`ToastProvider`. Its action examples and the workflow reference share `src/lib/shipment-action-feedback.ts`; these
-English review examples are not a production event publisher or a replacement for localized runtime copy.
+`ToastProvider`. Its action examples and the workflow reference share
+`src/stories/fixtures/shipment-action-feedback.ts`; these English review examples are not a production event publisher
+or a replacement for localized runtime copy.
 
 Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
 `PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
