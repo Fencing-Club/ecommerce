@@ -1,4 +1,6 @@
+import { HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { held, recordActions } from "@/stories/fixtures/shared"
 import { workspaces } from "@/stories/workspace"
@@ -63,6 +65,21 @@ export const Switch = meta.story({
     const menu = await screen.findByRole("menu")
     await userEvent.click(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ }))
     await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
+  }
+})
+
+// The menu has closed by then, so a failed switch shows as a toast and the page stays as it was.
+export const SwitchFails = meta.story({
+  play: async ({ canvas, msw }) => {
+    recordActions(msw, () =>
+      HttpResponse.json({ error: "You no longer have access to this workspace." }, { status: 403 })
+    )
+    await userEvent.click(canvas.getByRole("button", { name: /switch workspace/ }))
+    const menu = await screen.findByRole("menu")
+    await userEvent.click(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ }))
+    await expect(await screen.findByText("You no longer have access to this workspace.")).toBeVisible()
+    await expect(finishSignIn).not.toHaveBeenCalled()
+    await expect(canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
   }
 })
 

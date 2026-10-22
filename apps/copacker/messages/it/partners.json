@@ -86,7 +86,6 @@
       "trigger": "Rimuovi",
       "title": "Rimuovere {name}?",
       "description": "I nuovi ordini di acquisto non potranno essere spediti a lui. Quelli già inviati mantengono il loro indirizzo.",
-      "cancel": "Annulla",
       "confirm": "Rimuovi",
       "failed": "Impossibile rimuovere {name}. Riprova."
     }

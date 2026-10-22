@@ -1,12 +1,12 @@
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
 import { AddPartner } from "./add-partner"
 const sent: ActionRequest[] = []
 const meta = preview.meta({
   title: "Components/Partners/Add partner",
   component: AddPartner,
-  args: { onCreated: fn() },
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))
@@ -28,6 +28,8 @@ export const AddMenu = meta.story({
       expect(sent).toEqual([{ action: "forwarder.create", data: { name: "Bayline Freight", email: "" } }])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    // The list shows the new forwarder before the dialog closes.
+    await expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true })
   }
 })
 

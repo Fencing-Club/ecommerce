@@ -1,4 +1,3 @@
-import { useRouter } from "@tanstack/react-router"
 import { CheckCircle2, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Send } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
@@ -13,8 +12,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
 import { cn } from "@/lib/utils"
 import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
 import { isRowClick } from "./link-row"
@@ -40,21 +38,19 @@ function initials(name: string) {
 // Sends a partner's invitation again, to the email it went to before.
 function useResend(action: "supplier.resend" | "forwarder.invite", id: string, email: string | null) {
   const t = useTranslations("partners.row")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run, { isLoading }] = useActionMutation()
-  const [notice, setNotice] = useState<Notice | null>(null)
-  async function resend() {
-    setNotice(null)
-    try {
-      await run({ action, data: { id } }).unwrap()
-      setNotice({ failed: false, text: email ? t("invitationSentTo", { email }) : t("invitationSent") })
-      router.invalidate()
-    } catch (error) {
-      setNotice({ failed: true, text: errorMessage(error) })
-    }
+  const [sent, setSent] = useState(false)
+  const { run, pending, error } = useAction(action, { onSuccess: () => setSent(true) })
+  let notice: Notice | null = null
+  if (error) {
+    notice = { failed: true, text: error }
+  } else if (sent) {
+    notice = { failed: false, text: email ? t("invitationSentTo", { email }) : t("invitationSent") }
   }
-  return { resend, sending: isLoading, notice }
+  function resend() {
+    setSent(false)
+    void run({ id })
+  }
+  return { resend, sending: pending, notice }
 }
 
 // A partner's row: its initials, name and contact line, where it stands, a detail, and a menu of its actions. A click
@@ -238,7 +234,7 @@ export function SupplierRow({
             </DropdownMenuItem>
           )}
           {invitable && supplier.invited && (
-            <DropdownMenuItem disabled={sending} onClick={() => void resend()}>
+            <DropdownMenuItem disabled={sending} onClick={resend}>
               <Send />
               {t("menu.resend")}
             </DropdownMenuItem>
@@ -320,7 +316,7 @@ export function ForwarderRow({
             </DropdownMenuItem>
           )}
           {invitable && forwarder.invited && (
-            <DropdownMenuItem disabled={sending} onClick={() => void resend()}>
+            <DropdownMenuItem disabled={sending} onClick={resend}>
               <Send />
               {t("menu.resend")}
             </DropdownMenuItem>

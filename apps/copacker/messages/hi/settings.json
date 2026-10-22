@@ -21,7 +21,6 @@
       "closing": "आप साइन आउट हो जाएंगे और हर वर्कस्पेस से हटा दिए जाएंगे। {count, plural, one {{workspaces} आपके अकाउंट के साथ बंद हो जाएगा।} other {{workspaces} आपके अकाउंट के साथ बंद हो जाएंगे।}}",
       "handOver": "पहले {workspaces} की ओनरशिप ट्रांसफ़र करें।"
     },
-    "cancel": "रद्द करें",
     "close": "बंद करें"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "ओनरशिप ट्रांसफ़र करें",
     "transferTitle": "ओनरशिप {name} को ट्रांसफ़र करें?",
     "transferDescription": "वे {workspace} के ओनर बन जाएंगे, और आप एडमिन बने रहेंगे।",
-    "cancel": "रद्द करें",
     "invitationExpired": "आमंत्रण की अवधि खत्म हो गई",
     "invited": "आमंत्रित, {expires} को खत्म होगा",
     "invitationSent": "आमंत्रण भेजा गया, {expires} को खत्म होगा",
