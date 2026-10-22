@@ -8,8 +8,12 @@ const dirname = fileURLToPath(new URL(".", import.meta.url))
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    // Each database suite starts an embedded PostgreSQL instance. Bound concurrency independently of host core count.
-    maxWorkers: 4,
+    // Each database suite starts an embedded PostgreSQL instance, so concurrency is a fixed count, not the host's cores.
+    // CI's four-core machines run four; locally twelve took the unit tests from 108 to 38 seconds.
+    maxWorkers: process.env.CI ? 4 : 12,
+    // `pnpm verify` runs only the tests a change reaches (`--changed`). Vitest's defaults rerun everything when a
+    // config or package.json changes; a lockfile change reaches every test too.
+    forceRerunTriggers: ["**/package.json", "**/{vitest,vite}.config.*", "**/pnpm-lock.yaml"],
     testTimeout: 30000,
     hookTimeout: 30000,
     coverage: {

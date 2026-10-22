@@ -28,4 +28,5 @@ Quick reference:
 - **UX acceptance:** verify every UX change through the integrated browser before calling it complete. Component tests
   alone are not sufficient.
 
-Verify loop (must be clean before finishing): run **`pnpm verify`** (format, lint, types, knip, tests with coverage).
+Verify loop (must be clean before finishing): run **`pnpm verify`** (format, lint, types, knip, and the unit tests the
+change reaches). Stories, e2e and coverage run in PR validation; `pnpm verify:ci` runs every test with coverage.

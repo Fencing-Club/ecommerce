@@ -47,7 +47,7 @@ function its loader calls outside React.
 
 Stories that render a real PDF, such as the shipping document previews, the supplier packet page and the packing list
 download, carry the `documents` tag: they're there to look at, and Vitest leaves them out (`tags: { exclude:
-["documents"] }` in `vitest.config.ts`), so neither `pnpm verify` nor CI renders a document. Write the tag in the
+["documents"] }` in `vitest.config.ts`), so CI never renders a document. Write the tag in the
 story file itself, on the meta or the story; the test plugin reads tags from the source, so one spread in from a shared
 object doesn't count. `tags: ["!documents"]` keeps a story under a tagged meta that renders nothing, such as one blocked
 before its PDF.
@@ -114,7 +114,7 @@ Each data set lives in `src/stories/simulators/data.ts`; the Every Error example
 
 The packet's data sets are in `packet-data.ts`.
 
-Simulators are for trying the rules and documents by hand, so `pnpm verify` and CI leave them out: every simulator's
+Simulators are for trying the rules and documents by hand, so test runs leave them out: every simulator's
 stories carry the `simulator` tag, which `vitest.config.ts` excludes, and `tests/stories.test.ts` fails on a simulator
 without it. The packet's stories also carry `documents`, since they render PDFs. The rules themselves are tested in
 `@repo/copacker-packing-rules` and the app's own tests.

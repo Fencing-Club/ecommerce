@@ -41,21 +41,25 @@
       "outputs": ["dist/**", ".cloudflare/output/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.pen", "!**/*.md", "!docs/**"]
     },
     "check:types": {
-      "dependsOn": ["^check:types"]
+      "dependsOn": ["^check:types"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.pen", "!**/*.md", "!docs/**"]
     },
     "check:unused": {
       "dependsOn": ["^check:unused"]
     },
     "test": {
       "dependsOn": ["^transit"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.pen", "!**/*.md", "!docs/**"]
     },
     "test:coverage": {
       "dependsOn": ["^transit"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.pen", "!**/*.md", "!docs/**"]
     },
     "dev": {
       "cache": false,
