@@ -308,5 +308,21 @@
         "all": "Keine Sendungen"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} von {total, number}",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "previousShort": "Zurück",
+      "nextShort": "Weiter"
+    },
+    "saveBar": {
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "discard": "Verwerfen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…"
+    },
+    "selected": "{count, number} ausgewählt"
   }
 }

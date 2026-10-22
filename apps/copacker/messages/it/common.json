@@ -308,5 +308,21 @@
         "all": "Nessuna spedizione"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} di {total, number}",
+      "previous": "Pagina precedente",
+      "next": "Pagina successiva",
+      "previousShort": "Precedente",
+      "nextShort": "Successiva"
+    },
+    "saveBar": {
+      "unsaved": "Modifiche non salvate",
+      "discard": "Scarta",
+      "save": "Salva",
+      "saving": "Salvataggio…"
+    },
+    "selected": "{count, number} selezionati"
   }
 }

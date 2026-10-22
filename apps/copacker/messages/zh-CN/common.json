@@ -308,5 +308,21 @@
         "all": "没有货件"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "第 {first, number}–{last, number} 条，共 {total, number} 条",
+      "previous": "上一页",
+      "next": "下一页",
+      "previousShort": "上一页",
+      "nextShort": "下一页"
+    },
+    "saveBar": {
+      "unsaved": "有未保存的更改",
+      "discard": "放弃",
+      "save": "保存",
+      "saving": "正在保存…"
+    },
+    "selected": "已选 {count, number} 项"
   }
 }

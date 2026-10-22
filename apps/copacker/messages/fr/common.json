@@ -308,5 +308,21 @@
         "all": "Aucune expédition"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} sur {total, number}",
+      "previous": "Page précédente",
+      "next": "Page suivante",
+      "previousShort": "Précédent",
+      "nextShort": "Suivant"
+    },
+    "saveBar": {
+      "unsaved": "Modifications non enregistrées",
+      "discard": "Abandonner",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…"
+    },
+    "selected": "{count, plural, one {{count, number} sélectionné} many {{count, number} sélectionnés} other {{count, number} sélectionnés}}"
   }
 }

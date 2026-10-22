@@ -1,11 +1,13 @@
-import { orderCurrencies, type OrderCurrency, priceBases, type PriceBasis } from "@repo/copacker-orders"
 import { useRouter } from "@tanstack/react-router"
-import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
-import { useRef, useState } from "react"
+import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react"
+import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
-import { fileName, PageHeader } from "@/components/common"
+import { PageHeader } from "@/components/common"
+import { RequiredMark } from "@/components/form-controls"
+import { SaveBar } from "@/components/list/save-bar"
 import { MoneyInput } from "@/components/money-input"
+import { OptionSelect } from "@/components/option-select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,39 +20,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useDraft } from "@/hooks/use-draft"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import type { PriceBreak } from "@/lib/catalog-pricing"
-import type { QuantityRules } from "@/lib/catalog-pricing"
 import { defaultQuantityRules } from "@/lib/catalog-pricing"
-import { useSaveProductMutation, useUploadProductImageMutation } from "@/lib/supplier-api"
+import { useSaveProductMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
-import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
+import { variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
-import { SaveBar, StatusBadge } from "./shared"
+import { ProductMedia } from "./product-media"
+import { StatusBadge } from "./shared"
+import { type EditorVariant, VariantSheet } from "./variant-sheet"
 
-export type EditorVariant = {
-  key: string
-  id?: string
-  supplierSku: string
-  options: Record<string, string>
-  currency: OrderCurrency
-  priceMinor: number | null
-  priceBasis: PriceBasis
-  piecesPerSellablePack: number
-  sellablePacksPerCase: number | null
-  trackInventory: boolean
-  onHand: number
-  continueSelling: boolean
-  priceBreaks: PriceBreak[]
-  quantityRules: QuantityRules
-  notes: string
-}
 export type EditorProduct = {
   id?: string
   revision?: number
@@ -100,11 +82,6 @@ function blankProduct(): EditorProduct {
   }
 }
 
-function whole(text: string, fallback: number | null) {
-  const value = Number(text)
-  return text.trim() && Number.isSafeInteger(value) ? value : fallback
-}
-
 // The variant grid scrolls sideways inside its card when it's wider than the card. Its first column and the row actions
 // stay in view, on the card's own background so the columns scrolling past pass under them. Each cell draws its own
 // rule, which a sticky cell would otherwise cover. On a narrow card the option columns hide, and the SKU leads.
@@ -122,343 +99,6 @@ function fieldWidth(lengths: number[], least: number, most: number) {
   return `calc(${Math.min(most, Math.max(least, ...lengths)) + 1}ch + 1.5rem)`
 }
 
-function uploadLabel(
-  uploading: number,
-  count: number,
-  t: ReturnType<typeof useTranslations<"supplier.productEditor">>
-) {
-  if (uploading) {
-    return t("uploading", { count: uploading })
-  }
-  return count ? t("add") : t("addPhotos")
-}
-
-// Photos: upload several at once, remove one, or make one the main photo.
-function Media({ images, onChange }: { images: ProductImage[]; onChange: (images: ProductImage[]) => void }) {
-  const input = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(0)
-  // The last photo that didn't upload, and why.
-  const [failed, setFailed] = useState<{ name: string; error: string } | null>(null)
-  const [uploadImage] = useUploadProductImageMutation()
-  const t = useTranslations("supplier.productEditor")
-  const errorMessage = useErrorMessage()
-
-  // A photo that fails, even one that never reaches the server, is skipped: the rest still upload, and every photo that
-  // did is kept.
-  async function upload(files: File[]) {
-    setFailed(null)
-    setUploading(files.length)
-    const added: ProductImage[] = []
-    for (const file of files) {
-      try {
-        added.push(await uploadImage(file).unwrap())
-      } catch (caught) {
-        setFailed({ name: file.name, error: errorMessage(caught, t("couldNotUpload")) })
-      } finally {
-        setUploading((count) => count - 1)
-      }
-    }
-    onChange([...images, ...added])
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("media")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          {images.map((image, index) => (
-            <figure
-              key={image.key}
-              className={cn(
-                "group relative aspect-square overflow-hidden rounded-lg border bg-muted/30",
-                index === 0 && "col-span-2 row-span-2"
-              )}
-            >
-              {/* Stored photos come from our own authenticated route. */}
-              <img src={imageUrl(image)} alt={image.name} className="size-full object-contain" />
-              <div className="absolute inset-x-1 top-1 flex justify-end gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-                {index > 0 && (
-                  <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="secondary"
-                    aria-label={t("makeMain", { name: image.name })}
-                    onClick={() => onChange([image, ...images.filter((other) => other.key !== image.key)])}
-                  >
-                    <Star />
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="secondary"
-                  aria-label={t("removePhoto", { name: image.name })}
-                  onClick={() => onChange(images.filter((other) => other.key !== image.key))}
-                >
-                  <X />
-                </Button>
-              </div>
-            </figure>
-          ))}
-          <button
-            type="button"
-            onClick={() => input.current?.click()}
-            disabled={uploading > 0}
-            className={cn(
-              "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
-              !images.length && "col-span-3 aspect-auto py-8 sm:col-span-5"
-            )}
-          >
-            <ImagePlus className="size-5" aria-hidden />
-            {uploadLabel(uploading, images.length, t)}
-          </button>
-        </div>
-        <input
-          ref={input}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
-          hidden
-          onChange={(event) => {
-            // Copied first: clearing the input, so the same photos can be chosen again, empties its own file list.
-            const files = Array.from(event.target.files ?? [])
-            event.target.value = ""
-            if (files.length) {
-              void upload(files)
-            }
-          }}
-        />
-        {failed && <p className="text-sm text-destructive">{t.rich("fileError", { ...failed, file: fileName })}</p>}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Everything about one variant, in a side panel: its options, SKU, price, packaging, stock and notes.
-function VariantSheet({
-  variant,
-  optionNames,
-  title,
-  onClose,
-  onSave
-}: {
-  variant: EditorVariant | null
-  optionNames: string[]
-  title: string
-  onClose: () => void
-  onSave: (variant: EditorVariant) => void
-}) {
-  const prices = useCan("prices")
-  const [draft, setDraft] = useState(variant)
-  const [rulesOpen, setRulesOpen] = useState(false)
-  const [shown, setShown] = useState(variant)
-  if (shown !== variant) {
-    setShown(variant)
-    setDraft(variant)
-  }
-  const t = useTranslations("supplier.productEditor")
-  const shared = useTranslations("supplier.shared")
-  const rulesSummary = useRulesSummary()
-  const change = (next: Partial<EditorVariant>) => setDraft((current) => (current ? { ...current, ...next } : current))
-  const label = draft ? variantLabel(draft.options, optionNames) : null
-  const summary = draft ? rulesSummary(draft.priceBreaks, draft.quantityRules, draft.priceBasis) : ""
-  return (
-    <Sheet open={!!variant} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{label ?? t("variant")}</SheetTitle>
-          <SheetDescription className="truncate">{title || t("newProduct")}</SheetDescription>
-        </SheetHeader>
-        {draft && (
-          <FieldGroup className="gap-5 px-4">
-            {optionNames.length > 0 && (
-              <div className="grid grid-cols-2 gap-3">
-                {optionNames.map((name) => (
-                  <Field key={name}>
-                    <FieldLabel htmlFor={`variant-option-${name}`}>{name}</FieldLabel>
-                    <Input
-                      id={`variant-option-${name}`}
-                      value={draft.options[name] ?? ""}
-                      onChange={(event) => change({ options: { ...draft.options, [name]: event.target.value } })}
-                    />
-                  </Field>
-                ))}
-              </div>
-            )}
-            <Field>
-              <FieldLabel htmlFor="variant-sku">
-                <span>
-                  {t("sku")}
-                  <span aria-hidden className="text-destructive">
-                    *
-                  </span>
-                </span>
-              </FieldLabel>
-              <Input
-                id="variant-sku"
-                required
-                value={draft.supplierSku}
-                onChange={(event) => change({ supplierSku: event.target.value })}
-              />
-            </Field>
-            {prices && (
-              <div className="grid grid-cols-2 gap-3">
-                <Field>
-                  <FieldLabel htmlFor="variant-price">{t("price")}</FieldLabel>
-                  <MoneyInput
-                    label={t("price")}
-                    currency={draft.currency}
-                    value={draft.priceMinor}
-                    onValueChange={(value) => change({ priceMinor: value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="variant-currency">{t("currency")}</FieldLabel>
-                  <Select
-                    items={orderCurrencies.map((value) => ({ value, label: value }))}
-                    value={draft.currency}
-                    onValueChange={(value) => value && change({ currency: value as OrderCurrency })}
-                  >
-                    <SelectTrigger id="variant-currency" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderCurrencies.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="variant-basis">{t("pricePer")}</FieldLabel>
-                  <Select
-                    items={priceBases.map((value) => ({ value, label: t(`basis.${value}`) }))}
-                    value={draft.priceBasis}
-                    onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
-                  >
-                    <SelectTrigger id="variant-basis" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {priceBases.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {t(`basis.${value}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel>{t("volumePricing")}</FieldLabel>
-                  <Button type="button" variant="outline" className="justify-start" onClick={() => setRulesOpen(true)}>
-                    <SlidersHorizontal data-icon="inline-start" />
-                    <span className="truncate">{summary || t("addRules")}</span>
-                  </Button>
-                </Field>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="variant-pieces">{t("piecesPerPack")}</FieldLabel>
-                <Input
-                  id="variant-pieces"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  value={draft.piecesPerSellablePack}
-                  onChange={(event) => change({ piecesPerSellablePack: whole(event.target.value, 1) ?? 1 })}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="variant-packs">{t("packsPerCase")}</FieldLabel>
-                <Input
-                  id="variant-packs"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  placeholder={t("unknown")}
-                  value={draft.sellablePacksPerCase ?? ""}
-                  onChange={(event) => change({ sellablePacksPerCase: whole(event.target.value, null) })}
-                />
-              </Field>
-            </div>
-            <Field orientation="horizontal">
-              <Switch
-                id="variant-track"
-                aria-labelledby="variant-track-label"
-                checked={draft.trackInventory}
-                onCheckedChange={(checked) => change({ trackInventory: checked })}
-              />
-              <FieldLabel id="variant-track-label" htmlFor="variant-track">
-                {t("trackInventory")}
-              </FieldLabel>
-            </Field>
-            {draft.trackInventory && (
-              <>
-                <Field>
-                  <FieldLabel htmlFor="variant-on-hand">{t("onHand")}</FieldLabel>
-                  <Input
-                    id="variant-on-hand"
-                    type="number"
-                    value={draft.onHand}
-                    className="w-32"
-                    onChange={(event) => change({ onHand: whole(event.target.value, 0) ?? 0 })}
-                  />
-                  <FieldDescription>{t("piecesInStock")}</FieldDescription>
-                </Field>
-                <Field orientation="horizontal">
-                  <Switch
-                    id="variant-continue"
-                    aria-labelledby="variant-continue-label"
-                    checked={draft.continueSelling}
-                    onCheckedChange={(checked) => change({ continueSelling: checked })}
-                  />
-                  <FieldLabel id="variant-continue-label" htmlFor="variant-continue">
-                    {t("continueSelling")}
-                  </FieldLabel>
-                </Field>
-              </>
-            )}
-            <Field>
-              <FieldLabel htmlFor="variant-notes">{t("notes")}</FieldLabel>
-              <Textarea
-                id="variant-notes"
-                value={draft.notes}
-                onChange={(event) => change({ notes: event.target.value })}
-              />
-            </Field>
-          </FieldGroup>
-        )}
-        <SheetFooter>
-          <Button type="button" onClick={() => draft && onSave(draft)} disabled={!draft?.supplierSku.trim()}>
-            {shared("done")}
-          </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            {shared("cancel")}
-          </Button>
-        </SheetFooter>
-        {draft && prices && (
-          <PricingRulesDialog
-            open={rulesOpen}
-            onOpenChange={setRulesOpen}
-            title={label ? `${title}, ${label}` : title}
-            currency={draft.currency}
-            basis={draft.priceBasis}
-            priceMinor={draft.priceMinor}
-            priceBreaks={draft.priceBreaks}
-            quantityRules={draft.quantityRules}
-            onSave={(value) => value && change(value)}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
-  )
-}
-
 // A supplier's product page, laid out like Shopify's: title, description, photos and variants on the left; status,
 // organization and catalogs on the right.
 export function ProductEditor({
@@ -474,8 +114,8 @@ export function ProductEditor({
 }) {
   const router = useRouter()
   const prices = useCan("prices")
-  const [saved, setSaved] = useState(() => initial ?? blankProduct())
-  const [product, setProduct] = useState(saved)
+  const { draft: product, saved, change, dirty, reset, markSaved } = useDraft(() => initial ?? blankProduct())
+  // The key of the variant open in the sheet.
   const [editing, setEditing] = useState<string | null>(null)
   const [newOption, setNewOption] = useState("")
   const [pending, setPending] = useState(false)
@@ -486,10 +126,10 @@ export function ProductEditor({
   const pricing = useTranslations("supplier.pricing")
   const errorMessage = useErrorMessage()
   const locale = useLocale()
-  const dirty = JSON.stringify(product) !== JSON.stringify(saved)
-  const change = (next: Partial<EditorProduct>) => setProduct((current) => ({ ...current, ...next }))
   const setVariant = (key: string, next: Partial<EditorVariant>) =>
-    change({ variants: product.variants.map((variant) => (variant.key === key ? { ...variant, ...next } : variant)) })
+    change((current) => ({
+      variants: current.variants.map((variant) => (variant.key === key ? { ...variant, ...next } : variant))
+    }))
 
   function addOption() {
     const name = newOption.trim()
@@ -534,7 +174,7 @@ export function ProductEditor({
         images: product.images,
         variants
       }).unwrap()
-      setSaved(product)
+      markSaved()
       if (product.id) {
         router.invalidate()
       } else {
@@ -577,9 +217,7 @@ export function ProductEditor({
                     <FieldLabel htmlFor="product-title">
                       <span>
                         {t("title")}
-                        <span aria-hidden className="text-destructive">
-                          *
-                        </span>
+                        <RequiredMark />
                       </span>
                     </FieldLabel>
                     <Input
@@ -605,7 +243,7 @@ export function ProductEditor({
               </CardContent>
             </Card>
 
-            <Media images={product.images} onChange={(images) => change({ images })} />
+            <ProductMedia images={product.images} onChange={(images) => change({ images })} />
 
             <Card flush>
               <div className="flex flex-col gap-3 border-b p-4">
@@ -821,22 +459,16 @@ export function ProductEditor({
                 <CardTitle>{t("status")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <Select
-                  items={[
+                <OptionSelect
+                  options={[
                     { value: "active", label: shared("status.active") },
                     { value: "archived", label: shared("status.archived") }
                   ]}
                   value={product.status}
-                  onValueChange={(value) => value && change({ status: value as EditorProduct["status"] })}
-                >
-                  <SelectTrigger aria-label={t("status")} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">{shared("status.active")}</SelectItem>
-                    <SelectItem value="archived">{shared("status.archived")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(status) => change({ status })}
+                  label={t("status")}
+                  className="w-full"
+                />
                 {product.status === "archived" && (
                   <p className="mt-2 text-xs text-muted-foreground">{t("archivedNote")}</p>
                 )}
@@ -912,7 +544,7 @@ export function ProductEditor({
               router.navigate({ href: "/products" })
               return
             }
-            setProduct(saved)
+            reset()
             setError("")
           }}
           onSave={() => void save()}

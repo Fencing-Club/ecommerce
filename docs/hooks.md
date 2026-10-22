@@ -29,6 +29,11 @@ each hook.
   see [forms](../apps/copacker/docs/forms.md).
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
+- `useDraft` (`use-draft.ts`): an editor's unsaved changes beside what's saved, on Mantine's `useSetState`. Returns
+  `{ draft, saved, change, dirty, reset, markSaved }`; `dirty` compares Maps by their entries. The supplier catalog,
+  product and variant editors use it with the list kit's `SaveBar`.
+- `usePagedRows` (`components/list/use-paged-rows.ts`): one page of a list filtered in the browser, on Mantine's
+  `usePagination`, with the props its `Pager` takes and `reset` for a change of tab or search.
 - `usePackingDraft` (`use-packing-draft.ts`): saves a shipment's packing as a draft, finishes it after the server's
   checks, and links an existing AWD shipment, returning `{ save, submit, link, working, error, clearError }`. Each save
   reads the shipment again before it's done, so the next request sends the new revision. Used by the packing form.

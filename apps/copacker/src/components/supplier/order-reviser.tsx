@@ -1,11 +1,13 @@
 import { commonPaymentTerms, orderSubtotal } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
-import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
+import { CircleAlert, Plus, Undo2, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageHeader, StatusBadge } from "@/components/common"
 import { DateInput } from "@/components/form-controls"
 import { SelectControl } from "@/components/form-select"
+import { matches } from "@/components/list/matches"
+import { SearchField } from "@/components/list/search-field"
 import { MoneyInput } from "@/components/money-input"
 import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -13,7 +15,6 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
@@ -21,7 +22,6 @@ import { useProposeChangesMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { LineChange } from "./proposal-panel"
 import { ChangeBadge } from "./proposal-panel"
-import { matches } from "./shared"
 
 type Line = {
   key: string
@@ -361,18 +361,7 @@ export function OrderReviser({
             <DialogTitle>{t("addProducts")}</DialogTitle>
             <DialogDescription>{t("atPrices", { customer })}</DialogDescription>
           </DialogHeader>
-          <InputGroup>
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              value={query}
-              placeholder={t("search")}
-              aria-label={t("searchLabel")}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </InputGroup>
+          <SearchField label={t("searchLabel")} placeholder={t("search")} value={query} onChange={setQuery} />
           <ul className="-mx-2 max-h-80 overflow-y-auto">
             {available.slice(0, 100).map((product) => (
               <li key={product.supplierSku}>

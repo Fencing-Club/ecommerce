@@ -6,17 +6,6 @@
       "archived": "आर्काइव"
     },
     "range": "{low} – {high}",
-    "pager": {
-      "range": "{total, number} में से {first, number}–{last, number}",
-      "previous": "पिछला पेज",
-      "next": "अगला पेज"
-    },
-    "saveBar": {
-      "unsaved": "बदलाव सेव नहीं हुए",
-      "discard": "छोड़ें",
-      "save": "सेव करें",
-      "saving": "सेव हो रहा है…"
-    },
     "couldNotSave": "सेव नहीं हो सका। फिर से कोशिश करें।",
     "tryAnother": "कोई दूसरा टैब या खोज आज़माएं।",
     "all": "सभी",
@@ -26,7 +15,6 @@
     "noPrice": "कोई कीमत नहीं",
     "moreActions": "और कार्रवाइयां",
     "exportExcel": "Excel में एक्सपोर्ट करें",
-    "selected": "{count, number} चुने गए",
     "selectAllOnPage": "इस पेज के सभी प्रोडक्ट चुनें",
     "select": "{name} चुनें",
     "variantCount": "{count, plural, one {# वैरिएंट} other {# वैरिएंट}}"

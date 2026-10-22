@@ -6,17 +6,6 @@
       "archived": "آرکائیو شدہ"
     },
     "range": "{low} – {high}",
-    "pager": {
-      "range": "{total, number} میں سے {first, number}–{last, number}",
-      "previous": "پچھلا صفحہ",
-      "next": "اگلا صفحہ"
-    },
-    "saveBar": {
-      "unsaved": "غیر محفوظ تبدیلیاں",
-      "discard": "رد کریں",
-      "save": "محفوظ کریں",
-      "saving": "محفوظ ہو رہا ہے…"
-    },
     "couldNotSave": "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
     "tryAnother": "کوئی اور ٹیب یا تلاش آزمائیں۔",
     "all": "تمام",
@@ -26,7 +15,6 @@
     "noPrice": "کوئی قیمت نہیں",
     "moreActions": "مزید کارروائیاں",
     "exportExcel": "Excel میں ایکسپورٹ کریں",
-    "selected": "{count, number} منتخب",
     "selectAllOnPage": "اس صفحے کے تمام پروڈکٹس منتخب کریں",
     "select": "{name} منتخب کریں",
     "variantCount": "{count, plural, one {# ویریئنٹ} other {# ویریئنٹس}}"

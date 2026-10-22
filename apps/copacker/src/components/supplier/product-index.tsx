@@ -1,9 +1,15 @@
+import { useSet } from "@mantine/hooks"
 import type { PriceBasis } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
+import { IndexToolbar } from "@/components/list/index-toolbar"
+import { matches } from "@/components/list/matches"
+import { Pager } from "@/components/list/pager"
+import { SelectionBar } from "@/components/list/selection-bar"
+import { usePagedRows } from "@/components/list/use-paged-rows"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,7 +18,7 @@ import { useMoney } from "@/hooks/use-money"
 import { useSetProductsActiveMutation } from "@/lib/supplier-api"
 import type { ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { IndexToolbar, matches, Pager, ProductThumb, rowLink, StatusBadge } from "./shared"
+import { ProductThumb, rowLink, StatusBadge } from "./shared"
 
 export type ProductRow = {
   id: string
@@ -95,8 +101,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   const router = useRouter()
   const [tab, setTab] = useState<"all" | "active" | "archived">("all")
   const [query, setQuery] = useState("")
-  const [page, setPage] = useState(0)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const selected = useSet<string>()
   // Choosing products is for archiving or restoring them, which changes them.
   const editable = useCan("products", "edit")
   const prices = useCan("prices")
@@ -119,9 +124,8 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
         ...product.variants.map((variant) => variant.supplierSku)
       )
   )
-  const pages = Math.max(1, Math.ceil(shown.length / pageSize))
-  const current = Math.min(page, pages - 1)
-  const rows = shown.slice(current * pageSize, (current + 1) * pageSize)
+  const paged = usePagedRows(shown, pageSize)
+  const { rows } = paged
   const chosen = rows.filter((product) => selected.has(product.id))
   const allChosen = rows.length > 0 && chosen.length === rows.length
 
@@ -129,7 +133,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
     setError("")
     try {
       await setProductsActive({ ids: [...selected], active }).unwrap()
-      setSelected(new Set())
+      selected.clear()
       router.invalidate()
     } catch (caught) {
       setError(errorMessage(caught, shared("couldNotSave")))
@@ -163,29 +167,24 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
         tab={tab}
         onTabChange={(value) => {
           setTab(value)
-          setPage(0)
-          setSelected(new Set())
+          paged.reset()
+          selected.clear()
         }}
         query={query}
         onQueryChange={(value) => {
           setQuery(value)
-          setPage(0)
+          paged.reset()
         }}
         placeholder={t("search")}
       />
-      {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-          <span className="font-medium">{shared("selected", { count: selected.size })}</span>
-          <div className="ms-auto flex gap-2">
-            <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(true)}>
-              {t("setActive")}
-            </Button>
-            <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(false)}>
-              {t("archive")}
-            </Button>
-          </div>
-        </div>
-      )}
+      <SelectionBar count={selected.size}>
+        <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(true)}>
+          {t("setActive")}
+        </Button>
+        <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(false)}>
+          {t("archive")}
+        </Button>
+      </SelectionBar>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {rows.length ? (
         <Table>
@@ -198,15 +197,13 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                     checked={allChosen}
                     indeterminate={chosen.length > 0 && !allChosen}
                     onCheckedChange={(checked) => {
-                      const next = new Set(selected)
                       for (const product of rows) {
                         if (checked) {
-                          next.add(product.id)
+                          selected.add(product.id)
                         } else {
-                          next.delete(product.id)
+                          selected.delete(product.id)
                         }
                       }
-                      setSelected(next)
                     }}
                   />
                 </TableHead>
@@ -234,13 +231,11 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                         aria-label={shared("select", { name: product.title })}
                         checked={selected.has(product.id)}
                         onCheckedChange={(checked) => {
-                          const next = new Set(selected)
                           if (checked) {
-                            next.add(product.id)
+                            selected.add(product.id)
                           } else {
-                            next.delete(product.id)
+                            selected.delete(product.id)
                           }
-                          setSelected(next)
                         }}
                       />
                     </TableCell>
@@ -290,7 +285,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
       ) : (
         <EmptyState title={t("noneFound")} description={t("noneFoundDescription")} />
       )}
-      <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
+      <Pager {...paged.pager} />
     </div>
   )
 }
