@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { fitsConfiguration, readLabelMeasurements } from "../src/lib/label-measurements"
+import { fitsConfiguration, readLabelMeasurements } from "../src/label-measurements"
 
 const rounded = ({ weight, dimensions }: ReturnType<typeof readLabelMeasurements>) => ({
   weight: weight === undefined ? undefined : Math.round(weight * 100) / 100,

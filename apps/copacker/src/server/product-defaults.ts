@@ -1,8 +1,7 @@
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
-import { piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
+import { piecesPerUnit, productIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { prepCategories } from "@repo/copacker-orders"
-import type { AmazonNetwork } from "@repo/copacker-shipments"
-import { amazonNetworks } from "@repo/copacker-shipments"
+import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-packing-rules"
 import { and, eq, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -47,7 +46,7 @@ export const noDefaults: ProductDefaults = {
 }
 
 export const productDefaultsInputSchema = z.strictObject({
-  productId: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+  productId: productIdSchema,
   description: z.string().trim().max(2000),
   prepCategory: z.enum(prepCategories).nullable(),
   casePacks: z.array(casePackSchema).max(10),
@@ -65,10 +64,7 @@ export const productDefaultsInputSchema = z.strictObject({
 })
 
 export const assignSupplierInputSchema = z.strictObject({
-  productIds: z
-    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
-    .min(1)
-    .max(500),
+  productIds: z.array(productIdSchema).min(1).max(500),
   supplierId: z.uuid().nullable()
 })
 
@@ -234,10 +230,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
 }
 
 export const assignProductLabelInputSchema = z.strictObject({
-  productIds: z
-    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
-    .min(1)
-    .max(500),
+  productIds: z.array(productIdSchema).min(1).max(500),
   productLabel: z.enum(productLabels)
 })
 

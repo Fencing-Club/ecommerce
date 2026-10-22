@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportCount, reportRows, reportTimestamp } from "./report-tsv"
 export const fbaShipmentsReportType = "GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL"
 const required = [
   "amazon-order-id",
@@ -18,13 +18,9 @@ const item = z.object({
   shipmentId: z.string().min(1),
   shipmentItemId: z.string().min(1),
   orderItemId: z.string().nullable(),
-  shippedAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value)),
+  shippedAt: reportTimestamp,
   sku: z.string().min(1),
-  quantity: z
-    .string()
-    .regex(/^[1-9]\d*$/)
-    .transform(Number)
-    .pipe(z.number().int().max(2147483647)),
+  quantity: reportCount,
   fulfillmentCenterId: z.string().nullable(),
   fulfillmentChannel: z.string().nullable(),
   salesChannel: z.string().nullable()

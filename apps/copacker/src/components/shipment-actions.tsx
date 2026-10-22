@@ -1,3 +1,4 @@
+import { awdShipmentIdPattern, fbaInboundPlanIdPattern } from "@repo/copacker-shipments/amazon-inbound"
 import { ChevronDown } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
@@ -59,18 +60,14 @@ export function CorrectionForm({ id }: { id: string }) {
 }
 
 const awdReconcileSchema = z.object({
-  amazonOrderId: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.reconcile.awdInvalid")
+  amazonOrderId: z.string().trim().toUpperCase().regex(awdShipmentIdPattern, "shipments.actions.reconcile.awdInvalid")
 })
 const fbaReconcileSchema = z.object({
   amazonOrderId: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^wf[0-9a-f-]{36}$/, "shipments.actions.reconcile.fbaInvalid")
+    .regex(fbaInboundPlanIdPattern, "shipments.actions.reconcile.fbaInvalid")
 })
 
 const linkSchema = z.object({
@@ -78,7 +75,7 @@ const linkSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
+    .regex(awdShipmentIdPattern, "shipments.actions.linkExisting.invalid")
 })
 
 export function LinkExistingShipment({

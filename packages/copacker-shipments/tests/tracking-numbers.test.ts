@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { readTrackingFromBarcodes, readTrackingNumber, trackingNumberSchema } from "../src/lib/tracking-numbers"
+import {
+  readTrackingFromBarcodes,
+  readTrackingNumber,
+  trackingCarrier,
+  trackingNumberSchema
+} from "../src/tracking-numbers"
 
 describe("reading a carrier label's tracking number from its page text", () => {
   it("finds a UPS number in its printed groups", () => {
@@ -60,5 +65,13 @@ describe("a typed tracking number", () => {
   it("is refused when it isn't one", () => {
     expect(trackingNumberSchema.safeParse("").success).toBe(false)
     expect(trackingNumberSchema.safeParse("12-34").success).toBe(false)
+  })
+})
+
+describe("a tracking number's carrier", () => {
+  it("comes from the number's format and check digit", () => {
+    expect(trackingCarrier("1z 999 aa1 01 2345 6784")).toBe("UPS")
+    expect(trackingCarrier("")).toBeNull()
+    expect(trackingCarrier("12345")).toBeNull()
   })
 })

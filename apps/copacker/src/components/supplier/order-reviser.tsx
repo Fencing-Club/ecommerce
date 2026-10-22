@@ -1,4 +1,4 @@
-import { commonPaymentTerms } from "@repo/copacker-orders"
+import { commonPaymentTerms, orderSubtotal } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
 import { useState } from "react"
@@ -100,7 +100,7 @@ export function OrderReviser({
 
   const kept = lines.filter((line) => !line.removed)
   const named = (line: Line) => (line.variant ? `${line.name}, ${line.variant}` : line.name)
-  const after = kept.reduce((sum, line) => sum + line.pieces * line.unitPrice, 0)
+  const after = orderSubtotal(kept)
   const available = products.filter(
     (product) =>
       !lines.some((line) => line.supplierSku === product.supplierSku) &&

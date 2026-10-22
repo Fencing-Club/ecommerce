@@ -1,3 +1,4 @@
+import { countryName } from "@repo/copacker-shipments/countries"
 import type { LucideIcon } from "lucide-react"
 import {
   BookOpen,
@@ -74,17 +75,6 @@ const settingsGroup: { label: GroupKey | null; pages: Page[] } = {
   pages: [{ label: "settings", icon: Settings }]
 }
 
-// A country's name in the page's language, from the address's two-letter code.
-function countryName(code: string, locale: string) {
-  try {
-    return /^[A-Z]{2}$/i.test(code)
-      ? (new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? "")
-      : ""
-  } catch {
-    return ""
-  }
-}
-
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -130,7 +120,7 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
   const address = place.address ?? {}
   const street = text(address.addressLine1)
   const city = [text(address.city), text(address.stateOrRegion), text(address.postalCode)].filter(Boolean).join(", ")
-  const country = countryName(text(address.countryCode), locale)
+  const country = countryName(text(address.countryCode), locale) ?? ""
   const typedPosition = text(person.position)
   const positionLabel = isPosition(typedPosition) ? t(`positions.${positionKeys[typedPosition]}`) : typedPosition
   const groups = kind ? pages[kind] : []

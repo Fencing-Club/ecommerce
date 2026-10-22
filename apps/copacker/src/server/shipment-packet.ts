@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { packedItemIds } from "@repo/copacker-shipments"
 import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -105,7 +106,7 @@ export async function shipmentPacketPage(s: Session, id: string) {
     throw new StatusError("packetIncomplete", 409)
   }
   await releasedPacket(s, id, version)
-  const included = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(shipment.packing)
   return {
     id,
     orderId: order.id,
@@ -127,7 +128,7 @@ export async function shipmentPacketResult(s: Session, id: string) {
     let labelSections: Array<"carton_labels" | "carrier_labels" | "pallet_labels" | "product_labels"> = []
     try {
       const { shipment, labels, labelOrder } = await releasedPacket(s, id)
-      const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+      const included = packedItemIds(shipment.packing)
       labelSections = [
         ...(shipment.amazonNetwork ? ["carton_labels" as const] : []),
         ...(shipment.transport?.carrierLabels === "per_carton" ? ["carrier_labels" as const] : []),

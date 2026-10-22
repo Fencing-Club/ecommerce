@@ -1,3 +1,4 @@
+import type { PriceBasis } from "@repo/copacker-orders"
 import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -10,13 +11,7 @@ import {
   suppliers
 } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import {
-  catalogPricing,
-  type PriceBasis,
-  priceBreakSchema,
-  pricingProblem,
-  quantityRulesSchema
-} from "@/lib/catalog-pricing"
+import { catalogPricing, priceBreakSchema, pricingProblem, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
 import { requireSupplier } from "./authorization"
 import { pricingText } from "./text"

@@ -1,4 +1,4 @@
-import type { Address } from "@repo/copacker-orders"
+import type { Address, SupplierCatalogStatus } from "@repo/copacker-orders"
 import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
@@ -8,7 +8,6 @@ import type { events } from "@/db/schema"
 import type { orderRevisions } from "@/db/schema"
 import type { contacts, documents, orders, shipments, suppliers } from "@/db/schema"
 import type { CatalogProduct } from "@/lib/api"
-import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import type { ForwarderAddress } from "@/server/forwarders"
 import type { ImportProposal } from "@/server/import-proposal"
@@ -364,7 +363,7 @@ export function productHandlers(seen: (url: URL) => void = () => undefined) {
 }
 
 type Quote = {
-  status: BundleQuoteStatus
+  status: SupplierCatalogStatus
   unitPriceMinor: number | null
   available: number | null
   tiers?: Array<{ minimumPieces: number; unitPriceMinor: number }>

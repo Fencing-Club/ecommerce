@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/copacker-orders"
-import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames, packedItemIds } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
 import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"
 import { destinationName } from "@repo/copacker-shipments/requirements"
@@ -229,7 +230,7 @@ const packed = (shipment: typeof shipments.$inferSelect | undefined): shipment i
 async function shipmentParties(shipment: PackedShipment) {
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
   // Only the shipment's own lines, so a forwarder stop names the Amazon network its cartons go on to.
-  const included = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(shipment.packing)
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
