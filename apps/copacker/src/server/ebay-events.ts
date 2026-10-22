@@ -75,9 +75,10 @@ async function lookUpKey(app: Ebay, keyId: string) {
     )
     entry = { key: null, until: Date.now() + missMs }
   }
+  // Past a thousand IDs, the expired ones and the misses are dropped. eBay's own keys are few, and stay.
   if (keys.size >= 1000) {
-    for (const [other, { until }] of keys) {
-      if (until <= Date.now()) {
+    for (const [other, { key, until }] of keys) {
+      if (!key || until <= Date.now()) {
         keys.delete(other)
       }
     }
