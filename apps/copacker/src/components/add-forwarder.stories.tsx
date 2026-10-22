@@ -1,25 +1,41 @@
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { useState } from "react"
+import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { AddForwarder } from "./add-forwarder"
+import { Button } from "./ui/button"
+
 const sent: ActionRequest[] = []
+
+// The Add partner menu holds the dialog's state; this button stands in for it.
+function Opener() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Open</Button>
+      <AddForwarder open={open} onOpenChange={setOpen} />
+    </>
+  )
+}
+
 const meta = preview.meta({
   title: "Components/Partners/Add forwarder",
-  component: AddForwarder,
+  render: () => <Opener />,
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))
   }
 })
+
 export const Add = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Add forwarder" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
     const dialog = await screen.findByRole("dialog", { name: "Add a forwarder" })
     await expect(dialog).toHaveTextContent("Picks up from your supplier and ships on to Amazon or your warehouse.")
     await userEvent.type(screen.getByRole("textbox", { name: "Company" }), "Bayline Freight")
     await userEvent.type(screen.getByRole("textbox", { name: "Email" }), "ops@bayline.example.com")
-    await userEvent.click(screen.getAllByRole("button", { name: "Add forwarder" }).at(-1)!)
+    await userEvent.click(screen.getByRole("button", { name: "Add forwarder" }))
     await waitFor(() =>
       expect(sent).toEqual([
         { action: "forwarder.create", data: { name: "Bayline Freight", email: "ops@bayline.example.com" } }
@@ -34,10 +50,10 @@ export const Add = meta.story({
 // Without an email, the forwarder is added without an invitation.
 export const AddWithoutEmail = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Add forwarder" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
     await screen.findByRole("dialog")
     await userEvent.type(screen.getByRole("textbox", { name: "Company" }), "Pacific Consolidators")
-    await userEvent.click(screen.getAllByRole("button", { name: "Add forwarder" }).at(-1)!)
+    await userEvent.click(screen.getByRole("button", { name: "Add forwarder" }))
     await waitFor(() =>
       expect(sent).toEqual([{ action: "forwarder.create", data: { name: "Pacific Consolidators", email: "" } }])
     )
@@ -46,13 +62,17 @@ export const AddWithoutEmail = meta.story({
 
 export const AddValidation = meta.story({
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Add forwarder" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
     await screen.findByRole("dialog")
     await userEvent.type(screen.getByRole("textbox", { name: "Company" }), "B")
     await userEvent.type(screen.getByRole("textbox", { name: "Email" }), "ops@")
-    await userEvent.click(screen.getAllByRole("button", { name: "Add forwarder" }).at(-1)!)
+    await userEvent.click(screen.getByRole("button", { name: "Add forwarder" }))
     await expect(await screen.findByText("Enter at least 2 characters")).toBeInTheDocument()
     await expect(screen.getByText("Enter an email address")).toBeInTheDocument()
+    // The email's hint and its error both describe it.
+    await expect(screen.getByRole("textbox", { name: "Email" })).toHaveAccessibleDescription(
+      "Add one to invite them now. Enter an email address"
+    )
     await expect(sent).toHaveLength(0)
   }
 })
@@ -62,22 +82,31 @@ export const AddFails = meta.story({
     msw.use(recordActions(sent, () => serverError("Bayline Freight is already one of your forwarders.")))
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Add forwarder" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
     await screen.findByRole("dialog")
     await userEvent.type(screen.getByRole("textbox", { name: "Company" }), "Bayline Freight")
-    await userEvent.click(screen.getAllByRole("button", { name: "Add forwarder" }).at(-1)!)
+    await userEvent.click(screen.getByRole("button", { name: "Add forwarder" }))
     await expect(await screen.findByText("Bayline Freight is already one of your forwarders.")).toBeInTheDocument()
     await expect(screen.getByRole("dialog")).toBeInTheDocument()
   }
 })
 
-// Opened by the Add partner menu, which holds the dialog's state; there's no trigger of its own.
-export const AddControlled = meta.story({
-  args: { open: true, onOpenChange: fn() },
-  play: async ({ args, canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Add forwarder" })).toBeNull()
-    await screen.findByRole("dialog", { name: "Add a forwarder" })
+// Cancelling drops what was typed and the error: the next opening starts empty.
+export const CancelStartsOver = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(recordActions(sent, () => serverError("Bayline Freight is already one of your forwarders.")))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
+    await screen.findByRole("dialog")
+    await userEvent.type(screen.getByRole("textbox", { name: "Company" }), "Bayline Freight")
+    await userEvent.click(screen.getByRole("button", { name: "Add forwarder" }))
+    await screen.findByText("Bayline Freight is already one of your forwarders.")
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
-    await expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await userEvent.click(canvas.getByRole("button", { name: "Open" }))
+    await screen.findByRole("dialog")
+    await expect(screen.getByRole("textbox", { name: "Company" })).toHaveValue("")
+    await expect(screen.queryByText("Bayline Freight is already one of your forwarders.")).toBeNull()
   }
 })

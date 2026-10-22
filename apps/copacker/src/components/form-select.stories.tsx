@@ -95,8 +95,8 @@ export const ClearOptional = meta.story({
   play: async ({ canvas, args }) => {
     const forwarder = canvas.getByRole("combobox", { name: "Forwarder" })
     await expect(forwarder).toHaveTextContent("Bayline Freight")
-    await expect(forwarder).toHaveAccessibleDescription("")
-    await expect(canvas.getByText("Ships the goods on from the supplier")).toBeVisible()
+    // Its hint describes it.
+    await expect(forwarder).toHaveAccessibleDescription("Ships the goods on from the supplier")
     await userEvent.click(forwarder)
     await userEvent.click(await screen.findByRole("option", { name: "No forwarder" }))
     await waitFor(() => expect(forwarder).toHaveTextContent("No forwarder"))

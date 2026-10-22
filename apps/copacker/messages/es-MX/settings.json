@@ -29,10 +29,6 @@
     "label": "Idioma",
     "system": "Sistema ({language})"
   },
-  "form": {
-    "save": "Guardar",
-    "saved": "Guardado"
-  },
   "profile": {
     "title": "Perfil",
     "firstName": "Nombre",
@@ -172,9 +168,7 @@
     "addTag": "Agrega una etiqueta",
     "wildcard": "Usa * como comodín, por ejemplo amazon*",
     "saveFailed": "No se pudieron guardar las etiquetas. Inténtalo de nuevo.",
-    "cancel": "Cancelar",
-    "save": "Guardar",
-    "saving": "Guardando…"
+    "save": "Guardar"
   },
   "restock": {
     "title": "Reabastecimiento",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "Ahora tu proveedor administra las recolecciones. Quita esta dirección cuando la haya agregado.",
     "saveChanges": "Guardar cambios",
     "saveAddress": "Guardar dirección",
-    "name": "Nombre de la dirección",
     "namePlaceholder": "Almacén de Shenzhen",
-    "kind": "Tipo de dirección",
     "shopifyLocation": "Ubicación de Shopify",
     "shopifyLocationDescription": "Las órdenes de compra enviadas aquí aparecen como ordenadas allá",
     "notLinked": "Sin vincular"

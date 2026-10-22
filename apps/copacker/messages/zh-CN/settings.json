@@ -29,10 +29,6 @@
     "label": "语言",
     "system": "系统（{language}）"
   },
-  "form": {
-    "save": "保存",
-    "saved": "已保存"
-  },
   "profile": {
     "title": "个人资料",
     "firstName": "名字",
@@ -172,9 +168,7 @@
     "addTag": "添加标签",
     "wildcard": "可用 * 作为通配符，例如 amazon*",
     "saveFailed": "无法保存标签，请重试。",
-    "cancel": "取消",
-    "save": "保存",
-    "saving": "正在保存…"
+    "save": "保存"
   },
   "restock": {
     "title": "补货",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "提货地址现由你的供应商管理。待对方添加后，请移除此地址。",
     "saveChanges": "保存更改",
     "saveAddress": "保存地址",
-    "name": "地址名称",
     "namePlaceholder": "深圳仓库",
-    "kind": "地址类型",
     "shopifyLocation": "Shopify 地点",
     "shopifyLocationDescription": "发往此处的采购订单会在该地点显示为已订购",
     "notLinked": "未关联"

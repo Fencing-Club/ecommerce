@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "添加货代",
       "title": "添加货代",
       "description": "从你的供应商处提货，再转运至 Amazon 或你的仓库。",
       "submit": "添加货代",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "添加供应商",
       "title": "添加供应商",
       "description": "用于尚未在 Shopify 中的供应商。"
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} 在自己的工作区中维护联系方式。",
       "leadTime": "交货周期（天）",
       "leadTimeDescription": "从采购订单到可售库存。留空则为 {days}。",
-      "cancel": "取消",
       "save": "保存",
-      "saving": "正在保存…",
       "failed": "无法保存供应商，请重试。"
     },
     "invite": {
       "title": "邀请 {name}",
       "description": "对方可以查看你共享的采购订单，并在需要提供文件时收到邮件通知。",
       "email": "供应商邮箱",
-      "cancel": "取消",
       "submit": "发送邀请",
-      "sending": "正在发送…",
       "failed": "无法邀请 {name}，请重试。"
     }
   },
@@ -131,7 +125,6 @@
     "add": "为 {name} 添加地址",
     "saveChanges": "保存更改",
     "save": "保存地址",
-    "name": "地址名称",
     "pickupPlaceholder": "工厂",
     "placeholder": "义乌仓库",
     "sheet": {

@@ -40,9 +40,7 @@
     "none": "Ninguna",
     "edit": "Editar",
     "editLabel": "Editar ubicaciones de inventario",
-    "cancel": "Cancelar",
     "save": "Guardar",
-    "saving": "Guardando…",
     "saveFailed": "No se pudieron guardar las ubicaciones. Inténtalo de nuevo."
   },
   "list": {

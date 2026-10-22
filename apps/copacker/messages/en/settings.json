@@ -29,10 +29,6 @@
     "label": "Language",
     "system": "System ({language})"
   },
-  "form": {
-    "save": "Save",
-    "saved": "Saved"
-  },
   "profile": {
     "title": "Profile",
     "firstName": "First name",
@@ -172,9 +168,7 @@
     "addTag": "Add a tag",
     "wildcard": "Use * as a wildcard, like amazon*",
     "saveFailed": "Couldn’t save the tags. Try again.",
-    "cancel": "Cancel",
-    "save": "Save",
-    "saving": "Saving…"
+    "save": "Save"
   },
   "restock": {
     "title": "Restock",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "Your supplier keeps pickups now. Remove this once they’ve added it.",
     "saveChanges": "Save changes",
     "saveAddress": "Save address",
-    "name": "Address name",
     "namePlaceholder": "Shenzhen warehouse",
-    "kind": "Address type",
     "shopifyLocation": "Shopify location",
     "shopifyLocationDescription": "Purchase orders sent here show as on order there",
     "notLinked": "Not linked"

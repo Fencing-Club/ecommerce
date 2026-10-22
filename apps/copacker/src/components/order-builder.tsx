@@ -22,28 +22,28 @@ import {
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { Link, useRouter } from "@tanstack/react-router"
 import { useEffect, useEffectEvent, useId, useRef } from "react"
-import { FormProvider, useController, useFieldArray, useWatch } from "react-hook-form"
+import { FormProvider, useFieldArray, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"
 import { CostSummaryCard } from "@/components/cost-summary-card"
 import { CostSummaryDialog } from "@/components/cost-summary-dialog"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { FormError, FormServerError, SubmitButton } from "@/components/form-feedback"
 import { OrderLineRow } from "@/components/order-line-row"
 import { type ForwarderAddress, RouteCard } from "@/components/route-card"
 import { ShipmentGroupCard } from "@/components/shipment-group-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldError, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
+import { useActionForm } from "@/hooks/use-action-form"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionForm } from "@/hooks/useActionForm"
 import { type CatalogProduct, type SupplierCatalogMatch, useSupplierCatalogMatchQuery } from "@/lib/api"
-import { type OrderForm, orderFormSchema } from "@/lib/order-form"
+import { orderFormSchema } from "@/lib/order-form"
 import { knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { type LineQuote, lineQuotes, lineSkus, quotedPrice } from "@/lib/order-quotes"
 import { AddProductsDialog, type StockAt } from "./add-products-dialog"
-import { DateInput, FormInput, FormLabel, FormTextarea } from "./form-controls"
+import { DateInput, FormField, FormInput, FormTextarea, useFormField } from "./form-controls"
 import { FormSelect } from "./form-select"
 
 type Line = ReturnType<typeof orderLine>
@@ -293,7 +293,7 @@ export function OrderBuilder({
         </SubmitButton>
       </PageHeader>
       <form id={formId} onSubmit={submit} noValidate className="@container flex flex-col gap-4">
-        <FormError message={form.formState.errors.root?.server?.message} />
+        <FormServerError />
 
         <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex min-w-0 flex-col gap-4">
@@ -495,24 +495,21 @@ function stockAtDestination(
 // order keeps as no date.
 function RequiredBy() {
   const t = useTranslations("orders.detail")
-  const id = useId()
   const {
     field: { ref, value, onChange, onBlur, name },
-    fieldState
-  } = useController<OrderForm, "dueDate">({ name: "dueDate" })
+    fieldProps,
+    controlProps
+  } = useFormField("dueDate")
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <FormLabel htmlFor={id} label={t("requiredBy")} />
+    <FormField {...fieldProps} label={t("requiredBy")}>
       <DateInput
-        id={id}
+        {...controlProps}
         ref={ref}
         name={name}
-        value={value ?? ""}
+        value={typeof value === "string" ? value : ""}
         onChange={(event) => onChange(event.target.value || undefined)}
         onBlur={onBlur}
-        aria-invalid={fieldState.invalid}
       />
-      <FieldError errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }

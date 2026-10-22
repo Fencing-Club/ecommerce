@@ -1,7 +1,6 @@
 import { useMounted } from "@mantine/hooks"
-import { useId, useState } from "react"
-import { useController } from "react-hook-form"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { useState } from "react"
+import { FormField, useFormField } from "@/components/form-controls"
 import { cn } from "@/lib/utils"
 
 const length = 6
@@ -22,14 +21,15 @@ export function CodeField({
   label: string
   onComplete: (code: string) => void
 }) {
-  const id = useId()
   // SSR displays the field before its automatic-submit handler is attached. Keep early typing from being lost.
   const mounted = useMounted()
   const [focused, setFocused] = useState(false)
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
-    fieldState
-  } = useController({ name })
+    error,
+    fieldProps,
+    controlProps
+  } = useFormField(name)
   const value = typeof fieldValue === "string" ? fieldValue : ""
   const update = (digits: string) => {
     onChange(digits)
@@ -45,8 +45,8 @@ export function CodeField({
         className={cn(
           "relative flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg border border-input bg-background font-mono text-xl font-medium tabular-nums shadow-xs transition-[border-color,box-shadow] dark:bg-input/30",
           current && "border-ring ring-3 ring-ring/50",
-          fieldState.invalid && "border-destructive",
-          fieldState.invalid && current && "ring-destructive/20"
+          error && "border-destructive",
+          error && current && "ring-destructive/20"
         )}
       >
         {value[index] ?? ""}
@@ -57,13 +57,10 @@ export function CodeField({
     )
   }
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <FieldLabel htmlFor={id} className="sr-only">
-        {label}
-      </FieldLabel>
+    <FormField {...fieldProps} label={label} hideLabel>
       <div className="relative">
         <input
-          id={id}
+          {...controlProps}
           ref={ref}
           name={fieldName}
           disabled={!mounted}
@@ -98,7 +95,6 @@ export function CodeField({
           inputMode="numeric"
           autoComplete="one-time-code"
           spellCheck={false}
-          aria-invalid={fieldState.invalid}
           className="absolute inset-0 z-10 size-full cursor-text text-base caret-transparent opacity-0"
         />
         <div aria-hidden className="flex items-center gap-2">
@@ -107,7 +103,6 @@ export function CodeField({
           {[3, 4, 5].map(slot)}
         </div>
       </div>
-      <FieldError errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }

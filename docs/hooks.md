@@ -8,8 +8,7 @@ each hook.
 
 - **Reuse first.** Check Copacker's hooks and the catalog below before writing a hook.
 - **File names are kebab-case**: `use-{name}.ts`, colocated with the feature or in `apps/copacker/src/hooks` when
-  shared. A file may export a few closely related hooks (see `use-error-text.ts`). `useActionForm.ts` predates this,
-  and keeps its name until the open pull requests that import it land.
+  shared. A file may export a few closely related hooks (see `use-error-text.ts`).
 - **The React Compiler is on.** Don't hand-write `useMemo`, `useCallback`, or `React.memo` for performance; follow the
   Rules of React.
 - **Follow the Rules of Hooks** (call unconditionally, at the top level). oxlint's `react/rules-of-hooks` enforces this.
@@ -23,10 +22,11 @@ each hook.
   document, for anything that changes the session or workspace. Use it for every button, menu item and dialog that
   runs an action; `ConfirmDialog` and `ActionButton` are built on it. Another request, such as a connection's own
   endpoint, refreshes what it needs itself.
-- `useActionForm` (`useActionForm.ts`): the one form hook. React Hook Form + Zod, a server error on `root.server`, and
+- `useActionForm` (`use-action-form.ts`): the one form hook. React Hook Form + Zod, a server error on `root.server`, and
   `useAction`'s step after success, then `onSuccess(result, values)` and a reset for the next entry (or `keepSaved`).
   Pass `action` to post to `/api/action`, or `run` for a form a parent saves, such as linking a shipment. Sign-in and
-  recovery forms pass `navigation: "document"`.
+  recovery forms pass `navigation: "document"`. `ActionForm` lays the form out and `FormDialog` runs one in a dialog;
+  see [forms](../apps/copacker/docs/forms.md).
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
 - `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total. An amount

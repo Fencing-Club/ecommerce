@@ -40,9 +40,7 @@
     "none": "Aucun",
     "edit": "Modifier",
     "editLabel": "Modifier les emplacements de stock",
-    "cancel": "Annuler",
     "save": "Enregistrer",
-    "saving": "Enregistrement…",
     "saveFailed": "Impossible d’enregistrer les emplacements. Réessayez."
   },
   "list": {
