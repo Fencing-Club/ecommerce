@@ -47,7 +47,6 @@ export function CartonTable({
   context,
   readOnly = false,
   showErrors = false,
-  renderNote,
   onChange,
   onDuplicate,
   onDelete
@@ -64,8 +63,6 @@ export function CartonTable({
   readOnly?: boolean
   // Whether blank fields are errors yet: after submitting, or for cartons saved before.
   showErrors?: boolean | ((cartonIds: string[]) => boolean)
-  // Beneath a row, given its carton IDs, such as the Amazon label each carton carries.
-  renderNote?: (cartonIds: string[]) => React.ReactNode
   onChange?: (index: number, value: CartonGroup) => void
   onDuplicate?: (index: number) => void
   onDelete?: (index: number) => void
@@ -98,7 +95,6 @@ export function CartonTable({
               context={context}
               readOnly={readOnly}
               showErrors={typeof showErrors === "function" ? showErrors(ids) : showErrors}
-              note={renderNote?.(ids)}
               onChange={(next) => onChange?.(index, next)}
               onDuplicate={() => onDuplicate?.(index)}
               onDelete={() => onDelete?.(index)}
@@ -119,7 +115,6 @@ function CartonRow({
   context,
   readOnly,
   showErrors,
-  note,
   onChange,
   onDuplicate,
   onDelete
@@ -133,7 +128,6 @@ function CartonRow({
   context?: string
   readOnly: boolean
   showErrors: boolean
-  note?: React.ReactNode
   onChange: (value: CartonGroup) => void
   onDuplicate: () => void
   onDelete: () => void
@@ -361,7 +355,6 @@ function CartonRow({
         </div>
         {!open && errors.length > 0 && <IssueBadge count={errors.length} />}
       </div>
-      {note && <div className="px-3.5 pb-3.5 wide:col-[2/-1] wide:row-start-6 wide:px-0">{note}</div>}
       {open && (
         // In the table the band reaches the row's edges and shares its columns: a product spans cartons to dimensions,
         // its supplier SKU sits under weight and its quantity under contents.

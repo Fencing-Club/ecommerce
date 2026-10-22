@@ -61,7 +61,6 @@
       "title": "Lieferantenunterlagen bereit",
       "downloadLabel": "Sendungsunterlagen herunterladen",
       "incompleteTitle": "Lieferantenunterlagen unvollständig",
-      "waitingForLabels": "Wartet auf die Etiketten des Käufers",
       "cartonLabels": "Kartonetiketten",
       "unitLabels": "Produktetiketten",
       "carrierLabels": "Versandetiketten",
@@ -69,15 +68,6 @@
       "backToShipment": "Zurück zur Sendung",
       "document": "Sendungsunterlagen",
       "documentDescription": "Alle Dokumente der Sendung"
-    },
-    "cartons": {
-      "title": "Kartons",
-      "carton": "Karton",
-      "product": "Produkt",
-      "units": "Einheiten",
-      "dimensions": "Maße (cm)",
-      "weight": "Gewicht (kg)",
-      "amazonLabel": "Kartonetikett"
     },
     "pickup": {
       "title": "Abholung",
@@ -110,12 +100,6 @@
       "updateCost": "Auch Stückkosten in Shopify aktualisieren",
       "updateCostDescription": "Shopify-Kosten müssen in der Währung der Bestellung sein.",
       "submit": "Änderungen genehmigen"
-    },
-    "correction": {
-      "trigger": "Korrektur anfordern",
-      "submit": "Korrektur anfordern",
-      "reason": "Was muss sich ändern?",
-      "reasonDescription": "Die Dokumente dieser Sendung werden dadurch veraltet."
     },
     "reconcile": {
       "submit": "Prüfen und fortsetzen",

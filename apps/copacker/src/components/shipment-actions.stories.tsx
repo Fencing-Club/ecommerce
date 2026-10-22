@@ -2,7 +2,7 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
-import { ApproveInvoice, CorrectionForm, ReconcileShipment, LinkExistingShipment } from "./shipment-actions"
+import { ApproveInvoice, ReconcileShipment, LinkExistingShipment } from "./shipment-actions"
 
 const sent: ActionRequest[] = []
 const linked = fn(async (_shipmentId: string | null) => undefined)
@@ -90,39 +90,6 @@ export const ApproveFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
     await expect(await canvas.findByText("The invoice changed. Reload to see the latest version.")).toBeVisible()
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
-  }
-})
-
-export const Correction = meta.story({
-  render: () => <CorrectionForm id={shipmentId} />,
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("textbox")).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: "Request a correction" }))
-    const reason = await canvas.findByRole("textbox", { name: "What needs to change?" })
-    await expect(canvas.getByText("This shipment’s documents become outdated.")).toBeVisible()
-    await userEvent.type(reason, "ab")
-    await userEvent.click(canvas.getByRole("button", { name: "Request correction" }))
-    await expect(await canvas.findByText("Enter at least 3 characters")).toBeVisible()
-    await userEvent.type(reason, "c: carton C2 weighs 19 kg")
-    await userEvent.click(canvas.getByRole("button", { name: "Request correction" }))
-    await waitFor(() =>
-      expect(sent).toEqual([
-        { action: "shipment.correct", data: { id: shipmentId, reason: "abc: carton C2 weighs 19 kg" } }
-      ])
-    )
-  }
-})
-
-export const CorrectionFails = meta.story({
-  render: () => <CorrectionForm id={shipmentId} />,
-  beforeEach: ({ msw }) => {
-    msw.use(recordActions(sent, () => serverError("This shipment was already picked up.")))
-  },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Request a correction" }))
-    await userEvent.type(await canvas.findByRole("textbox", { name: "What needs to change?" }), "Wrong carton count")
-    await userEvent.click(canvas.getByRole("button", { name: "Request correction" }))
-    await expect(await canvas.findByText("This shipment was already picked up.")).toBeVisible()
   }
 })
 

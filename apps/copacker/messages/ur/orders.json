@@ -393,7 +393,7 @@
     "removeCarton": "کارٹن {name} ہٹائیں",
     "addCarton": "کارٹن شامل کریں",
     "noCartons": "ابھی کوئی کارٹن نہیں",
-    "noCartonsDescription": "کارٹن شامل کریں، پھر ایک جیسے کارٹن کی نقل بنائیں۔",
+    "noCartonsDescription": "کارٹن شامل کریں اور ایک جیسے کارٹن کے لیے تعداد سیٹ کریں، یا اسپریڈشیٹ درآمد کریں۔",
     "saveDraft": "ڈرافٹ محفوظ کریں",
     "check": "پیکنگ چیک کریں",
     "submit": "پیکنگ لسٹ جمع کرائیں",
@@ -415,6 +415,9 @@
     "addNewAddress": "پتہ شامل کریں",
     "chooseAddress": "پک اپ کا پتہ",
     "packedUnits": "{available} اکائیوں میں سے {count}",
+    "productCount": "{products} مصنوعات",
+    "productsLeft": "{products} مصنوعات، {count} اکائیاں باقی",
+    "productsPacked": "{products} مصنوعات، سب پیک",
     "leftCount": "{count} باقی",
     "overCount": "{count} زیادہ",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{total, plural, one {# کارٹن} other {# کارٹن}} میں سے {count, number} پیلٹ پر",
     "addPallet": "پیلٹ شامل کریں",
     "noPallets": "ابھی کوئی پیلٹ نہیں",
-    "noPalletsDescription": "پیلٹ شامل کریں، پھر اس پر رکھے کارٹن منتخب کریں۔",
+    "noPalletsDescription": "پیلٹ شامل کریں اور اس پر رکھے کارٹن منتخب کریں، یا اسپریڈشیٹ درآمد کریں۔",
     "columns": {
       "pallet": "پیلٹ",
       "dimensions": "ابعاد",

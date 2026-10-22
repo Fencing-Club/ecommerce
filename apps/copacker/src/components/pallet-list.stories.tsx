@@ -1,7 +1,6 @@
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
-import { expect, fn, within } from "storybook/test"
+import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { groupCartons, type PalletValue } from "@/lib/carton-groups"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
 import { PalletList } from "./pallet-list"
@@ -18,6 +17,7 @@ const pallet = (palletId: string, cartonIds: string[], stackable = true): Pallet
 })
 const aCartons = Array.from({ length: 10 }, (_, index) => `A${index + 1}`)
 const rest = ["B1", "B2", "B3", "B4", "B5", "B6", "C1", "C2"]
+const actions = () => ({ onAdd: fn(), onImport: fn(), onExport: fn() })
 
 const meta = preview.meta({
   title: "Components/Shipments/Pallet list",
@@ -50,25 +50,39 @@ export const Packing = meta.story({
     pallets: [pallet("1", [...aCartons, "Z9"])],
     issues: [offPallets],
     onChange: fn(),
-    actions: (
-      <Button type="button" variant="outline">
-        Add pallet
-      </Button>
-    )
+    actions: actions()
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const section = within(canvas.getByRole("region", { name: "Pallets" }))
-    await expect(section.getByRole("button", { name: "Add pallet" })).toBeVisible()
+    await expect(section.getByRole("button", { name: "Export pallets" })).toBeVisible()
+    await expect(section.getByRole("button", { name: "Import pallets" })).toBeVisible()
+    await userEvent.click(section.getByRole("button", { name: "Add pallet" }))
+    await expect(args.actions?.onAdd).toHaveBeenCalled()
     await expect(section.getByText("10 of 18 cartons on pallets")).not.toHaveClass("text-success")
     await expect(section.getByText(/^Cartons: 8 cartons aren’t on a pallet: B1–B6, C1–C2\./)).toBeVisible()
   }
 })
 
+// As with cartons, Add pallet and Import pallets sit in the empty box until the first pallet is added.
 export const Empty = meta.story({
-  args: { readOnly: false, pallets: [] },
+  args: { readOnly: false, pallets: [], actions: actions() },
+  play: async ({ canvas, args }) => {
+    const section = within(canvas.getByRole("region", { name: "Pallets" }))
+    await expect(section.getByText("No pallets yet")).toBeVisible()
+    await expect(section.getByText("Add a pallet and choose the cartons on it, or import a spreadsheet.")).toBeVisible()
+    await expect(section.getByText("0 of 18 cartons on pallets")).toBeVisible()
+    await expect(section.queryByRole("button", { name: "Export pallets" })).toBeNull()
+    await userEvent.click(section.getByRole("button", { name: "Import pallets" }))
+    await expect(args.actions?.onImport).toHaveBeenCalled()
+  }
+})
+
+// The chevron before the title closes the list, and the count stays beside it.
+export const Collapsed = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("No pallets yet")).toBeVisible()
-    await expect(canvas.getByText("0 of 18 cartons on pallets")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Pallets" }))
+    await expect(canvas.queryByRole("region", { name: "Pallet 1" })).toBeNull()
+    await expect(canvas.getByText("18 of 18 cartons on pallets")).toBeVisible()
   }
 })
 

@@ -95,21 +95,6 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await expect(titleStatus(supplier)).toHaveText("Ready for pickup", { timeout: 60_000 })
   })
 
-  await test.step("the supplier corrects packing without changing PO prices", async () => {
-    await supplier.getByRole("button", { name: "Request a correction" }).click()
-    await expect(supplier.getByRole("button", { name: "Request correction" })).toBeDisabled()
-    await supplier.getByLabel("What needs to change?").fill("Carton B1 weighs 7.5 kg")
-    await supplier.getByRole("button", { name: "Request correction" }).click()
-    await expect(titleStatus(supplier)).toHaveText("Correction requested")
-    await fillCarton(supplier, "B1", { "Weight (kg)": "7.5" })
-    await supplier.getByRole("button", { name: "Finish packing" }).click()
-    await expect(titleStatus(supplier)).toHaveText("Ready for pickup", { timeout: 60_000 })
-    await expect(supplier.getByRole("region", { name: "Carton B1", exact: true })).toContainText("7.5")
-    const row = await shipmentRow(page, "Active")
-    await expect(row).toContainText("Ready for pickup")
-    await expect(row).toContainText("Demo supplier")
-  })
-
   await test.step("the supplier marks it shipped", async () => {
     await supplier.reload()
     await expect(titleStatus(supplier)).toHaveText("Ready for pickup")

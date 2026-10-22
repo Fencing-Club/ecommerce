@@ -61,7 +61,6 @@
       "title": "सप्लायर पैकेट तैयार",
       "downloadLabel": "शिपमेंट पैकेट डाउनलोड करें",
       "incompleteTitle": "सप्लायर पैकेट अधूरा है",
-      "waitingForLabels": "खरीदार के लेबल का इंतज़ार है",
       "cartonLabels": "कार्टन लेबल",
       "unitLabels": "उत्पाद लेबल",
       "carrierLabels": "वाहक लेबल",
@@ -69,15 +68,6 @@
       "backToShipment": "शिपमेंट पर वापस जाएँ",
       "document": "शिपमेंट पैकेट",
       "documentDescription": "शिपमेंट के सभी दस्तावेज़"
-    },
-    "cartons": {
-      "title": "कार्टन",
-      "carton": "कार्टन",
-      "product": "प्रोडक्ट",
-      "units": "यूनिट",
-      "dimensions": "माप (cm)",
-      "weight": "वज़न (kg)",
-      "amazonLabel": "कार्टन लेबल"
     },
     "pickup": {
       "title": "पिकअप",
@@ -110,12 +100,6 @@
       "updateCost": "Shopify यूनिट लागत भी अपडेट करें",
       "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए।",
       "submit": "बदलाव मंज़ूर करें"
-    },
-    "correction": {
-      "trigger": "सुधार का अनुरोध करें",
-      "submit": "सुधार का अनुरोध करें",
-      "reason": "क्या बदलना है?",
-      "reasonDescription": "इस शिपमेंट के दस्तावेज़ पुराने हो जाएंगे।"
     },
     "reconcile": {
       "submit": "जांचें और फिर शुरू करें",

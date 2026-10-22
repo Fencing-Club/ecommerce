@@ -393,7 +393,7 @@
     "removeCarton": "कार्टन {name} हटाएं",
     "addCarton": "कार्टन जोड़ें",
     "noCartons": "अभी कोई कार्टन नहीं",
-    "noCartonsDescription": "एक कार्टन जोड़ें, फिर एक जैसे कार्टन डुप्लिकेट करें।",
+    "noCartonsDescription": "एक कार्टन जोड़ें और एक जैसे कार्टन के लिए संख्या सेट करें, या स्प्रेडशीट आयात करें।",
     "saveDraft": "ड्राफ़्ट सेव करें",
     "check": "पैकिंग जांचें",
     "submit": "पैकिंग लिस्ट सबमिट करें",
@@ -415,6 +415,9 @@
     "addNewAddress": "पता जोड़ें",
     "chooseAddress": "पिकअप का पता",
     "packedUnits": "{available} इकाइयों में से {count}",
+    "productCount": "{products} उत्पाद",
+    "productsLeft": "{products} उत्पाद, {count} इकाइयाँ बाकी",
+    "productsPacked": "{products} उत्पाद, सभी पैक",
     "leftCount": "{count} बाकी",
     "overCount": "{count} ज़्यादा",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{total, plural, one {# कार्टन} other {# कार्टन}} में से {count, number} पैलेट पर",
     "addPallet": "पैलेट जोड़ें",
     "noPallets": "अभी कोई पैलेट नहीं",
-    "noPalletsDescription": "पैलेट जोड़ें, फिर उस पर रखे कार्टन चुनें।",
+    "noPalletsDescription": "पैलेट जोड़ें और उस पर रखे कार्टन चुनें, या स्प्रेडशीट आयात करें।",
     "columns": {
       "pallet": "पैलेट",
       "dimensions": "आयाम",

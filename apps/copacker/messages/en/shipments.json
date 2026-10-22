@@ -61,7 +61,6 @@
       "title": "Supplier packet ready",
       "downloadLabel": "Download shipment packet",
       "incompleteTitle": "Supplier packet incomplete",
-      "waitingForLabels": "Waiting for the buyer’s labels",
       "cartonLabels": "Carton labels",
       "unitLabels": "Product labels",
       "carrierLabels": "Carrier labels",
@@ -69,15 +68,6 @@
       "backToShipment": "Back to shipment",
       "document": "Shipment packet",
       "documentDescription": "All shipment documents"
-    },
-    "cartons": {
-      "title": "Cartons",
-      "carton": "Carton",
-      "product": "Product",
-      "units": "Units",
-      "dimensions": "Dimensions (cm)",
-      "weight": "Weight (kg)",
-      "amazonLabel": "Carton label"
     },
     "pickup": {
       "title": "Pickup",
@@ -110,12 +100,6 @@
       "updateCost": "Also update Shopify unit costs",
       "updateCostDescription": "Shopify costs must be in the purchase order’s currency.",
       "submit": "Approve changes"
-    },
-    "correction": {
-      "trigger": "Request a correction",
-      "submit": "Request correction",
-      "reason": "What needs to change?",
-      "reasonDescription": "This shipment’s documents become outdated."
     },
     "reconcile": {
       "submit": "Verify and resume",

@@ -393,7 +393,7 @@
     "removeCarton": "Quitar caja {name}",
     "addCarton": "Agregar caja",
     "noCartons": "Aún no hay cajas",
-    "noCartonsDescription": "Agrega una caja y luego duplica las idénticas.",
+    "noCartonsDescription": "Agrega una caja y define la Cantidad de las idénticas, o importa una hoja de cálculo.",
     "saveDraft": "Guardar borrador",
     "check": "Revisar empaque",
     "submit": "Enviar lista de empaque",
@@ -415,6 +415,9 @@
     "addNewAddress": "Agregar dirección",
     "chooseAddress": "Dirección de recolección",
     "packedUnits": "{count} de {available, plural, one {# unidad} other {# unidades}}",
+    "productCount": "{products, plural, one {# producto} other {# productos}}",
+    "productsLeft": "{products, plural, one {# producto} other {# productos}}, {count, plural, one {falta # unidad} other {faltan # unidades}}",
+    "productsPacked": "{products, plural, one {# producto} other {# productos}}, todo empacado",
     "leftCount": "Faltan {count}",
     "overCount": "{count} de más",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} de {total, plural, one {# caja} other {# cajas}} en tarimas",
     "addPallet": "Agregar tarima",
     "noPallets": "Aún no hay tarimas",
-    "noPalletsDescription": "Agrega una tarima y luego elige las cajas que lleva.",
+    "noPalletsDescription": "Agrega una tarima y elige las cajas que lleva, o importa una hoja de cálculo.",
     "columns": {
       "pallet": "Tarima",
       "dimensions": "Dimensiones",

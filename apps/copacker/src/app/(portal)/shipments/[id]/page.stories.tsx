@@ -178,8 +178,7 @@ async function ShipmentPage({
   const amazon = orderDestination(order.data) === "amazon"
   const title = t("title", { number })
   const destination = await shipmentDestinations([order.data])
-  const nextStep =
-    step.next.step === "forward" || (isBuyer && step.next.step === "cancellation") ? step.next.message : undefined
+  const nextStep = isBuyer && step.next.step === "cancellation" ? step.next.message : undefined
   return (
     <ShipmentPageView
       page={{
@@ -360,7 +359,6 @@ export const PackingSupplier = meta.story({
     await expect(canvas.getAllByText("Packing").length).toBeGreaterThan(0)
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
 
@@ -450,7 +448,7 @@ export const DraftPacking = meta.story({
 
     // Each product's row prints just its own labels.
     const [towel, , teaTowel] = towelOrder.items
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     // The products show the supplier's SKU, not the buyer's, and what's left to pack.
     const products = within(await canvas.findByRole("table"))
     await expect(products.getByText("NT-WB-2214")).toBeVisible()
@@ -596,11 +594,10 @@ export const Packed = meta.story({
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("540 of 540 units")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: /^Products \(3\)/ })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Products" })).toBeVisible()
     const summary = canvas.getByRole("region", { name: "Shipment details" })
     await expect(within(summary).getByText("230.8 kg")).toBeVisible()
     await expect(canvas.queryByText(/Packing is complete/)).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
 
     // The documents: the product labels menu, then the packing list, which prints before Amazon's labels exist.
     const documents = canvas.getByRole("region", { name: "Documents" })
@@ -744,7 +741,7 @@ export const DraftPackingMissingLabel = meta.story({
     ]
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
     const menu = within(await screen.findByRole("menu"))
     await expect(menu.getByRole("menuitem", { name: /FNSKU labels/ })).toHaveAttribute("aria-disabled", "true")
@@ -909,7 +906,6 @@ export const Creating = meta.story({
     await expect(canvas.getByText("Amazon assigns the delivery address after shipment creation.")).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
     await expect(canvas.getByRole("region", { name: "Cartons" })).toBeVisible()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
 
@@ -948,8 +944,8 @@ export const WaitingForLabels = meta.story({
     // The cartons go to the AWD warehouse Amazon chose, each with Amazon's label.
     await expect(canvas.getByText("Amazon IUSP")).toBeVisible()
     await expect(canvas.getByText("200 Distribution Road, Hesperia, CA 92344, US")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: /^Products \(2\)/ })).toBeVisible()
-    await expect(canvas.getByText("C1: 201952611540373988")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Products" })).toBeVisible()
+    await expect(canvas.queryByText(/201952611540373988/)).toBeNull()
   }
 })
 
@@ -1067,7 +1063,8 @@ export const ReadySupplier = meta.story({
     await expect(canvas.getByText("Amazon ONT8")).toBeVisible()
     await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
-    await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
+    // Each carton's label number is on its label, not in the carton rows.
+    await expect(canvas.queryByText(/FBA18ABCD123U000002/)).toBeNull()
     await expect(canvas.getByRole("link", { name: "Download Carrier labels" })).toHaveAttribute(
       "href",
       expect.stringContaining("?bundle=true")
@@ -1077,41 +1074,6 @@ export const ReadySupplier = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     await waitFor(() => expect(sent).toEqual([{ action: "shipment.ship", data: { id: shipmentId } }]))
     // Until it ships, a correction can still be asked for.
-    await expect(canvas.getByRole("button", { name: "Request a correction" })).toBeVisible()
-  }
-})
-
-// The buyer doesn't mark a joined supplier's cartons shipped; the packet waits for a product label.
-export const ReadyIncomplete = meta.story({
-  ...buyer,
-  args: {
-    step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
-      issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
-    })
-  },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Supplier packet incomplete")).toBeVisible()
-    await expect(canvas.getByText("Add a product label for Linen apron / Charcoal")).toBeVisible()
-    await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
-    // A warehouse shipment has no Amazon labels, and ships to the buyer's warehouse.
-    await expect(canvas.queryByRole("columnheader", { name: "Carton label" })).toBeNull()
-    await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
-    await expect(canvas.getByText("2400 NW Front Ave, Portland, OR 97209, US")).toBeVisible()
-    await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
-  }
-})
-
-export const ReadyIncompleteSupplier = meta.story({
-  ...supplier,
-  args: {
-    kind: "supplier",
-    step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
-      issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
-    })
-  },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Waiting for the buyer’s labels")).toBeVisible()
-    await expect(canvas.queryByText("Add a product label for Linen apron / Charcoal")).toBeNull()
   }
 })
 
@@ -1148,14 +1110,11 @@ export const ShippedToForwarder = meta.story({
     })
   },
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getByText("The forwarder ships the goods on and adds the freight cost, carrier, and tracking")
-    ).toBeVisible()
-    // Until the forwarder sends the goods on, its warehouse is the next stop.
+    // Until the forwarder sends the goods on, its warehouse is the next stop. The route says so, with no line about it.
     await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(canvas.queryByText(/The forwarder ships the goods on/)).toBeNull()
     await expect(canvas.getByText("18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, CN")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
 
@@ -1180,7 +1139,6 @@ export const Received = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText("Received").length).toBeGreaterThan(0)
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }
 })
 
@@ -1205,7 +1163,6 @@ export const NeedsAttention = meta.story({
     await expect(alert).toHaveTextContent("Amazon could not generate carton labels")
     await userEvent.click(canvas.getByRole("button", { name: "Retry shipment" }))
     await waitFor(() => expect(sent).toEqual([{ action: "shipment.retry", data: { id: shipmentId, revision: 3 } }]))
-    await expect(canvas.getByRole("button", { name: "Request a correction" })).toBeVisible()
   }
 })
 
@@ -1224,8 +1181,11 @@ export const Reconcile = meta.story({
     step: step("reconcile", "Find and link the Amazon order before continuing")
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("textbox", { name: "Existing Amazon AWD order ID" })).toBeVisible()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
+    // The order ID goes in the alert that says what went wrong.
+    const alert = canvas.getByRole("alert")
+    await expect(within(alert).getByText("Amazon didn't answer in time.")).toBeVisible()
+    await expect(within(alert).getByRole("textbox", { name: "Existing Amazon AWD order ID" })).toBeVisible()
+    await expect(within(alert).getByRole("button", { name: "Verify and resume" })).toBeDisabled()
     await expect(canvas.queryByRole("button", { name: "Retry shipment" })).toBeNull()
   }
 })
@@ -1262,7 +1222,6 @@ export const ViewOnly = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await userEvent.click(within(cartons).getByRole("button", { name: "Products in C1" }))

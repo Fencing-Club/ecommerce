@@ -1,15 +1,12 @@
 import { awdShipmentIdPattern, fbaInboundPlanIdPattern } from "@repo/copacker-shipments/amazon-inbound"
-import { ChevronDown } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/form-feedback"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useAction } from "@/hooks/use-action"
 import { useActionForm } from "@/hooks/use-action-form"
 import { ActionForm } from "./action-form"
-import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
+import { FormCheckbox, FormInput } from "./form-controls"
 
 const approveSchema = z.object({ updateCost: z.boolean() })
 
@@ -26,38 +23,6 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
     <ActionForm form={form} onSubmit={submit} label={t("submit")}>
       <FormCheckbox name="updateCost" label={t("updateCost")} description={t("updateCostDescription")} />
     </ActionForm>
-  )
-}
-
-const correctionSchema = z.object({ reason: z.string().trim().min(3).max(2000) })
-
-export function CorrectionForm({ id }: { id: string }) {
-  const t = useTranslations("shipments.actions.correction")
-  const { form, submit } = useActionForm({
-    schema: correctionSchema,
-    action: "shipment.correct",
-    defaultValues: { reason: "" },
-    toPayload: (values) => ({ id, ...values })
-  })
-  return (
-    <Collapsible render={<Card />}>
-      <CardHeader>
-        <CollapsibleTrigger render={<Button variant="ghost" className="-mx-2.5 w-fit" />}>
-          {t("trigger")}
-          <ChevronDown
-            data-icon="inline-end"
-            className="transition-transform group-data-panel-open/button:rotate-180"
-          />
-        </CollapsibleTrigger>
-      </CardHeader>
-      <CollapsibleContent>
-        <CardContent>
-          <ActionForm form={form} onSubmit={submit} label={t("submit")} requireChange>
-            <FormTextarea name="reason" required label={t("reason")} description={t("reasonDescription")} />
-          </ActionForm>
-        </CardContent>
-      </CollapsibleContent>
-    </Collapsible>
   )
 }
 

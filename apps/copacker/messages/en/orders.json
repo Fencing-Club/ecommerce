@@ -393,7 +393,7 @@
     "removeCarton": "Remove carton {name}",
     "addCarton": "Add carton",
     "noCartons": "No cartons yet",
-    "noCartonsDescription": "Add a carton, then duplicate identical ones.",
+    "noCartonsDescription": "Add a carton and set Count for identical ones, or import a spreadsheet.",
     "saveDraft": "Save draft",
     "check": "Check packing",
     "submit": "Submit packing list",
@@ -415,6 +415,9 @@
     "addNewAddress": "Add new address",
     "chooseAddress": "Choose an address",
     "packedUnits": "{count} of {available, plural, one {# unit} other {# units}}",
+    "productCount": "{products, plural, one {# product} other {# products}}",
+    "productsLeft": "{products, plural, one {# product} other {# products}}, {count, plural, one {# unit} other {# units}} left",
+    "productsPacked": "{products, plural, one {# product} other {# products}}, all packed",
     "leftCount": "{count} left",
     "overCount": "{count} too many",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} of {total, plural, one {# carton} other {# cartons}} on pallets",
     "addPallet": "Add pallet",
     "noPallets": "No pallets yet",
-    "noPalletsDescription": "Add a pallet, then choose the cartons on it.",
+    "noPalletsDescription": "Add a pallet and choose the cartons on it, or import a spreadsheet.",
     "columns": {
       "pallet": "Pallet",
       "dimensions": "Dimensions",
