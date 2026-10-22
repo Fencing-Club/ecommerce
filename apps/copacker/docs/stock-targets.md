@@ -42,7 +42,8 @@ A location exists independently of targets. A connector identifies it by provide
 and external location ID. Display names are editable metadata, never identity. Reconnecting the same account preserves
 identity; connecting a different account never reassigns existing targets to it.
 
-Today the collectors support Shopify inventory locations, Amazon FBA US and Amazon AWD US. Shopify collects every
+Today the collectors support Shopify inventory locations, Amazon FBA (US marketplace) and Amazon AWD US. The location
+labels use the app's existing terminology: `FBA` and `AWD US`. Shopify collects every
 inventory level and classifies locations using the fulfillment service and saved buyer decisions. There is no separate
 location selection for collection. Only merchant-classified Shopify locations are eligible for targets. Amazon mirrors,
 excluded locations and unresolved fulfillment services remain visible observations without purchase recommendations.
@@ -55,7 +56,7 @@ planning. Disabled Amazon pools cannot queue new stock refreshes. Selections car
 to a different connected account. Existing targets retain disabled members and report them as ineligible.
 
 A target's `destination: {kind: "pool", locations: [...]}` is an explicit list, not a provider category or an expanding
-query. It can select two of three Shopify warehouses, FBA US plus AWD US, or supported locations across connectors.
+query. It can select two of three Shopify warehouses, FBA plus AWD US, or supported locations across connectors.
 New connector locations never silently join a target. A single-location destination and reusable named groups are
 also supported; a named group is optional and is not a connection setting. Pools do not schedule transfers, choose
 shipment destinations or claim that every member can fulfill every sale.
@@ -82,7 +83,7 @@ destination membership; lines for different destinations on the same PO must rem
 
 ## Existing values
 
-Preserve each existing Amazon quantity on one FBA US + AWD US group scoped to its existing Amazon account. Do not
+Preserve each existing Amazon quantity on one FBA + AWD US group scoped to its existing Amazon account. Do not
 associate an unconnected or different account by guessing. Preserve the Fencing Club store quantity on its one enabled Shopify location, never all Shopify locations. When the prior destination is ambiguous, retain the quantity as awaiting destination selection
 and expose it through the target settings and target report. Do not make recommendations from that unresolved
 target. Existing zero values must retain their intentional do-not-stock meaning during conversion.

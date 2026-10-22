@@ -101,7 +101,7 @@ export async function stockTargetContext(orgId: string, executor: Executor = db(
       }
       locations.set(inventoryLocationKey(ref), {
         ref,
-        name: source === "fba" ? "FBA US" : "AWD US",
+        name: source === "fba" ? "FBA" : "AWD US",
         role: "authoritative",
         available:
           (includeDisabled || inventoryLocationEnabled(amazon.inventoryLocations, ref)) &&
