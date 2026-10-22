@@ -238,6 +238,9 @@ importers:
       '@reduxjs/toolkit':
         specifier: ^2.13.0
         version: 2.13.0(react-redux@9.3.0(@types/react@19.3.0)(react@19.2.7)(redux@5.0.1))(react@19.2.7)
+      '@repo/copacker-contract':
+        specifier: workspace:*
+        version: link:../../packages/copacker-contract
       '@repo/copacker-emails':
         specifier: workspace:*
         version: link:../../packages/copacker-emails
@@ -383,6 +386,9 @@ importers:
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
+      '@repo/copacker-client':
+        specifier: workspace:*
+        version: link:../../packages/copacker-client
       '@repo/oxlint-config':
         specifier: workspace:*
         version: link:../../packages/oxlint-config

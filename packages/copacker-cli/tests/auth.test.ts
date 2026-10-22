@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { createServer } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { login, logout, profileToken } from "../src/auth.ts"
 import { LocalStore, secretFile, type LoginSecret } from "../src/storage.ts"
 
@@ -25,6 +25,32 @@ class MemoryStore extends LocalStore {
 }
 
 describe("interactive credentials", () => {
+  it("leaves no old secret bound to a new origin when protected replacement fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "copacker-auth-origin-"))
+    directories.push(root)
+    const store = new MemoryStore(root)
+    await store.replaceCredential(
+      "test",
+      { baseUrl: "https://old.example" },
+      { kind: "interactive", accessToken: "old-secret" }
+    )
+    const save = vi.spyOn(store, "saveCredential").mockRejectedValueOnce(new Error("Protected storage failed"))
+    await expect(
+      store.replaceCredential(
+        "test",
+        { baseUrl: "https://new.example" },
+        { kind: "interactive", accessToken: "new-secret" }
+      )
+    ).rejects.toThrow("Protected storage failed")
+    expect(await store.credential("test")).toBeUndefined()
+    save.mockRestore()
+    await store.replaceCredential(
+      "test",
+      { baseUrl: "https://new.example" },
+      { kind: "interactive", accessToken: "new-secret" }
+    )
+    expect(await profileToken(store, "test", "https://new.example")).toBe("new-secret")
+  })
   it("binds login to PKCE and loopback state, rotates refresh tokens and clears failed revocations", async () => {
     const root = await mkdtemp(join(tmpdir(), "copacker-auth-test-"))
     directories.push(root)
@@ -92,8 +118,17 @@ describe("interactive credentials", () => {
         throw new Error("Missing saved credential")
       }
       store.secret.expiresAt = 0
-      expect(await profileToken(store, "test", origin)).toBe("access-two")
+      expect(await Promise.all([profileToken(store, "test", origin), profileToken(store, "test", origin)])).toEqual([
+        "access-two",
+        "access-two"
+      ])
       expect(store.secret.refreshToken).toBe("refresh-two")
+      await expect(profileToken(store, "test", "https://another.example")).rejects.toThrow(
+        "This profile's API origin changed"
+      )
+      await expect(logout(store, "test", "https://another.example")).rejects.toThrow(
+        "This profile's API origin changed"
+      )
       expect(await logout(store, "test", origin)).toEqual({ cleared: true, revoked: false })
       expect(store.secret).toBeUndefined()
       expect(grants).toEqual(["authorization_code", "refresh_token"])

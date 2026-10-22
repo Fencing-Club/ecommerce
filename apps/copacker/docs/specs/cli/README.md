@@ -2,8 +2,11 @@
 
 Status: **application contract proposed; CLI client packages implemented**. The
 [CLI package](../../../../../packages/copacker-cli/docs/README.md), shared client and portable registry now implement
-the command vocabulary and client protocol. The application API, bearer/CLI authentication endpoints, domain handlers
-and hosted MCP remain unimplemented. This specification still describes the full intended operational release.
+the command vocabulary and client protocol. The first server slice implements bearer/CLI authentication and account,
+workspace, discovery and connection handlers; see [CLI server](../../cli-server.md). The remaining domain handlers
+and hosted MCP are not yet implemented. This specification describes the full intended operational release.
+Ten setup operations now have executable schemas; see the [implementation and recovery audit](implementation.md)
+for the restored commits, current gaps and next work.
 
 Copacker should expose its primary business data and the operations that maintain it: ingested customer orders,
 products, inventory, purchase orders, shipments, partners, connections and expenses. Restock adds Copacker's
@@ -12,6 +15,7 @@ Shopify, Amazon, Amazon Ads and eBay remain integrations behind those operations
 
 ## Proposal
 
+- [Implementation and recovery audit](implementation.md): recovered files, current executable coverage and remaining work.
 - [Command inventory](commands.md): commands, arguments, release scope and existing implementation to reuse.
 - [Shared API contract](contract.md): transport, authentication, schemas, output, revisions, repeated operations and MCP mapping.
 - [Operation schemas](operations/README.md): typed inputs, results, permissions, effects and errors for the command inventory, with worked examples.

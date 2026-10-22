@@ -32,6 +32,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
+- [CLI server: authentication, deployed handlers and release acceptance](cli-server.md)
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Run Copacker: setup, releases and infrastructure](operations.md)

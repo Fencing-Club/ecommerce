@@ -79,6 +79,7 @@ export const organizations = pgTable("organizations", {
   // without regard to case. Shopify's Amazon sales channel tags its copies of Amazon's orders "Amazon"; those are
   // counted from Amazon itself.
   excludedShopifyTags: text().array().notNull().default(["Amazon", "eBay"]),
+  settingsRevision: integer().notNull().default(0),
   // Restock's sales period and default lead time in days, used by Restock and the Overview. Null uses 60 days.
   restockSalesDays: integer(),
   restockLeadTimeDays: integer(),
@@ -98,6 +99,55 @@ export const memberships = pgTable(
     access: jsonb().$type<Access>().notNull().default({})
   },
   (t) => [primaryKey({ columns: [t.orgId, t.userId] })]
+)
+// CLI grants are independent of browser cookies and marketplace credentials. Only token hashes are persisted.
+export const cliGrants = pgTable(
+  "cli_grants",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    userId: text().notNull(),
+    createdAt: createdAt(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    revokedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [index("cli_grants_user").on(t.userId)]
+)
+export const cliAuthorizations = pgTable("cli_authorizations", {
+  hash: text().primaryKey(),
+  userId: text().notNull(),
+  redirectUri: text().notNull(),
+  challenge: text().notNull(),
+  state: text().notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  approvedAt: timestamp({ withTimezone: true }),
+  codeHash: text().unique(),
+  consumedAt: timestamp({ withTimezone: true })
+})
+export const cliTokens = pgTable(
+  "cli_tokens",
+  {
+    hash: text().primaryKey(),
+    grantId: uuid()
+      .notNull()
+      .references(() => cliGrants.id, { onDelete: "cascade" }),
+    kind: text({ enum: ["access", "refresh"] }).notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    consumedAt: timestamp({ withTimezone: true })
+  },
+  (t) => [index("cli_tokens_grant").on(t.grantId)]
+)
+export const operationReceipts = pgTable(
+  "operation_receipts",
+  {
+    userId: text().notNull(),
+    orgId: orgRef({ onDelete: "cascade" }),
+    operation: text().notNull(),
+    key: text().notNull(),
+    fingerprint: text().notNull(),
+    result: jsonb().$type<unknown>(),
+    createdAt: createdAt()
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.orgId, t.operation, t.key] })]
 )
 export const suppliers = pgTable(
   "suppliers",
@@ -293,6 +343,11 @@ export const connections = pgTable(
   "connections",
   {
     id: uuid().defaultRandom().primaryKey(),
+    revision: integer()
+      .notNull()
+      .default(0)
+      .$defaultFn(() => 0)
+      .$onUpdate(() => sql`"connections"."revision" + 1`),
     orgId: orgRef(),
     provider: text({ enum: stores }).notNull(),
     externalId: text().notNull(),
@@ -327,6 +382,12 @@ export const oauthStates = pgTable("oauth_states", {
 })
 // Ads grants are separate from seller API grants, and can only read profiles belonging to the connected seller.
 export const amazonAdsConnections = pgTable("amazon_ads_connections", {
+  id: uuid().defaultRandom().notNull().unique(),
+  revision: integer()
+    .notNull()
+    .default(0)
+    .$defaultFn(() => 0)
+    .$onUpdate(() => sql`"amazon_ads_connections"."revision" + 1`),
   orgId: uuid()
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),

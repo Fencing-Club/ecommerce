@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
+import { db, type Executor } from "@/db"
 import { organizations } from "@/db/schema"
 import { isTimeZone } from "@/lib/time-zone"
 import { dayRange } from "./restock-report"
@@ -37,9 +37,12 @@ export async function setRestockDefaults(
 // The Shopify order tags a buyer leaves out of its order counts.
 export const excludedTagsSchema = z.object({ tags: z.array(z.string().trim().min(1).max(255)).max(50) })
 
-export async function setExcludedShopifyTags(orgId: string, tags: string[]) {
+export async function setExcludedShopifyTags(orgId: string, tags: string[], executor: Executor = db()) {
   // Shopify compares tags without regard to case, so the first spelling of each is kept.
   const seen = new Set<string>()
   const kept = tags.filter((tag) => !seen.has(tag.toLowerCase()) && seen.add(tag.toLowerCase()))
-  await db().update(organizations).set({ excludedShopifyTags: kept }).where(eq(organizations.id, orgId))
+  await executor
+    .update(organizations)
+    .set({ excludedShopifyTags: kept, settingsRevision: sql`${organizations.settingsRevision} + 1` })
+    .where(eq(organizations.id, orgId))
 }

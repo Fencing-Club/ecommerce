@@ -119,4 +119,25 @@ describe("portable contract", () => {
     expect(exitCode({ ...failure, code: "wait_timeout" })).toBe(7)
     expect(exitCode({ ...failure, code: "incomplete_result" })).toBe(8)
   })
+  it("applies input defaults before determining effects and checks the operation byte limit", async () => {
+    const operation = defineOperation(
+      { ...definition().descriptor, limits: { maxInputBytes: 15 } },
+      z.strictObject({ mode: z.enum(["read", "direct"]).default("read") }),
+      z.strictObject({ saved: z.boolean() })
+    )
+    const registry = createRegistry([operation])
+    await expect(registry.execute("product.update", {}, async (_, mutation) => ({ saved: mutation }))).resolves.toEqual(
+      { saved: false }
+    )
+    let called = false
+    await expect(
+      registry.execute("product.update", { mode: "direct" }, async () => {
+        called = true
+        return { saved: true }
+      })
+    ).rejects.toThrow("byte limit")
+    expect(called).toBe(false)
+    // Operations with a read branch declare a conditional key instead of requiring one for those reads.
+    expect(registry.openapi().paths["/api/operations/product.update"]?.post.parameters?.[0]?.required).toBe(false)
+  })
 })

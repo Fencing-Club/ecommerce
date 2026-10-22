@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
-import { open, readFile, rm } from "node:fs/promises"
+import { open, readFile, realpath, rm } from "node:fs/promises"
 import { homedir } from "node:os"
-import { dirname, isAbsolute, join } from "node:path"
+import { dirname, isAbsolute, join, resolve } from "node:path"
+import { setTimeout as delay } from "node:timers/promises"
 import { apiOrigin, clientError } from "@repo/copacker-client"
 import { canonicalJson, type JsonObject } from "@repo/copacker-contract"
 import { z } from "zod"
@@ -17,6 +18,7 @@ export const loginSecretSchema = z.strictObject({
   kind: z.enum(["interactive", "automation"])
 })
 export type LoginSecret = z.infer<typeof loginSecretSchema>
+const protectedCredentialSchema = z.strictObject({ origin: z.string(), secret: loginSecretSchema })
 const receiptSchema = z.strictObject({
   key: z.string(),
   intentId: z.uuid(),
@@ -88,10 +90,67 @@ export function runProtected(
 export class LocalStore {
   readonly directory: string
   constructor(directory = process.env.COPACKER_CONFIG_DIR ?? join(homedir(), ".config", "copacker")) {
-    this.directory = directory
+    this.directory = resolve(directory)
+  }
+  private async credentialService() {
+    await privateDirectory(this.directory)
+    const directory = await realpath(this.directory)
+    return `copacker-${createHash("sha256").update(directory).digest("hex")}`
+  }
+  private async decodeCredential(name: string, plain: string) {
+    const parsed = protectedCredentialSchema.safeParse(JSON.parse(plain))
+    if (!parsed.success || parsed.data.origin !== apiOrigin((await this.profile(name)).baseUrl)) {
+      throw clientError(
+        "credential_origin_mismatch",
+        "The stored credential does not match this profile's API origin. Sign in again."
+      )
+    }
+    return parsed.data.secret
+  }
+  async withCredentialLock<T>(profile: string, run: () => Promise<T>): Promise<T> {
+    const path = join(this.directory, "credentials", `${profileName.parse(profile)}.lock`)
+    await privateDirectory(dirname(path))
+    const deadline = Date.now() + 60_000
+    for (;;) {
+      let handle
+      try {
+        handle = await open(path, "wx", 0o600)
+      } catch (error) {
+        if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") {
+          throw error
+        }
+        if (Date.now() >= deadline) {
+          throw clientError(
+            "credential_busy",
+            `Another command is updating this profile. If it stopped unexpectedly, confirm no Copacker command is running before removing ${path}.`
+          )
+        }
+        await delay(100)
+        continue
+      }
+      try {
+        return await run()
+      } finally {
+        await handle.close()
+        await rm(path)
+      }
+    }
   }
   private profilePath(name: string) {
     return join(this.directory, "profiles", `${profileName.parse(name)}.json`)
+  }
+  async replaceCredential(name: string, settings: z.infer<typeof profileSchema>, secret: LoginSecret) {
+    const parsed = profileSchema.parse(settings)
+    await this.withCredentialLock(name, async () => {
+      const previous = await this.profile(name)
+      const sameOrigin = apiOrigin(previous.baseUrl) === apiOrigin(parsed.baseUrl)
+      // A failed replacement must never bind one origin's secret to another origin.
+      if (!sameOrigin) {
+        await this.clearCredential(name)
+      }
+      await this.saveProfile(name, sameOrigin ? { ...previous, ...parsed } : parsed)
+      await this.saveCredential(name, secret)
+    })
   }
   private secretPath(name: string) {
     return join(this.directory, "credentials", `${profileName.parse(name)}.dpapi`)
@@ -128,13 +187,17 @@ export class LocalStore {
         ],
         encrypted
       )
-      return loginSecretSchema.parse(JSON.parse(plain))
+      return this.decodeCredential(name, plain)
     }
     if (process.platform === "linux") {
       try {
-        return loginSecretSchema.parse(
-          JSON.parse(await runProtected("secret-tool", ["lookup", "service", "copacker", "profile", name], "", [1]))
+        const plain = await runProtected(
+          "secret-tool",
+          ["lookup", "service", await this.credentialService(), "profile", name],
+          "",
+          [1]
         )
+        return plain ? await this.decodeCredential(name, plain) : undefined
       } catch (error) {
         if (error instanceof SyntaxError) {
           return undefined
@@ -144,11 +207,13 @@ export class LocalStore {
     }
     if (process.platform === "darwin") {
       try {
-        return loginSecretSchema.parse(
-          JSON.parse(
-            await runProtected("security", ["find-generic-password", "-s", "copacker", "-a", name, "-w"], "", [44])
-          )
+        const plain = await runProtected(
+          "security",
+          ["find-generic-password", "-s", await this.credentialService(), "-a", name, "-w"],
+          "",
+          [44]
         )
+        return plain ? await this.decodeCredential(name, plain) : undefined
       } catch (error) {
         if (error instanceof SyntaxError) {
           return undefined
@@ -160,7 +225,10 @@ export class LocalStore {
   }
   async saveCredential(name: string, value: LoginSecret) {
     profileName.parse(name)
-    const plain = JSON.stringify(loginSecretSchema.parse(value))
+    const plain = JSON.stringify({
+      origin: apiOrigin((await this.profile(name)).baseUrl),
+      secret: loginSecretSchema.parse(value)
+    })
     if (process.platform === "win32") {
       const encrypted = await runProtected(
         "powershell.exe",
@@ -180,7 +248,7 @@ export class LocalStore {
     if (process.platform === "linux") {
       await runProtected(
         "secret-tool",
-        ["store", "--label=Copacker CLI", "service", "copacker", "profile", name],
+        ["store", "--label=Copacker CLI", "service", await this.credentialService(), "profile", name],
         plain
       )
       return
@@ -188,7 +256,11 @@ export class LocalStore {
     if (process.platform === "darwin") {
       // security's interactive input keeps the secret out of process arguments.
       const quoted = plain.replaceAll("\\", "\\\\").replaceAll('"', '\\"')
-      await runProtected("security", ["-i"], `add-generic-password -U -s copacker -a ${name} -w "${quoted}"\n`)
+      await runProtected(
+        "security",
+        ["-i"],
+        `add-generic-password -U -s ${await this.credentialService()} -a ${name} -w "${quoted}"\n`
+      )
       return
     }
     throw clientError("credential_store_unavailable", "This operating system requires COPACKER_TOKEN.")
@@ -198,9 +270,14 @@ export class LocalStore {
     if (process.platform === "win32") {
       await rm(this.secretPath(name), { force: true })
     } else if (process.platform === "linux") {
-      await runProtected("secret-tool", ["clear", "service", "copacker", "profile", name], "", [1])
+      await runProtected("secret-tool", ["clear", "service", await this.credentialService(), "profile", name], "", [1])
     } else if (process.platform === "darwin") {
-      await runProtected("security", ["delete-generic-password", "-s", "copacker", "-a", name], "", [44])
+      await runProtected(
+        "security",
+        ["delete-generic-password", "-s", await this.credentialService(), "-a", name],
+        "",
+        [44]
+      )
     }
   }
   async execution(
