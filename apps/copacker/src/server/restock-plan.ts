@@ -81,6 +81,30 @@ export type RestockLine = {
   lostProfitMinor: number | null
 }
 
+export const restockPriceFields = [
+  "unitCostMinor",
+  "costCurrency",
+  "estimatedCostMinor",
+  "priceMinor",
+  "priceCurrency",
+  "lostSalesMinor",
+  "lostProfitMinor"
+] as const
+
+// Shared by the browser and operations API. Quantities remain visible without Prices access.
+export function restockWithoutPrices(line: RestockLine): RestockLine {
+  return {
+    ...line,
+    unitCostMinor: null,
+    costCurrency: null,
+    estimatedCostMinor: null,
+    priceMinor: null,
+    priceCurrency: null,
+    lostSalesMinor: null,
+    lostProfitMinor: null
+  }
+}
+
 function sum(values: (number | null | undefined)[]) {
   return values.every((value) => value === null || value === undefined)
     ? null

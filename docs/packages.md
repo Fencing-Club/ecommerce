@@ -16,7 +16,7 @@ enforces these lines; this page and code review do.
 | `copacker-client`        | The HTTP client for the operations API: auth, retries, paging, file transfers                                                                                             | Terminal output, stored credentials                                                                 | contract                                               |
 | `copacker-cli`           | The `copacker` command: login, profiles, the OS keychain, output formats, files                                                                                           | Business rules, which the app applies behind the API                                                | contract, client                                       |
 
-The app doesn't use the CLI packages yet; they wait for the operations API. Each package's `docs/README.md` says more,
+The app uses `copacker-contract` for its authenticated operations API, including connection and restock handlers. Each package's `docs/README.md` says more,
 and [the engineering docs](README.md) index them.
 
 ## Where does new code go?

@@ -67,7 +67,7 @@ export async function inventoryContext(orgId: string) {
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
   const amazonSnapshots = amazon
     ? await db()
-        .select({ data: stockSnapshots.data })
+        .select()
         .from(stockSnapshots)
         .where(
           and(
@@ -85,6 +85,17 @@ export async function inventoryContext(orgId: string) {
   withPools.set(amazonPools.fba.id, "merchant")
   withPools.set(amazonPools.awd.id, "merchant")
   return {
+    // Evidence from the exact snapshots used above, not a second read that could describe a newer refresh.
+    snapshots: [...(current?.stock ? [current.stock] : []), ...amazonSnapshots].map((snapshot) => ({
+      id: snapshot.id,
+      snapshotId: snapshot.snapshotId,
+      revision: snapshot.revision,
+      source: snapshot.source,
+      accountId: snapshot.externalAccountId,
+      observedAt: snapshot.data?.observedAt ?? null,
+      available: snapshot.data !== null,
+      status: snapshot.status
+    })),
     domain: current?.domain ?? null,
     data,
     rows,

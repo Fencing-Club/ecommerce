@@ -76,6 +76,9 @@ automatically. `schema show account.show` and `schema show workspace.list` work 
 
 ## Results and recovery
 
+`report restock` and `restock channel list` have server handlers. Reports support JSON and CSV stdout/local output;
+server artifact exports remain unsupported. See [restock behavior and limits](../../../apps/copacker/docs/cli-restock.md).
+
 Protected credentials include their API origin. Linux/macOS keychain entries are scoped to the canonical configuration
 directory as well as the profile, matching file-lock scope. Credentials without origin binding require a new login;
 the CLI does not reuse old global keychain entries. Native Linux/macOS keychain acceptance remains a release check.

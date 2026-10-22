@@ -42,7 +42,12 @@ export type RestockChannelOption = {
 
 // The channels a buyer can restock: Amazon once its stock has synced, and each Shopify location it counts.
 export async function restockChannels(orgId: string) {
-  return channelsIn(await inventoryContext(orgId))
+  return (await restockChannelDiscovery(orgId)).channels
+}
+
+export async function restockChannelDiscovery(orgId: string) {
+  const context = await inventoryContext(orgId)
+  return { channels: channelsIn(context), catalogAvailable: context.data !== null }
 }
 
 function channelsIn(context: InventoryContext) {
@@ -207,7 +212,7 @@ async function channelStockouts(
 async function restockInputs(orgId: string, days: number) {
   const context = await inventoryContext(orgId)
   const connected = await db()
-    .select({ provider: connections.provider })
+    .select({ id: connections.id, provider: connections.provider, accountId: connections.externalId })
     .from(connections)
     .where(eq(connections.orgId, orgId))
   const productDefaults: Map<string, ProductDefaults> = context.domain
@@ -231,6 +236,7 @@ async function restockInputs(orgId: string, days: number) {
     productDefaults,
     demand,
     lookup,
+    connected,
     ebayLocationId: demand.ebaySales ? ebayLocation(demand.shopifySales?.rows ?? [], merchant) : null
   }
 }
@@ -355,6 +361,13 @@ export async function restockAllChannels(orgId: string, days: number, leadTimeDa
   )
   return {
     channels,
+    evidence: {
+      snapshots: inputs.context.snapshots,
+      connections: inputs.connected,
+      suppliers: inputs.lookup.list,
+      onOrder: inputs.context.onOrder,
+      catalogAvailable: inputs.context.data !== null
+    },
     sources: inputs.demand.sources.map(({ saleDays: _saleDays, ...source }) => source),
     // The days each item sold, by source, for counting stockout days over another period (see periodStockouts).
     saleDays: inputs.demand.sources.map(({ source, saleDays }) => ({ source, saleDays })),

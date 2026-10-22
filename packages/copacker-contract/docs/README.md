@@ -9,14 +9,16 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
   metadata. `createRegistry` rejects duplicate operation, CLI and MCP names, validates handler boundaries and emits
   OpenAPI. Authorization and database transactions belong to the application dispatcher.
 - `json.ts`: duplicate-key-rejecting JSON input and canonical serialization for retained client intents.
+- `restock.ts`: executable channel/report schemas; the app injects its existing carton schema. Current provider-scoped
+  identities and pooled targets are explicit, with report evidence and a declared CSV projection.
 - `setup.ts`: executable schemas for account reads, workspace reads, discovery and the five credential operations.
   Call `setupOperations(accessSchema)` with the application's existing access schema; page grants are not copied here.
   Credential result schemas reject secret fields, and credential administration has no MCP tool name.
 
-The registry is a framework, not a deployed catalog. Ten setup and four connection operations have executable schemas.
-The application registers account, workspace, discovery and connection handlers. Credential handlers and the remaining
-domain schemas from [the spec](../../../apps/copacker/docs/specs/cli/operations/README.md) still need implementation and
-registration. The credential handlers must enforce current interactive-admin authority,
+The registry is a framework, not a deployed catalog. Setup, connection and restock operations have executable schemas;
+the [server guide](../../../apps/copacker/docs/cli-server.md) lists implemented handlers. Credential lifecycle handlers
+and the remaining domain schemas from [the spec](../../../apps/copacker/docs/specs/cli/operations/README.md) still need
+implementation and registration. Credential handlers must enforce current interactive-admin authority,
 workspace-supported scopes, the one-hour/90-day expiry window, rotation state and protected delivery transactions;
 validating a schema alone grants no authority and creates no credential.
 The CLI vocabulary includes the planned initial surface but does not assert server availability. Publish only

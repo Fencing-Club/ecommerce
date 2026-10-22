@@ -6,6 +6,7 @@ import {
   isQuery,
   jsonObject,
   operationSummarySchema,
+  metaSchema,
   parseInput,
   requestSchema,
   setupOperations,
@@ -14,12 +15,13 @@ import {
 } from "@repo/copacker-contract"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Executor } from "@/db"
-import { cliGrants, memberships, operationReceipts } from "@/db/schema"
-import { accessSchema, effectiveAccess, isAdmin } from "@/lib/access"
+import { db, withTransaction, type Executor } from "@/db"
+import { cliGrants, memberships, operationReceipts, restockReports } from "@/db/schema"
+import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
 import { boundedBody } from "./cli-http"
 import { connectionSettings, operationConnections, updateConnectionSettings } from "./operation-connections"
+import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { hash, sign, verifySignature } from "./security"
 import { workspaceMemberships, workspaceSession, type Session } from "./workspace-session"
 
@@ -29,11 +31,13 @@ type Context = {
   operation: string
   input: unknown
   executor: Executor
+  responseMeta: Partial<z.infer<typeof metaSchema>>
 }
 const setup = setupOperations(accessSchema)
 const member = (context: Context) => Boolean(context.session)
 const buyer = (context: Context) => context.session?.org.kind === "buyer"
 const admin = (context: Context) => buyer(context) && context.session !== null && isAdmin(context.session)
+const restock = (context: Context) => buyer(context) && context.session !== null && can(context.session, "restock")
 const account = () => true
 function session(context: Context) {
   if (!context.session) {
@@ -59,6 +63,14 @@ type Entry = {
   execute: (input: unknown, context: Context) => Promise<unknown>
 }
 const entries: Entry[] = [
+  entry(restockDefinitions["restock.channel.list"], restock, (_, context) =>
+    operationRestockChannels(session(context))
+  ),
+  entry(restockDefinitions["report.restock"], restock, async (input, context) => {
+    const result = await operationRestockReport(session(context), input, context.executor)
+    context.responseMeta = result.metadata
+    return result.data
+  }),
   entry(setup["account.show"], account, (_, { principal }) => ({
     id: principal.user.id,
     email: principal.user.email,
@@ -201,7 +213,6 @@ async function mutation(
     throw new CliError("idempotency_key_required", "Supply an Idempotency-Key for this change.")
   }
   const s = session(context)
-  const fingerprint = hash(canonicalJson(input))
   return db().transaction(async (tx) => {
     const [grant] = await tx.select().from(cliGrants).where(eq(cliGrants.id, context.principal.grantId)).for("share")
     if (!grant || grant.revokedAt || grant.expiresAt.getTime() <= Date.now()) {
@@ -224,6 +235,10 @@ async function mutation(
     if (!fresh || !found?.allowed(fresh)) {
       throw new CliError("forbidden", "Workspace access changed.", 403)
     }
+    const retainedReport = context.operation === "report.restock"
+    const fingerprint = hash(
+      canonicalJson(retainedReport ? { input, role: fresh.session.role, access: fresh.session.access } : input)
+    )
     const where = and(
       eq(operationReceipts.userId, s.user.id),
       eq(operationReceipts.orgId, s.org.id),
@@ -243,10 +258,36 @@ async function mutation(
       if (saved.createdAt.getTime() + 7 * 86400_000 <= Date.now()) {
         throw new CliError("idempotency_expired", "This execution expired. Review before starting a new one.", 409)
       }
-      return saved.result
+      if (!retainedReport) {
+        return saved.result
+      }
+      const reference = z.object({ reportId: z.uuid() }).parse(saved.result)
+      const [report] = await tx
+        .select()
+        .from(restockReports)
+        .where(
+          and(
+            eq(restockReports.id, reference.reportId),
+            eq(restockReports.orgId, s.org.id),
+            eq(restockReports.userId, s.user.id)
+          )
+        )
+      if (!report || report.expiresAt.getTime() <= Date.now()) {
+        throw new CliError(
+          "idempotency_expired",
+          "This report expired. Request a new report with a new execution key.",
+          409
+        )
+      }
+      context.responseMeta = metaSchema.partial().parse(report.metadata)
+      return report.data
     }
-    const result = await run(fresh)
-    await tx.update(operationReceipts).set({ result }).where(where)
+    const result = await withTransaction(tx, () => run(fresh))
+    context.responseMeta = fresh.responseMeta
+    await tx
+      .update(operationReceipts)
+      .set({ result: retainedReport ? z.object({ reportId: z.uuid() }).parse(result) : result })
+      .where(where)
     return result
   })
 }
@@ -278,7 +319,14 @@ export async function operationResponse(request: Request, operation: string) {
     if (!accountContext && !current) {
       throw new CliError("forbidden", "Select an accessible workspace.", 403)
     }
-    const context: Context = { principal, session: current, operation, input: body.input, executor: db() }
+    const context: Context = {
+      principal,
+      session: current,
+      operation,
+      input: body.input,
+      executor: db(),
+      responseMeta: {}
+    }
     const found = entries.find((item) => item.definition.descriptor.operation === operation)
     const definition = registry.get(operation)
     if (!found || !definition || !found.allowed(context)) {
@@ -315,7 +363,8 @@ export async function operationResponse(request: Request, operation: string) {
             }
           ],
           warnings: [],
-          redactedFields: []
+          redactedFields: [],
+          ...context.responseMeta
         }
       },
       { headers }

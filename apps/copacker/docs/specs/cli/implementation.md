@@ -41,7 +41,8 @@ The audit checkout was fast-forwarded from `262e5e85` to `8e29fb12`. Existing lo
    deployment was run locally. Complete automation credential/delivery records and lifecycle handlers.
 2. Expand the authorized operation registry with resource schemas and handlers. Keep discovery limited to deployed
    capabilities and preserve guarded transactions, permission checks and execution receipts.
-3. Connect the advertised restock, purchase-order detail and shipment list commands to real application data, with
+3. Restock channel/report handlers now use real stored data; see [their supported scope](../../cli-restock.md).
+   Complete canonical identities, target/dependency planning and export artifacts. Connect purchase-order detail and shipment list commands to real application data, with
    provenance, permissions and the contract's typed results. Then migrate each browser workflow onto the same handlers.
 4. Implement the remaining entity contracts and handlers, including supplier catalogs/stock, customer catalog assignments,
    durable listing links, Shopify-only SKU changes, linked price changes, location-routed stock writes, bulk execution

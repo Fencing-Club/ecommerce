@@ -6,6 +6,10 @@ Amazon targets, network allocation, report dependencies and transactional draft 
 
 ## Restock
 
+Implementation note: [CLI restock reports](../../../cli-restock.md) documents the executable initial handlers and
+their current provider IDs, pooled targets and retention. The richer canonical identities, pool targets, export
+artifacts and consumable plans below remain proposed; discovery does not advertise them as implemented.
+
 `RestockSelection = {channelIds?:Id[],supplierId?:Id,days?:integer 1..730,leadTimeDays?:integer 1..730,
 status?:"stockout"|"reorder"|"stocked"|"blocked"|"not_stocked"|"no_listing",sku?:Text<255>}`.
 Defaults resolve from workspace settings; missing channel selection means all eligible channels, not an empty report.
