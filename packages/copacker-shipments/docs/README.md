@@ -22,6 +22,10 @@ A buyer's own parcel carrier labels go on cartons by what they print. `tracking-
 from its text or barcodes and names its carrier (`trackingCarrier`). `label-measurements` reads the weight and size it
 prints and checks they fit a carton configuration (`fitsConfiguration`).
 
+Amazon's carton labels can come as a ZIP. `shipment-artifacts` checks it before anything reads it
+(`inspectShipmentZip`): safe paths, size and entry limits, checksums and a timeout, returning each file's bytes. Its
+tests build each ZIP byte by byte in the test, and treat a PDF inside it as bytes.
+
 ## Shipping documents
 
 `shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing
