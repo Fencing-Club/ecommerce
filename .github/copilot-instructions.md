@@ -19,8 +19,12 @@ setup and the [docs index](../docs/README.md) for conventions.
 Complete the whole coherent deliverable before running unit tests, type-checks, lint, browser acceptance or the full
 verification suite; don't run them after each small edit. Then run the smallest relevant focused checks, repair related
 failures in one batch, and finish with `pnpm verify`, which must be clean. It runs, in order, `check:format` (oxfmt),
-`check:lint` and `check:types` (per package via Turbo), `check:unused` (`knip` over the whole graph) and
-`test:coverage`. Formatting is global; lint and type-check are per-package.
+`check:lint` and `check:types` (per package via Turbo), `check:unused` (`knip` over the whole graph) and `test:changed`:
+the tests of the packages changed since `origin/main` and the packages that depend on them, and of Copacker only the
+unit tests the change reaches (`vitest --changed`), without coverage. Formatting is global; lint and type-check are
+per-package. The stories, end-to-end tests and coverage run in PR validation (CI); `pnpm verify:ci` runs the same checks
+with every test and coverage when a change needs them locally. For changed stories, run their play tests directly:
+`pnpm --filter copacker exec vitest run --project storybook <story files>`.
 
 Git hooks (lefthook): **pre-commit** runs `oxlint --fix` + `oxfmt` on staged files; **pre-push** runs
 `pnpm check:types`. The pre-commit tools run via `node node_modules/...`, not `pnpm`, so lefthook can split any number
