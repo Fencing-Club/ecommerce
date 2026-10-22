@@ -14,10 +14,12 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 import { GET as inventory } from "../src/server/http/api/inventory"
-import { GET as status } from "../src/server/http/api/inventory/status"
+import { GET as statusRoute } from "../src/server/http/api/inventory/status"
 import { salesSyncStatus } from "../src/server/sales-orders"
 import { applySchema } from "./database"
+import { served } from "./served"
 
+const status = served(statusRoute)
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()

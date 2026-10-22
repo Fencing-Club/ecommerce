@@ -159,7 +159,10 @@ export default {
             )
     )
     const headers = new Headers(response.headers)
-    headers.set("Cache-Control", "private, no-store")
+    // Private unless the response chose its own policy, such as an immutable product photo.
+    if (!headers.has("Cache-Control")) {
+      headers.set("Cache-Control", "private, no-store")
+    }
     headers.set("X-Content-Type-Options", "nosniff")
     headers.set("Referrer-Policy", "same-origin")
     if (env.DEPLOYMENT_ENV !== "production") {

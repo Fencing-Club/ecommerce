@@ -145,12 +145,12 @@ import {
 import { GET as searchImportCatalog } from "../src/server/http/api/imports/$id/catalog"
 import { GET as downloadImportSource } from "../src/server/http/api/imports/$id/source"
 import { GET as readInventory } from "../src/server/http/api/inventory"
-import { POST as readDemand } from "../src/server/http/api/inventory/demand"
-import { GET as readLocations, PATCH as patchLocation } from "../src/server/http/api/inventory/locations"
-import { POST as refreshInventory } from "../src/server/http/api/inventory/refresh"
+import { POST as demandRoute } from "../src/server/http/api/inventory/demand"
+import { GET as locationsRoute, PATCH as patchLocationRoute } from "../src/server/http/api/inventory/locations"
+import { POST as refreshRoute } from "../src/server/http/api/inventory/refresh"
 import { GET as downloadOrderLabels } from "../src/server/http/api/orders/$id/labels"
 import { GET as downloadPo } from "../src/server/http/api/orders/$id/po"
-import { GET as getCoverage } from "../src/server/http/api/orders/summary"
+import { GET as coverageRoute } from "../src/server/http/api/orders/summary"
 import { POST as postCarrierLabels } from "../src/server/http/api/shipments/$id/carrier-labels"
 import { GET as downloadPacket } from "../src/server/http/api/shipments/$id/packet"
 import { importJob } from "../src/server/import-job"
@@ -216,6 +216,13 @@ import { orderWorkflow } from "../src/server/workflow"
 import { profileFor } from "../src/server/workspace-session"
 import { applySchema } from "./database"
 import { drainSales } from "./drain-sales"
+import { served } from "./served"
+
+const readDemand = served(demandRoute)
+const readLocations = served(locationsRoute)
+const patchLocation = served(patchLocationRoute)
+const refreshInventory = served(refreshRoute)
+const getCoverage = served(coverageRoute)
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -2602,7 +2609,7 @@ describe("transport configuration", () => {
     await database.update(tables.shipments).set({ transport: null }).where(eq(tables.shipments.id, draft.id))
     const input = { id: draft.id, revision: 1, expected: null, transport: agl }
     context.actor = supplier
-    expect((await post("shipment.transport", input)).status).toBe(400)
+    expect((await post("shipment.transport", input)).status).toBe(403)
     context.actor = buyer
     expect((await post("shipment.transport", { ...input, transport: { ...agl, handoff: "forwarder" } })).status).toBe(
       400
@@ -2619,7 +2626,7 @@ describe("transport configuration", () => {
       await database.update(tables.shipments).set({ status, transport: null }).where(eq(tables.shipments.id, draft.id))
       const input = { id: draft.id, revision: 1, expected: null, transport: agl }
       context.actor = supplier
-      expect((await post("shipment.transport", input)).status).toBe(400)
+      expect((await post("shipment.transport", input)).status).toBe(403)
       context.actor = buyer
       expect((await post("shipment.transport", input)).status).toBe(200)
       expect((await post("shipment.transport", { ...input, expected: agl })).status).toBe(400)
@@ -3202,7 +3209,7 @@ describe("document upload and packet release", () => {
     const label = { cartonId: "A6", file: 0, page: 1, trackingNumber: printed(1) }
     // Only the buyer adds carrier labels, to the shipment as it last saw it.
     context.actor = supplier
-    expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(400)
+    expect((await uploadCarrierLabels(prepared.id, [label], [1])).status).toBe(403)
     context.actor = buyer
     expect((await uploadCarrierLabels(prepared.id, [label], [1], 2)).status).toBe(400)
     // Amazon's carton label hasn't arrived, so the carrier label alone doesn't complete the packet.
@@ -5131,17 +5138,17 @@ describe("tenant sales demand reads", () => {
     await expect(readSalesDemand(buyer, { source: "amazon", window: window() })).rejects.toThrow("account changed")
     expect(provider.amazonFor).toHaveBeenCalledWith(buyerId, "A123456789")
   })
-  it("rejects tenant overrides, suppliers and invalid request origins", async () => {
+  // Its origin check is the HTTP boundary's, in http-response.test.ts.
+  it("rejects tenant overrides and suppliers", async () => {
     vi.stubEnv("APP_URL", "http://localhost:3000")
-    const request = (body: unknown, origin = "http://localhost:3000") =>
+    const request = (body: unknown) =>
       new Request("http://localhost:3000/api/inventory/demand", {
         method: "POST",
-        headers: { origin, "content-type": "application/json" },
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
         body: JSON.stringify(body)
       })
     const body = { source: "amazon", window: window() }
     expect((await readDemand(request({ ...body, orgId: otherId }))).status).toBe(400)
-    expect((await readDemand(request(body, "https://other.example"))).status).toBe(403)
     context.actor = supplier
     expect((await readDemand(request(body))).status).toBe(403)
     expect(provider.api.request).not.toHaveBeenCalled()
@@ -5961,8 +5968,8 @@ describe("landed costs", () => {
     expect((await send("landedCost.create", { orderId, kind: "duty", amount: 0 })).status).toBe(400)
 
     context.actor = supplier
-    expect((await send("landedCost.create", { orderId, kind: "duty", amount: 500 })).status).toBe(400)
-    expect((await send("landedCost.delete", { id })).status).toBe(400)
+    expect((await send("landedCost.create", { orderId, kind: "duty", amount: 500 })).status).toBe(403)
+    expect((await send("landedCost.delete", { id })).status).toBe(403)
 
     context.actor = actor("buyer", otherId)
     expect((await send("landedCost.delete", { id })).status).toBe(400)

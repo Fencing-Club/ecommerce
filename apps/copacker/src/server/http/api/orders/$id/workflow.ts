@@ -8,5 +8,5 @@ export async function GET(_request: Request, context: { params: { id: string } }
   // It carries invoice prices and the purchase order's download links.
   requirePage(s, "prices")
   const id = z.uuid().parse((await context.params).id)
-  return Response.json(await orderWorkflow(s, id), { headers: { "Cache-Control": "private, no-store" } })
+  return Response.json(await orderWorkflow(s, id))
 }

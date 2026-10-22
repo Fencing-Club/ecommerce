@@ -19,6 +19,7 @@ import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"
 import { applySchema } from "./database"
+import { served } from "./served"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -48,11 +49,11 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
   }
 }
 
-function save(body: unknown, origin = appUrl()) {
-  return PATCH(
+function save(body: unknown) {
+  return served(PATCH)(
     new Request(`${appUrl()}/api/inventory/variant-fields`, {
       method: "PATCH",
-      headers: { origin, "content-type": "application/json" },
+      headers: { origin: appUrl(), "content-type": "application/json" },
       body: JSON.stringify(body)
     })
   )
@@ -248,7 +249,8 @@ describe("editing variation details", () => {
     expect([saved?.supplierSku, saved?.asin, saved?.amazonStockTarget]).toEqual([null, "B0NEW", 5])
   })
 
-  it("rejects unknown variations, invalid values, supplier workspaces and bad origins", async () => {
+  // The HTTP boundary checks the origin (http-response.test.ts).
+  it("rejects unknown variations, invalid values and supplier workspaces", async () => {
     const unknown = await save({ variantId: variant(99), supplierSku: "AB-1" })
     expect(unknown.status).toBe(404)
     expect(await unknown.json()).toEqual({
@@ -260,7 +262,6 @@ describe("editing variation details", () => {
     expect(await (await save({ variantId: variant(1), amazonStockTarget: -1 })).json()).toEqual({
       error: "Enter a whole number of units, or leave it empty"
     })
-    expect((await save({ variantId: variant(1), asin: "B0" }, "https://evil.example")).status).toBe(403)
     context.actor = actor(supplierOrgId, "supplier")
     expect((await save({ variantId: variant(1), asin: "B0" })).status).toBe(403)
   })

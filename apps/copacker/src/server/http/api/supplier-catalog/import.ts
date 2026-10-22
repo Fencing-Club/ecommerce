@@ -3,11 +3,10 @@ import { db } from "@/db"
 import { supplierCatalogImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { session } from "@/server/auth"
-import { requireAccess } from "@/server/authorization"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { requireAccess, requireSupplier } from "@/server/authorization"
+import { failureMessage, failureStatus } from "@/server/errors"
 import { commitImport, previewImport } from "@/server/product-import"
 import { readSheet } from "@/server/product-sheet"
-import { isAppOrigin } from "@/server/security"
 import { putFile } from "@/server/storage"
 
 const maxBytes = 5 * 1024 * 1024
@@ -19,14 +18,9 @@ const types = {
 // Imports a filled-in product template, CSV or Excel: first a preview of what would change, then the import itself,
 // which the preview's hash guards against changes made in between. Each file is imported once.
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const s = await session()
-    if (s.org.kind !== "supplier") {
-      return errorResponse("supplierWorkspaceRequired", 403)
-    }
+    requireSupplier(s)
     requireAccess(s, "products", "edit")
     // The sheet sets prices.
     requireAccess(s, "prices")

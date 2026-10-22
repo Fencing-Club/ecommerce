@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
 import { applySchema } from "./database"
+import { served } from "./served"
 const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -20,10 +21,11 @@ import { amazonAllocations } from "../src/server/amazon-allocation-data"
 import { saveAmazonProductMapping, productMappingInput } from "../src/server/amazon-product-mappings"
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
 import { ApiSessionError } from "../src/server/auth"
-import { GET as allocationsRoute } from "../src/server/http/api/analytics/amazon/allocations"
+import { GET as allocations } from "../src/server/http/api/analytics/amazon/allocations"
 import { POST, GET as mappingsRoute } from "../src/server/http/api/analytics/amazon/product-mappings"
 import { DELETE, GET as mappingRoute } from "../src/server/http/api/analytics/amazon/product-mappings/$id"
 import { appUrl } from "../src/server/security"
+const allocationsRoute = served(allocations)
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
@@ -59,10 +61,10 @@ const input = {
   validTo: "2027-01-01T00:00:00Z",
   evidence: "Imported invoice and catalog record"
 }
-const request = (body: unknown, method: "POST" | "DELETE" = "POST", origin = appUrl()) =>
+const request = (body: unknown, method: "POST" | "DELETE" = "POST") =>
   new Request(`${appUrl()}/api/analytics/amazon/product-mappings`, {
     method,
-    headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
+    headers: { Origin: appUrl(), "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
     body: JSON.stringify(body)
   })
 beforeAll(async () => {
@@ -116,10 +118,10 @@ describe("historical identity writes and allocation read", () => {
     expect(results.filter((result) => result.ok)).toHaveLength(1)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
   })
-  it("rejects foreign targets, invalid periods, forbidden origins and insufficient permissions", async () => {
+  // The HTTP boundary checks the origin (http-response.test.ts).
+  it("rejects foreign targets, invalid periods and insufficient permissions", async () => {
     expect((await POST(request({ ...input, shopifyDomain: "secret", variantId: "secret" }))).status).toBe(422)
     expect((await POST(request({ ...input, validTo: input.validFrom }))).status).toBe(400)
-    expect((await POST(request(input, "POST", "https://evil.test"))).status).toBe(403)
     context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
     expect((await POST(request(input))).status).toBe(403)
     context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "edit" } }

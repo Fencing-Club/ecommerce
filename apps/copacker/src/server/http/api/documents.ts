@@ -8,15 +8,11 @@ import { LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "@/server/access"
 import { session } from "@/server/auth"
 import { requireAccess, requireBuyer } from "@/server/authorization"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { failureMessage, failureStatus } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
-import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   const s = await session()
   try {
     if (Number(request.headers.get("content-length") ?? 0) > 34 * 1024 * 1024) {

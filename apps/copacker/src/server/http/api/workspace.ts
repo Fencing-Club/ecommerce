@@ -8,12 +8,11 @@ export async function GET() {
   const active = getCookie(workspaceCookie)
   const available = await workspaceMemberships(user.id)
   const current = available.find(({ org }) => org.id === active)
-  const headers = { "Cache-Control": "no-store" }
   if (current) {
-    return Response.json({ id: current.org.id }, { headers })
+    return Response.json({ id: current.org.id })
   }
   if (!available.length) {
-    return Response.json({ redirect: "/onboarding" }, { headers })
+    return Response.json({ redirect: "/onboarding" })
   }
-  return Response.json({ redirect: active ? "/workspaces?unavailable=1" : "/workspaces" }, { headers })
+  return Response.json({ redirect: active ? "/workspaces?unavailable=1" : "/workspaces" })
 }

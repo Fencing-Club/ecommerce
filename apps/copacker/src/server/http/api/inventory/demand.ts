@@ -1,31 +1,26 @@
 import { requirePage, session } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { fallbackResponse } from "@/server/http-response"
 import { demandInputSchema, DemandAccessError, readSalesDemand } from "@/server/sales"
-import { isAppOrigin } from "@/server/security"
 
 export async function POST(request: Request) {
-  const headers = { "Cache-Control": "private, no-store" }
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403, headers)
-  }
   const s = await session()
-  if (s.org.kind !== "buyer") {
-    return errorResponse("buyerWorkspaceRequired", 403, headers)
-  }
+  requireBuyer(s)
   requirePage(s, "sales")
   const input = demandInputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
-    return errorResponse("chooseSalesRange", 400, headers)
+    return errorResponse("chooseSalesRange", 400)
   }
   try {
     const result = await readSalesDemand(s, input.data, async () => {
       request.signal.throwIfAborted()
     })
-    return Response.json(result, { headers })
+    return Response.json(result)
   } catch (error) {
     if (error instanceof DemandAccessError) {
-      return Response.json({ error: await failureMessage(error) }, { status: 409, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: 409 })
     }
-    return errorResponse("salesRefreshFailed", 503, headers)
+    return fallbackResponse(error, "salesRefreshFailed", 503)
   }
 }

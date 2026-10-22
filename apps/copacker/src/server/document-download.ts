@@ -8,6 +8,7 @@ import { accessibleOrder, forwarderOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { shipmentDocumentFilename } from "./document-filenames"
 import { errorTextResponse } from "./errors"
+import { fileResponse } from "./http-response"
 import { releasedLabelKinds, releasedStates } from "./readiness"
 import { readFile } from "./storage"
 import type { Session } from "./workspace-session"
@@ -114,15 +115,7 @@ export async function downloadDocument(
       shipmentReference: shipment.amazonShipmentId ?? shipment.id,
       revision: shipment.revision
     })
-    return new Response(Buffer.from(bytes), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "sandbox"
-      }
-    })
+    return fileResponse(Buffer.from(bytes), { filename, contentType: "application/pdf" })
   }
   const file = await readFile(doc.objectKey)
   let transferred = false
@@ -141,15 +134,7 @@ export async function downloadDocument(
     const member = await requireMembership(s.user.id, s.org.id, executor)
     // A membership can survive while its page/price grants are revoked during a slow storage read.
     await canRead({ ...s, role: member.role, access: member.access }, current, executor)
-    const response = new Response(file.body, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.name)}`,
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "sandbox"
-      }
-    })
+    const response = fileResponse(file.body, { filename: doc.name, contentType: "application/pdf" })
     transferred = true
     return response
   } finally {

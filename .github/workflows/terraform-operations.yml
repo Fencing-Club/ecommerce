@@ -29,7 +29,7 @@ permissions:
 jobs:
   operate:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 35
     environment: infrastructure
     strategy:
@@ -51,7 +51,7 @@ jobs:
       TF_PLAN_SHA256: ${{ inputs.plan_sha256 }}
       TF_OPERATION: ${{ inputs.operation || 'backup' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: useblacksmith/checkout@v1
         with:
           ref: ${{ github.sha }}
       - uses: actions/setup-node@v7

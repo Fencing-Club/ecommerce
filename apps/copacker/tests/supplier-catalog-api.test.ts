@@ -168,7 +168,7 @@ beforeEach(async () => {
 describe("product template", () => {
   it("serves the blank template as CSV and as an Excel workbook", async () => {
     const csv = await downloadTemplate(new Request(`${appUrl()}/api/supplier-catalog/template?format=csv`))
-    expect(csv.headers.get("Content-Disposition")).toBe('attachment; filename="product-template.csv"')
+    expect(csv.headers.get("Content-Disposition")).toBe("attachment; filename*=UTF-8''product-template.csv")
     // The byte order mark tells Excel the file is UTF-8; text() would drop it.
     expect(new TextDecoder("utf-8", { ignoreBOM: true }).decode(await csv.arrayBuffer())).toBe(sheetCsv([]))
     const xlsx = await downloadTemplate(new Request(`${appUrl()}/api/supplier-catalog/template`))

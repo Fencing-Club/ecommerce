@@ -7,15 +7,35 @@ The pages call these routes through RTK Query (`src/lib/api.ts`), mounted with `
 `components/providers.tsx` and with no Redux store of its own. Forms submit `/api/action` commands through
 `useActionForm` (`src/hooks/useActionForm.ts`), which pairs React Hook Form with the command's Zod schema.
 
+A feature adds its routes with `api.injectEndpoints`, such as the supplier workspace's in `src/lib/supplier-api.ts`,
+rather than calling `fetch` itself. Every request then gets the API's session handling: a redirect, such as to sign in,
+becomes a full-page recovery navigation instead of being followed in the background. Failures show through
+`useErrorMessage`: the route's `{ error }` text, the translated offline message, or the caller's fallback. Endpoints are
+typed from the server function's return type, or checked with a Zod `responseSchema` where the page validates what
+arrives. A file the API sends, such as a label PDF, is read with `fileOrError` (`src/lib/download.ts`) in a `queryFn`,
+then saved with `downloadBlob` or previewed from an object URL, so its bytes never enter the store.
+
 ## Authentication and responses
 
 Business routes use the WorkOS session ([Sign-in and getting started](auth.md)). The active workspace is selected with a
 server-set HttpOnly cookie and checked against live database membership on every request. No client-supplied
-organization grants access. Every mutation requires an Origin equal to APP_URL; other origins get 403.
+organization grants access.
+
+Every request other than GET or HEAD must come from the app: the browser's `Sec-Fetch-Site: same-origin`, or an Origin
+(without one, a Referer) on APP_URL or one of its aliases. The request middleware in `src/start.ts`, with its policy in
+`server/http-response.ts`, refuses anything else with 403 `{ error }` before a route runs. Provider webhooks (`/api/webhooks/*`) and the mailing list's unsubscribe link are
+cross-site on purpose and skip it; they check their own signatures or tokens.
+
+Every route answers through `httpResponse` in `server/http-response.ts`. A response is `private, no-store` unless the
+route set its own `Cache-Control` (product photos are immutable), and always `nosniff`. Failures a route throws are
+answered there too, with `{ error }` in the person's language: an `AccessError` is 403, a missing record 404, a
+`StatusError` its own status, and a request body or query that doesn't parse 400. Anything else is unexpected and goes
+on to Start. Downloads use `fileResponse`, which names the file with `filename*` (RFC 5987) and adds
+`Content-Security-Policy: sandbox`.
 
 `POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`,
-`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role or
-page access doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
+`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role, page
+access or kind of workspace doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
 form. Refresh server data after successful mutations. Unexpected errors never show raw database queries or tokens.
 
 Send the last displayed numeric revision with every PO or shipment mutation. A revision conflict requires a refresh,
