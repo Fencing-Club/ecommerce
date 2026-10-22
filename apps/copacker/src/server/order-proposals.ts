@@ -140,7 +140,7 @@ export async function reviseContext(s: Session, orderId: string) {
       const skus = await tx
         .select({ sku: supplierProducts.supplierSku })
         .from(supplierProducts)
-        .where(and(eq(supplierProducts.supplierOrgId, s.org.id), eq(supplierProducts.active, 1)))
+        .where(and(eq(supplierProducts.supplierOrgId, s.org.id), eq(supplierProducts.active, true)))
       return customerProducts(
         tx,
         supplier,
@@ -201,7 +201,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
       }
       // The ready date is the supplier's to set: it updates the PO as it is, without a new revision.
       const data = orderInputSchema.parse({ ...order.data, readyDate: proposal.readyDate ?? undefined })
-      await tx.update(orders).set({ data, updatedAt: new Date() }).where(eq(orders.id, orderId))
+      await tx.update(orders).set({ data }).where(eq(orders.id, orderId))
       await tx
         .update(orderRevisions)
         .set({ data })
@@ -352,14 +352,14 @@ export async function approveProposal(s: Session, proposalId: string) {
       await tx
         .insert(orderRevisions)
         .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "approvedSupplierChanges" })
-      await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, locked.id))
+      await tx.update(orders).set({ data, revision }).where(eq(orders.id, locked.id))
       await tx
         .update(shipments)
-        .set({ snapshot: data, orderRevision: revision, updatedAt: new Date() })
+        .set({ snapshot: data, orderRevision: revision })
         .where(and(eq(shipments.orderId, locked.id), eq(shipments.status, "packing")))
       await tx
         .update(documents)
-        .set({ outdated: 1 })
+        .set({ outdated: true })
         .where(and(eq(documents.orderId, locked.id), inArray(documents.kind, ["purchase_order", "invoice"])))
       await tx
         .update(orderProposals)

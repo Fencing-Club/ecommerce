@@ -8,11 +8,11 @@ import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import type { DayRange } from "@/lib/date-range"
 import { rangeDays } from "@/lib/date-range"
+import { stores, type Store } from "@/lib/stores"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { adsCharge } from "./amazon-ads"
 import { freightDescriptions } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
-import type { SalesSource } from "./sales-orders"
 import { taggedWith } from "./shopify-tags"
 import { serverText } from "./text"
 
@@ -104,7 +104,7 @@ const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSe
 // `withoutAmazon` notes that Amazon is connected, so its orders come from Amazon.
 // `marketplaceId` narrows Amazon to one marketplace's orders and charges.
 type Account = {
-  provider: SalesSource
+  provider: Store
   externalId: string
   locationId?: string | null
   excludedTags?: readonly string[]
@@ -134,6 +134,9 @@ function accountFilter(accounts: Account[]) {
   )}) and ${countedOrder(sql`o.data`)}`
 }
 
+// A row of a query that groups by sales_orders.source.
+type SourceRow = { source: Store } & Record<string, unknown>
+
 function rows(result: unknown) {
   return (result as { rows: Record<string, unknown>[] }).rows
 }
@@ -155,7 +158,7 @@ export async function reportingCurrency(orgId: string) {
 }
 
 export type DayRow = {
-  source: SalesSource
+  source: Store
   date: string
   orders: number
   units: number
@@ -184,15 +187,15 @@ export async function salesByDay(orgId: string, accounts: Account[], since: Date
   }
   const date = sql`to_char(o."orderedAt" at time zone ${timeZone}, 'YYYY-MM-DD')`
   const sales = converted(currency)
-  const result = await db().execute(sql`
+  const result = await db().execute<SourceRow>(sql`
     select o.source, ${date} as date, count(*) as orders, sum(${orderUnits}) as units,
       count(*) filter (where ${sales.priced}) as priced,
       round(coalesce(sum(${sales.revenue}) filter (where ${sales.priced}), 0) * 100) as revenue
     from sales_orders o
     where o."orgId" = ${orgId} and o."orderedAt" >= ${since} and (${accountFilter(accounts)})
     group by 1, 2`)
-  return rows(result).map((row): DayRow => ({
-    source: row.source as SalesSource,
+  return result.rows.map((row): DayRow => ({
+    source: row.source,
     date: String(row.date),
     orders: count(row.orders),
     units: count(row.units),
@@ -203,7 +206,7 @@ export async function salesByDay(orgId: string, accounts: Account[], since: Date
 }
 
 export type ItemRow = {
-  source: SalesSource
+  source: Store
   // A Shopify variant ID (the bundle's, for a bundle sale), or an Amazon or eBay seller SKU.
   key: string
   period: "current" | "previous"
@@ -228,7 +231,7 @@ export async function salesByItem(
   const period = sql`case when ${within(periods.current)} then 'current' else 'previous' end`
   const scope = sql`o."orgId" = ${orgId} and (${within(periods.current)}${periods.previous ? sql` or ${within(periods.previous)}` : sql``})
     and (${accountFilter(accounts)})`
-  const result = await db().execute(sql`
+  const result = await db().execute<SourceRow>(sql`
     with raw as (
       select o."orderId" as "orderId", o.source, ${period} as period, o."orderedAt" as at,
         coalesce(line->'lineItemGroup'->>'variantId', line->'variant'->>'id') as key,
@@ -265,8 +268,8 @@ export async function salesByItem(
       coalesce(sum(units) filter (where priced), 0) as "pricedUnits"
     from grouped
     group by source, period, key`)
-  return rows(result).map((row): ItemRow => ({
-    source: row.source as SalesSource,
+  return result.rows.map((row): ItemRow => ({
+    source: row.source,
     key: String(row.key),
     period: row.period === "current" ? "current" : "previous",
     units: count(row.units),
@@ -347,7 +350,7 @@ const shopifyOrderFee = sql.raw(`
 // Each order from one account in a period, with its sales (null without prices) and the platform's fees on it, in
 // `currency`. The fees are converted at the same rate as the order's sales.
 export async function orderFees(orgId: string, account: Account, from: Date, to: Date, currency: string) {
-  const fees: Record<SalesSource, typeof amazonOrderFee> = {
+  const fees: Record<Store, typeof amazonOrderFee> = {
     amazon: amazonOrderFee,
     shopify: shopifyOrderFee,
     ebay: ebayOrderFee
@@ -385,7 +388,7 @@ export function platformFees(list: OrderFees[]) {
 }
 
 export type SourceDay = { orders: number; units: number; revenueMinor: number; unpriced: number }
-export type DailySales = { date: string } & Record<SalesSource, SourceDay | null>
+export type DailySales = { date: string } & Record<Store, SourceDay | null>
 
 // When a range of days starts and ends (the day after its last) in the store's time zone.
 export type Bounds = { from: Date; to: Date }
@@ -397,7 +400,7 @@ export function rangeBounds(range: DayRange, timeZone: string): Bounds {
 // don't cover it, so charts show a gap instead of a false zero. Today counts as covered up to the last sync.
 export function dailySales(
   list: DayRow[],
-  coverage: Partial<Record<SalesSource, { from: Date; to: Date }>>,
+  coverage: Partial<Record<Store, { from: Date; to: Date }>>,
   range: DayRange,
   timeZone: string,
   now: Date = new Date()
@@ -407,7 +410,7 @@ export function dailySales(
   for (let index = 0; index < rangeDays(range); index++) {
     const date = addDays(range.from, index)
     const start = zonedStart(date, timeZone).getTime()
-    const cell = (source: SalesSource): SourceDay | null => {
+    const cell = (source: Store): SourceDay | null => {
       const covered = coverage[source]
       // A day counts up to the last sync, so a sync that stops minutes before midnight doesn't leave that day out.
       if (!covered || covered.from.getTime() > start || covered.to.getTime() <= start || start > now.getTime()) {
@@ -430,7 +433,7 @@ type Totals = { orders: number; units: number; revenueMinor: number; unpriced: n
 export type PeriodTotal = Totals & { previous: Totals | null }
 
 // Orders, units and sales over a period, and over the one it's compared with when every counted source covers both.
-export function periodTotal(current: DailySales[], previous: DailySales[] | null, sources: SalesSource[]): PeriodTotal {
+export function periodTotal(current: DailySales[], previous: DailySales[] | null, sources: Store[]): PeriodTotal {
   const sum = (list: DailySales[]) => {
     const totals = { orders: 0, units: 0, revenueMinor: 0, unpriced: 0 }
     let complete = true
@@ -482,7 +485,7 @@ export function catalogIndex(catalog: readonly CatalogRow[], markups: ReadonlyMa
       bySku.set(row.buyerSku, bySku.has(row.buyerSku) ? null : row)
     }
   }
-  const variantFor = (source: SalesSource, key: string) =>
+  const variantFor = (source: Store, key: string) =>
     source === "shopify" ? (byVariant.get(key) ?? null) : (bySku.get(key) ?? null)
   // A unit's landed cost: its own, or for a bundle the sum of its components' costs, each with its landed markup (a
   // component without one takes the bundle's). Null when any cost is missing.
@@ -521,7 +524,7 @@ export function catalogIndex(catalog: readonly CatalogRow[], markups: ReadonlyMa
 export function grossProfit(
   items: ItemRow[],
   index: ReturnType<typeof catalogIndex>,
-  fees: Partial<Record<SalesSource, { feesMinor: number; revenueMinor: number }>>,
+  fees: Partial<Record<Store, { feesMinor: number; revenueMinor: number }>>,
   // Refunds and the platforms' other charges in the period (negative when a cost), taken off in full.
   charges: ChargeLine[] = [],
   // Amazon's inbound freight per unit: by seller SKU for the shipments whose contents are known, and spread over every
@@ -540,7 +543,7 @@ export function grossProfit(
     costed = 0,
     cost = 0,
     freight = 0
-  const costedBySource: Record<SalesSource, number> = { shopify: 0, amazon: 0, ebay: 0 }
+  const costedBySource: Record<Store, number> = { shopify: 0, amazon: 0, ebay: 0 }
   for (const item of current) {
     if (item.currency !== currency) {
       continue
@@ -561,7 +564,7 @@ export function grossProfit(
   }
   // Fees follow the sales they're charged on, so only the costed share of each platform's sales carries its fees.
   let feesMinor = 0
-  for (const source of ["shopify", "amazon", "ebay"] as const) {
+  for (const source of stores) {
     const platform = fees[source]
     if (platform && platform.revenueMinor > 0) {
       feesMinor += Math.round(platform.feesMinor * Math.min(1, costedBySource[source] / platform.revenueMinor))
@@ -606,7 +609,7 @@ export type Mover = {
 export function movers(
   items: ItemRow[],
   index: ReturnType<typeof catalogIndex>,
-  sources: SalesSource[],
+  sources: Store[],
   t: ServerText = serverTextInEnglish
 ) {
   const byItem = new Map<string, Mover>()
@@ -657,7 +660,7 @@ export function sellingPrices(items: ItemRow[], index: ReturnType<typeof catalog
       totals.set(key, entry)
     }
   }
-  return (source: SalesSource, variantId: string) => {
+  return (source: Store, variantId: string) => {
     const entry = totals.get(`${source}:${variantId}`)
     return entry && entry.units > 0
       ? { minor: Math.round(entry.revenue / entry.units), currency: entry.currency }

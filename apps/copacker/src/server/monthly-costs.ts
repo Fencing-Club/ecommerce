@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { monthlyCosts } from "@/db/schema"
 import { AccessError, LocalizedError } from "@/i18n/errors"
+import { stores } from "@/lib/stores"
 import type { Session } from "./workspace-session"
 
 // authorization.ts's requireBuyer, kept here so the worker can load this module without the app's navigation.
@@ -12,8 +13,6 @@ function requireBuyer(s: Session) {
   }
 }
 
-export const monthlyCostChannels = { amazon: "Amazon", shopify: "Shopify", ebay: "eBay" } as const
-
 const day = z.iso.date()
 export const monthlyCostInputSchema = z
   .strictObject({
@@ -21,7 +20,7 @@ export const monthlyCostInputSchema = z
     // In minor units of `currency`.
     amount: z.number().int().min(1).max(100000000),
     currency: z.string().regex(/^[A-Z]{3}$/),
-    channel: z.enum(["amazon", "shopify", "ebay"]).nullable().default(null),
+    channel: z.enum(stores).nullable().default(null),
     startsOn: day.nullable().default(null),
     endsOn: day.nullable().default(null)
   })

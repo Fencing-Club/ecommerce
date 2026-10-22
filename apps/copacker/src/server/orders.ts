@@ -665,7 +665,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       }
       await tx
         .update(documents)
-        .set({ outdated: 1 })
+        .set({ outdated: true })
         .where(and(eq(documents.orderId, order.id), eq(documents.kind, "purchase_order")))
       await tx
         .insert(jobs)
@@ -727,7 +727,7 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
       .where(eq(shipments.id, shipmentId))
     await tx
       .update(documents)
-      .set({ outdated: 1 })
+      .set({ outdated: true })
       .where(and(eq(documents.shipmentId, shipmentId), ne(documents.kind, "invoice")))
     await tx
       .update(jobs)

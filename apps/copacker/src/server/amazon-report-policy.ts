@@ -32,8 +32,7 @@ export async function reserveAmazonReportRequest(scope: string, reportType: stri
     await tx
       .update(amazonReportQuotas)
       .set({
-        nextRequestAt: new Date(now.getTime() + account.intervalMs),
-        updatedAt: now
+        nextRequestAt: new Date(now.getTime() + account.intervalMs)
       })
       .where(key(scope, ""))
     return null
@@ -61,8 +60,7 @@ export async function observeAmazonReportRequest(
       .update(amazonReportQuotas)
       .set({
         intervalMs,
-        nextRequestAt: new Date(Math.max(account.nextRequestAt.getTime(), now.getTime() + accountWait)),
-        updatedAt: now
+        nextRequestAt: new Date(Math.max(account.nextRequestAt.getTime(), now.getTime() + accountWait))
       })
       .where(key(scope, ""))
     if (isThrottled) {
@@ -76,14 +74,13 @@ export async function observeAmazonReportRequest(
               report.nextRequestAt.getTime(),
               now.getTime() + Math.max(hour * 2 ** (throttleCount - 1), result.retryAfterMs ?? 0)
             )
-          ),
-          updatedAt: now
+          )
         })
         .where(key(scope, result.reportType))
     } else if (result.status >= 200 && result.status < 300) {
       await tx
         .update(amazonReportQuotas)
-        .set({ throttleCount: 0, nextRequestAt: now, updatedAt: now })
+        .set({ throttleCount: 0, nextRequestAt: now })
         .where(key(scope, result.reportType))
     }
   })

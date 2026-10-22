@@ -175,8 +175,7 @@ export async function importJob(
         status: "review",
         proposal: result.proposal,
         model: result.model,
-        tokens: result.tokens,
-        updatedAt: new Date()
+        tokens: result.tokens
       })
       .where(active)
     outcome = "review"
@@ -184,7 +183,7 @@ export async function importJob(
     await assertOwned()
     await db()
       .update(poImports)
-      .set({ status: "failed", error: error instanceof Error ? error.message : "Import failed", updatedAt: new Date() })
+      .set({ status: "failed", error: error instanceof Error ? error.message : "Import failed" })
       .where(active)
     throw error
   } finally {

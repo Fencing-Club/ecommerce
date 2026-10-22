@@ -190,7 +190,7 @@ export async function inventoryRows(orgId: string) {
       })
       .from(supplierProducts)
       .innerJoin(supplierProductGroups, eq(supplierProductGroups.id, supplierProducts.groupId))
-      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, 1)))
+      .where(and(eq(supplierProducts.supplierOrgId, orgId), eq(supplierProducts.active, true)))
       .orderBy(asc(supplierProductGroups.title), asc(supplierProducts.position), asc(supplierProducts.supplierSku)),
     committedStock(orgId)
   ])

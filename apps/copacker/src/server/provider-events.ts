@@ -2,11 +2,11 @@ import { and, eq } from "drizzle-orm"
 import type { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations } from "@/db/schema"
+import type { Store } from "@/lib/stores"
 import { withJobWake } from "./job-delivery"
 import { jobRow, type JobPayload } from "./job-payloads"
 import { PollAgain } from "./job-runtime"
 import { logEvent } from "./log"
-import type { Provider } from "./provider-accounts"
 import { SalesSyncError } from "./sales-orders"
 
 // The steps Shopify's, eBay's and Amazon's events share. Each provider's events arrive in an SQS queue the worker reads
@@ -22,7 +22,7 @@ const eventProviders = {
   "shopify-event": "shopify",
   "ebay-event": "ebay",
   "amazon-event": "amazon"
-} as const satisfies Record<string, Provider>
+} as const satisfies Record<string, Store>
 type EventKind = keyof typeof eventProviders
 
 // A queue message read with its schema, or null for one that isn't the provider's event, which is logged and dropped.
@@ -68,7 +68,7 @@ export async function queueEventJobs<K extends EventKind>(
 }
 
 // The workspace an event job runs for, or null when it disconnected or switched accounts after the event arrived.
-export async function eventWorkspace(orgId: string, provider: Provider, externalId: string) {
+export async function eventWorkspace(orgId: string, provider: Store, externalId: string) {
   const [account] = await db()
     .select({ kind: organizations.kind })
     .from(connections)

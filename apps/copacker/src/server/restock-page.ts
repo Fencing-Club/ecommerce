@@ -5,6 +5,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import type { Store } from "@/lib/stores"
 import { requestInput } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
@@ -14,7 +15,6 @@ import { restockPlan, type RestockSupplier } from "./restock-plan"
 import { dayRange } from "./restock-report"
 import { resolveRestockSupplier } from "./restock-supplier"
 import type { DemandRow } from "./sales-attribution"
-import type { SalesSource } from "./sales-orders"
 import { restockDemand } from "./sales-orders"
 import { stockoutDays } from "./stock-days"
 import type { Session } from "./workspace-session"
@@ -133,9 +133,7 @@ export async function supplierLookup(
   }
   const supplierOrgIds = links.flatMap((link) => (link.supplierOrgId ? [link.supplierOrgId] : []))
   const products = supplierOrgIds.length
-    ? (await db().select().from(supplierProducts).where(inArray(supplierProducts.supplierOrgId, supplierOrgIds))).map(
-        (product) => ({ ...product, active: product.active === 1 })
-      )
+    ? await db().select().from(supplierProducts).where(inArray(supplierProducts.supplierOrgId, supplierOrgIds))
     : []
   for (const row of catalog) {
     if (byVariant.has(row.variantId) || external.has(row.variantId) || !row.supplierSku) {
@@ -161,7 +159,7 @@ async function channelStockouts(
   channel: z.infer<typeof restockInputSchema>["channel"],
   catalog: { variantId: string; buyerSku: string | null }[],
   sources: {
-    source: SalesSource
+    source: Store
     window: { from: string; to: string } | null
     saleDays: ReadonlyMap<string, ReadonlySet<string>>
   }[]
@@ -309,7 +307,7 @@ export async function restockReport(s: Session, raw: unknown) {
       line.externalSupplier === null &&
       (line.status === "stockout" || line.status === "reorder")
   ).length
-  const salesSources: SalesSource[] =
+  const salesSources: Store[] =
     channel.kind === "amazon"
       ? ["amazon"]
       : ["shopify", ...(channel.locationId === inputs.ebayLocationId ? (["ebay"] as const) : [])]

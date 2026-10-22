@@ -194,7 +194,7 @@ export function documentRow(
     bytes: 48213,
     orderRevision: 1,
     shipmentRevision: 3,
-    outdated: 0,
+    outdated: false,
     uploadedBy: "user_story",
     createdAt: daysAgo(2),
     ...overrides
