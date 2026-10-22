@@ -5992,6 +5992,20 @@ describe("timeline comments", () => {
     await expect(orderEvents(actor("buyer", otherId), orderId)).rejects.toThrow("not found")
     expect((await send({ orderId, message: "Unknown audience", visibility: "everyone" })).status).toBe(400)
   })
+
+  it("takes no comments on a closed PO", async () => {
+    const [{ status }] = await database
+      .select({ status: tables.orders.status })
+      .from(tables.orders)
+      .where(eq(tables.orders.id, orderId))
+    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    const response = await send({ orderId, message: "Too late" })
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ error: "This purchase order is already closed" })
+    const comments = await database.select().from(tables.events).where(eq(tables.events.message, "Too late"))
+    expect(comments).toEqual([])
+    await database.update(tables.orders).set({ status }).where(eq(tables.orders.id, orderId))
+  })
 })
 
 describe("profiles", () => {

@@ -47,15 +47,23 @@ function LineEnd({ className }: { className: string }) {
   return <span aria-hidden className={cn("absolute bottom-0 -start-7 w-1 bg-background", className)} />
 }
 
+// Hides the line above the first stop when there's no comment box: from the top of the day's heading (1rem tall, then
+// a 0.75rem gap) down to the stop's centre.
+function LineStart({ className }: { className: string }) {
+  return <span aria-hidden className={cn("absolute -top-7 -start-7 w-1 bg-background", className)} />
+}
+
 // A PO's timeline, like Shopify's: a comment box, then what happened, newest first and grouped by day. Comments show
 // who wrote them, with their workspace when it's another company's. One line runs from the box's bottom edge through
-// every stop to the last one: it's drawn behind the opaque box and hidden below the last stop.
+// every stop to the last one: it's drawn behind the opaque box and hidden below the last stop. A closed PO has no box,
+// so its line starts at the first stop.
 export function PoTimeline({
   orderId,
   viewerOrg,
   timeZone,
   entries,
   prices,
+  commentable = true,
   counterparty = "supplier",
   onCommentPosted
 }: {
@@ -65,6 +73,8 @@ export function PoTimeline({
   entries: TimelineEntry[]
   // Whether a revision's lines show their prices.
   prices: boolean
+  // Whether the comment box shows; a closed PO takes no comments.
+  commentable?: boolean
   counterparty?: "supplier" | "customer"
   onCommentPosted?: (comment: PostedComment) => void
 }) {
@@ -85,7 +95,8 @@ export function PoTimeline({
     }
     return groups
   }, [])
-  const lastEntry = entries.at(-1)
+  const firstEntry = entries[0],
+    lastEntry = entries.at(-1)
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-4 text-sm">
       <h2 id={titleId} className="font-semibold">
@@ -93,7 +104,7 @@ export function PoTimeline({
       </h2>
       <div className="relative flex flex-col gap-4">
         {entries.length > 0 && <span aria-hidden className="absolute inset-y-0 start-3.25 w-0.5 bg-border" />}
-        <TimelineComment orderId={orderId} counterparty={counterparty} onPosted={onCommentPosted} />
+        {commentable && <TimelineComment orderId={orderId} counterparty={counterparty} onPosted={onCommentPosted} />}
         {days.length > 0 && (
           <div className="flex flex-col gap-5">
             {days.map((group) => (
@@ -104,6 +115,9 @@ export function PoTimeline({
                     <li key={entry.key} className="relative">
                       {/* The line stops at the last stop's centre: its avatar's, or its dot's. */}
                       {entry === lastEntry && <LineEnd className={entry.comment ? "top-3.5" : "top-2.75"} />}
+                      {!commentable && entry === firstEntry && (
+                        <LineStart className={entry.comment ? "h-10.5" : "h-9.75"} />
+                      )}
                       {entry.comment ? (
                         <div className="-ms-10 flex gap-3">
                           <AuthorAvatar name={entry.author ?? "?"} />

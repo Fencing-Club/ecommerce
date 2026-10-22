@@ -95,6 +95,17 @@ export const Supplier = meta.story({
   }
 })
 
+// A closed purchase order: no comment box, and the page leaves its comments out, so the line starts at the first stop.
+export const Closed = meta.story({
+  args: { commentable: false, entries: timelineEntries.filter((entry) => !entry.comment) },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("textbox", { name: "Comment" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Post" })).toBeNull()
+    await expect(canvas.getByText("Supplier set the ready date to Oct 5, 2026")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Purchase order created" })).toBeVisible()
+  }
+})
+
 // A new purchase order: its first stop under the comment box, which Ctrl+Enter posts, and a failure shows in the box.
 export const CommentFails = meta.story({
   args: { entries: [createdTimelineEntry] },
