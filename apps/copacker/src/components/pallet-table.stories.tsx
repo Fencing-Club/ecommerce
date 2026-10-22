@@ -1,10 +1,10 @@
 import { validatePallets } from "@repo/copacker-packing-rules"
 import { useState } from "react"
-import { expect, fn, screen, userEvent, within } from "storybook/test"
+import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { expandCartonGroups, groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
-import { shownDialog, chooseOption } from "@/stories/play"
+import { chooseMenuItem, chooseOption, shownDialog } from "@/stories/play"
 import { PalletTable } from "./pallet-table"
 
 // The table with its pallets kept in state, as the packing form keeps them, and their issues worked out from them.
@@ -130,14 +130,12 @@ export const Errors = meta.story({
 
 export const RowMenu = meta.story({
   play: async ({ canvas, args }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Pallet 1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate pallet" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Pallet 1 actions" }), "Duplicate pallet")
     await expect(args.onChange).toHaveBeenLastCalledWith([
       ...editing,
       expect.objectContaining({ palletId: "4", weight: 152, cartonIds: [] })
     ])
-    await userEvent.click(canvas.getByRole("button", { name: "Pallet 2 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete pallet" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Pallet 2 actions" }), "Delete pallet")
     await expect(args.onChange).toHaveBeenLastCalledWith([
       editing[0],
       editing[2],

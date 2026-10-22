@@ -28,12 +28,18 @@ export const shownAlertDialog = (name?: string | RegExp) => shown("alertdialog",
 
 // Opens a select or combobox and picks one of its options, then waits for its list to close: a list that's still
 // closing keeps its options, which no longer take clicks.
-export async function chooseOption(control: HTMLElement, option: string | RegExp) {
+export const chooseOption = (control: HTMLElement, option: string | RegExp) => choose(control, "option", option)
+
+// Opens a menu and picks one of its items, then waits for the menu to close, as chooseOption does. A menu that's still
+// closing keeps its items, so opening it again too soon finds the old item, which no longer takes clicks.
+export const chooseMenuItem = (trigger: HTMLElement, item: string | RegExp) => choose(trigger, "menuitem", item)
+
+async function choose(control: HTMLElement, role: "option" | "menuitem", name: string | RegExp) {
   await settled()
   await userEvent.click(control)
-  const choice = await screen.findByRole("option", { name: option })
+  const choice = await screen.findByRole(role, { name })
   await userEvent.click(choice)
-  const list = choice.closest('[role="listbox"]') ?? choice
+  const list = choice.closest('[role="listbox"], [role="menu"]') ?? choice
   await waitFor(() => expect(list).not.toBeVisible())
 }
 
