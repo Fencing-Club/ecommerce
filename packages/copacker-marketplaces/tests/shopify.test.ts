@@ -11,7 +11,13 @@ import {
   shopifyLocationKind,
   variantName
 } from "../src/shopify"
-import { exchangeShopifyCode, refreshShopifyToken, revokeShopifyToken, verifyShopifyHmac } from "../src/shopify-auth"
+import {
+  exchangeShopifyCode,
+  grantedScopes,
+  refreshShopifyToken,
+  revokeShopifyToken,
+  verifyShopifyHmac
+} from "../src/shopify-auth"
 
 const domain = "example.myshopify.com"
 const itemId = "gid://shopify/InventoryItem/1"
@@ -546,6 +552,17 @@ it("classifies denied inventory access without exposing provider diagnostics", a
     Response.json({ errors: [{ message: "private detail", extensions: { code: "ACCESS_DENIED" } }] })
   )
   await expect(new Shopify(domain, "test", transport).stockPage()).rejects.toThrow(ShopifyPermissionError)
+})
+
+describe("grantedScopes", () => {
+  it("reads the scopes Shopify lists with commas or spaces", () => {
+    expect([...grantedScopes("read_orders,read_all_orders write_returns")]).toEqual([
+      "read_orders",
+      "read_all_orders",
+      "write_returns"
+    ])
+    expect(grantedScopes("").size).toBe(0)
+  })
 })
 
 describe("variantName", () => {

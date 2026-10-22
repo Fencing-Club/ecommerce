@@ -1,3 +1,4 @@
+import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
 import type { OrderInput } from "@repo/copacker-orders"
 import { orderTotal } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-shipments"
@@ -1122,7 +1123,7 @@ export async function overview(
           feesErrorCode: sync.feesErrorCode
         })),
         stock: stock.map((row) => ({ source: row.source, status: row.status, finishedAt: row.finishedAt })),
-        shopifyHistoryLimited: Boolean(shopify && !shopify.scopes.split(/[,\s]+/).includes("read_all_orders"))
+        shopifyHistoryLimited: Boolean(shopify && !grantedScopes(shopify.scopes).has("read_all_orders"))
       },
       t
     )

@@ -1,4 +1,5 @@
 import { collectShopifyBalanceTransactions } from "@repo/copacker-marketplaces/sales"
+import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq, gte, lt, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { salesSyncs, shopifyBalanceTransactions } from "@/db/schema"
@@ -19,7 +20,7 @@ export async function syncShopifyBalance(
 ) {
   const { orgId, externalAccountId, revision } = input
   const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, "shopify"), eq(salesSyncs.revision, revision))
-  const granted = new Set(input.scopes.split(/[,\s]+/))
+  const granted = grantedScopes(input.scopes)
   if (!shopifyPayoutsScopes.every((name) => granted.has(name))) {
     await db().update(salesSyncs).set({ feesErrorCode: "reconnect" }).where(scope)
     return
