@@ -58,6 +58,7 @@ Specs (planned work; the purchase order flow also maps how orders work today):
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)
 - [Inventory sync](specs/inventory-sync/README.md)
 - [Purchase order flow](specs/purchase-order-flow/README.md)
+- [Packing changes: editing finished packing, Amazon shipment sync and document history](specs/packing-changes/README.md)
 
 See [historical landed costs and FIFO](inventory-costing.md) for landed charges, depletion records and calculation resources.
 
