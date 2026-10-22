@@ -131,7 +131,13 @@ describe("a forwarder's purchase orders", () => {
       supplier: { name: "Ok Fencing" },
       forwarder: { name: "Yiwu Logistics", buyerOrgId: club }
     })
-    for (const name of ["club draft", "club direct", "club other forwarder", "club removed forwarder"]) {
+    for (const name of [
+      "club draft",
+      "club direct",
+      "club other forwarder",
+      "club removed forwarder",
+      "club naming the shop's"
+    ]) {
       await expect(forwarderOrder(forwarder, ids[name]!)).rejects.toThrow("not found")
     }
     await expect(forwarderOrder(forwarder, "abc")).rejects.toThrow("not found")
