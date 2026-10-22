@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // One choice, and what the menu says about it under its label.
 export type SelectOption<T extends string> = { value: T; label: string; description?: string }
@@ -53,18 +53,20 @@ export function OptionSelect<T extends string>({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.description ? (
-              <span className="flex flex-col">
-                {option.label}
-                <span className="text-xs text-muted-foreground">{option.description}</span>
-              </span>
-            ) : (
-              option.label
-            )}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.description ? (
+                <span className="flex flex-col">
+                  {option.label}
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </span>
+              ) : (
+                option.label
+              )}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )

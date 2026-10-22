@@ -8,7 +8,7 @@ import { WarningNote } from "@/components/common"
 import { RouteStops } from "@/components/route-stops"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { OrderForm } from "@/lib/order-form"
 
 type Option = { value: string; label: string; disabled?: boolean }
@@ -147,11 +147,13 @@ function PillSelect({
         </SelectValue>
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-48">
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )

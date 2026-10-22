@@ -110,6 +110,22 @@ export const Fails = meta.story({
   }
 })
 
+// Dismissing a failure hides it and goes back to the comment, which stays to post again.
+export const DismissError = meta.story({
+  play: async ({ canvas, msw }) => {
+    recordActions(msw, () => new HttpResponse(null, { status: 500 }))
+    const textbox = canvas.getByRole("textbox", { name: "Comment" })
+    await userEvent.type(textbox, "Cartons ship Friday")
+    await userEvent.click(canvas.getByRole("button", { name: "Post" }))
+    await canvas.findByRole("alert")
+    await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }))
+    await expect(canvas.queryByRole("alert")).toBeNull()
+    await expect(textbox).toHaveFocus()
+    await expect(textbox).toHaveValue("Cartons ship Friday")
+    await expect(textbox).toHaveAccessibleDescription("Only your team can see this comment.")
+  }
+})
+
 export const SupplierMessage = meta.story({
   args: { counterparty: "customer" },
   play: async ({ canvas, canvasElement, msw }) => {
