@@ -165,3 +165,22 @@ report-family correction separate from assigning the two original positive payme
 inventory change, not receipt of inventory or a verified bank settlement. Historical costs remain unknown. Further
 confirmation needs an authoritative payment-to-report reference or a reviewed allocation; more amount/date guessing
 cannot resolve it. No provider request, sync or backfill was started for this investigation.
+
+### Orderless reversal payments
+
+`possibleReversalPayment` flags a negative reimbursement report candidate when an order reference is missing on
+one or both sides, exact nonempty SKU and ASIN agree, marketplace and stored/payload currencies agree, and the signed
+whole-transaction amount matches. The payment must be released, have no deferred/release link, and contain exactly one
+item with one explicit `FBAReversedReimbursement` component equal to the total. Item and root breakdown totals must
+balance. These candidates rank after order-backed stronger candidates but before other candidates within the current
+transaction search page. Dates are used only for ordering, never to establish a match.
+
+`possibleReversalPaymentCount` covers that search page. `reversalPaymentCompetition` explicitly remains
+`not_assessed_across_report_pages`; the order-based competition search does not establish uniqueness for these
+orderless candidates. Missing order reference and allocation blockers remain, `paymentCompetition` is null, and
+`reconciled` remains false. No payment assignment, inventory receipt or accounting amount is confirmed.
+
+A read-only October 22 investigation found a saved -$21.18 released clawback for the July body-cord reimbursement's
+September 2 reversal, posted 46 seconds after report approval. SKU, ASIN and currency match; it was the only saved
+negative report and payment of that amount. The financial record contains settlement and financial-event-group IDs,
+not an order or reimbursement ID. This supports a candidate, not a confirmed link. No provider acquisition was run.
