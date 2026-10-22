@@ -488,7 +488,7 @@ export const PackingDetails = meta.story({
     )
   }
 })
-import { money } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
 
 export const WarehouseSkuLabel = meta.story({
   args: {

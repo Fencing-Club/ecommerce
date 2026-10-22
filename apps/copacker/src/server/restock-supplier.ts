@@ -1,4 +1,4 @@
-import { orderCurrencies } from "@repo/copacker-shipments"
+import { orderCurrencies } from "@repo/copacker-orders"
 import { z } from "zod"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 

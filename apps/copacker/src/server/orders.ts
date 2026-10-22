@@ -1,11 +1,9 @@
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
+import { approveChanges, commercialChanges, orderInputSchema } from "@repo/copacker-orders"
 import type { Packing } from "@repo/copacker-shipments"
 import {
   amazonNetworkNames,
-  approveChanges,
-  commercialChanges,
-  orderInputSchema,
   packingDraftSchema,
   splitByNetwork,
   orderDestination,

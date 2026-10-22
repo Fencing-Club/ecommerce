@@ -1,15 +1,8 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { ProviderError } from "@repo/copacker-marketplaces/amazon"
-import {
-  type Address,
-  addressSchema,
-  orderInputSchema,
-  packingSchema,
-  buildAwdRequest,
-  orderTotal,
-  type Packing
-} from "@repo/copacker-shipments"
+import { type Address, addressSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
+import { packingSchema, buildAwdRequest, type Packing } from "@repo/copacker-shipments"
 import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"

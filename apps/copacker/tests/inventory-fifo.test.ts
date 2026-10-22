@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { orderInputSchema } from "@repo/copacker-shipments"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"

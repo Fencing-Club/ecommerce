@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"

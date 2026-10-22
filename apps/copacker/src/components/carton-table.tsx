@@ -1,5 +1,5 @@
+import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
-import type { OrderInput } from "@repo/copacker-shipments"
 import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"

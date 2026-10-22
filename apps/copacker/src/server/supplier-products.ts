@@ -1,4 +1,4 @@
-import { orderCurrencies } from "@repo/copacker-shipments"
+import { orderCurrencies } from "@repo/copacker-orders"
 import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"

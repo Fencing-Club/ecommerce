@@ -1,11 +1,9 @@
 import { Toast } from "@base-ui/react/toast"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { type Address, money, type OrderInput } from "@repo/copacker-orders"
 import { checkPallets, palletRules, validatePacking, validatePallets } from "@repo/copacker-packing-rules"
 import {
-  type Address,
   cartonInputSchema,
-  money,
-  type OrderInput,
   type Packing,
   type PackingDraft,
   packingSchema,

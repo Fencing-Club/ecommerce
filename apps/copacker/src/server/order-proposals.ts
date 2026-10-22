@@ -1,13 +1,7 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/copacker-shipments"
-import {
-  itemSchema,
-  orderDestination,
-  orderInputSchema,
-  orderTotal,
-  packingSchema,
-  receiverFor
-} from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
+import { itemSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
+import { orderDestination, packingSchema, receiverFor } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"

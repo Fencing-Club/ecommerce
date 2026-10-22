@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { describe, expect, it } from "vitest"
 import {
   amazonReference,
@@ -14,7 +15,7 @@ import {
   palletConfiguration,
   sellerCentralShipment
 } from "../src/amazon-inbound"
-import { fbaBoxes, orderInputSchema, packingSchema } from "../src/index"
+import { fbaBoxes, packingSchema } from "../src/index"
 
 const foilId = randomUUID(),
   gloveId = randomUUID()

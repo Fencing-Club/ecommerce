@@ -1,8 +1,9 @@
+import { type OrderInput } from "@repo/copacker-orders"
+import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
 import { validatePacking } from "@repo/copacker-packing-rules"
 import { addressLines } from "./documents"
-import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "./index"
+import { palletLabels, type Packing, type Pallet, orderDestination } from "./index"
 import type { CartonLabel } from "./labels"
-import { packingTasks, type ProductTask } from "./packing-requirements"
 import {
   documentIssues,
   packingRecordIssues,

@@ -1,5 +1,5 @@
 import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
-import { orderCurrencies } from "@repo/copacker-shipments"
+import { orderCurrencies } from "@repo/copacker-orders"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
 

@@ -1,6 +1,6 @@
 import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
-import type { Address } from "@repo/copacker-shipments"
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { Address } from "@repo/copacker-orders"
+import type { OrderInput } from "@repo/copacker-orders"
 import type { Packing } from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import type { PartnerAddress } from "@/components/partner-address"

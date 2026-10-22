@@ -1,10 +1,5 @@
-import {
-  type Address,
-  type AmazonNetwork,
-  type OrderInput,
-  type OrderItem,
-  orderDestination
-} from "@repo/copacker-shipments"
+import { type Address, type OrderInput, type OrderItem } from "@repo/copacker-orders"
+import { type AmazonNetwork, orderDestination } from "@repo/copacker-shipments"
 import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { http, HttpResponse } from "msw/http"

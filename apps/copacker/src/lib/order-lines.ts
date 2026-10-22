@@ -1,9 +1,10 @@
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { bundleSupplierComponents, variantUnitCostMinor } from "@repo/copacker-marketplaces/shopify"
-import { type AmazonNetwork, type Destination, receiverFor } from "@repo/copacker-shipments"
-import type { OrderInput } from "@repo/copacker-shipments"
-import type { PrepCategory } from "@repo/copacker-shipments"
-import type { adjustmentTypes, commonPaymentTerms } from "@repo/copacker-shipments"
+import { type Destination } from "@repo/copacker-orders"
+import type { OrderInput } from "@repo/copacker-orders"
+import type { PrepCategory } from "@repo/copacker-orders"
+import type { adjustmentTypes, commonPaymentTerms } from "@repo/copacker-orders"
+import { type AmazonNetwork, receiverFor } from "@repo/copacker-shipments"
 
 export type LineDefaults = {
   // Looked up on the server when the PO is saved or sent, so often empty here.

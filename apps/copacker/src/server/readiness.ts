@@ -1,5 +1,5 @@
+import type { OrderInput } from "@repo/copacker-orders"
 import { validatePacking } from "@repo/copacker-packing-rules"
-import type { OrderInput } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
 import { packingSchema, orderDestination } from "@repo/copacker-shipments"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"

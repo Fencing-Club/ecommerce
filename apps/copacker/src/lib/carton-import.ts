@@ -1,5 +1,6 @@
+import { type OrderInput } from "@repo/copacker-orders"
 import { cartonRuns } from "@repo/copacker-packing-rules"
-import { cartonInputSchema, type OrderInput } from "@repo/copacker-shipments"
+import { cartonInputSchema } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { type CartonGroup, groupCartonIds } from "./carton-groups"
 import {
