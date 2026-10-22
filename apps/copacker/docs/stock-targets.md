@@ -3,6 +3,29 @@
 Implementation design for replacing the fixed Amazon and store target fields. This document describes the intended
 replacement; the existing planner still uses those fields until the implementation is complete.
 
+The target quantity remains a buffer beyond supplier lead-time demand. A target of 100 with 40 units of expected
+lead-time sales requires 140 units before subtracting available and incoming stock and applying MOQ/case rounding.
+
+## Storage and operations implemented
+
+`inventory_location_groups` stores workspace-owned named memberships; `variant_stock_target_sets` stores each catalog
+account/variant's targets, unresolved imported quantities and revision. A generated forward migration preserves current
+Amazon values on an explicit account-scoped US group and retains ambiguous store values for destination selection.
+New Shopify metafield imports preserve their quantities as unresolved rather than overwriting saved target edits.
+
+`variant.stock-targets.show`, `variant.stock-targets.update`, `location.group.list`, `location.group.save` and
+`location.group.remove` share the browser services. Reads need Products access and writes need Products edit access.
+CLI writes use the existing idempotency receipts; updates require the current revision, with zero for creation. Target
+updates replace the full variant set. `resolveImported: true` explicitly acknowledges resolving/removing imported
+quantities. Group saves reject overlaps across affected variants and deletion rejects groups still in use.
+
+The browser endpoints are `/api/inventory/stock-targets` (GET/PATCH) and `/api/inventory/location-groups`
+(GET/POST/DELETE). The target selection includes `accountId` and `variantId`. Group and variant writes serialize on the
+workspace and lock current connections, preventing concurrent group edits from introducing overlapping targets.
+
+These settings do not yet replace the fixed target editor or restock planner. Do not treat saving them as a change to
+purchase recommendations until that integration lands. No transfer or provider inventory write is performed.
+
 ## Locations and groups
 
 A location exists independently of targets. A connector identifies it by provider, external account, inventory scope

@@ -745,6 +745,31 @@ export const inventoryLocationMappings = pgTable(
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.locationId] })]
 )
+export const inventoryLocationGroups = pgTable(
+  "inventory_location_groups",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: orgRef(),
+    name: text().notNull(),
+    locations: jsonb().$type<import("@repo/copacker-contract").InventoryLocationRef[]>().notNull(),
+    revision: integer().notNull().default(1),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("inventory_location_groups_org").on(t.orgId)]
+)
+export const variantStockTargetSets = pgTable(
+  "variant_stock_target_sets",
+  {
+    orgId: orgRef(),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    targets: jsonb().$type<import("@repo/copacker-contract").VariantStockTarget[]>().notNull().default([]),
+    unassigned: jsonb().$type<import("@repo/copacker-contract").UnassignedStockTarget[]>().notNull().default([]),
+    revision: integer().notNull().default(1),
+    updatedAt: updatedAt()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.variantId] })]
+)
 // Buyer-owned product details that neither Shopify nor Amazon stores, used as defaults on new PO lines.
 export const productDefaults = pgTable(
   "product_defaults",

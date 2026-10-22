@@ -16,6 +16,7 @@ import {
 import type { ErrorKey } from "@/i18n/errors"
 import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
+import { preserveImportedStockTargets } from "./stock-targets"
 import { syncShopifySuppliers } from "./suppliers"
 import type { Session } from "./workspace-session"
 
@@ -231,6 +232,7 @@ export async function copyShopifyFields(
     .map(([productId, product]) => ({ orgId, shopifyDomain: domain, productId, ...product }))
   const keep = (table: string, column: string) => sql.raw(`coalesce("${table}"."${column}", excluded."${column}")`)
   await db().transaction(async (tx) => {
+    await preserveImportedStockTargets(orgId, domain, values, tx)
     for (let start = 0; start < variantRows.length; start += 500) {
       await tx
         .insert(variantFields)

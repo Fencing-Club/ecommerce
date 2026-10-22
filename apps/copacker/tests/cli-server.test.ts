@@ -399,6 +399,41 @@ describe("Restock operations", () => {
       coveredTo: new Date(observedAt)
     })
   }
+  it("shares revision-checked target editing with idempotent CLI receipts and current Product permissions", async () => {
+    await catalog()
+    const selection = { accountId: "shop.myshopify.com", variantId: "gid://shopify/ProductVariant/1" }
+    const before = await call("variant.stock-targets.show", selection)
+    expect(before.status).toBe(200)
+    expect(before.body.data).toMatchObject({ revision: 0, targets: [] })
+    const group = {
+      id: randomUUID(),
+      name: "Main warehouse",
+      locations: [before.body.data.locations[0].ref],
+      expectedRevision: 0
+    }
+    expect((await call("location.group.save", group)).body.error.code).toBe("idempotency_key_required")
+    const created = await call("location.group.save", group, workspaceId, "group-create")
+    expect(created.status).toBe(200)
+    expect((await call("location.group.save", group, workspaceId, "group-create")).body.data).toEqual(created.body.data)
+    const update = {
+      ...selection,
+      expectedRevision: 0,
+      targets: [{ id: randomUUID(), quantity: 125, destination: { kind: "group", groupId: group.id } }]
+    }
+    const saved = await call("variant.stock-targets.update", update, workspaceId, "targets-save")
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toMatchObject({ revision: 1, targets: update.targets })
+    expect((await call("variant.stock-targets.update", update, workspaceId, "targets-save")).body.data).toEqual(
+      saved.body.data
+    )
+    expect((await call("variant.stock-targets.update", update, workspaceId, "stale-save")).body.error.code).toBe(
+      "revision_conflict"
+    )
+    await database.update(memberships).set({ role: "member", access: { products: "view" } })
+    expect((await call("variant.stock-targets.show", selection)).status).toBe(200)
+    expect((await call("variant.stock-targets.update", update, workspaceId, "targets-save")).status).toBe(404)
+  })
+
   it("uses workspace defaults and the shared planner, retains missing suppliers and immutable report evidence", async () => {
     await catalog()
     const client = new CopackerClient({

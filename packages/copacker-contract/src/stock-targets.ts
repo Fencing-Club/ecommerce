@@ -33,6 +33,9 @@ export type LocationGroup = z.infer<typeof locationGroupSchema>
 export const variantStockTargetSchema = z.strictObject({
   id: z.uuid(),
   quantity: z.number().int().min(0).max(1000000),
+  // Omitted means replenished. Explicit false preserves the old Amazon zero/do-not-stock intent without making
+  // a zero buffer at a merchant warehouse suppress its lead-time demand.
+  stocked: z.boolean().optional(),
   destination: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("location"), location: inventoryLocationRefSchema }),
     z.strictObject({ kind: z.literal("group"), groupId: z.uuid() })
@@ -41,6 +44,13 @@ export const variantStockTargetSchema = z.strictObject({
 export type VariantStockTarget = z.infer<typeof variantStockTargetSchema>
 
 export const variantStockTargetsSchema = z.array(variantStockTargetSchema).max(100)
+
+// Imported quantities whose destination cannot be inferred without changing the buyer's intent.
+export const unassignedStockTargetSchema = z.strictObject({
+  source: z.enum(["amazon", "store"]),
+  quantity: z.number().int().min(0).max(1000000)
+})
+export type UnassignedStockTarget = z.infer<typeof unassignedStockTargetSchema>
 
 export type StockTargetIssue = {
   code: "duplicate_target" | "missing_group" | "duplicate_location" | "ineligible_location" | "overlap"

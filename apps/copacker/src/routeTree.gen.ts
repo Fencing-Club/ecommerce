@@ -94,12 +94,14 @@ import { Route as ApiImportsIdRouteImport } from './routes/api.imports.$id'
 import { Route as ApiInventoryBarcodesRouteImport } from './routes/api.inventory.barcodes'
 import { Route as ApiInventoryDemandRouteImport } from './routes/api.inventory.demand'
 import { Route as ApiInventoryLabelsRouteImport } from './routes/api.inventory.labels'
+import { Route as ApiInventoryLocationGroupsRouteImport } from './routes/api.inventory.location-groups'
 import { Route as ApiInventoryLocationsRouteImport } from './routes/api.inventory.locations'
 import { Route as ApiInventoryProductDefaultsRouteImport } from './routes/api.inventory.product-defaults'
 import { Route as ApiInventoryProductLabelsRouteImport } from './routes/api.inventory.product-labels'
 import { Route as ApiInventoryProductsRouteImport } from './routes/api.inventory.products'
 import { Route as ApiInventoryRefreshRouteImport } from './routes/api.inventory.refresh'
 import { Route as ApiInventoryStatusRouteImport } from './routes/api.inventory.status'
+import { Route as ApiInventoryStockTargetsRouteImport } from './routes/api.inventory.stock-targets'
 import { Route as ApiInventoryVariantFieldsRouteImport } from './routes/api.inventory.variant-fields'
 import { Route as ApiMailingListUnsubscribeRouteImport } from './routes/api.mailing-list.unsubscribe'
 import { Route as ApiOperationsOperationRouteImport } from './routes/api.operations.$operation'
@@ -584,6 +586,12 @@ const ApiInventoryLabelsRoute = ApiInventoryLabelsRouteImport.update({
   path: '/labels',
   getParentRoute: () => ApiInventoryRoute,
 } as any)
+const ApiInventoryLocationGroupsRoute =
+  ApiInventoryLocationGroupsRouteImport.update({
+    id: '/location-groups',
+    path: '/location-groups',
+    getParentRoute: () => ApiInventoryRoute,
+  } as any)
 const ApiInventoryLocationsRoute = ApiInventoryLocationsRouteImport.update({
   id: '/locations',
   path: '/locations',
@@ -616,6 +624,12 @@ const ApiInventoryStatusRoute = ApiInventoryStatusRouteImport.update({
   path: '/status',
   getParentRoute: () => ApiInventoryRoute,
 } as any)
+const ApiInventoryStockTargetsRoute =
+  ApiInventoryStockTargetsRouteImport.update({
+    id: '/stock-targets',
+    path: '/stock-targets',
+    getParentRoute: () => ApiInventoryRoute,
+  } as any)
 const ApiInventoryVariantFieldsRoute =
   ApiInventoryVariantFieldsRouteImport.update({
     id: '/variant-fields',
@@ -985,12 +999,14 @@ export interface FileRoutesByFullPath {
   '/api/inventory/barcodes': typeof ApiInventoryBarcodesRoute
   '/api/inventory/demand': typeof ApiInventoryDemandRoute
   '/api/inventory/labels': typeof ApiInventoryLabelsRoute
+  '/api/inventory/location-groups': typeof ApiInventoryLocationGroupsRoute
   '/api/inventory/locations': typeof ApiInventoryLocationsRoute
   '/api/inventory/product-defaults': typeof ApiInventoryProductDefaultsRoute
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
   '/api/inventory/status': typeof ApiInventoryStatusRoute
+  '/api/inventory/stock-targets': typeof ApiInventoryStockTargetsRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/operations/$operation': typeof ApiOperationsOperationRoute
@@ -1128,12 +1144,14 @@ export interface FileRoutesByTo {
   '/api/inventory/barcodes': typeof ApiInventoryBarcodesRoute
   '/api/inventory/demand': typeof ApiInventoryDemandRoute
   '/api/inventory/labels': typeof ApiInventoryLabelsRoute
+  '/api/inventory/location-groups': typeof ApiInventoryLocationGroupsRoute
   '/api/inventory/locations': typeof ApiInventoryLocationsRoute
   '/api/inventory/product-defaults': typeof ApiInventoryProductDefaultsRoute
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
   '/api/inventory/status': typeof ApiInventoryStatusRoute
+  '/api/inventory/stock-targets': typeof ApiInventoryStockTargetsRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/operations/$operation': typeof ApiOperationsOperationRoute
@@ -1274,12 +1292,14 @@ export interface FileRoutesById {
   '/api/inventory/barcodes': typeof ApiInventoryBarcodesRoute
   '/api/inventory/demand': typeof ApiInventoryDemandRoute
   '/api/inventory/labels': typeof ApiInventoryLabelsRoute
+  '/api/inventory/location-groups': typeof ApiInventoryLocationGroupsRoute
   '/api/inventory/locations': typeof ApiInventoryLocationsRoute
   '/api/inventory/product-defaults': typeof ApiInventoryProductDefaultsRoute
   '/api/inventory/product-labels': typeof ApiInventoryProductLabelsRoute
   '/api/inventory/products': typeof ApiInventoryProductsRoute
   '/api/inventory/refresh': typeof ApiInventoryRefreshRoute
   '/api/inventory/status': typeof ApiInventoryStatusRoute
+  '/api/inventory/stock-targets': typeof ApiInventoryStockTargetsRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
   '/api/operations/$operation': typeof ApiOperationsOperationRoute
@@ -1419,12 +1439,14 @@ export interface FileRouteTypes {
     | '/api/inventory/barcodes'
     | '/api/inventory/demand'
     | '/api/inventory/labels'
+    | '/api/inventory/location-groups'
     | '/api/inventory/locations'
     | '/api/inventory/product-defaults'
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
     | '/api/inventory/status'
+    | '/api/inventory/stock-targets'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/operations/$operation'
@@ -1562,12 +1584,14 @@ export interface FileRouteTypes {
     | '/api/inventory/barcodes'
     | '/api/inventory/demand'
     | '/api/inventory/labels'
+    | '/api/inventory/location-groups'
     | '/api/inventory/locations'
     | '/api/inventory/product-defaults'
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
     | '/api/inventory/status'
+    | '/api/inventory/stock-targets'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/operations/$operation'
@@ -1707,12 +1731,14 @@ export interface FileRouteTypes {
     | '/api/inventory/barcodes'
     | '/api/inventory/demand'
     | '/api/inventory/labels'
+    | '/api/inventory/location-groups'
     | '/api/inventory/locations'
     | '/api/inventory/product-defaults'
     | '/api/inventory/product-labels'
     | '/api/inventory/products'
     | '/api/inventory/refresh'
     | '/api/inventory/status'
+    | '/api/inventory/stock-targets'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
     | '/api/operations/$operation'
@@ -2449,6 +2475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInventoryLabelsRouteImport
       parentRoute: typeof ApiInventoryRoute
     }
+    '/api/inventory/location-groups': {
+      id: '/api/inventory/location-groups'
+      path: '/location-groups'
+      fullPath: '/api/inventory/location-groups'
+      preLoaderRoute: typeof ApiInventoryLocationGroupsRouteImport
+      parentRoute: typeof ApiInventoryRoute
+    }
     '/api/inventory/locations': {
       id: '/api/inventory/locations'
       path: '/locations'
@@ -2489,6 +2522,13 @@ declare module '@tanstack/react-router' {
       path: '/status'
       fullPath: '/api/inventory/status'
       preLoaderRoute: typeof ApiInventoryStatusRouteImport
+      parentRoute: typeof ApiInventoryRoute
+    }
+    '/api/inventory/stock-targets': {
+      id: '/api/inventory/stock-targets'
+      path: '/stock-targets'
+      fullPath: '/api/inventory/stock-targets'
+      preLoaderRoute: typeof ApiInventoryStockTargetsRouteImport
       parentRoute: typeof ApiInventoryRoute
     }
     '/api/inventory/variant-fields': {
@@ -3005,12 +3045,14 @@ interface ApiInventoryRouteChildren {
   ApiInventoryBarcodesRoute: typeof ApiInventoryBarcodesRoute
   ApiInventoryDemandRoute: typeof ApiInventoryDemandRoute
   ApiInventoryLabelsRoute: typeof ApiInventoryLabelsRoute
+  ApiInventoryLocationGroupsRoute: typeof ApiInventoryLocationGroupsRoute
   ApiInventoryLocationsRoute: typeof ApiInventoryLocationsRoute
   ApiInventoryProductDefaultsRoute: typeof ApiInventoryProductDefaultsRoute
   ApiInventoryProductLabelsRoute: typeof ApiInventoryProductLabelsRoute
   ApiInventoryProductsRoute: typeof ApiInventoryProductsRoute
   ApiInventoryRefreshRoute: typeof ApiInventoryRefreshRoute
   ApiInventoryStatusRoute: typeof ApiInventoryStatusRoute
+  ApiInventoryStockTargetsRoute: typeof ApiInventoryStockTargetsRoute
   ApiInventoryVariantFieldsRoute: typeof ApiInventoryVariantFieldsRoute
 }
 
@@ -3018,12 +3060,14 @@ const ApiInventoryRouteChildren: ApiInventoryRouteChildren = {
   ApiInventoryBarcodesRoute: ApiInventoryBarcodesRoute,
   ApiInventoryDemandRoute: ApiInventoryDemandRoute,
   ApiInventoryLabelsRoute: ApiInventoryLabelsRoute,
+  ApiInventoryLocationGroupsRoute: ApiInventoryLocationGroupsRoute,
   ApiInventoryLocationsRoute: ApiInventoryLocationsRoute,
   ApiInventoryProductDefaultsRoute: ApiInventoryProductDefaultsRoute,
   ApiInventoryProductLabelsRoute: ApiInventoryProductLabelsRoute,
   ApiInventoryProductsRoute: ApiInventoryProductsRoute,
   ApiInventoryRefreshRoute: ApiInventoryRefreshRoute,
   ApiInventoryStatusRoute: ApiInventoryStatusRoute,
+  ApiInventoryStockTargetsRoute: ApiInventoryStockTargetsRoute,
   ApiInventoryVariantFieldsRoute: ApiInventoryVariantFieldsRoute,
 }
 

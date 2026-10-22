@@ -1,0 +1,175 @@
+import { randomUUID } from "node:crypto"
+import { eq } from "drizzle-orm"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  connections,
+  inventoryLocationMappings,
+  organizations,
+  stockSnapshots,
+  variantStockTargetSets
+} from "../src/db/schema"
+import {
+  listLocationGroups,
+  preserveImportedStockTargets,
+  readStockTargets,
+  removeLocationGroup,
+  saveLocationGroup,
+  saveStockTargets
+} from "../src/server/stock-targets"
+import { database, setUpTestDatabase } from "./test-db"
+import { testSession } from "./test-session"
+
+vi.mock("@/db", () => import("./test-db"))
+setUpTestDatabase({ truncate: true })
+const orgId = randomUUID()
+const s = testSession({ orgId, kind: "buyer" })
+const accountId = "shop.myshopify.com"
+const variantId = "gid://shopify/ProductVariant/1"
+const first = { provider: "shopify", accountId, scope: "store", externalId: "gid://shopify/Location/1" }
+const second = { ...first, externalId: "gid://shopify/Location/2" }
+const selection = { accountId, variantId }
+const target = (location = first) => ({
+  id: randomUUID(),
+  quantity: 100,
+  destination: { kind: "location" as const, location }
+})
+
+beforeEach(async () => {
+  await database.insert(organizations).values({ id: orgId, name: "Buyer", kind: "buyer" })
+  await database
+    .insert(connections)
+    .values({ orgId, provider: "shopify", externalId: accountId, encryptedToken: "private" })
+  await database.insert(stockSnapshots).values({
+    orgId,
+    source: "shopify",
+    externalAccountId: accountId,
+    scopeKey: "store",
+    data: {
+      source: "shopify",
+      shopifyDomain: accountId,
+      scopeKey: "store",
+      startedAt: "2026-10-01T00:00:00Z",
+      observedAt: "2026-10-01T00:00:00Z",
+      rows: [
+        {
+          variantId,
+          productId: "gid://shopify/Product/1",
+          inventoryItemId: "gid://shopify/InventoryItem/1",
+          buyerSku: "SKU",
+          productTitle: "Product",
+          variantTitle: "Default Title",
+          imageUrl: null,
+          tracked: true,
+          unit: "shopify_inventory_unit",
+          levels: [first, second].map((ref) => ({
+            locationId: ref.externalId,
+            locationName: ref.externalId,
+            locationKind: "merchant",
+            available: 10,
+            onHand: 10,
+            incoming: 0,
+            committed: 0
+          }))
+        }
+      ]
+    }
+  })
+})
+
+describe("stock target settings", () => {
+  it("discovers independent locations without inventing targets and saves a variant buffer", async () => {
+    const before = await readStockTargets(s, selection)
+    expect(before.locations).toHaveLength(2)
+    expect(before.targets).toEqual([])
+    const value = target()
+    const saved = await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [value] })
+    expect(saved.targets).toEqual([value])
+    expect(saved.revision).toBe(1)
+    await expect(saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [] })).rejects.toMatchObject({
+      code: "revision_conflict"
+    })
+  })
+
+  it("rejects overlapping group edits across variants and prevents deleting assigned groups", async () => {
+    const group = await saveLocationGroup(s, {
+      id: randomUUID(),
+      name: "Warehouse group",
+      locations: [first],
+      expectedRevision: 0
+    })
+    await saveStockTargets(s, {
+      ...selection,
+      expectedRevision: 0,
+      targets: [{ id: randomUUID(), quantity: 40, destination: { kind: "group", groupId: group.id } }, target(second)]
+    })
+    await expect(
+      saveLocationGroup(s, { id: group.id, name: group.name, locations: [first, second], expectedRevision: 1 })
+    ).rejects.toMatchObject({ code: "target_overlap" })
+    expect((await listLocationGroups(s)).items[0]?.revision).toBe(1)
+    await expect(removeLocationGroup(s, { id: group.id, expectedRevision: 1 })).rejects.toMatchObject({
+      code: "group_in_use"
+    })
+    await saveStockTargets(s, { ...selection, expectedRevision: 1, targets: [] })
+    await removeLocationGroup(s, { id: group.id, expectedRevision: 1 })
+    expect((await listLocationGroups(s)).items).toEqual([])
+  })
+
+  it("rejects foreign accounts, missing variants, unavailable pools and mirror classifications", async () => {
+    await expect(readStockTargets(s, { ...selection, accountId: "other" })).rejects.toMatchObject({
+      code: "source_changed"
+    })
+    await expect(
+      readStockTargets(s, { ...selection, variantId: "gid://shopify/ProductVariant/2" })
+    ).rejects.toMatchObject({ code: "source_changed" })
+    await database
+      .insert(inventoryLocationMappings)
+      .values({ orgId, shopifyDomain: accountId, locationId: first.externalId, classification: "amazon_mirror" })
+    await expect(saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [target()] })).rejects.toMatchObject(
+      { code: "invalid_target" }
+    )
+    await database
+      .insert(connections)
+      .values({ orgId, provider: "amazon", externalId: "seller", encryptedToken: "private" })
+    expect(
+      (await listLocationGroups(s)).locations
+        .filter((location) => location.ref.provider === "amazon")
+        .map((location) => location.available)
+    ).toEqual([false, false])
+  })
+
+  it("preserves imported zero and store quantities until explicitly resolved, without overwriting edits", async () => {
+    await preserveImportedStockTargets(orgId, accountId, [{ variantId, amazonStockTarget: 0, storeStockTarget: 50 }])
+    const before = await readStockTargets(s, selection)
+    expect(before.unassigned).toEqual([
+      { source: "amazon", quantity: 0 },
+      { source: "store", quantity: 50 }
+    ])
+    await saveStockTargets(s, { ...selection, expectedRevision: 1, targets: [target()] })
+    expect((await readStockTargets(s, selection)).unassigned).toEqual(before.unassigned)
+    await saveStockTargets(s, { ...selection, expectedRevision: 2, targets: [target()], resolveImported: true })
+    await preserveImportedStockTargets(orgId, accountId, [{ variantId, amazonStockTarget: 300, storeStockTarget: 200 }])
+    const after = await readStockTargets(s, selection)
+    expect(after.unassigned).toEqual([])
+    expect(after.targets[0]?.quantity).toBe(100)
+    expect(after.revision).toBe(3)
+  })
+
+  it("scopes settings to the workspace and requires product edit permission", async () => {
+    const viewer = testSession({ orgId, kind: "buyer", role: "member", access: { products: "view" } })
+    expect((await readStockTargets(viewer, selection)).revision).toBe(0)
+    await expect(saveStockTargets(viewer, { ...selection, expectedRevision: 0, targets: [] })).rejects.toMatchObject({
+      status: 403
+    })
+    const foreign = testSession({ orgId: randomUUID(), kind: "buyer" })
+    expect((await listLocationGroups(foreign)).items).toEqual([])
+    await expect(readStockTargets(foreign, selection)).rejects.toMatchObject({ code: "source_changed" })
+  })
+
+  it("reports a previously valid target as ineligible after a reconnect rather than moving it", async () => {
+    await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [target()] })
+    await database.update(connections).set({ externalId: "replacement" }).where(eq(connections.orgId, orgId))
+    await expect(readStockTargets(s, selection)).rejects.toMatchObject({ code: "source_changed" })
+    const [saved] = await database.select().from(variantStockTargetSets)
+    expect(saved?.shopifyDomain).toBe(accountId)
+  })
+})

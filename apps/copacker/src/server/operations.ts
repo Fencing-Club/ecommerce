@@ -9,6 +9,7 @@ import {
   parseInput,
   requestSchema,
   setupOperations,
+  stockTargetOperations,
   usesAccountContext,
   type OperationDefinition
 } from "@repo/copacker-contract"
@@ -22,6 +23,13 @@ import { boundedBody } from "./cli-http"
 import { connectionSettings, operationConnections, updateConnectionSettings } from "./operation-connections"
 import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { hash, sign, verifySignature } from "./security"
+import {
+  listLocationGroups,
+  readStockTargets,
+  removeLocationGroup,
+  saveLocationGroup,
+  saveStockTargets
+} from "./stock-targets"
 import { workspaceMemberships, workspaceSession, type Session } from "./workspace-session"
 
 type Context = {
@@ -37,6 +45,9 @@ const member = (context: Context) => Boolean(context.session)
 const buyer = (context: Context) => context.session?.org.kind === "buyer"
 const admin = (context: Context) => buyer(context) && context.session !== null && isAdmin(context.session)
 const restock = (context: Context) => buyer(context) && context.session !== null && can(context.session, "restock")
+const productRead = (context: Context) => buyer(context) && context.session !== null && can(context.session, "products")
+const productEdit = (context: Context) =>
+  buyer(context) && context.session !== null && can(context.session, "products", "edit")
 const account = () => true
 function session(context: Context) {
   if (!context.session) {
@@ -62,6 +73,21 @@ type Entry = {
   execute: (input: unknown, context: Context) => Promise<unknown>
 }
 const entries: Entry[] = [
+  entry(stockTargetOperations["variant.stock-targets.show"], productRead, (input, context) =>
+    readStockTargets(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["variant.stock-targets.update"], productEdit, (input, context) =>
+    saveStockTargets(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["location.group.list"], productRead, (_, context) =>
+    listLocationGroups(session(context), context.executor)
+  ),
+  entry(stockTargetOperations["location.group.save"], productEdit, (input, context) =>
+    saveLocationGroup(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["location.group.remove"], productEdit, (input, context) =>
+    removeLocationGroup(session(context), input, context.executor)
+  ),
   entry(restockDefinitions["restock.channel.list"], restock, (_, context) =>
     operationRestockChannels(session(context))
   ),
