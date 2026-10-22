@@ -1,4 +1,5 @@
-import { expect, waitFor } from "storybook/test"
+import { expect, mocked, spyOn, waitFor } from "storybook/test"
+import invariant from "tiny-invariant"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { ShipmentProgress } from "./shipment-progress"
@@ -18,11 +19,20 @@ export const NextStep = meta.story({
   }
 })
 
-// While Amazon creates the shipment, the page refreshes every five seconds.
+// While Amazon creates the shipment, the page refreshes every five seconds. The play runs the timer's tick itself
+// instead of waiting five seconds for it.
 export const Processing = meta.story({
   args: { processing: true, message: undefined },
+  beforeEach: () => {
+    const timers = spyOn(window, "setInterval")
+    return () => timers.mockRestore()
+  },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("status")).toBeNull()
-    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled(), { timeout: 7000 })
+    await waitFor(() => expect(window.setInterval).toHaveBeenCalledWith(expect.any(Function), 5000))
+    const [tick] = mocked(window.setInterval).mock.calls.find(([, delay]) => delay === 5000) ?? []
+    invariant(typeof tick === "function")
+    tick()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })

@@ -102,7 +102,7 @@ export const SupplierProfile = meta.story({
       ])
     )
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
-    // The field shows the website as saved, once the form resets to the saved values.
+    // The field shows the website as saved, once the save comes back.
     await waitFor(() => expect(website).toHaveValue("https://lotus.example.com"))
   }
 })
