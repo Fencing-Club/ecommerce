@@ -37,6 +37,13 @@ export async function chooseOption(control: HTMLElement, option: string | RegExp
   await waitFor(() => expect(list).not.toBeVisible())
 }
 
+// Closes the open menu with Escape and waits for it to go: a menu that's still closing would answer the next
+// findByRole("menu").
+export async function closeMenu() {
+  await userEvent.keyboard("{Escape}")
+  await waitFor(() => expect(screen.queryByRole("menu")).toBeNull())
+}
+
 // Shows the story in a column of a Tailwind width, such as "w-72" or "max-w-lg": the room the component has where the
 // app shows it.
 export function width(className: string): Decorator {

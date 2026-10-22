@@ -8,6 +8,20 @@ the workspace, user and seller. Only North American seller profiles matching tha
 agency and unrelated seller profiles are excluded. Refresh tokens are encrypted with workspace-specific associated
 data. Reconnecting replaces the authorization generation so old jobs cannot write through it.
 
+## Connection diagnostics
+
+The callback emits `amazon_ads_connection_failed` through the structured logger with the failing stage:
+`token_exchange`, `profile_matching` (including saving the verified grant), or `queue_sync`.
+Profile failures distinguish `no_profiles`, `seller_mismatch`, `unsupported_region`, `account_mapping_missing`
+and `account_mapping_ambiguous`. The shared marketplace client supplies these typed errors; Copacker owns logging.
+Request failures expose only HTTP status; invalid responses expose at most 20 schema field paths. Other failures
+are labelled `unexpected`. No exception messages, provider bodies, OAuth state, codes, tokens or profile/account
+identities are logged. The browser keeps its generic error and seller matching remains mandatory.
+
+Amazon may reuse a shopping-account session during consent. If it does not manage the connected seller's advertising,
+switch to the advertising login and start Connect again. Do not reload a consumed callback or weaken seller checks.
+These diagnostics do not trigger collection; the existing successful connection flow still queues its initial sync.
+
 ## Configuration
 
 Set `AMAZON_ADS_CLIENT_ID` and `AMAZON_ADS_CLIENT_SECRET` on the web and worker services. These belong to the Login

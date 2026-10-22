@@ -121,14 +121,130 @@ export function postingEvidence(posting: ReconciliationPosting) {
     }
   }
 }
+type FinancialEvidence = ReturnType<typeof postingEvidence> & { total: unknown; hasReversalBreakdown?: boolean }
+type ReimbursementCompetition = { rows: AmazonEvidence[]; truncated: boolean }
+
+// Identical criteria for ranking a payment and finding other reports competing for that payment.
+export function isStrongerPaymentCandidate(row: AmazonEvidence, posting: FinancialEvidence) {
+  return (
+    row.source === "reimbursements" &&
+    Boolean(
+      row.orderId &&
+      (posting.orderId === row.orderId ||
+        posting.references.some((ref) => ref.name === "ORDER_ID" && ref.value === row.orderId))
+    ) &&
+    Boolean(
+      row.sku &&
+      posting.products.some((item) => item.sku === row.sku && !(row.asin && item.asin && row.asin !== item.asin))
+    ) &&
+    posting.type === "FBAInventoryReimbursement" &&
+    posting.marketplaceId === row.marketplaceId &&
+    row.currency === posting.currency &&
+    checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
+  )
+}
+
+// Orderless reversals remain a separate diagnostic, never an order-backed stronger candidate.
+function isPossibleReversalPayment(row: AmazonEvidence, posting: FinancialEvidence) {
+  const amount = exactMoney(row.amount, row.currency)
+  const orders = [
+    posting.orderId,
+    ...posting.references.filter((ref) => ref.name === "ORDER_ID").map((ref) => ref.value)
+  ].filter(Boolean)
+  return (
+    row.source === "reimbursements" &&
+    Boolean(amount && amount.integer < 0n) &&
+    (!row.orderId || !orders.length) &&
+    posting.type === "FBAInventoryReimbursement" &&
+    posting.status === "RELEASED" &&
+    !posting.hasReleaseLink &&
+    Boolean(posting.hasReversalBreakdown) &&
+    posting.marketplaceId === row.marketplaceId &&
+    row.currency === posting.currency &&
+    Boolean(
+      row.sku &&
+      row.asin &&
+      posting.products.length &&
+      posting.products.every((item) => item.sku === row.sku && item.asin === row.asin)
+    ) &&
+    posting.totals.items === "balanced" &&
+    posting.totals.breakdowns === "balanced" &&
+    checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
+  )
+}
+
+// All-time stored report context is bounded separately from transaction and candidate pagination.
+function paymentCompetition(rows: AmazonEvidence[], context: ReimbursementCompetition | undefined) {
+  const reportsByOrder = new Map<string, AmazonEvidence[]>()
+  for (const row of new Map([...(context?.rows ?? []), ...rows].map((row) => [row.id, row])).values()) {
+    if (row.orderId) {
+      const reports = reportsByOrder.get(row.orderId) ?? []
+      reports.push(row)
+      reportsByOrder.set(row.orderId, reports)
+    }
+  }
+  const matches = new Map<string, string[]>()
+  return (row: AmazonEvidence, posting: FinancialEvidence) => {
+    let ids = matches.get(posting.transactionId)
+    if (!ids) {
+      const orders = new Set([
+        posting.orderId,
+        ...posting.references.filter((ref) => ref.name === "ORDER_ID").map((ref) => ref.value)
+      ])
+      ids = [...orders]
+        .flatMap((order) => (order ? (reportsByOrder.get(order) ?? []) : []))
+        .filter((report) => isStrongerPaymentCandidate(report, posting))
+        .map((report) => report.id)
+        .sort()
+      matches.set(posting.transactionId, ids)
+    }
+    const others = ids.filter((id) => id !== row.id)
+    let status = "not_assessed"
+    if (context) {
+      status = "no_other_matching_stored_rows"
+      if (context.truncated) {
+        status = "search_incomplete"
+      }
+      if (others.length) {
+        status = "shared_candidate"
+      }
+    }
+    return {
+      status,
+      scope: "stored_reimbursements_for_candidate_orders_all_dates",
+      otherReportRowCount: context ? others.length : null,
+      otherReportRowIds: context ? others.slice(0, 20) : [],
+      returnedIdsTruncated: Boolean(context && others.length > 20),
+      reportSearchTruncated: context?.truncated ?? null,
+      countIsLowerBound: context?.truncated ?? null,
+      paymentAssignmentConfirmed: false
+    }
+  }
+}
+
 export function reconcileAmazonEvidence(
   rows: AmazonEvidence[],
   inventory: Product[],
   postings: ReconciliationPosting[],
-  candidatePage = 0
+  candidatePage = 0,
+  competition?: ReimbursementCompetition
 ) {
   const products = [...new Map(inventory.map((product) => [JSON.stringify(product), product])).values()]
-  const financial = postings.map((posting) => ({ ...postingEvidence(posting), total: posting.data.totalAmount }))
+  const financial = postings.map((posting) => {
+    const items = objects(posting.data.items)
+    const parts = objects(items[0]?.breakdowns)
+    return {
+      ...postingEvidence(posting),
+      total: posting.data.totalAmount,
+      // A single item with one explicit reversal component avoids inferring allocations within mixed payments.
+      hasReversalBreakdown:
+        items.length === 1 &&
+        parts.length === 1 &&
+        parts[0]?.breakdownType === "FBAReversedReimbursement" &&
+        checkPostingTotal(posting.data.totalAmount, [parts[0]?.breakdownAmount]) === "balanced"
+    }
+  })
+  const competingReports = paymentCompetition(rows, competition)
   return rows.map((row) => {
     const candidates = financial
       .flatMap((posting) => {
@@ -150,9 +266,13 @@ export function reconcileAmazonEvidence(
         if (!orderReference && !matchedItems.length) {
           return []
         }
+        const strongerPaymentCandidate = isStrongerPaymentCandidate(row, posting)
         return [
           {
             ...postingEvidenceFields(posting),
+            strongerPaymentCandidate,
+            possibleReversalPayment: isPossibleReversalPayment(row, posting),
+            paymentCompetition: strongerPaymentCandidate ? competingReports(row, posting) : null,
             basis: orderReference ? "order_reference" : "product_only",
             itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
             currencyMatches: row.currency ? row.currency === posting.currency : null,
@@ -162,6 +282,8 @@ export function reconcileAmazonEvidence(
       })
       .sort(
         (a, b) =>
+          Number(b.strongerPaymentCandidate) - Number(a.strongerPaymentCandidate) ||
+          Number(b.possibleReversalPayment) - Number(a.possibleReversalPayment) ||
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
           Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
           (row.source === "reimbursements"
@@ -185,6 +307,14 @@ export function reconcileAmazonEvidence(
         matching: {
           scope: "current_posting_search_page",
           candidateCount: candidates.length,
+          strongerPaymentCandidateCount: candidates.filter((candidate) => candidate.strongerPaymentCandidate).length,
+          possibleReversalPaymentCount: candidates.filter((candidate) => candidate.possibleReversalPayment).length,
+          reversalPaymentCompetition: "not_assessed_across_report_pages",
+          strongerPaymentCandidateBasis: "order_sku_marketplace_currency_signed_whole_transaction_amount",
+          competingReportRows: competition ? "assessed_for_stronger_candidates" : "not_assessed_across_report_pages",
+          sharedPaymentCandidateCount: competition
+            ? candidates.filter((candidate) => candidate.paymentCompetition?.status === "shared_candidate").length
+            : null,
           sameSignedAmountCount: candidates.filter(
             (candidate) =>
               candidate.checks.signedSourceToTransactionTotal === "balanced" &&
@@ -199,8 +329,8 @@ export function reconcileAmazonEvidence(
   })
 }
 
-function postingEvidenceFields(posting: ReturnType<typeof postingEvidence> & { total: unknown }) {
-  const { total: _total, ...fields } = posting
+function postingEvidenceFields(posting: FinancialEvidence) {
+  const { total: _total, hasReversalBreakdown: _hasReversalBreakdown, ...fields } = posting
   return fields
 }
 

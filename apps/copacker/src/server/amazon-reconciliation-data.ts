@@ -11,7 +11,12 @@ import {
   stockSnapshots
 } from "@/db/schema"
 import { historicalProductMatch } from "./amazon-product-mappings"
-import { preferredPostingType, reconcileAmazonEvidence } from "./amazon-reconciliation"
+import {
+  isStrongerPaymentCandidate,
+  postingEvidence,
+  preferredPostingType,
+  reconcileAmazonEvidence
+} from "./amazon-reconciliation"
 import { reimbursementAccounting } from "./amazon-reimbursement-accounting"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog, importedProductMatch } from "./analytics-product-evidence"
@@ -156,6 +161,29 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
         )
         .limit(postingLimit + 1)
         .offset((input.postingPage ?? 0) * postingLimit)
+      const candidateOrders =
+        input.source === "reimbursements"
+          ? [
+              ...new Set(
+                postings.slice(0, postingLimit).flatMap((posting) => {
+                  const detail = { ...postingEvidence(posting), total: posting.data.totalAmount }
+                  if (!pageRows.some((row) => isStrongerPaymentCandidate(row, detail))) {
+                    return []
+                  }
+                  return [
+                    ...(detail.orderId ? [detail.orderId] : []),
+                    ...detail.references.filter((ref) => ref.name === "ORDER_ID").map((ref) => ref.value)
+                  ]
+                })
+              )
+            ]
+          : []
+      const competingReportResult = candidateOrders.length
+        ? await tx.execute(sql`select * from (${sources.reimbursements}) evidence
+            where "orderId"=any(${sql.param(candidateOrders)}::text[])
+            order by id limit 1001`)
+        : null
+      const competingReports = competingReportResult ? z.array(evidence).parse(competingReportResult.rows) : []
       const mappings = await tx
         .select()
         .from(amazonProductMappings)
@@ -230,7 +258,10 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
           inventory?.rows.map((row) => ({ sku: row.sellerSku, asin: row.asin ?? null, fnsku: row.fnSku ?? null })) ??
             [],
           postings.slice(0, postingLimit),
-          input.candidatePage ?? 0
+          input.candidatePage ?? 0,
+          input.source === "reimbursements"
+            ? { rows: competingReports.slice(0, 1000), truncated: competingReports.length > 1000 }
+            : undefined
         ).map((row) => ({
           ...row,
           reimbursement: pageRows.find((source) => source.id === row.id)?.reimbursement ?? null,

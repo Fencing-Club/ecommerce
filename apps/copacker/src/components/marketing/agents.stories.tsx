@@ -40,9 +40,9 @@ export const Default = meta.story({
     await expect(canvas.getByText("Shenzhen Metalworks’s agent")).toBeVisible()
     await expect(canvas.getByText("Packing list submitted for purchase order 1043")).toBeVisible()
     await expect(canvas.getByText("Pickup booked for Oct 6")).toBeVisible()
-    // Your agent's steps take turns.
+    // Your agent's steps start on the first. They take turns as a Ticker, whose own stories check the turns.
     await expect(shown(canvas.getByText(firstStep))).toBe(true)
-    await waitFor(() => expect(shown(canvas.getByText(secondStep))).toBe(true), { timeout: 4000 })
+    await expect(shown(canvas.getByText(secondStep))).toBe(false)
   }
 })
 

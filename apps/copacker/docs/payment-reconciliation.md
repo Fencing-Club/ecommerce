@@ -25,6 +25,15 @@ pagination apply. These are lifetime events for each saved order, not a financia
   The collector does not retain a direct payment-transaction link, so an order reference cannot certify settlement.
   The 5,000-balance-row cap applies to the current evidence page and is disclosed on every affected comparison.
 
+`orderComparison.linkedRefundComparisons` groups successful refunds by their explicit parent SALE/CAPTURE transaction.
+It compares their sum with that payment in shop and presentment currency independently. Equal foreign-presentment
+amounts with unequal shop amounts are classified as `equal_presentment_different_shop_amounts`; this is an observation,
+not an FX gain, settlement, or explanation of the entire order difference. Split refunds are summed once after
+transaction deduplication. Missing parents are not inferred from amounts. Conflicting presentment copies block totals,
+and missing, negative or mixed-currency presentment values cannot establish that classification.
+`paymentStateObservations` retains the direction, amount and parent reference of pending/failed payment events.
+These observations never add unsuccessful payments to totals or infer that a failed refund explains the full difference.
+
 Missing or conflicting evidence yields null/unavailable, not zero. An empty totals list means no included observed
 events in that collection. It does not establish complete source history. Existing ingestion-status coverage still
 describes updated-order collection; it is not coverage by transaction processing date. Balance changes invalidate
@@ -89,14 +98,89 @@ amount equality nor a unique candidate proves a reimbursement link, allocation, 
 
 Receipt evidence adds `receiptReconciliation` using stored FBA `Receipts` movements with the exact shipment reference
 and SKU. The query is seller/workspace/US-marketplace scoped and capped at 5,000 rows per page; truncation withholds
-comparison totals. Signed movement quantities may agree or differ from shipment-received units; neither confirms
+observation totals. `observedMovementQuantity`, `observedDifference` and `observationStatus` describe retained movements
+only. Full reconciliation `difference` remains null and status is `requires_review` with `receipt_period_unknown`:
+neither a shipment name nor the earliest retained movement establishes when receiving began. Agreement is subject to
+the same limitation as disagreement. Page-level `receiptMovementCoverage.windows` exposes actual report status,
+requested bounds and imported bounds for that seller and marketplace; it does not bridge missing windows or assume
+unavailable reports cover receiving. Coverage changes invalidate pagination snapshots. These observations never confirm
 acquisition, losses, a receipt date or a lot. Missing movement history remains unknown. AWD case quantities require
 explicit network/reference and unit mappings and are not compared to FBA movements.
 
 Regression tests cover duplicate/conflicting payments, pending refunds, exact precision, currency separation,
 cross-account isolation, changed balance snapshots, reversals outside the period, multi-step chains, one-sided release
 references and ambiguous releases. PR #70 deployed as `d93964ff`; read-only live checks confirmed Shopify deduplication,
-reimbursement reversal netting and single released-posting contribution. The subsequent stored-evidence diagnostics
-and receipt-movement comparison described above await their own deployment and live acceptance.
+reimbursement reversal netting and single released-posting contribution. PR #71 deployed the subsequent stored-evidence
+diagnostics and receipt-movement comparison as `dae10ab0` on October 19, 2026. Read-only live acceptance confirmed the
+diagnostics without starting a sync or backfill; see the dated results and remaining coverage limitations in the
+[analytics data backlog](specs/analytics/analytics-data-backlog.md#pr-71-acceptance-october-19-2026-pacific).
 External gateway fees, refund duty components, payout matching, historical product identity and return-to-stock lot
 restoration remain separate data/accounting gaps.
+
+## Saved shipment contents and stronger payment candidates
+
+Receipt evidence includes `declaredShipmentUnits` from the saved inbound shipment cache, matched by workspace,
+seller, network and shipment ID. The source and fetch timestamp are retained. Quantities are declared saleable units,
+not independently confirmed received units or physical pieces. Missing/invalid contents and omitted SKUs remain unknown;
+no case conversion is inferred. Changes to this cache invalidate continuation snapshots.
+
+Reimbursement candidates include `strongerPaymentCandidate` when order, nonempty SKU, marketplace, stored and payload
+currency, signed whole-transaction amount and reimbursement transaction type agree. When both the report row and
+matching payment item have an ASIN, those ASINs must also agree. These candidates rank first within
+the current 5,000-transaction search page, before 20-candidate pagination. The matching summary exposes their count.
+Search-page counts do not establish global uniqueness. Stronger candidates also expose `paymentCompetition`: the
+other stored report rows that meet the same strict criteria for that payment, across all dates and report pages.
+The lookup uses all order references on stronger candidates from the current transaction search page within the same workspace, seller and marketplace, reads at most 1,000
+report rows, and includes current page rows even when that bound is reached. Each candidate returns at most 20 other
+report row IDs with the observed count and explicit truncation flags. Truncated counts are lower bounds; no observed
+competitor then means `search_incomplete`, never uniqueness. A complete stored search with no competitor still does
+not prove payment assignment or complete provider history. Shared candidates are flagged before candidate pagination,
+and the summary count remains limited to the current transaction search page. Existing release, total, allocation and reversal checks still apply. No candidate confirms payment or adds
+income, even when only one candidate is visible. These changes read saved data only and schedule no acquisition.
+
+
+### October 22 live acceptance
+
+PRs #168, #169 and #171 were deployed in release `3da902ffe2969fd483ad46430ef0baa7011d8389` after CI and staging
+passed. Read-only production responses confirmed 12 AWD receipts, saved declared units for three shipments,
+64 FBA receipts with 13 stored coverage windows, and linked refund fields on 100 Shopify orders (11 linked groups).
+September's 11 reimbursement rows exposed three stronger candidates within the inspected transaction search page,
+with reported recovery outcomes and no confirmed payment assignments. No sync or backfill was started.
+
+
+### Shared-payment investigation (October 22)
+
+A read-only check of all saved Fencing Club reimbursement reports and matching financial transactions found 38 report
+rows with stronger candidates and 38 distinct candidate payments. Four payments compete across two groups of report
+rows: two $9.48 payments and two reports for the same socks order on March 26; two $21.18 payments and two reports for
+the same body-cord order on July 29. Both groups have distinct report IDs and distinct payment IDs, so these are not
+identical imported rows to deduplicate. Each group has two possible one-to-one assignments under the current criteria.
+
+The respective nearby approval/payment timestamps differ by 60 and 14 seconds in March, and 59 and 8 seconds in July.
+That supports a possible pairing but does not supply a direct reimbursement identifier. Saved payment references are
+order, settlement and financial-event-group IDs. No pairing was confirmed and no accounting records were changed.
+
+One July report has an explicit later reimbursement reversal of -$21.18, -1 cash unit and +1 inventory unit. Keep that
+report-family correction separate from assigning the two original positive payments. It establishes a reported cash-to-
+inventory change, not receipt of inventory or a verified bank settlement. Historical costs remain unknown. Further
+confirmation needs an authoritative payment-to-report reference or a reviewed allocation; more amount/date guessing
+cannot resolve it. No provider request, sync or backfill was started for this investigation.
+
+### Orderless reversal payments
+
+`possibleReversalPayment` flags a negative reimbursement report candidate when an order reference is missing on
+one or both sides, exact nonempty SKU and ASIN agree, marketplace and stored/payload currencies agree, and the signed
+whole-transaction amount matches. The payment must be released, have no deferred/release link, and contain exactly one
+item with one explicit `FBAReversedReimbursement` component equal to the total. Item and root breakdown totals must
+balance. These candidates rank after order-backed stronger candidates but before other candidates within the current
+transaction search page. Dates are used only for ordering, never to establish a match.
+
+`possibleReversalPaymentCount` covers that search page. `reversalPaymentCompetition` explicitly remains
+`not_assessed_across_report_pages`; the order-based competition search does not establish uniqueness for these
+orderless candidates. Missing order reference and allocation blockers remain, `paymentCompetition` is null, and
+`reconciled` remains false. No payment assignment, inventory receipt or accounting amount is confirmed.
+
+A read-only October 22 investigation found a saved -$21.18 released clawback for the July body-cord reimbursement's
+September 2 reversal, posted 46 seconds after report approval. SKU, ASIN and currency match; it was the only saved
+negative report and payment of that amount. The financial record contains settlement and financial-event-group IDs,
+not an order or reimbursement ID. This supports a candidate, not a confirmed link. No provider acquisition was run.
