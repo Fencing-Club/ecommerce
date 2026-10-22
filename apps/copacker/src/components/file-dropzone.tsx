@@ -241,7 +241,7 @@ export function FileDropzone({
                   {current.href ? (
                     <a
                       href={current.href}
-                      className="truncate rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                      className="focus-ring truncate rounded-sm text-sm font-medium underline-offset-4 hover:underline"
                     >
                       {fileName(current.name, { title: current.name })}
                     </a>
@@ -286,7 +286,7 @@ export function FileDropzone({
           data-dragging={isDragActive || undefined}
           data-invalid={flagged || undefined}
           onClick={open}
-          className="flex w-full cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-6 text-center transition-colors outline-none *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive data-invalid:focus-visible:ring-destructive/20"
+          className="focus-ring flex w-full cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-6 text-center transition-colors *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive data-invalid:focus-visible:ring-destructive/20"
         >
           <UploadCloud aria-hidden className="mb-1 size-5 text-muted-foreground" />
           <span id={`${zoneId}-prompt`} className="text-sm">

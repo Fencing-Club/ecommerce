@@ -93,7 +93,7 @@ export function SupplierOrderIndex({
                   <Link
                     to="/orders/$id"
                     params={{ id: order.id }}
-                    className="font-medium underline-offset-4 hover:underline"
+                    className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
                   >
                     {order.reference}
                   </Link>

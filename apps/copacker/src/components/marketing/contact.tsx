@@ -97,7 +97,7 @@ export function Contact() {
               <Way icon={BookOpen} title={t("faqTitle")} text={t("faqText")}>
                 <a
                   href="/#faq"
-                  className="group inline-flex h-11 items-center gap-2 rounded-xl border px-5 text-[0.9375rem] font-medium transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="focus-ring group inline-flex h-11 items-center gap-2 rounded-xl border px-5 text-[0.9375rem] font-medium transition-colors hover:bg-muted"
                 >
                   {t("questions")}
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />

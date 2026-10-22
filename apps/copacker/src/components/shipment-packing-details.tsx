@@ -1,6 +1,6 @@
 import { ArrowRight, Building2, CornerDownRight, MapPin, Truck, Warehouse } from "lucide-react"
 import { Fragment, type ReactNode } from "react"
-import { FieldTitle } from "./ui/field"
+import { FieldTitle } from "@/components/ui/field"
 
 /** The same card surrounds editable packing fields and the submitted shipment details. */
 export function ShipmentPackingDetails({
@@ -20,7 +20,7 @@ export function ShipmentPackingDetails({
     <section className="@container/packing-details overflow-hidden rounded-lg border bg-card text-sm">
       {/* A narrow card lists the stops one per line, each after the first led in by a corner arrow from the one above. */}
       {route && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b bg-muted/40 px-4 py-3 text-[13px] leading-[17px] font-medium @max-md/packing-details:flex-col @max-md/packing-details:items-start @max-md/packing-details:gap-2.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b bg-muted/40 px-4 py-3 text-meta leading-[17px] font-medium @max-md/packing-details:flex-col @max-md/packing-details:items-start @max-md/packing-details:gap-2.5">
           {route.map((stop, index) => {
             let Icon = Warehouse
             if (index === 0) {

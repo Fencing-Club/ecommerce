@@ -1,11 +1,27 @@
 import type * as React from "react"
 import { cn } from "@/lib/utils"
 
-// `framed={false}` drops the table's own border, for a table that sits edge to edge inside a card.
-function Table({ className, framed = true, ...props }: React.ComponentProps<"table"> & { framed?: boolean }) {
+// `framed={false}` drops the table's own border, for a table that sits edge to edge inside a card. `inset` lines the
+// first and last columns up with the card's padding (16px, or 12px in a small card).
+function Table({
+  className,
+  framed = true,
+  inset = false,
+  ...props
+}: React.ComponentProps<"table"> & { framed?: boolean; inset?: boolean }) {
   return (
     <div data-slot="table-container" className={cn("relative w-full overflow-x-auto", framed && "rounded-lg border")}>
-      <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table
+        data-slot="table"
+        data-inset={inset || undefined}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          inset &&
+            "[&_td:first-child]:ps-[var(--card-spacing,1rem)] [&_td:last-child]:pe-[var(--card-spacing,1rem)] [&_th:first-child]:ps-[var(--card-spacing,1rem)] [&_th:last-child]:pe-[var(--card-spacing,1rem)]",
+          className
+        )}
+        {...props}
+      />
     </div>
   )
 }

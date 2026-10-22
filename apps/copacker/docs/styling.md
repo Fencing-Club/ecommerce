@@ -1,17 +1,17 @@
 # Styling
 
 Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwind CSS](https://tailwindcss.com) v4.
-[vanilla-extract](https://vanilla-extract.style) holds the theme tokens, the reset and a few remaining page styles.
+[vanilla-extract](https://vanilla-extract.style) holds the theme tokens, and nothing else.
 
 - **Shared components** under `apps/copacker/src/components/ui` are shadcn's own source on Base UI (style
   `base-nova`), added with the shadcn CLI and styled with Tailwind classes. Add one from `apps/copacker` with
   `pnpm dlx shadcn@latest add <component>`. Edit them like any other code: the frame and header band on `Table` are
-  ours.
+  ours. `components.json` sets `rsc: false` and `rtl: true`, so an added component comes without `"use client"` and
+  with logical classes (`ms-`, `ps-`, `start-`).
 - **New UI** uses Tailwind classes, shadcn components and their conventions: `data-slot`, `cn()` from `@/lib/utils`,
-  `cva` for variants.
-- **Remaining page styles** are two colocated `*.css.ts` files (`app/layout.css.ts` and
-  `components/shipment-actions.css.ts`) and the `sx()` helper, used by a few components. Move one to Tailwind when
-  it's being reworked anyway.
+  `cva` for variants. Import a kit component as `@/components/ui/<name>`, never by a relative path.
+- **Reset:** Tailwind's preflight. `globals.css` adds the few base rules it leaves out: the body's full height and font
+  smoothing, and the pointer on buttons.
 
 ## Theme
 
@@ -22,18 +22,20 @@ and dark values live once, in `src/styles/theme.css.ts`, which sets the CSS vari
 
 - `info` is in-progress blue, for statuses and current stages; `chart-*` are chart series only.
 - `warning-foreground` is text and icons on a warning surface, where `warning` itself is too light to read.
-- Each tone has a soft fill, for status pills, icon tiles, banners and count pills: `primary-soft`, `info-soft`,
+- Each tone has a soft fill, for status pills, icon tiles, notices and count pills: `primary-soft`, `info-soft`,
   `success-soft`, `warning-soft` and `destructive-soft`. Lighter tints and their borders: `primary-tint` and
-  `primary-border` (the "Your next step" card), `warning-` and `destructive-tint` and `-border` (banners, danger
-  zones, failing rows), `success-tint` (added rows).
+  `primary-border` (the "Your next step" card), `warning-` and `destructive-tint` and `-border` (notices, danger
+  zones, failing rows), `success-tint` (added rows). Use these, never a tone at an opacity such as `bg-success/10`.
 - `border-strong` outlines checkboxes and switches; `disabled-foreground` is disabled text and icons.
 - `kind-buyer`, `kind-supplier` and `kind-forwarder`, with their `-soft` tiles, mark a workspace's kind in the
   workspace menu, never an action.
 - `scrim` is behind dialogs, sheets and the command menu. `chart-1` to `chart-3`, `chart-1-soft` and `chart-muted`
   are chart series; `handoff-pickup`, `handoff-forwarder-soft` and `on-light-info` are the lead time bars.
-- Shadows are for overlays and the action bar only, each its own token: `shadow-menu` (menus, popovers, selects),
-  `shadow-dialog`, `shadow-command`, `shadow-sheet`, `shadow-action-bar` and `shadow-action-bar-docked`, and
-  `shadow-tooltip`.
+- Shadows are for overlays and the action bar only, each its own token: `shadow-menu` (menus, submenus, popovers,
+  selects and toasts), `shadow-dialog` (dialogs and side sheets), `shadow-command`, `shadow-sheet` (a bottom sheet),
+  `shadow-action-bar` and `shadow-action-bar-docked`, and `shadow-tooltip`.
+- `text-meta` is the 13px small print beside a value: breadcrumbs, a record's meta row, a field's problem. It keeps its
+  parent's line height. Write `text-meta`, never `text-[13px]`.
 
 Every color in the app is one of these tokens, never a literal: no hex, `rgb()` or Tailwind palette color such as
 `bg-black`. The exceptions are content, not UI: store and sign-in provider logos, product option swatches, and the
@@ -58,44 +60,64 @@ Dark mode is the `.dark` class on `<html>`; use Tailwind's `dark:` variant. The 
   server and while hydrating, it reports System.
 - **Storybook:** the toolbar's theme calls `themeStore.setTheme`.
 
+## Utilities
+
+`globals.css` defines two utilities of the app's own. `cn()` knows them, and `text-meta`, so a class passed after one
+of them doesn't replace it.
+
+- `focus-ring`: the ring a control shows when the keyboard reaches it (`outline-none`, then `ring-3 ring-ring/50` on
+  `:focus-visible`). Every interactive element that isn't a kit component takes it, with a `rounded-*` to shape it.
+- `text-link`: a link inside a sentence, underlined in the text's own color, with the focus ring. A link that's
+  underlined only on hover, such as a record's name in a table, takes `focus-ring rounded-sm` instead.
+
+## The kit's variants
+
+Reach for these before writing the classes they stand for:
+
+| Need                                          | Use                                                                                       |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| A card whose table or list runs edge to edge  | `<Card flush>`: no gap or padding; a direct `CardHeader` keeps the padding, with a rule under it when something follows |
+| A table's edge columns in line with its card  | `<Table framed={false} inset>`: 16px, or 12px in a small card                            |
+| A button that's 44px on a phone, 34px from `sm` | `size="responsive"`, or `size="icon-responsive"` for an icon button                     |
+| A quiet remove or disconnect                  | `variant="ghost-destructive"`: muted until pointed at, then red                           |
+| A menu, popover or dialog trigger that's a button | `render={<Button variant=… size=… />}` on the trigger, never the button's classes copied |
+| A number without the browser's spin buttons   | `NumberInput`, or `InputGroupNumberInput` inside an `InputGroup`                          |
+| Something loading                             | `Spinner`, which stops turning for reduced motion                                         |
+| An empty list, a failed page, an empty menu   | `EmptyState` from `@/components/common`: `icon`, an optional `title` (`titleAs` for a heading) and `description`, and its actions as children. `ui/empty`'s pieces carry the same spacing and 40px icon tile |
+| A popover                                     | `PopoverContent`, with its size and padding overridden, not Base UI's parts               |
+
 ## Page patterns
 
 One component per concept, from the redesign's kit ([consistency](specs/app-redesign/consistency.md)):
 
 | Component                                        | Use                                                                                          |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `Banner` (`components/banner.tsx`)               | The page's one notice, dismissible until its state changes; blocking errors can't be dismissed |
+| `Alert` (`components/ui/alert.tsx`)              | A page's notice, above its content: what happened and, in its action, what deals with it     |
 | `ActionBar` (`components/action-bar.tsx`)        | Unsaved changes, a task flow's summary and submit, a proposal to review, bulk actions. Floats over the column, docks on a phone |
 | `LifecycleTracker` (`components/lifecycle-tracker.tsx`) | A record's stages: done, current, waiting on the viewer, not started. A compact card on a phone |
 | `NextStepCard` (`components/next-step.tsx`)      | A record's one next step for the viewer, or who it waits on. On a phone its actions go in the `ActionBar` |
 | `TabLinks` (`components/tab-links.tsx`)          | A list's views and a record's tabs, as links with counts                                     |
 
-## Precedence
-
-vanilla-extract page styles and `sx()` are unlayered, so they win over Tailwind's layered utilities. Don't style the
-same property on one element with both. Where a component is on Tailwind, keep its layout in Tailwind too.
+`ActionBar`, `LifecycleTracker` and `NextStepCard` are prototypes for now: only their stories use them.
 
 ## Where things live
 
 | Module                    | Use it for                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/app/globals.css`     | Tailwind, shadcn's base styles, and the theme mapping. Imported by `AppProviders` and the marketing pages. |
+| `src/app/globals.css`     | Tailwind, shadcn's base styles, the theme mapping, `text-meta`, the base rules preflight leaves out, and the `focus-ring` and `text-link` utilities. Imported by the root layout and the marketing pages, after `theme.css`. |
 | `components.json`         | The shadcn CLI's settings.                                                                   |
-| `@/styles/theme.css`      | `vars`: the color, radius, font and shadow tokens, for vanilla-extract styles.               |
-| `@/styles/tokens`         | Build-time helpers for vanilla-extract: `space(4)`, `alpha(color, 50)`, `fontSize.sm`.       |
-| `@/styles/sprinkles.css`  | `sx()`: typed layout and text utilities with `sm`/`md`/`lg`/`xl` responsive values.          |
-| `@/styles/global.css`     | The reset and base element styles. Imported before `globals.css`, wherever that is.          |
+| `@/styles/theme.css`      | The color, radius, font and shadow tokens as CSS variables, and `vars` for TypeScript that needs a token, such as the charts. |
 
 ## Tables
 
 Tables use the shadcn `Table`, which frames itself with a rounded border and a muted header band, like shadcn's data
-table. A table that sits inside a card runs edge to edge instead: `<Table framed={false}>` in a card with
-`gap-0 overflow-hidden py-0`, under a header with `border-b`. Never put a framed table inside a card. Numbers are
-right-aligned with `tabular-nums`, and a value that doesn't apply is `—`. A row that opens a record is clickable as a
-whole (`LinkRow`, or a link stretched over the row) while its own link stays for keyboard and screen readers.
-Per-row actions live in a trailing ⋯ menu. Columns that only matter on a wide screen hide with container queries
-(`hidden @4xl:table-cell` inside an `@container`), and on a phone a table can stack each row (`@max-md:block` on the
-table and body, `@max-md:flex` on rows) instead of scrolling sideways. See Restock and Orders.
+table. A table that sits inside a card runs edge to edge instead: `<Table framed={false} inset>` in a `<Card flush>`,
+under its `CardHeader`. Never put a framed table inside a card. Numbers are right-aligned with `tabular-nums`, and a
+value that doesn't apply is `—`. A row that opens a record is clickable as a whole (`LinkRow`, or a link stretched over
+the row) while its own link stays for keyboard and screen readers. Per-row actions live in a trailing ⋯ menu. Columns
+that only matter on a wide screen hide with container queries (`hidden @4xl:table-cell` inside an `@container`), and on
+a phone a table can stack each row (`@max-md:block` on the table and body, `@max-md:flex` on rows) instead of scrolling
+sideways. See Restock and Orders.
 
 ## Statuses
 

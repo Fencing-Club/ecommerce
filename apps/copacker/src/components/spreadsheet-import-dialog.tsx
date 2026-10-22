@@ -1,12 +1,13 @@
-import { CircleAlert, Download, LoaderCircle } from "lucide-react"
+import { CircleAlert, Download } from "lucide-react"
 import { type ReactNode, useId, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Spinner } from "@/components/ui/spinner"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { FileDropzone } from "./file-dropzone"
-import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 
 export type ImportMode = "add" | "replace"
 export type ImportMessage = { location: string; message: string }
@@ -21,8 +22,7 @@ export type ImportCheck = {
   rows: number
 }
 // A list that scrolls inside the dialog, focusable so it scrolls from the keyboard too.
-export const scrollList =
-  "overflow-y-auto outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+export const scrollList = "focus-ring overflow-y-auto focus-visible:ring-inset"
 const fileTypes = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "text/csv": [".csv"]
@@ -158,7 +158,7 @@ export function SpreadsheetImportDialog<T>({
         {step === "upload" && (
           <div className="flex flex-col items-start gap-2">
             <Button type="button" variant="outline" disabled={isDownloading || isBusy} onClick={() => void download()}>
-              {isDownloading ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
+              {isDownloading ? <Spinner /> : <Download aria-hidden />}
               {t("downloadTemplate")}
             </Button>
             {downloadError && (
@@ -178,7 +178,7 @@ export function SpreadsheetImportDialog<T>({
         />
         {isBusy && (
           <output className="flex items-center gap-3 py-4">
-            <LoaderCircle aria-hidden className="size-5 animate-spin" />
+            <Spinner className="size-5" />
             <span>{isReading ? t("checking") : text.importing}</span>
           </output>
         )}
@@ -214,7 +214,7 @@ export function SpreadsheetImportDialog<T>({
             role="alert"
             className={cn("flex min-h-0 flex-col overflow-hidden rounded-lg border", messages.length > 3 && "min-h-48")}
           >
-            <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-[13px] font-semibold">
+            <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-meta font-semibold">
               {hasTemplateError ? t("templateMismatch") : t("issues", { count: messages.length })}
             </h3>
             {!hasTemplateError && checked?.hint && (

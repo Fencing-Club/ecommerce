@@ -68,14 +68,14 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
           {...handlers}
           data-dragging={isDragging || undefined}
           onClick={browse}
-          className="flex w-full items-center gap-3 rounded-lg border border-border-strong bg-sidebar px-3 text-start transition-colors outline-none *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 data-dragging:border-ring data-dragging:bg-muted/50"
+          className="focus-ring flex w-full items-center gap-3 rounded-lg border border-border-strong bg-sidebar px-3 text-start transition-colors *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring data-dragging:border-ring data-dragging:bg-muted/50"
         >
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground">
             <Upload className="size-4" aria-hidden />
           </span>
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-sm font-medium">{t("drop")}</span>
-            <span className="text-[13px] text-muted-foreground">{t.rich("browse", { browse: browseLink })}</span>
+            <span className="text-meta text-muted-foreground">{t.rich("browse", { browse: browseLink })}</span>
           </span>
         </button>
       )}
@@ -86,7 +86,7 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
           className="flex-wrap content-center items-center gap-x-2 gap-y-2.5 rounded-lg border bg-sidebar px-3 *:data-[slot=progress-track]:h-1.5"
         >
           <ProgressLabel className="min-w-0 flex-1">{t("filling")}</ProgressLabel>
-          <span id={`${id}-matching`} className="text-[13px] text-muted-foreground">
+          <span id={`${id}-matching`} className="text-meta text-muted-foreground">
             {t("matching", { units: state.units })}
           </span>
         </Progress>

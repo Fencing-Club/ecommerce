@@ -208,7 +208,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
             onClick={() => input.current?.click()}
             disabled={uploading > 0}
             className={cn(
-              "flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+              "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
               !images.length && "col-span-3 aspect-auto py-8 sm:col-span-5"
             )}
           >
@@ -608,7 +608,7 @@ export function ProductEditor({
 
             <Media images={product.images} onChange={(images) => change({ images })} />
 
-            <Card className="gap-0 overflow-hidden py-0">
+            <Card flush>
               <div className="flex flex-col gap-3 border-b p-4">
                 <CardHeader className="px-0">
                   <CardTitle>{t("variants")}</CardTitle>

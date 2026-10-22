@@ -50,7 +50,7 @@ export function LifecycleTracker({ label, stages }: { label: string; stages: Rea
           return (
             <li key={stage.id} className="flex min-w-0 flex-col gap-2" data-state={stage.state}>
               <span className={cn("h-1 rounded-full", look.bar)} aria-hidden />
-              <span className="flex min-w-0 items-center gap-1.5 text-[13px]">
+              <span className="flex min-w-0 items-center gap-1.5 text-meta">
                 <look.icon className={cn("size-3.5 shrink-0", look.tint)} aria-hidden />
                 <span className={cn("truncate", look.label)} aria-hidden>
                   {stage.label}
@@ -90,7 +90,7 @@ export function LifecycleTracker({ label, stages }: { label: string; stages: Rea
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md text-[13px] font-medium text-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring inline-flex shrink-0 items-center gap-1 rounded-md text-meta font-medium text-primary"
           >
             {t("allStages")}
             <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -112,7 +112,7 @@ export function LifecycleTracker({ label, stages }: { label: string; stages: Rea
                     {index < stages.length - 1 && <span className="w-0.5 flex-1 bg-border" />}
                   </span>
                   <span className="flex min-w-0 flex-col gap-px pb-2.5">
-                    <span className={cn("text-[13px]", look.label)} aria-hidden>
+                    <span className={cn("text-meta", look.label)} aria-hidden>
                       {stage.label}
                     </span>
                     <span className="sr-only">{spoken(stage)}</span>

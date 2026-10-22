@@ -2,14 +2,14 @@ import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@r
 import { ChevronRight, Copy, Ellipsis, Trash2, X } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { nextPalletId, type PalletCarton, type PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
 import { type PalletIssuePlace, usePalletIssueErrors } from "./packing-issues"
 import { PalletCartonsDialog } from "./pallet-cartons-dialog"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 // Toggle, pallet, dimensions, weight, stacking, cartons and the menu. From 50rem the fields have the design's widths,
 // the gaps grow to 2rem as there's room, and cartons takes the rest; from 44rem the columns give a little.
@@ -45,7 +45,7 @@ export function PalletTable({
       <div className="flex flex-col gap-3 wide:gap-0 wide:overflow-hidden wide:rounded-lg wide:border wide:bg-card">
         <div
           aria-hidden
-          className={cn("hidden bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
+          className={cn("hidden bg-muted/60 px-4 py-2.5 text-meta text-muted-foreground wide:grid", columns)}
         >
           <span className="col-start-2">{t("columns.pallet")}</span>
           <span>{t("columns.dimensions")}</span>
@@ -309,7 +309,7 @@ function PalletRow({
       <div className="hidden wide:col-start-6 wide:row-start-1 wide:flex wide:flex-wrap wide:items-center wide:justify-between wide:gap-x-3 wide:gap-y-1 wide:self-center wide:py-3.5">
         <div className="tabular-nums">
           <p>{summary.cartons}</p>
-          <p className="text-[13px] text-muted-foreground">{summary.units}</p>
+          <p className="text-meta text-muted-foreground">{summary.units}</p>
         </div>
         {!open && count > 0 && <IssueBadge count={count} />}
       </div>
@@ -359,7 +359,7 @@ function PalletRow({
                     </Button>
                   </li>
                 ))}
-                {!onPallet.length && <li className="text-[13px] text-muted-foreground">{t("noCartons")}</li>}
+                {!onPallet.length && <li className="text-meta text-muted-foreground">{t("noCartons")}</li>}
               </ul>
             )}
           </div>

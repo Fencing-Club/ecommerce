@@ -30,6 +30,9 @@ export const Default = meta.story({
     await expect(canvas.getByText("Create one to order stock from a supplier.")).toBeVisible()
     const media = canvas.getByText("No purchase orders yet").parentElement?.querySelector("[data-slot=empty-icon]")
     await expect(media).toHaveAttribute("data-variant", "icon")
+    // The kit's icon tile is 40px, with a 20px icon.
+    await expect(media?.getBoundingClientRect().width).toBe(40)
+    await expect(media?.querySelector("svg")?.getBoundingClientRect().width).toBe(20)
     await userEvent.click(canvas.getByRole("button", { name: "Create purchase order" }))
     await expect(args.onAction).toHaveBeenCalledOnce()
   }

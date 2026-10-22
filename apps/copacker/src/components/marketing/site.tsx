@@ -32,12 +32,11 @@ const sections = ["forecast", "handoffs", "agents", "faq"] as const
 
 function Nav({ tone }: { tone: "dark" | "light" }) {
   const t = useTranslations("marketing.site")
-  const link =
-    "rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+  const link = "focus-ring rounded-sm transition-colors hover:text-foreground"
   return (
     <Bar tone={tone}>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-10 px-6">
-        <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link to="/" className="focus-ring rounded-md">
           <BrandMark />
         </Link>
         <nav aria-label={t("mainNav")} className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">

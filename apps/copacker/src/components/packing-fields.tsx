@@ -1,11 +1,8 @@
 import { CircleAlert, ExternalLink } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
+import { Badge } from "@/components/ui/badge"
+import { InputGroup, InputGroupAddon, InputGroupNumberInput } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
-import { Badge } from "./ui/badge"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
-
-const numberInput =
-  "h-full min-w-0 text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 
 // A carton or pallet number: blank until entered, with its unit after it.
 export function NumberField({
@@ -31,18 +28,17 @@ export function NumberField({
 }) {
   return (
     <InputGroup className={cn("h-9 bg-background", className)}>
-      <InputGroupInput
+      <InputGroupNumberInput
         aria-label={label}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? errorId : undefined}
-        type="number"
         inputMode={integer ? "numeric" : "decimal"}
         min={0}
         step={integer ? 1 : "any"}
         value={Number.isFinite(value) ? value : ""}
         onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
         onBlur={onBlur}
-        className={numberInput}
+        className="h-full min-w-0 text-end"
       />
       {suffix && (
         <InputGroupAddon align="inline-end" className="text-xs font-normal">
@@ -90,18 +86,17 @@ export function DimensionsField({
                 ×
               </span>
             )}
-            <InputGroupInput
+            <InputGroupNumberInput
               aria-label={label(side)}
               aria-invalid={invalid.includes(side) || undefined}
               aria-describedby={invalid.includes(side) ? errorId : undefined}
-              type="number"
               inputMode="decimal"
               min={0}
               step="any"
               value={Number.isFinite(value[side]) ? value[side] : ""}
               onChange={(event) => onChange({ [side]: event.currentTarget.valueAsNumber })}
               onBlur={() => onBlur?.(side)}
-              className={cn(numberInput, "w-11 px-1.5 text-center wide:w-auto wide:flex-1")}
+              className="h-full w-11 min-w-0 px-1.5 text-center wide:w-auto wide:flex-1"
             />
           </span>
         ))}
@@ -154,7 +149,7 @@ export function FieldError({
   const t = useTranslations("orders.packing")
   const booking = useTranslations("booking")
   return (
-    <p id={id} className={cn("flex items-start gap-2 text-[13px] text-destructive", className)}>
+    <p id={id} className={cn("flex items-start gap-2 text-meta text-destructive", className)}>
       <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
       <span>
         <span>{children}</span>
@@ -165,7 +160,7 @@ export function FieldError({
               href={source.href}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-sm whitespace-nowrap text-foreground underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="focus-ring inline-flex items-center gap-1 rounded-sm whitespace-nowrap text-foreground underline underline-offset-4"
             >
               {t("ruleSource", { receiver: source.receiver })}
               <ExternalLink className="size-3 text-muted-foreground" aria-hidden />

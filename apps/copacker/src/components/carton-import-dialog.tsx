@@ -1,6 +1,7 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
 import { type OrderInput } from "@repo/copacker-shipments"
 import { useFormatter, useTranslations } from "use-intl"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCartonTemplate } from "@/hooks/use-import-templates"
 import { cartonTotals, expandCartonGroups, type CartonGroup } from "@/lib/carton-groups"
 import { readCartonFile, type CartonImportResult } from "@/lib/carton-import"
@@ -8,7 +9,6 @@ import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
 import { ProductIdentity } from "./product-identity"
 import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsheet-import-dialog"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion"
 
 export type CartonImportMode = ImportMode
 

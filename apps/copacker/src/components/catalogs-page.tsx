@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
 import type { catalogsPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
 import { CatalogIndex } from "./supplier/catalog-index"
-import { Button } from "./ui/button"
 
 export function CatalogsPageView({ catalogs, editable }: Awaited<ReturnType<typeof catalogsPageData>>) {
   const t = useTranslations("supplier.pages")
