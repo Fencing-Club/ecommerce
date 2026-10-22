@@ -54,8 +54,7 @@ export const ShipmentFilters = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Filters" }))
     const panel = await shownDialog("List filters")
-    // The panel fades in, so wait until it has finished opening.
-    await waitFor(() => expect(panel.getByText("Source")).toBeVisible())
+    await expect(panel.getByText("Source")).toBeVisible()
     await userEvent.type(panel.getByLabelText("From"), "2026-10-01")
     await expect(args.dispatch).toHaveBeenLastCalledWith({ type: "ready", from: "2026-10-01" })
     await userEvent.click(panel.getByRole("button", { name: "Done" }))

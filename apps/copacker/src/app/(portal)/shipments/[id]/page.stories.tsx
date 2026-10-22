@@ -478,7 +478,7 @@ export const DraftPacking = meta.story({
       "aria-disabled",
       "true"
     )
-    // The menu fades in, so its text is visible only once the animation ends.
+    // The menu shows from the frame after it opens.
     await waitFor(() => expect(teaTowelMenu.getByText("Label not provided")).toBeVisible())
     await userEvent.keyboard("{Escape}")
   }
@@ -746,7 +746,7 @@ export const DraftPackingMissingLabel = meta.story({
     await userEvent.click(await canvas.findByRole("button", { name: "Labels for NT-WB-2210" }))
     const menu = within(await screen.findByRole("menu"))
     await expect(menu.getByRole("menuitem", { name: /FNSKU labels/ })).toHaveAttribute("aria-disabled", "true")
-    // The menu fades in, so its text is visible only once the animation ends.
+    // The menu shows from the frame after it opens.
     await waitFor(() => expect(menu.getByText("Its FNSKU is looked up when the purchase order is sent")).toBeVisible())
     await expect(menu.getByRole("menuitem", { name: "Suffocation warning labels" })).toHaveAttribute(
       "href",

@@ -107,7 +107,7 @@ const meta = preview.meta({
   }
 })
 
-// The dialog, once it has faded in.
+// The dialog, once it shows.
 async function shown() {
   const dialog = await shownDialog("Upload carrier labels")
   return dialog.element

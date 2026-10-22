@@ -37,7 +37,9 @@ pnpm --filter copacker exec vitest run --project storybook
 
 Test runs turn animations and transitions off (`.storybook/vitest.setup.ts`, loaded only by Vitest), so no play
 function sees a popup, menu or dialog halfway through fading in or out. Storybook itself keeps them for people looking
-at the stories. The stories don't retry: one that fails has a problem to fix, not a moment it missed.
+at the stories. A popup still shows from the frame after it opens, so check it with `waitFor`, or open it through
+`shownDialog` or `chooseOption`, which wait for it. The stories don't retry: one that fails has a problem to fix, not a
+moment it missed.
 
 Components compile through the React Compiler in Storybook too (`.storybook/main.ts`), as they do in the app, so play
 tests run the memoized code people get. Story files themselves stay uncompiled: a page story's server half is an async

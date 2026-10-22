@@ -104,11 +104,10 @@ export const Menu = meta.story({
     await expect(canvas.getByText("Needs an uploaded label")).toBeVisible()
     await expect(canvas.getByText("Units must be divisible by units per pack")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "More for Canvas tote bag" }))
-    await expect(await screen.findByRole("menuitem", { name: "Download label" })).toHaveAttribute(
-      "href",
-      `/api/orders/${orderId}/labels/${order.items[0]!.id}`
-    )
-    // The menu fades in, so its items are checked by where they lead rather than by being visible yet.
+    const label = await screen.findByRole("menuitem", { name: "Download label" })
+    // The menu shows from the frame after it opens.
+    await waitFor(() => expect(label).toBeVisible())
+    await expect(label).toHaveAttribute("href", `/api/orders/${orderId}/labels/${order.items[0]!.id}`)
     await expect(screen.getByRole("menuitem", { name: "Download hazard label" })).toHaveAttribute(
       "href",
       `/api/orders/${orderId}/labels/warning`
