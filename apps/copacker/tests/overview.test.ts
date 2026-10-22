@@ -38,6 +38,9 @@ import {
 } from "../src/server/overview-sales"
 import { database, setUpTestDatabase } from "./test-db"
 
+// The query suites below share the file's database; each seeds its own workspace.
+setUpTestDatabase()
+
 function line(overrides: Partial<RestockLine>): RestockLine {
   return {
     variantId: "v1",
@@ -579,7 +582,6 @@ describe("sales queries", () => {
   const amazonAccount = { provider: "amazon" as const, externalId: "SELLER" }
   const money = (amount: string) => ({ shopMoney: { amount, currencyCode: "USD" } })
 
-  setUpTestDatabase()
   beforeAll(async () => {
     await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
     const shopifyOrder = (id: string, createdAt: string, lines: unknown[], extra: Record<string, unknown> = {}) => ({
@@ -1054,8 +1056,6 @@ describe("sales queries", () => {
 })
 
 describe("the Overview's purchase orders", () => {
-  const pg = new PGlite()
-  const database = drizzle(pg, { schema: tables })
   const org = { id: randomUUID(), timeZone: "UTC" }
   const po = (variantId: string, status: "draft" | "submitted") => ({
     buyerOrgId: org.id,
@@ -1069,8 +1069,6 @@ describe("the Overview's purchase orders", () => {
   })
 
   beforeAll(async () => {
-    context.current = database
-    await applySchema(pg)
     await database.insert(tables.organizations).values({ id: org.id, name: "Fencing Club", kind: "buyer" })
     // A supplier that isn't on Copacker: the buyer shares the PO's documents with it.
     const [supplier] = await database
@@ -1097,9 +1095,6 @@ describe("the Overview's purchase orders", () => {
         createdBy: "user-1"
       }))
     )
-  })
-  afterAll(async () => {
-    await pg.close()
   })
 
   it("dates a Net 30 PO sent to a supplier not on Copacker from when it was sent", async () => {

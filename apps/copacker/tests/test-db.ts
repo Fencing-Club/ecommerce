@@ -16,8 +16,8 @@ export function db() {
   return database
 }
 
-// Creates the schema from src/db/schema.ts before the tests and closes the database after them. `truncate` empties
-// tables before each test: `true` for every workspace's rows, or a list of tables.
+// Creates the schema from src/db/schema.ts before the tests and closes the database after them. Call it once per file.
+// `truncate` empties tables before each test: `true` for every workspace's rows, or a list of tables.
 export function setUpTestDatabase({ truncate = false }: { truncate?: boolean | PgTable[] } = {}) {
   beforeAll(async () => {
     await applySchema(pg)
