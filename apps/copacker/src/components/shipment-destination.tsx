@@ -1,5 +1,6 @@
 import type { Address } from "@repo/copacker-orders"
 import { useTranslations } from "use-intl"
+import { addressLine } from "@/lib/address"
 import { AddressSummary } from "./partner-address"
 import { ShipmentAddress } from "./shipment-packing-details"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
@@ -33,16 +34,7 @@ export function ShipmentDestination({
               key={index}
               label={t("title")}
               name={address.name}
-              address={[
-                address.addressLine1,
-                address.addressLine2,
-                address.city,
-                address.stateOrRegion,
-                address.postalCode,
-                address.countryCode
-              ]
-                .filter(Boolean)
-                .join(", ")}
+              address={addressLine(address)}
             />
           ))
         ) : (

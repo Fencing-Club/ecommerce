@@ -8,7 +8,7 @@ import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { FormServerError, SubmitButton } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -436,7 +436,7 @@ function DetailsForm({
           )}
         </div>
         <SheetFooter className="border-t">
-          <FormError message={form.formState.errors.root?.server?.message} />
+          <FormServerError />
           <div className="flex justify-end gap-2">
             <SheetClose render={<Button type="button" variant="outline" />}>
               {editable ? t("details.cancel") : t("details.close")}

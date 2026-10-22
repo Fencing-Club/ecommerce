@@ -1,7 +1,5 @@
-import { useId, useRef } from "react"
-import { useController } from "react-hook-form"
-import { FormLabel, type FormFieldProps } from "@/components/form-controls"
-import { Field, FieldDescription, FieldError } from "@/components/ui/field"
+import { useRef } from "react"
+import { FormField, type FormFieldProps, useFormField } from "@/components/form-controls"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +15,7 @@ const emptyChoice = "\u0000empty"
 
 // A shadcn select of string options, for FormSelect, SelectField and the address country. An empty option, such as
 // None, is a choice of its own. On an optional field the placeholder is one too, as in a native select, so the value
-// can be cleared.
+// can be cleared. In a FormField, it takes the field's `fieldControl` props.
 export function SelectControl({
   id,
   name,
@@ -25,13 +23,14 @@ export function SelectControl({
   placeholder,
   required,
   disabled,
-  invalid,
   value,
   defaultValue,
   autoComplete,
   onValueChange,
   onBlur,
-  ref
+  ref,
+  "aria-invalid": invalid,
+  "aria-describedby": describedBy
 }: {
   id: string
   // Submits the value with a native form.
@@ -40,7 +39,6 @@ export function SelectControl({
   placeholder?: string
   required?: boolean
   disabled?: boolean
-  invalid?: boolean
   // Null when controlled and empty; leave it undefined to use `defaultValue` instead.
   value?: string | null
   defaultValue?: string
@@ -48,6 +46,8 @@ export function SelectControl({
   onValueChange?: (value: string | undefined) => void
   onBlur?: () => void
   ref?: React.Ref<HTMLButtonElement>
+  "aria-invalid"?: boolean
+  "aria-describedby"?: string
 }) {
   // Opening the menu moves focus out of the trigger. That isn't leaving the field, so it doesn't count as a blur, which
   // would show a required field's error while its menu is still open; closing the menu does.
@@ -89,7 +89,7 @@ export function SelectControl({
           }
         }}
         aria-invalid={invalid}
-        aria-describedby={invalid ? `${id}-error` : undefined}
+        aria-describedby={describedBy}
         className="w-full"
       >
         <SelectValue>
@@ -122,27 +122,23 @@ export function SelectControl({
 type SelectProps = FormFieldProps & { options: Option[]; placeholder?: string; required?: boolean }
 
 export function FormSelect({ name, label, description, className, options, placeholder, required }: SelectProps) {
-  const id = useId()
   const {
     field: { ref, value, onChange, onBlur },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name, { description })
   return (
-    <Field data-invalid={fieldState.invalid} className={className}>
-      <FormLabel htmlFor={id} label={label} required={required} />
+    <FormField {...fieldProps} label={label} required={required} className={className}>
       <SelectControl
-        id={id}
+        {...controlProps}
         ref={ref}
         options={options}
         placeholder={placeholder}
         required={required}
-        invalid={fieldState.invalid}
         value={typeof value === "string" ? value : null}
         onValueChange={onChange}
         onBlur={onBlur}
       />
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
-    </Field>
+    </FormField>
   )
 }

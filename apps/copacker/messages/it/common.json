@@ -8,7 +8,9 @@
     "offline": "Impossibile raggiungere Copacker. Controlla la connessione e riprova."
   },
   "actions": {
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "save": "Salva",
+    "saved": "Salvato"
   },
   "status": {
     "draft": "Bozza",
@@ -89,7 +91,8 @@
     "addressLine2": "Indirizzo (riga 2)",
     "city": "Città",
     "stateOrProvince": "Stato o provincia",
-    "postalCode": "CAP"
+    "postalCode": "CAP",
+    "addressName": "Nome dell’indirizzo"
   },
   "sync": {
     "actions": "Azioni di {label}",

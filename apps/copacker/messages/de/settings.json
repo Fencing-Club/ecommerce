@@ -29,10 +29,6 @@
     "label": "Sprache",
     "system": "System ({language})"
   },
-  "form": {
-    "save": "Speichern",
-    "saved": "Gespeichert"
-  },
   "profile": {
     "title": "Profil",
     "firstName": "Vorname",
@@ -172,9 +168,7 @@
     "addTag": "Tag hinzufügen",
     "wildcard": "Verwenden Sie * als Platzhalter, z. B. amazon*",
     "saveFailed": "Die Tags konnten nicht gespeichert werden. Versuchen Sie es erneut.",
-    "cancel": "Abbrechen",
-    "save": "Speichern",
-    "saving": "Wird gespeichert…"
+    "save": "Speichern"
   },
   "restock": {
     "title": "Nachschub",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "Abholungen verwaltet jetzt Ihr Lieferant. Entfernen Sie diese, sobald er sie hinzugefügt hat.",
     "saveChanges": "Änderungen speichern",
     "saveAddress": "Adresse speichern",
-    "name": "Name der Adresse",
     "namePlaceholder": "Lager Shenzhen",
-    "kind": "Adresstyp",
     "shopifyLocation": "Shopify-Standort",
     "shopifyLocationDescription": "Bestellungen an diese Adresse erscheinen dort als bestellt",
     "notLinked": "Nicht verknüpft"

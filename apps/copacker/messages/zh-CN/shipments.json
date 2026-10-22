@@ -141,7 +141,6 @@
     "freightCost": "运费",
     "carrier": "承运商",
     "reference": "追踪号或预订号",
-    "cancel": "取消",
     "enterCarrier": "请输入承运商",
     "enterReference": "请输入追踪号或预订号",
     "enterFreightCost": "请输入运费"

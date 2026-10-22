@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useMessageText } from "@/hooks/use-error-text"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { cn } from "@/lib/utils"
 
 export type PostedComment = { message: string; visibility: "internal" | "shared" }

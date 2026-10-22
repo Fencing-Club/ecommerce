@@ -1,13 +1,12 @@
 import { ChevronDown } from "lucide-react"
-import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useAction } from "@/hooks/use-action"
+import { useActionForm } from "@/hooks/use-action-form"
 import { ActionForm } from "./action-form"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
 import * as styles from "./shipment-actions.css"
@@ -22,21 +21,11 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
     defaultValues: { updateCost: false },
     toPayload: (values) => ({ id, revision, ...values })
   })
-  // Laid out like ActionForm, whose button waits for a change: approving needs none.
+  // Approving needs no change first.
   return (
-    <FormProvider {...form}>
-      <form onSubmit={submit} noValidate>
-        <FieldGroup>
-          <FormCheckbox name="updateCost" label={t("updateCost")} description={t("updateCostDescription")} />
-          <FormError message={form.formState.errors.root?.server?.message} />
-          <div>
-            <SubmitButton type="submit" pending={form.formState.isSubmitting}>
-              {t("submit")}
-            </SubmitButton>
-          </div>
-        </FieldGroup>
-      </form>
-    </FormProvider>
+    <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+      <FormCheckbox name="updateCost" label={t("updateCost")} description={t("updateCostDescription")} />
+    </ActionForm>
   )
 }
 
@@ -60,7 +49,7 @@ export function CorrectionForm({ id }: { id: string }) {
       </CardHeader>
       <CollapsibleContent>
         <CardContent>
-          <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+          <ActionForm form={form} onSubmit={submit} label={t("submit")} requireChange>
             <FormTextarea name="reason" required label={t("reason")} description={t("reasonDescription")} />
           </ActionForm>
         </CardContent>
@@ -84,6 +73,14 @@ const fbaReconcileSchema = z.object({
     .regex(/^wf[0-9a-f-]{36}$/, "shipments.actions.reconcile.fbaInvalid")
 })
 
+const linkSchema = z.object({
+  amazonShipmentId: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
+})
+
 export function LinkExistingShipment({
   linkedId,
   onLink
@@ -92,21 +89,13 @@ export function LinkExistingShipment({
   onLink: (shipmentId: string | null) => Promise<void>
 }) {
   const t = useTranslations("shipments.actions.linkExisting")
-  const schema = z.object({
-    amazonShipmentId: linkedId
-      ? z.string()
-      : z
-          .string()
-          .trim()
-          .toUpperCase()
-          .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
-  })
   const { form, submit } = useActionForm({
-    schema,
-    defaultValues: { amazonShipmentId: linkedId ?? "" },
+    schema: linkSchema,
+    defaultValues: { amazonShipmentId: "" },
     // The packing form saves its draft first, then links, and refreshes the page.
-    run: (_, { amazonShipmentId }) => onLink(linkedId ? null : amazonShipmentId)
+    run: (_, { amazonShipmentId }) => onLink(amazonShipmentId)
   })
+  const unlink = useAction(() => onLink(null))
   return (
     <Card>
       <CardHeader>
@@ -115,14 +104,14 @@ export function LinkExistingShipment({
       </CardHeader>
       <CardContent>
         {linkedId ? (
-          <form onSubmit={submit}>
-            <SubmitButton type="submit" pending={form.formState.isSubmitting} variant="outline">
+          <div>
+            <SubmitButton type="button" variant="outline" pending={unlink.pending} onClick={() => void unlink.run()}>
               {t("unlink")}
             </SubmitButton>
-            <FormError message={form.formState.errors.root?.server?.message} />
-          </form>
+            <FormError message={unlink.error} />
+          </div>
         ) : (
-          <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+          <ActionForm form={form} onSubmit={submit} label={t("submit")} requireChange>
             <FormInput name="amazonShipmentId" required label={t("label")} placeholder="STAR-" />
           </ActionForm>
         )}
@@ -141,7 +130,7 @@ export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {
     toPayload: (values) => ({ id, ...values })
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+    <ActionForm form={form} onSubmit={submit} label={t("submit")} requireChange>
       <FormInput
         name="amazonOrderId"
         required

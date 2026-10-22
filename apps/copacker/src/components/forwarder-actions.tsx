@@ -1,23 +1,13 @@
 import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
-import { z } from "zod"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { useActionForm } from "@/hooks/useActionForm"
-import { ActionForm } from "./action-form"
+import { DialogTrigger } from "@/components/ui/dialog"
+import { inviteSchema, newPartnerSchema } from "@/lib/partners"
 import { FormInput } from "./form-controls"
-
-const inviteSchema = z.object({ email: z.email().max(254) })
+import { FormDialog } from "./form-dialog"
 
 // Invites a forwarder to keep its own addresses in Copacker. Opened from the forwarder's menu.
 export function InviteForwarder({
@@ -25,7 +15,7 @@ export function InviteForwarder({
   name,
   email,
   open,
-  onOpenChange: setOpen
+  onOpenChange
 }: {
   id: string
   name: string
@@ -34,64 +24,48 @@ export function InviteForwarder({
   onOpenChange: (open: boolean) => void
 }) {
   const t = useTranslations("partners.forwarder.invite")
-  const { form, submit } = useActionForm({
-    schema: inviteSchema,
-    action: "forwarder.invite",
-    defaultValues: { email: email ?? "" },
-    toPayload: (values) => ({ id, ...values }),
-    onSuccess: () => setOpen(false)
-  })
   return (
-    <Dialog
+    <FormDialog
       open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) {
-          form.reset()
-        }
+      onOpenChange={onOpenChange}
+      title={t("title", { name })}
+      description={t("description")}
+      submitLabel={t("submit")}
+      form={{
+        schema: inviteSchema,
+        action: "forwarder.invite",
+        defaultValues: { email: email ?? "" },
+        toPayload: (values) => ({ id, ...values })
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("title", { name })}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
-        </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
-          <FormInput name="email" required label={t("email")} type="email" autoComplete="off" />
-        </ActionForm>
-      </DialogContent>
-    </Dialog>
+      <FormInput name="email" required label={t("email")} type="email" autoComplete="off" />
+    </FormDialog>
   )
 }
 
-const renameSchema = z.object({ name: z.string().trim().min(2).max(120) })
+const renameSchema = newPartnerSchema.pick({ name: true })
 
 export function RenameForwarder({ id, name }: { id: string; name: string }) {
   const t = useTranslations("partners.forwarder.rename")
-  const [open, setOpen] = useState(false)
-  const { form, submit } = useActionForm({
-    schema: renameSchema,
-    action: "forwarder.rename",
-    defaultValues: { name },
-    toPayload: (values) => ({ id, ...values }),
-    onSuccess: () => setOpen(false),
-    keepSaved: true
-  })
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("triggerLabel", { name })} />}>
-        <Pencil data-icon="inline-start" />
-        {t("trigger")}
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-        </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
-          <FormInput name="name" required label={t("company")} autoComplete="off" />
-        </ActionForm>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      trigger={
+        <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("triggerLabel", { name })} />}>
+          <Pencil data-icon="inline-start" />
+          {t("trigger")}
+        </DialogTrigger>
+      }
+      title={t("title")}
+      submitLabel={t("submit")}
+      form={{
+        schema: renameSchema,
+        action: "forwarder.rename",
+        defaultValues: { name },
+        toPayload: (values) => ({ id, ...values })
+      }}
+    >
+      <FormInput name="name" required label={t("company")} autoComplete="off" />
+    </FormDialog>
   )
 }
 

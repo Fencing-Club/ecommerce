@@ -1,6 +1,6 @@
-import { Ellipsis, Mail, UserPlus } from "lucide-react"
+import { Mail, UserPlus } from "lucide-react"
 import { useId, useState } from "react"
-import { useController, useFormContext, useWatch } from "react-hook-form"
+import { useController, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -8,28 +8,21 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
+import { DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { useAction } from "@/hooks/use-action"
-import { useActionForm } from "@/hooks/useActionForm"
 import type { Access } from "@/lib/access"
 import type { Area } from "@/lib/access"
 import type { Role } from "@/lib/access"
 import { highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
-import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
+import { FormDialog } from "./form-dialog"
 import { SelectControl } from "./form-select"
+import { RowActionsMenu } from "./row-actions-menu"
 
 type Member = { userId: string; email: string; name: string; role: Role; access: Access }
 // `expires` is the day the link stops working, such as "Oct 4".
@@ -59,7 +52,6 @@ export function TeamSettings({
   kind: string
 }) {
   const t = useTranslations("settings.team")
-  const [inviting, setInviting] = useState(false)
   // The email an invitation just went to, so its row can say so.
   const [sent, setSent] = useState("")
 
@@ -68,24 +60,17 @@ export function TeamSettings({
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{t("people", { count: members.length })}</p>
         {admin && (
-          <Dialog open={inviting} onOpenChange={setInviting}>
-            <DialogTrigger render={<Button variant="outline" size="sm" />}>
-              <UserPlus data-icon="inline-start" />
-              {t("invite")}
-            </DialogTrigger>
-            <DialogContent className={accessDialog}>
-              <DialogHeader>
-                <DialogTitle>{t("inviteTo", { workspace })}</DialogTitle>
-              </DialogHeader>
-              <InviteForm
-                kind={kind}
-                onSent={(email) => {
-                  setSent(email)
-                  setInviting(false)
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          <InviteDialog
+            workspace={workspace}
+            kind={kind}
+            trigger={
+              <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                <UserPlus data-icon="inline-start" />
+                {t("invite")}
+              </DialogTrigger>
+            }
+            onSent={setSent}
+          />
         )}
       </div>
       <ul className="divide-y border-t">
@@ -116,9 +101,6 @@ export function TeamSettings({
     </Card>
   )
 }
-
-// A dialog tall enough for every page's access, which scrolls on a short screen.
-const accessDialog = "max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md"
 
 const levelChoices = ["none", "view", "edit"] as const
 // How many of the levels a page offers, from No access up to the most it allows.
@@ -165,17 +147,33 @@ function grant(values: z.output<typeof accessSchema>) {
 
 const inviteSchema = z.intersection(z.object({ email: z.email("settings.team.enterEmail").max(254) }), accessSchema)
 
-function InviteForm({ kind, onSent }: { kind: string; onSent: (email: string) => void }) {
+// Invites someone to the workspace, in a dialog tall enough for every page's access.
+function InviteDialog({
+  workspace,
+  kind,
+  trigger,
+  onSent
+}: {
+  workspace: string
+  kind: string
+  trigger: React.ReactNode
+  onSent: (email: string) => void
+}) {
   const t = useTranslations("settings.team")
-  const { form, submit } = useActionForm({
-    schema: inviteSchema,
-    action: "team.invite",
-    defaultValues: { email: "", ...accessValues(kind, "member", {}) },
-    toPayload: (values) => ({ email: values.email, ...grant(values) }),
-    onSuccess: (result) => onSent(typeof result.email === "string" ? result.email : "")
-  })
   return (
-    <ActionForm form={form} onSubmit={submit} label={t("sendInvitation")} dialog>
+    <FormDialog
+      trigger={trigger}
+      title={t("inviteTo", { workspace })}
+      size="md"
+      submitLabel={t("sendInvitation")}
+      form={{
+        schema: inviteSchema,
+        action: "team.invite",
+        defaultValues: { email: "", ...accessValues(kind, "member", {}) },
+        toPayload: (values) => ({ email: values.email, ...grant(values) }),
+        onSuccess: (result) => onSent(typeof result.email === "string" ? result.email : "")
+      }}
+    >
       <FormInput
         name="email"
         required
@@ -186,7 +184,7 @@ function InviteForm({ kind, onSent }: { kind: string; onSent: (email: string) =>
         placeholder="colleague@company.com"
       />
       <AccessFields kind={kind} />
-    </ActionForm>
+    </FormDialog>
   )
 }
 
@@ -201,12 +199,8 @@ function AccessFields({ kind }: { kind: string }) {
   const { field: role } = useController({ name: "role" })
   const { field: prices } = useController({ name: "prices" })
   const member = useWatch({ name: "role" }) === "member"
-  const {
-    trigger,
-    getValues,
-    setValue,
-    formState: { errors }
-  } = useFormContext()
+  const { trigger, getValues, setValue } = useFormContext()
+  const { errors } = useFormState({ name: "access" })
   // "Choose at least one page", when a member has none, until they choose one.
   const pagesError = errors.access?.message
   let pagesMessage = typeof pagesError === "string" ? pagesError : null
@@ -360,45 +354,21 @@ function ChangeAccess({
 }) {
   const t = useTranslations("settings.team")
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={accessDialog}>
-        <DialogHeader>
-          {/* An invitation's email can be long, so it wraps clear of the close button. */}
-          <DialogTitle className="pe-6 leading-snug [overflow-wrap:anywhere]">
-            {t("changeAccessFor", { who })}
-          </DialogTitle>
-        </DialogHeader>
-        <ChangeAccessForm target={target} role={role} access={access} kind={kind} onSaved={() => onOpenChange(false)} />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function ChangeAccessForm({
-  target,
-  role,
-  access,
-  kind,
-  onSaved
-}: {
-  target: { userId: string } | { email: string }
-  role: Role
-  access: Access
-  kind: string
-  onSaved: () => void
-}) {
-  const t = useTranslations("settings.team")
-  const { form, submit } = useActionForm({
-    schema: accessSchema,
-    action: "team.access",
-    defaultValues: accessValues(kind, role, access),
-    toPayload: (values) => ({ ...target, ...grant(values) }),
-    onSuccess: onSaved
-  })
-  return (
-    <ActionForm form={form} onSubmit={submit} label={t("save")} dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("changeAccessFor", { who })}
+      size="md"
+      submitLabel={t("save")}
+      form={{
+        schema: accessSchema,
+        action: "team.access",
+        defaultValues: accessValues(kind, role, access),
+        toPayload: (values) => ({ ...target, ...grant(values) })
+      }}
+    >
       <AccessFields kind={kind} />
-    </ActionForm>
+    </FormDialog>
   )
 }
 
@@ -446,27 +416,20 @@ function MemberRow({
       </div>
       <Badge variant={member.role === "member" ? "outline" : "secondary"}>{t(`roles.${member.role}`)}</Badge>
       {(manageable || transferable) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: member.name })} />}
-          >
-            <Ellipsis />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {manageable && <DropdownMenuItem onClick={() => setOpen("access")}>{t("changeAccess")}</DropdownMenuItem>}
-            {transferable && (
-              <DropdownMenuItem onClick={() => setOpen("transfer")}>{t("transferOwnership")}</DropdownMenuItem>
-            )}
-            {manageable && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={() => setOpen("remove")}>
-                  {t("remove")}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <RowActionsMenu label={t("more", { name: member.name })} className="w-48">
+          {manageable && <DropdownMenuItem onClick={() => setOpen("access")}>{t("changeAccess")}</DropdownMenuItem>}
+          {transferable && (
+            <DropdownMenuItem onClick={() => setOpen("transfer")}>{t("transferOwnership")}</DropdownMenuItem>
+          )}
+          {manageable && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={() => setOpen("remove")}>
+                {t("remove")}
+              </DropdownMenuItem>
+            </>
+          )}
+        </RowActionsMenu>
       )}
       {admin && !manageable && !transferable && <span aria-hidden className="size-7 shrink-0" />}
       {transferable && (
@@ -550,47 +513,34 @@ function InvitationRow({
         )}
       </div>
       <Badge variant={invitation.role === "member" ? "outline" : "secondary"}>{t(`roles.${invitation.role}`)}</Badge>
-      {admin &&
-        (pending ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled
-            aria-busy
-            aria-label={t("updating", { email: invitation.email })}
+      {admin && (
+        <RowActionsMenu
+          label={t("more", { name: invitation.email })}
+          pending={pending}
+          pendingLabel={t("updating", { email: invitation.email })}
+          className="w-44"
+        >
+          <DropdownMenuItem onClick={() => setChanging(true)}>{t("changeAccess")}</DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              cancel.reset()
+              void resend.run({ email: invitation.email })
+            }}
           >
-            <Spinner />
-          </Button>
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: invitation.email })} />}
-            >
-              <Ellipsis />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => setChanging(true)}>{t("changeAccess")}</DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  cancel.reset()
-                  void resend.run({ email: invitation.email })
-                }}
-              >
-                {t("sendAgain")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => {
-                  resend.reset()
-                  void cancel.run({ email: invitation.email })
-                }}
-              >
-                {t("cancelInvitation")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ))}
+            {t("sendAgain")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              resend.reset()
+              void cancel.run({ email: invitation.email })
+            }}
+          >
+            {t("cancelInvitation")}
+          </DropdownMenuItem>
+        </RowActionsMenu>
+      )}
       {admin && (
         <ChangeAccess
           who={invitation.email}

@@ -7,7 +7,7 @@ import {
 import { useId } from "react"
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import { FormLabel, FormTextarea } from "./form-controls"
 import { FormError, SubmitButton } from "./form-feedback"
 import { FormSelect, SelectControl } from "./form-select"

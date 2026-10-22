@@ -1,5 +1,4 @@
-import { Field, FieldDescription, FieldError } from "@/components/ui/field"
-import { FormLabel } from "./form-controls"
+import { FormField, fieldControl } from "./form-controls"
 import { SelectControl } from "./form-select"
 
 // A select for a plain form, outside React Hook Form.
@@ -15,7 +14,7 @@ export function SelectField({
   error,
   value,
   defaultValue,
-  onChange
+  onValueChange
 }: {
   label: string
   id: string
@@ -30,26 +29,22 @@ export function SelectField({
   error?: string
   value?: string
   defaultValue?: string
-  // Called with the chosen value as `target.value`, like a native select's change event.
-  onChange?: (event: { target: { value: string } }) => void
+  // Called with the chosen value, or an empty one when the choice is cleared.
+  onValueChange?: (value: string) => void
 }) {
   return (
-    <Field data-invalid={!!error}>
-      <FormLabel htmlFor={id} label={label} required={required} />
+    <FormField id={id} label={label} required={required} description={description} error={error}>
       <SelectControl
-        id={id}
+        {...fieldControl(id, { description, error })}
         name={name}
         options={options}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        invalid={!!error}
         value={value}
         defaultValue={defaultValue}
-        onValueChange={(next) => onChange?.({ target: { value: next ?? "" } })}
+        onValueChange={(next) => onValueChange?.(next ?? "")}
       />
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError id={`${id}-error`}>{error}</FieldError>
-    </Field>
+    </FormField>
   )
 }

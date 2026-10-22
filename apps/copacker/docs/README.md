@@ -43,6 +43,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [End-to-end tests: the Playwright suite](e2e.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [Styling](styling.md)
+- [Forms: the form layout, form dialog, fields and address pieces](forms.md)
 - [Storybook: stories and play tests](storybook.md)
 - [Localization](localization.md)
 

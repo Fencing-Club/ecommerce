@@ -8,7 +8,9 @@
     "offline": "Couldn’t reach Copacker. Check your connection and try again."
   },
   "actions": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Saved"
   },
   "status": {
     "draft": "Draft",
@@ -89,7 +91,8 @@
     "addressLine2": "Address line 2",
     "city": "City",
     "stateOrProvince": "State or province",
-    "postalCode": "Postal code"
+    "postalCode": "Postal code",
+    "addressName": "Address name"
   },
   "sync": {
     "actions": "{label} actions",

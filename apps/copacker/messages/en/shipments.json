@@ -141,7 +141,6 @@
     "freightCost": "Freight cost",
     "carrier": "Carrier",
     "reference": "Tracking or booking number",
-    "cancel": "Cancel",
     "enterCarrier": "Enter the carrier",
     "enterReference": "Enter the tracking or booking number",
     "enterFreightCost": "Enter the freight cost"

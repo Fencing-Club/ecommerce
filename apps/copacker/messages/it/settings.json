@@ -29,10 +29,6 @@
     "label": "Lingua",
     "system": "Sistema ({language})"
   },
-  "form": {
-    "save": "Salva",
-    "saved": "Salvato"
-  },
   "profile": {
     "title": "Profilo",
     "firstName": "Nome",
@@ -172,9 +168,7 @@
     "addTag": "Aggiungi un tag",
     "wildcard": "Usa * come carattere jolly, ad esempio amazon*",
     "saveFailed": "Impossibile salvare i tag. Riprova.",
-    "cancel": "Annulla",
-    "save": "Salva",
-    "saving": "Salvataggio…"
+    "save": "Salva"
   },
   "restock": {
     "title": "Riassortimento",
@@ -251,9 +245,7 @@
     "supplierKeepsPickups": "Ora i ritiri li gestisce il tuo fornitore. Rimuovi questo indirizzo quando l’avrà aggiunto.",
     "saveChanges": "Salva modifiche",
     "saveAddress": "Salva indirizzo",
-    "name": "Nome dell’indirizzo",
     "namePlaceholder": "Magazzino di Shenzhen",
-    "kind": "Tipo di indirizzo",
     "shopifyLocation": "Sede Shopify",
     "shopifyLocationDescription": "Gli ordini di acquisto inviati qui risultano in arrivo in Shopify",
     "notLinked": "Non collegato"

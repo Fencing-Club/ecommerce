@@ -8,7 +8,9 @@
     "offline": "Copacker تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
   },
   "actions": {
-    "cancel": "منسوخ کریں"
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "saved": "محفوظ ہو گیا"
   },
   "status": {
     "draft": "ڈرافٹ",
@@ -89,7 +91,8 @@
     "addressLine2": "پتہ لائن 2",
     "city": "شہر",
     "stateOrProvince": "ریاست یا صوبہ",
-    "postalCode": "پوسٹل کوڈ"
+    "postalCode": "پوسٹل کوڈ",
+    "addressName": "پتے کا نام"
   },
   "sync": {
     "actions": "{label} کی کارروائیاں",

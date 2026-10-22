@@ -141,7 +141,6 @@
     "freightCost": "Frachtkosten",
     "carrier": "Transporteur",
     "reference": "Sendungs- oder Buchungsnummer",
-    "cancel": "Abbrechen",
     "enterCarrier": "Geben Sie den Transporteur ein",
     "enterReference": "Geben Sie die Sendungs- oder Buchungsnummer ein",
     "enterFreightCost": "Geben Sie die Frachtkosten ein"
