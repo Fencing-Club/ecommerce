@@ -2,6 +2,8 @@ import { z } from "zod"
 import { importProposalSchema, validateProposal } from "./import-proposal"
 import type { ImportObservation } from "./import-trace"
 import { observeImportOperation } from "./import-trace"
+import { openRouterConfig } from "./integration-config"
+import { providerRequest } from "./provider-request"
 
 const callSchema = z.object({
   id: z.string(),
@@ -42,8 +44,8 @@ export async function runImportAgent(
   },
   transport: typeof fetch = fetch
 ) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
+  const config = openRouterConfig()
+  if (!config) {
     throw new Error("OpenRouter is not configured")
   }
   const messages: Record<string, unknown>[] = [
@@ -98,27 +100,29 @@ export async function runImportAgent(
     const result = await observeImportOperation(
       "generation",
       "import-model-request",
-      async () => {
-        const response = await transport("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-          body: JSON.stringify({
-            model: "anthropic/claude-opus-5.5",
-            messages,
-            tools,
-            tool_choice: "auto",
-            parallel_tool_calls: false,
-            // The supported 150-line proposal can exceed 12k output tokens even without catalog lookups.
-            max_tokens: 32000,
-            plugins: [{ id: "file-parser", pdf: { engine: "native" } }]
-          }),
-          signal: AbortSignal.any([signal, AbortSignal.timeout(180000)])
-        })
-        if (!response.ok) {
-          throw new Error(`OpenRouter request failed (${response.status})`)
-        }
-        return responseSchema.parse(await response.json())
-      },
+      () =>
+        providerRequest(
+          "OpenRouter",
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${config.apiKey}`, "content-type": "application/json" },
+            body: JSON.stringify({
+              model: "anthropic/claude-opus-5.5",
+              messages,
+              tools,
+              tool_choice: "auto",
+              parallel_tool_calls: false,
+              // The supported 150-line proposal can exceed 12k output tokens even without catalog lookups.
+              max_tokens: 32000,
+              plugins: [{ id: "file-parser", pdf: { engine: "native" } }]
+            }),
+            signal,
+            timeoutMs: 180000,
+            transport
+          },
+          responseSchema
+        ),
       input.onObservation
     )
     tokens += result.usage?.total_tokens ?? 0

@@ -5,7 +5,7 @@ Workflows receives only the SQL claim identity. Credentials and customer records
 
 | Executor | Job families |
 | --- | --- |
-| Cloudflare native queue handler | `analytics`, `shopify-event`, `ebay-event` |
+| Cloudflare native queue handler | `analytics`, `shopify-event`, `ebay-event`, `labels` |
 | Cloudflare Workflow | All remaining families, including imports, sales, shipments, documents, email and reconciliation |
 | Local Node worker | All families against the local database only |
 
@@ -14,6 +14,38 @@ whole historical Shopify bulk export. Other long handlers run inside a Workflow 
 300-second CPU budget. A Workflow step owns its Hyperdrive pool and native R2 context; no sockets cross step boundaries.
 External side effects retain their domain idempotency and ownership checks. Workflow execution does not automatically
 retry a failed step: SQL owns retry timing, payload checkpoints and failure status.
+
+## Job registry
+
+Every kind of job is one `defineJob({ kind, executor, payload, run, onFailure? })` entry in `src/server/job-registry.ts`,
+and the registry `satisfies` every kind in the `jobs.kind` column:
+
+- **`payload`** is the kind's zod schema in `src/server/job-payloads.ts`. That module imports only zod and the packages,
+  so producers and handlers use it without import cycles. The queue checks a job's payload against it before running.
+- **Producers** build every row they insert with `jobRow(kind, key, payload, { runAt })`, so a payload that doesn't
+  match its kind fails type-checking. The key is the job's idempotency key; the email job also sends it to Resend.
+- **`executor`** is `"queue"` for the short families above and `"workflow"` for the rest.
+- **`run(input, context)`** gets the checked payload and a `JobContext` from `src/server/job-runtime.ts`: the job's
+  `key`, its `attempt`, `assertOwned()` to call before each side effect, and `owned`, the SQL condition for the job row
+  while this attempt holds it. A handler throws `PollAgain` (same module) to run again later, optionally with a new
+  payload such as where to resume.
+- **`onFailure`** runs in the transaction that marks the job failed for good. The `amazon` job uses it to mark its
+  shipment as needing the buyer's attention.
+
+Handlers live with their domain. The shipment, email and Shopify cost jobs are in `job-amazon-shipment.ts`,
+`job-email.ts` and `job-shopify-cost.ts`.
+
+## Logs, provider calls and settings
+
+- **Logs:** `logEvent(level, event, fields)` in `src/server/log.ts` writes one JSON line. Errors go in as
+  `describeError(error)`: name, message, provider and status, and causes, never a request or response body. Jobs log
+  `job_started`, `job_finished`, `job_paused` and `job_failed`.
+- **Provider HTTP APIs:** `providerRequest(service, url, { timeoutMs, ... }, schema?)` in `src/server/provider-request.ts`
+  parses a success with the schema. An error status discards the body and throws
+  `ProviderHttpError(service, status, retryAfterMs)`.
+- **Settings:** `src/server/integration-config.ts` reads each integration's environment (email, Langfuse, OpenRouter,
+  AWS notification credentials, the Cloudflare queue API) when it's needed, and returns null when it isn't fully
+  configured.
 
 ## Delivery and recovery
 

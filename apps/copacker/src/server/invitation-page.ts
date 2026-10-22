@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
 import { signedInUser } from "./auth"
 import { findInvitation, invitationKind, invitationPath } from "./invitations"
+import { describeError, logEvent } from "./log"
 import { ownProfile } from "./profile"
 import { hasAccount } from "./sign-in"
 
@@ -41,8 +42,8 @@ export async function invitationPage(query: { token?: string; kind?: string; mod
     let existing = false
     try {
       existing = await hasAccount(invitation.email)
-    } catch {
-      console.error("Could not look up the invited account")
+    } catch (error) {
+      logEvent("error", "invited_account_lookup_failed", { kind, error: describeError(error) })
     }
     return { ...result, signIn: query.mode ? query.mode === "signin" : existing }
   }

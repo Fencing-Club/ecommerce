@@ -8,6 +8,7 @@ import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
 import { withJobWake } from "@/server/job-delivery"
+import { jobRow } from "@/server/job-payloads"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function GET() {
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
           amazonSellerId: amazon?.externalId,
           status: "queued"
         })
-        await tx.insert(jobs).values({ key: `import:${id}:1`, kind: "import", payload: { id, revision: 1 } })
+        await tx.insert(jobs).values(jobRow("import", `import:${id}:1`, { id, revision: 1 }))
       })
     )
     return Response.json({ id, status: "queued" }, { status: 202 })

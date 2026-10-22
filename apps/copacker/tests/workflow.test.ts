@@ -145,7 +145,9 @@ import { importProposalSchema } from "../src/server/import-proposal"
 import { saveImportedOrder } from "../src/server/import-save"
 import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
-import { amazonJob, emailJob } from "../src/server/job-handlers"
+import { amazonShipmentJob } from "../src/server/job-amazon-shipment"
+import { emailJob } from "../src/server/job-email"
+import { jobPayloads } from "../src/server/job-payloads"
 import { labelsJob } from "../src/server/label-release"
 import { orderLandedCosts } from "../src/server/landed-costs"
 import { resolveLocalization, withLocalization } from "../src/server/localization"
@@ -1979,12 +1981,12 @@ describe("linking existing AWD shipments", () => {
     await submitPacking(supplier, draft.id, draft.packing, 2)
     await prepareAmazonShipment(buyer, draft.id, 2)
     provider.api.labels.mockResolvedValue({ labelStatus: "GENERATING" })
-    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
-      "labels are generating"
-    )
-    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
-      "labels are generating"
-    )
+    await expect(
+      amazonShipmentJob({ shipmentId: draft.id, revision: 2 }, { assertOwned: async () => undefined })
+    ).rejects.toThrow("labels are generating")
+    await expect(
+      amazonShipmentJob({ shipmentId: draft.id, revision: 2 }, { assertOwned: async () => undefined })
+    ).rejects.toThrow("labels are generating")
     expect(provider.api.labels).toHaveBeenCalledWith("STAR-EXTERNAL")
     expect(provider.api.create).not.toHaveBeenCalled()
     expect(provider.api.eligibility).not.toHaveBeenCalled()
@@ -2095,8 +2097,8 @@ describe("durable shipment worker recovery", () => {
       await gate
     })
     await Promise.allSettled([
-      amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined),
-      amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+      amazonShipmentJob({ shipmentId: shipment.id, revision: 1 }, { assertOwned: async () => undefined }),
+      amazonShipmentJob({ shipmentId: shipment.id, revision: 1 }, { assertOwned: async () => undefined })
     ])
     expect(provider.api.create).toHaveBeenCalledOnce()
   })
@@ -2696,7 +2698,7 @@ describe("transport configuration", () => {
   }
   it("sends a shipment that needs no carrier labels to its supplier as soon as Amazon's labels arrive", async () => {
     const shipment = await labelsReady()
-    await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+    await amazonShipmentJob({ shipmentId: shipment.id, revision: 1 }, { assertOwned: async () => undefined })
     expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
     const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
     expect(emailed.map((job) => job.payload)).toEqual([
@@ -2712,11 +2714,11 @@ describe("transport configuration", () => {
     vi.mocked(releaseIssues).mockImplementationOnce(() => {
       throw new Error("Database unavailable")
     })
-    await amazonJob({ shipmentId: shipment.id, revision: 1 }, async () => undefined)
+    await amazonShipmentJob({ shipmentId: shipment.id, revision: 1 }, { assertOwned: async () => undefined })
     expect(await shipmentState(shipment.id)).toMatchObject({ status: "waiting_labels" })
     const [queued] = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "labels"))
     expect(queued).toMatchObject({ status: "pending", payload: { shipmentId: shipment.id, actor: "amazon" } })
-    await labelsJob(queued!.payload)
+    await labelsJob(jobPayloads.labels.parse(queued!.payload))
     expect(await shipmentState(shipment.id)).toEqual({ status: "ready", issues: [] })
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
     expect(events).toContainEqual(expect.objectContaining({ messageKey: "labelsReleased", actor: "amazon" }))
@@ -3330,7 +3332,10 @@ describe("document upload and packet release", () => {
     vi.stubEnv("EMAIL_FROM", "copacker@example.com")
     const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
     vi.stubGlobal("fetch", send)
-    await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
+    await emailJob(jobPayloads.email.parse(emailed[0]!.payload), {
+      key: emailed[0]!.key,
+      assertOwned: async () => undefined
+    })
     expect(JSON.parse(String(send.mock.calls[0]![1]!.body))).toMatchObject({ to: ["supplier@example.com"] })
   })
   it("keeps carrier labels saved for some cartons, and sends them once every carton has one", async () => {
@@ -4582,7 +4587,10 @@ describe("fluid packing handoff", () => {
     const filed = await currentPo()
     expect(filed).toHaveLength(1)
     storage.getFile.mockResolvedValue(new TextEncoder().encode("%PDF-"))
-    await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
+    await emailJob(jobPayloads.email.parse(emailed[0]!.payload), {
+      key: emailed[0]!.key,
+      assertOwned: async () => undefined
+    })
     // The email attaches the PDF filed when the PO was sent, so the link on the PO's page keeps working.
     expect(await currentPo()).toEqual(filed)
     const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { html: string; text: string }
@@ -4651,8 +4659,8 @@ describe("fluid packing handoff", () => {
     vi.stubEnv("EMAIL_FROM", "copacker@example.com")
     const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
     vi.stubGlobal("fetch", send)
-    const payload = { type: "ready", to: "supplier@example.com", orderId, shipmentId: second!.id }
-    await emailJob(payload, `ready:${second!.id}:1`, async () => undefined)
+    const payload = { type: "ready" as const, to: "supplier@example.com", orderId, shipmentId: second!.id }
+    await emailJob(payload, { key: `ready:${second!.id}:1`, assertOwned: async () => undefined })
     const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; html: string; text: string }
     expect(sent.subject).toBe("Labels ready for PO-TEST, shipment 2")
     for (const version of [sent.html, sent.text]) {
@@ -4846,7 +4854,7 @@ describe("import worker", () => {
       .mockResolvedValueOnce(call("get_shopify_variants", { ids: [orderData.items[0]!.variantId] }))
       .mockResolvedValueOnce(call("search_amazon_listings", { skus: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
-    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })
     expect(provider.shopifyFor).toHaveBeenCalledWith(buyerId, "test.myshopify.com")
     expect(provider.amazonFor).toHaveBeenCalledWith(buyerId, "A123456789")
     expect(storage.getFile).toHaveBeenCalledWith(`imports/${t.id}`)
@@ -4857,7 +4865,7 @@ describe("import worker", () => {
   it("rejects model attempts to choose another account before a catalog call", async () => {
     const t = await setup()
     t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"], orgId: otherId }))
-    await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow(
+    await expect(importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })).rejects.toThrow(
       "Unrecognized key"
     )
     expect(t.catalogPage).not.toHaveBeenCalled()
@@ -4881,7 +4889,7 @@ describe("import worker", () => {
         expect(result.searches[0].results[0]).not.toHaveProperty("inventoryItem")
         return call("finish_import", t.proposal)
       })
-    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })
     expect(t.catalogPage).toHaveBeenCalledTimes(1)
     expect(await t.record()).toMatchObject({ status: "review" })
   })
@@ -4894,19 +4902,21 @@ describe("import worker", () => {
         .where(eq(tables.poImports.id, t.id))
       return call("search_shopify_products", { queries: ["cord"] })
     })
-    await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("cancelled")
+    await expect(importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })).rejects.toThrow(
+      "cancelled"
+    )
     expect(await t.record()).toMatchObject({ status: "cancelled", revision: 2, proposal: null })
     expect(t.catalogPage).not.toHaveBeenCalled()
   })
   it("resumes the pinned prompt and ignores obsolete job revisions", async () => {
     const t = await setup()
-    await importJob({ id: t.id, revision: 2 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 2 }, { assertOwned: async () => Promise.resolve() })
     expect(t.fetcher).not.toHaveBeenCalled()
     await database.update(tables.poImports).set({ promptVersion: 7 }).where(eq(tables.poImports.id, t.id))
     t.fetcher
       .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
-    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })
     expect(t.fetcher.mock.calls[0]![0]).toBe(
       "https://langfuse.example/api/public/v2/prompts/purchase-order-import?version=7"
     )
@@ -4916,7 +4926,9 @@ describe("import worker", () => {
     const t = await setup()
     t.catalogPage.mockResolvedValue({ nodes: [], pageInfo: { hasNextPage: true, endCursor: null } })
     t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"] }))
-    await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("pagination")
+    await expect(importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })).rejects.toThrow(
+      "pagination"
+    )
     expect(t.catalogPage).toHaveBeenCalledTimes(1)
     expect(await t.record()).toMatchObject({ status: "failed", proposal: null })
   })
@@ -4947,7 +4959,7 @@ describe("import worker", () => {
         expect(results.catalogComplete).toBe(true)
         return call("finish_import", t.proposal)
       })
-    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })
     expect(await t.record()).toMatchObject({ status: "review" })
   })
   it("leaves state untouched after the worker loses its lease", async () => {
@@ -4955,7 +4967,7 @@ describe("import worker", () => {
     const lease = vi.fn<() => Promise<void>>(async () => {
       throw new Error("Lease lost")
     })
-    await expect(importJob({ id: t.id, revision: 1 }, lease)).rejects.toThrow("Lease lost")
+    await expect(importJob({ id: t.id, revision: 1 }, { assertOwned: lease })).rejects.toThrow("Lease lost")
     expect(t.fetcher).not.toHaveBeenCalled()
     expect(await t.record()).toMatchObject({ status: "queued", proposal: null })
   })
@@ -4977,7 +4989,7 @@ describe("import worker", () => {
     t.fetcher
       .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
-    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    await importJob({ id: t.id, revision: 1 }, { assertOwned: async () => Promise.resolve() })
     expect(t.catalogPage).toHaveBeenCalledTimes(5)
     expect((await t.record()).proposal?.warnings).toContain(
       "Catalog search was incomplete. Review matches before saving."

@@ -1,4 +1,7 @@
 import { randomBytes } from "node:crypto"
+import { z } from "zod"
+import { langfuseConfig } from "./integration-config"
+import { providerRequest } from "./provider-request"
 
 export type ImportObservation = {
   type: "generation" | "tool"
@@ -44,15 +47,12 @@ type ImportTrace = {
 
 // Allowlisted operational metadata only: never send source text, catalog rows or error messages.
 export async function traceImport(attempt: ImportTrace, transport: typeof fetch = fetch) {
-  const { LANGFUSE_BASE_URL, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } = process.env
-  if (!LANGFUSE_BASE_URL || !LANGFUSE_PUBLIC_KEY || !LANGFUSE_SECRET_KEY) {
+  // Langfuse is configured only with an HTTPS address, so its keys never go over plain HTTP.
+  const langfuse = langfuseConfig()
+  if (!langfuse) {
     return false
   }
   try {
-    const base = new URL(LANGFUSE_BASE_URL)
-    if (base.protocol !== "https:") {
-      return false
-    }
     const fields: Record<string, string | number> = {
       "langfuse.trace.name": "purchase-order-import",
       "langfuse.observation.type": "span",
@@ -102,64 +102,57 @@ export async function traceImport(attempt: ImportTrace, transport: typeof fetch 
         status: { code: observation.outcome === "failed" ? 2 : 1 }
       }
     })
-    const response = await transport(`${base.origin}/api/public/otel/v1/traces`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}`).toString("base64")}`,
-        "content-type": "application/json",
-        "x-langfuse-ingestion-version": "4"
+    const result = await providerRequest(
+      "Langfuse",
+      `${langfuse.origin}/api/public/otel/v1/traces`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: langfuse.authorization,
+          "content-type": "application/json",
+          "x-langfuse-ingestion-version": "4"
+        },
+        timeoutMs: 5000,
+        transport,
+        body: JSON.stringify({
+          resourceSpans: [
+            {
+              resource: { attributes: [{ key: "service.name", value: { stringValue: "copacker" } }] },
+              scopeSpans: [
+                {
+                  scope: { name: "copacker.import" },
+                  spans: [
+                    {
+                      traceId,
+                      spanId: rootSpanId,
+                      name: "purchase-order-import",
+                      kind: 1,
+                      startTimeUnixNano: `${BigInt(attempt.startedAt) * 1000000n}`,
+                      endTimeUnixNano: `${BigInt(Date.now()) * 1000000n}`,
+                      attributes: Object.entries(fields).map(([key, value]) => {
+                        if (typeof value === "string") {
+                          return { key, value: { stringValue: value } }
+                        }
+                        return {
+                          key,
+                          value: Number.isInteger(value) ? { intValue: String(value) } : { doubleValue: value }
+                        }
+                      }),
+                      status: { code: attempt.outcome === "failed" ? 2 : 1 }
+                    },
+                    ...children
+                  ]
+                }
+              ]
+            }
+          ]
+        })
       },
-      signal: AbortSignal.timeout(5000),
-      body: JSON.stringify({
-        resourceSpans: [
-          {
-            resource: { attributes: [{ key: "service.name", value: { stringValue: "copacker" } }] },
-            scopeSpans: [
-              {
-                scope: { name: "copacker.import" },
-                spans: [
-                  {
-                    traceId,
-                    spanId: rootSpanId,
-                    name: "purchase-order-import",
-                    kind: 1,
-                    startTimeUnixNano: `${BigInt(attempt.startedAt) * 1000000n}`,
-                    endTimeUnixNano: `${BigInt(Date.now()) * 1000000n}`,
-                    attributes: Object.entries(fields).map(([key, value]) => {
-                      if (typeof value === "string") {
-                        return { key, value: { stringValue: value } }
-                      }
-                      return {
-                        key,
-                        value: Number.isInteger(value) ? { intValue: String(value) } : { doubleValue: value }
-                      }
-                    }),
-                    status: { code: attempt.outcome === "failed" ? 2 : 1 }
-                  },
-                  ...children
-                ]
-              }
-            ]
-          }
-        ]
-      })
-    })
-    if (!response.ok) {
-      return false
-    }
-    const result: unknown = await response.json()
-    if (typeof result === "object" && result !== null && "partialSuccess" in result) {
-      const partial = result.partialSuccess
-      if (
-        typeof partial === "object" &&
-        partial !== null &&
-        "rejectedSpans" in partial &&
-        Number(partial.rejectedSpans) > 0
-      ) {
-        return false
-      }
-    }
-    return true
+      z.unknown()
+    )
+    // OTLP answers a partly rejected export with success and a count of the rejected spans.
+    const partial = z.object({ partialSuccess: z.object({ rejectedSpans: z.coerce.number() }) }).safeParse(result)
+    return !(partial.success && partial.data.partialSuccess.rejectedSpans > 0)
   } catch {
     // Observability outages must never retry the import or replace its actual result.
     return false

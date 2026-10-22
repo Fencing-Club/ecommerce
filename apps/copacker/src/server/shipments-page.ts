@@ -7,6 +7,7 @@ import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipme
 import { requirePage, session } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
 import { amazonShipmentCache } from "./amazon-shipment-cache"
+import { describeError, logEvent } from "./log"
 import { shipmentListRows } from "./logistics-rows"
 import { hash } from "./security"
 
@@ -49,13 +50,7 @@ export async function shipmentsPage(input: { query: Record<string, string | stri
     try {
       amazon = (await amazonShipments(s.org.id)) ?? []
     } catch (error) {
-      console.error(
-        JSON.stringify({
-          event: "amazon_shipments_failed",
-          orgId: s.org.id,
-          error: error instanceof Error ? error.message : "unknown error"
-        })
-      )
+      logEvent("error", "amazon_shipments_failed", { orgId: s.org.id, error: describeError(error) })
       amazonFailed = true
     }
   }

@@ -7,6 +7,7 @@ import { NotFoundError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError } from "./errors"
+import { logEvent } from "./log"
 import { packedStates } from "./readiness"
 import { serverTranslator } from "./translation"
 import type { Session } from "./workspace-session"
@@ -55,7 +56,7 @@ export async function packingList(s: Session, id: string) {
     if (!(error instanceof IncompletePackingList)) {
       throw error
     }
-    console.warn(JSON.stringify({ event: "packing_list_incomplete", shipmentId: id, issues: error.codes }))
+    logEvent("warn", "packing_list_incomplete", { shipmentId: id, issues: error.codes })
     throw new StatusError("packingListIncomplete", 409)
   }
 }

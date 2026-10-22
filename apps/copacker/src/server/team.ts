@@ -11,6 +11,7 @@ import { accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
 import { withJobWake } from "@/server/job-delivery"
 import { requestLocale } from "@/server/localization"
+import { jobRow } from "./job-payloads"
 import { hash, token } from "./security"
 import type { Session } from "./workspace-session"
 
@@ -141,11 +142,15 @@ async function send(tx: Transaction, org: Pick<Session["org"], "id" | "name">, e
     .insert(teamInvitations)
     .values({ orgId: org.id, email, ...grant, hash: hash(invitation), expiresAt: new Date(Date.now() + week) })
     .returning({ id: teamInvitations.id })
-  await tx.insert(jobs).values({
-    key: `team:${row!.id}`,
-    kind: "email",
-    payload: { type: "team", to: email, name: org.name, invitation, locale: await requestLocale() }
-  })
+  await tx.insert(jobs).values(
+    jobRow("email", `team:${row!.id}`, {
+      type: "team",
+      to: email,
+      name: org.name,
+      invitation,
+      locale: await requestLocale()
+    })
+  )
 }
 
 // Withdraws the invitation to an email, so its link stops working.

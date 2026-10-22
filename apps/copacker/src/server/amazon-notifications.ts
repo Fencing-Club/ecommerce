@@ -7,7 +7,8 @@ import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonApp, amazonFor } from "./connections"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
 import { amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue, queueArn } from "./sqs"
@@ -84,31 +85,26 @@ export async function receiveAmazonNotification(body: string, now = Date.now()) 
     db()
       .insert(jobs)
       .values(
-        accounts.map(({ orgId }) => ({
-          key: `amazon-event:${orgId}:${target}:${batch}`,
-          kind: "amazon-event" as const,
-          payload: { orgId, sellerId, target },
-          runAt: new Date((batch + 1) * batchMs + settleMs)
-        }))
+        accounts.map(({ orgId }) =>
+          jobRow(
+            "amazon-event",
+            `amazon-event:${orgId}:${target}:${batch}`,
+            { orgId, sellerId, target },
+            { runAt: new Date((batch + 1) * batchMs + settleMs) }
+          )
+        )
       )
       .onConflictDoNothing()
   )
   return accounts.length
 }
 
-const eventPayload = z.object({
-  orgId: z.uuid(),
-  sellerId: z.string(),
-  target: z.enum(["sales", "stock"])
-})
-
 // Worker job: brings the stored orders up to date, or starts an FBA stock refresh.
 export async function amazonEventJob(
-  payload: Record<string, unknown>,
-  assertOwned: () => Promise<void>,
+  { orgId, sellerId, target }: JobInput<"amazon-event">,
+  { assertOwned }: Pick<JobContext, "assertOwned">,
   now = Date.now()
 ) {
-  const { orgId, sellerId, target } = eventPayload.parse(payload)
   const [account] = await db()
     .select({ externalId: connections.externalId, kind: organizations.kind })
     .from(connections)
@@ -216,14 +212,16 @@ export async function queueAmazonSubscription(orgId: string, key: string) {
   await withJobWake(
     db()
       .insert(jobs)
-      .values({ key: `amazon-subscribe:${orgId}:${key}`, kind: "amazon-subscribe", payload: { orgId } })
+      .values(jobRow("amazon-subscribe", `amazon-subscribe:${orgId}:${key}`, { orgId }))
       .onConflictDoNothing()
   )
 }
 
 // Worker job: makes sure Copacker's queue is a notification destination and the seller is subscribed to it.
-export async function amazonSubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
+export async function amazonSubscribeJob(
+  { orgId }: JobInput<"amazon-subscribe">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
   const queueUrl = process.env.AMAZON_NOTIFICATIONS_QUEUE_URL
   if (!queueUrl) {
     console.warn(JSON.stringify({ event: "amazon_notifications_skipped", orgId, reason: "no queue configured" }))

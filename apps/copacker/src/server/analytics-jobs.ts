@@ -1,31 +1,21 @@
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, salesSyncs } from "@/db/schema"
 import { withJobWake } from "./job-delivery"
-import { PollAgain } from "./job-handlers"
+import { jobRow, type JobInput, type JobPayload } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
 import { syncShopifyEconomics } from "./shopify-economics"
-const inputSchema = z.strictObject({
-  orgId: z.uuid(),
-  externalAccountId: z.string().min(1),
-  revision: z.number().int().positive()
-})
-export async function queueShopifyEconomics(input: z.infer<typeof inputSchema>) {
+export async function queueShopifyEconomics(input: JobPayload<"analytics">) {
   await withJobWake(
     db()
       .insert(jobs)
-      .values({
-        key: `analytics:shopify:${input.orgId}:${input.revision}`,
-        kind: "analytics",
-        payload: input
-      })
+      .values(jobRow("analytics", `analytics:shopify:${input.orgId}:${input.revision}`, input))
       .onConflictDoNothing()
   )
 }
 // The sales sync queues this independent job. Each successful page checkpoints before yielding,
 // so a restart resumes without re-reading orders or waiting for tomorrow's sales reconciliation.
-export async function analyticsJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const input = inputSchema.parse(payload)
+export async function analyticsJob(input: JobInput<"analytics">, { assertOwned }: Pick<JobContext, "assertOwned">) {
   await assertOwned()
   const [account] = await db()
     .select({ scopes: connections.scopes })

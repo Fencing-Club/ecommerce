@@ -399,7 +399,7 @@ describe("resetting a password", () => {
     client.createPasswordReset.mockResolvedValue(reset(15))
     sendEmail.mockRejectedValue(new Error("Email provider rejected delivery (403)"))
     await expect(requestPasswordReset(context, { email: "ann@example.net" })).resolves.toEqual({ ok: true })
-    expect(console.error).toHaveBeenCalledWith("Couldn’t send the password reset email", expect.any(Error))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('"event":"password_reset_email_failed"'))
   })
 
   it("saves the new password and signs in with it", async () => {
