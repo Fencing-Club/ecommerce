@@ -1,5 +1,6 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { awdShipmentIdPattern } from "@repo/copacker-shipments/amazon-inbound"
+import { openPackingStates } from "@repo/copacker-shipments/states"
 import { and, eq, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -68,7 +69,7 @@ export async function linkExistingAwd(s: Session, id: string, revision: number, 
       current.revision !== revision ||
       currentOrder.revision !== order.revision ||
       current.amazonNetwork !== "awd_us" ||
-      !["packing", "correction"].includes(current.status) ||
+      !openPackingStates.includes(current.status) ||
       current.operation !== "none" ||
       current.amazonOrderId
     ) {
