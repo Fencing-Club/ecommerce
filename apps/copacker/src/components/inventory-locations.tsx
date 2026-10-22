@@ -107,7 +107,7 @@ function LocationRow({
 
 function productsLink(chunks: React.ReactNode) {
   return (
-    <Link to="/products" className="underline underline-offset-4 hover:text-foreground">
+    <Link to="/products" className="text-link hover:text-foreground">
       {chunks}
     </Link>
   )
@@ -168,7 +168,7 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
     <FormDialog
       trigger={
         <DialogTrigger
-          render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+          render={<Button variant="outline" size="responsive" className="shrink-0" aria-label={t("editLabel")} />}
         >
           {t("edit")}
         </DialogTrigger>

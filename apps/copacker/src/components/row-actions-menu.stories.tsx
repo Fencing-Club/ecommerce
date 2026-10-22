@@ -1,7 +1,7 @@
 import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { RowActionsMenu } from "./row-actions-menu"
-import { DropdownMenuItem } from "./ui/dropdown-menu"
 
 const edited = fn()
 const removed = fn()

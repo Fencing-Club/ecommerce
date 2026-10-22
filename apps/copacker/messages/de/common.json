@@ -3,6 +3,7 @@
   "skipToContent": "Zum Inhalt springen",
   "breadcrumb": "Brotkrümelnavigation",
   "about": "Info zu {label}",
+  "noValue": "Keine",
   "errors": {
     "generic": "Etwas ist schiefgelaufen. Versuchen Sie es erneut.",
     "offline": "Copacker ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
@@ -265,8 +266,6 @@
     "viewPurchaseOrder": "Bestellung ansehen",
     "viewOrder": "Bestellung ansehen",
     "noMatchesDescription": "Versuchen Sie eine andere Suche oder ändern Sie Ihre Filter.",
-    "previousPage": "Vorherige Seite",
-    "nextPage": "Nächste Seite",
     "orders": {
       "title": "Bestellungen",
       "reference": "Bestellung",

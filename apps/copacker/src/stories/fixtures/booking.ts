@@ -121,7 +121,7 @@ export const agl = {
 const hagerstown: FbaPlacement = {
   id: "hgr6",
   warehouses: [{ code: "HGR6", place: "Hagerstown, MD" }],
-  placementFee: 40.2,
+  placementFee: 4020,
   quotes: [
     {
       id: "amass-standard",
@@ -129,7 +129,7 @@ const hagerstown: FbaPlacement = {
       name: "Amass standard truck",
       service: "Standard truck",
       mode: "Ocean LCL",
-      shipping: 103.92
+      shipping: 10392
     },
     {
       id: "niuku-standard",
@@ -137,7 +137,7 @@ const hagerstown: FbaPlacement = {
       name: "Niuku standard truck",
       service: "Standard truck",
       mode: "Ocean LCL",
-      shipping: 118.17
+      shipping: 11817
     },
     {
       id: "catch-standard",
@@ -145,7 +145,7 @@ const hagerstown: FbaPlacement = {
       name: "CATCH standard truck",
       service: "Standard truck",
       mode: "Ocean LCL",
-      shipping: 124.71
+      shipping: 12471
     },
     {
       id: "catch-fast",
@@ -153,7 +153,7 @@ const hagerstown: FbaPlacement = {
       name: "CATCH fast truck",
       service: "Fast truck",
       mode: "Ocean LCL",
-      shipping: 156.82
+      shipping: 15682
     }
   ]
 }
@@ -164,7 +164,7 @@ const placements: FbaPlacement[] = [
   {
     id: "poc1",
     warehouses: [{ code: "POC1", place: "Fontana, CA" }],
-    placementFee: 77.2,
+    placementFee: 7720,
     quotes: [
       {
         id: "amass-standard-poc1",
@@ -172,14 +172,14 @@ const placements: FbaPlacement[] = [
         name: "Amass standard truck",
         service: "Standard truck",
         mode: "Ocean LCL",
-        shipping: 78.71
+        shipping: 7871
       }
     ]
   },
   {
     id: "bna6",
     warehouses: [{ code: "BNA6", place: "Clarksville, TN" }],
-    placementFee: 58.7,
+    placementFee: 5870,
     quotes: [
       {
         id: "niuku-standard-bna6",
@@ -187,7 +187,7 @@ const placements: FbaPlacement[] = [
         name: "Niuku standard truck",
         service: "Standard truck",
         mode: "Ocean LCL",
-        shipping: 108.86
+        shipping: 10886
       }
     ]
   },
@@ -208,7 +208,7 @@ const placements: FbaPlacement[] = [
         name: "Amass standard courier",
         service: "Standard courier",
         mode: "Ocean LCL",
-        shipping: 184.78
+        shipping: 18478
       }
     ]
   }
@@ -236,7 +236,7 @@ const fbaChoose: FbaBooking = {
 const booked = {
   place: "Hagerstown, MD",
   service: "Amass standard truck",
-  total: 144.12,
+  total: 14412,
   amazonLabels: { status: "ready", href: "/api/shipments/ship_2/labels", count: 5 },
   carrierLabels: { carrier: "Amass", labels: { status: "ready", href: "/api/shipments/ship_2/carrier-labels" } }
 } satisfies FbaBooking["booked"]

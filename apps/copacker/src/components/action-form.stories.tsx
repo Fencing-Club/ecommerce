@@ -1,11 +1,11 @@
 import { useForm } from "react-hook-form"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { shownDialog } from "@/stories/play"
 import { ActionForm, keepEnterFromSubmitting } from "./action-form"
 import { FormInput } from "./form-controls"
-import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog"
 
 const submitted = fn()
 

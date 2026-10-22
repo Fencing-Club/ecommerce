@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { addressLine, addressLines } from "../src/lib/address"
+import { addressLine, addressLines } from "../src/index"
 
 const factory = {
   addressLine1: "1000 Siji Road",

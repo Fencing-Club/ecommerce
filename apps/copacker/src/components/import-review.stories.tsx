@@ -190,7 +190,7 @@ export const SaveFails = meta.story({
 export const FindProduct = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(line(canvas, 2).getByRole("button", { name: "Find product" }))
-    const search = canvas.getByRole("textbox", { name: "Find a product for line 2" })
+    const search = canvas.getByRole("searchbox", { name: "Find a product for line 2" })
     await expect(search).toHaveValue("LM-BASKET-L")
     await expect(search).toHaveFocus()
     await waitFor(() => expect(searched).toHaveBeenCalledWith({ q: "LM-BASKET-L" }))
@@ -204,7 +204,7 @@ export const FindProduct = meta.story({
     const second = line(canvas, 2)
     await expect(second.getByText("Waffle towel")).toBeVisible()
     await expect(second.queryByText("Selected during review")).toBeNull()
-    await expect(canvas.queryByRole("textbox", { name: "Find a product for line 2" })).toBeNull()
+    await expect(canvas.queryByRole("searchbox", { name: "Find a product for line 2" })).toBeNull()
     // The menu now offers to change it.
     await userEvent.click(second.getByRole("button", { name: "More for line 2" }))
     await expect(await screen.findByRole("menuitem", { name: "Change product" })).toBeInTheDocument()
@@ -226,13 +226,13 @@ export const NoMatches = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(line(canvas, 2).getByRole("button", { name: "Find product" }))
     await expect(await canvas.findByText("No matches yet")).toBeVisible()
-    const search = canvas.getByRole("textbox", { name: "Find a product for line 2" })
+    const search = canvas.getByRole("searchbox", { name: "Find a product for line 2" })
     await userEvent.clear(search)
     // Enter searches rather than saving the review.
     await userEvent.type(search, "apron{Enter}")
     await expect(await canvas.findByText("No matches")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Close search" }))
-    await expect(canvas.queryByRole("textbox", { name: "Find a product for line 2" })).toBeNull()
+    await expect(canvas.queryByRole("searchbox", { name: "Find a product for line 2" })).toBeNull()
   }
 })
 
@@ -240,7 +240,7 @@ export const NoMatches = meta.story({
 export const AddAndRemoveLines = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add line" }))
-    await expect(canvas.getByRole("textbox", { name: "Find a product for line 3" })).toHaveValue("")
+    await expect(canvas.getByRole("searchbox", { name: "Find a product for line 3" })).toHaveValue("")
     await expect(line(canvas, 3).queryByText("Added during review")).toBeNull()
     await fillDetails(canvas)
     // Its empty cells are marked, the first focused, until they're filled in.

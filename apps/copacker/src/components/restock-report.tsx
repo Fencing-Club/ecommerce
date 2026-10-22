@@ -18,6 +18,7 @@ import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
 import { SearchField } from "@/components/list/search-field"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
 import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -50,7 +51,7 @@ import { storeNames } from "@/lib/stores"
 import type { RestockChannelOption } from "@/server/restock-page"
 import type { RestockLine, RestockStatus } from "@/server/restock-plan"
 import { InfoTip } from "./info-tip"
-import { Blank, Count, LineName, useRestockText } from "./restock-line"
+import { Count, LineName, useRestockText } from "./restock-line"
 import { GroupTrigger, RestockSupplierGroup } from "./restock-supplier-group"
 import { RestockToolbar } from "./restock-toolbar"
 
@@ -105,7 +106,7 @@ function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string | nu
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">{t("estimatedCost")}</span>
               <span className="text-3xl font-semibold tracking-tight tabular-nums">
-                {cost ?? <Blank reason={t("noUnitCosts")} />}
+                {cost ?? <NoValue reason={t("noUnitCosts")} />}
               </span>
             </div>
           )}
@@ -264,7 +265,7 @@ function Results({
           <OptionSelect
             options={restockSorts.map((value) => ({ value, label: t(`sort.${value}`) }))}
             value={sort}
-            onChange={setSort}
+            onValueChange={setSort}
             label={t("sortBy")}
             icon={<ArrowDownUp className="text-muted-foreground" />}
           />

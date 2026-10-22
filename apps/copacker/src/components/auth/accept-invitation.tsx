@@ -6,16 +6,7 @@ import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useAction } from "@/hooks/use-action"
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
-}
+import { initials } from "@/lib/initials"
 
 // Accepting for someone who's signed in with the invited email and has nothing left to give. A colleague joins. A
 // supplier or forwarder that already owns a workspace of that kind picks one, or goes on to make a new one.
@@ -56,7 +47,7 @@ export function AcceptInvitation({
             <FieldLabel
               key={workspace.id}
               htmlFor={`workspace-${workspace.id}`}
-              className="w-full cursor-pointer items-center gap-3 rounded-xl border p-3 has-data-checked:border-primary/40 has-data-checked:bg-primary/5 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+              className="w-full cursor-pointer items-center gap-3 rounded-xl border p-3 has-data-checked:border-primary-border has-data-checked:bg-primary-tint has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-xs font-medium">
                 {workspace.id === "new" ? <Plus className="size-4" aria-hidden /> : initials(workspace.name)}

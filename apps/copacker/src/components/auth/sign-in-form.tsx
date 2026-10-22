@@ -37,7 +37,7 @@ export function SignInForm({ next, email = "", locked = false }: { next: string;
         action={
           <a
             href={reset}
-            className="text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring rounded-sm text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             {t("fields.forgotPassword")}
           </a>

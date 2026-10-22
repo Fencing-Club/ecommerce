@@ -1,24 +1,30 @@
-import { useCanOpen } from "@/components/access"
+import { usePermissions } from "@/components/access"
 import { TableRow } from "@/components/ui/table"
+import { canOpen } from "@/lib/access"
 import { cn } from "@/lib/utils"
 
-// Whether a click lands on the row itself: not on one of its links, buttons or menus, not the end of selecting text,
-// and not inside a dialog or menu opened from the row, whose clicks React passes up to it from their portals.
-export function isRowClick(event: React.MouseEvent<HTMLElement>) {
+// Whether a click lands on the row itself: not on one of its links, buttons, checkboxes or menus, not the end of
+// selecting text, and not inside a dialog or menu opened from the row, whose clicks React passes up to it from their
+// portals.
+function isRowClick(event: React.MouseEvent<HTMLElement>) {
   const target = event.target
   return (
     target instanceof Element &&
     event.currentTarget.contains(target) &&
-    !target.closest("a, button, input, select, textarea, label, [role='menuitem']") &&
+    !target.closest("a, button, input, select, textarea, label, [role='menuitem'], [role='checkbox']") &&
     !window.getSelection()?.toString()
   )
 }
 
-// A table row that opens `href` from anywhere on it, like Shopify's lists. The link inside the row stays the way in
-// for keyboards and screen readers; Ctrl or Cmd, or the middle button, opens a new tab as a link would.
-export function LinkRow({ href, className, ...props }: React.ComponentProps<typeof TableRow> & { href: string }) {
-  // A row that leads to a page the person can't open stays a plain row.
-  if (!useCanOpen(href)) {
+// What a row opens: a page at `href`, or, with `onOpen`, something on this page, such as a sheet with the record.
+type Opens = { href: string; onOpen?: never } | { onOpen: () => void; href?: never }
+
+// The one clickable table row, like Shopify's lists: a click anywhere on it opens what it's for. The link or button
+// inside the row stays the way in for keyboards and screen readers. For a page, Ctrl or Cmd, or the middle button,
+// opens a new tab as a link would, and a row leading to a page the person can't open stays a plain row.
+export function LinkRow({ href, onOpen, className, ...props }: React.ComponentProps<typeof TableRow> & Opens) {
+  const permissions = usePermissions()
+  if (href !== undefined && !canOpen(permissions, href)) {
     return <TableRow {...props} className={className} />
   }
   return (
@@ -29,7 +35,9 @@ export function LinkRow({ href, className, ...props }: React.ComponentProps<type
         if (!isRowClick(event)) {
           return
         }
-        if (event.metaKey || event.ctrlKey) {
+        if (href === undefined) {
+          onOpen?.()
+        } else if (event.metaKey || event.ctrlKey) {
           window.open(href, "_blank", "noopener")
         } else {
           const link = Array.from(event.currentTarget.querySelectorAll("a")).find(
@@ -43,7 +51,7 @@ export function LinkRow({ href, className, ...props }: React.ComponentProps<type
         }
       }}
       onAuxClick={(event) => {
-        if (event.button === 1 && isRowClick(event)) {
+        if (href !== undefined && event.button === 1 && isRowClick(event)) {
           window.open(href, "_blank", "noopener")
         }
       }}

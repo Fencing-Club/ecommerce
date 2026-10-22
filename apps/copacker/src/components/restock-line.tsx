@@ -1,8 +1,10 @@
-import { ChevronDown, ChevronRight, ImageOff } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { match } from "ts-pattern"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { Status, StatusBadge } from "@/components/common"
+import { NoValue } from "@/components/no-value"
+import { ProductThumb } from "@/components/product-thumb"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -66,30 +68,6 @@ export function useRestockText() {
 }
 export type RestockText = ReturnType<typeof useRestockText>
 
-// The one mark for a value that doesn't apply. The reason, when it matters, shows on hover and is read out instead.
-export function Blank({ reason }: { reason?: string }) {
-  const t = useTranslations("restock")
-  return (
-    <span className="text-muted-foreground" title={reason}>
-      <span aria-hidden="true">—</span>
-      <span className="sr-only">{reason ?? t("none")}</span>
-    </span>
-  )
-}
-
-function Thumbnail({ url }: { url: string | null }) {
-  return url ? (
-    <img src={url} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md border bg-muted object-cover" />
-  ) : (
-    <span
-      className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground"
-      aria-hidden="true"
-    >
-      <ImageOff className="size-4" />
-    </span>
-  )
-}
-
 // The SKU and, for a multipack, its pieces.
 function detail(line: RestockLine, { t }: RestockText) {
   if (!line.packOf) {
@@ -103,7 +81,7 @@ export function LineName({ line }: { line: RestockLine }) {
   const text = detail(line, useRestockText())
   return (
     <span className="flex min-w-0 items-center gap-3">
-      <Thumbnail url={line.imageUrl} />
+      <ProductThumb url={line.imageUrl} className="size-9" />
       <span className="flex min-w-0 flex-col">
         <span className="font-medium whitespace-normal">
           {line.product}
@@ -223,10 +201,10 @@ function Explanation({ line }: { line: RestockLine }) {
 function LostSales({ line }: { line: RestockLine }) {
   const { t, money } = useRestockText()
   if (line.lostUnits === null) {
-    return <Blank reason={t("rateUnknown")} />
+    return <NoValue reason={t("rateUnknown")} />
   }
   if (line.lostUnits === 0) {
-    return <Blank />
+    return <NoValue />
   }
   return line.lostSalesMinor !== null && line.priceCurrency ? (
     <span className="text-destructive">{money(line.lostSalesMinor, line.priceCurrency)}</span>
@@ -241,30 +219,30 @@ function LostSales({ line }: { line: RestockLine }) {
 function StockLeft({ line }: { line: RestockLine }) {
   const t = useTranslations("restock")
   if (isOut(line)) {
-    return <Blank reason={t("outOfStock")} />
+    return <NoValue reason={t("outOfStock")} />
   }
   if (line.daysRemaining !== null) {
     return line.daysRemaining === 0 ? t("underADay") : t("days", { count: line.daysRemaining })
   }
-  return <Blank reason={line.sold === 0 ? t("noSales") : t("unknown")} />
+  return <NoValue reason={line.sold === 0 ? t("noSales") : t("unknown")} />
 }
 
 // A count, or a dash when it's unknown.
 export function Count({ value }: { value: number | null }) {
   const { t, number } = useRestockText()
-  return value === null ? <Blank reason={t("unknown")} /> : number(value)
+  return value === null ? <NoValue reason={t("unknown")} /> : number(value)
 }
 
 // What the units in the Order column cost; `units` is null for a line that can't be ordered.
 function LineCost({ line, units }: { line: RestockLine; units: string | null }) {
   const { t, money } = useRestockText()
   if (units === null) {
-    return <Blank />
+    return <NoValue />
   }
   return line.estimatedCostMinor !== null && line.costCurrency && line.unitCostMinor !== null ? (
     money(Number(units || 0) * line.unitCostMinor, line.costCurrency)
   ) : (
-    <Blank reason={t("noUnitCost")} />
+    <NoValue reason={t("noUnitCost")} />
   )
 }
 
@@ -381,7 +359,7 @@ export function RestockLineRows({
               )}
             </div>
           ) : (
-            <Blank />
+            <NoValue />
           )}
         </TableCell>
         {prices && (

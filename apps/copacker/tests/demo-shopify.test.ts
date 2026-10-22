@@ -46,7 +46,6 @@ describe("isolated demo Shopify provider", () => {
       productVariant: { supplierSku: { value: "GRIP-L" } }
     })
     expect(variants[2]).toBeNull()
-    expect(await api.search("body cord")).toHaveLength(1)
     expect((await api.catalogPage()).nodes).toHaveLength(6)
     expect(fetch).not.toHaveBeenCalled()
   })

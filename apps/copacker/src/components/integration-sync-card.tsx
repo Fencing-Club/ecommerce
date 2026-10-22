@@ -1,11 +1,10 @@
 import { CircleAlert, CircleCheck, Clock3, RefreshCw } from "lucide-react"
 import { useId } from "react"
 import { useFormatter, useTranslations } from "use-intl"
-import { cn } from "@/lib/utils"
+import type { StatusTone } from "@/components/ui/badge"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { StatusBadge } from "./common"
-import type { StatusTone } from "./ui/badge"
-import { Button, buttonVariants } from "./ui/button"
-import { Spinner } from "./ui/spinner"
 
 export type IntegrationSyncState =
   | "queued"
@@ -105,14 +104,15 @@ export function IntegrationSyncCard({
         {reconnect ? (
           <a
             href={reconnect}
-            className={cn(buttonVariants({ variant: "outline", className: "h-11 flex-1 sm:h-[34px]" }))}
+            className={buttonVariants({ variant: "outline", size: "responsive", className: "flex-1" })}
           >
             {common("reconnect")}
           </a>
         ) : (
           <Button
             variant="outline"
-            className="h-11 flex-1 sm:h-[34px]"
+            size="responsive"
+            className="flex-1"
             disabled={disabled || active}
             onClick={onSync}
             aria-label={actionLabel ?? t("syncAction", { label })}

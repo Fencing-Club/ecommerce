@@ -1,9 +1,9 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { shownDialog } from "@/stories/play"
 import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
-import { Button } from "./ui/button"
-import { Dialog, DialogTrigger } from "./ui/dialog"
 
 const meta = preview.meta({
   title: "Components/Integrations/Integration panel",

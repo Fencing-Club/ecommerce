@@ -45,10 +45,7 @@ export function AuthSwitch({ prompt, href, children }: { prompt: string; href: s
   return (
     <p className="text-center text-sm text-muted-foreground">
       {prompt}{" "}
-      <a
-        href={href}
-        className="font-medium text-foreground underline-offset-4 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
+      <a href={href} className="focus-ring rounded-sm font-medium text-foreground underline-offset-4 hover:underline">
         {children}
       </a>
     </p>

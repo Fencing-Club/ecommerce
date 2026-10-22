@@ -228,8 +228,9 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 
 ### Purchase orders
 
-- `GET /api/catalog?q=` or `?ids=`: buyer, Orders: Edit. Shopify variant search or lookup with line defaults, supplier
-  SKU and ASIN, plus Amazon `amazonAsin`/`fnsku` and `amazonError` (see [Catalog identity](#catalog-identity)).
+- `GET /api/catalog?ids=`: buyer, Orders: Edit. The Shopify variations the add-products dialog chose, with line
+  defaults, supplier SKU and ASIN, plus Amazon `amazonAsin`/`fnsku` and `amazonError` (see
+  [Catalog identity](#catalog-identity)). No IDs, no variations; the dialog searches through `/api/inventory/products`.
 - `POST /api/supplier-catalog/match` `{supplierId, currency, supplierSkus}`: buyer, Orders: Edit. Each SKU's catalog
   match at this buyer's catalog prices, and `available`: the pieces the supplier can still sell, or null when the
   product has no stock limit.
@@ -628,7 +629,8 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
   linked in one transaction; saving again returns the same PO. Saving sends no email and creates no Amazon shipment.
 
 The proposal schema is `src/lib/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
-values and non-product charges. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
+values and non-product charges. `src/lib/import-totals.ts` adds a proposal up (`importTotals`), so the review page and
+the save's document-total check agree. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
 SKU. Processing runs in the worker with the prompt's `production` label.
 
 Catalog search accepts up to 50 SKU or description queries per call and returns compact identity matches, with full

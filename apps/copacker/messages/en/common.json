@@ -3,6 +3,7 @@
   "skipToContent": "Skip to content",
   "breadcrumb": "Breadcrumb",
   "about": "About {label}",
+  "noValue": "None",
   "errors": {
     "generic": "Something went wrong. Try again.",
     "offline": "Couldn’t reach Copacker. Check your connection and try again."
@@ -265,8 +266,6 @@
     "viewPurchaseOrder": "View purchase order",
     "viewOrder": "View order",
     "noMatchesDescription": "Try another search or change your filters.",
-    "previousPage": "Previous page",
-    "nextPage": "Next page",
     "orders": {
       "title": "Purchase orders",
       "reference": "Purchase order",

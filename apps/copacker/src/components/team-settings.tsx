@@ -18,6 +18,7 @@ import type { Access } from "@/lib/access"
 import type { Area } from "@/lib/access"
 import type { Role } from "@/lib/access"
 import { highestLevel } from "@/lib/access"
+import { initials } from "@/lib/initials"
 import { areasFor } from "@/lib/navigation"
 import { FormInput } from "./form-controls"
 import { FormDialog } from "./form-dialog"
@@ -56,7 +57,7 @@ export function TeamSettings({
   const [sent, setSent] = useState("")
 
   return (
-    <Card className="gap-0 py-0">
+    <Card flush>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{t("people", { count: members.length })}</p>
         {admin && (
@@ -218,7 +219,7 @@ function AccessFields({ kind }: { kind: string }) {
             <FieldLabel
               key={choice}
               htmlFor={`${id}-${choice}`}
-              className="w-full cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-primary/40 has-data-checked:bg-primary/5 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+              className="w-full cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-primary-border has-data-checked:bg-primary-tint has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
             >
               {/* Base UI's radio isn't a labelable element, so it's named by its text. */}
               <RadioGroupItem
@@ -394,18 +395,11 @@ function MemberRow({
 }) {
   const t = useTranslations("settings.team")
   const [open, setOpen] = useState<"access" | "remove" | "transfer" | null>(null)
-  const initials = member.name
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 
   return (
     <li className="flex items-center gap-3 px-4 py-3">
       <Avatar>
-        <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
+        <AvatarFallback className="text-xs font-medium">{initials(member.name)}</AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-1 flex-col">
         <p className="flex min-w-0 items-baseline gap-2 font-medium">

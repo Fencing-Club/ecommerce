@@ -49,7 +49,7 @@ export const Validation = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     const dialog = await shownDialog()
-    await expect(dialog.element).toHaveTextContent("EUR")
+    await expect(dialog.getByRole("textbox", { name: "Freight cost" })).toHaveAccessibleDescription("€")
     await userEvent.click(screen.getAllByRole("button", { name: "Mark shipped" }).at(-1)!)
     await expect(await screen.findByText("Enter the freight cost")).toBeInTheDocument()
     await expect(screen.getByText("Enter the carrier")).toBeInTheDocument()

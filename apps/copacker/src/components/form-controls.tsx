@@ -1,6 +1,7 @@
 import { CalendarDays } from "lucide-react"
-import { useId, useState } from "react"
+import { useId } from "react"
 import { useController } from "react-hook-form"
+import { MoneyInput } from "@/components/money-input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -273,70 +274,41 @@ export function FormNumber({
   )
 }
 
-// A typed amount in minor units: "78.5", "1,250.00", or "78,50" from a keyboard with a decimal comma. Anything else is
-// NaN, which fails validation as not a number, and an empty field is null, as in FormNumber.
-function minorUnits(text: string) {
-  const amount = text.trim()
-  if (amount === "") {
-    return null
-  }
-  const decimal = /^-?\d+,\d{1,2}$/.test(amount) ? amount.replace(",", ".") : amount
-  if (!/^-?(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/.test(decimal) || !/\d/.test(decimal)) {
-    return Number.NaN
-  }
-  return Math.round(Number(decimal.replaceAll(",", "")) * 100)
-}
-
-// Money, stored in whole minor units such as cents, beside its currency. It shows with its cents (78.50) except while
-// it's being typed, and text that isn't an amount stays in view to fix.
+// Money, stored in whole minor units such as cents, in a MoneyInput. An empty field is null, as in FormNumber, and text
+// that isn't an amount is NaN, which fails validation as not a number while it stays in view to fix.
 export function FormMoney({
   name,
   label,
   description,
   className,
   currency,
-  ...props
-}: FormFieldProps & { currency: string } & Omit<
-    React.ComponentProps<typeof InputGroupInput>,
-    "name" | "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "type"
-  >) {
-  const currencyId = useId()
+  placeholder,
+  disabled,
+  required
+}: FormFieldProps &
+  Pick<React.ComponentProps<typeof MoneyInput>, "currency" | "placeholder" | "disabled" | "required">) {
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
     fieldProps,
     controlProps
-  } = useFormField(name, { description, describedBy: currencyId })
-  // The text as typed, with the value it was read as. A value set another way, such as by a reset, replaces it.
-  const [typed, setTyped] = useState<{ text: string; value: unknown } | null>(null)
-  const formatted = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? (fieldValue / 100).toFixed(2) : ""
-  const shown = typed && Object.is(typed.value, fieldValue) ? typed.text : formatted
+  } = useFormField(name, { description })
   return (
-    <FormField {...fieldProps} label={label} required={props.required} className={className}>
-      <InputGroup>
-        <InputGroupInput
-          {...props}
-          {...controlProps}
-          name={fieldName}
-          ref={ref}
-          inputMode="decimal"
-          autoComplete="off"
-          value={shown}
-          onFocus={() => setTyped({ text: shown, value: fieldValue })}
-          onChange={(event) => {
-            const next = minorUnits(event.target.value)
-            setTyped({ text: event.target.value, value: next })
-            onChange(next)
-          }}
-          onBlur={() => {
-            setTyped((current) => (current && Number.isNaN(current.value) ? current : null))
-            onBlur()
-          }}
-          className="text-end tabular-nums"
-        />
-        <InputGroupAddon align="inline-end">
-          <InputGroupText id={currencyId}>{currency}</InputGroupText>
-        </InputGroupAddon>
-      </InputGroup>
+    <FormField {...fieldProps} label={label} required={required} className={className}>
+      <MoneyInput
+        id={controlProps.id}
+        aria-describedby={controlProps["aria-describedby"]}
+        invalid={controlProps["aria-invalid"]}
+        ref={ref}
+        name={fieldName}
+        currency={currency}
+        placeholder={placeholder}
+        disabled={disabled}
+        required={required}
+        value={typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue : null}
+        onValueChange={onChange}
+        onUnreadable={() => onChange(Number.NaN)}
+        onBlur={onBlur}
+      />
     </FormField>
   )
 }

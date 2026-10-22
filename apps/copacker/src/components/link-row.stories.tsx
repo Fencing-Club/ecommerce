@@ -7,8 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { member } from "@/stories/workspace"
 import { LinkRow } from "./link-row"
 
-// A list of purchase orders whose rows open the order.
-function OrdersTable({ onRemind }: { onRemind: () => void }) {
+// A list of purchase orders whose rows open the order, and a row that opens a sheet on the page.
+function OrdersTable({ onRemind, onOpen }: { onRemind: () => void; onOpen: () => void }) {
   return (
     <Table>
       <TableHeader>
@@ -37,6 +37,15 @@ function OrdersTable({ onRemind }: { onRemind: () => void }) {
           <TableCell>Canvas tote bag</TableCell>
           <TableCell />
         </LinkRow>
+        <LinkRow onOpen={onOpen}>
+          <TableCell>
+            <button type="button" onClick={onOpen}>
+              Juniper Textiles
+            </button>
+          </TableCell>
+          <TableCell>Fabric supplier</TableCell>
+          <TableCell />
+        </LinkRow>
       </TableBody>
     </Table>
   )
@@ -45,7 +54,7 @@ function OrdersTable({ onRemind }: { onRemind: () => void }) {
 const meta = preview.meta({
   title: "Components/App shell/Link row",
   component: OrdersTable,
-  args: { onRemind: fn() }
+  args: { onRemind: fn(), onOpen: fn() }
 })
 
 export const OpensOnClick = meta.story({
@@ -88,5 +97,25 @@ export const MemberWithoutPage = meta.story({
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
     await userEvent.click(canvas.getByText("Lotus Manufacturing"))
     await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-1045" })
+  }
+})
+
+// A row for something on the page, such as a partner's sheet, opens it from anywhere on the row, once, and never a tab.
+export const OpensOnThePage = meta.story({
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByText("Fabric supplier"))
+    await expect(args.onOpen).toHaveBeenCalledOnce()
+    await userEvent.click(canvas.getByRole("button", { name: "Juniper Textiles" }))
+    await expect(args.onOpen).toHaveBeenCalledTimes(2)
+    const open = fn()
+    const original = window.open
+    window.open = open
+    try {
+      fireEvent(canvas.getByText("Fabric supplier"), new MouseEvent("auxclick", { bubbles: true, button: 1 }))
+    } finally {
+      window.open = original
+    }
+    await expect(open).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })

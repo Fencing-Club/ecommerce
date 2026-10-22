@@ -183,6 +183,8 @@ export const Default = meta.story({
 - `chooseOption(control, option)` opens a select or combobox, picks an option and waits for the list to close, so the
   next step never meets a list that's going away. For a list that stays open, such as a multiple choice, click the
   options directly.
+- `settled()` waits a couple of frames for what a component schedules as it mounts. `chooseOption` calls it; call it
+  before a play function's first typing or click when that comes before anything else.
 - `width(className)` is a decorator that shows a story in a column of a Tailwind width (`"w-72"`, `"max-w-lg"`): the
   room the component has in the app.
 

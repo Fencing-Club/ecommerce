@@ -2,8 +2,10 @@ import { ExternalLink, Info, Tags, Truck, Warehouse } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useLocale, useTimeZone, useTranslations } from "use-intl"
 import { SelectControl } from "@/components/form-select"
+import { NoValue } from "@/components/no-value"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { useMoney } from "@/hooks/use-money"
 import { BookingDialog, type BookingDialogState, BookingStep, DoneAction } from "./booking-dialog"
 import { FileRow, LabelsRow, RowStatus } from "./file-row"
 import { IssueSummary, IssuesView } from "./issues"
@@ -11,11 +13,12 @@ import { OptionList } from "./option-list"
 import { SummaryList } from "./summary-list"
 
 // A carrier's quote to take the shipment. `name` is its service as Amazon names it, such as "Amass standard truck",
-// `service` and `mode` the same in parts. `shipping` is Amazon's charge for it, without the placement fee.
+// `service` and `mode` the same in parts. `shipping` is Amazon's charge for it, without the placement fee, in minor
+// units, as Copacker keeps all money.
 export type FbaQuote = { id: string; carrier: string; name: string; service: string; mode: string; shipping: number }
 
-// Where Amazon would send the shipment, one warehouse or a split across several, its placement fee, and the carriers'
-// quotes for it, cheapest first.
+// Where Amazon would send the shipment, one warehouse or a split across several, its placement fee in minor units, and
+// the carriers' quotes for it, cheapest first.
 export type FbaPlacement = {
   id: string
   warehouses: Array<{ code: string; place: string }>
@@ -62,6 +65,7 @@ export type FbaBooking = {
   booked: {
     place: string
     service: string
+    // In minor units.
     total: number
     amazonLabels: { status: "pending" } | { status: "ready"; href: string; count: number }
     // The carrier's labels, which your own carrier doesn't send.
@@ -118,7 +122,8 @@ export function FbaBookingDialog({
   const { options } = booking
   const locale = useLocale()
   const timeZone = useTimeZone()
-  const money = (amount: number) => format.number(amount, { style: "currency", currency: booking.currency })
+  const formatMoney = useMoney()
+  const money = (minor: number) => formatMoney(minor, booking.currency)
   // The zone by its generic name, PT rather than PDT, which use-intl's formatter doesn't offer.
   const time = (date: Date) =>
     new Intl.DateTimeFormat(locale, {
@@ -400,15 +405,15 @@ export function FbaBookingDialog({
                       })
                     }
                   ]),
-              { label: t("fba.review.placementFee"), value: options.expired ? "—" : money(fee) },
+              { label: t("fba.review.placementFee"), value: options.expired ? <NoValue /> : money(fee) },
               {
                 label: t("fba.review.shipping"),
-                value: options.expired || shipping === undefined ? "—" : money(shipping)
+                value: options.expired || shipping === undefined ? <NoValue /> : money(shipping)
               }
             ]}
             total={{
               label: t("fba.review.total"),
-              value: options.expired ? "—" : money(fee + (shipping ?? 0))
+              value: options.expired ? <NoValue /> : money(fee + (shipping ?? 0))
             }}
           />
           {quote && (
@@ -516,7 +521,7 @@ function Booked({
 }: {
   booking: FbaBooking
   booked: NonNullable<FbaBooking["booked"]>
-  money: (amount: number) => string
+  money: (minor: number) => string
 }) {
   const t = useTranslations("booking")
   const { carrierLabels } = booked

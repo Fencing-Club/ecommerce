@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { ArrowRight, Check, Ellipsis, ExternalLink, Factory, Package, Ship, Truck, User } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Status } from "@/components/common"
+import { NoValue } from "@/components/no-value"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -87,7 +88,7 @@ export function LogisticsTable({
           </>
         )
       case "partner":
-        return row.partner ?? "—"
+        return row.partner ?? <NoValue />
       case "route":
         return (
           <span className="flex items-center gap-1.5 text-meta">
@@ -113,11 +114,11 @@ export function LogisticsTable({
           </div>
         )
       case "total":
-        return row.total ?? "—"
+        return row.total ?? <NoValue />
       case "cartons":
-        return row.cartons || "—"
+        return row.cartons || <NoValue />
       case "ready":
-        return row.ready ? text.readyDate(row.ready) : "—"
+        return row.ready ? text.readyDate(row.ready) : <NoValue />
       case "status":
         return <Status status={row.status} />
       case "waiting": {

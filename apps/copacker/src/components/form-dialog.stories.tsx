@@ -3,12 +3,12 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { Button } from "@/components/ui/button"
+import { DialogTrigger } from "@/components/ui/dialog"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { shownDialog } from "@/stories/play"
 import { FormInput } from "./form-controls"
 import { FormDialog } from "./form-dialog"
-import { Button } from "./ui/button"
-import { DialogTrigger } from "./ui/dialog"
 
 const sent: ActionRequest[] = []
 const saved = fn()

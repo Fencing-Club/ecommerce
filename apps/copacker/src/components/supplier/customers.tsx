@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
@@ -71,7 +72,7 @@ export function CatalogPicker({
       <OptionSelect
         options={options}
         value={current}
-        onChange={(next) => void choose(next)}
+        onValueChange={(next) => void choose(next)}
         disabled={pending || !editable}
         label={t("catalogFor", { customer })}
         className="w-full min-w-44"
@@ -165,7 +166,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                   {customer.orders.toLocaleString(locale)}
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground @3xl:table-cell">
-                  {customer.lastOrderAt ? formatDate(customer.lastOrderAt, locale, timeZone) : "—"}
+                  {customer.lastOrderAt ? formatDate(customer.lastOrderAt, locale, timeZone) : <NoValue />}
                 </TableCell>
                 {prices && (
                   <TableCell className="text-end">

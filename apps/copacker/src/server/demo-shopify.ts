@@ -82,12 +82,6 @@ export class DemoShopify extends Shopify {
     const variants = await this.catalog()
     return ids.map((id) => variants.find((variant) => variant.id === id) || null)
   }
-  override async search(query: string) {
-    const term = query.toLowerCase()
-    return (await this.catalog())
-      .filter((variant) => `${variant.sku} ${variant.title} ${variant.product.title}`.toLowerCase().includes(term))
-      .slice(0, 30)
-  }
   override async catalogPage(after: string | null = null) {
     return { nodes: after ? [] : await this.catalog(), pageInfo: { hasNextPage: false, endCursor: null } }
   }

@@ -5,6 +5,15 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 // popups' animations. Story tests turn animations off (.storybook/vitest.setup.ts), but a person watching a story in
 // Storybook sees them, so these wait for the popup either way.
 
+// Waits for the story to settle: the updates and effects a component schedules as it mounts land within a couple of
+// frames. Call it before typing or clicking first thing, so the play function doesn't act before the story is ready.
+export async function settled() {
+  await frame()
+  await frame()
+}
+
+const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
 async function shown(role: "dialog" | "alertdialog", name?: string | RegExp) {
   const element = await screen.findByRole(role, name === undefined ? {} : { name })
   await waitFor(() => expect(element).toBeVisible())
@@ -20,6 +29,7 @@ export const shownAlertDialog = (name?: string | RegExp) => shown("alertdialog",
 // Opens a select or combobox and picks one of its options, then waits for its list to close: a list that's still
 // closing keeps its options, which no longer take clicks.
 export async function chooseOption(control: HTMLElement, option: string | RegExp) {
+  await settled()
   await userEvent.click(control)
   const choice = await screen.findByRole("option", { name: option })
   await userEvent.click(choice)

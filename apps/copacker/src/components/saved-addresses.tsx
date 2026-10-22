@@ -37,7 +37,7 @@ export function SavedAddresses({
   const count = supplier && !contacts.length ? t("noPickupAddresses") : t("count", { count: contacts.length })
 
   return (
-    <Card className="gap-0 py-0">
+    <Card flush>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{count}</p>
         {admin && (

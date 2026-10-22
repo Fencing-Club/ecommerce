@@ -1,9 +1,9 @@
-import { usePagination } from "@mantine/hooks"
 import { Download } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useReducer, useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"
+import { usePagedRows } from "@/components/list/use-paged-rows"
 import { TabLinks } from "@/components/tab-links"
 import { Button } from "@/components/ui/button"
 import { csvCell } from "@/lib/csv"
@@ -72,13 +72,7 @@ export function LogisticsList({
     state.sort,
     kind
   )
-  const pages = Math.max(1, Math.ceil(shown.length / pageSize))
-  const pagination = usePagination({
-    total: pages,
-    page: Math.min(state.page, pages),
-    onChange: (page) => dispatch({ type: "page", page })
-  })
-  const visible = shown.slice((pagination.active - 1) * pageSize, pagination.active * pageSize)
+  const paged = usePagedRows(shown, pageSize, { page: state.page, onPage: (page) => dispatch({ type: "page", page }) })
   const filtered = isFiltered(state)
 
   function exportRows(list: LogisticsRow[]) {
@@ -140,7 +134,7 @@ export function LogisticsList({
       <LogisticsTable
         kind={kind}
         viewer={viewer}
-        rows={visible}
+        rows={paged.rows}
         columns={listColumns(kind, rows).filter((column) => !hidden.includes(column))}
         view={view}
         isFiltered={filtered}
@@ -148,7 +142,7 @@ export function LogisticsList({
         onSelectedChange={(selected) => dispatch({ type: "select", selected })}
         onClear={() => dispatch({ type: "clear" })}
       />
-      <LogisticsPagination kind={kind} count={shown.length} pagination={pagination} />
+      <LogisticsPagination kind={kind} {...paged.pager} />
     </div>
   )
 }

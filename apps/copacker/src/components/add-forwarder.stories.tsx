@@ -2,10 +2,10 @@ import { useState } from "react"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { Button } from "@/components/ui/button"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { shownDialog } from "@/stories/play"
 import { AddForwarder } from "./add-forwarder"
-import { Button } from "./ui/button"
 
 const sent: ActionRequest[] = []
 
