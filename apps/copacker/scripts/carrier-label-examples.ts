@@ -6,11 +6,11 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas"
+import { readLabelMeasurements } from "@repo/copacker-shipments/label-measurements"
+import { readTrackingNumber } from "@repo/copacker-shipments/tracking-numbers"
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib"
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs"
 import { prepareZXingModule, writeBarcode } from "zxing-wasm/writer"
-import { readLabelMeasurements } from "../src/lib/label-measurements"
-import { readTrackingNumber } from "../src/lib/tracking-numbers"
 import {
   type ExampleLabel,
   exampleLayout,

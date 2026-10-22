@@ -16,6 +16,12 @@ its `receiver`; `orderDestination` reads where the PO goes from them.
 
 Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).
 
+## Carrier labels
+
+A buyer's own parcel carrier labels go on cartons by what they print. `tracking-numbers` reads a label's tracking number
+from its text or barcodes and names its carrier (`trackingCarrier`). `label-measurements` reads the weight and size it
+prints and checks they fit a carton configuration (`fitsConfiguration`).
+
 ## Shipping documents
 
 `shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing
