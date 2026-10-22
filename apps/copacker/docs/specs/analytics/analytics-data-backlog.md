@@ -400,13 +400,13 @@ No UX changes, sync, backfill or accounting writes were performed for this accep
 
 ### Next stored-evidence work (no backfill or UX)
 
-- [ ] Make FBA receipt comparison coverage-aware. Shipment `FBA1911TQ9V7` records 59 mask-cord units received but has
+- [x] Implement FBA receipt coverage diagnostics (deployment and live acceptance pending). Shipment `FBA1911TQ9V7` records 59 mask-cord units received but has
   only a +1 movement on October 18, 2025; `FBA1911VYJ2V` records 40 body-cord units received but has only a +1 movement
   on October 25. Both shipment names indicate September, while stored movement coverage starts October 1. This is
   evidence of a coverage concern, not proof of a 58- or 39-unit loss. Do not derive a receipt date from shipment names
   or fabricate missing movements. Unknown receipt-period coverage must remain explicit, including for a lone -1
   November movement on June-labelled shipment `FBA18XTP79L4`.
-- [ ] Classify Shopify payment differences from explicit links and both currency representations. Six of the ten
+- [x] Implement Shopify payment observations from explicit links and both currency representations (deployment and live acceptance pending). Six of the ten
   sampled differences have equal CAD sale/refund amounts with differing stored USD values. One order has a pending
   $14.38 refund, another a pending $15.86 manual sale, and another a failed PayPal refund. Preserve amounts and distinguish
   observed payment state from confirmed settlement, FX accounting or a proven explanation for the full order difference.

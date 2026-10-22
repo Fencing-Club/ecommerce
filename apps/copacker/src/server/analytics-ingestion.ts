@@ -10,7 +10,8 @@ import {
   connections,
   organizations,
   shopifyBalanceTransactions,
-  amazonInventoryMovements
+  amazonInventoryMovements,
+  amazonMovementReports
 } from "@/db/schema"
 import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
@@ -127,7 +128,34 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
             .orderBy(shopifyBalanceTransactions.transactionId)
             .limit(5001)
         : []
+      const movementCoverage = shipmentIds.length
+        ? await tx
+            .select({
+              from: amazonMovementReports.from,
+              requestedTo: amazonMovementReports.requestedTo,
+              coveredTo: amazonMovementReports.coveredTo,
+              status: amazonMovementReports.status
+            })
+            .from(amazonMovementReports)
+            .where(
+              and(
+                eq(amazonMovementReports.orgId, orgId),
+                eq(amazonMovementReports.externalAccountId, input.externalAccountId),
+                eq(amazonMovementReports.marketplaceId, usMarketplaceId)
+              )
+            )
+            .orderBy(amazonMovementReports.from)
+        : []
       return {
+        receiptMovementCoverage:
+          input.dataset === "fba_inbound_receipts" && input.source === "amazon"
+            ? {
+                windows: movementCoverage,
+                receiptPeriod: null,
+                status: "receipt_period_unknown",
+                meaning: "report_windows_do_not_establish_full_shipment_receipt_history"
+              }
+            : null,
         rows: rows.slice(0, 100).map((row) => ({
           ...row,
           declaredShipmentUnits: receiptNetwork ? declaredShipmentUnits(savedByShipment.get(row.sourceId)) : null,
