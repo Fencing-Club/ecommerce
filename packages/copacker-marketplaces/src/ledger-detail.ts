@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportQuantity, reportRows } from "./report-tsv"
 
 export const ledgerDetailReportType = "GET_LEDGER_DETAIL_VIEW_DATA"
 const required = [
@@ -17,11 +17,6 @@ const required = [
   "Reconciled Quantity",
   "Unreconciled Quantity"
 ]
-const quantity = z
-  .string()
-  .regex(/^-?\d+$/)
-  .transform(Number)
-  .pipe(z.number().int().min(-2147483648).max(2147483647))
 const item = z.object({
   eventDay: z.iso.date(),
   sku: z.string().nullable(),
@@ -29,13 +24,13 @@ const item = z.object({
   asin: z.string().nullable(),
   eventType: z.string().min(1),
   referenceId: z.string().nullable(),
-  quantity,
+  quantity: reportQuantity,
   fulfillmentCenterId: z.string().nullable(),
   disposition: z.string().nullable(),
   reason: z.string().nullable(),
   country: z.string().nullable(),
-  reconciledQuantity: quantity.nullable(),
-  unreconciledQuantity: quantity.nullable(),
+  reconciledQuantity: reportQuantity.nullable(),
+  unreconciledQuantity: reportQuantity.nullable(),
   // Retain the source clock text; do not invent a timezone or midnight event timestamp from the calendar date.
   dateAndTime: z.string().nullable(),
   store: z.string().nullable()

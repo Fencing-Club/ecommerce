@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportCurrency, reportRows } from "./report-tsv"
 
 export const storageFeeReportTypes = {
   monthly: "GET_FBA_STORAGE_FEE_CHARGES_DATA",
@@ -35,10 +35,7 @@ const fee = z.object({
   fnsku: z.string().nullable(),
   fulfillmentCenterId: z.string().nullable(),
   country: z.string().nullable(),
-  currency: z
-    .string()
-    .regex(/^[A-Z]{3}$/)
-    .nullable(),
+  currency: reportCurrency.nullable(),
   amount: decimal,
   quantity: decimal,
   volume: decimal,

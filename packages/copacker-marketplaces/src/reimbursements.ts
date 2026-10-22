@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportCurrency, reportDecimal, reportQuantity, reportRows, reportTimestamp } from "./report-tsv"
 
 export const fbaReimbursementsReportType = "GET_FBA_REIMBURSEMENTS_DATA"
 
@@ -22,19 +22,10 @@ const required = [
   "original-reimbursement-id",
   "original-reimbursement-type"
 ]
-// Keep source decimals exact. Conversion to money's minor units belongs in financial reconciliation, not ingestion.
-const amount = z
-  .string()
-  .regex(/^-?\d+(\.\d+)?$/)
-  .nullable()
-const quantity = z
-  .string()
-  .regex(/^-?\d+$/)
-  .transform(Number)
-  .pipe(z.number().int().min(-2147483648).max(2147483647))
-  .nullable()
+const amount = reportDecimal.nullable()
+const quantity = reportQuantity.nullable()
 const item = z.object({
-  approvedAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value)),
+  approvedAt: reportTimestamp,
   reimbursementId: z.string().min(1),
   caseId: z.string().nullable(),
   orderId: z.string().nullable(),
@@ -43,10 +34,7 @@ const item = z.object({
   fnsku: z.string().nullable(),
   asin: z.string().nullable(),
   condition: z.string().nullable(),
-  currency: z
-    .string()
-    .regex(/^[A-Z]{3}$/)
-    .nullable(),
+  currency: reportCurrency.nullable(),
   amountPerUnit: amount,
   amountTotal: amount,
   quantityCash: quantity,
