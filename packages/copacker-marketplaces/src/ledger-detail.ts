@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportQuantity, reportRows } from "./report-tsv"
+import { reportDay, reportQuantity, reportRows } from "./report-tsv"
 
 export const ledgerDetailReportType = "GET_LEDGER_DETAIL_VIEW_DATA"
 const required = [
@@ -36,18 +36,13 @@ const item = z.object({
   store: z.string().nullable()
 })
 
-function eventDay(value: string) {
-  const us = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
-  return us ? `${us[3]}-${us[1]}-${us[2]}` : value
-}
-
 // Includes all event types and dispositions. Preserve signed transfers/adjustments, unknown codes and unmatched
 // product/reference values. A reference can span multiple rows; it is not a unique movement identifier.
 export function parseLedgerDetail(text: string) {
   return reportRows(text, required).map((row) => {
     const optional = (name: string) => row[name] || null
     return item.parse({
-      eventDay: eventDay(row.Date!),
+      eventDay: reportDay(row.Date!),
       sku: optional("MSKU"),
       fnsku: optional("FNSKU"),
       asin: optional("ASIN"),

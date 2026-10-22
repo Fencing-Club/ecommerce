@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportCurrency, reportRows } from "./report-tsv"
+import { reportCurrency, reportDay, reportRows } from "./report-tsv"
 
 export const storageFeeReportTypes = {
   monthly: "GET_FBA_STORAGE_FEE_CHARGES_DATA",
@@ -91,15 +91,8 @@ export function parseAgedStorageFees(text: string) {
   return reportRows(text, agedColumns).map((row) => {
     const optional = (key: string) => row[key] || null
     const date = row["snapshot-date"]!
-    const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(date)
     // Snapshot timestamps identify the source calendar day, not a UTC accounting date.
-    const timestamp = z.iso.datetime({ offset: true }).safeParse(date)
-    let periodDay = date
-    if (us) {
-      periodDay = `${us[3]}-${us[1]!.padStart(2, "0")}-${us[2]!.padStart(2, "0")}`
-    } else if (timestamp.success) {
-      periodDay = date.slice(0, 10)
-    }
+    const periodDay = z.iso.datetime({ offset: true }).safeParse(date).success ? date.slice(0, 10) : reportDay(date)
     const quantity = z
       .string()
       .regex(/^-?\d+$/)
