@@ -8,10 +8,10 @@ import {
   palletWeightLimit
 } from "@repo/copacker-packing-rules/pallet-policies"
 import type { AmazonNetwork } from "@repo/copacker-shipments"
+import { shippingMessage } from "@repo/copacker-shipments/shipping-copy"
+import { documentSettingsForLocale } from "@repo/copacker-shipments/shipping-model"
+import { palletPolicyChecks } from "@repo/copacker-shipments/shipping-rules"
 import { useLocale } from "use-intl"
-import { shippingMessage } from "@/documents/shipping-copy"
-import { documentSettingsForLocale } from "@/documents/shipping-model"
-import { palletPolicyChecks } from "@/documents/shipping-rules"
 import { expandCartonGroups, type PalletValue } from "@/lib/carton-groups"
 import { cartonGroup, pallet, palletCartonSet, type PalletDataSet, type Receiver } from "./data"
 

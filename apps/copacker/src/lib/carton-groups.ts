@@ -188,19 +188,3 @@ export function cartonTotals(groups: CartonGroup[]) {
     { cartons: 0, pieces: 0 }
   )
 }
-
-export function cartonGroupLabel(cartons: { id: string }[]) {
-  const first = cartons[0]?.id
-  const sequence = first?.match(/^(.*?)(\d+)$/)
-  if (sequence && cartons.length > 1) {
-    const prefix = sequence[1]!
-    const digits = sequence[2]!
-    const start = Number(digits)
-    if (
-      cartons.every((carton, index) => carton.id === `${prefix}${String(start + index).padStart(digits.length, "0")}`)
-    ) {
-      return `${first}–${cartons.at(-1)!.id}`
-    }
-  }
-  return cartons.map((carton) => carton.id).join(", ")
-}

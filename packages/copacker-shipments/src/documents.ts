@@ -1,25 +1,14 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import {
-  money,
-  orderCharges,
-  orderDestination,
-  orderTotal,
-  supplierChargeTotal,
-  type OrderInput,
-  type Packing
-} from "./index"
-import type { CartonLabel } from "./labels"
+import { money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput } from "./index"
 import { markdownBlocks } from "./markdown"
 import {
   destinationName,
   destinationRequirements,
   packingInstructions,
   itemRequirements,
-  isCartonRule,
   requirementText,
   sharedPrep
 } from "./requirements"
-import { transportInstructions, type ShipmentTransport } from "./transport"
 
 // "2026-12-01" as "December 1, 2026".
 function longDate(date: string) {
@@ -35,16 +24,6 @@ function longDate(date: string) {
 export type PoParty = { name: string; lines: string[] }
 // The buyer heading its documents, with how to reach it for the footer.
 export type DocumentBuyer = PoParty & { email?: string | null; website?: string | null }
-type ShipmentEdition = { orderRevision: number; shipmentRevision: number; generated: string }
-const shipmentEdition = (edition: ShipmentEdition, shipment?: string) => ({
-  revision: `Order revision ${edition.orderRevision} / Shipment revision ${edition.shipmentRevision}`,
-  date: `Generated ${edition.generated}`,
-  shipment
-})
-
-// A line's name without Shopify's "Default Title" for a product with no options.
-const lineName = (item: OrderInput["items"][number]) =>
-  [item.name, item.variant && item.variant !== "Default Title" ? item.variant : ""].filter(Boolean).join(" / ")
 
 type Column = { label: string; x: number; align?: "left" | "right"; width?: number }
 
@@ -105,7 +84,7 @@ async function documentKit(
   title: string,
   reference: string,
   buyer: DocumentBuyer,
-  edition?: { revision: string; date: string; shipment?: string }
+  edition?: { revision: string; date: string }
 ) {
   const pdf = await PDFDocument.create()
   pdf.setTitle(`${title} ${reference}`)
@@ -417,10 +396,6 @@ async function documentKit(
         if (edition) {
           at.y = 26
           draw(`${edition.revision} / ${edition.date}`, left, { size: 8, color: muted })
-          if (edition.shipment) {
-            at.y = 14
-            draw(`Shipment ${edition.shipment}`, left, { size: 8, color: muted })
-          }
         }
       })
       return pdf.save()
@@ -640,252 +615,6 @@ async function orderPdf(input: {
     }
   }
   return kit.save()
-}
-
-// The packing list that travels with a shipment: each carton's size, weight, Amazon label number and contents.
-export async function packingListPdf(input: {
-  order: OrderInput
-  packing: Packing
-  labels: CartonLabel[]
-  shipmentId: string
-  buyer: DocumentBuyer
-  shipTo?: PoParty
-  transport?: ShipmentTransport | null
-  bookingReference?: string | null
-  edition: ShipmentEdition
-}) {
-  const { order, packing, labels } = input
-  const kit = await documentKit(
-    "Packing list",
-    order.reference,
-    input.buyer,
-    shipmentEdition(input.edition, input.shipmentId)
-  )
-  const { at, content, right, bold, regular, muted, draw, line, wrap, ensure } = kit
-  const pieces = packing.cartons.reduce((sum, carton) => sum + carton.items.reduce((n, item) => n + item.pieces, 0), 0)
-  kit.facts([
-    ["Purchase order", order.reference],
-    ["Cartons", String(packing.cartons.length)],
-    ["Pieces", pieces.toLocaleString("en-US")]
-  ])
-  kit.section("Shipment")
-  kit.paragraphs([input.shipmentId])
-  kit.section("Parties")
-  kit.parties([
-    ["From", { name: packing.origin.name, lines: originLines(packing.origin) }],
-    ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
-  ])
-  line(kit.left, right, at.y)
-
-  // A shipment with a multi-pack line also counts each line's packs, which Amazon counts as its units.
-  const packs = packing.cartons.some((carton) =>
-    carton.items.some((contents) => (order.items.find((item) => item.id === contents.itemId)?.piecesPerSet ?? 1) > 1)
-  )
-  kit.section("Quantities")
-  kit.paragraphs([
-    packs
-      ? "Pieces are individual products. Packs are complete sellable units; Amazon label QTY counts packs."
-      : "One piece is one sellable unit."
-  ])
-  kit.section("Handoff")
-  kit.paragraphs([
-    ...transportInstructions(input.transport),
-    ...(input.bookingReference ? ["Booking: " + input.bookingReference] : [])
-  ])
-  const columns = { item: content, units: right - (packs ? 62 : 0), packs: right }
-  const itemWidth = columns.units - 38 - columns.item
-  for (const carton of packing.cartons) {
-    const cartonLabel = labels.find((row) => row.cartonId === carton.cartonId)
-    const rowsHeight = carton.items.reduce((sum, contents) => {
-      const item = order.items.find((row) => row.id === contents.itemId)
-      return sum + (item ? wrap(lineName(item), bold, 10, itemWidth).length * 12 + 48 : 0)
-    }, 0)
-    ensure(Math.min(570, rowsHeight + 85))
-    kit.section("Carton " + carton.cartonId, 22)
-    draw([carton.length, carton.width, carton.height].join(" x ") + " cm    " + carton.weight + " kg", content, {
-      size: 10,
-      font: bold
-    })
-    at.y -= 16
-    if (cartonLabel) {
-      draw("Amazon label (SSCC / box ID): " + cartonLabel.labelNumber, content, { size: 9.5 })
-      at.y -= 15
-      draw("Destination: " + cartonLabel.destinationCode, content, { size: 9, color: muted })
-      at.y -= 16
-    }
-    kit.tableHeader([
-      { label: "Item", x: columns.item },
-      { label: "Pieces", x: columns.units, align: "right" },
-      ...(packs ? [{ label: "Packs", x: columns.packs, align: "right" as const }] : [])
-    ])
-    for (const contents of carton.items) {
-      const item = order.items.find((row) => row.id === contents.itemId)
-      if (!item) {
-        continue
-      }
-      const title = wrap(lineName(item), bold, 10, itemWidth)
-      if (ensure(title.length * 12 + 52)) {
-        kit.section("Carton " + carton.cartonId, 0)
-        kit.paragraphs(["Contents continued"])
-      }
-      at.y -= 14
-      const rowTop = at.y
-      draw(contents.pieces.toLocaleString("en-US"), columns.units, { size: 10, align: "right" })
-      if (packs) {
-        draw((contents.pieces / item.piecesPerSet).toLocaleString("en-US"), columns.packs, { size: 10, align: "right" })
-      }
-      at.y = rowTop
-      for (const row of title) {
-        draw(row, columns.item, { size: 10, font: bold })
-        at.y -= 12
-      }
-      const supplierCodes =
-        item.supplierSku ||
-        item.components
-          ?.map((component) => component.supplierSku)
-          .filter(Boolean)
-          .join(", ")
-      const details = [
-        "SKU: " + item.buyerSku,
-        ...(supplierCodes ? ["Supplier SKU: " + supplierCodes] : []),
-        ...(item.fnsku
-          ? ["FNSKU: " + item.fnsku + (item.piecesPerSet > 1 ? " / " + item.piecesPerSet + " pieces per pack" : "")]
-          : [])
-      ]
-      for (const detail of details) {
-        for (const row of wrap(detail, regular, 8.5, right - content)) {
-          draw(row, content, { size: 8.5, color: muted })
-          at.y -= 11
-        }
-      }
-      at.y -= 8
-      line(content, right, at.y + 2)
-    }
-  }
-  return kit.save()
-}
-
-// The supplier's checklist for packing a shipment: carton rules, how to prepare each unit, each product's own steps,
-// and the final checks, each with a box to tick. Its destination is the Amazon network the cartons are packed for, or
-// else the name of where they ship.
-export async function checklistPdf(input: {
-  shipmentId?: string
-  order: OrderInput
-  packing: Packing
-  buyer: DocumentBuyer
-  shipTo?: PoParty
-  transport?: ShipmentTransport | null
-  bookingReference?: string | null
-  edition: ShipmentEdition
-}) {
-  const { order, packing } = input
-  const amazon = orderDestination(order) === "amazon"
-  const kit = await documentKit(
-    "Packing checklist",
-    order.reference,
-    input.buyer,
-    shipmentEdition(input.edition, input.shipmentId)
-  )
-  const { at, right, line } = kit
-  const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
-  const items = order.items.filter((item) => included.has(item.id))
-  kit.facts([
-    ["Purchase order", order.reference],
-    ["Destination", (!amazon && input.shipTo?.name) || destinationName({ items })],
-    ["Ready by", longDate(packing.readyDate)],
-    ["Cartons", String(packing.cartons.length)]
-  ])
-  if (input.shipmentId) {
-    kit.section("Shipment")
-    kit.paragraphs([input.shipmentId])
-  }
-  const prep = sharedPrep({ items })
-  const rules = destinationRequirements({ items })
-  // Each block: its label in the rail, a heading for a product's own steps, and the steps to tick.
-  const blocks: Array<{ rail: string; heading?: string; steps: string[]; instructions?: string }> = [
-    {
-      rail: "Cartons",
-      steps: [
-        ...rules.filter(isCartonRule).map(requirementText),
-        "Match carton contents and quantities to the packing list."
-      ]
-    },
-    {
-      rail: "Units",
-      steps: [
-        ...(prep ? [`${requirementText({ code: "prep", prep })}.`] : []),
-        ...rules.filter((rule) => !isCartonRule(rule)).map(requirementText)
-      ]
-    },
-    ...items.map((item) => ({
-      rail: "Product",
-      heading: item.buyerSku + " / " + item.name,
-      instructions: packingInstructions(item),
-      steps: [
-        packing.cartons.reduce(
-          (sum, carton) =>
-            sum +
-            carton.items
-              .filter((contents) => contents.itemId === item.id)
-              .reduce((count, contents) => count + contents.pieces, 0),
-          0
-        ) /
-          item.piecesPerSet +
-          " product labels. One per " +
-          (item.piecesPerSet > 1 ? "complete pack" : "unit") +
-          ".",
-        ...itemRequirements(item, prep)
-          .filter((requirement) => requirement.code !== "packFor" && requirement.code !== "instruction")
-          .map(requirementText)
-          .map((step) => (step.endsWith(".") ? step : step + "."))
-      ]
-    })),
-    {
-      rail: "Final checks",
-      steps: [
-        ...(amazon
-          ? [
-              "Match the SKU, quantity and SSCC / box ID to the packing list. Do not rely on PDF page order. Use each carton label once."
-            ]
-          : []),
-        "Print product labels for the quantities listed. Print at actual size (100%) and test-scan before applying.",
-        ...transportInstructions(input.transport),
-        ...(input.bookingReference ? ["Booking: " + input.bookingReference] : [])
-      ]
-    }
-  ]
-  for (const block of blocks) {
-    if (!block.steps.length) {
-      continue
-    }
-    kit.ensure(44)
-    kit.section(block.rail, 18)
-    if (block.heading) {
-      for (const row of kit.wrap(block.heading, kit.bold, 10.5, right - kit.content)) {
-        kit.draw(row, kit.content, { size: 10.5, font: kit.bold })
-        at.y -= 14
-      }
-    }
-    kit.paragraphs(block.steps, { check: true })
-    if (block.instructions) {
-      at.y -= 4
-      kit.markdown(block.instructions)
-    }
-    at.y -= 4
-    line(kit.left, right, at.y)
-  }
-  return kit.save()
-}
-
-// "No. 1000, Siji Road", "Yiwu, Zhejiang 322000", "CN", "+86 180 3818 1936"
-function originLines(origin: Packing["origin"]) {
-  return [
-    origin.addressLine1,
-    origin.addressLine2,
-    [origin.city, [origin.stateOrRegion, origin.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-    origin.countryCode,
-    origin.phoneNumber
-  ].filter((value): value is string => Boolean(value))
 }
 
 export async function combinePdfs(files: Uint8Array[]) {

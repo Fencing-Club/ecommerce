@@ -42,7 +42,7 @@ requirements (`shipments.requirements`) and the supplier's checklist (`shippingC
   and source, and resolve cartons to it in `cartonPolicy` (in `index.ts`). No other code changes. A policy is plain data, so a 3PL's rules could later be saved
   per account.
 - **A new kind of rule**: add its type to `CartonRule`, its case to `checkCarton` and its issue to `CartonRuleIssue`,
-  then its message in every locale and its checklist line in `apps/copacker/src/documents/shipping-rules.ts`. Type
+  then its message in every locale and its checklist line in `@repo/copacker-shipments/shipping-rules`. Type
   checks point to each place.
 
 ## Amazon's US rules

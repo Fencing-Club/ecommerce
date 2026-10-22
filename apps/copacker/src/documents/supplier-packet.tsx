@@ -1,5 +1,5 @@
 import { combinePdfs } from "@repo/copacker-shipments/documents"
-import type { DocumentSettings, ShippingDocumentData } from "./shipping-model"
+import type { DocumentSettings, ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import { renderShippingDocument, ShippingPdf } from "./shipping-pdf"
 
 // The label files a packet carries, each in its provider's original page geometry.

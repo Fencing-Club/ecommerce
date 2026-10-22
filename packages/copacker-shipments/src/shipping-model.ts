@@ -1,8 +1,6 @@
 import { z } from "zod"
-import { direction } from "../i18n/locales"
-import { cartonGroupLabel } from "../lib/carton-groups"
-import { countries } from "../lib/countries"
-import type { ProductTask } from "../lib/packing-requirements"
+import { countries } from "./countries"
+import type { ProductTask } from "./packing-requirements"
 
 export const documentSettingsSchema = z.object({
   language: z.enum(["en", "de", "zh-CN", "ur"]).default("en"),
@@ -77,7 +75,8 @@ export type ShippingDocumentData = {
 }
 
 export function documentDirection(settings: DocumentSettings): "rtl" | "ltr" {
-  return direction(settings.language)
+  // Urdu reads right to left.
+  return settings.language === "ur" ? "rtl" : "ltr"
 }
 
 // Group only identical physical cartons. Assignments remain explicit, never inferred from page order.
@@ -270,4 +269,21 @@ export function shippingPdfFilename(data: ShippingDocumentData, kind: DocumentKi
     documentDirection(settings)
   ]
   return `${parts.join("-").replace(/[<>:"/\\|?*\p{Cc}]/gu, "-")}.pdf`
+}
+
+// A group of cartons as documents name it: "A1–A3" for a run of numbered IDs, otherwise each ID.
+export function cartonGroupLabel(cartons: { id: string }[]) {
+  const first = cartons[0]?.id
+  const sequence = first?.match(/^(.*?)(\d+)$/)
+  if (sequence && cartons.length > 1) {
+    const prefix = sequence[1]!
+    const digits = sequence[2]!
+    const start = Number(digits)
+    if (
+      cartons.every((carton, index) => carton.id === `${prefix}${String(start + index).padStart(digits.length, "0")}`)
+    ) {
+      return `${first}–${cartons.at(-1)!.id}`
+    }
+  }
+  return cartons.map((carton) => carton.id).join(", ")
 }

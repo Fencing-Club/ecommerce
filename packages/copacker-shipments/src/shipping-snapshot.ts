@@ -1,8 +1,7 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
-import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "@repo/copacker-shipments"
-import type { CartonLabel } from "@repo/copacker-shipments/labels"
-import { packingTasks, type ProductTask } from "@repo/copacker-shipments/packing-requirements"
-import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/copacker-shipments/transport"
+import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "./index"
+import type { CartonLabel } from "./labels"
+import { packingTasks, type ProductTask } from "./packing-requirements"
 import {
   documentIssues,
   packingRecordIssues,
@@ -11,6 +10,7 @@ import {
   type ShippingDocumentData,
   type ShippingProduct
 } from "./shipping-model"
+import { shipmentLabelRequirements, type ShipmentTransport } from "./transport"
 
 type Item = OrderInput["items"][number]
 

@@ -18,9 +18,23 @@ file with PDF.js. No Chromium executable, backend service, customer data, or cre
 The shipment's supplier-packet page uses these same templates. Provider barcode artwork stays on the authenticated
 label-download endpoint and is never recreated from the preview.
 
+## One pipeline
+
+Copacker makes its packing list and packing checklist one way: this pipeline. The framework-free parts live in
+`@repo/copacker-shipments`, so a script or CLI builds the same snapshot the app does:
+
+- `shipping-snapshot`: `shippingDocumentSnapshot` and `packingListSnapshot` turn an accepted PO, its packing, labels and
+  transport into the document data.
+- `shipping-model`: the snapshot's types, document settings, `documentIssues` and `cartonGroupLabel`.
+- `shipping-rules`: the checklist lines for each product task and carton or pallet rule.
+- `shipping-copy`: the documents' text in each language.
+
+The app keeps only the React renderer: `src/documents/shipping-pdf.tsx` and `src/documents/supplier-packet.tsx`. The
+package's own pdf-lib documents are the purchase order and commercial invoice.
+
 ## Composition
 
-`src/documents/shipping-model.ts` describes the immutable shipment snapshot. Destination, booked transport,
+`@repo/copacker-shipments/shipping-model` describes the immutable shipment snapshot. Destination, booked transport,
 recipient, incoming transfer, products, and explicit carton label assignments are independent inputs. Templates
 share typography, page headers, footers, addresses, totals, and assignment rows. The scenario fixtures cover parcel
 pickup/drop-off, FBA/AWD freight, AGL, own warehouses, both supplier-to-forwarder arrangements, and forwarder repacking.
@@ -49,8 +63,7 @@ a PDF translation exists (English otherwise) and A4. Only explicit user choices 
 These preferences are local to the browser; they do not change the order or shipment.
 English, German, Simplified Chinese, and Urdu are review samples drawn from the app's supported locales.
 Translations require native-speaker review before customer release. Names, addresses, SKU/label IDs, and authored
-Markdown remain source data. Urdu mirrors layout and table order; identifiers remain left to right. Language names
-and reading direction reuse the app's locale definitions.
+Markdown remain source data. Urdu mirrors layout and table order; identifiers remain left to right.
 
 Fonts are bundled under `public/document-fonts`, with their SIL Open Font Licenses. Inter comes from the repository's
 print fonts. Noto Sans Arabic and Noto Sans SC come from Google Fonts' `ofl/notosansarabic` and `ofl/notosanssc`
@@ -61,7 +74,6 @@ to make a document fit or subset these fonts only to the fixture text.
 
 All previews and exports use `renderShippingDocument`. It serializes rendering and registers fresh fonts per document:
 reusing renderer font objects across exports can shift Unicode punctuation and word boundaries in later PDFs.
-The regression test renders a packing list followed by two checklist requests and checks their extracted text.
 
 ## Audited local exports
 
@@ -117,9 +129,9 @@ shipment or notify the supplier. FBA booking is independent of document generati
 
 Review the actual downloadable PDF on A4 and Letter, plus German, Chinese, and Urdu. Check multi-page packing and
 reference examples for repeated headings and intact carton groups. Stories cover download bytes, saved preferences,
-mobile, loading, generation failure, and missing carrier assignments. Unit tests inspect actual PDFs for page size,
-continuation headers, label identity, and group integrity. Fonts, complex scripts, and long content also require visual
-review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
+mobile, loading, generation failure, and missing carrier assignments. Tests cover the snapshot, model and rules, never
+rendered PDFs or their text; the PDF stories carry the `documents` tag, which verify and CI skip. Fonts, complex
+scripts, and long content require visual review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
 
 ## Carton import workbook
 

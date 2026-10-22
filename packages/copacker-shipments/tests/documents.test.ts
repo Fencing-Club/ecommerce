@@ -1,14 +1,7 @@
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { describe, expect, it } from "vitest"
-import {
-  commercialInvoicePdf,
-  checklistPdf,
-  drawableText,
-  packingListPdf,
-  purchaseOrderPdf,
-  type PoParty
-} from "../src/documents"
-import { orderInputSchema, packingSchema, type OrderInput } from "../src/index"
+import { commercialInvoicePdf, drawableText, purchaseOrderPdf } from "../src/documents"
+import { orderInputSchema, type OrderInput } from "../src/index"
 import { readLabelPdfPages } from "../src/label-pdf-reader"
 
 const item = (index: number) => ({
@@ -37,12 +30,6 @@ const order = (count: number) =>
     adjustments: [{ description: "Freight", amount: 5000 }],
     items: Array.from({ length: count }, (_, index) => item(index + 1))
   })
-// The same PO to Amazon FBA.
-const toAmazon = (data: OrderInput): OrderInput => ({
-  ...data,
-  items: data.items.map((line) => ({ ...line, receiver: "fba" }))
-})
-const edition = { orderRevision: 2, shipmentRevision: 3, generated: "2026-10-16" }
 const parties = {
   issued: "2026-09-27",
   buyer: { name: "Fencing Club", lines: ["10 Sample Road", "Sampletown, WA 98001"] },
@@ -66,6 +53,25 @@ describe("purchase order PDF", () => {
     const text = (await pdfText(await purchaseOrderPdf({ order: data, revision: 1, ...parties }))).replace(/\s+/g, " ")
     expect(text).toContain("Packing: $0.26 per pack ($0.52)")
     expect(text).toContain("$364.52")
+  })
+
+  it("uses edited packing instructions in the PO and invoice", async () => {
+    const data = order(1)
+    data.items[0]!.instructions = "Obsolete instructions"
+    data.items[0]!.packingRequirements = {
+      preparation: "none",
+      labels: [],
+      countryCode: "",
+      instructions: "- Use the updated grip material."
+    }
+    for (const bytes of [
+      await purchaseOrderPdf({ order: data, revision: 1, ...parties }),
+      await commercialInvoicePdf({ order: data, revision: 1, ...parties })
+    ]) {
+      const text = (await pdfText(bytes)).replace(/\s+/g, " ")
+      expect(text).toContain("Use the updated grip material.")
+      expect(text).not.toContain("Obsolete instructions")
+    }
   })
 
   it("fits a short PO on one page", async () => {
@@ -143,161 +149,5 @@ describe("document text", () => {
     expect(drawableText("Krako\u{301}w \u{ff11}\u{ff12} \u{2212}20 °C", font)).toBe("Kraków 12 -20 °C")
     // Chinese has no nearer letter, so each character becomes a space.
     expect(drawableText("花剑 blade", font)).toBe("   blade")
-  })
-})
-
-describe("packing checklist PDF", () => {
-  const packing = (shipment: OrderInput) =>
-    packingSchema.parse({
-      readyDate: "2026-11-20",
-      origin: {
-        name: "Zakład Szermierczy",
-        addressLine1: "ul. Przemysłowa 12",
-        city: "Kraków",
-        stateOrRegion: "Lesser Poland",
-        postalCode: "30-701",
-        countryCode: "PL",
-        phoneNumber: "+48 12 555 0100"
-      },
-      cartons: [
-        {
-          cartonId: "A1",
-          length: 50,
-          width: 40,
-          height: 30,
-          weight: 12,
-          items: shipment.items.map((row) => ({ itemId: row.id, pieces: row.pieces }))
-        }
-      ]
-    })
-  // The checklist's text with whitespace as single spaces, since a value that wraps is drawn as separate runs.
-  const checklistText = async (shipment: OrderInput, shipTo?: PoParty) => {
-    const bytes = await checklistPdf({
-      edition,
-      order: shipment,
-      packing: packing(shipment),
-      buyer: parties.buyer,
-      shipTo
-    })
-    return (await pdfText(bytes)).replace(/\s+/g, " ")
-  }
-
-  it("uses edited packing instructions in PO, invoice and checklist documents", async () => {
-    const data = order(1)
-    data.items[0]!.instructions = "Obsolete instructions"
-    data.items[0]!.packingRequirements = {
-      preparation: "none",
-      labels: [],
-      countryCode: "",
-      instructions: "- Use the updated grip material."
-    }
-    for (const bytes of [
-      await purchaseOrderPdf({ order: data, revision: 1, ...parties }),
-      await commercialInvoicePdf({ order: data, revision: 1, ...parties })
-    ]) {
-      const text = (await pdfText(bytes)).replace(/\s+/g, " ")
-      expect(text).toContain("Use the updated grip material.")
-      expect(text).not.toContain("Obsolete instructions")
-    }
-    const checklist = await checklistText(data)
-    expect(checklist).toContain("Use the updated grip material.")
-    expect(checklist).not.toContain("Obsolete instructions")
-  })
-
-  it("names the destination after the ship-to, in full", async () => {
-    const text = await checklistText(order(1), { name: "Fencing Club, Seattle fulfillment warehouse", lines: [] })
-    expect(text).toContain("Fencing Club, Seattle fulfillment warehouse")
-    expect(text).not.toContain("Buyer's location")
-  })
-
-  it("names the kind of destination without a ship-to", async () => {
-    expect(await checklistText(order(1))).toContain("Buyer's location")
-  })
-
-  it("preserves nested Markdown product steps in the packing checklist", async () => {
-    const data = order(1)
-    data.items[0]!.instructions =
-      "- Keep **both units** together.\n  - Seal the bag completely.\n\n3. Contact the buyer if a label is missing."
-    const text = await checklistText(data)
-    expect(text).toContain("both units")
-    expect(text).toContain("Seal the bag completely.")
-    expect(text).toContain("3. Contact the buyer if a label is missing.")
-    expect(text).not.toContain("**")
-  })
-
-  it("counts the packing list's contents in units, and in packs only when a line is a multi-pack", async () => {
-    const listText = async (shipment: OrderInput) => {
-      const bytes = await packingListPdf({
-        edition,
-        order: shipment,
-        packing: packing(shipment),
-        labels: [],
-        shipmentId: "SHIP-1",
-        buyer: parties.buyer
-      })
-      return (await pdfText(bytes)).replace(/\s+/g, " ")
-    }
-    // The first sample line sells singly; the fourth is a pack of 2. Column headings are drawn letter-spaced.
-    const single = await listText(order(1))
-    expect(single).toContain("4")
-    expect(single).toContain("P I E C E S")
-    expect(single).not.toMatch(/P A C K S/)
-    const multi = await listText(order(4))
-    expect(multi).toContain("16")
-    expect(multi).toContain("P I E C E S P A C K S")
-    expect(multi).toContain("Amazon label QTY counts packs")
-  })
-
-  it("keeps the Amazon network as an Amazon shipment's destination", async () => {
-    const text = await checklistText(toAmazon(order(1)), { name: "Ningbo Consolidation, Dock 4", lines: [] })
-    expect(text).toContain("Amazon FBA")
-    expect(text).not.toContain("Ningbo Consolidation")
-  })
-
-  it("prints complete shipment and carton identities, component SKUs and the booked handoff", async () => {
-    const shipment = toAmazon(order(1))
-    shipment.items[0] = {
-      ...shipment.items[0]!,
-      piecesPerSet: 2,
-      fnsku: "X003ZURP4R",
-      components: [
-        { buyerSku: "single", variantId: "gid://shopify/ProductVariant/99", supplierSku: "OKFO26.2", quantity: 2 }
-      ]
-    }
-    const transport = {
-      service: "agl",
-      handoff: "supplier",
-      collection: "pickup",
-      carrierLabels: "none",
-      instructions: "Call Chen before arrival."
-    } as const
-    const input = {
-      edition,
-      order: shipment,
-      packing: packing(shipment),
-      buyer: parties.buyer,
-      transport,
-      shipmentId: "STAR-WBSAXKQKBYMYS",
-      labels: [
-        {
-          cartonId: "A1",
-          labelNumber: "201952611540373964",
-          destinationCode: "IUSP",
-          amazonShipmentId: "STAR-WBSAXKQKBYMYS"
-        }
-      ]
-    }
-    const text = (await pdfText(await packingListPdf(input))).replace(/\s+/g, " ")
-    expect(text).toContain("STAR-WBSAXKQKBYMYS")
-    expect(text).toContain("Order revision 2 / Shipment revision 3 / Generated 2026-10-16")
-    expect(text).toContain("201952611540373964")
-    expect(text).toContain("Supplier SKU: OKFO26.2")
-    expect(text).toContain("No separate carrier label per carton")
-    expect(text).toContain("Call Chen before arrival.")
-    const checklist = (await pdfText(await checklistPdf(input))).replace(/\s+/g, " ")
-    expect(checklist).toContain("Order revision 2 / Shipment revision 3 / Generated 2026-10-16")
-    expect(checklist).toContain("2 product labels. One per complete pack.")
-    expect(checklist).toContain("Do not rely on PDF page order")
-    expect(checklist).not.toContain("Apply the buyer's shipping labels")
   })
 })
