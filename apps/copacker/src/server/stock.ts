@@ -5,7 +5,7 @@ import { ShopifyPermissionError, ShopifyRequestError } from "@repo/copacker-mark
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, jobs, stockSnapshots } from "@/db/schema"
+import { jobs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonFor, shopifyFor } from "./connections"
@@ -13,6 +13,7 @@ import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
 import { PollAgain } from "./job-handlers"
 import { copyShopifyFields, fillStockRows } from "./product-fields"
+import { connectedAccount } from "./provider-accounts"
 import { recordStockDays } from "./stock-days"
 import type { Session } from "./workspace-session"
 
@@ -78,11 +79,7 @@ export async function refreshStock(
   }
   return withJobWake(
     db().transaction(async (tx) => {
-      const [account] = await tx
-        .select()
-        .from(connections)
-        .where(and(eq(connections.orgId, org.id), eq(connections.provider, provider)))
-        .for("update")
+      const account = await connectedAccount(org.id, provider, { executor: tx, lock: "update" })
       if (!account) {
         return null
       }
@@ -202,13 +199,10 @@ export async function stockJob(
       if (!job) {
         return
       }
-      const [account] = await tx
-        .select()
-        .from(connections)
-        .where(
-          and(eq(connections.orgId, claimed.orgId), eq(connections.provider, stockScopes[claimed.source].provider))
-        )
-        .for("update")
+      const account = await connectedAccount(claimed.orgId, stockScopes[claimed.source].provider, {
+        executor: tx,
+        lock: "update"
+      })
       if (!account || account.externalId !== claimed.externalAccountId) {
         throw new Error("Stock account changed")
       }

@@ -2,8 +2,10 @@ import { collectShopifyEconomics, economicsQueries } from "@repo/copacker-market
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { analyticsEvidence, analyticsFeeds, connections, salesSyncs } from "@/db/schema"
+import { analyticsFeeds } from "@/db/schema"
+import { publishAnalyticsFeed } from "./analytics-feed-store"
 import { shopifyFor } from "./connections"
+import { grantedScopes } from "./provider-accounts"
 const dataset = "order_economics"
 export async function syncShopifyEconomics(
   input: { orgId: string; externalAccountId: string; revision: number; scopes: string },
@@ -18,8 +20,9 @@ export async function syncShopifyEconomics(
     eq(analyticsFeeds.dataset, dataset)
   )
   const [prior] = await db().select().from(analyticsFeeds).where(scope)
-  const canReturn = scopes.split(/[,\s]+/).some((s) => s === "read_returns" || s === "write_returns")
-  const allOrders = scopes.split(/[,\s]+/).includes("read_all_orders")
+  const granted = grantedScopes(scopes)
+  const canReturn = granted.has("read_returns") || granted.has("write_returns")
+  const allOrders = granted.has("read_all_orders")
   const end = new Date(now.getTime() - 180000).toISOString()
   const previous = prior?.state.scopes === scopes && prior.state.history === "available" ? prior.state : undefined
   let state: typeof analyticsFeeds.$inferInsert.state = previous?.to
@@ -35,72 +38,15 @@ export async function syncShopifyEconomics(
         scopes,
         history: "available"
       }
-  const publish = async (rows: { id: string; data: Record<string, unknown> }[]) => {
-    await assertOwned()
-    await db().transaction(async (tx) => {
-      const [active] = await tx
-        .select({ id: connections.externalId })
-        .from(connections)
-        .where(
-          and(
-            eq(connections.orgId, orgId),
-            eq(connections.provider, "shopify"),
-            eq(connections.externalId, externalAccountId)
-          )
-        )
-        .for("share")
-      const [sync] = await tx
-        .select({ revision: salesSyncs.revision })
-        .from(salesSyncs)
-        .where(
-          and(
-            eq(salesSyncs.orgId, orgId),
-            eq(salesSyncs.source, "shopify"),
-            eq(salesSyncs.revision, revision),
-            eq(salesSyncs.externalAccountId, externalAccountId)
-          )
-        )
-        .for("share")
-      if (!active || !sync) {
-        throw new Error("Shopify economics account changed")
-      }
-      for (const row of rows) {
-        await tx
-          .insert(analyticsEvidence)
-          .values({
-            orgId,
-            source: "shopify",
-            externalAccountId,
-            dataset,
-            sourceId: row.id,
-            data: row.data,
-            observedAt: now
-          })
-          .onConflictDoUpdate({
-            target: [
-              analyticsEvidence.orgId,
-              analyticsEvidence.source,
-              analyticsEvidence.externalAccountId,
-              analyticsEvidence.dataset,
-              analyticsEvidence.sourceId
-            ],
-            set: { data: row.data, observedAt: now }
-          })
-      }
-      await tx
-        .insert(analyticsFeeds)
-        .values({ orgId, source: "shopify", externalAccountId, dataset, state, checkedAt: now })
-        .onConflictDoUpdate({
-          target: [
-            analyticsFeeds.orgId,
-            analyticsFeeds.source,
-            analyticsFeeds.externalAccountId,
-            analyticsFeeds.dataset
-          ],
-          set: { state, checkedAt: now }
-        })
-    })
-  }
+  const publish = (rows: { id: string; data: Record<string, unknown> }[]) =>
+    publishAnalyticsFeed(
+      { orgId, source: "shopify", externalAccountId, revision },
+      dataset,
+      rows,
+      state,
+      assertOwned,
+      now
+    )
   let initialState = { ...state }
   try {
     const client = await shopifyFor(orgId, externalAccountId)

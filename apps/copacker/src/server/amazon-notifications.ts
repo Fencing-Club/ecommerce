@@ -1,13 +1,15 @@
 import { ProviderError, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { collectUpdatedAmazonSales } from "@repo/copacker-marketplaces/sales"
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
+import { chunked, excluded } from "@/db/helpers"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonApp, amazonFor } from "./connections"
 import { PollAgain } from "./job-handlers"
+import { connectedAccount } from "./provider-accounts"
 import { amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
 import type { NotificationQueue } from "./sqs"
 import { pollQueue, queueArn } from "./sqs"
@@ -187,11 +189,11 @@ async function updateStoredOrders(
     if (!current || current.revision !== sync.revision || current.status === "queued" || current.status === "running") {
       throw new PollAgain("A newer Amazon sync started; reading again after it", { delayMs: syncWaitMs })
     }
-    for (let index = 0; index < orders.length; index += 200) {
+    for (const batch of chunked(orders, 200)) {
       await tx
         .insert(salesOrders)
         .values(
-          orders.slice(index, index + 200).map((order) => ({
+          batch.map((order) => ({
             orgId: org.id,
             source: "amazon" as const,
             externalAccountId: sellerId,
@@ -202,7 +204,7 @@ async function updateStoredOrders(
         )
         .onConflictDoUpdate({
           target: [salesOrders.orgId, salesOrders.source, salesOrders.externalAccountId, salesOrders.orderId],
-          set: { orderedAt: sql`excluded."orderedAt"`, data: sql`excluded.data`, syncedAt: new Date() }
+          set: { ...excluded(salesOrders, "orderedAt", "data"), syncedAt: new Date() }
         })
     }
     if (current.coveredTo && end > current.coveredTo) {
@@ -229,10 +231,7 @@ export async function amazonSubscribeJob(payload: Record<string, unknown>, asser
     console.warn(JSON.stringify({ event: "amazon_notifications_skipped", orgId, reason: "no queue configured" }))
     return
   }
-  const [account] = await db()
-    .select({ externalId: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  const account = await connectedAccount(orgId, "amazon")
   if (!account) {
     return
   }

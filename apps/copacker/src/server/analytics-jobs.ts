@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, jobs, salesSyncs } from "@/db/schema"
+import { jobs, salesSyncs } from "@/db/schema"
 import { withJobWake } from "./job-delivery"
 import { PollAgain } from "./job-handlers"
+import { connectedAccount } from "./provider-accounts"
+import { salesSyncScope } from "./sales-sync-coverage"
 import { syncShopifyEconomics } from "./shopify-economics"
 const inputSchema = z.strictObject({
   orgId: z.uuid(),
@@ -27,27 +28,11 @@ export async function queueShopifyEconomics(input: z.infer<typeof inputSchema>) 
 export async function analyticsJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   const input = inputSchema.parse(payload)
   await assertOwned()
-  const [account] = await db()
-    .select({ scopes: connections.scopes })
-    .from(connections)
-    .where(
-      and(
-        eq(connections.orgId, input.orgId),
-        eq(connections.provider, "shopify"),
-        eq(connections.externalId, input.externalAccountId)
-      )
-    )
+  const account = await connectedAccount(input.orgId, "shopify", { externalId: input.externalAccountId })
   const [sync] = await db()
     .select({ revision: salesSyncs.revision })
     .from(salesSyncs)
-    .where(
-      and(
-        eq(salesSyncs.orgId, input.orgId),
-        eq(salesSyncs.source, "shopify"),
-        eq(salesSyncs.externalAccountId, input.externalAccountId),
-        eq(salesSyncs.revision, input.revision)
-      )
-    )
+    .where(salesSyncScope({ ...input, source: "shopify" }))
   if (!account || !sync) {
     return
   }

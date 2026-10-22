@@ -18,6 +18,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Amazon FBA returns ingestion](amazon-returns.md)
 - [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): daily-report reuse and refresh coverage
 - [Detailed Amazon inventory movements](amazon-inventory-movements.md)
+- [Amazon monthly reports](amazon-monthly-reports.md): one definition per report, and the sales sync's steps after its orders
 - [Amazon report request limits](amazon-report-limits.md): shared pacing, durable cooldowns and investigation evidence
 - [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, unavailable-month backoff and safe failure diagnostics
 - [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
@@ -25,6 +26,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Stored payment and recovery reconciliation](payment-reconciliation.md): payment differences, missing-original coverage, financial candidates and receipt movements
 - [Historical inventory cost inputs](historical-inventory-basis.md): unknown cost basis and historical product validation
 - [Analytics HTTP contract](analytics-api.md)
+- [Server query helpers](server-helpers.md): connected accounts, sales sync copies, upserts and analytics pages
 - [Historical product mappings and Amazon allocations](amazon-cost-allocation.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
 - [App header: search and notifications](app-header.md)

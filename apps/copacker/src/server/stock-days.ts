@@ -4,7 +4,9 @@ import { ledgerReportOptions, ledgerReportType, parseLedgerSummary } from "@repo
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { salesSyncs, stockDays } from "@/db/schema"
+import { chunked } from "@/db/helpers"
+import { stockDays } from "@/db/schema"
+import { syncCoveredPeriods } from "./sales-sync-coverage"
 
 type StockData =
   | Awaited<ReturnType<Shopify["stock"]>>
@@ -64,10 +66,10 @@ export async function recordStockDays(orgId: string, externalAccountId: string, 
           ]
     })
   }
-  for (let index = 0; index < rows.length; index += 500) {
+  for (const batch of chunked(rows, 500)) {
     await db()
       .insert(stockDays)
-      .values(rows.slice(index, index + 500))
+      .values(batch)
       .onConflictDoUpdate({
         target: [
           stockDays.orgId,
@@ -115,84 +117,54 @@ export async function syncLedger(
   assertOwned: () => Promise<void>
 ) {
   const { orgId, externalAccountId, revision } = input
-  const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, "amazon"), eq(salesSyncs.revision, revision))
-  const [sync] = await db().select().from(salesSyncs).where(scope)
-  if (!sync) {
-    return
-  }
-  let covered =
-    sync.stockCoveredFrom && sync.stockCoveredTo ? { from: sync.stockCoveredFrom, to: sync.stockCoveredTo } : null
-  const { chunks, fresh } = ledgerChunks(Date.now(), { from: covered?.from ?? null, to: covered?.to ?? null })
-  if (fresh) {
-    covered = null
-  }
-  try {
-    for (const chunk of chunks) {
+  const day = (date: Date) => isoDay(date.getTime())
+  await syncCoveredPeriods({ orgId, source: "amazon", revision }, assertOwned, {
+    coverage: "stock",
+    plan: (stored) => ledgerChunks(Date.now(), stored),
+    read: async (period) => {
       const text = await input.amazon.report(
         {
           reportType: ledgerReportType,
           marketplaceIds: [marketplace],
-          dataStartTime: chunk.from.toISOString(),
+          dataStartTime: period.from.toISOString(),
           // Amazon's end time is inclusive; stop just before the next day.
-          dataEndTime: new Date(chunk.to.getTime() - 1000).toISOString(),
+          dataEndTime: new Date(period.to.getTime() - 1000).toISOString(),
           reportOptions: ledgerReportOptions
         },
         { deadline: Date.now() + 20 * 60 * 1000, assertActive: assertOwned }
       )
-      const fromDay = isoDay(chunk.from.getTime())
-      const toDay = isoDay(chunk.to.getTime())
-      const days = parseLedgerSummary(text ?? "").filter((row) => row.day >= fromDay && row.day < toDay)
-      await assertOwned()
-      covered = covered
-        ? {
-            from: chunk.from < covered.from ? chunk.from : covered.from,
-            to: chunk.to > covered.to ? chunk.to : covered.to
-          }
-        : chunk
-      const range = covered
-      await db().transaction(async (tx) => {
-        const [current] = await tx.select({ revision: salesSyncs.revision }).from(salesSyncs).where(scope).for("update")
-        if (!current) {
-          throw new Error("A newer sync replaced this one")
-        }
-        await tx
-          .delete(stockDays)
-          .where(
-            and(
-              eq(stockDays.orgId, orgId),
-              eq(stockDays.externalAccountId, externalAccountId),
-              eq(stockDays.pool, "fba"),
-              eq(stockDays.scope, marketplace),
-              gte(stockDays.day, fromDay),
-              lt(stockDays.day, toDay)
-            )
+      return parseLedgerSummary(text ?? "").filter((row) => row.day >= day(period.from) && row.day < day(period.to))
+    },
+    replace: async (tx, period, days) => {
+      await tx
+        .delete(stockDays)
+        .where(
+          and(
+            eq(stockDays.orgId, orgId),
+            eq(stockDays.externalAccountId, externalAccountId),
+            eq(stockDays.pool, "fba"),
+            eq(stockDays.scope, marketplace),
+            gte(stockDays.day, day(period.from)),
+            lt(stockDays.day, day(period.to))
           )
-        for (let index = 0; index < days.length; index += 500) {
-          await tx.insert(stockDays).values(
-            days.slice(index, index + 500).map((row) => ({
-              orgId,
-              externalAccountId,
-              pool: "fba" as const,
-              scope: marketplace,
-              itemKey: row.sku,
-              day: row.day,
-              units: row.endingUnits,
-              origin: "ledger" as const
-            }))
-          )
-        }
-        await tx
-          .update(salesSyncs)
-          .set({ stockCoveredFrom: range.from, stockCoveredTo: range.to, stockErrorCode: null })
-          .where(scope)
-      })
-    }
-  } catch (error) {
-    // Logged here rather than with describeError, which lives in the stock module that imports this one.
-    const message = error instanceof Error ? error.message : "Unknown error"
-    console.error(JSON.stringify({ event: "ledger_sync_failed", orgId, error: message }))
-    await db().update(salesSyncs).set({ stockErrorCode: "ledger_failed" }).where(scope)
-  }
+        )
+      for (const batch of chunked(days, 500)) {
+        await tx.insert(stockDays).values(
+          batch.map((row) => ({
+            orgId,
+            externalAccountId,
+            pool: "fba" as const,
+            scope: marketplace,
+            itemKey: row.sku,
+            day: row.day,
+            units: row.endingUnits,
+            origin: "ledger" as const
+          }))
+        )
+      }
+    },
+    failure: { event: "ledger_sync_failed", errorCode: "ledger_failed" }
+  })
 }
 
 // Days in [from, to) each item was out of stock, from recorded days. For FBA, a day inside the ledger's period with no

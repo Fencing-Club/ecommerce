@@ -1,9 +1,12 @@
 import { collectShopifyBalanceTransactions } from "@repo/copacker-marketplaces/sales"
-import { and, eq, gte, lt, sql } from "drizzle-orm"
+import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
+import { chunked, excluded } from "@/db/helpers"
 import { salesSyncs, shopifyBalanceTransactions } from "@/db/schema"
 import { shopifyFor } from "./connections"
+import { grantedScopes } from "./provider-accounts"
 import { syncChunks } from "./sales-orders"
+import { salesSyncScope, syncCoveredPeriods } from "./sales-sync-coverage"
 
 // The Shopify permissions that show the Shopify Payments account and its payout balance transactions: labels, bills
 // and dispute fees.
@@ -18,98 +21,72 @@ export async function syncShopifyBalance(
   assertOwned: () => Promise<void>
 ) {
   const { orgId, externalAccountId, revision } = input
-  const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, "shopify"), eq(salesSyncs.revision, revision))
-  const granted = new Set(input.scopes.split(/[,\s]+/))
+  const scope = { orgId, source: "shopify" as const, revision }
+  const granted = grantedScopes(input.scopes)
   if (!shopifyPayoutsScopes.every((name) => granted.has(name))) {
-    await db().update(salesSyncs).set({ feesErrorCode: "reconnect" }).where(scope)
+    await db().update(salesSyncs).set({ feesErrorCode: "reconnect" }).where(salesSyncScope(scope))
     return
   }
-  const [sync] = await db().select().from(salesSyncs).where(scope)
-  if (!sync) {
-    return
-  }
-  const { chunks, fresh } = syncChunks(Date.now(), { coveredFrom: sync.feesCoveredFrom, coveredTo: sync.feesCoveredTo })
-  let covered =
-    fresh || !sync.feesCoveredFrom || !sync.feesCoveredTo
-      ? null
-      : { from: sync.feesCoveredFrom, to: sync.feesCoveredTo }
-  try {
-    for (const chunk of chunks) {
-      // A fresh client each period, so a long copy outlives an hour-long access token.
-      const rows = await collectShopifyBalanceTransactions(
+  await syncCoveredPeriods(scope, assertOwned, {
+    coverage: "fees",
+    plan: (stored) => syncChunks(Date.now(), { coveredFrom: stored.from, coveredTo: stored.to }),
+    // A fresh client each period, so a long copy outlives an hour-long access token.
+    read: async (period) =>
+      collectShopifyBalanceTransactions(
         await shopifyFor(orgId, externalAccountId),
-        { from: chunk.from.toISOString(), to: chunk.to.toISOString() },
+        { from: period.from.toISOString(), to: period.to.toISOString() },
         assertOwned
-      )
-      await assertOwned()
-      covered = covered
-        ? {
-            from: chunk.from < covered.from ? chunk.from : covered.from,
-            to: chunk.to > covered.to ? chunk.to : covered.to
-          }
-        : chunk
-      const range = covered
-      await db().transaction(async (tx) => {
-        const [current] = await tx.select({ revision: salesSyncs.revision }).from(salesSyncs).where(scope).for("update")
-        if (!current) {
-          throw new Error("A newer sync replaced this one")
-        }
-        await tx
-          .delete(shopifyBalanceTransactions)
-          .where(
-            and(
-              eq(shopifyBalanceTransactions.orgId, orgId),
-              eq(shopifyBalanceTransactions.externalAccountId, externalAccountId),
-              gte(shopifyBalanceTransactions.processedAt, chunk.from),
-              lt(shopifyBalanceTransactions.processedAt, chunk.to)
-            )
+      ),
+    replace: async (tx, period, rows) => {
+      await tx
+        .delete(shopifyBalanceTransactions)
+        .where(
+          and(
+            eq(shopifyBalanceTransactions.orgId, orgId),
+            eq(shopifyBalanceTransactions.externalAccountId, externalAccountId),
+            gte(shopifyBalanceTransactions.processedAt, period.from),
+            lt(shopifyBalanceTransactions.processedAt, period.to)
           )
-        for (let index = 0; index < rows.length; index += 200) {
-          await tx
-            .insert(shopifyBalanceTransactions)
-            .values(
-              rows.slice(index, index + 200).map((row) => ({
-                orgId,
-                externalAccountId,
-                transactionId: row.transactionId,
-                type: row.type,
-                processedAt: new Date(row.processedAt),
-                orderId: row.orderId,
-                currency: row.currency,
-                amountMinor: row.amountMinor,
-                feeMinor: row.feeMinor,
-                netMinor: row.netMinor,
-                data: row.data
-              }))
-            )
-            // A transaction whose processing time moved into another period; the newer copy wins.
-            .onConflictDoUpdate({
-              target: [
-                shopifyBalanceTransactions.orgId,
-                shopifyBalanceTransactions.externalAccountId,
-                shopifyBalanceTransactions.transactionId
-              ],
-              set: {
-                type: sql`excluded.type`,
-                processedAt: sql`excluded."processedAt"`,
-                orderId: sql`excluded."orderId"`,
-                currency: sql`excluded.currency`,
-                amountMinor: sql`excluded."amountMinor"`,
-                feeMinor: sql`excluded."feeMinor"`,
-                netMinor: sql`excluded."netMinor"`,
-                data: sql`excluded.data`
-              }
-            })
-        }
+        )
+      for (const batch of chunked(rows, 200)) {
         await tx
-          .update(salesSyncs)
-          .set({ feesCoveredFrom: range.from, feesCoveredTo: range.to, feesErrorCode: null })
-          .where(scope)
-      })
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    console.error(JSON.stringify({ event: "shopify_balance_sync_failed", orgId, error: message }))
-    await db().update(salesSyncs).set({ feesErrorCode: "fees_failed" }).where(scope)
-  }
+          .insert(shopifyBalanceTransactions)
+          .values(
+            batch.map((row) => ({
+              orgId,
+              externalAccountId,
+              transactionId: row.transactionId,
+              type: row.type,
+              processedAt: new Date(row.processedAt),
+              orderId: row.orderId,
+              currency: row.currency,
+              amountMinor: row.amountMinor,
+              feeMinor: row.feeMinor,
+              netMinor: row.netMinor,
+              data: row.data
+            }))
+          )
+          // A transaction whose processing time moved into another period; the newer copy wins.
+          .onConflictDoUpdate({
+            target: [
+              shopifyBalanceTransactions.orgId,
+              shopifyBalanceTransactions.externalAccountId,
+              shopifyBalanceTransactions.transactionId
+            ],
+            set: excluded(
+              shopifyBalanceTransactions,
+              "type",
+              "processedAt",
+              "orderId",
+              "currency",
+              "amountMinor",
+              "feeMinor",
+              "netMinor",
+              "data"
+            )
+          })
+      }
+    },
+    failure: { event: "shopify_balance_sync_failed", errorCode: "fees_failed" }
+  })
 }
