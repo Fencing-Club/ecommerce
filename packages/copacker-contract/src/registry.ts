@@ -1,8 +1,13 @@
 import { z } from "zod"
 import {
   contractVersion,
+  accountOperations,
+  errorMetaSchema,
   errorSchema,
+  id,
   isQuery,
+  jsonObject,
+  metaSchema,
   operationDescriptorSchema,
   type JsonObject,
   type OperationDescriptor
@@ -57,8 +62,11 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
       if (!definition) {
         throw new Error(`Operation is not registered: ${name}`)
       }
-      const parsed = definition.input.parse(input)
-      return definition.output.parse(await handler(parsed, !isQuery(definition.descriptor, input)))
+      const parsed = jsonObject.parse(definition.input.parse(input))
+      if (new TextEncoder().encode(JSON.stringify(parsed)).length > definition.descriptor.limits.maxInputBytes) {
+        throw new Error("Operation input exceeds its declared byte limit.")
+      }
+      return definition.output.parse(await handler(parsed, !isQuery(definition.descriptor, parsed)))
     },
     openapi() {
       return {
@@ -66,12 +74,21 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
         info: { title: "Copacker operations", version: contractVersion },
         components: { securitySchemes: { bearer: { type: "http", scheme: "bearer" } } },
         paths: Object.fromEntries(
-          [...byName.values()].map(({ descriptor: d }) => {
-            const success = {
-              type: "object",
-              properties: { data: d.outputSchema, meta: { type: "object" } },
-              required: ["data", "meta"]
-            }
+          [...byName.values()].map(({ descriptor: d, input, output }) => {
+            // Generate each whole envelope together: embedding separately generated schemas breaks their local $refs.
+            // A schema resource ID keeps those refs local when this document is embedded in OpenAPI as well.
+            const document = (schema: z.ZodType, part: string, io: "input" | "output" = "output") => ({
+              ...z.toJSONSchema(schema, { io }),
+              $id: `urn:copacker:${contractVersion}:${d.operation}:${part}`
+            })
+            const success = document(z.strictObject({ data: output, meta: metaSchema }), "result")
+            const request = z.strictObject({ ...(d.context === "workspace" ? { workspaceId: id } : {}), input })
+            const bootstrap = z.strictObject({ input: z.strictObject({ operation: z.enum(accountOperations) }) })
+            const requestDocument = document(
+              d.operation === "schema.show" ? z.union([request, bootstrap]) : request,
+              "request",
+              "input"
+            )
             return [
               `/api/operations/${d.operation}`,
               {
@@ -84,7 +101,10 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
                       {
                         name: "Idempotency-Key",
                         in: "header",
-                        required: false,
+                        // Read branches of exports/batches need no key; every actual mutation does.
+                        required: d.execution.readBranches.length === 0,
+                        description:
+                          "Required for mutations; omit for a declared read branch. Reuse for the same logical execution.",
                         schema: { type: "string", pattern: "^[\\x21-\\x7e]{1,200}$" }
                       }
                     ]
@@ -93,15 +113,7 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
                     required: true,
                     content: {
                       "application/json": {
-                        schema: {
-                          type: "object",
-                          additionalProperties: false,
-                          properties: {
-                            ...(d.context === "workspace" ? { workspaceId: { type: "string", format: "uuid" } } : {}),
-                            input: d.inputSchema
-                          },
-                          required: d.context === "workspace" ? ["workspaceId", "input"] : ["input"]
-                        }
+                        schema: requestDocument
                       }
                     }
                   },
@@ -113,11 +125,7 @@ export function createRegistry(definitions: readonly OperationDefinition[]) {
                       description: "Operation error",
                       content: {
                         "application/json": {
-                          schema: {
-                            type: "object",
-                            properties: { error: d.errorSchema, meta: { type: "object" } },
-                            required: ["error", "meta"]
-                          }
+                          schema: document(z.strictObject({ error: errorSchema, meta: errorMetaSchema }), "error")
                         }
                       }
                     }

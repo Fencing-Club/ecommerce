@@ -12,7 +12,7 @@ import { type ActionRequest, recordActions } from "@/stories/actions"
 import { supplierId } from "@/stories/fixtures/orders"
 import { northwindFactory } from "@/stories/fixtures/parties"
 import { order, shipmentRecord } from "@/stories/fixtures/purchase-orders"
-import { shownDialog, chooseOption } from "@/stories/play"
+import { chooseMenuItem, chooseOption, shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { PackingForm } from "./packing-form"
 import { ShipmentTransportSettings } from "./shipment-transport"
@@ -339,14 +339,12 @@ export const Cartons = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Products" }))
-    await userEvent.click(canvas.getByRole("button", { name: "Carton C2 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton C2 actions" }), "Duplicate carton")
     await expectPacked(canvas, 120)
     await expect(within(canvas.getByRole("table")).getByText("120 of 100")).toHaveClass("text-destructive")
     // The copy takes the next letter.
     await expect(canvas.getByRole("region", { name: "Carton D1" })).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton C1 actions" }), "Delete carton")
     await expectPacked(canvas, 80)
     await expect(within(canvas.getByRole("table")).getByText("80 of 100")).not.toHaveClass("text-destructive")
     // Complete rows stay closed until opened; open, each says which carton its products go in.
@@ -387,11 +385,9 @@ export const MixedCarton = meta.story({
     await userEvent.click(dialog.getByRole("button", { name: "Add to carton" }))
     await userEvent.type(canvas.getByRole("spinbutton", { name: `${basket!.buyerSku}: quantity per carton C1` }), "10")
     await expectPacked(canvas, 36)
-    await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton C1 actions" }), "Duplicate carton")
     await expectPacked(canvas, 72)
-    await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton C1 actions" }), "Delete carton")
     await expectPacked(canvas, 36)
     await userEvent.click(canvas.getByRole("button", { name: `Remove ${basket!.buyerSku} from carton B1` }))
     await expectPacked(canvas, 26)

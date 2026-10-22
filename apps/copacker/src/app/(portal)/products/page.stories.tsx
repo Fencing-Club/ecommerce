@@ -71,7 +71,8 @@ export const Buyer = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Products" })).toBeVisible()
     await expect(await canvas.findByRole("button", { name: "Canvas tote bag" })).toBeVisible()
-    await expect(canvas.getByRole("button", { name: /3 products have no supplier/ })).toBeVisible()
+    // The products without a supplier come from a request of their own.
+    await expect(await canvas.findByRole("button", { name: /3 products have no supplier/ })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Upload barcodes" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Manage labels" })).toBeVisible()
   }

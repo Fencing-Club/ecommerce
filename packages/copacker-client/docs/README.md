@@ -32,6 +32,8 @@ The application must implement:
   operation-specific Zod schemas. `schema.show` and `schema.list` publish only registered, authorized capabilities.
 - Account-context schema discovery: `schema.show` for `account.show` and `workspace.list` must work without an active
   workspace. Other schema discovery and business operations require the explicit workspace. This allows bootstrap.
+  The client pins `schema.show`'s descriptor locally to avoid recursive discovery. Both `describe` and direct
+  `schema.show` calls support this account-context branch. Returned operation versions are checked by `describe`.
 - `GET /api/cli/authorize`: public client `copacker-cli`, authorization code with S256 PKCE, exact loopback redirect,
   preserved state, authenticated browser consent and a short-lived single-use code. Do not grant a token from a GET
   request without user consent. Loopback callbacks bind to `127.0.0.1` with an ephemeral port and `/callback` path.
@@ -47,6 +49,8 @@ Discovery descriptors add an explicit `execution` block to the proposal: `kind`,
 HTTP POST or command names. Input/output schemas are generated from the same Zod definitions as handlers; not a second
 hand-maintained API. The server remains responsible for authorization, strict validation, atomic revision checks,
 durable deduplication and external reconciliation. Client checks cannot substitute for those guarantees.
+Both input and result schemas must be understood before dispatch, including mutations. The client enforces each
+operation's `maxInputBytes` against UTF-8 input bytes and classifies execution after schema defaults are applied.
 
 This package ships no application endpoint or authentication service. Its tests establish protocol behavior against
 fixtures, including replay, partial outcomes and workspace isolation. Before release, add application integration tests

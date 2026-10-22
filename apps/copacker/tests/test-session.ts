@@ -26,6 +26,7 @@ export function testSession({
       workosId: null,
       timeZone: null,
       excludedShopifyTags: ["Amazon"],
+      settingsRevision: 0,
       restockSalesDays: null,
       restockLeadTimeDays: null,
       createdAt: new Date()

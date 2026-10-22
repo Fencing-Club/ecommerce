@@ -296,3 +296,179 @@ it.each([
   )[0]!
   expect(result.finance.matching.strongerPaymentCandidateCount).toBe(0)
 })
+
+it("flags a payment shared by report rows across dates without counting duplicate context twice", () => {
+  const current = { ...row, source: "reimbursements" }
+  const other = { ...current, id: "other", occurredAt: "2025-01-01T00:00:00Z" }
+  const payments = Array.from({ length: 21 }, (_, i) => ({
+    ...posting,
+    type: "FBAInventoryReimbursement",
+    transactionId: `T${i}`
+  }))
+  const context = { rows: [current, other, other], truncated: false }
+  const result = reconcileAmazonEvidence([current], [], payments, 1, context)[0]!
+  expect(result.finance.candidates).toHaveLength(1)
+  expect(result.finance.candidates[0]?.paymentCompetition).toMatchObject({
+    status: "shared_candidate",
+    otherReportRowCount: 1,
+    otherReportRowIds: ["other"],
+    countIsLowerBound: false,
+    reportSearchTruncated: false,
+    paymentAssignmentConfirmed: false
+  })
+  expect(result.finance.matching.sharedPaymentCandidateCount).toBe(21)
+  expect(result.finance.reconciled).toBe(false)
+})
+it("does not claim uniqueness from a truncated report search, and bounds returned IDs", () => {
+  const current = { ...row, source: "reimbursements" }
+  const payment = { ...posting, type: "FBAInventoryReimbursement" }
+  const context = { rows: Array.from({ length: 25 }, (_, i) => ({ ...current, id: `other-${i}` })), truncated: true }
+  const shared = reconcileAmazonEvidence([current], [], [payment], 0, context)[0]!.finance.candidates[0]!
+  expect(shared.paymentCompetition).toMatchObject({
+    status: "shared_candidate",
+    otherReportRowCount: 25,
+    returnedIdsTruncated: true,
+    countIsLowerBound: true
+  })
+  expect(shared.paymentCompetition?.otherReportRowIds).toHaveLength(20)
+  const missing = reconcileAmazonEvidence([current], [], [payment], 0, { rows: [], truncated: true })[0]!.finance
+    .candidates[0]!
+  expect(missing.paymentCompetition).toMatchObject({
+    status: "search_incomplete",
+    otherReportRowCount: 0,
+    countIsLowerBound: true
+  })
+})
+it("uses the same strict identity and signed amount rules for competing reports", () => {
+  const current = { ...row, source: "reimbursements" }
+  const changes = [
+    { orderId: "other" },
+    { sku: "other" },
+    { asin: "other" },
+    { marketplaceId: "other" },
+    { currency: "EUR" },
+    { amount: "-0.3" },
+    { sku: null }
+  ]
+  const context = { rows: changes.map((change, i) => ({ ...current, ...change, id: `other-${i}` })), truncated: false }
+  const payment = {
+    ...posting,
+    orderId: null,
+    type: "FBAInventoryReimbursement",
+    data: {
+      ...posting.data,
+      relatedIdentifiers: [{ relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "ORDER1" }]
+    }
+  }
+  const candidate = reconcileAmazonEvidence([current], [], [payment], 0, context)[0]!.finance.candidates[0]!
+  expect(candidate.paymentCompetition).toMatchObject({
+    status: "no_other_matching_stored_rows",
+    otherReportRowCount: 0,
+    paymentAssignmentConfirmed: false
+  })
+  const weak = reconcileAmazonEvidence([{ ...current, sku: null }], [], [payment], 0, context)[0]!.finance
+    .candidates[0]!
+  expect(weak.paymentCompetition).toBeNull()
+})
+
+const reversalRow = { ...row, source: "reimbursements", orderId: null, amount: "-7.25" }
+const reversalPosting: ReconciliationPosting = {
+  ...posting,
+  orderId: null,
+  type: "FBAInventoryReimbursement",
+  data: {
+    ...posting.data,
+    totalAmount: money("-7.25"),
+    breakdowns: [{ breakdownType: "Expenses", breakdownAmount: money("-7.25") }],
+    items: [
+      {
+        totalAmount: money("-7.25"),
+        contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }],
+        breakdowns: [{ breakdownType: "FBAReversedReimbursement", breakdownAmount: money("-7.25") }]
+      }
+    ]
+  }
+}
+it("surfaces orderless reversals before pagination without confirming or claiming unique payment assignment", () => {
+  const others = Array.from({ length: 25 }, (_, i) => ({ ...posting, transactionId: `other-${i}` }))
+  const result = reconcileAmazonEvidence([reversalRow], [], [...others, reversalPosting])[0]!
+  expect(result.finance.candidates[0]).toMatchObject({
+    possibleReversalPayment: true,
+    strongerPaymentCandidate: false,
+    paymentCompetition: null,
+    checks: {
+      additionalRecognizedAmount: null,
+      blockers: expect.arrayContaining(["no_order_reference", "source_to_posting_allocation_required"])
+    }
+  })
+  expect(result.finance).toMatchObject({
+    reconciled: false,
+    matching: { possibleReversalPaymentCount: 1, reversalPaymentCompetition: "not_assessed_across_report_pages" }
+  })
+})
+it.each([
+  { source: "returns" },
+  { amount: "7.25" },
+  { amount: "-7.24" },
+  { currency: "EUR" },
+  { sku: null },
+  { asin: null },
+  { sku: "OTHER" },
+  { asin: "OTHER" },
+  { marketplaceId: "OTHER" }
+])("does not flag incomplete or conflicting reversal reports: %j", (change) => {
+  const result = reconcileAmazonEvidence([{ ...reversalRow, ...change }], [], [reversalPosting])[0]!
+  expect(result.finance.matching.possibleReversalPaymentCount).toBe(0)
+})
+it.each([
+  { transactionStatus: "DEFERRED" },
+  { relatedIdentifiers: [{ relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "release" }] },
+  { totalAmount: money("-7.25", "EUR") },
+  { breakdowns: [] },
+  {
+    items: [
+      {
+        totalAmount: money("-7.25"),
+        contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }],
+        breakdowns: [{ breakdownType: "Other", breakdownAmount: money("-7.25") }]
+      }
+    ]
+  },
+  {
+    items: [
+      {
+        totalAmount: money("-7.25"),
+        contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }],
+        breakdowns: [{ breakdownType: "FBAReversedReimbursement", breakdownAmount: money("-7.24") }]
+      }
+    ]
+  }
+])("rejects unproven reversal payment evidence: %j", (data) => {
+  expect(
+    reconcileAmazonEvidence([reversalRow], [], [{ ...reversalPosting, data: { ...reversalPosting.data, ...data } }])[0]!
+      .finance.matching.possibleReversalPaymentCount
+  ).toBe(0)
+})
+
+it("does not relabel an order-backed candidate or an ordinary refund as an orderless reversal", () => {
+  const source = { ...reversalRow, orderId: "ORDER1" }
+  const result = reconcileAmazonEvidence([source], [], [{ ...reversalPosting, orderId: "ORDER1" }])[0]!
+  expect(result.finance.candidates[0]).toMatchObject({ strongerPaymentCandidate: true, possibleReversalPayment: false })
+  expect(
+    reconcileAmazonEvidence([reversalRow], [], [{ ...reversalPosting, type: "Refund" }])[0]!.finance.matching
+      .possibleReversalPaymentCount
+  ).toBe(0)
+})
+it("does not infer reversal allocations from mixed multi-item payments", () => {
+  const item = {
+    totalAmount: money("-3.625"),
+    contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }],
+    breakdowns: [{ breakdownType: "FBAReversedReimbursement", breakdownAmount: money("-3.625") }]
+  }
+  const result = reconcileAmazonEvidence(
+    [reversalRow],
+    [],
+    [{ ...reversalPosting, data: { ...reversalPosting.data, items: [item, item] } }]
+  )[0]!
+  expect(result.finance.matching.possibleReversalPaymentCount).toBe(0)
+})

@@ -5,17 +5,19 @@ import { CopackerClient, CopackerError, apiOrigin, clientError } from "@repo/cop
 import {
   codeUnitOrder,
   commands,
+  credentialDeliverySchema,
   exitCode,
   isQuery,
   jsonObject,
   parseInput,
+  usesAccountContext,
   type CommandDefinition,
   type JsonObject,
   type SuccessEnvelope
 } from "@repo/copacker-contract"
 import { Command, CommanderError } from "commander"
 import { z } from "zod"
-import { login, logout, profileToken } from "./auth.ts"
+import { login, logout, profileToken, requireProfileOrigin } from "./auth.ts"
 import { atomicWrite, fileFingerprint, saveArtifact, uploadFile } from "./files.ts"
 import { booleanFlags, buildInput, camel, optionsSchema, type Options } from "./input.ts"
 import { render, safeMessage } from "./output.ts"
@@ -130,16 +132,7 @@ async function deliverCredential(
   environment: CliEnvironment,
   sink?: Awaited<ReturnType<typeof secretFile>>
 ) {
-  const data = z
-    .object({
-      credential: jsonObject,
-      delivery: z.object({
-        id: z.uuid(),
-        state: z.enum(["available", "consumed", "expired"]),
-        download: z.object({ url: z.string(), authentication: z.literal("interactive_required") })
-      })
-    })
-    .parse(result.data)
+  const data = credentialDeliverySchema.parse(result.data)
   if (data.delivery.state !== "available") {
     throw clientError(
       "credential_delivery_unavailable",
@@ -149,13 +142,17 @@ async function deliverCredential(
     )
   }
   try {
-    const response = await client.transfer(data.delivery.download.url)
+    // Unlike large artifacts, a secret is small. Bound the entire one-use response, including its body.
+    const response = await client.transfer(data.delivery.download.url, { signal: AbortSignal.timeout(30000) })
     const secret = z.object({ token: z.string().min(1).max(8192) }).parse(await response.json())
     if (sink) {
       await sink.write(secret.token)
     } else if (options.storeAs) {
-      await environment.store.saveCredential(options.storeAs, { kind: "automation", accessToken: secret.token })
-      await environment.store.saveProfile(options.storeAs, { baseUrl: client.baseUrl, workspaceId: client.workspaceId })
+      await environment.store.replaceCredential(
+        options.storeAs,
+        { baseUrl: client.baseUrl, workspaceId: client.workspaceId },
+        { kind: "automation", accessToken: secret.token }
+      )
     }
   } catch {
     throw clientError(
@@ -192,7 +189,7 @@ async function execute(
     }
   }
   const built = buildInput(definition, options, args, raw)
-  const account = definition.operation === "account.show" || definition.operation === "workspace.list"
+  const account = usesAccountContext(definition.operation, built.input)
   const { client, baseUrl, workspaceId } = await context(options, environment, account)
   const descriptor = await client.describe(definition.operation)
   if (descriptor.cliPath.join(".") !== definition.operation) {
@@ -409,7 +406,10 @@ export function createProgram(environment: CliEnvironment, completed: (code: num
       const options = optionsSchema.parse(command.optsWithGlobals())
       const { client, profile, baseUrl } = await context({ ...options, workspace: id }, environment)
       await client.call("workspace.show", {})
-      await environment.store.saveProfile(profile, { baseUrl, workspaceId: id })
+      await environment.store.withCredentialLock(profile, async () => {
+        await requireProfileOrigin(environment.store, profile, baseUrl)
+        await environment.store.saveProfile(profile, { baseUrl, workspaceId: id })
+      })
       environment.stdout(render(localResult({ workspaceId: id }, id), options.json ? "json" : "table"))
       completed(0)
     })

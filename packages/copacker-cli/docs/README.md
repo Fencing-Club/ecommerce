@@ -3,9 +3,10 @@
 The private `@repo/copacker-cli` package supplies the `copacker` executable on Node 24+. It implements the command
 vocabulary in [the application spec](../../../apps/copacker/docs/specs/cli/commands.md) through the shared operation client.
 
-**Integration status:** the executable, command adapters and protocol tests exist. Copacker's web application still
-needs the planned operation registry, bearer authorization, CLI authentication routes and domain handlers. Commands
-are not usable against the current production web app yet. Local help works without a server. The CLI checks deployed
+**Integration status:** the executable and command adapters exist, together with the first
+[server authentication and real-data handlers](../../../apps/copacker/docs/cli-server.md). Account/workspace/schema
+discovery and connection reads/settings are implemented. Business-resource handlers and automation issuance remain
+unfinished. These changes have not been deployed. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
 claim that a server has enabled that capability. No npm release or deployment has been performed.
 
@@ -18,12 +19,19 @@ pnpm --filter @repo/copacker-cli build
 node packages/copacker-cli/dist/bin.js --version
 ```
 
-Once the operation API is deployed:
+After the first server slice is deployed:
 
 ```sh
 copacker login
 copacker workspace list --json
 copacker workspace use <workspace-id>
+copacker connection list --json
+copacker connection settings show <connection-id> --json
+```
+
+The remaining planned workflows require their resource handlers before they can run:
+
+```sh
 copacker report restock --json
 copacker order show 1043 --connection <connection-id> --json
 copacker po show <po-id> --json
@@ -62,8 +70,18 @@ OS-backed test on Windows. Linux/macOS integration still needs native acceptance
 Credential create/rotate requires `--store-as` or an absolute `--secret-file`; files are created without overwrite and
 protected before consuming the one-use delivery. `logout` clears the interactive login and reports failed revocation;
 automation credentials use their explicit revoke operation.
+Secret delivery has a 30-second deadline covering the response body. A stalled/lost delivery retains the credential ID
+in its error receipt so an interactive administrator can inspect, rotate or revoke it; it never requests a new secret
+automatically. `schema show account.show` and `schema show workspace.list` work before workspace selection.
 
 ## Results and recovery
+
+`report restock` and `restock channel list` have server handlers. Reports support JSON and CSV stdout/local output;
+server artifact exports remain unsupported. See [restock behavior and limits](../../../apps/copacker/docs/cli-restock.md).
+
+Protected credentials include their API origin. Linux/macOS keychain entries are scoped to the canonical configuration
+directory as well as the profile, matching file-lock scope. Credentials without origin binding require a new login;
+the CLI does not reuse old global keychain entries. Native Linux/macOS keychain acceptance remains a release check.
 
 `--json` writes exactly one success/error envelope to stdout. Progress and execution keys go to stderr. Human detail
 output includes nested field destinations. CSV stdout requires the operation's declared tabular projection. Artifact

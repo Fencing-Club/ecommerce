@@ -124,9 +124,7 @@ export async function login(
         code_verifier: verifier
       })
     )
-    await store.saveCredential(profile, secret)
-    const previous = await store.profile(profile)
-    await store.saveProfile(profile, { ...previous, baseUrl })
+    await store.replaceCredential(profile, { baseUrl }, secret)
     return { authenticated: true, profile }
   } finally {
     clearTimeout(timer)
@@ -140,6 +138,15 @@ export async function logout(
   profile: string,
   baseUrl: string
 ): Promise<{ cleared: boolean; revoked: boolean }> {
+  return store.withCredentialLock(profile, () => revokeProfile(store, profile, baseUrl))
+}
+
+async function revokeProfile(
+  store: LocalStore,
+  profile: string,
+  baseUrl: string
+): Promise<{ cleared: boolean; revoked: boolean }> {
+  await requireProfileOrigin(store, profile, baseUrl)
   const credential = await store.credential(profile)
   if (credential?.kind === "automation") {
     throw clientError("invalid_input", "Use account credential revoke to revoke an automation credential.")
@@ -169,6 +176,11 @@ export async function logout(
 }
 
 export async function profileToken(store: LocalStore, profile: string, baseUrl: string): Promise<string> {
+  return store.withCredentialLock(profile, () => readProfileToken(store, profile, baseUrl))
+}
+
+async function readProfileToken(store: LocalStore, profile: string, baseUrl: string): Promise<string> {
+  await requireProfileOrigin(store, profile, baseUrl)
   const secret = await store.credential(profile)
   if (!secret) {
     throw clientError("unauthenticated", "Run copacker login or set COPACKER_TOKEN.", 401)
@@ -192,4 +204,13 @@ export async function profileToken(store: LocalStore, profile: string, baseUrl: 
     return fresh.accessToken
   }
   return secret.accessToken
+}
+
+export async function requireProfileOrigin(store: LocalStore, profile: string, baseUrl: string) {
+  if (apiOrigin((await store.profile(profile)).baseUrl) !== apiOrigin(baseUrl)) {
+    throw clientError(
+      "invalid_input",
+      "This profile's API origin changed. Run the command again with its current origin."
+    )
+  }
 }

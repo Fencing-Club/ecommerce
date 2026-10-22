@@ -174,6 +174,15 @@ export type OperationDescriptor = z.infer<typeof operationDescriptorSchema>
 export type OperationSummary = z.infer<typeof operationSummarySchema>
 export const requestSchema = z.strictObject({ workspaceId: id.optional(), input: jsonObject })
 
+export const accountOperations = ["account.show", "workspace.list"] as const
+
+/** Account bootstrap must work before workspace selection, including discovery of those two operations. */
+export function usesAccountContext(operation: string, input: JsonObject): boolean {
+  return accountOperations.some(
+    (name) => name === operation || (operation === "schema.show" && name === input.operation)
+  )
+}
+
 export function isQuery(descriptor: OperationDescriptor, input: JsonObject): boolean {
   return (
     descriptor.execution.kind === "query" ||

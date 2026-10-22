@@ -1,7 +1,8 @@
 # Operation schemas
 
-These documentation schemas define the proposed initial command surface. They are not generated OpenAPI, executable
-Zod schemas or implemented endpoints. Each business command maps to one named operation, its input/result types,
+These documentation schemas define the proposed initial command surface. Ten setup operations have executable Zod
+schemas in [the contract package](../../../../../../packages/copacker-contract/src/setup.ts); these pages themselves
+are not generated OpenAPI or implemented endpoints. Each business command maps to one named operation, its input/result types,
 access policy, effects and errors. Implement the portable schema once and generate CLI, HTTP and MCP descriptions from it.
 
 - [Shared types and policies](shared.md)
