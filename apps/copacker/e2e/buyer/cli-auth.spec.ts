@@ -38,10 +38,11 @@ test("CLI approval preserves the browser origin and exchanges, refreshes and rev
   expect(callback.searchParams.get("state") === state).toBe(true)
   expect(callback.searchParams.has("code")).toBe(true)
   // A separate API context never sends the browser session cookie to token or operation endpoints.
-  const api = await playwright.request.newContext({ baseURL })
+  const api = await playwright.request.newContext({ baseURL, storageState: { cookies: [], origins: [] } })
   const tokens = z.object({ access_token: z.string(), refresh_token: z.string() })
   let revoke: string | undefined
   try {
+    expect((await api.storageState()).cookies.length).toBe(0)
     const exchanged = await api.post("/api/cli/token", {
       form: {
         grant_type: "authorization_code",
