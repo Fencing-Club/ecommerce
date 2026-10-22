@@ -5,6 +5,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { requestInput } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
 import type { ProductDefaults } from "./product-defaults"
@@ -280,7 +281,7 @@ async function channelPlan(
 
 // Restock suggestions for one channel from stored orders, current stock and open POs.
 export async function restockReport(s: Session, raw: unknown) {
-  const input = restockInputSchema.parse(raw)
+  const input = requestInput(restockInputSchema, raw)
   const inputs = await restockInputs(s.org.id, input.days)
   const { context } = inputs
   const { channel } = input

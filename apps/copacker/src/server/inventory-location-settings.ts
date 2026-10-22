@@ -4,7 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, inventoryLocationMappings, stockSnapshots } from "@/db/schema"
 import { requireBuyer } from "./authorization"
-import { StatusError } from "./errors"
+import { requestInput, StatusError } from "./errors"
 import { automaticClassification, locationClassifications, locationMappingSchema } from "./inventory-locations"
 import type { Session } from "./workspace-session"
 
@@ -89,7 +89,7 @@ const inputSchema = locationMappingSchema
 
 export async function saveLocationMapping(s: Session, input: unknown) {
   requireBuyer(s)
-  const data = inputSchema.parse(input)
+  const data = requestInput(inputSchema, input)
   return db().transaction(async (tx) => {
     // Serialize mapping saves and reconnects on the tenant's existing connection.
     const [account] = await tx

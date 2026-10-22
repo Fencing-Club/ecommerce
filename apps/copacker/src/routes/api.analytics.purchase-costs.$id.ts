@@ -1,12 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { httpResponse } from "@/server/http-response"
-import { GET, DELETE } from "@/server/http/api/analytics/purchase-costs/$id"
+import { apiHandlers } from "@/server/http-response"
+import { inventoryBasisResource } from "@/server/inventory-basis-http"
 
 export const Route = createFileRoute("/api/analytics/purchase-costs/$id")({
-  server: {
-    handlers: {
-      GET: ({ request, params }) => httpResponse(() => GET(request, { params })),
-      DELETE: ({ request, params }) => httpResponse(() => DELETE(request, { params }))
-    }
-  }
+  server: { handlers: apiHandlers(inventoryBasisResource("purchase")) }
 })

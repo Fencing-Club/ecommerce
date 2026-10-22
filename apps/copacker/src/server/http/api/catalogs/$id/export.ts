@@ -10,7 +10,7 @@ import { priceListPdf, priceListWorkbook } from "@/server/price-list-files"
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const s = await session()
   requireSupplier(s)
-  const id = z.uuid().safeParse((await params).id)
+  const id = z.uuid().safeParse(params.id)
   if (!id.success) {
     return errorTextResponse("catalogNotFound", 404)
   }

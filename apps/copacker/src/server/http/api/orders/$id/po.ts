@@ -8,7 +8,7 @@ import { fallbackResponse, fileResponse } from "@/server/http-response"
 // The PO document, to download and share with a supplier that hasn't joined Copacker. Downloading serves the filed PDF
 // rather than a fresh one, so it stays the document the purchase order's page links to.
 export async function GET(_request: Request, context: { params: { id: string } }) {
-  const id = z.uuid().safeParse((await context.params).id)
+  const id = z.uuid().safeParse(context.params.id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404)
   }

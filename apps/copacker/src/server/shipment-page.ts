@@ -1,10 +1,9 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
-import { notFound } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
 import { shipmentDestinations, shipmentDelivery } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
+import { NotFoundError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { accessibleOrder } from "@/server/access"
@@ -16,6 +15,7 @@ import { knownPackingGroups, releasedLabelKinds, releasedStates, reservedPieces 
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
+import { pageId } from "./page-id"
 import { lineLabels } from "./product-barcodes"
 export async function shipmentPage(input: { id: string; query: Record<string, string | string[]> }) {
   const s = await session()
@@ -27,15 +27,10 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const seesOrder = can(s, "orders")
   // Someone who doesn't see prices packs and follows the shipment without its invoice's prices.
   const prices = can(s, "prices")
-  // A malformed link is a shipment that doesn't exist.
-  const parsed = z.uuid().safeParse(input.id)
-  if (!parsed.success) {
-    throw notFound()
-  }
-  const id = parsed.data
+  const id = pageId(input.id)
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!shipment) {
-    throw notFound()
+    throw new NotFoundError()
   }
   const { order, supplier } = await accessibleOrder(s, shipment.orderId)
   const workflow = await orderWorkflow(s, order.id)

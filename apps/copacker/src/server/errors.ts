@@ -22,6 +22,33 @@ export class StatusError extends LocalizedError {
   }
 }
 
+// The request's own input didn't parse: its body isn't JSON, or a body, query or path value fails its schema. A route
+// answers it 400. A ZodError or SyntaxError from anywhere else, such as stored data or a provider's answer, is a bug.
+export class InvalidRequestError extends Error {
+  declare readonly cause: z.ZodError | SyntaxError
+  constructor(cause: z.ZodError | SyntaxError) {
+    super(cause.message, { cause })
+  }
+}
+
+// A request's body, query or path value, read with its schema.
+export function requestInput<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
+  const result = schema.safeParse(value)
+  if (!result.success) {
+    throw new InvalidRequestError(result.error)
+  }
+  return result.data
+}
+
+// A request's JSON body, for requestInput or a domain function that reads it with its schema.
+export async function requestJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json()
+  } catch (error) {
+    throw error instanceof SyntaxError ? new InvalidRequestError(error) : error
+  }
+}
+
 // The status for a request that failed: 403 when access was refused, and otherwise 400.
 export function failureStatus(error: unknown) {
   return error instanceof AccessError ? 403 : 400
@@ -53,6 +80,9 @@ function isMessageKey(message: string): message is MessageKey {
 export async function failureMessage(error: unknown, fallback: ErrorKey = "requestFailed") {
   if (isRedirect(error) || isNotFound(error)) {
     throw error
+  }
+  if (error instanceof InvalidRequestError) {
+    return failureMessage(error.cause, fallback)
   }
   const t = await errorText()
   if (error instanceof LocalizedError) {

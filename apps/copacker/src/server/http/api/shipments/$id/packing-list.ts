@@ -5,7 +5,7 @@ import { packingList } from "@/server/packing-list"
 
 // A packed shipment's packing list, as the document data the browser renders into its PDF.
 export async function GET(_request: Request, context: { params: { id: string } }) {
-  const id = z.uuid().safeParse((await context.params).id)
+  const id = z.uuid().safeParse(context.params.id)
   if (!id.success) {
     return errorResponse("shipmentNotFound", 404)
   }

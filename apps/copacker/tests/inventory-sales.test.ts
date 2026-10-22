@@ -44,9 +44,10 @@ beforeEach(async () => {
   ])
   signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
-import { POST as depletionPost } from "../src/server/http/api/analytics/depletions"
 import { GET as listSales } from "../src/server/http/api/analytics/sales-orders"
+import { inventoryBasisCollection } from "../src/server/inventory-basis-http"
 import { inventoryFifo } from "../src/server/inventory-fifo"
+const { POST: depletionPost } = inventoryBasisCollection("depletion")
 const range = {
   shopifyDomain: "store",
   variantId: "v1",

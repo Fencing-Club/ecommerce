@@ -1,31 +1,29 @@
-import { notFound, redirect } from "@tanstack/react-router"
+import { redirect } from "@tanstack/react-router"
 import { and, eq, isNull } from "drizzle-orm"
 import type * as React from "react"
-import { z } from "zod"
 import type { ImportReview } from "@/components/import-review"
 import type { ReviewProduct } from "@/components/import-review"
 import { db } from "@/db"
 import { poImports, suppliers } from "@/db/schema"
+import { NotFoundError } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
+import { pageId } from "@/server/page-id"
 
 export async function reviewImportPage(params: { id: string }): Promise<React.ComponentProps<typeof ImportReview>> {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   requirePage(s, "prices")
-  const { id } = await params
-  if (!z.uuid().safeParse(id).success) {
-    throw notFound()
-  }
+  const id = pageId(params.id)
   const [record] = await db()
     .select()
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   if (!record) {
-    throw notFound()
+    throw new NotFoundError()
   }
   if (record.status === "saved" && record.orderId) {
     throw redirect({ href: `/orders/${record.orderId}` })

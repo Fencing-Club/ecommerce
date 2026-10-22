@@ -1,6 +1,5 @@
-import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
-import { errorResponse } from "@/server/errors"
+import { errorResponse, InvalidRequestError, requestJson } from "@/server/errors"
 import { fallbackResponse } from "@/server/http-response"
 import { assignProductSupplier } from "@/server/product-defaults"
 
@@ -9,9 +8,9 @@ export async function POST(request: Request) {
   const s = await session()
   requirePage(s, "products", "edit")
   try {
-    return Response.json(await assignProductSupplier(s, await request.json()))
+    return Response.json(await assignProductSupplier(s, await requestJson(request)))
   } catch (error) {
-    if (error instanceof ZodError || error instanceof SyntaxError) {
+    if (error instanceof InvalidRequestError) {
       return errorResponse("chooseProductsAndSupplier", 400)
     }
     return fallbackResponse(error, "supplierNotSaved")

@@ -9,7 +9,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     const s = await session()
     requireAccess(s, "catalogs", "edit")
     requireAccess(s, "prices")
-    await deleteCatalog(s, z.uuid().parse((await params).id))
+    await deleteCatalog(s, z.uuid().parse(params.id))
     return Response.json({ ok: true })
   } catch (error) {
     return Response.json(
