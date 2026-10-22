@@ -606,9 +606,8 @@ export async function warningLabelFile(
     : null
 }
 
-// The lines of a PO the workspace can see whose product can't make a label yet.
-export async function linesMissingLabels(s: Session, orderId: string) {
-  const { order } = await accessibleOrder(s, orderId)
+// The lines of a PO whose product can't make a label yet.
+export async function linesMissingLabels(order: LabelOrder) {
   return new Set((await lineLabels(order)).flatMap((label) => (label.state === "missing" ? [label.itemId] : [])))
 }
 

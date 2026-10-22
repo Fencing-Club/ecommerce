@@ -62,19 +62,19 @@ export async function newOrderPage(
   requirePage(s, "orders", "edit")
   requirePage(s, "prices")
   const params = await searchParams
-  const rows = await db()
-    .select()
-    .from(suppliers)
-    .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
-  const [initialItems, needsBarcode] = await Promise.all([
+  const [rows, deliveries, initialItems, needsBarcode, forwarding] = await Promise.all([
+    db()
+      .select()
+      .from(suppliers)
+      .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt))),
+    db()
+      .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
+      .from(contacts)
+      .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery"))),
     reorderLines(s.org.id, params.variant),
-    variantsNeedingBarcode(s.org.id)
+    variantsNeedingBarcode(s.org.id),
+    forwarderAddresses(s.org.id)
   ])
-  const forwarding = await forwarderAddresses(s.org.id)
-  const deliveries = await db()
-    .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
-    .from(contacts)
-    .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
   // Restock links name the Amazon network; the PO goes to Amazon, and each line picks its network.
   const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
