@@ -27,8 +27,9 @@ prints and checks they fit a carton configuration (`fitsConfiguration`).
 `shipping-snapshot`, `shipping-model`, `shipping-rules` and `shipping-copy` hold the packing list and packing
 checklist's data model and rules, with no React: `shippingDocumentSnapshot` and `packingListSnapshot` build the
 document data from a PO, its packing, labels and transport. Copacker's app renders that data with react-pdf; see
-[shipping document templates](../../../apps/copacker/docs/shipping-document-templates.md). `countries` lists the ISO
-countries addresses use.
+[shipping document templates](../../../apps/copacker/docs/shipping-document-templates.md). Their tests build the
+document data from small fixtures of their own (`tests/shipping-fixtures.ts`), never the app's. `countries` lists the
+ISO countries addresses use.
 
 `documents` draws the purchase order and commercial invoice with pdf-lib, and `combinePdfs` joins PDFs. Packing lists and
 checklists come only from the shipping-document data above. `orderLineText` is the text a PO or invoice line prints;

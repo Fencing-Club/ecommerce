@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/copacker-orders"
-import { itemSchema, orderInputSchema, orderSubtotal, orderTotal, lineName } from "@repo/copacker-orders"
-import { orderDestination, receiverFor } from "@repo/copacker-packing-rules"
+import { itemSchema, orderInputSchema, orderLine, orderSubtotal, orderTotal, lineName } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { packingSchema } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
@@ -28,6 +28,8 @@ import { generateInvoice, generatePo } from "./documents"
 import { jobRow } from "./job-payloads"
 import { describeError } from "./log"
 import { checkOrder, prepareOrder } from "./orders"
+import { lineDefaultsFor } from "./product-defaults"
+import { withVariantFields } from "./product-fields"
 import type { Session } from "./workspace-session"
 
 export const proposalSchema = z.object({
@@ -311,31 +313,26 @@ export async function approveProposal(s: Session, proposalId: string) {
   if (unmatched.length) {
     throw new LocalizedError("giveVariantSupplierSku", { skus: unmatched.map((line) => line.supplierSku).join(", ") })
   }
-  const variants = added.length
-    ? await (await shopifyFor(s.org.id, order.shopifyDomain)).variants(matches.map((row) => row.variantId))
-    : []
+  const [variants, defaultsFor] = added.length
+    ? await Promise.all([
+        shopifyFor(s.org.id, order.shopifyDomain)
+          .then((shopify) => shopify.variants(matches.map((row) => row.variantId)))
+          .then((found) => withVariantFields(s.org.id, order.shopifyDomain, found)),
+        lineDefaultsFor(s.org.id)
+      ])
+    : [[], undefined]
+  // An added product starts as one added in the PO editor would, with its saved defaults, where the PO goes (its Amazon
+  // network on a PO to Amazon), at the supplier's quantity and price. Saving sets its pieces per set from Shopify, and
+  // says when the supplier's quantity isn't a whole number of sets.
+  const destination = orderDestination(order.data)
   const newItems = added.map((line) => {
     const variantId = matches.find((row) => row.supplierSku === line.supplierSku)!.variantId
     const variant = variants.find((candidate) => candidate?.id === variantId)
     if (!variant) {
       throw new LocalizedError("noVariantForSupplierSku", { sku: line.supplierSku })
     }
-    return {
-      id: randomUUID(),
-      variantId,
-      inventoryItemId: variant.inventoryItem.id,
-      name: variant.product.title,
-      variant: variant.title,
-      buyerSku: variant.sku ?? line.supplierSku,
-      supplierSku: line.supplierSku,
-      pieces: line.pieces,
-      piecesPerSet: 1,
-      unitPrice: line.unitPrice,
-      asin: "",
-      fnsku: "",
-      // An added product goes where the PO goes.
-      receiver: receiverFor(orderDestination(order.data))
-    }
+    const item = orderLine(variant, randomUUID(), defaultsFor?.(variant), order.data.currency, destination)
+    return { ...item, pieces: line.pieces, piecesPerSet: 1, unitPrice: line.unitPrice }
   })
   const next = applied(order.data, proposal.data)
   const prepared = await prepareOrder(s, { ...next, items: [...next.items, ...newItems] })

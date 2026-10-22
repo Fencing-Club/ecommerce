@@ -1,10 +1,10 @@
+import type { OrderItem } from "@repo/copacker-orders"
 import { HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import type { suppliers } from "@/db/schema"
-import type { orderLine } from "@/lib/order-lines"
 import type { ForwarderAddress } from "@/server/forwarders"
 import { deliveryId, supplierId } from "@/stories/fixtures/orders"
 import {
@@ -26,7 +26,7 @@ type Args = {
   // What the page reads: the buyer's suppliers, the lines made from ?variant=…, the variations that still need a label,
   // the forwarders' addresses and the delivery addresses.
   suppliers: Array<typeof suppliers.$inferSelect>
-  initialItems: Array<ReturnType<typeof orderLine>>
+  initialItems: OrderItem[]
   needsBarcode: string[]
   forwarding: ForwarderAddress[]
   deliveries: typeof deliveries

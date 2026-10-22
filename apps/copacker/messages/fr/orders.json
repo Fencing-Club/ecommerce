@@ -254,7 +254,8 @@
       "supplierHint": "Votre équipe et le fournisseur peuvent voir ce message.",
       "customerHint": "Votre équipe et le client peuvent voir ce message.",
       "sharedSupplier": "Partagé avec le fournisseur",
-      "sharedCustomer": "Partagé avec le client"
+      "sharedCustomer": "Partagé avec le client",
+      "dismissError": "Ignorer"
     },
     "events": {
       "created": "Bon de commande créé",

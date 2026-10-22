@@ -10,8 +10,20 @@ import {
   proposeChanges
 } from "../../src/server/order-proposals"
 import { newShipment } from "../../src/server/orders"
+import { provider } from "../mocks/providers"
 import { database } from "../test-db"
-import { buyer, orderConnections, orderData, orderId, reviewedImport, setUpWorkflowTests, supplier } from "./fixtures"
+import {
+  buyer,
+  buyerId,
+  orderConnections,
+  orderData,
+  orderId,
+  reviewedImport,
+  setUpWorkflowTests,
+  supplier,
+  supplierId,
+  withGroup
+} from "./fixtures"
 
 vi.mock("../../src/server/connections", async () => (await import("../mocks/providers")).connectionsModule())
 vi.mock("../../src/server/product-fields", async (original) =>
@@ -76,6 +88,63 @@ describe("supplier proposals", () => {
       .where(and(eq(tables.documents.orderId, orderId), eq(tables.documents.kind, "invoice")))
     expect(invoices).toMatchObject([{ orderRevision: 2, shipmentId: null, outdated: false, uploadedBy: "system" }])
     await expect(approveProposal(buyer, proposal!.id)).rejects.toThrow("already answered")
+  })
+
+  it("starts a product the supplier adds with its saved defaults and Amazon network", async () => {
+    await reviewedImport()
+    await packing()
+    const { variants } = (await provider.shopifyFor()) as { variants: () => Promise<unknown[]> }
+    const glove = {
+      id: "gid://shopify/ProductVariant/2",
+      sku: "glove-6",
+      title: "Six-pack",
+      product: { id: "gid://shopify/Product/2", title: "Nitrile glove" },
+      inventoryItem: { id: "gid://shopify/InventoryItem/2" },
+      supplierSku: { value: "G-6" },
+      asin: { value: "B000000002" },
+      requiresComponents: false,
+      productVariantComponents: { nodes: [], pageInfo: { hasNextPage: false } }
+    }
+    provider.shopifyFor.mockResolvedValue({ variants: async () => [...(await variants()), glove] })
+    await database
+      .insert(tables.variantFields)
+      .values({ orgId: buyerId, shopifyDomain: "test.myshopify.com", variantId: glove.id, supplierSku: "G-6" })
+    await database.insert(tables.productDefaults).values({
+      orgId: buyerId,
+      shopifyDomain: "test.myshopify.com",
+      productId: glove.product.id,
+      description: "Bag in sixes",
+      prepCategory: "NO_PREP",
+      suffocationWarning: true,
+      amazonNetwork: "awd_us"
+    })
+    // The supplier can add only a product from its own catalog.
+    await database.insert(tables.supplierProducts).values(
+      await withGroup({
+        supplierOrgId: supplierId,
+        supplierSku: "G-6",
+        title: "Nitrile glove",
+        currency: "USD",
+        priceMinor: 300,
+        priceBasis: "piece",
+        piecesPerSellablePack: 1
+      })
+    )
+    const added = { supplierSku: "G-6", title: "Nitrile glove", pieces: 60, unitPrice: 300 }
+    await proposeChanges(supplier, orderId, change({ lines: [...change().lines, added] }), 1)
+    const [proposal] = await database.select().from(tables.orderProposals)
+    await approveProposal(buyer, proposal!.id)
+    const [saved] = await database.select().from(tables.orders).where(eq(tables.orders.id, orderId))
+    expect(saved!.data.items[1]).toMatchObject({
+      buyerSku: "glove-6",
+      supplierSku: "G-6",
+      pieces: 60,
+      unitPrice: 300,
+      instructions: "Bag in sixes",
+      prepCategory: "NO_PREP",
+      suffocationWarning: true,
+      receiver: "awd_us"
+    })
   })
 
   it("keeps the PO when the buyer declines, and sets a ready date alone without approval", async () => {
