@@ -719,6 +719,21 @@ export const stockSnapshots = pgTable(
   (t) => [uniqueIndex("stock_scope").on(t.orgId, t.source, t.externalAccountId, t.scopeKey)]
 )
 
+// Immutable, permission-filtered report payloads. No inventory reservations or purchase orders are created.
+export const restockReports = pgTable(
+  "restock_reports",
+  {
+    id: uuid().primaryKey(),
+    orgId: orgRef({ onDelete: "cascade" }),
+    userId: text().notNull(),
+    createdAt: createdAt(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    data: jsonb().$type<import("@repo/copacker-contract").JsonObject>().notNull(),
+    metadata: jsonb().$type<import("@repo/copacker-contract").JsonObject>().notNull()
+  },
+  (t) => [index("restock_reports_expiry").on(t.orgId, t.expiresAt)]
+)
+
 export const inventoryLocationMappings = pgTable(
   "inventory_location_mappings",
   {

@@ -3,22 +3,7 @@ import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse, failureMessage, InvalidRequestError, requestJson } from "@/server/errors"
 import { RestockInputError, restockReport } from "@/server/restock-page"
-import type { RestockLine } from "@/server/restock-plan"
-
-// A line without what it costs and sells for, or the sales and profit it would lose, for a member who doesn't see
-// prices. The quantities stay.
-function withoutPrices(line: RestockLine): RestockLine {
-  return {
-    ...line,
-    unitCostMinor: null,
-    costCurrency: null,
-    estimatedCostMinor: null,
-    priceMinor: null,
-    priceCurrency: null,
-    lostSalesMinor: null,
-    lostProfitMinor: null
-  }
-}
+import { restockWithoutPrices } from "@/server/restock-plan"
 
 // Restock suggestions for Amazon or one Shopify location, from stored orders.
 export async function POST(request: Request) {
@@ -27,7 +12,7 @@ export async function POST(request: Request) {
   requirePage(s, "restock")
   try {
     const report = await restockReport(s, await requestJson(request))
-    return Response.json(can(s, "prices") ? report : { ...report, lines: report.lines.map(withoutPrices) })
+    return Response.json(can(s, "prices") ? report : { ...report, lines: report.lines.map(restockWithoutPrices) })
   } catch (error) {
     if (error instanceof RestockInputError) {
       return Response.json({ error: await failureMessage(error) }, { status: 409 })

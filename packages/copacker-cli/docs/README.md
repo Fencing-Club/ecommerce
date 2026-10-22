@@ -76,6 +76,9 @@ automatically. `schema show account.show` and `schema show workspace.list` work 
 
 ## Results and recovery
 
+`report restock` and `restock channel list` have server handlers. Reports support JSON and CSV stdout/local output;
+server artifact exports remain unsupported. See [restock behavior and limits](../../../apps/copacker/docs/cli-restock.md).
+
 `--json` writes exactly one success/error envelope to stdout. Progress and execution keys go to stderr. Human detail
 output includes nested field destinations. CSV stdout requires the operation's declared tabular projection. Artifact
 `--file-format` is independent of stdout `--format`. `--output` writes a temporary sibling, verifies artifact bytes and
