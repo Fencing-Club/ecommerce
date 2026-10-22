@@ -355,4 +355,51 @@ describe("eBay's webhook", () => {
   it("refuses a body that isn't an eBay notification", async () => {
     expect((await post({ hello: "world" })).status).toBe(400)
   })
+
+  describe("forged signatures", () => {
+    // A signature naming a key ID eBay won't hand a key over for, from one address.
+    function forged(kid: string, address: string, notification: EbayNotification = orderConfirmation()) {
+      const header = Buffer.from(JSON.stringify({ alg: "ECDSA", kid, signature: "abc", digest: "SHA1" })).toString(
+        "base64"
+      )
+      return POST(
+        new Request("https://copacker.ai/api/webhooks/ebay", {
+          method: "POST",
+          headers: { "x-ebay-signature": header, "cf-connecting-ip": address },
+          body: JSON.stringify(notification)
+        })
+      )
+    }
+    beforeEach(() => {
+      ebay.app.publicKey.mockRejectedValue(new Error("eBay request failed (404)"))
+      vi.spyOn(console, "error").mockImplementation(() => undefined)
+    })
+
+    it("asks eBay about an unknown key once in five minutes, with one app client", async () => {
+      expect((await forged("unknown-1", "192.0.2.1")).status).toBe(503)
+      expect((await forged("unknown-1", "192.0.2.1")).status).toBe(503)
+      // A deletion notice is still acknowledged when its signature can't be checked.
+      expect((await forged("unknown-1", "192.0.2.1", deletion(seller))).status).toBe(204)
+      expect(await database.select().from(tables.connections)).toHaveLength(1)
+      expect(ebay.app.publicKey.mock.calls).toEqual([["unknown-1"]])
+      await forged("unknown-2", "192.0.2.1")
+      expect(new Set(ebay.app.publicKey.mock.contexts).size).toBe(1)
+      vi.useFakeTimers({ now: Date.now() + 5 * 60000, toFake: ["Date"] })
+      await forged("unknown-1", "192.0.2.1")
+      expect(ebay.app.publicKey).toHaveBeenCalledTimes(3)
+    })
+
+    it("answers 429 to an address that asks for too many keys, before asking eBay", async () => {
+      const statuses = []
+      for (let n = 0; n < 11; n++) {
+        statuses.push((await forged(`flood-${n}`, "192.0.2.2")).status)
+      }
+      expect(statuses).toEqual([...Array.from({ length: 10 }, () => 503), 429])
+      expect(ebay.app.publicKey).toHaveBeenCalledTimes(10)
+      // Keys it already asked about, and other addresses, still get their answer.
+      expect((await forged("flood-0", "192.0.2.2")).status).toBe(503)
+      expect((await forged("flood-10", "192.0.2.3")).status).toBe(503)
+      expect(ebay.app.publicKey).toHaveBeenCalledTimes(11)
+    })
+  })
 })

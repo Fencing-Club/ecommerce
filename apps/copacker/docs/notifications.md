@@ -45,7 +45,10 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   API; `apps/copacker/shopify.app.toml` routes them to the same EventBridge source and is released with
   `shopify app deploy`. A data request emails workspace owners the stored order details, a customer redaction removes
   the customer's Shopify ID from their orders, and a shop redaction erases the orders, stock snapshots and stock
-  history copied from that store.
+  history copied from that store. Only IDs are kept from these webhooks, never the customer's contact details. A
+  privacy webhook Copacker can't read is logged as `shopify_compliance_rejected` (topic, delivery ID and the fields
+  that didn't match) and stays in the queue, so after five tries it waits in `copacker-shopify-events-dlq` instead of
+  being lost. The rest of its batch is still handled.
 - Releasing `shopify.app.toml`: deploy with the app's automation token (Dev Dashboard, Copacker, App settings, App
   automation token), not a Shopify CLI sign-in. Keep it out of git as `SHOPIFY_APP_AUTOMATION_TOKEN` in the local
   `apps/copacker/.env`, and set it in the environment of `shopify app deploy --config shopify.app.toml --no-release`.
@@ -160,6 +163,10 @@ EventBridge to a queue the worker reads.
   `X-EBAY-SIGNATURE` header, ECDSA, the key read with the app's token and kept for an hour). A notification that
   fails the check gets 412. One that can't be checked (no keys, or eBay won't hand over its key) gets 503 so eBay
   sends it again, except an account deletion notice, which is acknowledged.
+- Forged signatures can't make Copacker call eBay again and again. The app's eBay client is kept, so its token is
+  reused. A key ID eBay won't hand a key over for is remembered for five minutes. Each address may look up ten keys
+  Copacker doesn't keep in ten minutes; after that it gets 429 before anything is checked. eBay rarely rotates its keys,
+  so its own notifications use kept keys and aren't limited.
 - A checked notification goes to EventBridge as source `copacker.ebay` on the bus named by `EBAY_EVENT_BUS` (the
   account's `default` bus). Without `EBAY_EVENT_BUS` (local development) the route queues its work directly.
 - On the default bus in account `316338643347`, `us-east-1`, rule `copacker-ebay-to-sqs` forwards source
