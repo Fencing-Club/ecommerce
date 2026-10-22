@@ -7,36 +7,30 @@ import { profiles } from "@/db/schema"
 import { timeZoneCookie } from "@/lib/time-zone"
 import { signedInUser } from "@/server/auth"
 import { withAuthentication } from "@/server/auth-session"
-import { consumeJobSignal } from "@/server/cloudflare-jobs"
-import { jobSignal, withJobPublisher } from "@/server/job-delivery"
+import { consumeJobSignals, wakeForNextJob, wakeSignal } from "@/server/cloudflare-jobs"
+import { withJobPublisher } from "@/server/job-delivery"
 import { resolveLocalization, withLocalization } from "@/server/localization"
 import { closedForMaintenance, underMaintenance } from "@/server/maintenance"
-import { readNotifications } from "@/server/notification-reader"
-import { nextJobDelay, runNextJob, runClaimedJob, type JobClaim } from "@/server/queue"
-import { queueReconciliation } from "@/server/reconcile"
+import { runClaimedJob, type JobClaim } from "@/server/queue"
 import { maintenanceResponse } from "@/server/start-maintenance"
-import { withFileStorage } from "@/server/storage"
+import { r2FileStorage, withFileStorage } from "@/server/storage"
+
+// Staging and production wake the executor; a preview wakes its own isolated queue.
+function jobQueue(env: Cloudflare.Env) {
+  return env.EXECUTOR_JOBS ?? env.JOBS
+}
 
 async function publishJobs(env: Cloudflare.Env, delaySeconds: number) {
-  const queue = env.EXECUTOR_JOBS ?? env.JOBS
+  const queue = jobQueue(env)
   if (queue) {
-    await queue.send(JSON.stringify({ kind: "wake" }), { contentType: "text", delaySeconds })
+    await wakeSignal(queue, delaySeconds)
   }
 }
 
 function withWorkerServices<T>(env: Cloudflare.Env, run: () => Promise<T>) {
   return withDatabase({ connectionString: env.HYPERDRIVE.connectionString }, () =>
     withFileStorage(
-      {
-        put: async (key, bytes, contentType) => {
-          await env.DOCUMENTS.put(key, bytes, { httpMetadata: { contentType } })
-        },
-        get: async (key) => {
-          const file = await env.DOCUMENTS.get(key)
-          return file ? { body: file.body, size: file.size, contentType: file.httpMetadata?.contentType } : null
-        },
-        delete: (key) => env.DOCUMENTS.delete(key)
-      },
+      r2FileStorage(env.DOCUMENTS),
       () => withJobPublisher((delay) => publishJobs(env, delay), run),
       env.DOCUMENTS_PREFIX
     )
@@ -53,9 +47,9 @@ export class JobWorkflow extends WorkflowEntrypoint<Cloudflare.Env, JobClaim> {
     } finally {
       await step.do("wake next job", () =>
         withWorkerServices(this.env, async () => {
-          const delay = await nextJobDelay()
-          if (delay !== null) {
-            await publishJobs(this.env, Math.min(86400, Math.max(1, delay)))
+          const queue = jobQueue(this.env)
+          if (queue) {
+            await wakeForNextJob(queue, 1)
           }
         })
       )
@@ -69,49 +63,7 @@ export default {
     if (!queue) {
       throw new Error("Cloudflare job execution is not enabled")
     }
-    await withWorkerServices(env, async () => {
-      for (const message of batch.messages) {
-        const signal = jobSignal.parse(typeof message.body === "string" ? JSON.parse(message.body) : message.body)
-        if (signal.kind === "notifications") {
-          const count = await readNotifications(signal.provider)
-          if (count === 10) {
-            await queue.send(JSON.stringify(signal), { contentType: "text", delaySeconds: 1 })
-          }
-        } else {
-          if (signal.kind === "reconcile") {
-            await queueReconciliation()
-          }
-          await consumeJobSignal(
-            { kind: "wake" },
-            {
-              runNext: () =>
-                runNextJob("cloudflare", async (claim) => {
-                  const workflow = env.JOB_WORKFLOW
-                  if (!workflow) {
-                    throw new Error("Job Workflow binding is missing")
-                  }
-                  const id = `${claim.id}-${Date.parse(claim.leaseAt)}`
-                  try {
-                    await workflow.create({ id, params: claim })
-                  } catch (error) {
-                    // A create response may have been lost. Only suppress it when the same instance exists.
-                    try {
-                      await (await workflow.get(id)).status()
-                    } catch {
-                      throw error
-                    }
-                  }
-                }),
-              nextDelay: () => nextJobDelay(),
-              signal: async (delaySeconds) => {
-                await queue.send(JSON.stringify({ kind: "wake" }), { contentType: "text", delaySeconds })
-              }
-            }
-          )
-        }
-        message.ack()
-      }
-    })
+    await withWorkerServices(env, () => consumeJobSignals(batch.messages, { queue, workflow: env.JOB_WORKFLOW }))
   },
   async fetch(request, env) {
     const active = await underMaintenance()
@@ -141,18 +93,7 @@ export default {
           ? maintenanceResponse(request, render)
           : withDatabase({ connectionString: env.HYPERDRIVE.connectionString }, () =>
               withFileStorage(
-                {
-                  put: async (key, bytes, contentType) => {
-                    await env.DOCUMENTS.put(key, bytes, { httpMetadata: { contentType } })
-                  },
-                  get: async (key) => {
-                    const file = await env.DOCUMENTS.get(key)
-                    return file
-                      ? { body: file.body, size: file.size, contentType: file.httpMetadata?.contentType }
-                      : null
-                  },
-                  delete: (key) => env.DOCUMENTS.delete(key)
-                },
+                r2FileStorage(env.DOCUMENTS),
                 () => withAuthentication(request, render),
                 env.DOCUMENTS_PREFIX
               )

@@ -1,5 +1,5 @@
 import { useWindowEvent } from "@mantine/hooks"
-import { useEffect } from "react"
+import { useEffect, useEffectEvent } from "react"
 import { z } from "zod"
 
 const workspaceStatus = z.union([
@@ -24,8 +24,9 @@ export function announceWorkspace(id: string) {
 // The workspace is kept in a cookie every tab shares, and the portal's shell (its sidebar and header) doesn't render
 // again on navigation. After another tab switches workspaces, a page opened here would show that workspace's data
 // under this one's name. So the shell reloads when another tab announces a switch, and checks the active workspace
-// whenever the page changes or the window comes back into focus.
-export function WorkspaceWatch({ id, pathname }: { id?: string; pathname?: string }) {
+// whenever the page changes or the window comes back into focus. `id` is the workspace the shell was rendered for, if
+// any; `pathname` is the page.
+export function useWorkspaceWatch({ id, pathname }: { id?: string; pathname?: string } = {}) {
   async function check() {
     try {
       const response = await fetch("/api/workspace", { cache: "no-store" })
@@ -52,6 +53,7 @@ export function WorkspaceWatch({ id, pathname }: { id?: string; pathname?: strin
       // Offline: the next navigation checks again.
     }
   }
+  const pageChanged = useEffectEvent(() => void check())
 
   useEffect(() => {
     const broadcast = new BroadcastChannel(channel)
@@ -63,10 +65,9 @@ export function WorkspaceWatch({ id, pathname }: { id?: string; pathname?: strin
     return () => broadcast.close()
   }, [id])
 
+  // Checks on every page change.
   useEffect(() => {
-    void check()
-    // Checks on every page change; check only reads the id this shell was rendered for.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    pageChanged()
   }, [pathname])
 
   useWindowEvent("focus", () => void check())
@@ -75,5 +76,4 @@ export function WorkspaceWatch({ id, pathname }: { id?: string; pathname?: strin
       window.location.reload()
     }
   })
-  return null
 }

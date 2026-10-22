@@ -16,7 +16,7 @@ import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
 import { localeNames } from "@/i18n/locales"
@@ -73,11 +73,13 @@ function Choice({
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </div>

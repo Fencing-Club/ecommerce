@@ -1,6 +1,6 @@
 import { useRef } from "react"
 import { FormField, type FormFieldProps, useFormField } from "@/components/form-controls"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 // Select fields, apart from the text fields in form-controls: Base UI's Select is the heaviest control, so a page with
@@ -104,16 +104,18 @@ export function SelectControl({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {choices.map((option) => (
-          <SelectItem
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-            className={cn(option.clears && "text-muted-foreground")}
-          >
-            {option.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {choices.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className={cn(option.clears && "text-muted-foreground")}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )

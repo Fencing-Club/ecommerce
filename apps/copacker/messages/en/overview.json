@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "Sales, {period}",
-    "about": "About {label}",
     "versus": "{comparison, select, previousYear {vs previous year} other {vs previous period}}",
     "noPrices": "No prices yet",
     "noOrders": "No orders synced",

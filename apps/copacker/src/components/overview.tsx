@@ -1,10 +1,10 @@
 import { isPresent } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
-import { cn } from "@/lib/utils"
+import { buckets, seriesStep } from "@/lib/series"
 import type { Overview } from "@/server/overview"
 import type { SourceDay } from "@/server/overview-sales"
 import { InfoTip } from "./info-tip"
@@ -17,7 +17,6 @@ import {
   Customers,
   Dash,
   DaysOfCover,
-  DeltaPill,
   OpenOrders,
   ProfitBreakdown,
   SetupChecklist,
@@ -29,105 +28,44 @@ import {
 } from "./overview-sections"
 import type { PeriodSelection } from "./period-picker"
 import { PeriodPicker } from "./period-picker"
+import { DeltaNote, StatCard, StatGrid } from "./stat-card"
 
-// Grids: six KPI tiles, the sales chart beside gross profit, a wide card beside a narrow one, and two even halves.
-// The KPI row goes by its own width, sidebar or not: two tiles a row, three once each has room for its whole label,
-// and all six from 72rem.
-const kpiGrid = "grid grid-cols-2 gap-4 @xl/kpis:grid-cols-3 @6xl/kpis:grid-cols-6"
+// Grids: the sales chart beside gross profit, a wide card beside a narrow one, and two even halves. The six KPI cards
+// are a StatGrid, which goes by its own width, sidebar or not.
 // Gross profit keeps room for its longest line, "Refunds and disputes" with its share and amount.
 const salesRow = "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(22rem,1fr)]"
 const wide = "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
 const halves = "grid grid-cols-1 gap-4 lg:grid-cols-2"
-// A figure inside a tile's note, as strong as the tile's other text.
+// A figure inside a card's note, as strong as the card's other text.
 const figure = (chunks: React.ReactNode) => <span className="font-medium text-foreground tabular-nums">{chunks}</span>
+// A card without a trend keeps the trend's space, so every card in the row is the same height.
+const noTrend = <div className="h-10" aria-hidden />
 
-// One headline figure. Every tile has the same parts in the same places, so a row of them lines up: the label on one
-// line, the value, its change against the compared period (or a short note), and its trend when there's a daily series.
-function Kpi({
-  label,
-  value,
-  info,
-  loss,
-  footnote,
-  trend
-}: {
-  label: string
-  // Null when the figure can't be worked out yet.
-  value: string | null
-  // What the figure means, behind an info icon after the label.
-  info?: React.ReactNode
-  // A loss reads in red.
-  loss?: boolean
-  footnote?: React.ReactNode
-  // The line under the figure; `id` names it on the page.
-  trend?: { id: string; values: (number | null)[] }
-}) {
-  const t = useTranslations("overview.kpis")
-  return (
-    // Two tiles a row on a phone pad less, so each label still fits.
-    <Card className="@container gap-3 @max-sm/kpis:[--card-spacing:--spacing(3)]">
-      <CardHeader className="grid-cols-1 gap-1">
-        <CardDescription className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate" title={label}>
-            {label}
-          </span>
-          {info && <InfoTip label={t("about", { label })}>{info}</InfoTip>}
-        </CardDescription>
-        <CardTitle
-          className={cn(
-            "truncate text-2xl leading-8 font-semibold tracking-tight",
-            loss && value !== null && "text-destructive"
-          )}
-        >
-          {value ?? <Dash />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col justify-end gap-3">
-        <div className="flex h-5 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">{footnote}</div>
-        {/* Tiles without a series keep the space, so every tile is the same height. */}
-        {value !== null && trend && trend.values.filter(isPresent).length > 1 ? (
-          <Sparkline id={trend.id} values={trend.values} />
-        ) : (
-          <div className="h-10" aria-hidden />
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Days per point on a KPI's trend: one up to about three months, then a week, then four weeks, so a long period reads
-// as a trend rather than noise.
-function daysPerPoint(days: number) {
-  if (days <= 92) {
-    return 1
-  }
-  return days <= 400 ? 7 : 28
-}
-
-// A series over the period for the shown sources, null where no source covers a point's days. `pick` turns the point's
-// totals, and how many of its days are covered, into its value.
+// A series over the period for the shown sources, a point for each day, week or month as the sales chart draws them,
+// null where no source covers a point's days. `pick` turns the point's totals, and how many of its days are covered,
+// into its value.
 function trend(sales: Overview["sales"], pick: (total: SourceDay, days: number) => number | null) {
-  const step = daysPerPoint(sales.daily.length)
-  const series: (number | null)[] = []
-  for (let start = 0; start < sales.daily.length; start += step) {
-    const rows = sales.daily.slice(start, start + step)
+  return buckets(sales.daily, seriesStep(sales.daily.length), (row) => row.date).map(({ start, end }) => {
+    const rows = sales.daily.slice(start, end)
     const cells = rows.flatMap((row) => sales.sources.map((source) => row[source])).filter(isPresent)
     const days = rows.filter((row) => sales.sources.some((source) => row[source] !== null)).length
-    series.push(
-      cells.length
-        ? pick(
-            cells.reduce((sum, cell) => ({
-              orders: sum.orders + cell.orders,
-              units: sum.units + cell.units,
-              revenueMinor: sum.revenueMinor + cell.revenueMinor,
-              unpriced: sum.unpriced + cell.unpriced
-            })),
-            days
-          )
-        : null
-    )
-  }
-  return series
+    return cells.length
+      ? pick(
+          cells.reduce((sum, cell) => ({
+            orders: sum.orders + cell.orders,
+            units: sum.units + cell.units,
+            revenueMinor: sum.revenueMinor + cell.revenueMinor,
+            unpriced: sum.unpriced + cell.unpriced
+          })),
+          days
+        )
+      : null
+  })
+}
+
+// A card's trend under its figure, once there's a figure and two points to draw. `id` names it on the page.
+function trendLine(id: string, value: string | null, values: (number | null)[]) {
+  return value !== null && values.filter(isPresent).length > 1 ? <Sparkline id={id} values={values} /> : noTrend
 }
 
 // Sales per priced order: orders Amazon hasn't priced yet aren't counted either way. Null without priced orders.
@@ -156,19 +94,13 @@ function SalesKpis({
   const hasSales = sales.daily.some((row) => sales.sources.some((source) => row[source] !== null))
   // Why a sales figure is missing: no orders yet, or orders Amazon hasn't priced.
   const missing = hasSales ? t("noPrices") : t("noOrders")
-  // The change against the compared period. The comparison shows beside the pill when the tile has room for it, and
-  // is always read out.
+  // The change against the compared period, when there's one.
   const delta = (current: number, before: number | null | undefined) => {
     const value = change(current, before)
-    return value === null ? null : (
-      <>
-        <DeltaPill value={value} title={versus} />
-        <span className="sr-only @min-[15rem]:not-sr-only">
-          <span className="whitespace-nowrap">{versus}</span>
-        </span>
-      </>
-    )
+    return value === null ? null : <DeltaNote value={value} versus={versus} />
   }
+  // A figure, or a dash while it can't be worked out yet.
+  const shown = (value: string | null) => value ?? <Dash />
   const perDay = (value: number, days: number) => (days ? value / days : null)
   const averageOrder = orderValue(totals)
   const previousAverage = previous ? orderValue(previous) : null
@@ -194,71 +126,84 @@ function SalesKpis({
     lossValue = figures.whole(expectedLoss.minor, expectedLoss.currency)
   }
   const lostInPeriod = restock.lostValue[0]
+  const salesValue = currency ? figures.whole(totals.revenueMinor, currency) : null
+  const ordersValue = hasSales ? figures.number(totals.orders) : null
+  const averageValue = currency && averageOrder !== null ? figures.money([{ minor: averageOrder, currency }]) : null
+  const unitsValue = hasSales ? figures.number(totals.units) : null
+  const profitValue =
+    profit.currency && profit.costedRevenueMinor > 0 ? figures.whole(profit.profitMinor, profit.currency) : null
+  // Each figure's trend: sales, orders and units a day, and the average order value.
+  const trends = {
+    sales: trend(sales, (total, days) => perDay(total.revenueMinor, days)),
+    orders: trend(sales, (total, days) => perDay(total.orders, days)),
+    average: trend(sales, (total) => orderValue(total)),
+    units: trend(sales, (total, days) => perDay(total.units, days))
+  }
 
   return (
-    <section className="@container/kpis" aria-label={t("label", { period: periodLabel })}>
-      <div className={kpiGrid}>
-        <Kpi
-          label={t("sales")}
-          info={t("salesInfo")}
-          value={currency ? figures.whole(totals.revenueMinor, currency) : null}
-          footnote={currency ? previous && delta(totals.revenueMinor, previous.revenueMinor) : missing}
-          trend={{ id: "sales", values: trend(sales, (total, days) => perDay(total.revenueMinor, days)) }}
-        />
-        <Kpi
-          label={t("orders")}
-          value={hasSales ? figures.number(totals.orders) : null}
-          footnote={hasSales ? previous && delta(totals.orders, previous.orders) : missing}
-          trend={{ id: "orders", values: trend(sales, (total, days) => perDay(total.orders, days)) }}
-        />
-        <Kpi
-          label={t("averageOrder")}
-          value={currency && averageOrder !== null ? figures.money([{ minor: averageOrder, currency }]) : null}
-          footnote={
-            currency
-              ? averageOrder !== null && previousAverage !== null && delta(averageOrder, previousAverage)
-              : missing
-          }
-          trend={{ id: "average", values: trend(sales, (total) => orderValue(total)) }}
-        />
-        <Kpi
-          label={t("units")}
-          value={hasSales ? figures.number(totals.units) : null}
-          footnote={hasSales ? previous && delta(totals.units, previous.units) : missing}
-          trend={{ id: "units", values: trend(sales, (total, days) => perDay(total.units, days)) }}
-        />
-        <Kpi
-          label={t("grossProfit")}
-          info={
-            caveats.length > 0 && (
-              <span className="flex flex-col gap-1">
-                {caveats.map((caveat) => (
-                  <span key={caveat}>{caveat}</span>
-                ))}
-              </span>
-            )
-          }
-          value={
-            profit.currency && profit.costedRevenueMinor > 0 ? figures.whole(profit.profitMinor, profit.currency) : null
-          }
-          loss={profit.profitMinor < 0}
-          footnote={profitNote}
-        />
-        <Kpi
-          label={t("stockoutLosses")}
-          info={t("stockoutInfo")}
-          value={lossValue}
-          loss={restock.expectedLostItems > 0}
-          footnote={
-            lostInPeriod && (
-              <span className="truncate">
-                {t("lostThisPeriod", { amount: figures.whole(lostInPeriod.minor, lostInPeriod.currency) })}
-              </span>
-            )
-          }
-        />
-      </div>
-    </section>
+    <StatGrid label={t("label", { period: periodLabel })}>
+      <StatCard
+        label={t("sales")}
+        info={t("salesInfo")}
+        value={shown(salesValue)}
+        note={currency ? delta(totals.revenueMinor, previous?.revenueMinor) : missing}
+      >
+        {trendLine("sales", salesValue, trends.sales)}
+      </StatCard>
+      <StatCard
+        label={t("orders")}
+        value={shown(ordersValue)}
+        note={hasSales ? delta(totals.orders, previous?.orders) : missing}
+      >
+        {trendLine("orders", ordersValue, trends.orders)}
+      </StatCard>
+      <StatCard
+        label={t("averageOrder")}
+        value={shown(averageValue)}
+        note={currency ? averageOrder !== null && delta(averageOrder, previousAverage) : missing}
+      >
+        {trendLine("average", averageValue, trends.average)}
+      </StatCard>
+      <StatCard
+        label={t("units")}
+        value={shown(unitsValue)}
+        note={hasSales ? delta(totals.units, previous?.units) : missing}
+      >
+        {trendLine("units", unitsValue, trends.units)}
+      </StatCard>
+      <StatCard
+        label={t("grossProfit")}
+        info={
+          caveats.length > 0 && (
+            <span className="flex flex-col gap-1">
+              {caveats.map((caveat) => (
+                <span key={caveat}>{caveat}</span>
+              ))}
+            </span>
+          )
+        }
+        value={shown(profitValue)}
+        loss={profitValue !== null && profit.profitMinor < 0}
+        note={profitNote}
+      >
+        {noTrend}
+      </StatCard>
+      <StatCard
+        label={t("stockoutLosses")}
+        info={t("stockoutInfo")}
+        value={shown(lossValue)}
+        loss={lossValue !== null && restock.expectedLostItems > 0}
+        note={
+          lostInPeriod ? (
+            <span className="truncate">
+              {t("lostThisPeriod", { amount: figures.whole(lostInPeriod.minor, lostInPeriod.currency) })}
+            </span>
+          ) : null
+        }
+      >
+        {noTrend}
+      </StatCard>
+    </StatGrid>
   )
 }
 
@@ -411,13 +356,11 @@ export function OverviewSkeleton() {
   return (
     <div className="flex flex-col gap-6" aria-busy="true" aria-label={t("loading")}>
       <Skeleton className="h-36 rounded-xl" />
-      <div className="@container/kpis">
-        <div className={kpiGrid}>
-          {[0, 1, 2, 3, 4, 5].map((index) => (
-            <Skeleton key={index} className="h-43 rounded-xl" />
-          ))}
-        </div>
-      </div>
+      <StatGrid>
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <Skeleton key={index} className="h-43 rounded-xl" />
+        ))}
+      </StatGrid>
       <div className={salesRow}>
         <Skeleton className="h-96 rounded-xl" />
         <Skeleton className="h-96 rounded-xl" />

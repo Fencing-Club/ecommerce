@@ -52,6 +52,10 @@ recovery. It refuses remote databases, destroys only its randomly named test dat
 owns its storage. Local credentials live in ignored `.cloudflare/storage-credentials.json`. Hosted jobs use native R2
 and Hyperdrive inside each Workflow step. Never point local development at hosted provider queues.
 
+`src/server/storage.ts` has one adapter per transport. A Worker invocation binds `r2FileStorage(env.DOCUMENTS)` with
+`withFileStorage`; outside one, such as the Node worker and local tools, files go through the S3 adapter and the `S3_*`
+settings. Both keep each file's key and content type.
+
 The October 16 release replaced the early qualification artifact with the tested commit recorded in
 [acceptance](specs/platform-migration/acceptance.md). The stable staging domain and its `workers.dev` alias address the
 same deployment. Both environments use verified Neon Hyperdrive connections, caching disabled and five origin

@@ -18,7 +18,7 @@ under it (`components/shell.tsx`).
 The sidebar (`components/app-sidebar.tsx`) starts with the workspace switcher (`components/workspace-menu.tsx`): the
 workspace's kind tile with its initials, its name and chevrons, and on the rail just the tile. The menu lists every
 workspace with its kind, the open one marked, then **New workspace** and **Workspace settings**. The switcher doesn't
-name the kind, which leaves room for long names. Switching reloads, as `WorkspaceWatch` needs. Under it, the sidebar
+name the kind, which leaves room for long names. Switching reloads, as `useWorkspaceWatch` needs. Under it, the sidebar
 lists the kind's pages in groups (`lib/navigation.ts`), with Settings pinned at the bottom, and the account menu
 (`components/account-menu.tsx`) in its footer: the person's initials, name and email (just the initials on the rail),
 opening to **Account settings**, Theme and **Sign out**. A buyer's store orders are

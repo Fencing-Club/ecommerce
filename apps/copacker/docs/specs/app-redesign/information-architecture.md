@@ -28,7 +28,7 @@ Every portal page renders inside `components/shell.tsx`:
 - **Page header** (`PageHeader` in `components/common.tsx`): the sidebar toggle, a breadcrumb of parents, the title,
   an optional status badge and the page's actions on the right.
 
-`WorkspaceWatch` reloads a tab when another tab switches workspace. The active workspace is a cookie.
+`useWorkspaceWatch` reloads a tab when another tab switches workspace. The active workspace is a cookie.
 
 ## Navigation by workspace kind
 

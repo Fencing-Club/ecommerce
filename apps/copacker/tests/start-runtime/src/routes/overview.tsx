@@ -5,8 +5,8 @@ import { PortalError } from "@/components/portal-error"
 import { PortalForbidden } from "@/components/portal-forbidden"
 import { Providers } from "@/components/providers"
 import { Shell } from "@/components/shell"
-import { SystemTimeZone } from "@/components/system-time-zone"
-import { WorkspaceWatch } from "@/components/workspace-watch"
+import { useSystemTimeZone } from "@/hooks/use-system-time-zone"
+import { useWorkspaceWatch } from "@/hooks/use-workspace-watch"
 import { periodSearch } from "@/lib/date-range"
 import { overviewSearch } from "@/lib/page-search"
 import { readOverview } from "../portal.functions"
@@ -47,6 +47,8 @@ function OverviewRoute() {
   const refresh = () => {
     void router.invalidate()
   }
+  useSystemTimeZone(refresh)
+  useWorkspaceWatch({ id: shell.active, pathname: "/overview" })
   return (
     <Providers key={shell.active}>
       <AccessProvider permissions={shell.permissions}>
@@ -57,8 +59,6 @@ function OverviewRoute() {
             void router.navigate({ href })
           }}
         >
-          <SystemTimeZone refresh={refresh} />
-          <WorkspaceWatch id={shell.active} pathname="/overview" />
           {data.forbidden ? (
             <PortalForbidden />
           ) : (

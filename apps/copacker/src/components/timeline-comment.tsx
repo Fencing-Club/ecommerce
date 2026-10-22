@@ -1,11 +1,12 @@
-import { CircleAlert, Lock, Users } from "lucide-react"
+import { CircleAlert, Lock, Users, X } from "lucide-react"
 import { useId } from "react"
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { SubmitButton } from "@/components/form-feedback"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/use-action-form"
 import { useMessageText } from "@/hooks/use-error-text"
@@ -19,7 +20,8 @@ const schema = z.object({
 })
 
 // The comment box at the top of a PO's timeline, like Shopify's. It's opaque, so the timeline's line can start behind
-// it, and a failure shows inside it, between what was written and the Post button.
+// it, and a failure shows inside it, between what was written and the Post button, until it's dismissed or the comment
+// is posted again.
 export function TimelineComment({
   orderId,
   counterparty = "supplier",
@@ -71,10 +73,25 @@ export function TimelineComment({
           <Alert
             id={errorId}
             variant="destructive"
-            className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint"
+            className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint has-data-[slot=alert-action]:pe-10"
           >
             <CircleAlert aria-hidden />
             <AlertDescription className="text-meta/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
+            <AlertAction className="top-1.5 end-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={t("dismissError")}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  form.clearErrors()
+                  form.setFocus("message")
+                }}
+              >
+                <X aria-hidden />
+              </Button>
+            </AlertAction>
           </Alert>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/50 px-2 py-1.5">
@@ -98,11 +115,13 @@ export function TimelineComment({
                   : t(counterparty === "supplier" ? "messageSupplier" : "messageCustomer")}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              <SelectItem value="internal">{t("internal")}</SelectItem>
-              <SelectItem value="shared">
-                {t(counterparty === "supplier" ? "messageSupplier" : "messageCustomer")}
-              </SelectItem>
+            <SelectContent align="start" alignItemWithTrigger={false} className="w-auto">
+              <SelectGroup>
+                <SelectItem value="internal">{t("internal")}</SelectItem>
+                <SelectItem value="shared">
+                  {t(counterparty === "supplier" ? "messageSupplier" : "messageCustomer")}
+                </SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
           <SubmitButton

@@ -51,7 +51,6 @@
   },
   "kpis": {
     "label": "Umsatz, {period}",
-    "about": "Über {label}",
     "versus": "{comparison, select, previousYear {ggü. Vorjahr} other {ggü. Vorperiode}}",
     "noPrices": "Noch keine Preise",
     "noOrders": "Keine Aufträge synchronisiert",

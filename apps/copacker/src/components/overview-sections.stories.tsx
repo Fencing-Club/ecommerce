@@ -9,7 +9,6 @@ import {
   Customers,
   Dash,
   DaysOfCover,
-  DeltaPill,
   OpenOrders,
   ProfitBreakdown,
   SetupChecklist,
@@ -18,6 +17,7 @@ import {
   Trending,
   UpcomingSpend
 } from "./overview-sections"
+import { DeltaPill } from "./stat-card"
 
 const { sales, restock, purchasing, upcoming, period, attention } = buyerOverview
 const customers = sales.customers!

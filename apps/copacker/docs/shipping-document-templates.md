@@ -129,8 +129,9 @@ shipment or notify the supplier. FBA booking is independent of document generati
 
 Review the actual downloadable PDF on A4 and Letter, plus German, Chinese, and Urdu. Check multi-page packing and
 reference examples for repeated headings and intact carton groups. Stories cover download bytes, saved preferences,
-mobile, loading, generation failure, and missing carrier assignments. Tests cover the snapshot, model and rules, never
-rendered PDFs or their text; the PDF stories carry the `documents` tag, which verify and CI skip. Fonts, complex
+mobile, loading, generation failure, and missing carrier assignments. `@repo/copacker-shipments`' tests cover the
+snapshot, model, rules and copy; the app's cover only what `ShippingPdf` refuses or accepts. No test renders a PDF or
+reads its text; the PDF stories carry the `documents` tag, which verify and CI skip. Fonts, complex
 scripts, and long content require visual review. Never treat the Pen screenshot of an Amazon label as printable label artwork.
 
 ## Carton import workbook

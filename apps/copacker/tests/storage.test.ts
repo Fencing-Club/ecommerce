@@ -1,5 +1,14 @@
+import { NoSuchKey } from "@aws-sdk/client-s3"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { deleteFile, getFile, putFile, readFile, withFileStorage, type FileStorage } from "../src/server/storage"
+import {
+  deleteFile,
+  getFile,
+  putFile,
+  r2FileStorage,
+  readFile,
+  withFileStorage,
+  type FileStorage
+} from "../src/server/storage"
 
 const s3 = vi.hoisted(() => ({
   send: vi.fn<
@@ -96,6 +105,50 @@ describe("invocation storage", () => {
   })
 })
 
+describe("R2 binding", () => {
+  it("keeps each file's key, content type and size, and reads a deleted key as unavailable", async () => {
+    const objects = new Map<string, { bytes: Uint8Array; contentType: string }>()
+    const bucket = {
+      put: vi.fn<(key: string, value: Uint8Array, options: { httpMetadata: { contentType: string } }) => Promise<void>>(
+        async (key, value, options) => {
+          objects.set(key, { bytes: value, contentType: options.httpMetadata.contentType })
+        }
+      ),
+      get: async (key: string) => {
+        const object = objects.get(key)
+        return object
+          ? {
+              body: new ReadableStream<Uint8Array>({
+                start(controller) {
+                  controller.enqueue(object.bytes)
+                  controller.close()
+                }
+              }),
+              size: object.bytes.length,
+              httpMetadata: { contentType: object.contentType }
+            }
+          : null
+      },
+      delete: async (key: string) => {
+        objects.delete(key)
+      }
+    }
+    await withFileStorage(r2FileStorage(bucket), async () => {
+      await putFile("private/key", bytes, "image/png")
+      await putFile("private/document", bytes)
+      expect(await readFile("private/key")).toMatchObject({ size: bytes.length, contentType: "image/png" })
+      expect(await getFile("private/key")).toEqual(bytes)
+      await deleteFile("private/key")
+      await expect(readFile("private/key")).rejects.toThrow("Document is unavailable")
+    })
+    expect(bucket.put.mock.calls.map(([key, , options]) => [key, options])).toEqual([
+      ["private/key", { httpMetadata: { contentType: "image/png" } }],
+      ["private/document", { httpMetadata: { contentType: "application/pdf" } }]
+    ])
+    expect(s3.send).not.toHaveBeenCalled()
+  })
+})
+
 describe("retained Node S3 transport", () => {
   it("keeps the client alive until the response stream is consumed", async () => {
     s3.send.mockResolvedValue({
@@ -116,6 +169,13 @@ describe("retained Node S3 transport", () => {
     await file.body.cancel()
     expect(cancel).toHaveBeenCalledOnce()
     expect(s3.destroy).toHaveBeenCalledOnce()
+  })
+  it("reads a missing object as unavailable, and closes its client", async () => {
+    s3.send.mockRejectedValue(new NoSuchKey({ message: "missing", $metadata: {} }))
+    await expect(readFile("private/key")).rejects.toThrow("Document is unavailable")
+    s3.send.mockResolvedValue({})
+    await expect(readFile("private/key")).rejects.toThrow("Document is unavailable")
+    expect(s3.destroy).toHaveBeenCalledTimes(2)
   })
   it("closes the client after storage read failure", async () => {
     s3.send.mockRejectedValue(new Error("offline"))

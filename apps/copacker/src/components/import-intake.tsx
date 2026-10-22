@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { LinkRow } from "@/components/link-row"
+import type { StatusTone } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
-import { fileName, StatusBadge, type StatusTone } from "./common"
+import { fileName, StatusBadge } from "./common"
 import { FileDropzone, pdfFiles } from "./file-dropzone"
 
 type ImportSummary = { id: string; filename: string; status: string; revision: number; createdAt: string }

@@ -17,7 +17,7 @@ that same component. This data/rendering split prepares the page for the Start l
 ## Days, channels and freshness
 
 - **Time zone.** Days and months follow the store's time zone: the one chosen in Settings (`organizations.timeZone`),
-  or else the viewer's computer's, which the browser reports in the `tz` cookie (`components/system-time-zone.tsx`,
+  or else the viewer's computer's, which the browser reports in the `tz` cookie (`hooks/use-system-time-zone.ts`,
   `server/store-time-zone.ts`; UTC until it has).
   `lib/time-zone.ts` finds the instant each day starts, so days around daylight saving changes are 23 or 25 hours.
 - **Channel filter.** `?channel=amazon`, `?channel=amazon:<marketplace>` (such as `amazon:ca`, listed when the seller
@@ -76,8 +76,15 @@ that same component. This data/rendering split prepares the page for the Start l
     transfers and reserves are cash movements and aren't counted. A Shopify location's view leaves out store-wide
     charges.
 - **Sales trend** chart: sales, orders or units over the period (orders when no order has a price), the channels shown
-  summed into one line, by day up to 92 days, by week up to 400 and by month beyond, with the compared period dashed.
-  Days no source's stored orders cover are gaps.
+  summed into one line, with the compared period dashed. Days no source's stored orders cover are gaps.
+- **One rule for every series.** The sales chart, the KPI cards' trend lines and the supplier Overview's orders chart
+  draw a period by day up to 92 days, by week up to 400 (seven days at a time from the period's first day) and by
+  calendar month beyond, the first and last months partly (`seriesStep` and `buckets` in `lib/series.ts`). A trend
+  line's point is a daily average over the days its sources cover, so a partial week or month doesn't dip. The charts
+  share their axes and tooltip frame (`chartAxis`, `ChartTooltipFrame` in `components/overview-charts.tsx`).
+- **KPI cards** are `StatCard`s in a `StatGrid` (`components/stat-card.tsx`), as on the supplier Overview and a
+  customer's page: two a row on a phone, three once each has room for its label, and six from 72rem. A card's change
+  against the compared period is a `DeltaNote`.
 - **Inventory:** units on hand and on the way by channel, value at cost (a bundle held as its own item, such as a
   2-pack at Amazon, at its components' cost; Shopify's bundles are made from component stock and aren't counted), retail value (each unit at its recent average
   selling price in that channel, else its Shopify price) and the potential gross profit between them.

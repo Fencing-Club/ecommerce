@@ -13,12 +13,12 @@ import { hash, siteUrlFor } from "@/server/security"
 
 export async function GET(request: Request) {
   const site = siteUrlFor(request.headers)
-  try {
-    const relayed = relayAdsOAuth(request, site)
-    if (relayed) {
-      return relayed
-    }
-  } catch {
+  // A refused relay state shows that the connection expired. A relay that's set up wrong throws a 503 instead.
+  const relayed = relayAdsOAuth(request, site)
+  if (relayed instanceof Response) {
+    return relayed
+  }
+  if (relayed) {
     return errorResponse("connectionExpired", 400)
   }
   const s = await session()
@@ -44,13 +44,7 @@ export async function GET(request: Request) {
     if (url.searchParams.has("code") || url.searchParams.has("error")) {
       return errorResponse("connectionExpired", 400)
     }
-    let authorization
-    try {
-      authorization = startAdsOAuth(site)
-    } catch {
-      return errorResponse("amazonConnectionFailed", 503)
-    }
-    const { state, callback } = authorization
+    const { state, callback } = startAdsOAuth(site)
     await db()
       .insert(oauthStates)
       .values({
@@ -71,10 +65,8 @@ export async function GET(request: Request) {
     }).toString()
     return Response.redirect(target)
   }
-  let callback
-  try {
-    callback = adsOAuthCallback(site, url.searchParams.get("state") ?? "")
-  } catch {
+  const callback = adsOAuthCallback(site, url.searchParams.get("state") ?? "")
+  if (typeof callback !== "string") {
     return errorResponse("connectionExpired", 400)
   }
   // Consumed atomically and bound to both the workspace and the person who started consent.

@@ -56,7 +56,8 @@
     "declined": "مسترد",
     "atForwarder": "فریٹ فارورڈر کے پاس",
     "packed": "پیک ہو گیا",
-    "changesProposed": "تبدیلیاں تجویز کی گئیں"
+    "changesProposed": "تبدیلیاں تجویز کی گئیں",
+    "unknown": "نامعلوم"
   },
   "destinations": {
     "amazon": "Amazon",

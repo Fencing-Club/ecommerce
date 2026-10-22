@@ -3,7 +3,7 @@ import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
-import { PageHeader } from "@/components/common"
+import { PageHeader, Status } from "@/components/common"
 import { RequiredMark } from "@/components/form-controls"
 import { SaveBar } from "@/components/list/save-bar"
 import { MoneyInput } from "@/components/money-input"
@@ -30,7 +30,6 @@ import type { ProductImage } from "@/lib/supplier-product"
 import { variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { ProductMedia } from "./product-media"
-import { StatusBadge } from "./shared"
 import { type EditorVariant, VariantSheet } from "./variant-sheet"
 
 export type EditorProduct = {
@@ -202,7 +201,7 @@ export function ProductEditor({
       <PageHeader
         parents={[{ label: t("products"), href: "/products" }]}
         title={saved.id ? saved.title : t("addProduct")}
-        badge={saved.id ? <StatusBadge status={saved.status} /> : undefined}
+        badge={saved.id ? <Status status={saved.status} labels="supplier" /> : undefined}
       />
       <div className="@container flex flex-col gap-4">
         <fieldset
@@ -522,7 +521,7 @@ export function ProductEditor({
                           <PageLink href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
                             {catalog.title}
                           </PageLink>
-                          {catalog.status !== "active" && <StatusBadge status={catalog.status} />}
+                          {catalog.status !== "active" && <Status status={catalog.status} labels="supplier" />}
                         </li>
                       ))}
                     </ul>

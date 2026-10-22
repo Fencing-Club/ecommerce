@@ -2,7 +2,7 @@ import type { OrderInput } from "@repo/copacker-orders"
 import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
 
@@ -59,11 +59,13 @@ export function Setting<T extends string>({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </label>

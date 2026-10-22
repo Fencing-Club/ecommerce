@@ -37,6 +37,28 @@ export const Variants = meta.story({
   }
 })
 
+const tones = ["neutral", "info", "success", "warning", "destructive"] as const
+
+// The five status tones, in place of a variant: each tone's soft fill without an outline.
+export const Tones = meta.story({
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      {tones.map((tone) => (
+        <Badge key={tone} tone={tone}>
+          {tone}
+        </Badge>
+      ))}
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    for (const tone of tones) {
+      await expect(canvas.getByText(tone)).toHaveAttribute("data-tone", tone)
+    }
+    await expect(getComputedStyle(canvas.getByText("info")).backgroundColor).toBe("rgb(234, 242, 252)")
+    await expect(getComputedStyle(canvas.getByText("warning")).borderTopWidth).toBe("0px")
+  }
+})
+
 export const WithIcon = meta.story({
   render: () => (
     <Badge variant="secondary">
