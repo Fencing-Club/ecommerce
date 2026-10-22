@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
 import { HttpResponse, http } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"

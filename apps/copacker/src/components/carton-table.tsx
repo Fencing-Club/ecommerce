@@ -1,5 +1,6 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
-import type { OrderInput } from "@repo/copacker-shipments"
 import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
@@ -379,7 +380,7 @@ function CartonRow({
                 <div className="col-span-3 min-w-0 [overflow-wrap:anywhere]">
                   {first && <p className={cn(caption, "mb-2 hidden wide:block")}>{packing("product")}</p>}
                   <p className="font-medium">{item.name}</p>
-                  {item.variant && item.variant !== "Default Title" && (
+                  {variantName(item.variant) && (
                     <p className="mt-0.5 text-[13px] text-muted-foreground">{item.variant}</p>
                   )}
                 </div>

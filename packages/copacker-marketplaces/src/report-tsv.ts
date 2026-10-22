@@ -1,3 +1,29 @@
+import { z } from "zod"
+
+// Field rules Amazon's report rows share. Amounts stay exact decimal text; converting them to money's minor units
+// belongs in financial reconciliation, not ingestion.
+export const reportTimestamp = z.iso.datetime({ offset: true }).transform((value) => new Date(value))
+export const reportQuantity = z
+  .string()
+  .regex(/^-?\d+$/)
+  .transform(Number)
+  .pipe(z.int32())
+// A quantity of at least one, such as the pieces in a return or a shipped item.
+export const reportCount = z
+  .string()
+  .regex(/^[1-9]\d*$/)
+  .transform(Number)
+  .pipe(z.int32())
+export const reportDecimal = z.string().regex(/^-?\d+(\.\d+)?$/)
+export const reportCurrency = z.string().regex(/^[A-Z]{3}$/)
+
+// Some reports write a day as MM/DD/YYYY, at times without leading zeros. That becomes YYYY-MM-DD; any other text comes
+// back as it was, for the caller to check.
+export function reportDay(value: string) {
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value)
+  return us ? `${us[3]}-${us[1]!.padStart(2, "0")}-${us[2]!.padStart(2, "0")}` : value
+}
+
 // Comments can contain quoted tabs/newlines. Parse the complete document before accepting any rows.
 function records(text: string) {
   const rows: string[][] = []

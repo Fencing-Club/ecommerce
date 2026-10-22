@@ -2,13 +2,9 @@ import { z } from "zod"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { deleteCatalog } from "@/server/catalogs"
-import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
-import { isAppOrigin } from "@/server/security"
+import { failureMessage, failureStatus } from "@/server/errors"
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
     const s = await session()
     requireAccess(s, "catalogs", "edit")

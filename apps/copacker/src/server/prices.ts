@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
 import type { PackingDraft } from "@repo/copacker-shipments"
 import type { proposalChanges } from "./order-proposals"
 

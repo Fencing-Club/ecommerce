@@ -1,6 +1,7 @@
+import type { OrderInput } from "@repo/copacker-orders"
 import { PDFDocument } from "pdf-lib"
 import { readAwdLabelPdf } from "./awd-label-pdf"
-import type { OrderInput, Packing } from "./index"
+import type { Packing } from "./index"
 import { inspectShipmentZip } from "./shipment-artifacts"
 
 // Amazon's label for one supplier carton, as a shipment keeps it: the label's number (an AWD SSCC, or an FBA box ID

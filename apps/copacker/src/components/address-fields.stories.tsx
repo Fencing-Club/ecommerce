@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { addressSchema, originSchema } from "@repo/copacker-shipments"
+import { addressSchema } from "@repo/copacker-orders"
+import { originSchema } from "@repo/copacker-shipments"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"

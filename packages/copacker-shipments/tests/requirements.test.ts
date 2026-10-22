@@ -1,5 +1,5 @@
+import { orderInputSchema } from "@repo/copacker-orders"
 import { describe, expect, it } from "vitest"
-import { orderInputSchema } from "../src/index"
 import { destinationRequirements, itemRequirements, requirementText, sharedPrep } from "../src/requirements"
 
 const line = (overrides: Record<string, unknown> = {}) => ({

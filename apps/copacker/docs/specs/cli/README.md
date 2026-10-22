@@ -83,7 +83,7 @@ application's calculations where useful. Restock is the central domain report.
 
 | Area | Existing foundation | Required work |
 | --- | --- | --- |
-| Shared packages | `@repo/copacker-shipments` (PO, packing and document schemas, labels, PDFs), `@repo/copacker-marketplaces` (Shopify, Amazon and eBay adapters) and `@repo/copacker-packing-rules` (receivers and packing rules) | Reuse server implementations and extract portable public schemas where needed. |
+| Shared packages | `@repo/copacker-orders` (PO schemas and costs), `@repo/copacker-shipments` (packing and document schemas, labels, PDFs), `@repo/copacker-marketplaces` (Shopify, Amazon and eBay adapters) and `@repo/copacker-packing-rules` (receivers and packing rules) | Reuse server implementations and extract portable public schemas where needed. |
 | Application API | Browser routes and `/api/action`; some reads live only in server page loaders | Introduce an operation registry with complete input and output schemas, normalized errors and list/detail reads. |
 | Access | WorkOS browser sessions, live workspace membership, role/page permissions and price filtering | Add Copacker bearer credentials and explicit workspace selection for CLI and MCP. Browser cookies alone are insufficient. |
 | Ingested data | Stored customer orders, products/variants, stock snapshots, stock days, transactions and Ads spend | Expose typed records, their provider identities and coverage, not just dashboard totals. |
@@ -115,7 +115,7 @@ Proposed directories, with published names to be chosen before release:
 | `packages/copacker-cli` | The `copacker` executable, argument parsing, local profiles, tables, JSON/CSV output and local file handling. |
 | `apps/copacker/src/server` | Canonical business handlers, authorization, transactions, jobs and integrations. |
 | `apps/copacker/src/server/mcp` | Hosted MCP adapter and document resources using the same handlers and authorization context. |
-| `packages/copacker-shipments`, `packages/copacker-marketplaces` | Domain schemas, documents and provider adapters, used by the server handlers. |
+| `packages/copacker-orders`, `packages/copacker-shipments`, `packages/copacker-marketplaces` | Domain schemas, documents and provider adapters, used by the server handlers. |
 
 Extract shared schema definitions once and change their consumers together; do not copy the shipments schemas into a second
 implementation. The public client should not pull in PDF generators or provider SDK internals. Each new package gets

@@ -38,6 +38,15 @@ export function readTrackingFromBarcodes(values: string[]) {
   )
 }
 
+// The carrier a tracking number belongs to, known from its format and check digit.
+export function trackingCarrier(trackingNumber: string) {
+  const found = trackingNumber ? getTracking(compact(trackingNumber)) : undefined
+  if (!found || found.courier.code === "s10") {
+    return null
+  }
+  return found.courier.code === "usps" ? "USPS" : found.courier.name
+}
+
 // The tracking number among the readings of the numbers on a page, each tried in turn until one is valid.
 function pick(readings: string[][]) {
   const found = readings.flatMap((tries) => {

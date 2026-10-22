@@ -1,4 +1,4 @@
-import { itemTotal, productLabel } from "@repo/copacker-shipments"
+import { itemTotal, lineName } from "@repo/copacker-orders"
 import { Ellipsis, Package, X } from "lucide-react"
 import { useState } from "react"
 import { useController, useFormContext } from "react-hook-form"
@@ -67,7 +67,7 @@ export function OrderLineRow({
       {select && (
         <td className="px-3 py-4">
           <Checkbox
-            aria-label={t("builder.selectProduct", { name: productLabel(item.name, item.variant) })}
+            aria-label={t("builder.selectProduct", { name: lineName(item.name, item.variant) })}
             checked={select.selected}
             onCheckedChange={select.onSelectedChange}
           />

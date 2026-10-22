@@ -1,12 +1,9 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 import { acceptTeamInvitation } from "../src/server/invitations"
 import {
   cancelInvitation,
@@ -17,24 +14,15 @@ import {
   teamOf,
   transferOwnership
 } from "../src/server/team"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite(),
-  database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
 const org = { id: orgId, name: "Fencing Club", kind: "buyer" as const, timeZone: "America/Los_Angeles" }
 const owner = { id: "user_owner", email: "owner@club.example" }
 const s = { org, user: owner }
 
-beforeAll(async () => {
-  context.current = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: [tables.organizations, tables.profiles, tables.teamInvitations, tables.jobs] })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations, profiles, team_invitations, jobs CASCADE")
   await database.insert(tables.organizations).values({ id: orgId, name: org.name, kind: "buyer" })
   await database.insert(tables.memberships).values([
     { orgId, userId: owner.id, email: owner.email, role: "owner" },

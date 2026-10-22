@@ -1,18 +1,19 @@
-import { itemTotal, orderTotal, type OrderInput } from "@repo/copacker-shipments"
+import { itemTotal, type OrderInput, orderSubtotal, orderTotal } from "@repo/copacker-orders"
 import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { landedCosts, orders } from "@/db/schema"
-import { LocalizedError } from "@/i18n/errors"
+import { AccessError, LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import { sentDates } from "./sent-dates"
 import type { Session } from "./workspace-session"
 
-// Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
+// Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module;
+// otherwise this is authorization.ts's requireBuyer.
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new LocalizedError("buyerWorkspaceRequired")
+    throw new AccessError("buyerWorkspaceRequired")
   }
 }
 
@@ -73,7 +74,7 @@ export async function orderLandedCosts(orderId: string) {
 // How much a PO's landed costs and charges add to its products' price, as a share of that price: 0.12 means each
 // unit cost 12% more to land than the supplier charged. Charges and discounts on the PO count too.
 export function landedMarkup(order: Pick<OrderInput, "items" | "adjustments">, landedMinor: number) {
-  const products = order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+  const products = orderSubtotal(order.items)
   if (products <= 0) {
     return null
   }

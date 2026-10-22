@@ -1,52 +1,21 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => {
-    if (!context.actor) {
-      throw new ApiSessionError(401)
-    }
-    return context.actor
-  }
-}))
+import { served } from "./served"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { amazonAllocations } from "../src/server/amazon-allocation-data"
 import { saveAmazonProductMapping, productMappingInput } from "../src/server/amazon-product-mappings"
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
-import { ApiSessionError } from "../src/server/auth"
-import { GET as allocationsRoute } from "../src/server/http/api/analytics/amazon/allocations"
+import { GET as allocations } from "../src/server/http/api/analytics/amazon/allocations"
 import { POST, GET as mappingsRoute } from "../src/server/http/api/analytics/amazon/product-mappings"
 import { DELETE, GET as mappingRoute } from "../src/server/http/api/analytics/amazon/product-mappings/$id"
 import { appUrl } from "../src/server/security"
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
+const allocationsRoute = served(allocations)
 const orgId = randomUUID(),
   otherId = randomUUID()
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const input = {
   externalAccountId: "SELLER1",
@@ -59,21 +28,14 @@ const input = {
   validTo: "2027-01-01T00:00:00Z",
   evidence: "Imported invoice and catalog record"
 }
-const request = (body: unknown, method: "POST" | "DELETE" = "POST", origin = appUrl()) =>
+const request = (body: unknown, method: "POST" | "DELETE" = "POST") =>
   new Request(`${appUrl()}/api/analytics/amazon/product-mappings`, {
     method,
-    headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
+    headers: { Origin: appUrl(), "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
     body: JSON.stringify(body)
   })
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }
@@ -86,7 +48,7 @@ beforeEach(async () => {
     { orgId, shopifyDomain: "store", variantId: "v2" },
     { orgId: otherId, shopifyDomain: "secret", variantId: "secret" }
   ])
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
 describe("historical identity writes and allocation read", () => {
   it("preserves audit history on correction, rejects overlaps, and permits adjacent dated identities", async () => {
@@ -116,24 +78,24 @@ describe("historical identity writes and allocation read", () => {
     expect(results.filter((result) => result.ok)).toHaveLength(1)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
   })
-  it("rejects foreign targets, invalid periods, forbidden origins and insufficient permissions", async () => {
+  // The HTTP boundary checks the origin (http-response.test.ts).
+  it("rejects foreign targets, invalid periods and insufficient permissions", async () => {
     expect((await POST(request({ ...input, shopifyDomain: "secret", variantId: "secret" }))).status).toBe(422)
     expect((await POST(request({ ...input, validTo: input.validFrom }))).status).toBe(400)
-    expect((await POST(request(input, "POST", "https://evil.test"))).status).toBe(403)
-    context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "view", prices: "view" } }
+    signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "view", prices: "view" } })
     expect((await POST(request(input))).status).toBe(403)
-    context.actor = { ...actor(orgId, "buyer"), role: "member", access: { products: "edit" } }
+    signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "edit" } })
     expect((await POST(request(input))).status).toBe(403)
-    context.actor = actor(orgId, "supplier")
+    signedIn.actor = testSession({ orgId, kind: "supplier" })
     expect((await POST(request(input))).status).toBe(403)
     expect(await database.select().from(tables.amazonProductMappings)).toEqual([])
   })
   it("retires mistaken mappings without deleting audit evidence and scopes retirement to the workspace", async () => {
     await POST(request(input))
     const [saved] = await database.select().from(tables.amazonProductMappings)
-    context.actor = actor(otherId, "buyer")
+    signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
     expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(404)
-    context.actor = actor(orgId, "buyer")
+    signedIn.actor = testSession({ orgId, kind: "buyer" })
     expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(204)
     expect((await DELETE(request(null, "DELETE"), { params: { id: saved!.id } })).status).toBe(204)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
@@ -234,7 +196,7 @@ describe("historical identity writes and allocation read", () => {
       new Request(`${appUrl()}/api/analytics/amazon/allocations?from=2026-10-01&to=2026-11-01`)
     )
     expect(response.headers.get("Cache-Control")).toBe("private, no-store")
-    context.actor = { ...actor(orgId, "buyer"), role: "member", access: { sales: "view" } }
+    signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { sales: "view" } })
     expect(
       (
         await allocationsRoute(
@@ -259,7 +221,7 @@ describe("analytics HTTP contract", () => {
     const changed = request({ ...input, evidence: "Different request" })
     changed.headers.set("Idempotency-Key", original.headers.get("Idempotency-Key")!)
     expect((await POST(changed)).status).toBe(409)
-    context.actor = actor(otherId, "buyer")
+    signedIn.actor = testSession({ orgId: otherId, kind: "buyer" })
     expect((await mappingRoute(new Request(`${appUrl()}${location}`), resource)).status).toBe(404)
   })
   it("returns problem details for invalid JSON, content types, missing retry keys, and authentication", async () => {
@@ -272,7 +234,7 @@ describe("analytics HTTP contract", () => {
     const missing = request(input)
     missing.headers.delete("Idempotency-Key")
     expect((await POST(missing)).status).toBe(400)
-    context.actor = null
+    signedIn.actor = null
     const response = await mappingsRoute(new Request(`${appUrl()}/api/analytics/amazon/product-mappings`))
     expect(response.status).toBe(401)
     expect(response.headers.get("content-type")).toBe("application/problem+json")

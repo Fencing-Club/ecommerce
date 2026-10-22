@@ -1,7 +1,7 @@
+import { orderInputSchema } from "@repo/copacker-orders"
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { describe, expect, it } from "vitest"
 import { drawableText, orderLineText } from "../src/documents"
-import { orderInputSchema } from "../src/index"
 import { sharedPrep } from "../src/requirements"
 
 const item = (index: number) => ({

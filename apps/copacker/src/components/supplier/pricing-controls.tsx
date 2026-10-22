@@ -1,3 +1,4 @@
+import type { PriceBasis } from "@repo/copacker-orders"
 import { Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
@@ -15,7 +16,6 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { useMoney } from "@/hooks/use-money"
-import type { PriceBasis } from "@/lib/catalog-pricing"
 import { countOf, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
 

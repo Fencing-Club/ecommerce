@@ -1,14 +1,6 @@
-import {
-  amazonNetworkNames,
-  isAmazonNetwork,
-  itemTotal,
-  orderCharges,
-  orderDestination,
-  orderTotal,
-  orderUnits,
-  productLabel,
-  shipmentGroups
-} from "@repo/copacker-shipments"
+import { itemTotal, orderCharges, orderTotal, orderUnits, lineName, shipmentGroups } from "@repo/copacker-orders"
+import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { packingInstructions } from "@repo/copacker-shipments/requirements"
 import { Link } from "@tanstack/react-router"
 import { Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
@@ -180,7 +172,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
               key={group.receiver}
               title={isAmazonNetwork(group.receiver) ? amazonNetworkNames[group.receiver] : destination}
               lines={group.lines.length}
-              pieces={orderUnits({ items: group.lines })}
+              pieces={orderUnits(group.lines)}
               total={prices ? orderTotal({ items: group.lines }) : undefined}
               currency={currency}
             >
@@ -241,7 +233,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                         <LineMenu
                           orderId={id}
                           itemId={item.id}
-                          name={productLabel(item.name, item.variant)}
+                          name={lineName(item.name, item.variant)}
                           label={labelFor(item.id)}
                           warning={item.suffocationWarning}
                           editable={order.status === "draft" && buyer && editsOrder}
@@ -348,11 +340,11 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
           )}
           <PoTimeline
             orderId={id}
-            viewer={s.user.name ?? s.user.email}
             viewerOrg={s.org.name}
             timeZone={timeZone}
             entries={timeline}
             prices={prices}
+            commentable={order.status !== "closed"}
             counterparty={buyer ? "supplier" : "customer"}
           />
         </div>

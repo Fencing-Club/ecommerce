@@ -1,4 +1,4 @@
-import { adjustmentTypes } from "@repo/copacker-shipments"
+import { adjustmentTypes } from "@repo/copacker-orders"
 import { Plus, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

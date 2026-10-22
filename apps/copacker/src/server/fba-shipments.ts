@@ -1,7 +1,7 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import type { FbaPackingOption } from "@repo/copacker-marketplaces/amazon"
 import { downloadAmazonLabels, ProviderError } from "@repo/copacker-marketplaces/amazon"
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
 import type { Packing } from "@repo/copacker-shipments"
 import type { Pallet } from "@repo/copacker-shipments"
 import { buildFbaPlan, fbaBoxes, originSchema, palletLabels } from "@repo/copacker-shipments"

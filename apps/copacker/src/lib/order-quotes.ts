@@ -1,6 +1,6 @@
-import type { OrderItem } from "@repo/copacker-shipments"
+import type { OrderItem, SupplierCatalogStatus } from "@repo/copacker-orders"
 import type { SupplierCatalogMatch } from "@/lib/api"
-import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
+import { bundleQuote } from "@/lib/bundle-quote"
 
 // A line as the editor's form holds it, where a supplier SKU may not be filled in yet.
 type Line = Pick<OrderItem, "components" | "piecesPerSet"> & { supplierSku?: string }
@@ -48,7 +48,7 @@ export function quotedPrice(quote: LineQuote, pieces: number) {
 
 // Why a line's price isn't the supplier's quote, in a few words, as its key under orders.builder.matchNotes. A supplier
 // without a catalog has nothing to say.
-export function matchNote(status: BundleQuoteStatus) {
+export function matchNote(status: SupplierCatalogStatus) {
   switch (status) {
     case "matched":
     case "supplier_catalog_unavailable":

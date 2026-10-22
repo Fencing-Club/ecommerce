@@ -346,7 +346,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      pull-requests: read
+      # Write, to post the preview comment.
+      pull-requests: write
     concurrency:
       group: copacker-preview-${{ github.event.pull_request.number }}
       cancel-in-progress: false
@@ -386,6 +387,29 @@ jobs:
           path: apps/copacker
       - id: deploy
         run: pnpm --filter copacker preview:deploy
+      # One comment on the PR carries the links, found by its marker: later deploys edit it, and the cleanup workflow
+      # marks it removed.
+      - if: steps.deploy.outputs.url
+        run: |
+          marker="<!-- copacker-preview -->"
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")
+          id=$(head -n 1 <<< "$ids")
+          body="$marker
+          ### Preview
+
+          App: $APP_URL
+          Storybook: $STORIES_URL
+
+          Deployed from $APP_COMMIT_SHA. A preview being up doesn't mean CI passed."
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" > /dev/null
+          fi
+        env:
+          APP_URL: ${{ steps.deploy.outputs.url }}
+          STORIES_URL: ${{ steps.deploy.outputs.stories_url }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:

@@ -18,7 +18,7 @@ A supplier can work for several buyers.
   quote replaces that, at the volume price for the line's quantity, and follows the quantity across price breaks.
   A price the buyer types, or a saved draft's price, stays; a draft line without a price takes the quote.
 - The draft editor and saved PO group Amazon products into separate FBA and AWD US shipment cards, in the order the
-  packing rules list Amazon's networks (`shipmentGroups` in `@repo/copacker-shipments`). The group names
+  packing rules list Amazon's networks (`shipmentGroups` in `@repo/copacker-orders`). The group names
   carry the destination and shipment total, so product rows do not repeat the destination. Totals include the product's
   supplier service costs and update with quantities, costs and product moves; PO-level charges remain in the overall
   total. Members without price access do not see shipment totals. At narrower widths the cost and details panels move below

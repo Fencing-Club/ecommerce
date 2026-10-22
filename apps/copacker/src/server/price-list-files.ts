@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money } from "@repo/copacker-orders"
 import { drawableText } from "@repo/copacker-shipments/documents"
 import ExcelJS from "exceljs"
 import type { PDFFont } from "pdf-lib"

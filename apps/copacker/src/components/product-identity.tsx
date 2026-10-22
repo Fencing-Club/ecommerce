@@ -1,4 +1,4 @@
-import { variantTitle } from "@repo/copacker-shipments"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { useTranslations } from "use-intl"
 import { Badge } from "@/components/ui/badge"
 
@@ -15,7 +15,7 @@ export function ProductIdentity({
   showPackSize?: boolean
 }) {
   const t = useTranslations("orders.detail")
-  const variant = variantTitle(item.variant)
+  const variant = variantName(item.variant)
   return (
     <div>
       {showName && <p className="leading-snug font-medium">{item.name}</p>}

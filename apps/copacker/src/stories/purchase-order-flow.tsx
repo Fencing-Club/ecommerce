@@ -1,7 +1,8 @@
 import { Toast } from "@base-ui/react/toast"
+import { type OrderInput, orderSubtotal } from "@repo/copacker-orders"
+import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing, type OrderInput } from "@repo/copacker-shipments"
-import { packingTasks } from "@repo/copacker-shipments/packing-requirements"
+import { packingSchema, type Packing } from "@repo/copacker-shipments"
 import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
@@ -235,7 +236,6 @@ const products = [
 const readyDate = daysAgo(-14).toISOString().slice(0, 10)
 const packingCharge = { id: "packing", name: "Packing", amount: 12000 }
 const handlingCharge = { id: "handling", name: "Handling", amount: 2500 }
-const lineTotal = (items: Item[]) => items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
 const productImages = [
   "https://images.unsplash.com/photo-1636714573130-bbb1d4b19cc1?w=160&fit=crop",
   "https://images.unsplash.com/photo-1784371542080-0d38a43bcf23?w=160&fit=crop",
@@ -506,10 +506,10 @@ export function PurchaseOrderFlow({
   const [costSources, setCostSources] = useState<Record<string, string>>({})
   const [proposalMessage, setProposalMessage] = useState("")
   const allItems = shipments.flatMap((shipment) => shipment.items)
-  const subtotal = lineTotal(allItems)
+  const subtotal = orderSubtotal(allItems)
   const total = subtotal + adjustments.reduce((sum, row) => sum + row.amount, 0)
   const acceptedTotal =
-    lineTotal(acceptedShipments.flatMap((shipment) => shipment.items)) +
+    orderSubtotal(acceptedShipments.flatMap((shipment) => shipment.items)) +
     acceptedAdjustments.reduce((sum, row) => sum + row.amount, 0)
   const hasProposalChanges =
     JSON.stringify(shipments) !== JSON.stringify(acceptedShipments) ||
@@ -578,8 +578,8 @@ export function PurchaseOrderFlow({
           .with("removedAdjustment", () => [packingCharge])
           .with("price", "both", "quantity", () => [packingCharge, handlingCharge])
           .otherwise(() => [])
-  const originalTotal = lineTotal(beforeItems) + oldAdjustments.reduce((sum, row) => sum + row.amount, 0)
-  const proposedTotal = lineTotal(afterItems) + newAdjustments.reduce((sum, row) => sum + row.amount, 0)
+  const originalTotal = orderSubtotal(beforeItems) + oldAdjustments.reduce((sum, row) => sum + row.amount, 0)
+  const proposedTotal = orderSubtotal(afterItems) + newAdjustments.reduce((sum, row) => sum + row.amount, 0)
   const changedProductIds = [...new Set([...afterItems, ...beforeItems].map((item) => item.id))].filter((id) => {
     const before = beforeItems.find((item) => item.id === id)
     const after = afterItems.find((item) => item.id === id)
@@ -1498,7 +1498,7 @@ export function PurchaseOrderFlow({
                     Accepted total {cash(total)}. Proposed total{" "}
                     {cash(
                       proposal
-                        ? lineTotal(proposal.shipments.flatMap((shipment) => shipment.items)) +
+                        ? orderSubtotal(proposal.shipments.flatMap((shipment) => shipment.items)) +
                             proposal.adjustments.reduce((sum, row) => sum + row.amount, 0)
                         : proposedTotal
                     )}
@@ -2012,7 +2012,7 @@ export function PurchaseOrderFlow({
                       <span className={cn("text-end whitespace-nowrap @lg/shipment:col-span-2", editable && "pe-2")}>
                         {shipment.items.reduce((sum, item) => sum + item.pieces, 0)} items
                       </span>
-                      <span className="text-end @lg/shipment:col-start-5">{cash(lineTotal(shipment.items))}</span>
+                      <span className="text-end @lg/shipment:col-start-5">{cash(orderSubtotal(shipment.items))}</span>
                     </div>
                     {editable && (
                       <div className="flex items-center gap-2 border-t p-3">
@@ -2232,7 +2232,6 @@ export function PurchaseOrderFlow({
             <div className="flex flex-col gap-4 border-t pt-6 [grid-area:timeline]">
               <PoTimeline
                 orderId={orderId}
-                viewer={viewer === "buyer" ? "Alex Rivera" : "Maya Liu"}
                 viewerOrg={viewer === "buyer" ? "Harbor Goods" : "Northwind Textiles"}
                 counterparty={viewer === "buyer" ? "supplier" : "customer"}
                 timeZone="UTC"

@@ -1,5 +1,5 @@
 // Display labels for the shared persisted packing contract.
-export type { PackingRequirements } from "@repo/copacker-shipments/packing-requirements"
+export type { PackingRequirements } from "@repo/copacker-orders/packing-requirements"
 export const preparationOptions = [
   { value: "none", label: "None" },
   { value: "polybag", label: "Polybag" },

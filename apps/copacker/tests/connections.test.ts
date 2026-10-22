@@ -1,12 +1,9 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 
-const context = vi.hoisted(() => ({ database: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@/db", () => import("./test-db"))
 import {
   connection,
   shopifyFor,
@@ -15,27 +12,18 @@ import {
   amazonSelfAuthEnabled
 } from "../src/server/connections"
 import { encrypt, decrypt } from "../src/server/security"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
 const fetchMock = vi.fn<typeof fetch>()
 
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
   vi.stubEnv("SHOPIFY_CLIENT_ID", "client")
   vi.stubEnv("SHOPIFY_CLIENT_SECRET", "secret")
   fetchMock.mockReset()
   vi.stubGlobal("fetch", fetchMock)
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values({ id: orgId, name: "Buyer", kind: "buyer" })
 })
 afterEach(() => {

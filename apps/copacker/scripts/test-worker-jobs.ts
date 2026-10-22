@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import { fileURLToPath } from "node:url"
-import { orderInputSchema } from "@repo/copacker-shipments"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"

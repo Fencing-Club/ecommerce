@@ -17,7 +17,8 @@ The existing `/api/sales` sync-status endpoint remains unchanged. Shared ingesti
 
 The server chooses the workspace from the authenticated session and checks live membership. Reads require a buyer
 workspace with Sales and Prices access; writes require Products edit and Prices access plus a matching app Origin.
-Session failures return JSON 401 (sign-in needed) or 403 (no authorized workspace), without page redirects.
+The app's request middleware checks that Origin before the route runs, so a write from another origin gets the app's
+403 `{ error }` rather than Problem Details ([application contract](api-contract.md)). Session failures return JSON 401 (sign-in needed) or 403 (no authorized workspace), without page redirects.
 The 401 response advertises the app-specific `Session` authentication scheme; authentication remains the existing WorkOS cookie session.
 All handled responses are private/no-store. Writes accept JSON with `Content-Type: application/json`; DELETE has no body.
 
@@ -25,7 +26,9 @@ Failures use `application/problem+json` with `type: "about:blank"`, standard HTT
 stable `code`, and request-path `instance`. Clients branch on code/status, not prose. Malformed JSON, dates, UUIDs or
 missing request keys return 400; denied access returns 403; missing or foreign mapping IDs return 404; stale state,
 overlap or reused keys return 409; unsupported content type returns 415; an unavailable target variant returns 422.
-Unexpected failures return a generic 500 without database details. This follows [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html).
+Only the request itself (its query, path ID and JSON body) is validated into a 400. Anything else, including a
+validation error inside a service, is unexpected: it returns a generic 500 without database details and is logged as one
+JSON line with `event: "analytics_request_failed"`, the method, the path and the error. This follows [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html).
 
 ## Pagination consistency
 

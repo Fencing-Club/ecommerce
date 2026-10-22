@@ -2,12 +2,13 @@ import { and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { monthlyCosts } from "@/db/schema"
-import { LocalizedError } from "@/i18n/errors"
+import { AccessError, LocalizedError } from "@/i18n/errors"
 import type { Session } from "./workspace-session"
 
+// authorization.ts's requireBuyer, kept here so the worker can load this module without the app's navigation.
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new LocalizedError("buyerWorkspaceRequired")
+    throw new AccessError("buyerWorkspaceRequired")
   }
 }
 

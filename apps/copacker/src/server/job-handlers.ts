@@ -7,7 +7,9 @@ import {
   shownLines
 } from "@repo/copacker-emails"
 import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
-import { buildAwdRequest, money, orderTotal, packingSchema } from "@repo/copacker-shipments"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { money, orderTotal } from "@repo/copacker-orders"
+import { buildAwdRequest, packingSchema } from "@repo/copacker-shipments"
 import { amazonReference } from "@repo/copacker-shipments/amazon-inbound"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
@@ -331,7 +333,7 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
         .map((item) => ({
           quantity: item.pieces,
           name: item.name,
-          detail: [item.variant === "Default Title" ? "" : item.variant, item.supplierSku].filter(Boolean).join(", "),
+          detail: [variantName(item.variant), item.supplierSku].filter(Boolean).join(", "),
           amount: money(item.pieces * item.unitPrice, order.currency)
         })),
       total,

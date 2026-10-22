@@ -1,8 +1,8 @@
 # Copacker marketplaces
 
 Amazon, Shopify and eBay clients, sales collectors and Amazon report parsers for Copacker:
-`@repo/copacker-marketplaces/<module>`. Orders, packing and documents live in
-[`@repo/copacker-shipments`](../../copacker-shipments/docs/README.md).
+`@repo/copacker-marketplaces/<module>`. Orders live in [`@repo/copacker-orders`](../../copacker-orders/docs/README.md),
+and packing and documents in [`@repo/copacker-shipments`](../../copacker-shipments/docs/README.md).
 
 Connecting accounts: `./shopify-auth` exchanges and refreshes Shopify's OAuth tokens, uninstalls the app and checks
 Shopify's callback signature (`verifyShopifyHmac`); `exchangeAmazonCode` in `./amazon` and `exchangeEbayCode` in

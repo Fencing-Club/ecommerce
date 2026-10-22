@@ -58,7 +58,7 @@ describe("Amazon Ads client", () => {
 
   it("rejects a profile in a time zone that doesn't exist", async () => {
     const transport = vi.fn<typeof fetch>(async () => Response.json([{ ...profile, timezone: "Not/AZone" }]))
-    await expect(new AmazonAds(app, "access", transport).profiles("SELLER1")).rejects.toThrow()
+    await expect(new AmazonAds(app, "access", transport).profiles("SELLER1")).rejects.toThrow("timezone")
   })
 
   it("downloads gzipped reports only from Amazon's storage, and turns network failures into retryable errors", async () => {

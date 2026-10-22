@@ -2,15 +2,15 @@ import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import {
   itemTotal,
+  money,
   orderCharges,
   orderInputSchema,
   orderSubtotal,
   orderTotal,
   orderUnits,
-  productLabel,
+  lineName,
   shipmentGroups,
-  supplierChargeTotal,
-  variantTitle
+  supplierChargeTotal
 } from "../src/index"
 
 const order = () =>
@@ -37,6 +37,20 @@ const order = () =>
       supplierCharges: index < 2 ? [{ description: "Packing", amount: 26, basis: "pack" }] : []
     }))
   })
+
+describe("product subtotal", () => {
+  it("adds each line's pieces at its unit price, without services or adjustments", () => {
+    expect(orderSubtotal(order().items)).toBe(800 * 408 + 1120 * 423 + 1200 * 113)
+    expect(orderSubtotal([])).toBe(0)
+  })
+})
+
+describe("product units", () => {
+  it("adds each line's pieces", () => {
+    expect(orderUnits(order().items)).toBe(3120)
+    expect(orderUnits([])).toBe(0)
+  })
+})
 
 describe("product supplier costs", () => {
   it("charges once per assembled pack and keeps PO charges separate", () => {
@@ -65,15 +79,6 @@ describe("product supplier costs", () => {
     const item = order().items[0]!
     expect(supplierChargeTotal(item, { description: "Labeling", amount: 10, basis: "piece" })).toBe(8000)
     expect(supplierChargeTotal(item, { description: "Setup", amount: 5000, basis: "flat" })).toBe(5000)
-  })
-
-  it("adds up the products before services and charges", () => {
-    const data = order()
-    expect(orderUnits(data)).toBe(3120)
-    expect(orderSubtotal(data)).toBe(800 * 408 + 1120 * 423 + 1200 * 113)
-    const withFreight = { ...data, adjustments: [{ description: "Freight", amount: 5000 }] }
-    expect(orderSubtotal(withFreight)).toBe(orderSubtotal(data))
-    expect(orderUnits({ items: [] })).toBe(0)
   })
 
   it("rejects negative service rates and unsafe totals", () => {
@@ -117,12 +122,29 @@ describe("shipment groups", () => {
 })
 
 describe("product names", () => {
-  it("leaves out Shopify's Default Title", () => {
-    expect(variantTitle("Natural")).toBe("Natural")
-    expect(variantTitle("Default Title")).toBeNull()
-    expect(variantTitle("")).toBeNull()
-    expect(variantTitle(null)).toBeNull()
-    expect(productLabel("Canvas tote bag", "Natural")).toBe("Canvas tote bag / Natural")
-    expect(productLabel("Linen apron", "Default Title")).toBe("Linen apron")
+  it("names a product with its variant, leaving out Shopify's Default Title", () => {
+    expect(lineName("Canvas tote bag", "Natural")).toBe("Canvas tote bag / Natural")
+    expect(lineName("Linen apron", "Default Title")).toBe("Linen apron")
+    expect(lineName("Linen apron", "")).toBe("Linen apron")
+  })
+})
+
+describe("money", () => {
+  it.each([
+    [0, "$0"],
+    [400, "$4"],
+    [410, "$4.10"],
+    [401, "$4.01"],
+    [-400, "-$4"],
+    [-410, "-$4.10"],
+    [123400, "$1,234"]
+  ])("formats %i minor units as %s", (amount, expected) => {
+    expect(money(amount)).toBe(expected)
+  })
+
+  it("writes minor units in English unless given a language", () => {
+    expect(money(123450)).toBe("$1,234.50")
+    expect(money(123450, "EUR", "de")).toBe("1.234,50 €")
+    expect(money(123400, "EUR", "de")).toBe("1.234 €")
   })
 })

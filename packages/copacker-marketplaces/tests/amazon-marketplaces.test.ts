@@ -37,7 +37,7 @@ describe("Amazon marketplaces", () => {
     ).toBe(false)
     expect(() =>
       amazonConsentUrl({ marketplace: "DE", applicationId: "a", state: "s", callback: "c", draft: false })
-    ).toThrow()
+    ).toThrow("expected one of")
   })
 })
 

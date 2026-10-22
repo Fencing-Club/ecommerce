@@ -1,5 +1,5 @@
-import type { Address } from "@repo/copacker-shipments"
-import type { OrderInput } from "@repo/copacker-shipments"
+import type { Address, SupplierCatalogStatus } from "@repo/copacker-orders"
+import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
 import { z } from "zod"
@@ -8,7 +8,6 @@ import type { events } from "@/db/schema"
 import type { orderRevisions } from "@/db/schema"
 import type { contacts, documents, orders, shipments, suppliers } from "@/db/schema"
 import type { CatalogProduct } from "@/lib/api"
-import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import type { ForwarderAddress } from "@/server/forwarders"
 import type { ImportProposal } from "@/server/import-proposal"
@@ -364,7 +363,7 @@ export function productHandlers(seen: (url: URL) => void = () => undefined) {
 }
 
 type Quote = {
-  status: BundleQuoteStatus
+  status: SupplierCatalogStatus
   unitPriceMinor: number | null
   available: number | null
   tiers?: Array<{ minimumPieces: number; unitPriceMinor: number }>
@@ -392,6 +391,18 @@ export function catalogMatches(
       }))
     )
   })
+}
+
+// A purchase order's first stop, which every timeline has: the purchase order being created, as its first revision.
+export const createdTimelineEntry: TimelineEntry = {
+  key: "revision-1",
+  at: daysAgo(12),
+  content: { key: "created", values: null },
+  comment: false,
+  author: null,
+  authorOrg: null,
+  revision: orderData({ items: [orderItem({ buyerSku: "TOTE-NAT", supplierSku: "", pieces: 240 })] }),
+  revisionNumber: 1
 }
 
 // PO-1042's timeline: comments from both sides, the supplier's events, and its two revisions.
@@ -458,16 +469,7 @@ export const timelineEntries: TimelineEntry[] = [
     revision: null,
     revisionNumber: null
   },
-  {
-    key: "revision-1",
-    at: daysAgo(12),
-    content: { key: "created", values: null },
-    comment: false,
-    author: null,
-    authorOrg: null,
-    revision: orderData({ items: [orderItem({ buyerSku: "TOTE-NAT", supplierSku: "", pieces: 240 })] }),
-    revisionNumber: 1
-  }
+  createdTimelineEntry
 ]
 
 // PO-1042's history as the database keeps it: its events and comments, and its revisions.

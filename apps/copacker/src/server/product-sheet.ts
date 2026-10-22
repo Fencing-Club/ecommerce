@@ -1,14 +1,9 @@
-import { orderCurrencies, type OrderCurrency } from "@repo/copacker-shipments"
+import type { PriceBasis } from "@repo/copacker-orders"
+import { orderCurrencies, type OrderCurrency } from "@repo/copacker-orders"
 import ExcelJS from "exceljs"
 import { z } from "zod"
 import { LocalizedError } from "@/i18n/errors"
-import {
-  defaultQuantityRules,
-  type PriceBasis,
-  type PriceBreak,
-  pricingProblem,
-  type QuantityRules
-} from "@/lib/catalog-pricing"
+import { defaultQuantityRules, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { csvTable } from "@/lib/csv-table"
 import { variantLabel } from "@/lib/supplier-product"
 import { pricingText } from "./text"

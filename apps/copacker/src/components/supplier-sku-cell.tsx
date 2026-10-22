@@ -1,4 +1,4 @@
-import type { OrderItem } from "@repo/copacker-shipments"
+import type { OrderItem } from "@repo/copacker-orders"
 import { useTranslations } from "use-intl"
 import { WarningNote } from "@/components/common"
 import { cn } from "@/lib/utils"

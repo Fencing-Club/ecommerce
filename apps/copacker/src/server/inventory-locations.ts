@@ -1,3 +1,4 @@
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { z } from "zod"
@@ -5,7 +6,7 @@ import { z } from "zod"
 export const locationMappingSchema = z.strictObject({
   orgId: z.uuid(),
   shopifyDomain: z.string().min(1),
-  locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/),
+  locationId: locationIdSchema,
   classification: z.enum(["merchant", "amazon_mirror", "excluded", "unresolved"])
 })
 type Mapping = z.infer<typeof locationMappingSchema>

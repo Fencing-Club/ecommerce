@@ -1,23 +1,17 @@
 import { randomUUID } from "node:crypto"
 import { inflateSync } from "node:zlib"
-import { PGlite } from "@electric-sql/pglite"
-import { type Destination, type OrderInput, receiverFor } from "@repo/copacker-shipments"
+import { type Destination, type OrderInput } from "@repo/copacker-orders"
+import { receiverFor } from "@repo/copacker-packing-rules"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 const storage = vi.hoisted(() => ({
   files: new Map<string, Uint8Array>()
 }))
-vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 vi.mock("../src/server/storage", async (original) => ({
   ...(await original<typeof import("../src/server/storage")>()),
   putFile: async (key: string, bytes: Uint8Array) => void storage.files.set(key, bytes),
@@ -68,19 +62,29 @@ vi.mock("../src/server/connections", async (original) => ({
   amazonFor: async () => amazon
 }))
 
-import { DELETE, GET, POST } from "../src/server/http/api/inventory/barcodes"
-import { POST as downloadLabels } from "../src/server/http/api/inventory/labels"
-import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/server/http/api/inventory/product-labels"
-import { GET as orderLabels } from "../src/server/http/api/orders/$id/labels"
-import { GET as lineLabel } from "../src/server/http/api/orders/$id/labels/$itemId"
-import { GET as shipmentLabels } from "../src/server/http/api/shipments/$id/labels"
+import * as barcodes from "../src/server/http/api/inventory/barcodes"
+import { POST as labelsRoute } from "../src/server/http/api/inventory/labels"
+import * as labelTypes from "../src/server/http/api/inventory/product-labels"
+import { GET as orderLabelsRoute } from "../src/server/http/api/orders/$id/labels"
+import { GET as lineLabelRoute } from "../src/server/http/api/orders/$id/labels/$itemId"
+import { GET as shipmentLabelsRoute } from "../src/server/http/api/shipments/$id/labels"
 import { deleteDraftOrder } from "../src/server/orders"
 import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
-import { applySchema } from "./database"
+import { served } from "./served"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
+const POST = served(barcodes.POST)
+const GET = served(barcodes.GET)
+const DELETE = served(barcodes.DELETE)
+const downloadLabels = served(labelsRoute)
+const listLabelTypes = served(labelTypes.GET)
+const setLabelTypes = served(labelTypes.PATCH)
+const orderLabels = served(orderLabelsRoute)
+const lineLabel = served(lineLabelRoute)
+const shipmentLabels = served(shipmentLabelsRoute)
+
 const buyerId = randomUUID()
 const supplierOrgId = randomUUID()
 const supplierId = randomUUID()
@@ -91,25 +95,7 @@ const sharedA = "gid://shopify/ProductVariant/3"
 const sharedB = "gid://shopify/ProductVariant/4"
 const unknownVariant = "gid://shopify/ProductVariant/99"
 
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
+const actor = (id: string, kind: "buyer" | "supplier") => testSession({ orgId: id, kind })
 
 async function pdf(pages: number) {
   const doc = await PDFDocument.create()
@@ -193,9 +179,8 @@ const downloadLine = (orderId: string, itemId: string) =>
     params: { id: orderId, itemId }
   })
 
+setUpTestDatabase()
 beforeAll(async () => {
-  await applySchema(pg)
-  context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: supplierOrgId, name: "Supplier", kind: "supplier" }
@@ -222,11 +207,7 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  context.actor = actor(buyerId, "buyer")
-})
-
-afterAll(async () => {
-  await pg.close()
+  signedIn.actor = testSession({ orgId: buyerId, kind: "buyer" })
 })
 
 describe("product barcodes", () => {
@@ -251,7 +232,7 @@ describe("product barcodes", () => {
     expect(multi.status).toBe(400)
     expect(await multi.json()).toEqual({ error: "Upload a barcode PDF with one page" })
     expect((await upload(unknownVariant)).status).toBe(404)
-    context.actor = actor(supplierOrgId, "supplier")
+    signedIn.actor = testSession({ orgId: supplierOrgId, kind: "supplier" })
     expect((await upload(variantB)).status).toBe(403)
     expect((await GET(new Request(barcodeUrl(variantA)))).status).toBe(403)
   })
@@ -551,7 +532,8 @@ describe("label file names", () => {
 
 describe("shipment labels", () => {
   // Someone at the supplier who packs shipments but can't open purchase orders.
-  const packer = (): Session => ({ ...actor(supplierOrgId, "supplier"), role: "member", access: { shipments: "edit" } })
+  const packer = () =>
+    testSession({ orgId: supplierOrgId, kind: "supplier", role: "member", access: { shipments: "edit" } })
   const download = (shipmentId: string, query = "") =>
     shipmentLabels(new Request(`${appUrl()}/api/shipments/${shipmentId}/labels${query}`), {
       params: { id: shipmentId }
@@ -573,7 +555,7 @@ describe("shipment labels", () => {
       .insert(tables.shipments)
       .values({ orderId: po.id, orderRevision: 1, status: "packing", amazonNetwork: "fba" })
       .returning()
-    context.actor = packer()
+    signedIn.actor = packer()
 
     const all = await download(shipment!.id)
     expect(all.status).toBe(200)
@@ -600,7 +582,7 @@ describe("shipment labels", () => {
       .insert(tables.shipments)
       .values({ orderId: po.id, orderRevision: 1, status: "packing", amazonNetwork: "fba" })
       .returning()
-    context.actor = packer()
+    signedIn.actor = packer()
 
     // The cord needs no warning sheet, so its missing FNSKU label leaves nothing to print, with or without a kind.
     for (const query of [`?item=${cord}`, `?item=${cord}&kind=fnsku`]) {

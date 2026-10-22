@@ -1,8 +1,10 @@
-import { validatePacking } from "@repo/copacker-packing-rules"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { type OrderInput } from "@repo/copacker-orders"
+import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
+import { orderDestination, validatePacking } from "@repo/copacker-packing-rules"
 import { addressLines } from "./documents"
-import { palletLabels, type OrderInput, type Packing, type Pallet, orderDestination } from "./index"
+import { packedItemIds, palletLabels, type Packing, type Pallet } from "./index"
 import type { CartonLabel } from "./labels"
-import { packingTasks, type ProductTask } from "./packing-requirements"
 import {
   documentIssues,
   packingRecordIssues,
@@ -179,7 +181,7 @@ export class IncompletePackingList extends Error {
 
 // The PO's lines that some carton holds.
 function packedItems(order: OrderInput, packing: Packing) {
-  const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(packing)
   return order.items.filter((item) => included.has(item.id))
 }
 
@@ -217,7 +219,7 @@ function documentProduct(item: Item, tasks: ProductTask[], supplierSku: string):
     id: item.id,
     supplierSku,
     description: item.name,
-    variant: item.variant === "Default Title" ? undefined : item.variant,
+    variant: variantName(item.variant) ?? undefined,
     piecesPerPack: item.piecesPerSet,
     tasks,
     countryCode: item.packingRequirements?.countryCode || undefined

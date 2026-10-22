@@ -15,7 +15,7 @@ stockTargets:StockTarget[], listings:Listing[], price?:Money|null, cost?:Money|n
 Price/cost fields follow redaction. `ProductMetadata` has `supplierId:Id|null`, `caseQuantity:integer|null`,
 `prepCategory`, `suffocationWarning:boolean` and `productLabel:"standard"|"uploaded"|"none"`.
 
-`ProductPatch` permits `supplierId:Id|null`, `caseQuantity:integer 1..1000000|null`, the `PrepCategory` enum from `@repo/copacker-shipments` and
+`ProductPatch` permits `supplierId:Id|null`, `caseQuantity:integer 1..1000000|null`, the `PrepCategory` enum from `@repo/copacker-orders` and
 `suffocationWarning:boolean`. All fields are optional, but at least one must be present. `VariantPatch` permits
 `supplierSku:Text<255>|null`, `asin:10 uppercase alphanumeric characters|null`, and `stockTargets:StockTargetChange[]`.
 `StockTargetChange = {poolId:Id, quantity:integer 0..1000000|null, unit:"piece"|"sellable_unit"}`. Each pool occurs once;

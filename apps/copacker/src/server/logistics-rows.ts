@@ -1,4 +1,6 @@
-import { amazonNetworkNames, type OrderInput, orderDestination } from "@repo/copacker-shipments"
+import { type OrderInput } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { inArray } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
 import type { ListParty, ListStage, LogisticsRow } from "@/components/logistics-list"

@@ -1,14 +1,8 @@
+import { type OrderInput, type OrderItem, type PrepCategory } from "@repo/copacker-orders"
+import { packingTasks, type ProductTask } from "@repo/copacker-orders/packing-requirements"
+import { type AmazonNetwork, amazonNetworks, isAmazonNetwork } from "@repo/copacker-packing-rules"
 import { cartonLimits, cartonPolicies } from "@repo/copacker-packing-rules/carton-policies"
-import {
-  type AmazonNetwork,
-  amazonNetworkNames,
-  amazonNetworks,
-  isAmazonNetwork,
-  type OrderInput,
-  type OrderItem,
-  type PrepCategory
-} from "./index"
-import { packingTasks, type ProductTask } from "./packing-requirements"
+import { amazonNetworkNames } from "./index"
 
 // One thing the supplier must do, as a code and the values it names, so the app can say it in each reader's language
 // and documents in English (requirementText).

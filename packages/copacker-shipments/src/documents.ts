@@ -1,5 +1,14 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import {
+  type Address,
+  money,
+  orderCharges,
+  orderSubtotal,
+  orderTotal,
+  supplierChargeTotal,
+  type OrderInput
+} from "@repo/copacker-orders"
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import { type Address, money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput } from "./index"
 import { markdownBlocks } from "./markdown"
 import {
   destinationName,
@@ -528,8 +537,8 @@ async function orderPdf(input: {
   const prep = sharedPrep(order)
   for (const item of order.items) {
     const title = wrap(item.name, bold, 10.5, descriptionWidth)
-    const variant =
-      item.variant && item.variant !== "Default Title" ? wrap(item.variant, regular, 9.5, descriptionWidth) : []
+    const variantText = variantName(item.variant)
+    const variant = variantText ? wrap(variantText, regular, 9.5, descriptionWidth) : []
     const text = orderLineText(item, order.currency, prep)
     const details = text.details.flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
     const instructions = kit.markdownLines(text.instructions, 8.5, descriptionWidth)
@@ -586,7 +595,7 @@ async function orderPdf(input: {
   const adjustments = orderCharges(order)
   const summary: Array<[string, number]> = adjustments.length
     ? [
-        ["Subtotal", order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)],
+        ["Subtotal", orderSubtotal(order.items)],
         ...adjustments.map((adjustment): [string, number] => [adjustment.description, adjustment.amount])
       ]
     : []

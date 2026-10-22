@@ -1,8 +1,10 @@
+import { packedItemIds } from "@repo/copacker-shipments"
 import { combinePdfs } from "@repo/copacker-shipments/documents"
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { shipmentDocumentFilename } from "@/server/document-filenames"
 import { errorTextResponse, StatusError } from "@/server/errors"
+import { fileResponse } from "@/server/http-response"
 import { lineLabelFiles, warningLabelFile } from "@/server/product-barcodes"
 import { releasedPacket } from "@/server/shipment-packet"
 import { getFile } from "@/server/storage"
@@ -31,9 +33,9 @@ async function packet(request: Request, context: { params: { id: string } }) {
   const { id } = context.params
   const { shipment, labelOrder, docs, labels, version } = await releasedPacket(s, id, query.get("version") ?? undefined)
   if (section.data === "verify") {
-    return new Response(null, { status: 204, headers: { "Cache-Control": "private, no-store" } })
+    return new Response(null, { status: 204 })
   }
-  const included = new Set(shipment.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const included = packedItemIds(shipment.packing)
   const files: Uint8Array[] = []
   if (section.data === "product_labels") {
     files.push(
@@ -79,13 +81,5 @@ async function packet(request: Request, context: { params: { id: string } }) {
       revision: shipment.revision
     }
   )
-  return new Response(Buffer.from(bytes), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-      "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-      "Content-Security-Policy": "sandbox"
-    }
-  })
+  return fileResponse(Buffer.from(bytes), { filename, contentType: "application/pdf" })
 }

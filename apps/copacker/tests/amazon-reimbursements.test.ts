@@ -1,34 +1,22 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
 import { Amazon, ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { and, eq } from "drizzle-orm"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import { applySchema } from "./database"
 import { reimbursementReport } from "./fixtures/amazon-reimbursements"
-const context = vi.hoisted(() => ({ database: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.database }))
+import { database, setUpTestDatabase } from "./test-db"
+vi.mock("@/db", () => import("./test-db"))
 import { amazonReimbursementsStatus, syncAmazonReimbursements } from "../src/server/amazon-reimbursements"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const orgId = randomUUID(),
   otherId = randomUUID()
 const now = new Date("2026-10-16T12:00:00Z")
 const report = vi.fn<Amazon["report"]>()
 const owned = vi.fn<() => Promise<void>>()
 const input = { orgId, externalAccountId: "SELLER1", revision: 1, amazon: { report } }
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
   vi.resetAllMocks()
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }

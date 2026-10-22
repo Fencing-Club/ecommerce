@@ -1,5 +1,5 @@
+import { type OrderInput } from "@repo/copacker-orders"
 import { cartonList } from "@repo/copacker-packing-rules"
-import { type OrderInput } from "@repo/copacker-shipments"
 import { useLocale, useTranslations } from "use-intl"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { cartonColumns, cartonExample, cartonRows, cartonTemplate } from "@/lib/carton-import"

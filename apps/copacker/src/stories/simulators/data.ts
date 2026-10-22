@@ -1,4 +1,6 @@
-import type { AmazonNetwork, OrderInput, OrderItem, Packing } from "@repo/copacker-shipments"
+import type { OrderInput, OrderItem } from "@repo/copacker-orders"
+import type { AmazonNetwork } from "@repo/copacker-packing-rules"
+import type { Packing } from "@repo/copacker-shipments"
 import type { CartonGroup, PalletValue } from "@/lib/carton-groups"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
 import { northwindFactory, towelOrder } from "@/stories/fixtures/packing"

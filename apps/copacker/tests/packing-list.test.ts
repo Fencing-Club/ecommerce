@@ -1,16 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
 
-const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 
 import {
   cartonGroupLabel,
@@ -22,10 +16,9 @@ import { ShippingPdf } from "../src/documents/shipping-pdf"
 import { httpResponse } from "../src/server/http-response"
 import { GET } from "../src/server/http/api/shipments/$id/packing-list"
 import { towelOrder, towelPacking } from "../src/stories/fixtures/packing"
-import { applySchema } from "./database"
+import { database, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
 
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
 const buyerId = randomUUID()
 const supplierOrgId = randomUUID()
 const strangerOrgId = randomUUID()
@@ -38,25 +31,8 @@ const awd = {
   instructions: ""
 } as const
 
-function actor(id: string, kind: "buyer" | "supplier", access: Session["access"] = {}): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: [],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: Object.keys(access).length ? "member" : "owner",
-    access,
-    workspaces: []
-  }
-}
+const actor = (id: string, kind: "buyer" | "supplier", access: Session["access"] = {}) =>
+  testSession({ orgId: id, kind, role: Object.keys(access).length ? "member" : "owner", access })
 // Someone at the supplier who packs shipments but can't open purchase orders.
 const packer = () => actor(supplierOrgId, "supplier", { shipments: "edit" })
 
@@ -100,9 +76,8 @@ const download = (id: string) =>
     })
   )
 
+setUpTestDatabase()
 beforeAll(async () => {
-  await applySchema(pg)
-  context.current = database
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Harbor Goods", kind: "buyer" },
     { id: supplierOrgId, name: "Northwind Textiles", kind: "supplier" },
@@ -118,11 +93,7 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  context.actor = packer()
-})
-
-afterAll(async () => {
-  await pg.close()
+  signedIn.actor = packer()
 })
 
 describe("packing list", () => {
@@ -169,7 +140,7 @@ describe("packing list", () => {
 
   it("names the shipment by its Amazon ID once it has one, for the buyer too", async () => {
     const ready = await shipment({ status: "ready", amazonShipmentId: "STAR-4XM29CQ" })
-    context.actor = actor(buyerId, "buyer")
+    signedIn.actor = actor(buyerId, "buyer")
     const response = await download(ready.id)
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
@@ -191,13 +162,13 @@ describe("packing list", () => {
   it("keeps to who can open the shipment's labels", async () => {
     const packed = await shipment()
     // Without Shipments access.
-    context.actor = actor(supplierOrgId, "supplier", { orders: "view" })
+    signedIn.actor = actor(supplierOrgId, "supplier", { orders: "view" })
     expect((await download(packed.id)).status).toBe(403)
     // Another supplier can't open the purchase order.
-    context.actor = actor(strangerOrgId, "supplier")
+    signedIn.actor = actor(strangerOrgId, "supplier")
     expect((await download(packed.id)).status).toBe(404)
     // An unknown shipment, and a malformed link.
-    context.actor = packer()
+    signedIn.actor = packer()
     expect((await download(randomUUID())).status).toBe(404)
     expect((await download("abc")).status).toBe(404)
   })

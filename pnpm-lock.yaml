@@ -244,6 +244,9 @@ importers:
       '@repo/copacker-marketplaces':
         specifier: workspace:*
         version: link:../../packages/copacker-marketplaces
+      '@repo/copacker-orders':
+        specifier: workspace:*
+        version: link:../../packages/copacker-orders
       '@repo/copacker-packing-rules':
         specifier: workspace:*
         version: link:../../packages/copacker-packing-rules
@@ -349,9 +352,6 @@ importers:
       ts-pattern:
         specifier: ^5.9.2
         version: 5.9.2
-      ts-tracking-number:
-        specifier: ^1.0.17
-        version: 1.0.17
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -711,6 +711,37 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@24.19.2)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(msw@3.0.3(@types/node@24.19.2)(graphql@16.14.2)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/copacker-orders:
+    dependencies:
+      '@repo/copacker-marketplaces':
+        specifier: workspace:*
+        version: link:../copacker-marketplaces
+      '@repo/copacker-packing-rules':
+        specifier: workspace:*
+        version: link:../copacker-packing-rules
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@repo/oxlint-config':
+        specifier: workspace:*
+        version: link:../oxlint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@vitest/coverage-v8':
+        specifier: 5.0.5
+        version: 5.0.5(@vitest/browser@5.0.5)(vitest@5.0.5)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(msw@3.0.3(@types/node@24.19.2)(graphql@16.14.2)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/copacker-packing-rules:
     devDependencies:
       '@repo/oxlint-config':
@@ -737,6 +768,9 @@ importers:
       '@repo/copacker-marketplaces':
         specifier: workspace:*
         version: link:../copacker-marketplaces
+      '@repo/copacker-orders':
+        specifier: workspace:*
+        version: link:../copacker-orders
       '@repo/copacker-packing-rules':
         specifier: workspace:*
         version: link:../copacker-packing-rules
@@ -749,6 +783,9 @@ importers:
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0(supports-color@10.2.2)
+      ts-tracking-number:
+        specifier: ^1.0.17
+        version: 1.0.17
       unified:
         specifier: ^11.0.5
         version: 11.0.5

@@ -1,19 +1,17 @@
 import { randomUUID } from "node:crypto"
+import { orderInputSchema } from "@repo/copacker-orders"
 import { validatePacking, cartonReceivers, cartonList } from "@repo/copacker-packing-rules"
 import { amazonSources } from "@repo/copacker-packing-rules/carton-policies"
 import { describe, expect, it } from "vitest"
 import {
-  orderInputSchema,
   packingSchema,
   buildAwdRequest,
   buildFbaPlan,
   fbaBoxes,
   splitByNetwork,
-  commercialChanges,
-  approveChanges,
   cartonsValue,
   fbaPallets,
-  money,
+  packedItemIds,
   palletLabels
 } from "../src/index"
 import {
@@ -74,6 +72,14 @@ const packing = packingSchema.parse({
     items: [{ itemId, pieces: 160 }]
   }))
 })
+describe("packedItemIds", () => {
+  it("lists the PO lines a packing's cartons hold, once each", () => {
+    const cartons = [{ items: [{ itemId: "a" }, { itemId: "b" }] }, { items: [{ itemId: "a" }] }]
+    expect([...packedItemIds({ cartons })]).toEqual(["a", "b"])
+    expect(packedItemIds(null).size).toBe(0)
+  })
+})
+
 describe("Supplier piece and carton contract", () => {
   it("groups identical physical cartons and converts pieces to sellable packs", () => {
     expect(validatePacking(order, packing).valid).toBe(true)
@@ -100,23 +106,6 @@ describe("Supplier piece and carton contract", () => {
     // Complete sets still apply everywhere.
     p.cartons[0]!.items[0]!.pieces = 3
     expect(validatePacking(toWarehouse, p).issues.map((issue) => issue.code)).toContain("incompletePacks")
-  })
-  it("requires a delivery address for the buyer's own location", () => {
-    expect(orderInputSchema.safeParse(warehouseOrder()).success).toBe(false)
-  })
-  it("sends every line of a PO to one group of receivers", () => {
-    const mixed = {
-      ...warehouseOrder(randomUUID()),
-      items: [...order.items, { ...order.items[0]!, id: randomUUID(), buyerSku: "x", receiver: "warehouse" }]
-    }
-    expect(orderInputSchema.safeParse(mixed).success).toBe(false)
-  })
-  it("stops at a forwarder on the way to Amazon or the buyer's own location, never ends there", () => {
-    const via = { forwarderId: randomUUID(), addressId: randomUUID() }
-    expect(orderInputSchema.safeParse({ ...order, via }).success).toBe(true)
-    expect(orderInputSchema.safeParse({ ...warehouseOrder(randomUUID()), via }).success).toBe(true)
-    const toForwarder = { ...order, items: order.items.map((item) => ({ ...item, receiver: "forwarder" })) }
-    expect(orderInputSchema.safeParse(toForwarder).success).toBe(false)
   })
   it("holds cartons to 50 lb as shown, 22.67 kg", () => {
     // 50 lb is 22.6796185 kg, so 22.68 kg is over it.
@@ -145,43 +134,6 @@ describe("Supplier piece and carton contract", () => {
     p.cartons[0]!.items[0]!.itemId = randomUUID()
     expect(validatePacking(order, p).valid).toBe(false)
     expect(validatePacking({ ...order, items: [{ ...order.items[0]!, fnsku: "" }] }, packing).valid).toBe(false)
-  })
-  it("applies only allowed commercial changes without mutating historical PO", () => {
-    const p = { ...packing, changes: [{ itemId, supplierSku: "B02-new", unitPrice: 230 }] }
-    expect(commercialChanges(order, p)).toHaveLength(1)
-    const approved = approveChanges(order, p)
-    expect(approved.items[0]?.supplierSku).toBe("B02-new")
-    expect(approved.items[0]?.buyerSku).toBe("foil-2")
-    expect(order.items[0]?.unitPrice).toBe(210)
-  })
-  it("clears a catalog quote when the supplier changes its SKU", () => {
-    const quoted = orderInputSchema.parse({
-      ...order,
-      items: [
-        {
-          ...order.items[0],
-          supplierCatalogStatus: "matched",
-          supplierCatalog: {
-            productId: randomUUID(),
-            revision: 3,
-            supplierSku: "B02",
-            title: "Body cord",
-            currency: "USD",
-            priceMinor: 210,
-            priceBasis: "piece",
-            piecesPerSellablePack: 1,
-            sellablePacksPerCase: null
-          }
-        }
-      ]
-    })
-    const changed = approveChanges(quoted, {
-      ...packing,
-      changes: [{ itemId, supplierSku: "B02-new", unitPrice: 230 }]
-    })
-    expect(changed.items[0]?.supplierCatalog).toBeUndefined()
-    expect(changed.items[0]?.supplierCatalogStatus).toBeUndefined()
-    expect(quoted.items[0]?.supplierCatalog?.supplierSku).toBe("B02")
   })
 })
 
@@ -489,25 +441,5 @@ describe("POs to Amazon with lines for several networks", () => {
     ])
     expect(destinationName(both)).toBe("Amazon FBA and AWD US")
     expect(itemRequirements(both.items[0]!)[0]).toEqual({ code: "packFor", network: "awd_us" })
-  })
-})
-
-describe("money", () => {
-  it.each([
-    [0, "$0"],
-    [400, "$4"],
-    [410, "$4.10"],
-    [401, "$4.01"],
-    [-400, "-$4"],
-    [-410, "-$4.10"],
-    [123400, "$1,234"]
-  ])("formats %i minor units as %s", (amount, expected) => {
-    expect(money(amount)).toBe(expected)
-  })
-
-  it("writes minor units in English unless given a language", () => {
-    expect(money(123450)).toBe("$1,234.50")
-    expect(money(123450, "EUR", "de")).toBe("1.234,50 €")
-    expect(money(123400, "EUR", "de")).toBe("1.234 €")
   })
 })

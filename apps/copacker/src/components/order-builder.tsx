@@ -1,23 +1,25 @@
 import { useSelection } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query"
 import {
-  amazonNetworkNames,
-  amazonNetworks,
   commonPaymentTerms,
   type Destination,
-  isAmazonNetwork,
   orderCharges,
   orderCurrencies,
-  orderDestination,
   type OrderInput,
   orderSubtotal,
   orderTotal,
   orderUnits,
+  shipmentGroups
+} from "@repo/copacker-orders"
+import {
+  amazonNetworks,
+  isAmazonNetwork,
+  orderDestination,
   type ReceiverId,
   receiverFor,
-  receivers,
-  shipmentGroups
-} from "@repo/copacker-shipments"
+  receivers
+} from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { Link, useRouter } from "@tanstack/react-router"
 import { useEffect, useEffectEvent, useId, useRef } from "react"
 import { FormProvider, useController, useFieldArray, useWatch } from "react-hook-form"
@@ -341,7 +343,7 @@ export function OrderBuilder({
                   title={label}
                   heading="h3"
                   lines={group.lines.length}
-                  pieces={orderUnits({ items: groupItems })}
+                  pieces={orderUnits(groupItems)}
                   total={orderTotal({ items: groupItems })}
                   currency={currency}
                   select={
@@ -427,8 +429,8 @@ export function OrderBuilder({
           <div className="flex flex-col gap-4">
             <CostSummaryCard
               lines={lineItems.fields.length}
-              units={orderUnits({ items })}
-              subtotal={orderSubtotal({ items })}
+              units={orderUnits(items)}
+              subtotal={orderSubtotal(items)}
               charges={orderCharges({ items, adjustments })}
               total={orderTotal({ items, adjustments })}
               currency={currency}

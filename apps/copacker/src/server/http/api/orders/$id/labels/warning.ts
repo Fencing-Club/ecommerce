@@ -2,15 +2,14 @@ import { z } from "zod"
 import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { fallbackResponse, fileResponse } from "@/server/http-response"
 import { warningLabelFile } from "@/server/product-barcodes"
-
-const headers = { "Cache-Control": "private, no-store" }
 
 // The PO's sheet of suffocation warning labels, when any of its lines needs them.
 export async function GET(_request: Request, context: { params: { id: string } }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
-    return errorResponse("orderNotFound", 404, headers)
+    return errorResponse("orderNotFound", 404)
   }
   const s = await session()
   requirePage(s, "orders")
@@ -18,18 +17,10 @@ export async function GET(_request: Request, context: { params: { id: string } }
   try {
     const file = await warningLabelFile(order.data.items)
     if (!file) {
-      return errorResponse("noWarningLabels", 404, headers)
+      return errorResponse("noWarningLabels", 404)
     }
-    return new Response(Buffer.from(file.bytes), {
-      headers: {
-        ...headers,
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "sandbox"
-      }
-    })
-  } catch {
-    return errorResponse("warningLabelsNotMade", 500, headers)
+    return fileResponse(Buffer.from(file.bytes), { filename: file.name, contentType: "application/pdf" })
+  } catch (error) {
+    return fallbackResponse(error, "warningLabelsNotMade")
   }
 }

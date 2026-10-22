@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportDecimal, reportRows } from "./report-tsv"
 const required = [
   "Order ID",
   "Return request date",
@@ -58,18 +58,9 @@ export function parseFbmReturns(text: string) {
         orderId: z.string().min(1),
         sku: z.string().min(1),
         quantity: z.coerce.number().int().positive().safe(),
-        labelCost: z
-          .string()
-          .regex(/^-?\d+(\.\d+)?$/)
-          .nullable(),
-        refundedAmount: z
-          .string()
-          .regex(/^-?\d+(\.\d+)?$/)
-          .nullable(),
-        recoveryAmount: z
-          .string()
-          .regex(/^-?\d+(\.\d+)?$/)
-          .nullable()
+        labelCost: reportDecimal.nullable(),
+        refundedAmount: reportDecimal.nullable(),
+        recoveryAmount: reportDecimal.nullable()
       })
       .safeParse({
         ...returnDate(date),

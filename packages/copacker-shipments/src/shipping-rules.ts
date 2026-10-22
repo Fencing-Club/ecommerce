@@ -6,6 +6,7 @@ import {
   palletPolicies,
   palletWeightLimit
 } from "@repo/copacker-packing-rules/pallet-policies"
+import { countryName } from "./countries"
 import type { ShippingCopyKey } from "./shipping-copy"
 import type { DocumentLanguage, ShippingDocumentData, ShippingProduct } from "./shipping-model"
 
@@ -72,7 +73,7 @@ export function productChecks(product: ShippingProduct, language: DocumentLangua
     ...product.tasks.map((task): ShippingCheck => {
       const country =
         task === "countryOfOrigin" && product.countryCode
-          ? (new Intl.DisplayNames([language], { type: "region" }).of(product.countryCode) ?? product.countryCode)
+          ? (countryName(product.countryCode, language) ?? product.countryCode)
           : undefined
       return { title: task, detail: taskDetails[task], ...(country && { values: { country } }) }
     })

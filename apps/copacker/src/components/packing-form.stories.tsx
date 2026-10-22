@@ -1,4 +1,5 @@
-import type { OrderInput, PackingDraft } from "@repo/copacker-shipments"
+import type { OrderInput } from "@repo/copacker-orders"
+import type { PackingDraft } from "@repo/copacker-shipments"
 import { useRouter } from "@tanstack/react-router"
 import { HttpResponse } from "msw/http"
 import { type ComponentProps, useSyncExternalStore } from "react"

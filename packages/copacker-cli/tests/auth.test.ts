@@ -4,8 +4,8 @@ import { createServer } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import { login, logout, profileToken } from "./auth.ts"
-import { LocalStore, secretFile, type LoginSecret } from "./storage.ts"
+import { login, logout, profileToken } from "../src/auth.ts"
+import { LocalStore, secretFile, type LoginSecret } from "../src/storage.ts"
 
 const directories: string[] = []
 afterEach(async () => {

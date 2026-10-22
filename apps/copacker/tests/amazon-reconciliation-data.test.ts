@@ -1,41 +1,16 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
-const context = vi.hoisted(() => ({ database: null as unknown, actor: null as Session | null }))
-vi.mock("@/db", () => ({ db: () => context.database }))
-vi.mock("../src/server/auth", async (original) => ({
-  ...(await original<typeof import("../src/server/auth")>()),
-  session: async () => context.actor
-}))
+import { served } from "./served"
+import { database, pg, setUpTestDatabase } from "./test-db"
+import { signedIn, testSession } from "./test-session"
+vi.mock("@/db", () => import("./test-db"))
+vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
-import { GET } from "../src/server/http/api/analytics/amazon/reconciliation"
-const pg = new PGlite()
-const database = drizzle(pg, { schema: tables })
+import { GET as reconciliation } from "../src/server/http/api/analytics/amazon/reconciliation"
+const GET = served(reconciliation)
 const orgId = randomUUID(),
   otherId = randomUUID()
-function actor(id: string, kind: "buyer" | "supplier"): Session {
-  return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
-    org: {
-      id,
-      kind,
-      name: kind,
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: ["Amazon"],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
 
 const request = (query = "source=returns&from=2026-10-01&to=2026-11-01") =>
   new Request(`https://example.test/api/analytics/amazon/reconciliation?${query}`)
@@ -72,15 +47,8 @@ const baseRow = {
   fnsku: "FN1",
   quantity: 1
 }
-beforeAll(async () => {
-  context.database = database
-  await applySchema(pg)
-})
-afterAll(async () => {
-  await pg.close()
-})
+setUpTestDatabase({ truncate: true })
 beforeEach(async () => {
-  await pg.exec("TRUNCATE organizations CASCADE")
   await database.insert(tables.organizations).values([
     { id: orgId, kind: "buyer", name: "Buyer" },
     { id: otherId, kind: "buyer", name: "Other" }
@@ -88,7 +56,7 @@ beforeEach(async () => {
   await database
     .insert(tables.connections)
     .values({ orgId, provider: "amazon", externalId: "SELLER1", encryptedToken: "test" })
-  context.actor = actor(orgId, "buyer")
+  signedIn.actor = testSession({ orgId, kind: "buyer" })
 })
 describe("Amazon reconciliation endpoint", () => {
   it("uses UTC window boundaries when ranking near the search limit in a non-UTC session", async () => {
@@ -375,11 +343,11 @@ describe("Amazon reconciliation endpoint", () => {
     expect(first.coverage?.finances).toBeNull()
   })
   it("requires buyer, sales and price permissions before exposing evidence", async () => {
-    context.actor = actor(orgId, "supplier")
+    signedIn.actor = testSession({ orgId, kind: "supplier" })
     expect((await GET(request())).status).toBe(403)
-    context.actor = { ...actor(orgId, "buyer"), role: "member", access: { sales: "view" } }
+    signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { sales: "view" } })
     expect((await GET(request())).status).toBe(403)
-    context.actor = { ...actor(orgId, "buyer"), role: "member", access: { prices: "view" } }
+    signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { prices: "view" } })
     expect((await GET(request())).status).toBe(403)
   })
   it("rejects invalid windows and returns no stale-account records when disconnected", async () => {

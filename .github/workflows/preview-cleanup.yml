@@ -67,6 +67,10 @@ jobs:
       max-parallel: 4
       matrix:
         number: ${{ fromJSON(needs.plan.outputs.numbers || '[]') }}
+    permissions:
+      contents: read
+      # Write, to mark the preview comment removed.
+      pull-requests: write
     concurrency:
       group: copacker-preview-${{ matrix.number }}
       cancel-in-progress: false
@@ -90,4 +94,19 @@ jobs:
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       # Re-read provider state and PR state only after acquiring the same lock used by deployment.
-      - run: pnpm --filter copacker preview:remove
+      - id: remove
+        run: pnpm --filter copacker preview:remove
+      # Edit the preview comment CI posted, if there is one, to say the preview is gone.
+      - if: steps.remove.outputs.removed == 'true'
+        run: |
+          marker="<!-- copacker-preview -->"
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")
+          id=$(head -n 1 <<< "$ids")
+          body="$marker
+          ### Preview
+
+          Removed after this pull request closed."
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
+          fi

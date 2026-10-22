@@ -4,7 +4,7 @@
 // signed-in browsers stay in them. Refuses to run against anything but a local or staging database.
 // Usage: pnpm db:seed:e2e (needs WORKOS_API_KEY for the environment the app signs in with).
 import { randomUUID } from "node:crypto"
-import type { Address, OrderInput } from "@repo/copacker-shipments"
+import type { Address, OrderInput } from "@repo/copacker-orders"
 import { and, eq } from "drizzle-orm"
 import { db } from "../src/db/index"
 import {

@@ -1,40 +1,18 @@
 import { randomUUID } from "node:crypto"
-import { PGlite } from "@electric-sql/pglite"
-import type { OrderInput } from "@repo/copacker-shipments"
-import { drizzle } from "drizzle-orm/pglite"
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import type { OrderInput } from "@repo/copacker-orders"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/workspace-session"
-import { applySchema } from "./database"
 
-const context = vi.hoisted(() => ({ current: null as unknown }))
-vi.mock("@/db", () => ({ db: () => context.current }))
+vi.mock("@/db", () => import("./test-db"))
 
 import { forwarderOrder, forwarderOrders } from "../src/server/access"
+import { database, setUpTestDatabase } from "./test-db"
+import { testSession } from "./test-session"
 
-function actor(kind: Session["org"]["kind"], id: string): Session {
-  return {
-    user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true, name: "Tess Tester" },
-    org: {
-      id,
-      kind,
-      name: "Test org",
-      workosId: null,
-      timeZone: null,
-      excludedShopifyTags: [],
-      restockSalesDays: null,
-      restockLeadTimeDays: null,
-      createdAt: new Date()
-    },
-    role: "owner",
-    access: {},
-    workspaces: []
-  }
-}
+const actor = (kind: Session["org"]["kind"], id: string) => testSession({ orgId: id, kind, name: "Test org" })
 
 describe("a forwarder's purchase orders", () => {
-  const pg = new PGlite()
-  const database = drizzle(pg, { schema: tables })
   const yiwu = randomUUID(),
     other = randomUUID(),
     club = randomUUID(),
@@ -43,9 +21,8 @@ describe("a forwarder's purchase orders", () => {
   // Each PO's id, by what it is.
   const ids: Record<string, string> = {}
 
+  setUpTestDatabase()
   beforeAll(async () => {
-    context.current = database
-    await applySchema(pg)
     await database.insert(tables.organizations).values([
       { id: yiwu, name: "Yiwu Logistics", kind: "forwarder" },
       { id: other, name: "Bayline Freight", kind: "forwarder" },
@@ -107,9 +84,6 @@ describe("a forwarder's purchase orders", () => {
       // Naming another buyer's forwarder doesn't route the club's PO through it.
       po("club naming the shop's", club, "submitted", shopYiwu, "2026-09-07T00:00:00Z")
     ])
-  })
-  afterAll(async () => {
-    await pg.close()
   })
 
   it("lists the sent POs passing through a forwarder it joined as, oldest first", async () => {

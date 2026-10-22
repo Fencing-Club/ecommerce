@@ -1,4 +1,4 @@
-import { type Destination, destinationSchema } from "@repo/copacker-shipments"
+import { type Destination, destinationSchema } from "@repo/copacker-orders"
 import { Building2, MapPin, Plus, Warehouse, X } from "lucide-react"
 import { useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"

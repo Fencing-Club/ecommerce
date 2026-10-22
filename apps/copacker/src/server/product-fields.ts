@@ -14,6 +14,7 @@ import {
   variantFields
 } from "@/db/schema"
 import type { ErrorKey } from "@/i18n/errors"
+import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
 import { syncShopifySuppliers } from "./suppliers"
 import type { Session } from "./workspace-session"
@@ -31,8 +32,6 @@ type StockRow = {
   caseQuantity?: number | null
   supplierName?: string | null
 }
-
-export class VariantFieldsError extends StatusError {}
 
 // The database, or a transaction reading within its own locks.
 type Executor = Pick<ReturnType<typeof db>, "select">
@@ -299,9 +298,7 @@ const inputSchema = z.strictObject({
 
 // Saves a variation's supplier SKU, ASIN or stock targets.
 export async function saveVariantFields(s: Session, raw: unknown) {
-  if (s.org.kind !== "buyer") {
-    throw new VariantFieldsError("buyerWorkspaceRequired", 403)
-  }
+  requireBuyer(s)
   const input = inputSchema.safeParse(raw)
   if (!input.success) {
     const field = input.error.issues[0]?.path[0]
@@ -312,7 +309,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
       amazonStockTarget: "enterWholeUnits",
       storeStockTarget: "enterWholeUnits"
     }
-    throw new VariantFieldsError(messages[String(field)] ?? "checkValues", 400)
+    throw new StatusError(messages[String(field)] ?? "checkValues", 400)
   }
   const { variantId, ...fields } = input.data
   const [account] = await db()
@@ -320,7 +317,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
     .from(connections)
     .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
   if (!account) {
-    throw new VariantFieldsError("connectShopifyBeforeEditing", 409)
+    throw new StatusError("connectShopifyBeforeEditing", 409)
   }
   const [stock] = await db()
     .select({ data: stockSnapshots.data })
@@ -334,7 +331,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
       )
     )
   if (stock?.data?.source !== "shopify" || !stock.data.rows.some((row) => row.variantId === variantId)) {
-    throw new VariantFieldsError("productNotSyncedSync", 404)
+    throw new StatusError("productNotSyncedSync", 404)
   }
   const values = {
     ...(fields.supplierSku !== undefined && { supplierSku: fields.supplierSku || null }),

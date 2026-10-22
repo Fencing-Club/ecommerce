@@ -1,4 +1,6 @@
-import { money, orderDestination } from "@repo/copacker-shipments"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { money } from "@repo/copacker-orders"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"
@@ -351,11 +353,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                   {changes.map(({ item, change }) => (
                     <Item key={change.itemId} variant="muted">
                       <ItemContent>
-                        <ItemTitle>
-                          {[item.name, item.variant === "Default Title" ? "" : item.variant]
-                            .filter(Boolean)
-                            .join(" / ")}
-                        </ItemTitle>
+                        <ItemTitle>{[item.name, variantName(item.variant)].filter(Boolean).join(" / ")}</ItemTitle>
                         {prices && change.unitPrice !== item.unitPrice && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
                             {t("invoiceChanges.pricePerUnit")} {money(item.unitPrice, snapshot.currency, locale)}
