@@ -5,8 +5,8 @@ import { db } from "@/db"
 import { connections, forwarders, orders, shipments, stockSnapshots, supplierProfiles, suppliers } from "@/db/schema"
 import { can } from "@/lib/access"
 import { forwarderOrders, orderVisibleTo } from "./access"
+import { stockScopes } from "./inventory-connectors"
 import { isCollective } from "./inventory-products"
-import { stockScopes } from "./stock"
 import type { Session } from "./workspace-session"
 
 export type SearchOrder = {

@@ -1,14 +1,79 @@
-import { connectionSchema, type datasetStatusSchema } from "@repo/copacker-contract"
+import {
+  connectionSchema,
+  connectionInventoryInput,
+  inventoryLocationKey,
+  type datasetStatusSchema
+} from "@repo/copacker-contract"
 import { and, eq } from "drizzle-orm"
 import type { z } from "zod"
 import { db, type Executor } from "@/db"
 import { amazonAdsConnections, connections, organizations, salesSyncs, stockSnapshots } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { CliError } from "./cli-auth"
+import { inventoryLocationEnabled } from "./inventory-connectors"
+import { stockTargetContext } from "./stock-targets"
 import type { Session } from "./workspace-session"
 import { setExcludedShopifyTags } from "./workspace-settings"
 
 type Dataset = z.infer<typeof datasetStatusSchema>
+
+export async function connectionInventory(s: Session, id: string, executor: Executor = db()) {
+  if (s.org.kind !== "buyer" || !isAdmin(s)) {
+    throw new CliError("forbidden", "Only workspace owners and admins can configure connections.", 403)
+  }
+  const [account] = await executor
+    .select({
+      id: connections.id,
+      provider: connections.provider,
+      externalId: connections.externalId,
+      revision: connections.revision,
+      selected: connections.inventoryLocations
+    })
+    .from(connections)
+    .where(and(eq(connections.id, id), eq(connections.orgId, s.org.id)))
+  if (!account) {
+    throw new CliError("not_found", "Connection not found.", 404)
+  }
+  const context = await stockTargetContext(s.org.id, executor, true)
+  return {
+    connectionId: id,
+    revision: account.revision,
+    selected: account.selected,
+    locations: context.locations
+      .filter((location) => location.ref.provider === account.provider && location.ref.accountId === account.externalId)
+      .map((location) => ({ ...location, enabled: inventoryLocationEnabled(account.selected, location.ref) }))
+  }
+}
+
+export async function updateConnectionInventory(s: Session, raw: unknown, executor: Executor = db()) {
+  const input = connectionInventoryInput.parse(raw)
+  return executor.transaction(async (tx) => {
+    await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, s.org.id)).for("update")
+    await tx
+      .select({ id: connections.id })
+      .from(connections)
+      .where(and(eq(connections.id, input.id), eq(connections.orgId, s.org.id)))
+      .for("update")
+    const current = await connectionInventory(s, input.id, tx)
+    if (current.revision !== input.expectedRevision) {
+      throw new CliError("revision_conflict", "Read the connection again before changing its locations.", 409)
+    }
+    const keys = input.locations?.map(inventoryLocationKey) ?? []
+    const supported = new Set(
+      current.locations
+        .filter((location) => location.role === "authoritative")
+        .map((location) => inventoryLocationKey(location.ref))
+    )
+    if (new Set(keys).size !== keys.length || keys.some((key) => !supported.has(key))) {
+      throw new CliError("invalid_location", "Select distinct inventory locations supported by this connection.", 409)
+    }
+    await tx
+      .update(connections)
+      .set({ inventoryLocations: input.locations })
+      .where(and(eq(connections.id, input.id), eq(connections.orgId, s.org.id)))
+    return connectionInventory(s, input.id, tx)
+  })
+}
 const issue = (code: string, message: string) => ({ code, message, path: [] })
 const iso = (date?: Date | null) => date?.toISOString() ?? null
 function datasetState(

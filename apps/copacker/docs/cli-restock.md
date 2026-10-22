@@ -44,10 +44,18 @@ model. Executable discovery describes the supported shape:
   its Copacker connection and provider account. Channel keys are not canonical UUIDs.
 - `targetBasis: "pooled"`: Amazon uses the existing single pooled target and inbound/open-PO reconciliation.
   It does not invent separate FBA/AWD target allocations. Missing pools are surfaced as incomplete coverage.
-- There are no canonical product IDs, per-pool targets, immutable sales coverage IDs or full dependency validation
+- There are no canonical product IDs, immutable sales coverage IDs or full dependency validation
   yet. A retained report is not a consumable purchase plan. Plan and create-PO operations remain undiscoverable.
 - JSON envelopes and declared CSV stdout/local output work. `--file-format`/`--export-id` server artifact exports remain
   unsupported and fail schema validation before execution.
 
 The restock-report retention table requires its generated forward migration through the CI release gate. No local
 migration is run or tested. Tests build the current schema directly and exercise the real dispatcher/client and planner.
+
+## Targets with selected pools
+
+`copacker report restock targets --days 56 --lead-time-days 56 --json` calculates one row per saved variation target.
+It uses explicit member lists, pools raw demand and balances before MOQ/case rounding, and returns assignment and
+availability issues. This live report is not retained and does not choose a shipping destination. Unresolved imports
+make the result partial. See [stock targets](stock-targets.md) for connection selection, migration and existing-screen
+behavior. Connection inventory changes use `connection inventory update` with JSON input and a current revision.

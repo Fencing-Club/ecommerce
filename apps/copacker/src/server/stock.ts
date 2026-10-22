@@ -10,6 +10,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { withJobWake } from "@/server/job-delivery"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
+import { stockScopes, inventoryLocationEnabled } from "./inventory-connectors"
 import { isCollective } from "./inventory-products"
 import { jobRow, type JobInput } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
@@ -20,11 +21,6 @@ import { recordStockDays } from "./stock-days"
 import type { Session } from "./workspace-session"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
-export const stockScopes = {
-  fba: { provider: "amazon", scopeKey: usMarketplaceId },
-  awd: { provider: "amazon", scopeKey: "us" },
-  shopify: { provider: "shopify", scopeKey: "store" }
-} as const
 
 export type StockErrorCode = "shopify_permissions" | "reconnect" | "provider_unavailable" | "refresh_failed"
 
@@ -70,6 +66,17 @@ export async function refreshStock(
     db().transaction(async (tx) => {
       const account = await connectedAccount(org.id, provider, { executor: tx, lock: "update" })
       if (!account) {
+        return null
+      }
+      if (
+        source !== "shopify" &&
+        !inventoryLocationEnabled(account.inventoryLocations, {
+          provider,
+          accountId: account.externalId,
+          scope: scopeKey,
+          externalId: source
+        })
+      ) {
         return null
       }
       const scope = and(

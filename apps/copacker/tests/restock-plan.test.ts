@@ -1,5 +1,7 @@
+import type { InventoryLocationRef, VariantStockTarget } from "@repo/copacker-contract"
 import { describe, expect, it } from "vitest"
 import { restockPlan, supplierLeadTime } from "../src/server/restock-plan"
+import { restockTargetPlan } from "../src/server/restock-target-plan"
 import type { DemandRow } from "../src/server/sales-attribution"
 
 const variantId = "gid://shopify/ProductVariant/1"
@@ -100,6 +102,96 @@ const base = {
 const supplier = { id: "00000000-0000-4000-8000-000000000001", name: "Maker", leadTimeDays: 42 }
 const shopify = { kind: "shopify" as const, locationId: "gid://shopify/Location/1" }
 const amazon = { kind: "amazon" as const }
+
+describe("target pools", () => {
+  const warehouse = (id: number): InventoryLocationRef => ({
+    provider: "shopify",
+    accountId: "store",
+    scope: "store",
+    externalId: `gid://shopify/Location/${id}`
+  })
+  const fba: InventoryLocationRef = {
+    provider: "amazon",
+    accountId: "seller",
+    scope: "ATVPDKIKX0DER",
+    externalId: "fba"
+  }
+  const awd: InventoryLocationRef = { ...fba, scope: "us", externalId: "awd" }
+  const target = (members: InventoryLocationRef[], quantity = 100): VariantStockTarget => ({
+    id: "00000000-0000-4000-8000-000000000001",
+    quantity,
+    destination: { kind: "pool", locations: members }
+  })
+  const locations = [warehouse(1), warehouse(3), fba, awd].map((ref) => ({
+    ref,
+    name: ref.externalId,
+    role: "authoritative" as const,
+    available: true
+  }))
+  const plan = (targets: VariantStockTarget[], input = base, available = locations) =>
+    restockTargetPlan(input, [{ variantId, targets }], [], available)
+
+  it("pools only selected warehouses and rounds once after adding one buffer", () => {
+    const [result] = plan([target([warehouse(1), warehouse(3)])], {
+      ...base,
+      catalog: catalog.map((row) => ({ ...row, caseQuantity: 6 })),
+      productDefaults: new Map([[catalog[0]!.productId, { casePacks: [], minimumOrder: 1200 }]])
+    })
+    expect(result?.line).toMatchObject({
+      available: 90,
+      sold: 1111,
+      targetStock: 100,
+      need: 1121,
+      purchaseUnits: 1200,
+      caseCount: 200
+    })
+    expect(result?.issues).toEqual([])
+  })
+  it("pools FBA/AWD with Amazon demand once and reconciles inbound with both PO destinations", () => {
+    const result = plan([target([fba, awd])], {
+      ...base,
+      amazonSales: { rows: [row("fba", null, 112)], gaps: [] },
+      onOrder: new Map([
+        [
+          variantId,
+          [
+            { id: "same-po", reference: "PO", units: 20, destination: "amazon", locationIds: ["amazon:fba"] },
+            { id: "same-po", reference: "PO", units: 30, destination: "amazon", locationIds: ["amazon:awd"] }
+          ]
+        ]
+      ]),
+      fbaRows: base.fbaRows.map((row) => ({
+        ...row,
+        inventoryDetails: { ...row.inventoryDetails, inboundShippedQuantity: 40 }
+      }))
+    })
+    expect(result[0]?.line).toMatchObject({ available: 70, sold: 112, incoming: 50, need: 92, purchaseUnits: 92 })
+  })
+  it("does not assign FBA demand to a separate AWD target", () => {
+    expect(plan([target([awd])])[0]?.line).toMatchObject({ sold: 0, available: 30, purchaseUnits: 70 })
+  })
+  it("blocks missing members and overlapping targets before producing recommendations", () => {
+    const overlapping = { ...target([warehouse(3)]), id: "00000000-0000-4000-8000-000000000002" }
+    expect(
+      plan([target([warehouse(1), warehouse(3)]), overlapping]).every((result) => result.line?.purchaseUnits === null)
+    ).toBe(true)
+    const missing = locations.map((location) => ({
+      ...location,
+      available: location.ref.externalId !== warehouse(3).externalId
+    }))
+    expect(plan([target([warehouse(1), warehouse(3)])], base, missing)[0]).toMatchObject({
+      issues: ["ineligible_location"],
+      line: { purchaseUnits: null }
+    })
+  })
+  it("keeps no targets as balances only and preserves explicit do-not-stock", () => {
+    expect(plan([])).toEqual([])
+    expect(plan([{ ...target([awd], 0), stocked: false }])[0]?.line).toMatchObject({
+      status: "not_stocked",
+      purchaseUnits: 0
+    })
+  })
+})
 
 describe("restock plan", () => {
   it("restocks one Shopify location from its own stock and sales, never the Amazon mirror", () => {

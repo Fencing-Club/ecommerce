@@ -112,6 +112,7 @@ import { Route as ApiRestockAssignSupplierRouteImport } from './routes/api.resto
 import { Route as ApiRestockChannelsRouteImport } from './routes/api.restock.channels'
 import { Route as ApiRestockPlanRouteImport } from './routes/api.restock.plan'
 import { Route as ApiRestockSuppliersRouteImport } from './routes/api.restock.suppliers'
+import { Route as ApiRestockTargetsRouteImport } from './routes/api.restock.targets'
 import { Route as ApiSalesOrdersRouteImport } from './routes/api.sales.orders'
 import { Route as ApiSalesSyncRouteImport } from './routes/api.sales.sync'
 import { Route as ApiSupplierCatalogExportRouteImport } from './routes/api.supplier-catalog.export'
@@ -684,6 +685,11 @@ const ApiRestockSuppliersRoute = ApiRestockSuppliersRouteImport.update({
   path: '/api/restock/suppliers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRestockTargetsRoute = ApiRestockTargetsRouteImport.update({
+  id: '/api/restock/targets',
+  path: '/api/restock/targets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSalesOrdersRoute = ApiSalesOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -1017,6 +1023,7 @@ export interface FileRoutesByFullPath {
   '/api/restock/channels': typeof ApiRestockChannelsRoute
   '/api/restock/plan': typeof ApiRestockPlanRoute
   '/api/restock/suppliers': typeof ApiRestockSuppliersRoute
+  '/api/restock/targets': typeof ApiRestockTargetsRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
   '/api/sales/sync': typeof ApiSalesSyncRoute
   '/api/supplier-catalog/export': typeof ApiSupplierCatalogExportRoute
@@ -1162,6 +1169,7 @@ export interface FileRoutesByTo {
   '/api/restock/channels': typeof ApiRestockChannelsRoute
   '/api/restock/plan': typeof ApiRestockPlanRoute
   '/api/restock/suppliers': typeof ApiRestockSuppliersRoute
+  '/api/restock/targets': typeof ApiRestockTargetsRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
   '/api/sales/sync': typeof ApiSalesSyncRoute
   '/api/supplier-catalog/export': typeof ApiSupplierCatalogExportRoute
@@ -1310,6 +1318,7 @@ export interface FileRoutesById {
   '/api/restock/channels': typeof ApiRestockChannelsRoute
   '/api/restock/plan': typeof ApiRestockPlanRoute
   '/api/restock/suppliers': typeof ApiRestockSuppliersRoute
+  '/api/restock/targets': typeof ApiRestockTargetsRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
   '/api/sales/sync': typeof ApiSalesSyncRoute
   '/api/supplier-catalog/export': typeof ApiSupplierCatalogExportRoute
@@ -1457,6 +1466,7 @@ export interface FileRouteTypes {
     | '/api/restock/channels'
     | '/api/restock/plan'
     | '/api/restock/suppliers'
+    | '/api/restock/targets'
     | '/api/sales/orders'
     | '/api/sales/sync'
     | '/api/supplier-catalog/export'
@@ -1602,6 +1612,7 @@ export interface FileRouteTypes {
     | '/api/restock/channels'
     | '/api/restock/plan'
     | '/api/restock/suppliers'
+    | '/api/restock/targets'
     | '/api/sales/orders'
     | '/api/sales/sync'
     | '/api/supplier-catalog/export'
@@ -1749,6 +1760,7 @@ export interface FileRouteTypes {
     | '/api/restock/channels'
     | '/api/restock/plan'
     | '/api/restock/suppliers'
+    | '/api/restock/targets'
     | '/api/sales/orders'
     | '/api/sales/sync'
     | '/api/supplier-catalog/export'
@@ -1854,6 +1866,7 @@ export interface RootRouteChildren {
   ApiRestockChannelsRoute: typeof ApiRestockChannelsRoute
   ApiRestockPlanRoute: typeof ApiRestockPlanRoute
   ApiRestockSuppliersRoute: typeof ApiRestockSuppliersRoute
+  ApiRestockTargetsRoute: typeof ApiRestockTargetsRoute
   ApiSupplierCatalogExportRoute: typeof ApiSupplierCatalogExportRoute
   ApiSupplierCatalogImportRoute: typeof ApiSupplierCatalogImportRoute
   ApiSupplierCatalogMatchRoute: typeof ApiSupplierCatalogMatchRoute
@@ -2601,6 +2614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRestockSuppliersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/restock/targets': {
+      id: '/api/restock/targets'
+      path: '/api/restock/targets'
+      fullPath: '/api/restock/targets'
+      preLoaderRoute: typeof ApiRestockTargetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sales/orders': {
       id: '/api/sales/orders'
       path: '/orders'
@@ -3286,6 +3306,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRestockChannelsRoute: ApiRestockChannelsRoute,
   ApiRestockPlanRoute: ApiRestockPlanRoute,
   ApiRestockSuppliersRoute: ApiRestockSuppliersRoute,
+  ApiRestockTargetsRoute: ApiRestockTargetsRoute,
   ApiSupplierCatalogExportRoute: ApiSupplierCatalogExportRoute,
   ApiSupplierCatalogImportRoute: ApiSupplierCatalogImportRoute,
   ApiSupplierCatalogMatchRoute: ApiSupplierCatalogMatchRoute,

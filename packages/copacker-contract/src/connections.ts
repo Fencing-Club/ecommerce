@@ -9,6 +9,7 @@ import {
   type OperationDescriptor
 } from "./protocol.ts"
 import { defineOperation } from "./registry.ts"
+import { inventoryLocationRefSchema, inventoryLocationSchema } from "./stock-targets.ts"
 
 const provider = z.enum(["shopify", "amazon", "ebay", "amazon_ads"])
 export const datasetStatusSchema = z.strictObject({
@@ -42,6 +43,17 @@ const settings = z.discriminatedUnion("provider", [
   z.strictObject({ provider: z.enum(["amazon", "ebay", "amazon_ads"]), editableFields: z.array(z.never()) })
 ])
 const settingsResult = z.strictObject({ connectionId: id, revision, settings })
+export const connectionInventoryInput = z.strictObject({
+  id,
+  expectedRevision: revision,
+  locations: z.array(inventoryLocationRefSchema).max(1000).nullable()
+})
+const inventoryResult = z.strictObject({
+  connectionId: id,
+  revision,
+  selected: z.array(inventoryLocationRefSchema).nullable(),
+  locations: z.array(inventoryLocationSchema.extend({ enabled: z.boolean() }))
+})
 function metadata(operation: string, mutation = false) {
   return {
     operation,
@@ -68,6 +80,31 @@ function metadata(operation: string, mutation = false) {
   } satisfies Omit<OperationDescriptor, "inputSchema" | "outputSchema" | "errorSchema" | "contractVersion" | "mcpName">
 }
 export const connectionOperations = {
+  "connection.inventory.show": defineOperation(
+    {
+      ...metadata("connection.inventory.show"),
+      accessPolicy: {
+        scopes: ["connections:read"],
+        workspaceKinds: ["buyer"],
+        description: "Current buyer owner/admin membership."
+      }
+    },
+    z.strictObject({ id }),
+    inventoryResult
+  ),
+  "connection.inventory.update": defineOperation(
+    {
+      ...metadata("connection.inventory.update", true),
+      accessPolicy: {
+        scopes: ["connections:manage"],
+        workspaceKinds: ["buyer"],
+        description: "Current buyer owner/admin membership."
+      },
+      effects: [{ kind: "local_write", description: "Select inventory locations on this connection." }]
+    },
+    connectionInventoryInput,
+    inventoryResult
+  ),
   "connection.list": defineOperation(
     metadata("connection.list"),
     pageInputSchema.extend({ provider: provider.optional() }),

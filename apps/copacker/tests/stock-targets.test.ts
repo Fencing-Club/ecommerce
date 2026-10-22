@@ -8,6 +8,8 @@ import {
   stockSnapshots,
   variantStockTargetSets
 } from "../src/db/schema"
+import { connectionInventory, updateConnectionInventory } from "../src/server/operation-connections"
+import { readVariantFields, saveVariantFields } from "../src/server/product-fields"
 import {
   listLocationGroups,
   preserveImportedStockTargets,
@@ -77,6 +79,53 @@ beforeEach(async () => {
 })
 
 describe("stock target settings", () => {
+  it("stores a pool on the target and preserves its membership through the existing product field API", async () => {
+    const value = { id: randomUUID(), quantity: 100, destination: { kind: "pool", locations: [first, second] } }
+    await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [value] })
+    expect((await readVariantFields(orgId, accountId)).get(variantId)?.storeStockTarget).toBe(100)
+    await saveVariantFields(s, { variantId, supplierSku: "EDIT", storeStockTarget: 100, amazonStockTarget: null })
+    expect((await readStockTargets(s, selection)).revision).toBe(1)
+    await saveVariantFields(s, { variantId, storeStockTarget: 125 })
+    expect((await readStockTargets(s, selection)).targets).toEqual([{ ...value, quantity: 125 }])
+    expect((await readStockTargets(s, selection)).revision).toBe(2)
+  })
+
+  it("keeps independent variation targets and does not collapse them through a scalar form", async () => {
+    const values = [target(first), target(second)]
+    await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: values })
+    expect((await readVariantFields(orgId, accountId)).get(variantId)?.storeStockTarget).toBeNull()
+    await saveVariantFields(s, { variantId, supplierSku: "EDIT", storeStockTarget: null })
+    expect((await readStockTargets(s, selection)).targets).toEqual(values)
+    await expect(saveVariantFields(s, { variantId, storeStockTarget: 50 })).rejects.toMatchObject({ status: 409 })
+  })
+
+  it("configures connection availability independently of target membership with revision and admin checks", async () => {
+    const [account] = await database.select().from(connections)
+    const id = account!.id
+    await saveStockTargets(s, { ...selection, expectedRevision: 0, targets: [target(first)] })
+    const before = await connectionInventory(s, id)
+    const saved = await updateConnectionInventory(s, { id, expectedRevision: before.revision, locations: [second] })
+    expect(saved.locations.map((location) => location.enabled)).toEqual([false, true])
+    expect(saved.revision).toBe(before.revision + 1)
+    expect((await readStockTargets(s, selection)).issues[0]?.code).toBe("ineligible_location")
+    await expect(
+      updateConnectionInventory(s, { id, expectedRevision: before.revision, locations: [] })
+    ).rejects.toMatchObject({ code: "revision_conflict" })
+    await expect(
+      updateConnectionInventory(s, {
+        id,
+        expectedRevision: saved.revision,
+        locations: [{ ...first, accountId: "other" }]
+      })
+    ).rejects.toMatchObject({ code: "invalid_location" })
+    await expect(
+      connectionInventory(testSession({ orgId, kind: "buyer", role: "member", access: { products: "edit" } }), id)
+    ).rejects.toMatchObject({ status: 403 })
+    expect((await readStockTargets(s, selection)).targets[0]?.destination).toEqual({
+      kind: "location",
+      location: first
+    })
+  })
   it("discovers independent locations without inventing targets and saves a variant buffer", async () => {
     const before = await readStockTargets(s, selection)
     expect(before.locations).toHaveLength(2)

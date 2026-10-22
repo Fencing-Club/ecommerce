@@ -1,17 +1,18 @@
 import { and, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { connections, contacts, inventoryLocationMappings, orders, shipments, stockSnapshots } from "@/db/schema"
+import { stockScopes, inventoryLocationEnabled } from "./inventory-connectors"
 import { locationClassifications } from "./inventory-locations"
 import { amazonPools, onOrderByVariant, withAmazonStock } from "./inventory-products"
+import { readVariantFields } from "./product-fields"
 import { receivedPieces } from "./readiness"
-import { stockScopes } from "./stock"
 
 // Everything the Products page and restock read for a buyer: the Shopify snapshot, how each location counts, and
 // what's on order where.
 export async function inventoryContext(orgId: string) {
   const { scopeKey, provider } = stockScopes.shopify
   const [current] = await db()
-    .select({ domain: connections.externalId, stock: stockSnapshots })
+    .select({ domain: connections.externalId, stock: stockSnapshots, selection: connections.inventoryLocations })
     .from(connections)
     .leftJoin(
       stockSnapshots,
@@ -33,6 +34,18 @@ export async function inventoryContext(orgId: string) {
         )
     : []
   const classifications = locationClassifications(data, saved)
+  for (const location of classifications.keys()) {
+    if (
+      !inventoryLocationEnabled(current?.selection, {
+        provider: "shopify",
+        accountId: current?.domain ?? "",
+        scope: "store",
+        externalId: location
+      })
+    ) {
+      classifications.set(location, "excluded")
+    }
+  }
   // Sent POs only: drafts haven't been ordered, and closed POs have arrived or been cancelled.
   const sentOrders = await db()
     .select({ id: orders.id, data: orders.data })
@@ -62,10 +75,10 @@ export async function inventoryContext(orgId: string) {
   )
   // Amazon's FBA and AWD stock, added to the Shopify variants they match by SKU.
   const [amazon] = await db()
-    .select({ sellerId: connections.externalId })
+    .select({ sellerId: connections.externalId, selection: connections.inventoryLocations })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
-  const amazonSnapshots = amazon
+  const collectedAmazonSnapshots = amazon
     ? await db()
         .select()
         .from(stockSnapshots)
@@ -77,9 +90,26 @@ export async function inventoryContext(orgId: string) {
           )
         )
     : []
+  const amazonSnapshots = collectedAmazonSnapshots.filter(
+    (row) =>
+      row.source !== "shopify" &&
+      row.scopeKey === stockScopes[row.source].scopeKey &&
+      inventoryLocationEnabled(amazon?.selection, {
+        provider: "amazon",
+        accountId: row.externalAccountId,
+        scope: row.scopeKey,
+        externalId: row.source
+      })
+  )
   const fba = amazonSnapshots.flatMap((row) => (row.data?.source === "fba" ? row.data.rows : []))
   const awd = amazonSnapshots.flatMap((row) => (row.data?.source === "awd" ? row.data.rows : []))
-  const rows = data?.rows ?? []
+  const fields = current ? await readVariantFields(orgId, current.domain) : new Map()
+  const rows = (data?.rows ?? []).map((row) => {
+    const value = fields.get(row.variantId)
+    return value
+      ? { ...row, amazonStockTarget: value.amazonStockTarget, storeStockTarget: value.storeStockTarget }
+      : row
+  })
   const pooled = withAmazonStock(rows, fba, awd)
   const withPools = new Map(classifications)
   withPools.set(amazonPools.fba.id, "merchant")

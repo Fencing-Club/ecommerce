@@ -9,12 +9,11 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
   metadata. `createRegistry` rejects duplicate operation, CLI and MCP names, validates handler boundaries and emits
   OpenAPI. Authorization and database transactions belong to the application dispatcher.
 - `json.ts`: duplicate-key-rejecting JSON input and canonical serialization for retained client intents.
-- `stock-targets.ts`: connector/account/scope location identities, named groups and per-variant target schemas;
+- `stock-targets.ts`: connector/account/scope location identities, inline target pools, optional named groups and per-variant target schemas;
   membership resolution rejects mirrors, missing locations and overlapping target membership before planning.
-  These primitives do not advertise target editing operations or change the deployed restock planner.
 - `stock-target-operations.ts`: generic revision-checked variant-target and location-group operations. The server
-  applies workspace authorization, connector eligibility and overlap validation; saved targets await planner/editor
-  integration before they drive purchasing recommendations.
+  applies workspace authorization, connector eligibility and overlap validation. The target report plans each saved
+  target through the app's shared recommendation calculation; connection inventory operations control location eligibility.
 - `restock.ts`: executable channel/report schemas; the app injects its existing carton schema. Current provider-scoped
   identities and pooled targets are explicit, with report evidence and a declared CSV projection.
 - `setup.ts`: executable schemas for account reads, workspace reads, discovery and the five credential operations.

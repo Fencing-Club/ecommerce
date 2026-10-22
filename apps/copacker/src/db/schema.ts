@@ -352,6 +352,9 @@ export const connections = pgTable(
     externalId: text().notNull(),
     encryptedToken: text().notNull(),
     scopes: text().notNull().default(""),
+    // Null preserves connector defaults. Explicit selections are account-scoped, so reconnecting another account
+    // cannot silently inherit the old account's inventory choices.
+    inventoryLocations: jsonb().$type<import("@repo/copacker-contract").InventoryLocationRef[] | null>(),
     createdAt: createdAt()
   },
   (t) => [uniqueIndex("connection_org_provider").on(t.orgId, t.provider)]

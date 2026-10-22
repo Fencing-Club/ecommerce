@@ -290,6 +290,12 @@ export const commands: readonly CommandDefinition[] = [
     "variantId"
   ),
   command("location.group.list", "List location groups and connector locations."),
+  command("report.restock.targets", "Plan each configured variation buffer across its selected locations.", [
+    "days",
+    "lead-time-days"
+  ]),
+  read("connection.inventory.show", "Show a connection's inventory locations."),
+  write("connection.inventory.update", "Select connection inventory locations using JSON input.", guarded),
   write("location.group.save", "Create or update a location group using JSON input.", guarded),
   write("location.group.remove", "Remove an unused location group.", guarded),
   write("location.update", "Classify an observed Shopify location.", [...guarded, "snapshot", "classification"]),

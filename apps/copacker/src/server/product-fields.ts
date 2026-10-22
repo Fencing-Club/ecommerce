@@ -7,6 +7,9 @@ import { z } from "zod"
 import { db } from "@/db"
 import {
   connections,
+  organizations,
+  inventoryLocationGroups,
+  variantStockTargetSets,
   productDefaults,
   shopifyFieldImports,
   stockSnapshots,
@@ -16,6 +19,7 @@ import {
 import type { ErrorKey } from "@/i18n/errors"
 import { requireBuyer } from "./authorization"
 import { StatusError } from "./errors"
+import { stockTargetFields, writeStockTargetFields } from "./stock-target-fields"
 import { preserveImportedStockTargets } from "./stock-targets"
 import { syncShopifySuppliers } from "./suppliers"
 import type { Session } from "./workspace-session"
@@ -56,7 +60,33 @@ export async function readVariantFields(
         variantIds ? inArray(variantFields.variantId, variantIds) : undefined
       )
     )
-  return new Map(rows.map((row) => [row.variantId, row]))
+  const [sets, groups] = await Promise.all([
+    executor
+      .select()
+      .from(variantStockTargetSets)
+      .where(
+        and(
+          eq(variantStockTargetSets.orgId, orgId),
+          eq(variantStockTargetSets.shopifyDomain, domain),
+          variantIds ? inArray(variantStockTargetSets.variantId, variantIds) : undefined
+        )
+      ),
+    executor.select().from(inventoryLocationGroups).where(eq(inventoryLocationGroups.orgId, orgId))
+  ])
+  const result = new Map(rows.map((row) => [row.variantId, row]))
+  for (const set of sets) {
+    result.set(set.variantId, {
+      orgId,
+      shopifyDomain: domain,
+      variantId: set.variantId,
+      supplierSku: null,
+      asin: null,
+      updatedAt: set.updatedAt,
+      ...result.get(set.variantId),
+      ...stockTargetFields(set, groups)
+    })
+  }
+  return result
 }
 
 // Adds each variant's supplier SKU and ASIN, and its bundle components' supplier SKUs, to variants read from Shopify.
@@ -314,42 +344,68 @@ export async function saveVariantFields(s: Session, raw: unknown) {
     throw new StatusError(messages[String(field)] ?? "checkValues", 400)
   }
   const { variantId, ...fields } = input.data
-  const [account] = await db()
-    .select({ domain: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
-  if (!account) {
-    throw new StatusError("connectShopifyBeforeEditing", 409)
-  }
-  const [stock] = await db()
-    .select({ data: stockSnapshots.data })
-    .from(stockSnapshots)
-    .where(
-      and(
-        eq(stockSnapshots.orgId, s.org.id),
-        eq(stockSnapshots.source, "shopify"),
-        eq(stockSnapshots.externalAccountId, account.domain),
-        eq(stockSnapshots.scopeKey, "store")
+  const { domain, saved } = await db().transaction(async (tx) => {
+    await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, s.org.id)).for("update")
+    await tx
+      .select({ id: connections.id })
+      .from(connections)
+      .where(eq(connections.orgId, s.org.id))
+      .orderBy(connections.id)
+      .for("update")
+    const [account] = await tx
+      .select({ domain: connections.externalId })
+      .from(connections)
+      .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
+      .for("update")
+    if (!account) {
+      throw new StatusError("connectShopifyBeforeEditing", 409)
+    }
+    const [stock] = await tx
+      .select({ data: stockSnapshots.data })
+      .from(stockSnapshots)
+      .where(
+        and(
+          eq(stockSnapshots.orgId, s.org.id),
+          eq(stockSnapshots.source, "shopify"),
+          eq(stockSnapshots.externalAccountId, account.domain),
+          eq(stockSnapshots.scopeKey, "store")
+        )
       )
+    if (stock?.data?.source !== "shopify" || !stock.data.rows.some((row) => row.variantId === variantId)) {
+      throw new StatusError("productNotSyncedSync", 404)
+    }
+    const previous = (await readVariantFields(s.org.id, account.domain, [variantId], tx)).get(variantId)
+    await writeStockTargetFields(
+      s.org.id,
+      account.domain,
+      variantId,
+      fields,
+      {
+        amazonStockTarget: previous?.amazonStockTarget ?? null,
+        storeStockTarget: previous?.storeStockTarget ?? null
+      },
+      tx
     )
-  if (stock?.data?.source !== "shopify" || !stock.data.rows.some((row) => row.variantId === variantId)) {
-    throw new StatusError("productNotSyncedSync", 404)
-  }
-  const values = {
-    ...(fields.supplierSku !== undefined && { supplierSku: fields.supplierSku || null }),
-    ...(fields.asin !== undefined && { asin: fields.asin || null }),
-    ...(fields.amazonStockTarget !== undefined && { amazonStockTarget: fields.amazonStockTarget }),
-    ...(fields.storeStockTarget !== undefined && { storeStockTarget: fields.storeStockTarget })
-  }
-  const [saved] = await db()
-    .insert(variantFields)
-    .values({ orgId: s.org.id, shopifyDomain: account.domain, variantId, ...values })
-    .onConflictDoUpdate({
-      target: [variantFields.orgId, variantFields.shopifyDomain, variantFields.variantId],
-      set: values
-    })
-    .returning()
-  await refreshStoredStockFields(s.org.id, account.domain)
+    const values = {
+      ...(fields.supplierSku !== undefined && { supplierSku: fields.supplierSku || null }),
+      ...(fields.asin !== undefined && { asin: fields.asin || null }),
+      ...(fields.amazonStockTarget !== undefined && { amazonStockTarget: fields.amazonStockTarget }),
+      ...(fields.storeStockTarget !== undefined && { storeStockTarget: fields.storeStockTarget })
+    }
+    await tx
+      .insert(variantFields)
+      .values({ orgId: s.org.id, shopifyDomain: account.domain, variantId, ...values })
+      .onConflictDoUpdate({
+        target: [variantFields.orgId, variantFields.shopifyDomain, variantFields.variantId],
+        set: values
+      })
+      .returning()
+    return {
+      domain: account.domain,
+      saved: (await readVariantFields(s.org.id, account.domain, [variantId], tx)).get(variantId)
+    }
+  })
+  await refreshStoredStockFields(s.org.id, domain)
   return {
     supplierSku: saved?.supplierSku ?? null,
     asin: saved?.asin ?? null,

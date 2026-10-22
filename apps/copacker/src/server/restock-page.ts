@@ -1,22 +1,33 @@
+import { resolveStockTargets, targetRestockSelectionSchema } from "@repo/copacker-contract"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
+import { connections, orders, salesSyncs, supplierProducts, suppliers, variantStockTargetSets } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { can } from "@/lib/access"
 import type { Store } from "@/lib/stores"
+import { CliError } from "./cli-auth"
 import { requestInput } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
 import type { ProductDefaults } from "./product-defaults"
 import { readProductDefaults } from "./product-defaults"
-import { restockPlan, type RestockSupplier } from "./restock-plan"
+import {
+  restockPlan,
+  restockWithoutPrices,
+  calculateRestockLine,
+  restockLineStatus,
+  type RestockSupplier
+} from "./restock-plan"
 import { dayRange } from "./restock-report"
 import { resolveRestockSupplier } from "./restock-supplier"
+import { restockTargetPlan } from "./restock-target-plan"
 import type { DemandRow } from "./sales-attribution"
 import { restockDemand } from "./sales-orders"
 import { stockoutDays } from "./stock-days"
+import { stockTargetContext } from "./stock-targets"
 import type { Session } from "./workspace-session"
 
 const days = z.number().int().min(dayRange.min).max(dayRange.max)
@@ -224,7 +235,16 @@ async function restockInputs(orgId: string, days: number) {
   const merchant = inventoryLocations(context.rows, context.classifications)
     .filter((location) => location.classification === "merchant")
     .map((location) => location.id)
+  const targetContext = await stockTargetContext(orgId)
+  const targetSets = context.domain
+    ? await db()
+        .select()
+        .from(variantStockTargetSets)
+        .where(and(eq(variantStockTargetSets.orgId, orgId), eq(variantStockTargetSets.shopifyDomain, context.domain)))
+    : []
   return {
+    targetContext,
+    targetSets,
     orgId,
     days,
     context,
@@ -257,7 +277,7 @@ async function channelPlan(
 ) {
   const { context, demand } = inputs
   const stockouts = await channelStockouts(inputs.orgId, channel, context.rows, demand.sources)
-  return restockPlan({
+  const plan = restockPlan({
     channel,
     catalog: context.rows,
     classifications: context.classifications,
@@ -276,6 +296,107 @@ async function channelPlan(
     // Amazon history is by seller SKU, Shopify's by variant.
     stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
   })
+  // The existing channel UI can express one warehouse or the US Amazon pool. Other pools remain available through
+  // the target report, never silently assigned to one warehouse or duplicated across channel recommendations.
+  return plan.map((line) => {
+    const set = inputs.targetSets.find((set) => set.variantId === line.variantId)
+    if (!set) {
+      return line
+    }
+    const resolved = resolveStockTargets(set.targets, inputs.targetContext.groups, inputs.targetContext.locations)
+    const relevant = resolved.targets.filter((target) =>
+      target.members.some((member) =>
+        channel.kind === "amazon"
+          ? member.provider === "amazon"
+          : member.provider === "shopify" && member.externalId === channel.locationId
+      )
+    )
+    const target = relevant[0]
+    const exact =
+      target &&
+      relevant.length === 1 &&
+      !target.issues.length &&
+      (channel.kind === "amazon"
+        ? target.members.length === 2 &&
+          target.members.every((member) => member.provider === "amazon") &&
+          target.members.some((member) => member.externalId === "fba") &&
+          target.members.some((member) => member.externalId === "awd")
+        : target.members.length === 1)
+    const unresolved = set.unassigned.some((value) => value.source === (channel.kind === "amazon" ? "amazon" : "store"))
+    if (!exact && (target || unresolved || resolved.issues.length)) {
+      return {
+        ...line,
+        status: "blocked" as const,
+        blocked: [...new Set([...line.blocked, "stock_unknown" as const])],
+        targetStock: null,
+        need: null,
+        purchaseUnits: null,
+        caseCount: null,
+        estimatedCostMinor: null
+      }
+    }
+    const base = { ...line, targetStock: target?.quantity ?? null, targetWhere: target?.name ?? line.targetWhere }
+    const notStocked = !target || target.stocked === false
+    const calculated = calculateRestockLine(base, notStocked)
+    const status = restockLineStatus({ ...base, ...calculated })
+    if (notStocked) {
+      return { ...base, ...calculated, status: "not_stocked" as const }
+    }
+    if (line.status === "no_listing") {
+      return {
+        ...base,
+        ...calculated,
+        status: "no_listing" as const,
+        purchaseUnits: null,
+        caseCount: null,
+        estimatedCostMinor: null
+      }
+    }
+    return { ...base, ...calculated, status }
+  })
+}
+
+export async function restockTargetReport(s: Session, raw: unknown) {
+  if (s.org.kind !== "buyer" || !can(s, "restock")) {
+    throw new CliError("forbidden", "Restock access is required.", 403)
+  }
+  const settings = targetRestockSelectionSchema.parse(raw)
+  const inputs = await restockInputs(s.org.id, settings.days)
+  const { context, demand, targetContext, targetSets } = inputs
+  if (!context.data || !context.domain) {
+    throw new CliError("source_unavailable", "Sync the connected product catalog before requesting restock.", 409)
+  }
+  const rows = restockTargetPlan(
+    {
+      catalog: context.rows,
+      classifications: context.classifications,
+      onOrder: context.onOrder,
+      shopifySales: demand.shopifySales,
+      amazonSales: demand.amazonSales,
+      ebaySales: demand.ebaySales,
+      ebayLocationId: inputs.ebayLocationId,
+      fbaRows: context.fbaRows,
+      awdRows: context.awdRows,
+      salesDays: settings.days,
+      leadTimeDays: settings.leadTimeDays,
+      productDefaults: inputs.productDefaults,
+      supplierFor: inputs.lookup.supplierFor,
+      externalSupplierFor: inputs.lookup.externalSupplierFor
+    },
+    targetSets,
+    targetContext.groups,
+    targetContext.locations
+  )
+  return {
+    settings,
+    rows: rows.map((row) => ({
+      ...row,
+      line: row.line && !can(s, "prices") ? restockWithoutPrices(row.line) : row.line
+    })),
+    unassigned: targetSets
+      .filter((set) => set.unassigned.length)
+      .map((set) => ({ variantId: set.variantId, values: set.unassigned }))
+  }
 }
 
 // Restock suggestions for one channel from stored orders, current stock and open POs.

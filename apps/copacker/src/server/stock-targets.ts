@@ -23,8 +23,8 @@ import {
 } from "@/db/schema"
 import { can } from "@/lib/access"
 import { CliError } from "./cli-auth"
+import { stockScopes, inventoryLocationEnabled } from "./inventory-connectors"
 import { locationClassifications } from "./inventory-locations"
-import { stockScopes } from "./stock"
 import type { Session } from "./workspace-session"
 
 function access(s: Session, edit = false) {
@@ -34,9 +34,13 @@ function access(s: Session, edit = false) {
 }
 
 // Collection capabilities, independent of target membership. Unknown connectors do not become eligible by name.
-export async function stockTargetContext(orgId: string, executor: Executor = db()) {
+export async function stockTargetContext(orgId: string, executor: Executor = db(), includeDisabled = false) {
   const accounts = await executor
-    .select({ provider: connections.provider, externalId: connections.externalId })
+    .select({
+      provider: connections.provider,
+      externalId: connections.externalId,
+      inventoryLocations: connections.inventoryLocations
+    })
     .from(connections)
     .where(eq(connections.orgId, orgId))
   const snapshots = await executor.select().from(stockSnapshots).where(eq(stockSnapshots.orgId, orgId))
@@ -79,7 +83,12 @@ export async function stockTargetContext(orgId: string, executor: Executor = db(
       } else if (classification === "excluded") {
         role = "excluded"
       }
-      locations.set(inventoryLocationKey(ref), { ref, name: level.locationName, role, available: true })
+      locations.set(inventoryLocationKey(ref), {
+        ref,
+        name: level.locationName,
+        role,
+        available: includeDisabled || inventoryLocationEnabled(shopify?.inventoryLocations, ref)
+      })
     }
   }
   if (amazon) {
@@ -94,13 +103,15 @@ export async function stockTargetContext(orgId: string, executor: Executor = db(
         ref,
         name: source === "fba" ? "FBA US" : "AWD US",
         role: "authoritative",
-        available: snapshots.some(
-          (snapshot) =>
-            snapshot.source === source &&
-            snapshot.externalAccountId === amazon.externalId &&
-            snapshot.scopeKey === ref.scope &&
-            snapshot.data?.source === source
-        )
+        available:
+          (includeDisabled || inventoryLocationEnabled(amazon.inventoryLocations, ref)) &&
+          snapshots.some(
+            (snapshot) =>
+              snapshot.source === source &&
+              snapshot.externalAccountId === amazon.externalId &&
+              snapshot.scopeKey === ref.scope &&
+              snapshot.data?.source === source
+          )
       })
     }
   }

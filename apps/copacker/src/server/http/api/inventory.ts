@@ -8,7 +8,8 @@ import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
-import { stockSource, stockScopes, stockSelection } from "@/server/stock"
+import { stockScopes } from "@/server/inventory-connectors"
+import { stockSource, stockSelection } from "@/server/stock"
 
 const cursorSchema = z.strictObject({
   snapshotId: z.uuid(),
