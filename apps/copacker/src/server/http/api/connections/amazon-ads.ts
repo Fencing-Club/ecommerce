@@ -1,4 +1,4 @@
-import { adsScope, adsToken, AmazonAds } from "@repo/copacker-marketplaces/amazon-ads"
+import { AdsProfileError, AdsRequestError, adsScope, adsToken, AmazonAds } from "@repo/copacker-marketplaces/amazon-ads"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -9,7 +9,21 @@ import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
 import { amazonAdsApp } from "@/server/connections"
 import { errorResponse, requestInput, requestJson } from "@/server/errors"
+import { logEvent } from "@/server/log"
 import { hash, siteUrlFor } from "@/server/security"
+
+function connectionFailure(error: unknown) {
+  if (error instanceof AdsProfileError) {
+    return { reason: error.reason, received: error.received }
+  }
+  if (error instanceof AdsRequestError) {
+    return { reason: "provider_request", status: error.status }
+  }
+  if (error instanceof z.ZodError) {
+    return { reason: "invalid_response", fields: error.issues.slice(0, 20).map((issue) => issue.path.join(".")) }
+  }
+  return { reason: "unexpected" }
+}
 
 export async function GET(request: Request) {
   const site = siteUrlFor(request.headers)
@@ -88,6 +102,7 @@ export async function GET(request: Request) {
   if (url.searchParams.has("error")) {
     return Response.redirect(settings)
   }
+  let stage = "token_exchange"
   try {
     const result = await adsToken(app, {
       grant_type: "authorization_code",
@@ -95,11 +110,16 @@ export async function GET(request: Request) {
       redirect_uri: callback
     })
     if (!result.refresh_token) {
+      logEvent("error", "amazon_ads_connection_failed", { stage, reason: "missing_refresh_token" })
       return errorResponse("amazonConnectionFailed", 400)
     }
+    stage = "profile_matching"
     await saveAdsConnection(s.org.id, seller.externalId, result.refresh_token, new AmazonAds(app, result.access_token))
+    stage = "queue_sync"
     await queueAdsSync(s.org.id)
-  } catch {
+  } catch (error) {
+    // OAuth diagnostics allowlist fields; never log exception messages, bodies, URLs, state or credentials.
+    logEvent("error", "amazon_ads_connection_failed", { stage, ...connectionFailure(error) })
     return errorResponse("amazonConnectionFailed", 400)
   }
   return Response.redirect(settings)

@@ -16,9 +16,6 @@ import { decrypt, encrypt } from "./security"
 const connectionScope = (orgId: string) => eq(amazonAdsConnections.orgId, orgId)
 export async function saveAdsConnection(orgId: string, sellerId: string, refreshToken: string, ads: AmazonAds) {
   const profiles = await ads.profiles(sellerId)
-  if (!profiles.length) {
-    throw new Error("No matching Amazon Ads seller profiles")
-  }
   await db().transaction(async (tx) => {
     const seller = await connectedAccount(orgId, "amazon", { executor: tx, lock: "update" })
     if (seller?.externalId !== sellerId) {
