@@ -9,7 +9,8 @@ export default defineConfig({
       reporter: ["text", "json-summary"],
       include: ["src/**/*.ts"],
       exclude: ["src/bin.ts", "src/index.ts"],
-      thresholds: { lines: 66, statements: 64, functions: 56, branches: 60 }
+      // Below Linux's coverage, which is lower: the Windows and macOS keychain and browser code only runs on those systems.
+      thresholds: { lines: 59, statements: 58, functions: 46, branches: 58 }
     }
   }
 })
