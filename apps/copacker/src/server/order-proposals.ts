@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/copacker-shipments"
-import { orderDestination, orderInputSchema, orderTotal, receiverFor } from "@repo/copacker-shipments"
+import {
+  itemSchema,
+  orderDestination,
+  orderInputSchema,
+  orderTotal,
+  packingSchema,
+  receiverFor
+} from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -31,11 +38,11 @@ export const proposalSchema = z.object({
   lines: z
     .array(
       z.object({
-        itemId: z.uuid().optional(),
-        supplierSku: z.string().trim().max(255),
+        itemId: itemSchema.shape.id.optional(),
+        supplierSku: packingSchema.shape.changes.unwrap().element.shape.supplierSku,
         title: z.string().trim().min(1).max(500),
-        pieces: z.number().int().min(1).max(1_000_000),
-        unitPrice: z.number().int().min(0).max(100_000_000)
+        pieces: itemSchema.shape.pieces,
+        unitPrice: itemSchema.shape.unitPrice
       })
     )
     .min(1, "errors.keepOneProduct")

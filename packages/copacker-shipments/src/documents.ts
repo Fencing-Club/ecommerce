@@ -1,5 +1,5 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import { money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput } from "./index"
+import { type Address, money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput } from "./index"
 import { markdownBlocks } from "./markdown"
 import {
   destinationName,
@@ -615,6 +615,18 @@ async function orderPdf(input: {
     }
   }
   return kit.save()
+}
+
+// "1 Test Street", "Suite 2", "Testville, WA 98000", "US", leaving out what isn't known.
+export function addressLines(
+  address: Pick<Address, "addressLine1" | "addressLine2" | "city" | "stateOrRegion" | "postalCode" | "countryCode">
+) {
+  return [
+    address.addressLine1,
+    address.addressLine2,
+    [address.city, [address.stateOrRegion, address.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+    address.countryCode
+  ].filter((value): value is string => Boolean(value))
 }
 
 export async function combinePdfs(files: Uint8Array[]) {

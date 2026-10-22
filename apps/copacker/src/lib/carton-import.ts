@@ -1,5 +1,5 @@
 import { cartonRuns } from "@repo/copacker-packing-rules"
-import { type OrderInput } from "@repo/copacker-shipments"
+import { cartonInputSchema, type OrderInput } from "@repo/copacker-shipments"
 import { z } from "zod"
 import { type CartonGroup, groupCartonIds } from "./carton-groups"
 import {
@@ -46,8 +46,9 @@ export type ImportIssue = {
 }
 export type CartonImportResult = { groups: CartonGroup[]; issues: ImportIssue[]; templateMatches: boolean }
 
-const positive = z.number().finite().positive()
-const quantity = positive.int().max(1000000)
+// A row's carton count, at most a packing's cartons.
+const cartonCount = z.number().int().positive().max(1000)
+const { pieces } = cartonInputSchema.shape.items.element.shape
 
 export function parseCartonTable(table: string[][], products: OrderInput["items"]): CartonImportResult {
   const { issues: columnIssues, positions } = matchColumns(table[0] ?? [], cartonColumns)
@@ -70,7 +71,7 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
       continue
     }
     const location = { row, carton: id }
-    if (!id || id.length > 60) {
+    if (!cartonInputSchema.shape.cartonId.safeParse(id).success) {
       issues.push({ ...location, code: "cartonId" })
       continue
     }
@@ -92,16 +93,16 @@ export function parseCartonTable(table: string[][], products: OrderInput["items"
     const measurements = measurementText.map(Number)
     const [length = 0, width = 0, height = 0, weight = 0] = measurements
     let valid = true
-    if (!positive.int().max(1000).safeParse(count).success) {
+    if (!cartonCount.safeParse(count).success) {
       issues.push({ ...location, code: "number", value: "Carton count" })
       valid = false
     }
-    if (!quantity.safeParse(packs).success || packs * product.piecesPerSet > 1000000) {
+    if (!pieces.safeParse(packs).success || !pieces.safeParse(packs * product.piecesPerSet).success) {
       issues.push({ ...location, code: "number", value: "Quantity per carton" })
       valid = false
     }
-    for (const [dimension, value] of measurements.entries()) {
-      if (!positive.max(dimension === 3 ? 1000 : 500).safeParse(value).success) {
+    for (const [dimension, field] of (["length", "width", "height", "weight"] as const).entries()) {
+      if (!cartonInputSchema.shape[field].safeParse(measurements[dimension]).success) {
         issues.push({ ...location, code: "number", value: cartonColumns[dimension + 4] })
         valid = false
       }

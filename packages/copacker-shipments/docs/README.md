@@ -22,6 +22,13 @@ countries addresses use.
 `documents` draws the purchase order and commercial invoice with pdf-lib, and `combinePdfs` joins PDFs. Packing lists and
 checklists come only from the shipping-document data above.
 
+## Shared values
+
+The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
+(`orderCurrencies`), each Amazon network's name (`amazonNetworkNames`), the schemas' field limits (`itemSchema.shape`,
+`cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`) and an address as documents print it
+(`addressLines` in `/documents`).
+
 ## Supplier service costs
 
 `OrderItem.supplierCharges` stores supplier services assigned to that product. Each charge has a description,

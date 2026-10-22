@@ -1,3 +1,4 @@
+import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import type { ErrorKey } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
@@ -6,8 +7,7 @@ import {
   ProductBarcodeError,
   productLabelFile,
   removeProductBarcode,
-  saveProductBarcode,
-  variantIdSchema
+  saveProductBarcode
 } from "@/server/product-barcodes"
 import { isAppOrigin } from "@/server/security"
 
