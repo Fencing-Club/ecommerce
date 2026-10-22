@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { objectEntries } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
+import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem } from "@/components/ui/combobox"
 import { FieldGroup } from "@/components/ui/field"
 import { addressRegions } from "@/lib/address-regions"
 import { loadGooglePlaces } from "@/lib/google-places"
@@ -12,7 +13,6 @@ import type { placeAddress } from "@/lib/place-address"
 import { createPlaceSearch, type AddressSuggestion } from "@/lib/place-search"
 import { FormField, FormInput, useFormField } from "./form-controls"
 import { SelectControl } from "./form-select"
-import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem } from "./ui/combobox"
 
 export const emptyAddress = {
   name: "",

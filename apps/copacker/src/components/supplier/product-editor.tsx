@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/common"
 import { RequiredMark } from "@/components/form-controls"
 import { SaveBar } from "@/components/list/save-bar"
 import { MoneyInput } from "@/components/money-input"
+import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -389,7 +390,7 @@ export function ProductEditor({
                           )}
                           {tracked && (
                             <TableCell className="hidden text-end tabular-nums @lg:table-cell">
-                              {variant.trackInventory ? variant.onHand.toLocaleString(locale) : "—"}
+                              {variant.trackInventory ? variant.onHand.toLocaleString(locale) : <NoValue />}
                             </TableCell>
                           )}
                           <TableCell className={cn(grid.last, "bg-card")}>
@@ -465,7 +466,7 @@ export function ProductEditor({
                     { value: "archived", label: shared("status.archived") }
                   ]}
                   value={product.status}
-                  onChange={(status) => change({ status })}
+                  onValueChange={(status) => change({ status })}
                   label={t("status")}
                   className="w-full"
                 />

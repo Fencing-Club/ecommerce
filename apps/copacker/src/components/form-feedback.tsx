@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { useMessageText } from "@/hooks/use-error-text"
 
-// A form's error, such as the server's. A message that is a full key shows in the person's language.
-export function FormError({ message }: { message?: string }) {
+// A form's error, such as the server's. A message that is a full key shows in the person's language. `id` lets a field
+// name it in aria-describedby, and `className` fits it into a surrounding box, as the timeline's comment box does.
+export function FormError({ message, id, className }: { message?: string; id?: string; className?: string }) {
   const text = useMessageText()
   if (!message) {
     return null
   }
   return (
-    <Alert variant="destructive">
-      <AlertCircle />
+    <Alert id={id} variant="destructive" className={className}>
+      <AlertCircle aria-hidden />
       <AlertDescription className="whitespace-pre-line">{text(message)}</AlertDescription>
     </Alert>
   )

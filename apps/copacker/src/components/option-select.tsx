@@ -4,12 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export type SelectOption<T extends string> = { value: T; label: string; description?: string }
 
 // A select of set choices, typed by their values, for a control that isn't bound to a form: a sort, a filter, or a
-// setting saved as it changes. A React Hook Form field is a FormSelect. Choosing calls `onChange` with the option's own
-// value, so a caller never casts it.
+// setting saved as it changes. A React Hook Form field is a FormSelect. Choosing calls `onValueChange` with the option's
+// own value, so a caller never casts it, as SelectField and Base UI's Select name it.
 export function OptionSelect<T extends string>({
   options,
   value,
-  onChange,
+  onValueChange,
   label,
   labelledBy,
   id,
@@ -22,7 +22,7 @@ export function OptionSelect<T extends string>({
   options: ReadonlyArray<SelectOption<T>>
   // Null shows the placeholder.
   value: T | null
-  onChange: (value: T) => void
+  onValueChange: (value: T) => void
   // Names the select for screen readers when no label beside it does.
   label?: string
   // The id of a label beside it, such as "Rows per page".
@@ -43,7 +43,7 @@ export function OptionSelect<T extends string>({
       value={value}
       onValueChange={(next) => {
         if (next !== null) {
-          onChange(next)
+          onValueChange(next)
         }
       }}
       disabled={disabled}

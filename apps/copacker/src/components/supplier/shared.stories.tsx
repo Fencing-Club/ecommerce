@@ -1,27 +1,12 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { photo } from "@/stories/fixtures/supplier"
-import { Amounts, ProductThumb, StatusBadge } from "./shared"
+import { Amounts, StatusBadge } from "./shared"
 
-// The pieces the supplier pages share: a product's photo, status badges and amounts.
+// The pieces the supplier pages share: status badges and amounts.
 const meta = preview.meta({
   title: "Components/Supplier workspace/Shared",
-  component: ProductThumb,
-  args: { image: photo }
-})
-
-export const Thumbnails = meta.story({
-  render: () => (
-    <div className="flex gap-2" data-testid="thumbs">
-      <ProductThumb image={photo} />
-      <ProductThumb image={null} />
-    </div>
-  ),
-  play: async ({ canvas }) => {
-    const image = canvas.getByTestId("thumbs").querySelector("img")
-    await expect(image).toHaveAttribute("src", `/api/product-images?key=${encodeURIComponent(photo.key)}`)
-    await expect(canvas.getByTestId("thumbs").querySelectorAll("svg")).toHaveLength(1)
-  }
+  component: StatusBadge,
+  args: { status: "active" }
 })
 
 export const Statuses = meta.story({
@@ -55,5 +40,6 @@ export const AmountsInCurrencies = meta.story({
     await expect(canvas.getByText("$12,840")).toBeVisible()
     await expect(canvas.getByText("€960")).toBeVisible()
     await expect(canvas.getByText("—")).toBeVisible()
+    await expect(canvas.getByText("None")).toHaveClass("sr-only")
   }
 })

@@ -1,8 +1,8 @@
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Dialog } from "@/components/ui/dialog"
 import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
 import { AmazonConnect } from "./amazon-connect"
-import { Dialog } from "./ui/dialog"
 
 const submitted = fn<(marketplace: FormDataEntryValue | null) => void>()
 const meta = preview.meta({

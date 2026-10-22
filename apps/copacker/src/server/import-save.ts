@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto"
-import { destinationSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
+import { destinationSchema, orderInputSchema } from "@repo/copacker-orders"
 import { receiverFor } from "@repo/copacker-packing-rules"
 import { and, eq } from "drizzle-orm"
+import invariant from "tiny-invariant"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { chargeInMinorUnits, importTotals, priceInMinorUnits } from "@/lib/import-totals"
 import { requireBuyer } from "./authorization"
-import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
+import { importProposalSchema } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
 import type { Session } from "./workspace-session"
 
@@ -75,16 +77,18 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
     if (adjustment.amount === null) {
       throw new LocalizedError("confirmAdjustments")
     }
-    const negative = adjustment.amount.startsWith("-")
-    return {
-      description: adjustment.description,
-      amount: (negative ? -1 : 1) * priceInMinorUnits(negative ? adjustment.amount.slice(1) : adjustment.amount)
-    }
+    return { description: adjustment.description, amount: chargeInMinorUnits(adjustment.amount) }
   })
   const { destination: _, ...order } = input
   const proposed = orderInputSchema.parse({ ...order, currency: proposal.currency, items, adjustments })
-  if (proposal.documentTotal !== null && priceInMinorUnits(proposal.documentTotal) !== orderTotal(proposed)) {
-    throw new LocalizedError("documentTotalDiffers")
+  // The document's total must be an amount, and the review's totals must make it, as the review showed.
+  if (proposal.documentTotal !== null) {
+    const documentTotal = priceInMinorUnits(proposal.documentTotal)
+    const totals = importTotals(proposal)
+    invariant(totals, "Every line and charge has its amount by now")
+    if (totals.total !== documentTotal) {
+      throw new LocalizedError("documentTotalDiffers")
+    }
   }
   const prepared = await prepareOrder(s, proposed)
   if (

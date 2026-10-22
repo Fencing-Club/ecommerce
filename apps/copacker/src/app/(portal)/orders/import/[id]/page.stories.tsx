@@ -1,6 +1,6 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { type ReviewProduct } from "@/components/import-review"
+import { type ReviewProduct } from "@/components/import-review-lines"
 import type { poImports } from "@/db/schema"
 import { importProposalSchema } from "@/server/import-proposal"
 import { daysAgo } from "@/stories/fixtures/orders"

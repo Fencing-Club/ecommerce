@@ -1,7 +1,7 @@
 import type { Address } from "@repo/copacker-orders"
+import { addressLine } from "@repo/copacker-orders"
 import { useTranslations } from "use-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { addressLine } from "@/lib/address"
 import { AddressSummary } from "./partner-address"
 import { ShipmentAddress } from "./shipment-packing-details"
 

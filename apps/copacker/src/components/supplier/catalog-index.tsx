@@ -3,13 +3,13 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
+import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { adjustmentLabel } from "@/lib/catalog-pricing"
-import { cn } from "@/lib/utils"
-import { rowLink, StatusBadge } from "./shared"
+import { StatusBadge } from "./shared"
 
 type CatalogRow = {
   id: string
@@ -84,9 +84,13 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
           </TableHeader>
           <TableBody>
             {shown.map((catalog) => (
-              <TableRow key={catalog.id} className="relative">
+              <LinkRow key={catalog.id} href={`/catalogs/${catalog.id}`}>
                 <TableCell className="whitespace-normal">
-                  <Link to="/catalogs/$id" params={{ id: catalog.id }} className={cn("font-medium", rowLink)}>
+                  <Link
+                    to="/catalogs/$id"
+                    params={{ id: catalog.id }}
+                    className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
+                  >
                     {catalog.title}
                   </Link>
                 </TableCell>
@@ -109,7 +113,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
                   )}
                 </TableCell>
                 <TableCell className="text-end tabular-nums">{catalog.products.toLocaleString(locale)}</TableCell>
-              </TableRow>
+              </LinkRow>
             ))}
           </TableBody>
         </Table>

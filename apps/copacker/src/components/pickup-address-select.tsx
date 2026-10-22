@@ -1,10 +1,10 @@
 import { MapPin, Plus } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
+import { Field } from "@/components/ui/field"
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FormLabel } from "./form-controls"
 import type { PartnerAddress } from "./partner-address"
-import { Field } from "./ui/field"
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "./ui/select"
 
 const addAddress = "add-address"
 

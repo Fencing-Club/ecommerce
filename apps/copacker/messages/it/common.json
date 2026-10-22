@@ -3,6 +3,7 @@
   "skipToContent": "Vai al contenuto",
   "breadcrumb": "Percorso di navigazione",
   "about": "Info: {label}",
+  "noValue": "Nessuno",
   "errors": {
     "generic": "Qualcosa è andato storto. Riprova.",
     "offline": "Impossibile raggiungere Copacker. Controlla la connessione e riprova."
@@ -264,8 +265,6 @@
     "viewPurchaseOrder": "Visualizza ordine di acquisto",
     "viewOrder": "Visualizza ordine di acquisto",
     "noMatchesDescription": "Prova un’altra ricerca o cambia i filtri.",
-    "previousPage": "Pagina precedente",
-    "nextPage": "Pagina successiva",
     "orders": {
       "title": "Ordini di acquisto",
       "reference": "Ordine di acquisto",

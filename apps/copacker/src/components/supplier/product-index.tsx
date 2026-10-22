@@ -5,20 +5,23 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
+import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
 import { SelectionBar } from "@/components/list/selection-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
+import { NoValue } from "@/components/no-value"
+import { ProductThumb } from "@/components/product-thumb"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { useSetProductsActiveMutation } from "@/lib/supplier-api"
-import type { ProductImage } from "@/lib/supplier-product"
+import { imageUrl, type ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { ProductThumb, rowLink, StatusBadge } from "./shared"
+import { StatusBadge } from "./shared"
 
 export type ProductRow = {
   id: string
@@ -220,13 +223,13 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
             {rows.map((product) => {
               const price = priceRange(product.variants)
               return (
-                <TableRow
+                <LinkRow
                   key={product.id}
-                  className="relative"
+                  href={`/products/${product.id}`}
                   data-state={selected.has(product.id) ? "selected" : undefined}
                 >
                   {editable && (
-                    <TableCell className="relative z-10">
+                    <TableCell>
                       <Checkbox
                         aria-label={shared("select", { name: product.title })}
                         checked={selected.has(product.id)}
@@ -242,12 +245,15 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   )}
                   <TableCell className="whitespace-normal">
                     <div className="flex items-center gap-3">
-                      <ProductThumb image={product.images[0] ?? null} className="hidden @sm:flex" />
+                      <ProductThumb
+                        url={product.images[0] ? imageUrl(product.images[0]) : null}
+                        className="hidden @sm:flex"
+                      />
                       <div className="flex min-w-0 flex-col">
                         <Link
                           to="/products/$id"
                           params={{ id: product.id }}
-                          className={cn("line-clamp-2 font-medium", rowLink)}
+                          className="focus-ring line-clamp-2 rounded-sm font-medium underline-offset-4 hover:underline"
                         >
                           {product.title}
                         </Link>
@@ -270,14 +276,14 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   <TableCell className={columns.inventory}>
                     <Inventory variants={product.variants} />
                   </TableCell>
-                  <TableCell className={columns.category}>{product.category ?? "—"}</TableCell>
+                  <TableCell className={columns.category}>{product.category ?? <NoValue />}</TableCell>
                   <TableCell className={columns.catalogs}>{product.catalogs.toLocaleString(locale)}</TableCell>
                   {prices && (
                     <TableCell className="text-end tabular-nums">
                       {price ?? <WarningNote>{shared("noPrice")}</WarningNote>}
                     </TableCell>
                   )}
-                </TableRow>
+                </LinkRow>
               )
             })}
           </TableBody>

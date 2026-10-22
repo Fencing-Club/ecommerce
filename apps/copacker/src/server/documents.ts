@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { OrderInput } from "@repo/copacker-orders"
+import { addressLines, type OrderInput } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames, packedItemIds } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
@@ -19,7 +19,6 @@ import {
   suppliers,
   orderRevisions
 } from "@/db/schema"
-import { addressLines } from "@/lib/address"
 import { amazonDestinationAddresses } from "./amazon-shipments"
 import { amazonFor } from "./connections"
 import { getFile, putFile } from "./storage"

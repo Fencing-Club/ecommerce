@@ -118,9 +118,10 @@ export const AddForEveryChannel = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Add cost" }))
     const dialog = await screen.findByRole("dialog")
     await expect(within(dialog).getByRole("combobox", { name: "Channel" })).toHaveTextContent("All channels")
-    await expect(dialog).toHaveTextContent("EUR")
+    const amount = within(dialog).getByRole("textbox", { name: "Amount a month" })
+    await expect(amount).toHaveAccessibleDescription("€")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bookkeeping")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "Amount a month" }), "250,50")
+    await userEvent.type(amount, "250.50")
     await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
     await waitFor(() =>
       expect(sent).toEqual([

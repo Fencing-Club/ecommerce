@@ -47,7 +47,7 @@ export function MonthlyCosts({
 }) {
   const t = useTranslations("settings.monthlyCosts")
   return (
-    <Card className="gap-0 py-0">
+    <Card flush>
       <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{t("count", { count: costs.length })}</p>
         {admin && <AddMonthlyCost currency={currency} />}

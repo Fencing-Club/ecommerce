@@ -3,6 +3,7 @@
   "skipToContent": "跳到主要内容",
   "breadcrumb": "面包屑导航",
   "about": "关于{label}",
+  "noValue": "无",
   "errors": {
     "generic": "出了点问题，请重试。",
     "offline": "无法连接到 Copacker。请检查网络连接后重试。"
@@ -264,8 +265,6 @@
     "viewPurchaseOrder": "查看采购订单",
     "viewOrder": "查看采购订单",
     "noMatchesDescription": "试试其他搜索词，或调整筛选条件。",
-    "previousPage": "上一页",
-    "nextPage": "下一页",
     "orders": {
       "title": "采购订单",
       "reference": "采购订单",

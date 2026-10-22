@@ -3,6 +3,7 @@
   "skipToContent": "Aller au contenu",
   "breadcrumb": "Fil d’Ariane",
   "about": "À propos de : {label}",
+  "noValue": "Aucun",
   "errors": {
     "generic": "Une erreur s’est produite. Réessayez.",
     "offline": "Impossible de joindre Copacker. Vérifiez votre connexion et réessayez."
@@ -264,8 +265,6 @@
     "viewPurchaseOrder": "Voir le bon de commande",
     "viewOrder": "Voir le bon de commande",
     "noMatchesDescription": "Essayez une autre recherche ou modifiez vos filtres.",
-    "previousPage": "Page précédente",
-    "nextPage": "Page suivante",
     "orders": {
       "title": "Bons de commande",
       "reference": "Bon de commande",

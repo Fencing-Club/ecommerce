@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { StatusBadge, type StatusTone } from "@/components/common"
+import { NoValue } from "@/components/no-value"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -64,7 +65,7 @@ function Delta({
   format: (value: number) => string
 }) {
   if (before === null) {
-    return <span className="font-medium">{after === null ? "—" : format(after)}</span>
+    return <span className="font-medium">{after === null ? <NoValue /> : format(after)}</span>
   }
   if (after === null) {
     return <span className="text-muted-foreground line-through">{format(before)}</span>

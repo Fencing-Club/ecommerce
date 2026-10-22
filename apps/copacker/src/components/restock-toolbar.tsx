@@ -81,7 +81,7 @@ export function RestockToolbar({
       <OptionSelect
         options={channels.map((item) => ({ value: item.key, label: item.label }))}
         value={channel}
-        onChange={onChannelChange}
+        onValueChange={onChannelChange}
         disabled={!channels.length}
         label={t("location")}
         icon={<Warehouse className="text-muted-foreground" />}
@@ -94,7 +94,7 @@ export function RestockToolbar({
           ...suppliers.map((row) => ({ value: row.id, label: row.name }))
         ]}
         value={supplier}
-        onChange={onSupplierChange}
+        onValueChange={onSupplierChange}
         label={t("supplier")}
         icon={<Factory className="text-muted-foreground" />}
         className="min-w-40"

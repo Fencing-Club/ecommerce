@@ -4,6 +4,7 @@ import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Attention, CardLink, DeltaPill } from "@/components/overview-sections"
+import { ProductThumb } from "@/components/product-thumb"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,11 +13,11 @@ import type { Permissions } from "@/lib/access"
 import { canOpen } from "@/lib/access"
 import { rangeLabel } from "@/lib/date-range"
 import { formatDate, formatNumber } from "@/lib/format"
+import { imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import type { AttentionItem } from "@/server/overview"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 import { OrdersChart } from "./overview-chart"
-import { ProductThumb } from "./shared"
 
 type Data = SupplierOverviewData
 
@@ -364,7 +365,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
                   {inventory.watch.map((row) => (
                     <Item key={row.id} size="sm" className="px-0">
                       <ItemMedia>
-                        <ProductThumb image={row.image} className="size-9" />
+                        <ProductThumb url={row.image && imageUrl(row.image)} className="size-9" />
                       </ItemMedia>
                       <ItemContent className="min-w-0">
                         <ItemTitle className="w-full truncate">{row.title}</ItemTitle>

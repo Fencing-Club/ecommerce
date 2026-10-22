@@ -1,14 +1,12 @@
-import { CircleAlert, Lock, Users } from "lucide-react"
+import { Lock, Users } from "lucide-react"
 import { useId } from "react"
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { SubmitButton } from "@/components/form-feedback"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/use-action-form"
-import { useMessageText } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 
 export type PostedComment = { message: string; visibility: "internal" | "shared" }
@@ -31,7 +29,6 @@ export function TimelineComment({
 }) {
   const hintId = useId(),
     errorId = useId()
-  const messageText = useMessageText()
   const t = useTranslations("orders.timeline.comment")
   const { form, submit } = useActionForm({
     schema,
@@ -67,16 +64,11 @@ export function TimelineComment({
             }
           }}
         />
-        {error && (
-          <Alert
-            id={errorId}
-            variant="destructive"
-            className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint"
-          >
-            <CircleAlert aria-hidden />
-            <AlertDescription className="text-meta/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
-          </Alert>
-        )}
+        <FormError
+          id={errorId}
+          message={error}
+          className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint *:data-[slot=alert-description]:text-meta/5"
+        />
         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/50 px-2 py-1.5">
           <Select
             value={visibility.value}

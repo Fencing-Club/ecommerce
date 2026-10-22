@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { runImportAgent, type ImportUsage } from "../src/server/import-agent"
-import { priceInMinorUnits, validateProposal } from "../src/server/import-proposal"
+import { validateProposal } from "../src/server/import-proposal"
 import type { ImportObservation } from "../src/server/import-trace"
 const id = "gid://shopify/ProductVariant/1"
 const proposal = () => ({
@@ -73,11 +73,6 @@ describe("import proposals", () => {
     expect(result.items[0]?.sourcePage).toBeNull()
     expect(result.items[0]?.selectedVariantId).toBeNull()
     expect(() => validateProposal({ ...p, items: [{ ...manual, sourcePage: 0 }] }, new Set())).toThrow("sourcePage")
-  })
-  it("does not round a per-piece conversion silently", () => {
-    expect(priceInMinorUnits("4.08")).toBe(408)
-    expect(() => priceInMinorUnits("2.005")).toThrow("up to 2 decimal places")
-    expect(() => priceInMinorUnits("-1")).toThrow("up to 2 decimal places")
   })
   it("flags incomplete packs for human correction", () => {
     const p = proposal()

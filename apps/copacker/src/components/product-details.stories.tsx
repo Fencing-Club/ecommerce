@@ -3,7 +3,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { editable, productDefaults, suppliers } from "@/stories/fixtures/catalog"
 import { member } from "@/stories/workspace"
-import { ProductDetails, ProductImage } from "./product-details"
+import { ProductDetails } from "./product-details"
 
 // What each story's panel saved, in order: the product's details and each variation's fields.
 let saved: { url: string; body: Record<string, unknown> }[] = []
@@ -227,20 +227,5 @@ export const Closed = meta.story({
   args: { open: false },
   play: async () => {
     await expect(screen.queryByRole("dialog")).toBeNull()
-  }
-})
-
-export const Images = meta.story({
-  render: () => (
-    <div className="flex items-center gap-3">
-      <ProductImage url={null} />
-      <ProductImage url={null} small />
-      <ProductImage url="/marketing/og.jpg" />
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    // A missing photo shows a placeholder; a photo is decorative beside the product's name.
-    await expect(canvasElement.querySelectorAll("span[aria-hidden=true]")).toHaveLength(2)
-    await expect(canvasElement.querySelector("img")).toHaveAttribute("alt", "")
   }
 })

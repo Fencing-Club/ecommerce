@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import { AmazonAdsCard } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
@@ -39,7 +38,7 @@ type Connection = {
 // Each store's name. What connecting it brings is under settings.integrations.stores.
 const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
 
-const cardAction = cn(buttonVariants({ variant: "outline", className: "h-11 sm:h-[34px]" }))
+const cardAction = buttonVariants({ variant: "outline", size: "responsive" })
 
 // Each card has an explicit Connect or Manage action. Members can inspect connection details without changing them.
 export function Integrations({
@@ -218,7 +217,7 @@ function Connected({
       status={status}
       action={
         admin && (
-          <DialogTrigger render={<Button variant="outline" className="h-11 sm:h-[34px]" />}>
+          <DialogTrigger render={<Button variant="outline" size="responsive" />}>
             {t("manage")}
             <span className="sr-only"> {storeNames[store]}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />

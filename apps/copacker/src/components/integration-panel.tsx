@@ -1,12 +1,12 @@
 import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StatusBadge } from "./common"
 import { InventorySyncRow } from "./inventory-sync"
 import { FinancialDataSyncCard, OrdersSyncRow } from "./sales-orders"
 import { StoreLogo } from "./store-logos"
-import { Button } from "./ui/button"
-import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 
 // Management stays close to the card and grows with its contents, rather than filling an empty drawer.
 export function IntegrationPanel({
@@ -70,9 +70,7 @@ export function IntegrationPanelFooter({ children }: { children: React.ReactNode
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-5 py-4 sm:px-6">
       <div className="flex flex-wrap items-center gap-1">{children}</div>
-      <DialogClose render={<Button variant="outline" className="hidden h-[34px] sm:inline-flex" />}>
-        {t("close")}
-      </DialogClose>
+      <DialogClose render={<Button variant="outline" className="hidden sm:inline-flex" />}>{t("close")}</DialogClose>
     </div>
   )
 }

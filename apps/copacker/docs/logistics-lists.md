@@ -50,6 +50,7 @@ route and totals beneath them. A view with no rows says so inside the table.
 
 `src/lib/logistics-list.ts` holds the rows' type and the pure parts, with unit tests: `filterRows` (search, filters
 and the ready-date range), `sortRows`, `routeText`, the views each viewer has, and `listReducer`, the list's state,
-where searching, filtering, sorting or another view goes back to the first page. Mantine's `usePagination` does the
-page math. `LogisticsList` puts together `LogisticsToolbar` (search, filters, sort and columns), `AppliedFilterChips`,
-`LogisticsTable` and `LogisticsPagination`, which word rows through `useLogisticsText`.
+where searching, filtering, sorting or another view goes back to the first page. The list kit's `usePagedRows` does the
+page math on the page `listReducer` keeps. `LogisticsList` puts together `LogisticsToolbar` (the kit's `SearchField`,
+filters, sort and columns), `AppliedFilterChips`, `LogisticsTable` and `LogisticsPagination` (the kit's
+`PageButtons`), which word rows through `useLogisticsText`.

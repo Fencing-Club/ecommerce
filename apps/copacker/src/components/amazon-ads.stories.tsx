@@ -1,8 +1,8 @@
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Dialog } from "@/components/ui/dialog"
 import { AmazonAdsSettings } from "./amazon-ads"
-import { Dialog } from "./ui/dialog"
 
 const meta = preview.meta({
   title: "Components/Sales and costs/Amazon ads",

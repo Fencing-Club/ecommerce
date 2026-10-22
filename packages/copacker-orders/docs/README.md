@@ -22,6 +22,10 @@ them, and `orderInputSchema` keeps a PO's lines to one group of receivers.
 The app reads these from the package rather than restating them: the currencies a PO or a supplier price can be in
 (`orderCurrencies`) and a PO line's field limits (`itemSchema.shape`).
 
+An address has one format everywhere: `addressLines(address)` gives its lines as a document prints them ("1000 Siji
+Road", "Building 3", "Yiwu, Zhejiang 322000", "CN"), and `addressLine(address)` joins them on one line for lists and
+summaries. Both leave out what isn't known.
+
 A line's product goes by `lineName(name, variant)`, such as "Canvas tote bag / Natural", which leaves out Shopify's
 "Default Title" for a product's only variant. `shipmentGroups(lines)` splits a PO's lines into the shipments they
 become, one per receiver, Amazon's networks in `amazonNetworks`' order and then the buyer's location; the PO editor and
