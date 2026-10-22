@@ -45,6 +45,9 @@ Copacker's WorkOS sign-in, while CLI access has separate database grants and opa
 Token/revoke/operation routes are narrowly exempted from browser CSRF middleware because they authenticate independently.
 They reject browser cookies, Origin and Fetch Metadata headers; token forms also reject Authorization headers.
 Browser consent remains protected by both the middleware and its own exact-origin check. No CORS access is enabled.
+The approval page uses `same-origin` referrer policy so its native form retains the Origin header. Its redirect to
+the loopback callback uses `no-referrer`. The browser acceptance test exercises approval, token exchange, refresh and
+revocation; hand-built request fixtures alone cannot detect a browser suppressing the form's origin.
 Token and operation responses are private/no-store; errors never include provider failures, credentials or request bodies.
 
 The client serializes refresh, credential replacement and logout per local profile across processes. A crashed process
