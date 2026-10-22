@@ -22,7 +22,9 @@ describe("page ids", () => {
     expect(() => pageId(raw)).toThrow(NotFoundError)
   })
   it("shows Not found for a malformed shipment packet link, and answers its download 404", async () => {
-    await expect(pageResult(() => shipmentPacketResult(supplier, "abc"))).rejects.toSatisfy(isNotFound)
+    await expect(
+      pageResult(() => shipmentPacketResult(supplier, "abc"), "shipments.detail.packet.title")
+    ).rejects.toSatisfy(isNotFound)
     signedIn.actor = supplier
     const download = await served(packet)(new Request("http://localhost/api/shipments/abc/packet?section=verify"), {
       params: { id: "abc" }

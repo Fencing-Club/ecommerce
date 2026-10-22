@@ -1,28 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Page from "@/app/(portal)/products/page"
-import { PortalForbidden } from "@/components/portal-forbidden"
-import { urlQuery } from "@/lib/url-query"
+import { productsSearch } from "@/lib/page-search"
 import { readProducts } from "@/workspace.functions"
+import { PortalPage, PortalRouteError, pageHead, reloadOnEnter } from "./-page-route"
 
+// A buyer's search starts the product list, which loads its own rows. ?import= only opens a dialog.
 export const Route = createFileRoute("/_portal/products")({
-  validateSearch: urlQuery,
-  loaderDeps: ({ search }) => ({ query: search }),
-  loader: ({ deps }) => readProducts({ data: { ...deps } }),
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? (loaderData.forbidden ? loaderData.title : loaderData.page.title) + " | Copacker"
-          : "Copacker"
-      }
-    ]
-  }),
+  validateSearch: productsSearch,
+  loader: () => readProducts(),
+  shouldReload: reloadOnEnter,
+  head: pageHead,
+  errorComponent: PortalRouteError,
   component: Screen
 })
 function Screen() {
-  const result = Route.useLoaderData()
-  if (result.forbidden) {
-    return <PortalForbidden />
-  }
-  return <Page page={result.page.data} />
+  const search = Route.useSearch()
+  return <PortalPage result={Route.useLoaderData()}>{(page) => <Page page={page} search={search} />}</PortalPage>
 }

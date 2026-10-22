@@ -1,12 +1,11 @@
 import { randomUUID } from "node:crypto"
-import { variantIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { orderLine } from "@repo/copacker-orders"
 import { and, eq, isNull } from "drizzle-orm"
 import type * as React from "react"
-import { z } from "zod"
 import type { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
+import type { NewOrderSearch } from "@/lib/page-search"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
@@ -16,23 +15,11 @@ import { lineDefaultsFor } from "@/server/product-defaults"
 import { withVariantFields } from "@/server/product-fields"
 import { serverTranslator } from "./translation"
 
-const variantIds = z
-  .array(
-    z.string().refine((entry) => {
-      const [id, units, ...rest] = entry.split("@")
-      return (
-        variantIdSchema.safeParse(id).success && (units === undefined || /^[1-9]\d{0,5}$/.test(units)) && !rest.length
-      )
-    })
-  )
-  .max(100)
-  .catch([])
-
 // Variants passed as ?variant=… (Reorder on Products, and restock) start as lines on the new PO. "<id>@<units>" also
 // sets the quantity in sellable units.
-async function reorderLines(orgId: string, raw: string | string[] | undefined) {
+async function reorderLines(orgId: string, entries: string[] = []) {
   const units = new Map(
-    variantIds.parse(typeof raw === "string" ? [raw] : (raw ?? [])).map((entry) => {
+    entries.map((entry) => {
       const [id = "", count] = entry.split("@")
       return [id, count ? Number(count) : 1]
     })
@@ -54,9 +41,7 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
   })
 }
 
-export async function newOrderPage(
-  params: Record<string, string | string[]>
-): Promise<React.ComponentProps<typeof OrderBuilder>> {
+export async function newOrderPage(search: NewOrderSearch): Promise<React.ComponentProps<typeof OrderBuilder>> {
   const [s, t] = await Promise.all([session(), serverTranslator("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -70,13 +55,13 @@ export async function newOrderPage(
       .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
       .from(contacts)
       .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery"))),
-    reorderLines(s.org.id, params.variant),
+    reorderLines(s.org.id, search.variant),
     variantsNeedingBarcode(s.org.id),
     forwarderAddresses(s.org.id)
   ])
   // Restock links name the Amazon network; the PO goes to Amazon, and each line picks its network.
-  const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
-  const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
+  const initialDestination = search.destination ?? "amazon"
+  const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === search.locationId)
 
   // The builder renders the page's header row first, then its form.
   return {
@@ -93,7 +78,7 @@ export async function newOrderPage(
     initialItems: initialItems,
     needsBarcodeVariantIds: needsBarcode,
     initialDestination: initialDestination,
-    initialSupplierId: rows.find((row) => row.id === params.supplierId)?.id,
+    initialSupplierId: rows.find((row) => row.id === search.supplierId)?.id,
     initialDeliveryId: initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined
   }
 }

@@ -1,7 +1,7 @@
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
+import type { PageData } from "@/server/page-result"
 import type { readNewCatalog } from "@/workspace.functions"
 
-type Data = Extract<Awaited<ReturnType<typeof readNewCatalog>>, { forbidden: false }>["page"]
-export default function NewCatalogPage({ page }: { page: Data["data"] }) {
+export default function NewCatalogPage({ page }: { page: PageData<typeof readNewCatalog> }) {
   return <CatalogEditor {...page} />
 }

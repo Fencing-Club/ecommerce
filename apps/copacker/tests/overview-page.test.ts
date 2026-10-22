@@ -23,7 +23,7 @@ beforeEach(() => {
 
 describe("overview rendering data", () => {
   it("filters restricted links and admin setup before serialization, retaining workspace reporting settings", async () => {
-    const query = { channel: "amazon", period: "30d" }
+    const query = { channel: "amazon", period: "last7" as const }
     const page = await overviewPageData({ ...member, org }, query)
     expect(page.kind).toBe("buyer")
     if (page.kind !== "buyer") {
@@ -53,10 +53,10 @@ describe("overview rendering data", () => {
   })
 
   it("returns only supplier rendering data and permissions", async () => {
-    const page = await overviewPageData({ ...member, org: { ...org, kind: "supplier" } }, { compare: "year" })
+    const page = await overviewPageData({ ...member, org: { ...org, kind: "supplier" } }, { compare: "previousYear" })
     expect(page).toEqual({ kind: "supplier", permissions: member, data: supplierOverviewData })
     expect(overview).not.toHaveBeenCalled()
-    expect(supplierOverview).toHaveBeenCalledWith({ id: org.id, timeZone: null }, { compare: "year" })
+    expect(supplierOverview).toHaveBeenCalledWith({ id: org.id, timeZone: null }, { compare: "previousYear" })
   })
 
   it("rejects a forwarder before reading buyer data", async () => {

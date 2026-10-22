@@ -1,36 +1,44 @@
 import { useMounted } from "@mantine/hooks"
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
+import { createIsomorphicFn } from "@tanstack/react-start"
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router"
 import { IntlProvider } from "use-intl"
-import ErrorPage from "@/app/error"
 import NotFound from "@/app/not-found"
 import { ThemeScript } from "@/components/theme-script"
 import { direction } from "@/i18n/locales"
+import { documentKey } from "@/lib/document-key"
+import { pageTitle } from "@/lib/page-title"
 import { documentFonts } from "@/styles/document-fonts"
 import common from "../../messages/en/common.json"
 import { readDocument } from "../document.functions"
 import "@/styles/theme.css"
 import "@/app/globals.css"
 
+// The document key the page in the browser was rendered with. The server only ever loads a document afresh.
+const renderedDocument = createIsomorphicFn()
+  .server(() => undefined)
+  .client(() => document.documentElement.dataset.document)
+
 export const Route = createRootRoute({
   loader: ({ location }) => readDocument({ data: location.pathname }),
-  shouldReload: true,
+  // The document's messages and head are the same for every page with the same key, such as every portal page, so a
+  // navigation between them keeps what's loaded. Invalidating the router still reads them again.
+  shouldReload: ({ location }) => documentKey(location.pathname) !== renderedDocument(),
   head: ({ loaderData, matches }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "referrer", content: "same-origin" },
-      ...(loaderData?.head.meta ?? [{ title: "Copacker" }]),
+      ...(loaderData?.head.meta ?? [{ title: pageTitle() }]),
       ...(matches.some((match) => match._notFound || match.status === "notFound")
-        ? [{ title: `${loaderData?.messages.common.pages.notFound.title ?? common.pages.notFound.title} | Copacker` }]
+        ? [{ title: pageTitle(loaderData?.messages.common.pages.notFound.title ?? common.pages.notFound.title) }]
         : [])
     ],
     links: loaderData?.head.links
   }),
   shellComponent: Document,
   component: Outlet,
-  notFoundComponent: NotFound,
-  errorComponent: ({ reset }) => <ErrorPage retry={reset} />
+  notFoundComponent: NotFound
 })
 
 // Hidden until a keyboard reaches it, then pinned to the page's top start corner.
@@ -48,6 +56,7 @@ function Document({ children }: { children: React.ReactNode }) {
       dir={direction(config.locale)}
       style={fonts.style}
       data-maintenance={result?.maintenance || undefined}
+      data-document={result?.key}
       data-hydrated={hydrated || undefined}
       suppressHydrationWarning
     >

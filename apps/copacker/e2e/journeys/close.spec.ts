@@ -114,10 +114,10 @@ test("a buyer sends a purchase order, records landed costs and closes it", async
   })
 
   await test.step("find it under Closed", async () => {
-    await page.goto("/orders?status=closed")
+    await page.goto("/orders?view=closed")
     const row = page.getByRole("row", { name: /E2E-CLOSE / })
     await expect(row).toContainText("Closed")
-    await page.goto("/orders?status=submitted")
+    await page.goto("/orders?view=active")
     await expect(page.getByRole("row", { name: /E2E-CLOSE / })).toHaveCount(0)
     await page.goto(url)
     await expect(titleStatus(page)).toHaveText("Closed")

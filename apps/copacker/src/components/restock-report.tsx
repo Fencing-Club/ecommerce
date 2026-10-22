@@ -1,6 +1,6 @@
 import { useDebouncedValue, useLocalStorage, useMap, useSet, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
-import { Link, useLocation } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -31,7 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api, useSuppliersQuery } from "@/lib/api"
 import type { CoverBucket } from "@/lib/cover"
-import { isCoverBucket } from "@/lib/cover"
+import type { RestockSearch } from "@/lib/page-search"
 import {
   type LineEdit,
   listedLines,
@@ -59,13 +59,12 @@ import { RestockToolbar } from "./restock-toolbar"
 // only the items to reorder. A link calculates straight away.
 type LinkFilters = { channel: string | null; q: string; cover: CoverBucket | null; onlyOrders: boolean }
 
-function linkFilters(params: URLSearchParams | null): LinkFilters {
-  const cover = params?.get("cover")
+function linkFilters(link: RestockSearch): LinkFilters {
   return {
-    channel: params?.get("channel") || null,
-    q: params?.get("q") ?? "",
-    cover: isCoverBucket(cover) ? cover : null,
-    onlyOrders: params?.get("status") === "order"
+    channel: link.channel || null,
+    q: link.q ?? "",
+    cover: link.cover ?? null,
+    onlyOrders: link.status === "order"
   }
 }
 
@@ -401,8 +400,15 @@ function Loading() {
   )
 }
 
-// `settings` are the workspace's sales period and default lead time (Settings), which the page starts from.
-export function RestockReport({ settings }: { settings: { days: number; leadTimeDays: number } }) {
+// `settings` are the workspace's sales period and default lead time (Settings), which the page starts from, and `link`
+// the filters in the URL it was opened with.
+export function RestockReport({
+  settings,
+  link = {}
+}: {
+  settings: { days: number; leadTimeDays: number }
+  link?: RestockSearch
+}) {
   const t = useTranslations("restock")
   const errorMessage = useErrorMessage()
   // Kept as typed so the fields can be cleared while editing. Changes here are for this visit; the workspace's
@@ -416,8 +422,7 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
   const [supplier, setSupplier] = useLocalStorage({ key: "restock-supplier", defaultValue: "all" })
   const { data: channels = [], isLoading: channelsLoading } = restockApi.useRestockChannelsQuery()
   const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliersQuery()
-  const params = new URLSearchParams(useLocation({ select: (location) => location.searchStr }))
-  const [filters] = useState(() => linkFilters(params))
+  const [filters] = useState(() => linkFilters(link))
   // Keep the typed search when a setting replaces the report; order selections still reset with each result.
   const [search, setSearch] = useState(filters.q)
   // The linked channel wins until another is chosen.

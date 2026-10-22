@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { comparisonRange, periodQuery, presetRange, rangeLabel, readPeriod } from "../src/lib/date-range"
+import { comparisonRange, periodSearch, presetRange, rangeLabel, readPeriod } from "../src/lib/date-range"
 
 // A Saturday.
 const today = "2026-09-26"
@@ -47,17 +47,17 @@ describe("periods", () => {
     expect(readPeriod({ from: "2026-02-30", to: "2026-03-01" }, today).key).toBe("last30")
   })
 
-  it("writes the query back, leaving out the defaults", () => {
+  it("writes the search back, leaving out the defaults", () => {
+    expect(periodSearch({ key: "last30", range: presetRange("last30", today), comparison: "previousPeriod" })).toEqual(
+      {}
+    )
+    expect(periodSearch({ key: "today", range: presetRange("today", today), comparison: "none" })).toEqual({
+      period: "today",
+      compare: "none"
+    })
     expect(
-      periodQuery({ key: "last30", range: presetRange("last30", today), comparison: "previousPeriod" }).toString()
-    ).toBe("")
-    expect(
-      periodQuery({
-        key: "custom",
-        range: { from: "2026-09-01", to: "2026-09-10" },
-        comparison: "previousYear"
-      }).toString()
-    ).toBe("from=2026-09-01&to=2026-09-10&compare=previousYear")
+      periodSearch({ key: "custom", range: { from: "2026-09-01", to: "2026-09-10" }, comparison: "previousYear" })
+    ).toEqual({ from: "2026-09-01", to: "2026-09-10", compare: "previousYear" })
   })
 
   it("labels ranges", () => {

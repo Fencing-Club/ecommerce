@@ -5,6 +5,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 
 - [Product rules](domain.md)
 - [API: routes, actions and document imports](api-contract.md)
+- [Page routes: loaders, titles, search params, reloads and error pages](routes.md)
 - [Amazon inbound shipments: AWD orders, FBA plans, and future capacity preflight](amazon-inbound.md)
 - [Packing: the ready date, the carton and pallet tables, carton IDs and what Amazon gets](packing.md)
 - [Amazon case packs: what they are, and why FBA cartons are individual units](amazon-case-packs.md)

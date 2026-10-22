@@ -5,19 +5,27 @@ import { EmptyState, PageHeader } from "@/components/common"
 import { LogisticsList } from "@/components/logistics-list"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Button } from "@/components/ui/button"
+import type { OrdersSearch } from "@/lib/page-search"
 import type { ordersPage } from "@/server/orders-page"
 
-export default function OrdersPage({ page }: { page: Awaited<ReturnType<typeof ordersPage>> }) {
+// `search` is the URL's: a supplier's tab, or everyone else's view.
+export default function OrdersPage({
+  page,
+  search
+}: {
+  page: Awaited<ReturnType<typeof ordersPage>>
+  search: OrdersSearch
+}) {
   const t = useTranslations("orders.index")
   if (page.view === "supplier") {
     return (
       <>
         <PageHeader title={t("supplierTitle")} />
-        <SupplierOrderIndex orders={page.orders} initialTab={page.tab} />
+        <SupplierOrderIndex orders={page.orders} initialTab={search.tab} />
       </>
     )
   }
-  const { rows, creates, nextStep, guided, kind, listView } = page
+  const { rows, creates, nextStep, guided, kind } = page
   const actions = creates && (
     <>
       <Button variant="outline" nativeButton={false} render={<Link to="/orders/import" />}>
@@ -47,5 +55,5 @@ export default function OrdersPage({ page }: { page: Awaited<ReturnType<typeof o
       </>
     )
   }
-  return <LogisticsList kind="orders" viewer={kind} rows={rows} view={listView} actions={actions} />
+  return <LogisticsList kind="orders" viewer={kind} rows={rows} view={search.view} actions={actions} />
 }

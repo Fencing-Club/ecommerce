@@ -1,7 +1,7 @@
 import { SalesPageView } from "@/components/sales-page"
-import type { readSales } from "@/workspace.functions"
+import type { SalesSearch } from "@/lib/page-search"
 
-type Data = Extract<Awaited<ReturnType<typeof readSales>>, { forbidden: false }>["page"]
-export default function SalesPage({ page }: { page: Data["data"] }) {
-  return <SalesPageView {...page} />
+// The sales list loads its orders itself; the URL's ?q= starts it searched.
+export default function SalesPage({ search }: { search: SalesSearch }) {
+  return <SalesPageView search={search.q ?? ""} />
 }

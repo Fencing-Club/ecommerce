@@ -5,10 +5,19 @@ import { EmptyState, PageHeader } from "@/components/common"
 import { LogisticsList } from "@/components/logistics-list"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import type { ShipmentsSearch } from "@/lib/page-search"
 import type { shipmentsPage } from "@/server/shipments-page"
 
-export default function ShipmentsPage({ page }: { page: Awaited<ReturnType<typeof shipmentsPage>> }) {
-  const { viewer, seesOrders, amazonFailed, view, rows } = page
+// `search` is the URL's, with the list's view.
+export default function ShipmentsPage({
+  page,
+  search
+}: {
+  page: Awaited<ReturnType<typeof shipmentsPage>>
+  search: ShipmentsSearch
+}) {
+  const { viewer, seesOrders, amazonFailed, rows } = page
+  const { view } = search
   const t = useTranslations("shipments.list")
   const failed = amazonFailed && (
     <Alert>
