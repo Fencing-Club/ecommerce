@@ -126,7 +126,8 @@ export const NewBuyer = meta.story({
     await fillStreet(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
+    // The new workspace's page loads fresh on the way there, so nothing is refreshed again.
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
     await expect(actions.sent).toHaveLength(1)
     await expect(actions.sent[0]).toMatchObject({
       action: "onboarding.workspace",
@@ -279,7 +280,8 @@ export const JoinTeam = meta.story({
   }
 })
 
-// Someone in a workspace already, without a full profile, gives just that and goes back where they were.
+// Someone in a workspace already, without a full profile, gives just that and goes back where they were: with the
+// profile complete, the page's refresh sends them on to `next`.
 export const ProfileOnly = meta.story({
   args: {
     steps: ["about"],
@@ -291,7 +293,7 @@ export const ProfileOnly = meta.story({
   play: async ({ canvas }) => {
     await fillAbout(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledWith({ sync: true }))
     await expect(actions.sent).toEqual([
       {
         action: "profile.update",

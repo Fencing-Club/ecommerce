@@ -6,7 +6,7 @@ import { FormInput } from "@/components/form-controls"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
-import { useAuthForm } from "@/hooks/use-auth-form"
+import { useActionForm } from "@/hooks/useActionForm"
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
 import { AuthPage, AuthSwitch } from "./auth-shell"
@@ -23,12 +23,12 @@ function strong(chunks: React.ReactNode) {
 export function ForgotPassword({ email = "" }: { email?: string }) {
   const t = useTranslations("auth")
   const [sentTo, setSentTo] = useState<string | null>(null)
-  const { form, submit } = useAuthForm({
+  const { form, submit } = useActionForm({
     schema: forgotPasswordSchema,
     action: "auth.forgotPassword",
     defaultValues: { email },
     keepSaved: true,
-    onSuccess: () => setSentTo(form.getValues("email"))
+    onSuccess: (_, values) => setSentTo(values.email)
   })
   if (sentTo) {
     return (
@@ -91,9 +91,10 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
 // The new password, from the emailed link's token. Saving it signs straight in.
 export function ResetPasswordForm({ token }: { token: string }) {
   const t = useTranslations("auth")
-  const { form, submit } = useAuthForm({
+  const { form, submit } = useActionForm({
     schema: resetPasswordSchema,
     action: "auth.resetPassword",
+    navigation: "document",
     defaultValues: { password: "" },
     toPayload: (values) => ({ ...values, token })
   })

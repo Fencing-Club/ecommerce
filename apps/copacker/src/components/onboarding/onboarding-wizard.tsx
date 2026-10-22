@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { Path } from "react-hook-form"
@@ -9,8 +8,8 @@ import { z } from "zod"
 import { BrandMark, Stage } from "@/components/auth/stage"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
-import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
+import { useFormErrorMap } from "@/hooks/use-error-text"
 import type { WorkspaceKind } from "@/lib/onboarding"
 import { companySchema, personSchema, placeSchema, workspaceKinds } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
@@ -52,6 +51,12 @@ export type WizardFinish =
   | { type: "join"; token: string; workspace: string }
   | { type: "profile"; company: string; next: string }
 
+const finishActions = {
+  workspace: "onboarding.workspace",
+  join: "onboarding.join",
+  profile: "profile.update"
+} as const satisfies Record<WizardFinish["type"], string>
+
 // The browser's country, to start an address from, such as US for en-US.
 function browserCountry() {
   try {
@@ -85,9 +90,7 @@ export function OnboardingWizard({
   accountEmail?: string
 }) {
   const t = useTranslations("onboarding")
-  const router = useRouter()
-  const [run] = useActionMutation()
-  const errorMessage = useErrorMessage()
+  const save = useAction(finishActions[finish.type])
   const formErrorMap = useFormErrorMap()
   const form = useForm<WizardValues, unknown, z.output<typeof wizardSchema>>({
     resolver: zodResolver(wizardSchema, { error: formErrorMap }),
@@ -103,8 +106,8 @@ export function OnboardingWizard({
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<"forward" | "back">("forward")
   const [moved, setMoved] = useState(false)
-  const [pending, setPending] = useState<"finish" | "skip" | null>(null)
-  const [error, setError] = useState("")
+  const [via, setVia] = useState<"finish" | "skip">("finish")
+  const pending = save.pending ? via : null
   const heading = useRef<HTMLHeadingElement>(null)
   const chosen = useWatch({ control: form.control, name: "kind" })
   const kind = settled ?? chosen
@@ -141,7 +144,7 @@ export function OnboardingWizard({
   }
 
   function go(to: number) {
-    setError("")
+    save.reset()
     setDirection(to > index ? "forward" : "back")
     setMoved(true)
     if (steps[to] === "address") {
@@ -151,34 +154,22 @@ export function OnboardingWizard({
   }
 
   // Saves everything, with the address or without it when it's skipped. `via` is the button that shows the spinner.
+  // Making or joining a workspace opens it. Saving the profile completes it, so the page's refresh goes on to `next`.
   async function complete(withAddress: boolean, via: "finish" | "skip") {
     const values = form.getValues()
-    let request: { action: string; data: Record<string, unknown> }
+    setVia(via)
     if (finish.type === "workspace") {
-      request = {
-        action: "onboarding.workspace",
-        data: {
-          person: values.person,
-          kind: finish.invitation?.kind ?? values.kind,
-          company: { ...values.company, phone: kind === "supplier" ? values.company.phone : "" },
-          address: withAddress ? values.address : null,
-          invitation: finish.invitation
-        }
-      }
+      await save.run({
+        person: values.person,
+        kind: finish.invitation?.kind ?? values.kind,
+        company: { ...values.company, phone: kind === "supplier" ? values.company.phone : "" },
+        address: withAddress ? values.address : null,
+        invitation: finish.invitation
+      })
     } else if (finish.type === "join") {
-      request = { action: "onboarding.join", data: { kind: "team", token: finish.token, person: values.person } }
+      await save.run({ kind: "team", token: finish.token, person: values.person })
     } else {
-      request = { action: "profile.update", data: { ...values.person, company: finish.company } }
-    }
-    setPending(via)
-    setError("")
-    try {
-      const result = await run(request).unwrap()
-      router.navigate({ href: finish.type === "profile" ? finish.next : (result.redirect ?? "/") })
-      router.invalidate()
-    } catch (failure) {
-      setError(errorMessage(failure))
-      setPending(null)
+      await save.run({ ...values.person, company: finish.company })
     }
   }
 
@@ -271,7 +262,7 @@ export function OnboardingWizard({
                 {step === "company" && <CompanyFields kind={kind} />}
                 {step === "address" && <AddressStepFields kind={kind} />}
               </div>
-              <FormError message={error} />
+              <FormError message={save.error} />
               {/* On a phone, Back is only its arrow so the last step's three buttons share one row; a longer
                   translation wraps them instead of running off the screen. */}
               <div className="flex flex-wrap items-center gap-2">

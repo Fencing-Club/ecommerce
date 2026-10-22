@@ -21,7 +21,6 @@
       "closing": "آپ سائن آؤٹ ہو جائیں گے اور ہر ورک اسپیس سے ہٹا دیے جائیں گے۔ {count, plural, one {{workspaces} آپ کے اکاؤنٹ کے ساتھ بند ہو جائے گا۔} other {{workspaces} آپ کے اکاؤنٹ کے ساتھ بند ہو جائیں گے۔}}",
       "handOver": "پہلے {workspaces} کی ملکیت منتقل کریں۔"
     },
-    "cancel": "منسوخ کریں",
     "close": "بند کریں"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "ملکیت منتقل کریں",
     "transferTitle": "ملکیت {name} کو منتقل کریں؟",
     "transferDescription": "وہ {workspace} کے اونر بن جائیں گے، اور آپ ایڈمن رہیں گے۔",
-    "cancel": "منسوخ کریں",
     "invitationExpired": "دعوت نامے کی میعاد ختم ہو گئی",
     "invited": "مدعو، میعاد {expires} کو ختم",
     "invitationSent": "دعوت نامہ بھیج دیا گیا، میعاد {expires} کو ختم",

@@ -42,6 +42,9 @@ export const Draft = meta.story({
 })
 
 export const DeleteDraft = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(actionHandler(actions, () => HttpResponse.json({ redirect: "/orders" })))
+  },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More actions for PO-1042" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete draft" }))
@@ -51,6 +54,8 @@ export const DeleteDraft = meta.story({
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
     await expect(actions).toHaveBeenCalledWith({ action: "order.delete", data: { id: orderId } })
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
+    // The list loads fresh on the way there, so it isn't refreshed again.
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 

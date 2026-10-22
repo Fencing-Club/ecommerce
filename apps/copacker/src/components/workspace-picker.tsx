@@ -1,13 +1,10 @@
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, LoaderCircle } from "lucide-react"
-import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { type Workspace, WorkspaceIdentity } from "@/components/workspace-menu"
-import { announceWorkspace } from "@/components/workspace-watch"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
 
 export function WorkspacePicker({
   workspaces,
@@ -17,23 +14,7 @@ export function WorkspacePicker({
   unavailable?: boolean
 }) {
   const t = useTranslations("navigation.workspacePicker")
-  const errorMessage = useErrorMessage()
-  const [run] = useActionMutation()
-  const [pending, setPending] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  async function choose(id: string) {
-    setPending(id)
-    setError(null)
-    try {
-      await run({ action: "workspace.switch", data: { id } }).unwrap()
-      announceWorkspace(id)
-      window.location.assign("/")
-    } catch (reason) {
-      setError(errorMessage(reason))
-      setPending(null)
-    }
-  }
+  const { switchTo, switching, error } = useSwitchWorkspace()
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -53,12 +34,12 @@ export function WorkspacePicker({
               <Button
                 variant="outline"
                 className="h-auto min-h-16 w-full justify-start gap-3 px-3 py-3"
-                disabled={pending !== null}
-                aria-busy={pending === workspace.id}
-                onClick={() => void choose(workspace.id)}
+                disabled={switching !== null}
+                aria-busy={switching === workspace.id}
+                onClick={() => void switchTo(workspace.id)}
               >
                 <WorkspaceIdentity workspace={workspace} />
-                {pending === workspace.id ? (
+                {switching === workspace.id ? (
                   <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" />
                 ) : (
                   <ArrowRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />

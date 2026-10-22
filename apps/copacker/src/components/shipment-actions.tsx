@@ -1,6 +1,5 @@
-import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown } from "lucide-react"
-import { FormProvider, useForm } from "react-hook-form"
+import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -8,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FieldGroup } from "@/components/ui/field"
-import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./action-form"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
@@ -94,8 +92,6 @@ export function LinkExistingShipment({
   onLink: (shipmentId: string | null) => Promise<void>
 }) {
   const t = useTranslations("shipments.actions.linkExisting")
-  const errorMessage = useErrorMessage()
-  const errorMap = useFormErrorMap()
   const schema = z.object({
     amazonShipmentId: linkedId
       ? z.string()
@@ -105,16 +101,11 @@ export function LinkExistingShipment({
           .toUpperCase()
           .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
   })
-  const form = useForm({
-    resolver: zodResolver(schema, { error: errorMap }),
-    defaultValues: { amazonShipmentId: linkedId ?? "" }
-  })
-  const submit = form.handleSubmit(async ({ amazonShipmentId }) => {
-    try {
-      await onLink(linkedId ? null : amazonShipmentId)
-    } catch (error) {
-      form.setError("root.server", { message: errorMessage(error) })
-    }
+  const { form, submit } = useActionForm({
+    schema,
+    defaultValues: { amazonShipmentId: linkedId ?? "" },
+    // The packing form saves its draft first, then links, and refreshes the page.
+    run: (_, { amazonShipmentId }) => onLink(linkedId ? null : amazonShipmentId)
   })
   return (
     <Card>

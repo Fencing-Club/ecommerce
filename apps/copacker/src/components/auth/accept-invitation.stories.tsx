@@ -30,19 +30,9 @@ export const Team = meta.story({
     await expect(canvas.queryByRole("radiogroup")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
     await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
-    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
+    // The workspace's page loads fresh on the way there, so nothing is refreshed again.
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
     await expect(actions.sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
-  }
-})
-
-// Without a redirect from the server, joining opens the portal's home.
-export const TeamHome = meta.story({
-  beforeEach: ({ msw }) => {
-    msw.use(actions.handler())
-  },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
-    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/" }))
   }
 })
 

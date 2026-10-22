@@ -21,7 +21,6 @@
       "closing": "Vous êtes déconnecté et retiré de tous les espaces de travail. {count, plural, one {{workspaces} est fermé avec votre compte.} other {{workspaces} sont fermés avec votre compte.}}",
       "handOver": "Transférez d’abord la propriété de {workspaces}."
     },
-    "cancel": "Annuler",
     "close": "Fermer"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "Transférer la propriété",
     "transferTitle": "Transférer la propriété à {name} ?",
     "transferDescription": "Cette personne devient propriétaire de {workspace}, et vous restez administrateur.",
-    "cancel": "Annuler",
     "invitationExpired": "Invitation expirée",
     "invited": "Invité, expire le {expires}",
     "invitationSent": "Invitation envoyée, expire le {expires}",

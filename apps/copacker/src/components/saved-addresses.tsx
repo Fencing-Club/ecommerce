@@ -1,5 +1,4 @@
 import type { Address } from "@repo/copacker-shipments"
-import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
@@ -9,8 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
 import type { ContactKind } from "@/lib/contacts"
 import { contactKindLabelKeys } from "@/lib/contacts"
 import { formatPhone, phoneHref } from "@/lib/phone"
@@ -83,12 +81,9 @@ function SavedAddress({
 }) {
   const t = useTranslations("settings.addresses")
   const partners = useTranslations("partners")
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
+  const remove = useAction("contact.delete", { fallback: t("removeFailed") })
+  const { pending, error } = remove
   const { address } = contact
   // A supplier's addresses are all pickups, and everyone else's deliveries; only another kind needs saying.
   const usual: ContactKind = supplier ? "pickup" : "delivery"
@@ -105,18 +100,6 @@ function SavedAddress({
   if (contact.kind === "delivery" && contact.shopifyLocationId) {
     const linked = locations.find((candidate) => candidate.id === contact.shopifyLocationId)
     location = linked ? t("stockArrivesAt", { location: linked.name }) : t("stockArrivesAtShopify")
-  }
-
-  async function remove() {
-    setPending(true)
-    setError("")
-    try {
-      await run({ action: "contact.delete", data: { id: contact.id } }).unwrap()
-      router.invalidate()
-    } catch (e) {
-      setError(errorMessage(e, t("removeFailed")))
-      setPending(false)
-    }
   }
 
   return (
@@ -167,7 +150,7 @@ function SavedAddress({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
             <DropdownMenuItem onClick={() => setEditing(true)}>{t("edit")}</DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+            <DropdownMenuItem variant="destructive" onClick={() => void remove.run({ id: contact.id })}>
               {t("remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>

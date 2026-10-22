@@ -1,3 +1,4 @@
+import { Toast } from "@base-ui/react/toast"
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
 import { useTranslations } from "use-intl"
 import {
@@ -7,8 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { announceWorkspace } from "@/components/workspace-watch"
-import { useActionMutation } from "@/lib/api"
+import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
 import { cn } from "@/lib/utils"
 
 export type Workspace = { id: string; name: string; kind: string }
@@ -65,7 +65,8 @@ export function WorkspaceIdentity({ workspace }: { workspace: Workspace }) {
 
 // The workspace switcher at the top of the sidebar: the open workspace's kind tile and its name. Collapsed to the rail,
 // only its tile. Copacker's own mark and name are in the top bar. The trigger doesn't name the kind, since most people
-// have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs.
+// have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs. The menu has
+// closed by the time a switch fails, so the failure shows as a toast.
 export function WorkspaceMenu({
   active,
   fallbackName,
@@ -77,17 +78,10 @@ export function WorkspaceMenu({
   workspaces: ReadonlyArray<Workspace>
 }) {
   const t = useTranslations("navigation.workspaceMenu")
-  const [run] = useActionMutation()
+  const toast = Toast.useToastManager()
+  const { switchTo } = useSwitchWorkspace({ onError: (message) => toast.add({ title: message, type: "error" }) })
   const open = workspaces.find((workspace) => workspace.id === active)
   const current = open?.name ?? fallbackName
-
-  async function switchTo(id: string) {
-    // Persist the selection before opening a fresh document and discarding workspace-scoped caches.
-    await run({ action: "workspace.switch", data: { id } }).unwrap()
-    announceWorkspace(id)
-    // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
-    window.location.assign("/")
-  }
 
   return (
     <DropdownMenu>

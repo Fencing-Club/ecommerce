@@ -1,6 +1,5 @@
-import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus, Trash2 } from "lucide-react"
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
@@ -18,10 +17,9 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
-import { useErrorMessage } from "@/hooks/use-error-text"
+import { useAction } from "@/hooks/use-action"
 import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
-import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./action-form"
 import { FormInput, FormMoney } from "./form-controls"
@@ -145,22 +143,8 @@ function CostRow({
   const money = useMoney()
   const kind = kindKey(cost.kind)
   const kindName = kind ? t(`kinds.${kind}`) : cost.kind
-  const errorMessage = useErrorMessage()
-  const router = useRouter()
-  const [run, { isLoading }] = useActionMutation()
-  const [refreshing, startRefresh] = useTransition()
-  const [error, setError] = useState("")
-  const pending = isLoading || refreshing
-
-  async function remove() {
-    setError("")
-    try {
-      await run({ action: "landedCost.delete", data: { id: cost.id } }).unwrap()
-      startRefresh(() => router.invalidate())
-    } catch (failure) {
-      setError(errorMessage(failure))
-    }
-  }
+  const remove = useAction("landedCost.delete")
+  const { pending, error } = remove
 
   return (
     <li className="flex flex-col gap-2">
@@ -186,7 +170,7 @@ function CostRow({
               {pending ? <Spinner /> : <Ellipsis />}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+              <DropdownMenuItem variant="destructive" onClick={() => void remove.run({ id: cost.id })}>
                 <Trash2 />
                 {t("remove")}
               </DropdownMenuItem>

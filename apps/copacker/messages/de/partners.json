@@ -86,7 +86,6 @@
       "trigger": "Entfernen",
       "title": "{name} entfernen?",
       "description": "Neue Bestellungen können nicht mehr an ihn gehen. Bereits gesendete Bestellungen behalten ihre Adresse.",
-      "cancel": "Abbrechen",
       "confirm": "Entfernen",
       "failed": "{name} konnte nicht entfernt werden. Versuchen Sie es erneut."
     }

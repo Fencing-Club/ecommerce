@@ -86,7 +86,6 @@
       "trigger": "Remove",
       "title": "Remove {name}?",
       "description": "New purchase orders can’t ship to them. Purchase orders already sent keep their address.",
-      "cancel": "Cancel",
       "confirm": "Remove",
       "failed": "Couldn’t remove {name}. Try again."
     }

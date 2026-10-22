@@ -1,7 +1,6 @@
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { useSubmissionForm } from "@/hooks/use-submission-form"
-import { useActionMutation } from "@/lib/api"
+import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 
@@ -12,10 +11,9 @@ const supplierSchema = z.object({
 
 export function SupplierForm({ onSuccess }: { onSuccess: () => void }) {
   const t = useTranslations("settings.supplierForm")
-  const [run] = useActionMutation()
-  const { form, submit } = useSubmissionForm({
+  const { form, submit } = useActionForm({
     schema: supplierSchema,
-    run: (data) => run({ action: "supplier.create", data }).unwrap(),
+    action: "supplier.create",
     defaultValues: { name: "", email: "" },
     onSuccess
   })

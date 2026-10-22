@@ -21,7 +21,6 @@
       "closing": "Se cierra tu sesión y se te quita de todos los espacios de trabajo. {count, plural, one {{workspaces} se cierra con tu cuenta.} other {{workspaces} se cierran con tu cuenta.}}",
       "handOver": "Primero transfiere la propiedad de {workspaces}."
     },
-    "cancel": "Cancelar",
     "close": "Cerrar"
   },
   "language": {
@@ -83,7 +82,6 @@
     "transferOwnership": "Transferir propiedad",
     "transferTitle": "¿Transferir la propiedad a {name}?",
     "transferDescription": "Se convierte en propietario de {workspace} y tú sigues como administrador.",
-    "cancel": "Cancelar",
     "invitationExpired": "Invitación vencida",
     "invited": "Invitado, vence {expires}",
     "invitationSent": "Invitación enviada, vence {expires}",

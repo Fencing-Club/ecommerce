@@ -4,9 +4,8 @@ import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
-import { useAuthForm } from "@/hooks/use-auth-form"
-import { useErrorMessage } from "@/hooks/use-error-text"
-import { useActionMutation } from "@/lib/api"
+import { useAction } from "@/hooks/use-action"
+import { useActionForm } from "@/hooks/useActionForm"
 import { codeSchema } from "@/lib/sign-in"
 import { CodeField } from "./code-field"
 import { leaving } from "./sign-in-form"
@@ -17,9 +16,10 @@ const cooldown = 30
 // The code WorkOS emailed. It sends itself once all six digits are in; a wrong one clears for another try.
 export function VerifyEmailForm() {
   const t = useTranslations("auth")
-  const { form, submit } = useAuthForm({
+  const { form, submit } = useActionForm({
     schema: codeSchema,
     action: "auth.verifyEmail",
+    navigation: "document",
     defaultValues: { code: "" }
   })
   async function send() {
@@ -57,21 +57,15 @@ export function VerifyEmailForm() {
 
 function ResendCode() {
   const t = useTranslations("auth.verifyEmail")
-  const [run, { isLoading }] = useActionMutation()
-  const errorMessage = useErrorMessage()
   const [wait, setWait] = useState(cooldown)
-  const [status, setStatus] = useState("")
-  useInterval(() => setWait((seconds) => Math.max(0, seconds - 1)), 1000, { autoInvoke: true })
-  async function resend() {
-    setStatus("")
-    try {
-      await run({ action: "auth.resendCode", data: {} }).unwrap()
+  const [sent, setSent] = useState(false)
+  const resend = useAction("auth.resendCode", {
+    onSuccess: () => {
       setWait(cooldown)
-      setStatus(t("newCodeSent"))
-    } catch (error) {
-      setStatus(errorMessage(error))
+      setSent(true)
     }
-  }
+  })
+  useInterval(() => setWait((seconds) => Math.max(0, seconds - 1)), 1000, { autoInvoke: true })
   return (
     <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
       <p>
@@ -79,14 +73,17 @@ function ResendCode() {
         <Button
           variant="link"
           className="h-auto p-0 font-medium text-foreground"
-          disabled={wait > 0 || isLoading}
-          onClick={() => void resend()}
+          disabled={wait > 0 || resend.pending}
+          onClick={() => {
+            setSent(false)
+            void resend.run()
+          }}
         >
           {wait > 0 ? t("sendAgainIn", { seconds: wait }) : t("sendNewCode")}
         </Button>
       </p>
       <output aria-live="polite" className="min-h-5 text-xs">
-        {status}
+        {resend.error || (sent && t("newCodeSent"))}
       </output>
     </div>
   )

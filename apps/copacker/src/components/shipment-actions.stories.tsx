@@ -32,6 +32,24 @@ export const LinkExistingAwd = meta.story({
   }
 })
 
+// The packing form's own save failed: its reason shows, and the field keeps what was typed.
+export const LinkExistingFails = meta.story({
+  render: () => (
+    <LinkExistingShipment
+      onLink={() => Promise.reject(new Error("STAR-EXAMPLE is linked to another shipment."))}
+      linkedId={null}
+    />
+  ),
+  play: async ({ canvas }) => {
+    const field = canvas.getByRole("textbox", { name: "AWD shipment ID" })
+    await userEvent.type(field, "STAR-EXAMPLE")
+    await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
+    await expect(await canvas.findByText("STAR-EXAMPLE is linked to another shipment.")).toBeVisible()
+    await expect(field).toHaveValue("STAR-EXAMPLE")
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
+  }
+})
+
 export const ExistingAwdLinked = meta.story({
   render: () => <LinkExistingShipment onLink={linked} linkedId="STAR-EXAMPLE" />,
   play: async ({ canvas }) => {
