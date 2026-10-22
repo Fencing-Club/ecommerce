@@ -600,3 +600,48 @@ it("stops both receipt networks after recording a transient checkpoint failure",
     transaction.mockRestore()
   }
 })
+
+it("exposes only exact scoped shipment contents and invalidates snapshots when they change", async () => {
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "amazon",
+    externalAccountId: "seller",
+    dataset: "awd_inbound_receipts",
+    sourceId: "SHIP",
+    data: {}
+  })
+  const saved = {
+    orgId,
+    externalAccountId: "seller",
+    network: "awd" as const,
+    shipmentId: "SHIP",
+    units: { SKU: 80 },
+    fetchedAt: new Date("2026-10-01")
+  }
+  await database.insert(tables.amazonInboundShipments).values([
+    { ...saved, orgId: otherId },
+    { ...saved, externalAccountId: "other" },
+    { ...saved, network: "fba" }
+  ])
+  const query = {
+    source: "amazon" as const,
+    externalAccountId: "seller",
+    dataset: "awd_inbound_receipts" as const,
+    page: 0
+  }
+  const before = await listIngestionEvidence(orgId, query)
+  expect(before.rows[0]?.declaredShipmentUnits).toMatchObject({ status: "unknown", rows: [] })
+  await database
+    .update(tables.amazonInboundShipments)
+    .set({ network: "awd" })
+    .where(sql`"orgId"=${orgId} and "externalAccountId"='seller'`)
+  const after = await listIngestionEvidence(orgId, query)
+  expect(after.rows[0]?.declaredShipmentUnits).toMatchObject({
+    rows: [{ sku: "SKU", quantity: 80 }],
+    receivedUnitsConfirmed: false
+  })
+  expect(after.snapshot).not.toBe(before.snapshot)
+  await expect(listIngestionEvidence(orgId, { ...query, snapshot: before.snapshot })).rejects.toMatchObject({
+    status: 409
+  })
+})

@@ -150,9 +150,18 @@ export function reconcileAmazonEvidence(
         if (!orderReference && !matchedItems.length) {
           return []
         }
+        const strongerPaymentCandidate =
+          row.source === "reimbursements" &&
+          orderReference &&
+          Boolean(row.sku && matchedItems.some((item) => item.sku === row.sku)) &&
+          posting.type === "FBAInventoryReimbursement" &&
+          posting.marketplaceId === row.marketplaceId &&
+          row.currency === posting.currency &&
+          checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
         return [
           {
             ...postingEvidenceFields(posting),
+            strongerPaymentCandidate,
             basis: orderReference ? "order_reference" : "product_only",
             itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
             currencyMatches: row.currency ? row.currency === posting.currency : null,
@@ -162,6 +171,7 @@ export function reconcileAmazonEvidence(
       })
       .sort(
         (a, b) =>
+          Number(b.strongerPaymentCandidate) - Number(a.strongerPaymentCandidate) ||
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
           Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
           (row.source === "reimbursements"
@@ -185,6 +195,9 @@ export function reconcileAmazonEvidence(
         matching: {
           scope: "current_posting_search_page",
           candidateCount: candidates.length,
+          strongerPaymentCandidateCount: candidates.filter((candidate) => candidate.strongerPaymentCandidate).length,
+          strongerPaymentCandidateBasis: "order_sku_marketplace_currency_signed_whole_transaction_amount",
+          competingReportRows: "not_assessed_across_report_pages",
           sameSignedAmountCount: candidates.filter(
             (candidate) =>
               candidate.checks.signedSourceToTransactionTotal === "balanced" &&
