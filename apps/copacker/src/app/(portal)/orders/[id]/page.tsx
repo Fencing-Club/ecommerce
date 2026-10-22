@@ -399,7 +399,6 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
           )}
           <PoTimeline
             orderId={id}
-            viewer={s.user.name ?? s.user.email}
             viewerOrg={s.org.name}
             timeZone={timeZone}
             entries={timeline}

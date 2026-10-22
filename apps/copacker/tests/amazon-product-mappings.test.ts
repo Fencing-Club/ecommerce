@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
 vi.mock("@/db", () => import("./test-db"))
@@ -8,10 +9,11 @@ vi.mock("../src/server/auth", async (original) => (await import("./test-session"
 import { amazonAllocations } from "../src/server/amazon-allocation-data"
 import { saveAmazonProductMapping, productMappingInput } from "../src/server/amazon-product-mappings"
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
-import { GET as allocationsRoute } from "../src/server/http/api/analytics/amazon/allocations"
+import { GET as allocations } from "../src/server/http/api/analytics/amazon/allocations"
 import { POST, GET as mappingsRoute } from "../src/server/http/api/analytics/amazon/product-mappings"
 import { DELETE, GET as mappingRoute } from "../src/server/http/api/analytics/amazon/product-mappings/$id"
 import { appUrl } from "../src/server/security"
+const allocationsRoute = served(allocations)
 const orgId = randomUUID(),
   otherId = randomUUID()
 
@@ -26,10 +28,10 @@ const input = {
   validTo: "2027-01-01T00:00:00Z",
   evidence: "Imported invoice and catalog record"
 }
-const request = (body: unknown, method: "POST" | "DELETE" = "POST", origin = appUrl()) =>
+const request = (body: unknown, method: "POST" | "DELETE" = "POST") =>
   new Request(`${appUrl()}/api/analytics/amazon/product-mappings`, {
     method,
-    headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
+    headers: { Origin: appUrl(), "Content-Type": "application/json", "Idempotency-Key": randomUUID() },
     body: JSON.stringify(body)
   })
 setUpTestDatabase({ truncate: true })
@@ -76,10 +78,10 @@ describe("historical identity writes and allocation read", () => {
     expect(results.filter((result) => result.ok)).toHaveLength(1)
     expect(await database.select().from(tables.amazonProductMappings)).toHaveLength(1)
   })
-  it("rejects foreign targets, invalid periods, forbidden origins and insufficient permissions", async () => {
+  // The HTTP boundary checks the origin (http-response.test.ts).
+  it("rejects foreign targets, invalid periods and insufficient permissions", async () => {
     expect((await POST(request({ ...input, shopifyDomain: "secret", variantId: "secret" }))).status).toBe(422)
     expect((await POST(request({ ...input, validTo: input.validFrom }))).status).toBe(400)
-    expect((await POST(request(input, "POST", "https://evil.test"))).status).toBe(403)
     signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "view", prices: "view" } })
     expect((await POST(request(input))).status).toBe(403)
     signedIn.actor = testSession({ orgId, kind: "buyer", role: "member", access: { products: "edit" } })

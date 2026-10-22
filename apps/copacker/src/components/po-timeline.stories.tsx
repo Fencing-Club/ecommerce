@@ -2,7 +2,7 @@ import { HttpResponse } from "msw/http"
 import type { ComponentProps } from "react"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { actionHandler, orderId, timelineEntries } from "@/stories/fixtures/purchase-orders"
+import { actionHandler, createdTimelineEntry, orderId, timelineEntries } from "@/stories/fixtures/purchase-orders"
 import { serverStory } from "@/stories/server"
 import { PoTimeline } from "./po-timeline"
 
@@ -13,7 +13,6 @@ const meta = preview.meta({
   ...serverStory((props: ComponentProps<typeof PoTimeline>) => <PoTimeline {...props} />),
   args: {
     orderId,
-    viewer: "Alex Rivera",
     viewerOrg: "Harbor Goods",
     timeZone: undefined,
     entries: timelineEntries,
@@ -36,6 +35,8 @@ export const Default = meta.story({
     await expect(canvas.getByText("Supplier set the ready date to Oct 5, 2026")).toBeVisible()
     await expect(canvas.getByText("Bayline Freight shipped the goods: MAEU 204113")).toBeVisible()
     await expect(canvas.getByText("Purchase order emailed to Lotus Manufacturing")).toBeVisible()
+    // Only comments have avatars: the comment box spans the timeline.
+    await expect(canvas.getAllByText("AR")).toHaveLength(1)
 
     // A revision opens to show its lines, with prices and supplier SKUs.
     await userEvent.click(canvas.getByRole("button", { name: "Revision 2: Approved supplier changes" }))
@@ -75,24 +76,41 @@ export const WithoutPrices = meta.story({
   }
 })
 
-// A new purchase order: only the comment box, which Ctrl+Enter posts, and a failure shows under it.
-export const CommentFails = meta.story({
-  args: { entries: [] },
-  beforeEach: ({ msw }) => {
-    msw.use(
-      actionHandler(actions, () => HttpResponse.json({ error: "This purchase order is closed" }, { status: 409 }))
+// The supplier's view: the buyer's comments name its company, the supplier's own don't, and shared comments and
+// messages are with the customer.
+export const Supplier = meta.story({
+  args: { viewerOrg: "Lotus Manufacturing", counterparty: "customer" },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByText("Alex Rivera")).toHaveTextContent("Alex Rivera at Harbor Goods")
+    await expect(canvas.getByText("Mei Chen")).toHaveTextContent(/^Mei Chen$/)
+    await expect(canvas.queryByText("at Lotus Manufacturing")).toBeNull()
+    await expect(canvas.getAllByText("Shared with customer")).toHaveLength(2)
+    await expect(canvas.queryByText("Shared with supplier")).toBeNull()
+    await userEvent.click(canvas.getByRole("combobox", { name: "Comment visibility" }))
+    await userEvent.click(
+      await within(canvasElement.ownerDocument.body).findByRole("option", { name: "Message customer" })
     )
+    await expect(canvas.getByRole("combobox", { name: "Comment visibility" })).toHaveTextContent("Message customer")
+    await expect(canvas.getByText("Your team and the customer can see this message.")).toBeVisible()
+  }
+})
+
+// A new purchase order: its first stop under the comment box, which Ctrl+Enter posts, and a failure shows in the box.
+export const CommentFails = meta.story({
+  args: { entries: [createdTimelineEntry] },
+  beforeEach: ({ msw }) => {
+    msw.use(actionHandler(actions, () => new HttpResponse(null, { status: 500 })))
   },
   play: async ({ canvas }) => {
-    await expect(canvas.queryAllByRole("heading", { level: 3 })).toHaveLength(0)
-    const box = canvas.getByRole("textbox", { name: "Comment" })
+    await expect(canvas.getAllByRole("heading", { level: 3 })).toHaveLength(1)
+    await expect(canvas.getByRole("button", { name: "Purchase order created" })).toBeVisible()
+    const timeline = within(canvas.getByRole("region", { name: "Timeline" }))
+    const box = timeline.getByRole("textbox", { name: "Comment" })
     await userEvent.type(box, "Any update?")
     await userEvent.keyboard("{Control>}{Enter}{/Control}")
-    await expect(await canvas.findByText("This purchase order is closed")).toBeVisible()
+    await expect(await timeline.findByRole("alert")).toHaveTextContent("Something went wrong. Try again.")
     await expect(actions).toHaveBeenCalledOnce()
     // What was written stays, to post again.
-    await expect(within(canvas.getByRole("region", { name: "Timeline" })).getByRole("textbox")).toHaveValue(
-      "Any update?"
-    )
+    await expect(box).toHaveValue("Any update?")
   }
 })

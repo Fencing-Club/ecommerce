@@ -112,7 +112,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@babel/core": "^7.29.7",
+    "@babel/core": "^8.0.7",
     "@buildkitgg/dev-domains": "0.1.0",
     "@cloudflare/vite-plugin": "1.64.0",
     "@electric-sql/pglite": "^0.5.10",
@@ -137,7 +137,7 @@
     "@vitest/browser-playwright": "5.0.5",
     "@vitest/coverage-v8": "5.0.5",
     "babel-plugin-react-compiler": "^1.0.0",
-    "cf": "1.0.0-beta.17",
+    "cf": "1.0.0-beta.18",
     "drizzle-kit": "^0.31.11",
     "miniflare": "5.20261012.0-beta",
     "msw": "^3.0.3",

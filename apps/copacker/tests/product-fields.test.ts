@@ -11,6 +11,7 @@ import { PATCH } from "../src/server/http/api/inventory/variant-fields"
 import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
 
@@ -20,11 +21,11 @@ const domain = "shop.myshopify.com"
 const variant = (id: number) => `gid://shopify/ProductVariant/${id}`
 const product = (id: number) => `gid://shopify/Product/${id}`
 
-function save(body: unknown, origin = appUrl()) {
-  return PATCH(
+function save(body: unknown) {
+  return served(PATCH)(
     new Request(`${appUrl()}/api/inventory/variant-fields`, {
       method: "PATCH",
-      headers: { origin, "content-type": "application/json" },
+      headers: { origin: appUrl(), "content-type": "application/json" },
       body: JSON.stringify(body)
     })
   )
@@ -215,7 +216,8 @@ describe("editing variation details", () => {
     expect([saved?.supplierSku, saved?.asin, saved?.amazonStockTarget]).toEqual([null, "B0NEW", 5])
   })
 
-  it("rejects unknown variations, invalid values, supplier workspaces and bad origins", async () => {
+  // The HTTP boundary checks the origin (http-response.test.ts).
+  it("rejects unknown variations, invalid values and supplier workspaces", async () => {
     const unknown = await save({ variantId: variant(99), supplierSku: "AB-1" })
     expect(unknown.status).toBe(404)
     expect(await unknown.json()).toEqual({
@@ -227,7 +229,6 @@ describe("editing variation details", () => {
     expect(await (await save({ variantId: variant(1), amazonStockTarget: -1 })).json()).toEqual({
       error: "Enter a whole number of units, or leave it empty"
     })
-    expect((await save({ variantId: variant(1), asin: "B0" }, "https://evil.example")).status).toBe(403)
     signedIn.actor = testSession({ orgId: supplierOrgId, kind: "supplier" })
     expect((await save({ variantId: variant(1), asin: "B0" })).status).toBe(403)
   })

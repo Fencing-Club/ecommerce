@@ -20,11 +20,13 @@ vi.mock("@tanstack/react-start/server", () => ({
 
 import { ApiSessionError, session } from "../src/server/auth"
 import { POST as action } from "../src/server/http/api/action"
-import { GET as workspaceStatus } from "../src/server/http/api/workspace"
+import { GET as workspaceRoute } from "../src/server/http/api/workspace"
 import { readWorkspacesData, recoverWorkspace as recover } from "../src/server/workspace-recovery"
 import { workspaceCookie } from "../src/server/workspace-session"
+import { served } from "./served"
 import { database, setUpTestDatabase } from "./test-db"
 
+const workspaceStatus = served(workspaceRoute)
 const buyerId = randomUUID(),
   supplierId = randomUUID(),
   outsiderId = randomUUID(),
@@ -105,7 +107,7 @@ describe("workspace recovery", () => {
   it("tells open tabs to recover after access is removed, even when the workspace still exists", async () => {
     jar.set(workspaceCookie, outsiderId)
     const response = await workspaceStatus()
-    expect(response.headers.get("cache-control")).toBe("no-store")
+    expect(response.headers.get("cache-control")).toBe("private, no-store")
     expect(await response.json()).toEqual({ redirect: "/workspaces?unavailable=1" })
     jar.set(workspaceCookie, supplierId)
     expect(await (await workspaceStatus()).json()).toEqual({ id: supplierId })

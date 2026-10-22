@@ -7,11 +7,13 @@ import * as tables from "../src/db/schema"
 vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { GET as inventory } from "../src/server/http/api/inventory"
-import { GET as status } from "../src/server/http/api/inventory/status"
+import { GET as statusRoute } from "../src/server/http/api/inventory/status"
 import { salesSyncStatus } from "../src/server/sales-orders"
+import { served } from "./served"
 import { database, pg, setUpTestDatabase } from "./test-db"
 import { signedIn } from "./test-session"
 
+const status = served(statusRoute)
 const orgId = randomUUID()
 const domain = "status-test.myshopify.com"
 const observedAt = "2026-10-16T10:00:00.000Z"

@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
+import { served } from "./served"
 import { database, pg, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
 vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
 import { amazonReconciliation } from "../src/server/amazon-reconciliation-data"
-import { GET } from "../src/server/http/api/analytics/amazon/reconciliation"
+import { GET as reconciliation } from "../src/server/http/api/analytics/amazon/reconciliation"
+const GET = served(reconciliation)
 const orgId = randomUUID(),
   otherId = randomUUID()
 

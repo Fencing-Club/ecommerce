@@ -74,7 +74,9 @@ test.describe("forwarder", () => {
 
   test("Partners is a buyer's page", async ({ page }) => {
     await page.goto("/partners")
-    await expect(page.getByRole("heading", { level: 1, name: "Something went wrong" })).toBeVisible()
+    // Another kind of workspace gets No access, as a missing page grant does.
+    await expect(page.getByRole("heading", { level: 1, name: "No access" })).toBeVisible()
+    await expect(page).toHaveTitle("No access | Copacker")
     await expect(sidebar(page).getByRole("link", { name: "Partners" })).toHaveCount(0)
   })
 })
