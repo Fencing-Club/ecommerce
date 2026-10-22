@@ -125,7 +125,8 @@ not independently confirmed received units or physical pieces. Missing/invalid c
 no case conversion is inferred. Changes to this cache invalidate continuation snapshots.
 
 Reimbursement candidates include `strongerPaymentCandidate` when order, nonempty SKU, marketplace, stored and payload
-currency, signed whole-transaction amount and reimbursement transaction type agree. These candidates rank first within
+currency, signed whole-transaction amount and reimbursement transaction type agree. When both the report row and
+matching payment item have an ASIN, those ASINs must also agree. These candidates rank first within
 the current 5,000-transaction search page, before 20-candidate pagination. The matching summary exposes their count.
 Search-page counts do not establish global uniqueness. Stronger candidates also expose `paymentCompetition`: the
 other stored report rows that meet the same strict criteria for that payment, across all dates and report pages.
@@ -145,3 +146,22 @@ passed. Read-only production responses confirmed 12 AWD receipts, saved declared
 64 FBA receipts with 13 stored coverage windows, and linked refund fields on 100 Shopify orders (11 linked groups).
 September's 11 reimbursement rows exposed three stronger candidates within the inspected transaction search page,
 with reported recovery outcomes and no confirmed payment assignments. No sync or backfill was started.
+
+
+### Shared-payment investigation (October 22)
+
+A read-only check of all saved Fencing Club reimbursement reports and matching financial transactions found 38 report
+rows with stronger candidates and 38 distinct candidate payments. Four payments compete across two groups of report
+rows: two $9.48 payments and two reports for the same socks order on March 26; two $21.18 payments and two reports for
+the same body-cord order on July 29. Both groups have distinct report IDs and distinct payment IDs, so these are not
+identical imported rows to deduplicate. Each group has two possible one-to-one assignments under the current criteria.
+
+The respective nearby approval/payment timestamps differ by 60 and 14 seconds in March, and 59 and 8 seconds in July.
+That supports a possible pairing but does not supply a direct reimbursement identifier. Saved payment references are
+order, settlement and financial-event-group IDs. No pairing was confirmed and no accounting records were changed.
+
+One July report has an explicit later reimbursement reversal of -$21.18, -1 cash unit and +1 inventory unit. Keep that
+report-family correction separate from assigning the two original positive payments. It establishes a reported cash-to-
+inventory change, not receipt of inventory or a verified bank settlement. Historical costs remain unknown. Further
+confirmation needs an authoritative payment-to-report reference or a reviewed allocation; more amount/date guessing
+cannot resolve it. No provider request, sync or backfill was started for this investigation.
