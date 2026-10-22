@@ -200,7 +200,8 @@ const eventBridgeEvent = z.object({
 })
 
 // Handles one event from the EventBridge queue. The queue only accepts events from the app's own EventBridge rule,
-// so there's no signature to check. Returns false for a message it can't use.
+// so there's no signature to check. Returns false for a message that isn't a Shopify event, which is dropped; a privacy
+// webhook it can't read throws instead, so it isn't lost (see receiveShopifyCompliance).
 export async function receiveShopifyEvent(body: string, now = Date.now()) {
   let json: unknown
   try {
@@ -219,7 +220,8 @@ export async function receiveShopifyEvent(body: string, now = Date.now()) {
   const topic = headers.get("x-shopify-topic") ?? ""
   if (shopifyComplianceTopics.some((compliance) => compliance === topic)) {
     const deliveryId = headers.get("x-shopify-webhook-id") ?? event.data.id
-    return receiveShopifyCompliance(topic, JSON.stringify(event.data.detail.payload), deliveryId)
+    await receiveShopifyCompliance(topic, event.data.detail.payload, deliveryId)
+    return true
   }
   await receiveShopifyWebhook(topic, headers.get("x-shopify-shop-domain") ?? "", now)
   return true

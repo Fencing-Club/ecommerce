@@ -194,8 +194,8 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   environment's RuName ([eBay](notifications.md#ebay)). A new connection starts its first order sync and subscribes the
   seller to notifications.
 - `GET, POST /api/webhooks/ebay`: eBay's endpoint check (`challenge_code`) and its signed notifications, checked and
-  sent on to the worker; 412 for a bad signature, 503 when one can't be checked yet
-  ([eBay notifications](notifications.md#notifications)).
+  sent on to the worker; 412 for a bad signature, 503 when one can't be checked yet, 429 for an address that looks up
+  more than ten unknown signing keys in ten minutes ([eBay notifications](notifications.md#notifications)).
 
 ### Purchase orders
 
