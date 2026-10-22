@@ -96,7 +96,7 @@ state:"pending"|"approved"|"declined"|"withdrawn",data:ProposalInput,createdAt}`
 `PoImport = {id,revision,state:"queued"|"running"|"review"|"saved"|"failed"|"cancelled",
 connectionId,proposal:ImportProposal|null,issues:Issue[],poId:Id|null,source:Artifact,operation:Operation|null,
 statusQuery:StatusQuery|null}`. `ImportProposal` reuses the exact
-[import proposal schema](../../../../src/server/import-proposal.ts), retaining extracted decimal strings and nullable
+[import proposal schema](../../../../src/lib/import-proposal.ts), retaining extracted decimal strings and nullable
 source evidence. Its Shopify candidate IDs stay scoped to the pinned connection and are resolved before draft creation.
 
 | Operation | Input | Result data | Access and effects |

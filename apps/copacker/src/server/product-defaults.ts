@@ -144,8 +144,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       productLabel: input.productLabel,
       suffocationWarning: input.suffocationWarning ?? previous?.suffocationWarning ?? false,
       amazonNetwork: input.amazonNetwork ?? previous?.amazonNetwork ?? "fba",
-      revision: input.expectedRevision + 1,
-      updatedAt: new Date()
+      revision: input.expectedRevision + 1
     }
     await tx
       .insert(productDefaults)
@@ -219,8 +218,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
         target: [productDefaults.orgId, productDefaults.shopifyDomain, productDefaults.productId],
         set: {
           supplierId: input.supplierId,
-          revision: sql`${productDefaults.revision} + 1`,
-          updatedAt: new Date()
+          revision: sql`${productDefaults.revision} + 1`
         }
       })
     return { updated: productIds.length }
@@ -263,8 +261,7 @@ export async function assignProductLabel(s: Session, raw: unknown) {
         target: [productDefaults.orgId, productDefaults.shopifyDomain, productDefaults.productId],
         set: {
           productLabel: input.productLabel,
-          revision: sql`${productDefaults.revision} + 1`,
-          updatedAt: new Date()
+          revision: sql`${productDefaults.revision} + 1`
         }
       })
     return { updated: productIds.length }

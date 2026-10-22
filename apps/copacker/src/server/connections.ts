@@ -10,10 +10,11 @@ import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { AccessError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
+import type { Store } from "@/lib/stores"
 import { amazonReportPolicy } from "./amazon-report-policy"
 import { DemoShopify, demoShopConnection } from "./demo-shopify"
 import { ReconnectRequiredError } from "./errors"
-import { type Provider, requireConnectedAccount } from "./provider-accounts"
+import { requireConnectedAccount } from "./provider-accounts"
 import { decrypt, encrypt } from "./security"
 
 // Copacker's Shopify app's keys.
@@ -37,7 +38,7 @@ const shopifyTokenExpiring = (account: Account, stored: z.infer<typeof savedToke
 
 // The connected account and its access token. Only renewing a Shopify token locks the row, so concurrent jobs renew
 // it once: one that waited for the lock finds the token already renewed.
-export async function connection(orgId: string, provider: Provider) {
+export async function connection(orgId: string, provider: Store) {
   const account = await requireConnectedAccount(orgId, provider)
   const stored = readToken(account)
   if (provider === "shopify" && shopifyTokenExpiring(account, stored)) {
@@ -136,7 +137,7 @@ export function amazonApp(scope: string) {
   })
 }
 // Returns whether the provider confirmed the revocation. Local credentials are always removed.
-export async function disconnect(orgId: string, provider: Provider) {
+export async function disconnect(orgId: string, provider: Store) {
   let revoked = false
   if (provider === "shopify") {
     try {

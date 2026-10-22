@@ -4,8 +4,9 @@ import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { type Locale } from "@/i18n/locales"
 import { can, isAdmin, type Permissions } from "@/lib/access"
+import { storeNames } from "@/lib/stores"
 import { timeZoneLabel } from "@/lib/time-zone"
-import { monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
+import type { MonthlyCost } from "@/server/monthly-costs"
 import { restockSettings } from "@/server/restock-report"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
@@ -140,7 +141,7 @@ function costDetails(
   t: Awaited<ReturnType<typeof translateStory<"settings">>>,
   date: (day: string) => string
 ) {
-  const channel = cost.channel ? monthlyCostChannels[cost.channel] : t("monthlyCosts.allChannels")
+  const channel = cost.channel ? storeNames[cost.channel] : t("monthlyCosts.allChannels")
   if (cost.startsOn && cost.endsOn) {
     return t("monthlyCosts.between", { channel, start: date(cost.startsOn), end: date(cost.endsOn) })
   }

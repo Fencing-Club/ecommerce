@@ -84,7 +84,7 @@ export async function sendLabelsWhenComplete(shipmentId: string, actor: string) 
       const docs = await tx
         .select()
         .from(documents)
-        .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
+        .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, false)))
       if (releaseIssues(shipment, docs, missingLabels).length) {
         return false
       }
@@ -93,7 +93,7 @@ export async function sendLabelsWhenComplete(shipmentId: string, actor: string) 
         .from(orders)
         .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
         .where(eq(orders.id, shipment.orderId))
-      await tx.update(shipments).set({ status: "ready", updatedAt: new Date() }).where(eq(shipments.id, shipment.id))
+      await tx.update(shipments).set({ status: "ready" }).where(eq(shipments.id, shipment.id))
       // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the shipment
       // in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the purchase
       // order's documents.

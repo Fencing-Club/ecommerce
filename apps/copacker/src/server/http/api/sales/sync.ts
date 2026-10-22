@@ -1,9 +1,10 @@
 import { z } from "zod"
+import { stores } from "@/lib/stores"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
-import { requestSalesSync, SalesSyncError, salesSources } from "@/server/sales-orders"
+import { requestSalesSync, SalesSyncError } from "@/server/sales-orders"
 
-const inputSchema = z.strictObject({ source: z.enum(salesSources) })
+const inputSchema = z.strictObject({ source: z.enum(stores) })
 
 // Queues a sync that copies a source's recent orders into Copacker.
 export async function POST(request: Request) {

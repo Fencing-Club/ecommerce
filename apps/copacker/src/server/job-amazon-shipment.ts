@@ -181,8 +181,7 @@ export async function amazonShipmentJob(input: JobInput<"amazon">, { assertOwned
         amazonShipmentId
       })),
       operation: "complete",
-      issue: null,
-      updatedAt: new Date()
+      issue: null
     })
     .where(eq(shipments.id, shipmentId))
   await assertOwned()
