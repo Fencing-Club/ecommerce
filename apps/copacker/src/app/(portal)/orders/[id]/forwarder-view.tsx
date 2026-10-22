@@ -1,11 +1,13 @@
-import { amazonNetworkNames, orderDestination, receivers } from "@repo/copacker-shipments"
-import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
+import { orderDestination, receivers } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { AddressSummary } from "@/components/partner-address"
+import { ProductIdentity } from "@/components/product-identity"
 import { RoutePill } from "@/components/route-pill"
-import { Badge } from "@/components/ui/badge"
+import { RouteStops } from "@/components/route-stops"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { forwarderPage } from "@/server/forwarder-page"
@@ -14,13 +16,10 @@ import type { forwarderPage } from "@/server/forwarder-page"
 // with the other cards' content.
 const edgeTable = "[&_td:first-child]:ps-3 [&_td:last-child]:pe-3 [&_th:first-child]:ps-3 [&_th:last-child]:pe-3"
 
-// The shipping documents a forwarder gets, in the order they're made, as the purchase order page lists them.
-
 // What a freight forwarder sees of a PO whose goods pass through it: the route, with the address to ship on to when
 // that's the buyer's own location, what's coming and in how many cartons, and the shipping documents. No prices; the
 // commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
 // history.
-
 export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwarderPage>> }) {
   const { editable, order, supplier, forwarder, places, onward, shipmentRows, documentGroups } = page
   const t = useTranslations("orders"),
@@ -35,22 +34,23 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
       />
 
       <div className="flex max-w-4xl flex-col gap-4">
-        <Card className="gap-0 overflow-hidden py-0">
-          <div className="flex flex-wrap items-center gap-1.5 border-b p-3">
-            <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
-            <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-            {order.data.via && (
-              <>
+        <Card flush>
+          <RouteStops
+            className="border-b"
+            supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
+            stop={
+              order.data.via && (
                 <RoutePill icon={<Warehouse />}>
                   {[forwarder.name, place(order.data.via.addressId)].filter(Boolean).join(", ")}
                 </RoutePill>
-                <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-              </>
-            )}
-            <RoutePill icon={<MapPin />}>
-              {place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)}
-            </RoutePill>
-          </div>
+              )
+            }
+            destination={
+              <RoutePill icon={<MapPin />}>
+                {place(order.data.deliveryId) ?? formatDestination(orderDestination(order.data), common)}
+              </RoutePill>
+            }
+          />
           {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
           <Table framed={false} className={edgeTable}>
             <TableHeader>
@@ -63,12 +63,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
               {order.data.items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="py-2.5 align-top whitespace-normal">
-                    <p className="leading-snug font-medium">{item.name}</p>
-                    {item.variant && item.variant !== "Default Title" && (
-                      <Badge variant="secondary" className="mt-1">
-                        {item.variant}
-                      </Badge>
-                    )}
+                    <ProductIdentity item={item} showSku={false} showPackSize={false} />
                     <p className="mt-1 text-xs text-muted-foreground">
                       {orderDestination(order.data) === "amazon"
                         ? t("detail.skuToAmazon", {
@@ -102,7 +97,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
                           })
                         : t("detail.shipment", { number: index + 1 })}
                     </span>
-                    <ShipmentDetails
+                    <CartonsAndTracking
                       shipment={shipment}
                       cartons={shipment.cartonCount ? t("detail.cartons", { count: shipment.cartonCount }) : undefined}
                     />
@@ -140,7 +135,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
 }
 
 // Under a shipment's name: its cartons once they're packed, and the carrier and tracking number once it's shipped on.
-function ShipmentDetails({
+function CartonsAndTracking({
   shipment,
   cartons
 }: {

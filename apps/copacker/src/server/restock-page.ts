@@ -1,9 +1,11 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { requestInput } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
 import type { ProductDefaults } from "./product-defaults"
@@ -23,7 +25,7 @@ export const restockInputSchema = z.strictObject({
   leadTimeDays: days,
   channel: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("amazon") }),
-    z.strictObject({ kind: z.literal("shopify"), locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/) })
+    z.strictObject({ kind: z.literal("shopify"), locationId: locationIdSchema })
   ]),
   // Every supplier, one supplier's products, or products never ordered from a supplier.
   supplier: z.union([z.literal("all"), z.uuid()]).default("all")
@@ -279,7 +281,7 @@ async function channelPlan(
 
 // Restock suggestions for one channel from stored orders, current stock and open POs.
 export async function restockReport(s: Session, raw: unknown) {
-  const input = restockInputSchema.parse(raw)
+  const input = requestInput(restockInputSchema, raw)
   const inputs = await restockInputs(s.org.id, input.days)
   const { context } = inputs
   const { channel } = input

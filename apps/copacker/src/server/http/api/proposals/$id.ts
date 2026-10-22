@@ -14,7 +14,7 @@ const input = z.discriminatedUnion("action", [
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = input.parse(await request.json())
-    const id = z.uuid().parse((await params).id)
+    const id = z.uuid().parse(params.id)
     const s = await session()
     requireAccess(s, "orders", "edit")
     if (body.action === "approve") {

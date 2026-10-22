@@ -203,5 +203,6 @@ English review examples are not a production event publisher or a replacement fo
 
 Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
 `PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
-and required ready date. The standalone shipment-packing-details stories cover editing, read-only, forwarder,
-and mobile layouts; the prototype sidebar reads the date from the live form.
+and required ready date; a packed shipment shows its pickup address with `ShipmentOrigin`, without a form. The
+standalone shipment-packing-details stories cover editing, read-only, forwarder, and mobile layouts; the prototype
+sidebar reads the date from the live form.

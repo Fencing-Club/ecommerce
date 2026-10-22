@@ -4,13 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
 import { AccessError, NotFoundError } from "../src/i18n/errors"
 import { loadMessages } from "../src/i18n/messages"
-import { StatusError } from "../src/server/errors"
-import { appOriginPolicy, fallbackResponse, fileResponse, httpResponse } from "../src/server/http-response"
+import { InvalidRequestError, requestInput, requestJson, StatusError } from "../src/server/errors"
+import { apiHandlers, appOriginPolicy, fallbackResponse, fileResponse, httpResponse } from "../src/server/http-response"
 import { requestLocale, resolveLocalization, withLocalization } from "../src/server/localization"
+
+const request = new Request("https://copacker.example/api/things/1?format=csv", { method: "PATCH" })
+const answer = (run: () => Response | Promise<Response>) => httpResponse(request, run)
 
 describe("HTTP boundary", () => {
   it("preserves downloads and cookies while preventing shared caching", async () => {
-    const response = await httpResponse(
+    const response = await answer(
       () =>
         new Response("file", {
           status: 206,
@@ -29,7 +32,7 @@ describe("HTTP boundary", () => {
     expect(await response.text()).toBe("file")
   })
   it("keeps a cache policy the handler chose, such as a product photo's", async () => {
-    const response = await httpResponse(
+    const response = await answer(
       () => new Response("photo", { headers: { "Cache-Control": "private, max-age=31536000, immutable" } })
     )
     expect(response.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable")
@@ -38,7 +41,7 @@ describe("HTTP boundary", () => {
     const response = await withLocalization(
       () => resolveLocalization({ preferredLocale: "ur", acceptLanguage: null }),
       () =>
-        httpResponse(() => {
+        answer(() => {
           throw new AccessError("forbidden")
         })
     )
@@ -48,27 +51,53 @@ describe("HTTP boundary", () => {
     expect(await requestLocale()).toBeUndefined()
   })
   it("answers a StatusError with its status and message", async () => {
-    const response = await httpResponse(() => {
+    const response = await answer(() => {
       throw new StatusError("packingListUnavailable", 409)
     })
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: "The packing list is available once packing is finished" })
   })
-  it("answers a request that doesn't parse with 400", async () => {
-    const invalid = await httpResponse(() => {
-      z.strictObject({ id: z.uuid() }).parse({ id: "abc" })
-      return new Response()
-    })
-    expect(invalid.status).toBe(400)
-    expect(await invalid.json()).toEqual({ error: expect.stringContaining("id:") })
-    const malformed = await httpResponse(async () =>
-      Response.json(await new Request("https://copacker.example", { method: "POST", body: "{" }).json())
+  it("answers request input that doesn't parse with 400: its body, query or path", async () => {
+    const post = (body: string) => new Request("https://copacker.example/api/things", { method: "POST", body })
+    const body = await answer(async () =>
+      Response.json(requestInput(z.strictObject({ count: z.number() }), await requestJson(post('{"count":"two"}'))))
     )
+    expect(body.status).toBe(400)
+    expect(await body.json()).toEqual({ error: expect.stringContaining("count:") })
+    const malformed = await answer(async () => Response.json(await requestJson(post("{"))))
     expect(malformed.status).toBe(400)
     expect(await malformed.json()).toHaveProperty("error")
+    const query = await answer(() =>
+      Response.json(requestInput(z.enum(["pdf", "xlsx"]), new URL(request.url).searchParams.get("format")))
+    )
+    expect(query.status).toBe(400)
+    const path = await answer(() => Response.json(requestInput(z.uuid(), "abc")))
+    expect(path.status).toBe(400)
+    const id = "00000000-0000-4000-8000-000000000001"
+    expect(await (await answer(() => Response.json(requestInput(z.uuid(), id)))).json()).toBe(id)
+  })
+  it("logs a parse failure that isn't the request's, such as stored or provider data, and answers 500", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    try {
+      const stored = await answer(() =>
+        Response.json(z.strictObject({ revision: z.number() }).parse({ revision: "1" }))
+      )
+      expect(stored.status).toBe(500)
+      expect(stored.headers.get("Cache-Control")).toBe("private, no-store")
+      expect(await stored.json()).toEqual({ error: "Something went wrong. Try again." })
+      const provider = await answer(() => Response.json(JSON.parse("<html>")))
+      expect(provider.status).toBe(500)
+      const line = { event: "api_request_failed", method: "PATCH", path: "/api/things/1" }
+      expect(logged.mock.calls.map(([text]) => JSON.parse(String(text)))).toEqual([
+        { ...line, error: expect.objectContaining({ name: "ZodError" }) },
+        { ...line, error: expect.objectContaining({ name: "SyntaxError" }) }
+      ])
+    } finally {
+      logged.mockRestore()
+    }
   })
   it("maps missing records to a private 404 and preserves redirects and unexpected errors", async () => {
-    const response = await httpResponse(() => {
+    const response = await answer(() => {
       throw new NotFoundError()
     })
     expect(response.status).toBe(404)
@@ -76,25 +105,43 @@ describe("HTTP boundary", () => {
     expect(await response.json()).toEqual({ error: "Not found" })
     const login = redirect({ href: "/login" })
     await expect(
-      httpResponse(() => {
+      answer(() => {
         throw login
       })
     ).rejects.toBe(login)
     await expect(
-      httpResponse(() => {
+      answer(() => {
         throw new Error("unrelated")
       })
     ).rejects.toThrow("unrelated")
   })
 })
 
+describe("API route handlers", () => {
+  it("serves each HTTP method its module exports through the boundary, with the route's params", async () => {
+    const handlers = apiHandlers({
+      GET: (route: Request, { params }: { params: { id: string } }) => Response.json({ id: params.id, url: route.url }),
+      DELETE: () => {
+        throw new NotFoundError()
+      }
+    })
+    expect(Object.keys(handlers)).toEqual(["GET", "DELETE"])
+    const read = await handlers.GET!({ request, params: { id: "1" } })
+    expect(await read.json()).toEqual({ id: "1", url: request.url })
+    expect(read.headers.get("Cache-Control")).toBe("private, no-store")
+    expect((await handlers.DELETE!({ request, params: { id: "1" } })).status).toBe(404)
+  })
+})
+
 describe("route fallbacks", () => {
-  it("leaves the failures the boundary knows to it", async () => {
+  it("leaves the failures the boundary knows to it, and parse failures for it to log", async () => {
     for (const error of [
       new AccessError("forbidden"),
       new StatusError("packingListUnavailable", 409),
       new NotFoundError(),
-      new SyntaxError("Unexpected end of JSON input"),
+      new InvalidRequestError(new SyntaxError("Unexpected end of JSON input")),
+      new SyntaxError("Unexpected token '<'"),
+      new z.ZodError([]),
       redirect({ href: "/login" })
     ]) {
       await expect(fallbackResponse(error, "labelsNotMade")).rejects.toBe(error)
@@ -165,6 +212,8 @@ describe("app origin", () => {
   ])("refuses a write from %s", async (_name, headers) => {
     expect(await allowed(post("/api/inventory/refresh", headers))).toBe(false)
     expect(await allowed(post("/api/inventory/locations", headers))).toBe(false)
+    expect(await allowed(post("/api/action", headers))).toBe(false)
+    expect(await allowed(post("/api/connections/amazon-ads", headers))).toBe(false)
     expect(await allowed(post("/logout", headers))).toBe(false)
     expect(await allowed(post("/_serverFn/abc", headers), "serverFn")).toBe(false)
   })

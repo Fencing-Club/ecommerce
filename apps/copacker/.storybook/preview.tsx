@@ -19,8 +19,8 @@ import { prepareIntl, storyTimeZone } from "./intl"
 import { mockRows } from "./mocks/db"
 import { handlers } from "./mocks/handlers"
 import { prepareStoryRouter, StoryRouter } from "./router"
-// The app's stylesheet, as AppProviders brings it: the reset first, then Tailwind's layers.
-import "@/styles/global.css"
+// The app's stylesheet, as AppProviders brings it: the theme's colors, then Tailwind.
+import "@/styles/theme.css"
 import "@/app/globals.css"
 
 // findBy and waitFor give a mocked response and its render 5 seconds, not 1: under a full test run, a busy machine

@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "Add forwarder",
       "title": "Add a forwarder",
       "description": "Picks up from your supplier and ships on to Amazon or your warehouse.",
       "submit": "Add forwarder",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "Add supplier",
       "title": "Add a supplier",
       "description": "For a supplier that isn’t in Shopify yet."
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} keeps their contact details in their own workspace.",
       "leadTime": "Lead time (days)",
       "leadTimeDescription": "From purchase order to sellable stock. Empty means {days}.",
-      "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving…",
       "failed": "Couldn’t save the supplier. Try again."
     },
     "invite": {
       "title": "Invite {name}",
       "description": "They’ll see the purchase orders you share and get emailed when one needs documents.",
       "email": "Supplier email",
-      "cancel": "Cancel",
       "submit": "Send invitation",
-      "sending": "Sending…",
       "failed": "Couldn’t invite {name}. Try again."
     }
   },
@@ -131,7 +125,6 @@
     "add": "Add an address for {name}",
     "saveChanges": "Save changes",
     "save": "Save address",
-    "name": "Address name",
     "pickupPlaceholder": "Factory",
     "placeholder": "Yiwu warehouse",
     "sheet": {

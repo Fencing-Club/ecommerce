@@ -1,14 +1,6 @@
-import type { Address } from "@repo/copacker-orders"
-import { addressSchema } from "@repo/copacker-orders"
-import { Check } from "lucide-react"
-import { useId, useSyncExternalStore } from "react"
-import type { UseFormReturn } from "react-hook-form"
-import { type FieldValues, FormProvider, useController, useFormState, useWatch } from "react-hook-form"
+import { useSyncExternalStore } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError, SubmitButton } from "@/components/form-feedback"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   Select,
   SelectContent,
@@ -19,62 +11,17 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useActionForm } from "@/hooks/use-action-form"
 import type { Locale } from "@/i18n/locales"
 import { localeNames, locales } from "@/i18n/locales"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import type { ContactKind } from "@/lib/contacts"
-import { contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
 import { ActionForm } from "./action-form"
-import { AddressFields, emptyAddress } from "./address-fields"
-import { FormInput, FormNumber } from "./form-controls"
+import { FormField, FormInput, FormNumber, useFormField } from "./form-controls"
 import { FormSelect } from "./form-select"
 
-type FormLayoutProps<Values extends FieldValues> = {
-  form: UseFormReturn<Values, unknown, FieldValues>
-  onSubmit: (event?: React.BaseSyntheticEvent) => Promise<void>
-  children: React.ReactNode
-}
-
-// A settings form as a card: its fields, then Save at the right of the card's footer. Save stays outlined and
-// disabled until something changes, so a page of these cards doesn't read as a column of orange buttons. The form
-// state is read here rather than passed in, so the footer follows edits however the parent is memoized.
-export function SettingsForm<Values extends FieldValues>({ form, onSubmit, children }: FormLayoutProps<Values>) {
-  const t = useTranslations("settings.form")
-  const { isDirty, isSubmitting, isSubmitSuccessful, errors } = useFormState({ control: form.control })
-  return (
-    <FormProvider {...form}>
-      <form onSubmit={onSubmit} noValidate>
-        <Card>
-          <CardContent>
-            <FieldGroup>
-              {children}
-              <FormError message={errors.root?.server?.message} />
-            </FieldGroup>
-          </CardContent>
-          <CardFooter className="justify-end gap-3">
-            {isSubmitSuccessful && !isDirty && (
-              <output className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Check className="size-3.5" aria-hidden />
-                {t("saved")}
-              </output>
-            )}
-            <SubmitButton
-              type="submit"
-              variant={isDirty ? "default" : "outline"}
-              pending={isSubmitting}
-              disabled={!isDirty}
-            >
-              {t("save")}
-            </SubmitButton>
-          </CardFooter>
-        </Card>
-      </form>
-    </FormProvider>
-  )
-}
+// Each settings form is a card whose Save waits for a change (ActionForm's "card" layout).
 
 // The supplier's contact details, which their buyers see. All optional.
 export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema>) {
@@ -87,7 +34,7 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
     keepSaved: (saved) => saved
   })
   return (
-    <SettingsForm form={form} onSubmit={submit}>
+    <ActionForm form={form} onSubmit={submit} layout="card" requireChange>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput name="contactName" label={t("contactName")} autoComplete="name" />
         <FormInput name="contactEmail" label={t("contactEmail")} type="email" autoComplete="email" />
@@ -101,7 +48,7 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
           placeholder="example.com"
         />
       </div>
-    </SettingsForm>
+    </ActionForm>
   )
 }
 
@@ -126,7 +73,7 @@ export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
     keepSaved: true
   })
   return (
-    <SettingsForm form={form} onSubmit={submit}>
+    <ActionForm form={form} onSubmit={submit} layout="card" requireChange>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormNumber
           name="salesDays"
@@ -146,13 +93,10 @@ export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
           step={1}
         />
       </div>
-    </SettingsForm>
+    </ActionForm>
   )
 }
 
-const timeZoneSchema = z.object({ timeZone: z.string() })
-
-// The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.
 // The choice that follows the computer's language, which is saved as an empty value.
 const systemLanguage = "system"
 
@@ -169,7 +113,7 @@ export function LanguageForm({ locale, systemLocale }: { locale: Locale | null; 
     keepSaved: true
   })
   return (
-    <SettingsForm form={form} onSubmit={submit}>
+    <ActionForm form={form} onSubmit={submit} layout="card" requireChange>
       <FormSelect
         name="locale"
         label={t("label")}
@@ -178,10 +122,13 @@ export function LanguageForm({ locale, systemLocale }: { locale: Locale | null; 
           ...locales.map((value) => ({ value, label: localeNames[value] }))
         ]}
       />
-    </SettingsForm>
+    </ActionForm>
   )
 }
 
+const timeZoneSchema = z.object({ timeZone: z.string() })
+
+// The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.
 export function TimeZoneForm({
   timeZone,
   computerZone,
@@ -207,9 +154,9 @@ export function TimeZoneForm({
     () => computerZone
   )
   return (
-    <SettingsForm form={form} onSubmit={submit}>
+    <ActionForm form={form} onSubmit={submit} layout="card" requireChange>
       <TimeZoneField name="timeZone" label={t("label")} zones={zones} computerZone={timeZoneLabel(browserZone)} />
-    </SettingsForm>
+    </ActionForm>
   )
 }
 
@@ -260,11 +207,11 @@ function TimeZoneField({
   computerZone: string
 }) {
   const t = useTranslations("settings.timeZone")
-  const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur },
-    fieldState
-  } = useController({ name })
+    fieldProps,
+    controlProps
+  } = useFormField(name)
   const value = typeof fieldValue === "string" && fieldValue ? fieldValue : automatic
   // A zone saved under another name, such as an alias, stays one of the choices.
   const listed = value === automatic || zones.some((zone) => zone.value === value)
@@ -275,10 +222,9 @@ function TimeZoneField({
     ...choices.map((zone): [string, string] => [zone.value, zone.label])
   ])
   return (
-    <Field data-invalid={fieldState.invalid}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <FormField {...fieldProps} label={label}>
       <Select value={value} onValueChange={(next: string | null) => onChange(!next || next === automatic ? "" : next)}>
-        <SelectTrigger id={id} ref={ref} onBlur={onBlur} aria-invalid={fieldState.invalid} className="w-full">
+        <SelectTrigger {...controlProps} ref={ref} onBlur={onBlur} className="w-full">
           <SelectValue>{(chosen: string | null) => (chosen && labels.get(chosen)) ?? chosen}</SelectValue>
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false} className="max-h-[min(20rem,var(--available-height))]">
@@ -307,83 +253,6 @@ function TimeZoneField({
           ))}
         </SelectContent>
       </Select>
-      <FieldError errors={[fieldState.error]} />
-    </Field>
-  )
-}
-
-const contactSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  kind: z.enum(contactKinds),
-  address: addressSchema,
-  // Empty when a delivery address isn't linked to a Shopify location.
-  shopifyLocationId: z.string()
-})
-
-type SavedContact = {
-  id: string
-  name: string
-  kind: ContactKind
-  address: Address
-  shopifyLocationId: string | null
-}
-
-export function ContactForm({
-  contact,
-  onSuccess,
-  supplier = false,
-  locations = []
-}: {
-  contact?: SavedContact
-  onSuccess?: () => void
-  supplier?: boolean
-  locations?: { id: string; name: string }[]
-}) {
-  const t = useTranslations("settings.addresses")
-  const partners = useTranslations("partners")
-  const { form, submit } = useActionForm({
-    schema: contactSchema,
-    action: contact ? "contact.update" : "contact.create",
-    defaultValues: contact
-      ? {
-          name: contact.name,
-          kind: contact.kind,
-          address: { ...emptyAddress, ...contact.address },
-          shopifyLocationId: contact.shopifyLocationId ?? ""
-        }
-      : { name: "", kind: supplier ? "pickup" : "delivery", address: emptyAddress, shopifyLocationId: "" },
-    toPayload: (values) => ({
-      ...(contact && { id: contact.id }),
-      ...values,
-      shopifyLocationId: values.shopifyLocationId || null
-    }),
-    onSuccess
-  })
-  const kind = useWatch({ control: form.control, name: "kind" })
-  const kinds = supplier ? [] : contactKindsFor("buyer")
-  return (
-    <ActionForm form={form} onSubmit={submit} label={contact ? t("saveChanges") : t("saveAddress")} dialog>
-      <div className={kinds.length > 1 ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
-        <FormInput name="name" required label={t("name")} placeholder={t("namePlaceholder")} autoComplete="off" />
-        {kinds.length > 1 && (
-          <FormSelect
-            name="kind"
-            required
-            label={t("kind")}
-            options={kinds.map((option) => ({ value: option, label: partners(contactKindLabelKeys[option]) }))}
-          />
-        )}
-      </div>
-      {!supplier && kind === "delivery" && locations.length > 0 && (
-        <FormSelect
-          name="shopifyLocationId"
-          label={t("shopifyLocation")}
-          description={t("shopifyLocationDescription")}
-          placeholder={t("notLinked")}
-          options={locations.map((location) => ({ value: location.id, label: location.name }))}
-        />
-      )}
-      <AddressFields path="address" />
-    </ActionForm>
+    </FormField>
   )
 }

@@ -46,15 +46,7 @@ const config: StorybookConfig = {
         ]
       },
       optimizeDeps: {
-        include: [
-          "msw/http",
-          "msw/utils/delay",
-          "msw/browser",
-          "msw-storybook-addon",
-          "@vanilla-extract/sprinkles/createRuntimeSprinkles",
-          "nuqs",
-          "nuqs/adapters/testing"
-        ]
+        include: ["msw/http", "msw/utils/delay", "msw/browser", "msw-storybook-addon", "nuqs", "nuqs/adapters/testing"]
       }
     })
   }

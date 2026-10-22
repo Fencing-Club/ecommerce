@@ -1,9 +1,8 @@
 import type { EditableProduct } from "@/components/product-details"
 import type { EditorProduct } from "@/components/supplier/product-editor"
 import type { ProductRow } from "@/components/supplier/product-index"
-import type { SupplierOption } from "@/lib/api"
+import type { ListedProduct, ListedVariant, SupplierOption } from "@/lib/api"
 import type { AmazonOnlyStock } from "@/server/inventory-products"
-import type { InventoryProduct, InventoryVariant } from "@/server/inventory-products"
 import type { ProductBarcode } from "@/server/product-barcodes"
 import type { ProductDefaults } from "@/server/product-defaults"
 import type { ProductWithoutSupplier } from "@/server/product-suppliers"
@@ -45,17 +44,6 @@ export const uploadedBarcode: ProductBarcode = {
   bytes: 48210,
   uploadedAt: daysAgo(5).toISOString()
 }
-
-// A variation as the products API lists it: its stock and the details Copacker keeps for it.
-type ListedVariant = InventoryVariant & {
-  barcode: ProductBarcode | null
-  fnsku: string | null
-  supplierSku: string | null
-  asin: string | null
-  storeStockTarget: number | null
-  countryOfOrigin?: string | null
-}
-type ListedProduct = Omit<InventoryProduct, "variants"> & { defaults: ProductDefaults; variants: ListedVariant[] }
 
 function variant(id: number, overrides: Partial<ListedVariant> = {}): ListedVariant {
   return {

@@ -1,3 +1,4 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
@@ -6,6 +7,15 @@ import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Field, FieldError, FieldGroup } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
@@ -13,19 +23,11 @@ import { currencySymbol } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { useCan } from "./access"
+import { keepEnterFromSubmitting } from "./action-form"
 import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { InviteSupplier } from "./invite-supplier"
-import { Badge } from "./ui/badge"
-import { Button } from "./ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Field, FieldError, FieldGroup } from "./ui/field"
-import { Input } from "./ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 
 const reviewApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -88,11 +90,6 @@ function reviewProduct(variant: CatalogVariant): ReviewProduct {
   return { title: variant.product.title, variant: variant.title, sku: variant.sku }
 }
 
-// Shopify names a product's only variant "Default Title", which says nothing.
-function variantName(product: ReviewProduct) {
-  return product.variant === "Default Title" ? null : product.variant
-}
-
 // The currencies an import can be in, named as the purchase order editor names them, under orders.currencies.
 const currencies = objectKeys({
   USD: true,
@@ -117,24 +114,8 @@ function reasonText(reason: string, t: ReviewTranslator) {
   return reason === addedReason ? t("addedDuringReview") : reason
 }
 
-// The table's first and last columns line up with the card's header.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-
 // Focuses the product search when it opens. Defined once, so React calls it only when the search mounts.
 const focusOnMount = (input: HTMLInputElement | null) => input?.focus()
-
-// Enter in a field would save the draft, which creates the purchase order, so only Save draft saves. Buttons still
-// press, and the product search keeps Enter to search.
-function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
-  if (
-    event.key === "Enter" &&
-    !event.nativeEvent.isComposing &&
-    event.target instanceof HTMLInputElement &&
-    event.target.form === event.currentTarget
-  ) {
-    event.preventDefault()
-  }
-}
 
 // A cell saving needs that's still empty.
 const blank = (value: string | number | null) => value === null || value === ""
@@ -208,7 +189,7 @@ function LineProduct({
 }) {
   const t = useTranslations("orders.review")
   if (product) {
-    const variant = variantName(product)
+    const variant = variantName(product.variant)
     return (
       <>
         <span className="leading-snug font-medium">{product.title}</span>
@@ -345,7 +326,7 @@ export function ImportReview({
       line.reason = selectedReason
       // A line added during review has no document text; it takes the product's name.
       if (!line.description.trim()) {
-        line.description = [product.title, variantName(product)].filter(Boolean).join(" ")
+        line.description = [product.title, variantName(product.variant)].filter(Boolean).join(" ")
       }
     })
     setSearchRow(null)
@@ -481,7 +462,7 @@ export function ImportReview({
                     error={checking && missing.supplier ? tr("chooseSupplier") : undefined}
                     options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
                     value={supplierId}
-                    onChange={(e) => setSupplierId(e.target.value)}
+                    onValueChange={setSupplierId}
                   />
                   {canAddSupplier && (
                     <Button
@@ -529,8 +510,7 @@ export function ImportReview({
                   error={checking && missing.currency ? tr("chooseCurrency") : undefined}
                   options={currencies.map((code) => ({ value: code, label: t(`currencies.${code}`) }))}
                   value={currency ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value
+                  onValueChange={(value) => {
                     if (arrayIncludes(currencies, value)) {
                       edit((p) => {
                         p.currency = value
@@ -542,12 +522,12 @@ export function ImportReview({
             </CardContent>
           </Card>
 
-          <Card className="gap-0 overflow-hidden py-0 @5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
-            <CardHeader className="border-b p-4">
+          <Card flush className="@5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
+            <CardHeader>
               <CardTitle>{tr("lines")}</CardTitle>
             </CardHeader>
             {/* An editing grid: on a phone it scrolls sideways rather than squeezing the inputs. */}
-            <Table framed={false} className={cn(edgeTable, "min-w-3xl")}>
+            <Table framed={false} inset className="min-w-3xl">
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("columns.product")}</TableHead>
@@ -749,7 +729,7 @@ export function ImportReview({
                                   {results.results.map((result) => {
                                     const option = reviewProduct(result)
                                     const details = [
-                                      variantName(option),
+                                      variantName(option.variant),
                                       option.sku,
                                       result.supplierSku && tr("supplierSku", { sku: result.supplierSku.value })
                                     ]
@@ -759,7 +739,7 @@ export function ImportReview({
                                       <li key={result.id}>
                                         <button
                                           type="button"
-                                          className="flex w-full flex-col items-start px-3 py-2 text-start text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+                                          className="focus-ring flex w-full flex-col items-start px-3 py-2 text-start text-sm hover:bg-muted focus-visible:bg-muted focus-visible:ring-inset"
                                           onClick={() => choose(index, result)}
                                         >
                                           <span className="font-medium">{option.title}</span>

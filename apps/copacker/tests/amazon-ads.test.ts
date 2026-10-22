@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { applySchema } from "./database"
+import { served } from "./served"
 const context = vi.hoisted(() => ({ database: null as unknown, orgId: "", userId: "user-1", role: "owner" }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 
@@ -175,7 +176,7 @@ describe("Amazon Ads authorization and transport", () => {
     expect(await adsStatus(orgId)).toMatchObject({ connected: true, active: true })
     expect((await GET(callback)).status).toBe(400)
   })
-  it("rejects expired consent, a different workspace, non-admins and cross-origin mutations", async () => {
+  it("rejects expired consent, a different workspace, non-admins and unknown actions", async () => {
     const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
     const state = new URL(start.headers.get("location")!).searchParams.get("state")
     const callback = new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=code`)
@@ -184,17 +185,17 @@ describe("Amazon Ads authorization and transport", () => {
     context.orgId = orgId
     await database.update(tables.oauthStates).set({ expiresAt: new Date(0) })
     expect((await GET(callback)).status).toBe(400)
+    // The app-origin middleware refuses a POST from another site before this route runs (tests/http-response.test.ts).
     expect(
       (
-        await POST(
+        await served(POST)(
           new Request("https://copacker.ai/api/connections/amazon-ads", {
             method: "POST",
-            headers: { origin: "https://example.com" },
-            body: JSON.stringify({ action: "disconnect" })
+            body: JSON.stringify({ action: "delete" })
           })
         )
       ).status
-    ).toBe(403)
+    ).toBe(400)
     context.role = "member"
     expect(
       await (await GET(new Request("https://copacker.ai/api/connections/amazon-ads?status=1"))).json()
@@ -339,7 +340,7 @@ describe("durable ad spend imports", () => {
     await disconnectAds(orgId)
     await amazonAdsJob(
       { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
-      async () => undefined
+      { assertOwned: async () => undefined }
     )
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -364,7 +365,7 @@ describe("durable ad spend imports", () => {
         reportId: "report",
         productDetail: true
       },
-      async () => undefined
+      { assertOwned: async () => undefined }
     )
     expect(await database.select().from(tables.amazonAdsDays)).toHaveLength(0)
     const evidence = await database.select().from(tables.analyticsEvidence)
@@ -379,7 +380,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       options: {
@@ -398,7 +399,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       message: "Waiting for Amazon Ads report",
@@ -427,7 +428,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({ message: `Amazon Ads report is outside the requested scope: ${label}` })
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
@@ -457,12 +458,12 @@ describe("durable ad spend imports", () => {
       to: "2026-10-13",
       reportId: "report"
     }
-    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+    await expect(amazonAdsJob(payload, { assertOwned: async () => undefined })).rejects.toMatchObject({
       options: { payload: expect.objectContaining({ productDetail: true }) }
     })
     expect((await database.select().from(tables.amazonAdsDays)).map((d) => d.cost)).toEqual(["3.750000", "0.000000"])
     cost = 2
-    await expect(amazonAdsJob(payload, async () => undefined)).rejects.toMatchObject({
+    await expect(amazonAdsJob(payload, { assertOwned: async () => undefined })).rejects.toMatchObject({
       options: { payload: expect.objectContaining({ productDetail: true }) }
     })
     const from = new Date("2026-10-12T07:00:00Z"),
@@ -510,7 +511,7 @@ describe("durable ad spend imports", () => {
           to: "2026-10-13",
           reportId: "report"
         },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toThrow("generation failed")
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
@@ -541,7 +542,7 @@ describe("durable ad spend imports", () => {
       await expect(
         amazonAdsJob(
           { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-          async () => undefined
+          { assertOwned: async () => undefined }
         )
       ).rejects.toThrow("download is missing")
       expect((await database.select().from(tables.amazonAdsDays)).map((day) => day.cost)).toEqual(["12.500000"])
@@ -565,7 +566,7 @@ describe("durable ad spend imports", () => {
     await expect(
       amazonAdsJob(
         { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-        async () => undefined
+        { assertOwned: async () => undefined }
       )
     ).rejects.toMatchObject({
       message: `Amazon Ads ${stage} transport_TypeError failure (503)`,
@@ -599,7 +600,7 @@ describe("durable ad spend imports", () => {
       await expect(
         amazonAdsJob(
           { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
-          async () => undefined
+          { assertOwned: async () => undefined }
         )
       ).rejects.toMatchObject({
         message: `Amazon Ads ${stage} transport_TypeError failure (503)`,

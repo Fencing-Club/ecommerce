@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { expect, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { Button } from "@/components/ui/button"
 import { expandCartonGroups, groupCartons, palletCartons, type PalletValue } from "@/lib/carton-groups"
 import { palletColumns } from "@/lib/pallet-import"
 import { towelOrder, towelPacking } from "@/stories/fixtures/packing"
 import { shownDialog } from "@/stories/fixtures/purchase-orders"
 import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletTable } from "./pallet-table"
-import { Button } from "./ui/button"
 
 // PO38's cartons: A1–A10, B1–B6 and C1–C2.
 const groups = groupCartons(towelPacking().cartons)

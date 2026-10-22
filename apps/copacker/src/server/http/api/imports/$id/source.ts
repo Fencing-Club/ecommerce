@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
-  const { id } = await params
+  const { id } = params
   if (!z.uuid().safeParse(id).success) {
     return errorTextResponse("notFound", 404)
   }

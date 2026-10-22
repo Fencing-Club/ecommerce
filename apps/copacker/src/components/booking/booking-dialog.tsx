@@ -124,7 +124,7 @@ function StepProgress({ step }: { step: BookingStepCount }) {
       aria-valuetext={t("step", step)}
       className="flex-nowrap items-center gap-2 *:data-[slot=progress-track]:w-10 *:data-[slot=progress-track]:shrink-0 *:data-[slot=progress-track]:bg-input"
     >
-      <ProgressLabel className="order-last text-[13px] font-normal text-muted-foreground">
+      <ProgressLabel className="order-last text-meta font-normal text-muted-foreground">
         {t("step", step)}
       </ProgressLabel>
     </Progress>

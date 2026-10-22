@@ -160,7 +160,8 @@ list and labels.
 - **Shipment to your warehouse:** packing, approval, ready (no release step), shipped, at the forwarder (planned),
   forwarded, receiving (planned), received.
 - **Side states:** correction, needs attention, cancelled. A shipment in correction with no Amazon order can't be
-  cancelled today and blocks closing.
+  cancelled today and blocks closing. The [packing changes spec](../packing-changes/README.md) replaces correction with
+  editing finished packing.
 
 ## Gates
 

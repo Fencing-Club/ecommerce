@@ -1,21 +1,12 @@
 import { Tags } from "lucide-react"
-import { useId, useRef, useState } from "react"
+import { useRef } from "react"
 import { useTranslations } from "use-intl"
-import { FormError } from "@/components/form-feedback"
+import { z } from "zod"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { useAction } from "@/hooks/use-action"
+import { DialogTrigger } from "@/components/ui/dialog"
+import { FormField, useFormField } from "./form-controls"
+import { FormDialog } from "./form-dialog"
 import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
 
@@ -39,66 +30,59 @@ export function ExcludedOrderTags({ tags, suggestions }: { tags: string[]; sugge
   )
 }
 
+const tagsSchema = z.object({ tags: z.array(z.string()) })
+
 function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[] }) {
   const t = useTranslations("settings.excludedTags")
-  const id = useId()
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState<string[]>([])
   const input = useRef<HTMLInputElement>(null)
-  const save = useAction("workspace.excludedShopifyTags", {
-    fallback: t("saveFailed"),
-    onSuccess: () => setOpen(false)
-  })
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setValue(tags)
-          save.reset()
-        }
-        setOpen(next)
+    <FormDialog
+      trigger={
+        <DialogTrigger
+          render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+        >
+          {t("edit")}
+        </DialogTrigger>
+      }
+      title={t("title")}
+      description={t("description")}
+      submitLabel={t("save")}
+      // Typing goes straight into the tags, not to the first chip's remove button.
+      initialFocus={input}
+      form={{
+        schema: tagsSchema,
+        action: "workspace.excludedShopifyTags",
+        defaultValues: { tags },
+        fallback: t("saveFailed")
       }}
     >
-      <DialogTrigger
-        render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
-      >
-        {t("edit")}
-      </DialogTrigger>
-      {/* Typing goes straight into the tags, not to the first chip's remove button. */}
-      <DialogContent initialFocus={input}>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void save.run({ tags: value })
-          }}
-          className="flex flex-col gap-4"
-        >
-          <DialogHeader>
-            <DialogTitle>{t("title")}</DialogTitle>
-            <DialogDescription>{t("description")}</DialogDescription>
-          </DialogHeader>
-          <Field>
-            <FieldLabel htmlFor={id}>{t("tags")}</FieldLabel>
-            <TagPicker
-              id={id}
-              value={value}
-              onChange={setValue}
-              suggestions={suggestions}
-              placeholder={t("addTag")}
-              inputRef={input}
-            />
-            <FieldDescription>{t("wildcard")}</FieldDescription>
-          </Field>
-          <FormError message={save.error} />
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
-            <Button type="submit" disabled={save.pending}>
-              {save.pending ? t("saving") : t("save")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <TagsField suggestions={suggestions} inputRef={input} />
+    </FormDialog>
+  )
+}
+
+function TagsField({
+  suggestions,
+  inputRef
+}: {
+  suggestions: string[]
+  inputRef: React.RefObject<HTMLInputElement | null>
+}) {
+  const t = useTranslations("settings.excludedTags")
+  const {
+    field: { value, onChange },
+    fieldProps
+  } = useFormField("tags", { description: t("wildcard") })
+  return (
+    <FormField {...fieldProps} label={t("tags")}>
+      <TagPicker
+        id={fieldProps.id}
+        value={Array.isArray(value) ? value : []}
+        onChange={onChange}
+        suggestions={suggestions}
+        placeholder={t("addTag")}
+        inputRef={inputRef}
+      />
+    </FormField>
   )
 }

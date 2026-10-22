@@ -131,7 +131,7 @@ preferences persist, revoked access is handled and a failure is diagnosable with
 - [ ] Connect each proposal difference type, withdrawal, approval and rejection from the event catalog.
 - [ ] Connect immediate ready-date changes and date removal with accurate copy.
 - [ ] Connect invoice uploads, comments and generated packing-list availability.
-- [ ] Connect packing submitted, commercial approval required, correction requested and labels required.
+- [ ] Connect packing submitted, commercial approval required, packing edited after booking and labels required.
 - [ ] Connect released shipment documents and migrate labels-ready email delivery.
 - [ ] Keep `sendLabelsWhenComplete` (labels sent once the packet is complete) as the ready-email trigger; packing
   completion alone does not send it.
@@ -294,7 +294,7 @@ in implementation docs rather than assuming this plan verifies an external integ
 - [Orders](../../../src/server/orders.ts), [proposals](../../../src/server/order-proposals.ts),
   [shipment legs](../../../src/server/shipment-legs.ts), [comments](../../../src/server/comments.ts).
 - [Queue](../../../src/server/queue.ts), [worker](../../../src/server/worker.ts),
-  [email handler](../../../src/server/job-handlers.ts), [schema](../../../src/db/schema.ts).
+  [email handler](../../../src/server/job-email.ts), [schema](../../../src/db/schema.ts).
 - [Catalogs](../../../src/server/catalogs.ts), [products](../../../src/server/supplier-products.ts),
   [supplier stock](../../../src/server/supplier-stock.ts), [restock plan](../../../src/server/restock-plan.ts).
 - [Emails package](../../../../../packages/copacker-emails/src/index.ts).

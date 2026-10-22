@@ -2,7 +2,7 @@ import { and, eq, gte, lt, desc } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonFulfillmentShipments } from "@/db/schema"
-import { amazonFulfillmentShipmentsStatus } from "@/server/amazon-fulfillment-shipments"
+import { amazonFulfillmentShipmentsReport } from "@/server/amazon-fulfillment-shipments"
 import { analyticsPagination } from "@/server/analytics-contract"
 import { analyticsQuery, analyticsRoute } from "@/server/analytics-http"
 import { analyticsSnapshot } from "@/server/analytics-snapshot"
@@ -46,7 +46,12 @@ export async function GET(request: Request) {
           )
           .limit(101)
           .offset(input.page * 100)
-        const coverage = await amazonFulfillmentShipmentsStatus(s.org.id, input.externalAccountId, new Date(), tx)
+        const coverage = await amazonFulfillmentShipmentsReport.status(
+          s.org.id,
+          input.externalAccountId,
+          new Date(),
+          tx
+        )
         return { shipments: rows.slice(0, 100), page: input.page, hasMore: rows.length > 100, snapshot, coverage }
       },
       { isolationLevel: "repeatable read", accessMode: "read only" }

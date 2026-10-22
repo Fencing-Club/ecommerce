@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "Agregar agente de carga",
       "title": "Agregar un agente de carga",
       "description": "Recoge en tu proveedor y envía a Amazon o a tu almacén.",
       "submit": "Agregar agente de carga",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "Agregar proveedor",
       "title": "Agregar un proveedor",
       "description": "Para un proveedor que aún no está en Shopify."
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} administra sus datos de contacto en su propio espacio de trabajo.",
       "leadTime": "Tiempo de entrega (días)",
       "leadTimeDescription": "Desde la orden de compra hasta tener existencias a la venta. Si está vacío, son {days}.",
-      "cancel": "Cancelar",
       "save": "Guardar",
-      "saving": "Guardando…",
       "failed": "No se pudo guardar el proveedor. Inténtalo de nuevo."
     },
     "invite": {
       "title": "Invitar a {name}",
       "description": "Verá las órdenes de compra que compartas y recibirá un correo cuando alguna necesite documentos.",
       "email": "Correo electrónico del proveedor",
-      "cancel": "Cancelar",
       "submit": "Enviar invitación",
-      "sending": "Enviando…",
       "failed": "No se pudo invitar a {name}. Inténtalo de nuevo."
     }
   },
@@ -131,7 +125,6 @@
     "add": "Agregar una dirección para {name}",
     "saveChanges": "Guardar cambios",
     "save": "Guardar dirección",
-    "name": "Nombre de la dirección",
     "pickupPlaceholder": "Fábrica",
     "placeholder": "Almacén de Yiwu",
     "sheet": {

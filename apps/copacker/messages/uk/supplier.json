@@ -6,17 +6,6 @@
       "archived": "В архіві"
     },
     "range": "{low} – {high}",
-    "pager": {
-      "range": "{first, number}–{last, number} з {total, number}",
-      "previous": "Попередня сторінка",
-      "next": "Наступна сторінка"
-    },
-    "saveBar": {
-      "unsaved": "Незбережені зміни",
-      "discard": "Відкинути",
-      "save": "Зберегти",
-      "saving": "Збереження…"
-    },
     "couldNotSave": "Не вдалося зберегти. Спробуйте ще раз.",
     "tryAnother": "Спробуйте іншу вкладку або інший запит.",
     "all": "Усі",
@@ -26,7 +15,6 @@
     "noPrice": "Без ціни",
     "moreActions": "Інші дії",
     "exportExcel": "Експорт в Excel",
-    "selected": "Вибрано: {count, number}",
     "selectAllOnPage": "Вибрати всі товари на цій сторінці",
     "select": "Вибрати {name}",
     "variantCount": "{count, plural, one {# варіант} few {# варіанти} many {# варіантів} other {# варіанта}}"

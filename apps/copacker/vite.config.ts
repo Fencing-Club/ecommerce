@@ -22,8 +22,6 @@ export default defineConfig(({ mode }) => ({
   // Match package browser-field mappings to Cloudflare's workerd/browser export conditions. Node's default SSR
   // target mixes AWS's Node runtimeConfig with browser-only exports and fails when an EventBridge client is created.
   ssr: { target: "webworker" },
-  // Style extraction introduces this import after dependency scanning. Prebundle it to avoid a late full reload.
-  optimizeDeps: { include: ["@vanilla-extract/sprinkles/createRuntimeSprinkles"] },
   environments: {
     client: {
       // Shared tiny chunks otherwise generate hundreds of requests per portal document, exhausting Windows
@@ -52,14 +50,7 @@ export default defineConfig(({ mode }) => ({
     },
     ssr: {
       optimizeDeps: {
-        include: [
-          "react",
-          "react-dom",
-          "react-dom/server",
-          "react/jsx-runtime",
-          "react/jsx-dev-runtime",
-          "@vanilla-extract/sprinkles/createRuntimeSprinkles"
-        ]
+        include: ["react", "react-dom", "react-dom/server", "react/jsx-runtime", "react/jsx-dev-runtime"]
       }
     }
   },

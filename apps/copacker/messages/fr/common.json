@@ -8,7 +8,9 @@
     "offline": "Impossible de joindre Copacker. Vérifiez votre connexion et réessayez."
   },
   "actions": {
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saved": "Enregistré"
   },
   "status": {
     "draft": "Brouillon",
@@ -89,7 +91,8 @@
     "addressLine2": "Complément d’adresse",
     "city": "Ville",
     "stateOrProvince": "État ou province",
-    "postalCode": "Code postal"
+    "postalCode": "Code postal",
+    "addressName": "Nom de l’adresse"
   },
   "sync": {
     "actions": "Actions pour {label}",
@@ -154,9 +157,6 @@
       "text": "Vos données sont en sécurité, et cette page se recharge dès notre retour.",
       "contact": "Nous contacter"
     }
-  },
-  "banner": {
-    "dismiss": "Ignorer"
   },
   "actionBar": {
     "label": "Actions",
@@ -308,5 +308,21 @@
         "all": "Aucune expédition"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} sur {total, number}",
+      "previous": "Page précédente",
+      "next": "Page suivante",
+      "previousShort": "Précédent",
+      "nextShort": "Suivant"
+    },
+    "saveBar": {
+      "unsaved": "Modifications non enregistrées",
+      "discard": "Abandonner",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…"
+    },
+    "selected": "{count, plural, one {{count, number} sélectionné} many {{count, number} sélectionnés} other {{count, number} sélectionnés}}"
   }
 }

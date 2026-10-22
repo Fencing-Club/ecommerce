@@ -1,14 +1,15 @@
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight, ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"
+import { ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
+import { EmptyState } from "@/components/common"
+import { PageButtons } from "@/components/list/pager"
+import { SearchField } from "@/components/list/search-field"
+import { OptionSelect } from "@/components/option-select"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -64,13 +65,11 @@ const salesApi = api.injectEndpoints({
 const titles: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 const pageSize = 50
 
-const isSource = (value: unknown): value is SalesSource => value === "shopify" || value === "amazon" || value === "ebay"
-
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
 
 const settingsLink = (chunks: React.ReactNode) => (
-  <Link to="/settings" hash="integrations" className="underline underline-offset-2">
+  <Link to="/settings" hash="integrations" className="text-link">
     {chunks}
   </Link>
 )
@@ -318,7 +317,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
             href={order.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex w-fit items-center gap-1 font-medium whitespace-nowrap underline-offset-4 hover:underline"
+            className="focus-ring inline-flex w-fit items-center gap-1 rounded-sm font-medium whitespace-nowrap underline-offset-4 hover:underline"
           >
             {order.number}
             <ExternalLink
@@ -382,17 +381,18 @@ function OrderList({
   initialSearch: string
 }) {
   const t = useTranslations("sales.list")
-  const format = useFormatter()
+  const pager = useTranslations("common.list.pager")
   const errorMessage = useErrorMessage()
-  const [source, setSource] = useState<SalesSource | null>(null)
-  const [page, setPage] = useState(0)
+  const [source, setSource] = useState<SalesSource | "all">("all")
+  // The page shown, counting from 1.
+  const [page, setPage] = useState(1)
   const [search, setSearch] = useState(initialSearch)
   const [q] = useDebouncedValue(search.trim(), 300)
   const prices = useCan("prices")
   // The last page loaded stays on screen while the next one loads.
   const { data, isFetching, isError, error } = salesApi.useSalesOrdersQuery({
-    source: source ?? undefined,
-    page,
+    source: source === "all" ? undefined : source,
+    page: page - 1,
     q,
     syncKey
   })
@@ -402,7 +402,7 @@ function OrderList({
   const firstSync = running.find((state) => state.progress !== null) ?? running[0]
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const sourceItems = [
-    { value: "all", label: t("allSources") },
+    { value: "all" as const, label: t("allSources") },
     ...sources.map((state) => ({ value: state.source, label: titles[state.source] }))
   ]
   let body: React.ReactNode
@@ -424,26 +424,14 @@ function OrderList({
   } else if (total === 0 && !q && firstSync) {
     // The first sync is still copying: the orders appear here period by period.
     body = (
-      <Empty className="py-12">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Spinner />
-          </EmptyMedia>
-          <EmptyTitle>{t("syncing")}</EmptyTitle>
-          {typeof firstSync.progress === "number" && (
-            <EmptyDescription>{t("copied", { progress: firstSync.progress })}</EmptyDescription>
-          )}
-        </EmptyHeader>
-      </Empty>
+      <EmptyState
+        icon={<Spinner className="size-5" />}
+        title={t("syncing")}
+        description={typeof firstSync.progress === "number" ? t("copied", { progress: firstSync.progress }) : undefined}
+      />
     )
   } else if (total === 0) {
-    body = (
-      <Empty className="py-12">
-        <EmptyHeader>
-          <EmptyTitle>{q ? t("noMatches") : t("empty")}</EmptyTitle>
-        </EmptyHeader>
-      </Empty>
-    )
+    body = <EmptyState icon={q ? <Search aria-hidden /> : undefined} title={q ? t("noMatches") : t("empty")} />
   } else {
     body = (
       <div
@@ -478,67 +466,40 @@ function OrderList({
     )
   }
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card flush>
       <div className="flex flex-wrap items-center gap-2 border-b p-4">
-        <InputGroup className="min-w-48 flex-1 sm:max-w-sm">
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="search"
-            aria-label={t("searchLabel")}
-            placeholder={t("searchPlaceholder")}
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
-              setPage(0)
-            }}
-          />
-        </InputGroup>
+        <SearchField
+          label={t("searchLabel")}
+          placeholder={t("searchPlaceholder")}
+          value={search}
+          onChange={(value) => {
+            setSearch(value)
+            setPage(1)
+          }}
+          className="min-w-48 flex-1 sm:max-w-sm"
+        />
         {sources.length > 1 && (
-          <Select
-            items={sourceItems}
-            value={source ?? "all"}
-            onValueChange={(value) => {
-              setSource(isSource(value) ? value : null)
-              setPage(0)
+          <OptionSelect
+            options={sourceItems}
+            value={source}
+            onChange={(value) => {
+              setSource(value)
+              setPage(1)
             }}
-          >
-            <SelectTrigger aria-label={t("source")} className="w-32">
-              <SelectValue>
-                {(value: string | null) => sourceItems.find((item) => item.value === value)?.label}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {sourceItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            label={t("source")}
+            className="w-32"
+          />
         )}
       </div>
       {body}
       {data && !isError && total > 0 && (
         <CardFooter className="flex-wrap justify-between gap-3 py-3">
           <p className="text-muted-foreground tabular-nums">
-            {t("range", {
-              from: format.number(page * pageSize + 1),
-              to: format.number(Math.min((page + 1) * pageSize, total)),
-              total: format.number(total)
-            })}
+            {pager("range", { first: (page - 1) * pageSize + 1, last: Math.min(page * pageSize, total), total })}
           </p>
           {totalPages > 1 && (
             <nav aria-label={t("pages")} className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                <ChevronLeft data-icon="inline-start" className="rtl:rotate-180" />
-                {t("previous")}
-              </Button>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>
-                {t("next")}
-                <ChevronRight data-icon="inline-end" className="rtl:rotate-180" />
-              </Button>
+              <PageButtons page={page} pages={totalPages} onPage={setPage} words />
             </nav>
           )}
         </CardFooter>
@@ -578,19 +539,17 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   if (currentData.sources.length === 0) {
     return (
       <Card>
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>{admin ? t("connect") : t("noStore")}</EmptyTitle>
-            {!admin && <EmptyDescription>{t("askAdminToConnect")}</EmptyDescription>}
-          </EmptyHeader>
+        <EmptyState
+          icon={<ShoppingBag aria-hidden />}
+          title={admin ? t("connect") : t("noStore")}
+          description={admin ? undefined : t("askAdminToConnect")}
+        >
           {admin && (
-            <EmptyContent>
-              <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
-                {t("goToSettings")}
-              </Button>
-            </EmptyContent>
+            <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
+              {t("goToSettings")}
+            </Button>
           )}
-        </Empty>
+        </EmptyState>
       </Card>
     )
   }
@@ -598,7 +557,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   const syncKey = currentData.sources.map((state) => `${state.coveredTo ?? ""}:${state.orders}`).join("|")
   return (
     <div className="flex flex-col gap-4">
-      <Card className="@container/sources gap-0 py-0">
+      <Card flush className="@container/sources">
         <ul
           aria-label={t("sources")}
           className="grid divide-y @3xl/sources:auto-cols-fr @3xl/sources:grid-flow-col @3xl/sources:divide-x @3xl/sources:divide-y-0"

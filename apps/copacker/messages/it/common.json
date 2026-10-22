@@ -8,7 +8,9 @@
     "offline": "Impossibile raggiungere Copacker. Controlla la connessione e riprova."
   },
   "actions": {
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "save": "Salva",
+    "saved": "Salvato"
   },
   "status": {
     "draft": "Bozza",
@@ -89,7 +91,8 @@
     "addressLine2": "Indirizzo (riga 2)",
     "city": "Città",
     "stateOrProvince": "Stato o provincia",
-    "postalCode": "CAP"
+    "postalCode": "CAP",
+    "addressName": "Nome dell’indirizzo"
   },
   "sync": {
     "actions": "Azioni di {label}",
@@ -154,9 +157,6 @@
       "text": "I tuoi dati sono al sicuro, e questa pagina si ricarica al nostro ritorno.",
       "contact": "Contattaci"
     }
-  },
-  "banner": {
-    "dismiss": "Ignora"
   },
   "actionBar": {
     "label": "Azioni",
@@ -308,5 +308,21 @@
         "all": "Nessuna spedizione"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} di {total, number}",
+      "previous": "Pagina precedente",
+      "next": "Pagina successiva",
+      "previousShort": "Precedente",
+      "nextShort": "Successiva"
+    },
+    "saveBar": {
+      "unsaved": "Modifiche non salvate",
+      "discard": "Scarta",
+      "save": "Salva",
+      "saving": "Salvataggio…"
+    },
+    "selected": "{count, number} selezionati"
   }
 }

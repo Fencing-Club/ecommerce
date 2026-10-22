@@ -58,7 +58,7 @@ export function TabLinks({
               : undefined
           }
           className={cn(
-            "-mb-px inline-flex h-10 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50",
+            "focus-ring -mb-px inline-flex h-10 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground focus-visible:rounded-sm",
             tab.current && "border-foreground text-foreground"
           )}
         >

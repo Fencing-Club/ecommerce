@@ -42,7 +42,10 @@ export const SupplierPickups = meta.story({
     const sheet = await screen.findByRole("dialog", { name: "Lotus Manufacturing" })
     await expect(sheet).toHaveTextContent("Pickup addresses")
     await expect(within(sheet).getByText("Factory")).toBeInTheDocument()
-    await expect(within(sheet).getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang, 322000, CN")).toBeInTheDocument()
+    await expect(within(sheet).getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeInTheDocument()
+    // Who to contact there, with links to call or email them.
+    await expect(within(sheet).getByRole("link", { name: /^\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
+    await expect(within(sheet).getByRole("link", { name: "mei@lotus.example.com" })).toBeInTheDocument()
     await expect(within(sheet).getByRole("button", { name: "Add address" })).toBeInTheDocument()
     await userEvent.click(within(sheet).getByRole("button", { name: "Close" }))
     await expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
@@ -255,7 +258,7 @@ export const Summary = meta.story({
   render: () => <AddressSummary name="Factory" address={pickupAddress} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Factory")).toBeVisible()
-    await expect(canvas.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang, 322000, CN")).toBeVisible()
+    await expect(canvas.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeVisible()
     await expect(canvas.getByText(/^Mei Chen, \+86/)).toBeVisible()
   }
 })

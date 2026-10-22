@@ -8,7 +8,9 @@
     "offline": "Copacker ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
   },
   "actions": {
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saved": "Gespeichert"
   },
   "status": {
     "draft": "Entwurf",
@@ -89,7 +91,8 @@
     "addressLine2": "Adresszusatz",
     "city": "Ort",
     "stateOrProvince": "Bundesland oder Region",
-    "postalCode": "Postleitzahl"
+    "postalCode": "Postleitzahl",
+    "addressName": "Name der Adresse"
   },
   "sync": {
     "actions": "Aktionen für {label}",
@@ -154,9 +157,6 @@
       "text": "Ihre Daten sind sicher, und diese Seite lädt neu, sobald wir zurück sind.",
       "contact": "Kontakt aufnehmen"
     }
-  },
-  "banner": {
-    "dismiss": "Ausblenden"
   },
   "actionBar": {
     "label": "Aktionen",
@@ -308,5 +308,21 @@
         "all": "Keine Sendungen"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} von {total, number}",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "previousShort": "Zurück",
+      "nextShort": "Weiter"
+    },
+    "saveBar": {
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "discard": "Verwerfen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…"
+    },
+    "selected": "{count, number} ausgewählt"
   }
 }

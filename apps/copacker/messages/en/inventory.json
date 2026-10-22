@@ -40,9 +40,7 @@
     "none": "None",
     "edit": "Edit",
     "editLabel": "Edit inventory locations",
-    "cancel": "Cancel",
     "save": "Save",
-    "saving": "Saving…",
     "saveFailed": "Couldn’t save the locations. Try again."
   },
   "list": {
@@ -92,8 +90,6 @@
     "rowsPerPage": "Rows per page",
     "pages": "Product pages",
     "pageOf": "Page {page} of {total}",
-    "previousPage": "Previous page",
-    "nextPage": "Next page",
     "duplicateSkus": "{count, plural, one {# SKU is used by more than one variation} other {# SKUs are used by more than one variation}}",
     "duplicateSkusHint": "Give each variation its own SKU in Shopify",
     "productVariant": "{product}, {variant}",

@@ -5,6 +5,7 @@ import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { initials } from "@/lib/initials"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { cn } from "@/lib/utils"
 import { TimelineComment, type PostedComment } from "./timeline-comment"
@@ -24,14 +25,6 @@ export type TimelineEntry = {
   revisionNumber: number | null
   details?: ReactNode
 }
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("")
 
 // A comment's author. The avatar is positioned, so it paints over the timeline's line.
 function AuthorAvatar({ name }: { name: string }) {
@@ -258,7 +251,7 @@ function EventText({
   }
   return (
     <Collapsible className="min-w-0 flex-1">
-      <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+      <CollapsibleTrigger className="focus-ring group flex items-center gap-1 rounded-sm text-start">
         {text}
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-panel-open:rotate-180" />
       </CollapsibleTrigger>

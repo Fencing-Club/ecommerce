@@ -4,12 +4,15 @@ import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
+import { IndexToolbar } from "@/components/list/index-toolbar"
+import { matches } from "@/components/list/matches"
+import { Pager } from "@/components/list/pager"
+import { usePagedRows } from "@/components/list/use-paged-rows"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import { formatDate } from "@/lib/format"
 import type { ListedOrder } from "@/server/supplier-workspace"
 import type { OrderStage } from "@/server/supplier-workspace"
-import { IndexToolbar, matches, Pager } from "./shared"
 
 type Tab = "all" | OrderStage
 const tabs: Array<{ value: Tab; test: (stage: OrderStage) => boolean }> = [
@@ -37,7 +40,6 @@ export function SupplierOrderIndex({
   const prices = useCan("prices")
   const [tab, setTab] = useState<Tab>(tabs.find((option) => option.value === initialTab)?.value ?? "all")
   const [query, setQuery] = useState("")
-  const [page, setPage] = useState(0)
   const t = useTranslations("supplier.orderIndex")
   const shared = useTranslations("supplier.shared")
   const locale = useLocale()
@@ -47,8 +49,7 @@ export function SupplierOrderIndex({
   const shown = orders.filter(
     (order) => test(order.stage) && matches(query, order.reference, order.customer, order.firstItem)
   )
-  const pages = Math.max(1, Math.ceil(shown.length / pageSize))
-  const current = Math.min(page, pages - 1)
+  const paged = usePagedRows(shown, pageSize)
 
   if (!orders.length) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
@@ -65,12 +66,12 @@ export function SupplierOrderIndex({
         tab={tab}
         onTabChange={(value) => {
           setTab(value)
-          setPage(0)
+          paged.reset()
         }}
         query={query}
         onQueryChange={(value) => {
           setQuery(value)
-          setPage(0)
+          paged.reset()
         }}
         placeholder={t("search")}
       />
@@ -87,13 +88,13 @@ export function SupplierOrderIndex({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shown.slice(current * pageSize, (current + 1) * pageSize).map((order) => (
+            {paged.rows.map((order) => (
               <LinkRow key={order.id} href={`/orders/${order.id}`}>
                 <TableCell className="max-w-72">
                   <Link
                     to="/orders/$id"
                     params={{ id: order.id }}
-                    className="font-medium underline-offset-4 hover:underline"
+                    className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
                   >
                     {order.reference}
                   </Link>
@@ -131,7 +132,7 @@ export function SupplierOrderIndex({
       ) : (
         <EmptyState title={t("noneHere")} description={t("noneHereDescription")} />
       )}
-      <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
+      <Pager {...paged.pager} />
     </div>
   )
 }

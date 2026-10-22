@@ -40,9 +40,7 @@
     "none": "कोई नहीं",
     "edit": "एडिट करें",
     "editLabel": "इन्वेंटरी लोकेशन एडिट करें",
-    "cancel": "रद्द करें",
     "save": "सेव करें",
-    "saving": "सेव हो रहा है…",
     "saveFailed": "लोकेशन सेव नहीं हो सकीं। फिर से कोशिश करें।"
   },
   "list": {
@@ -92,8 +90,6 @@
     "rowsPerPage": "प्रति पेज पंक्तियां",
     "pages": "प्रोडक्ट पेज",
     "pageOf": "पेज {page} / {total}",
-    "previousPage": "पिछला पेज",
-    "nextPage": "अगला पेज",
     "duplicateSkus": "{count, plural, one {# SKU एक से ज़्यादा वैरिएंट में इस्तेमाल हो रहा है} other {# SKU एक से ज़्यादा वैरिएंट में इस्तेमाल हो रहे हैं}}",
     "duplicateSkusHint": "Shopify में हर वैरिएंट को उसका अपना SKU दें",
     "productVariant": "{product}, {variant}",

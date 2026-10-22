@@ -2,7 +2,7 @@ import type { VariantProps } from "class-variance-authority"
 import { cva } from "class-variance-authority"
 import type * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input, NumberInput } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
@@ -100,17 +100,17 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   )
 }
 
+// The group draws the border and the focus ring, so its input draws neither.
+const groupControl =
+  "flex-1 rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent"
+
 function InputGroupInput({ className, ...props }: React.ComponentProps<"input">) {
-  return (
-    <Input
-      data-slot="input-group-control"
-      className={cn(
-        "flex-1 rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent",
-        className
-      )}
-      {...props}
-    />
-  )
+  return <Input data-slot="input-group-control" className={cn(groupControl, className)} {...props} />
+}
+
+// A NumberInput inside a group, such as a quantity with its unit after it.
+function InputGroupNumberInput({ className, ...props }: React.ComponentProps<typeof NumberInput>) {
+  return <NumberInput data-slot="input-group-control" className={cn(groupControl, className)} {...props} />
 }
 
 function InputGroupTextarea({ className, ...props }: React.ComponentProps<"textarea">) {
@@ -126,4 +126,12 @@ function InputGroupTextarea({ className, ...props }: React.ComponentProps<"texta
   )
 }
 
-export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupInput, InputGroupTextarea }
+export {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupInput,
+  InputGroupNumberInput,
+  InputGroupTextarea
+}

@@ -1,14 +1,15 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { and, eq, gte, lt, desc, inArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
-import { amazonProductMappings, amazonTransactions, connections, salesSyncs } from "@/db/schema"
+import type { Executor } from "@/db"
+import { amazonProductMappings, amazonTransactions, salesSyncs } from "@/db/schema"
 import { allocateAmazonPosting } from "./amazon-cost-allocation"
 import { amazonPostingAccounting, postingLinks } from "./amazon-posting-accounting"
 import { amazonPostingDetail } from "./amazon-posting-detail"
 import type { ReconciliationPosting } from "./amazon-reconciliation"
 import { analyticsPagination } from "./analytics-contract"
-import { analyticsSnapshot } from "./analytics-snapshot"
+import { analyticsPage } from "./analytics-snapshot"
+import { connectedAccount } from "./provider-accounts"
 export const allocationInput = z
   .object({
     from: z.iso.date(),
@@ -23,18 +24,12 @@ export const allocationInput = z
     "Choose an increasing window of at most 31 days"
   )
 export async function amazonAllocations(orgId: string, input: z.infer<typeof allocationInput>) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(
-        tx,
-        orgId,
-        input,
-        JSON.stringify(["allocation", input.from, input.to, input.postingType, input.transactionId])
-      )
-      const [account] = await tx
-        .select()
-        .from(connections)
-        .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  return analyticsPage(
+    orgId,
+    input,
+    JSON.stringify(["allocation", input.from, input.to, input.postingType, input.transactionId]),
+    async (tx, snapshot) => {
+      const account = await connectedAccount(orgId, "amazon", { executor: tx })
       if (!account) {
         return { snapshot, connected: false, postings: [], hasMore: false }
       }
@@ -125,17 +120,11 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
           "Allocations use explicit mappings valid at the posting date; no proportional allocation or current-catalog fallback."
         ]
       }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
+    }
   )
 }
 
-async function releaseFamily(
-  tx: Pick<ReturnType<typeof db>, "select">,
-  orgId: string,
-  externalAccountId: string,
-  seeds: ReconciliationPosting[]
-) {
+async function releaseFamily(tx: Executor, orgId: string, externalAccountId: string, seeds: ReconciliationPosting[]) {
   const query = (ids: string[]) =>
     tx
       .select()

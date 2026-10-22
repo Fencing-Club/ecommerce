@@ -54,7 +54,6 @@
     "ship": "Imprime el paquete de documentos, empaca las cajas y márcalas como enviadas",
     "forward": "El agente de carga reenvía la mercancía y agrega el costo de flete, el transportista y el rastreo",
     "receive": "Marca la mercancía como recibida cuando llegue",
-    "complete": "Envío completado",
     "cancellation": "Cancela el envío existente de Amazon antes de crear uno de reemplazo",
     "reconcile": "Busca y vincula el pedido de Amazon antes de continuar",
     "retry": "Resuelve el problema reportado y vuelve a intentar el envío",

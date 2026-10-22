@@ -1,4 +1,5 @@
 import { amazonMarketplaces } from "@repo/copacker-marketplaces/amazon-marketplaces"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { freightPerSku } from "@repo/copacker-shipments/amazon-inbound"
 import { sql } from "drizzle-orm"
 import { db } from "@/db"
@@ -618,7 +619,7 @@ export function movers(
     const entry = byItem.get(id) ?? {
       id,
       product: row?.productTitle ?? (item.source === "shopify" ? t("unknownProduct") : item.key),
-      variant: row?.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null,
+      variant: variantName(row?.variantTitle),
       sku: row?.buyerSku ?? (item.source === "shopify" ? null : item.key),
       imageUrl: row?.imageUrl ?? null,
       current: 0,

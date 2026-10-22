@@ -40,9 +40,7 @@
     "none": "Nessuna",
     "edit": "Modifica",
     "editLabel": "Modifica sedi dell’inventario",
-    "cancel": "Annulla",
     "save": "Salva",
-    "saving": "Salvataggio…",
     "saveFailed": "Impossibile salvare le sedi. Riprova."
   },
   "list": {
@@ -92,8 +90,6 @@
     "rowsPerPage": "Righe per pagina",
     "pages": "Pagine dei prodotti",
     "pageOf": "Pagina {page} di {total}",
-    "previousPage": "Pagina precedente",
-    "nextPage": "Pagina successiva",
     "duplicateSkus": "{count, plural, one {# SKU è usato da più di una variante} other {# SKU sono usati da più di una variante}}",
     "duplicateSkusHint": "Assegna a ogni variante uno SKU proprio in Shopify",
     "productVariant": "{product}, {variant}",

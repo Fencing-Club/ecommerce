@@ -1,5 +1,5 @@
 import { destinationSchema } from "@repo/copacker-orders"
-import { orderDestination, groupReceivers } from "@repo/copacker-shipments"
+import { groupReceivers, orderDestination } from "@repo/copacker-packing-rules"
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"

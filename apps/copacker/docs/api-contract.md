@@ -5,7 +5,7 @@ routes, and the rules behind them.
 
 The pages call these routes through RTK Query (`src/lib/api.ts`), mounted with `ApiProvider` in
 `components/providers.tsx` and with no Redux store of its own. Forms submit `/api/action` commands through
-`useActionForm` (`src/hooks/useActionForm.ts`), which pairs React Hook Form with the command's Zod schema.
+`useActionForm` (`src/hooks/use-action-form.ts`), which pairs React Hook Form with the command's Zod schema.
 
 A feature adds its routes with `api.injectEndpoints`, such as the supplier workspace's in `src/lib/supplier-api.ts`,
 rather than calling `fetch` itself. Every request then gets the API's session handling: a redirect, such as to sign in,
@@ -26,12 +26,21 @@ Every request other than GET or HEAD must come from the app: the browser's `Sec-
 `server/http-response.ts`, refuses anything else with 403 `{ error }` before a route runs. Provider webhooks (`/api/webhooks/*`) and the mailing list's unsubscribe link are
 cross-site on purpose and skip it; they check their own signatures or tokens.
 
-Every route answers through `httpResponse` in `server/http-response.ts`. A response is `private, no-store` unless the
+A route's handlers live in `server/http`, one module per path, exporting a function per HTTP method that takes the
+request and `{ params }`. Its file in `src/routes` is only `server: { handlers: apiHandlers(handlers) }`, which serves
+each exported method through `httpResponse` in `server/http-response.ts`. A response is `private, no-store` unless the
 route set its own `Cache-Control` (product photos are immutable), and always `nosniff`. Failures a route throws are
 answered there too, with `{ error }` in the person's language: an `AccessError` is 403, a missing record 404, a
-`StatusError` its own status, and a request body or query that doesn't parse 400. Anything else is unexpected and goes
-on to Start. Downloads use `fileResponse`, which names the file with `filename*` (RFC 5987) and adds
-`Content-Security-Policy: sandbox`.
+`StatusError` its own status, and request input that doesn't parse 400. Request input is the body, query or path, read
+with `requestJson` and `requestInput` from `server/errors.ts`, which throw `InvalidRequestError`. Any other `ZodError`
+or `SyntaxError`, such as stored data or a provider's answer that no longer fits its schema, is a bug: it's logged as
+one JSON line with `event: "api_request_failed"`, the method, the path and the error, and answered 500. Anything else
+is unexpected and goes on to Start. Downloads use `fileResponse`, which names the file with `filename*` (RFC 5987) and
+adds `Content-Security-Policy: sandbox`.
+
+A page's record id comes from its URL, so its server function accepts any string and its loader reads it with
+`pageId` (`server/page-id.ts`). A malformed id, such as `/shipments/abc/packet`, is a record that doesn't exist, so the
+page shows Not found rather than an error.
 
 `POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`,
 `{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role, page
@@ -355,7 +364,8 @@ label, then each pallet's label.
 A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
 and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the
 PO's delivery address as the ship-to. A packet with a shipped line whose product label can't be made yet is incomplete:
-the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
+the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels. An id
+that names no shipment, malformed or unknown, returns 404.
 
 A shipment's labels go to its supplier (`sendLabelsWhenComplete`), with no step of the buyer's, once it has its
 transport, a unique Amazon label and current carton PDF for every carton, a current carrier label with its tracking

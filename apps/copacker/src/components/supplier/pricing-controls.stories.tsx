@@ -1,8 +1,8 @@
-import { type ComponentProps, useState } from "react"
+import type { ComponentProps } from "react"
 import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { defaultQuantityRules } from "@/lib/catalog-pricing"
-import { MoneyInput, PricingRulesDialog, parseMoney } from "./pricing-controls"
+import { PricingRulesDialog } from "./pricing-controls"
 
 const meta = preview.meta({
   title: "Components/Supplier workspace/Pricing controls",
@@ -130,46 +130,5 @@ export const Cancel = meta.story({
     await userEvent.click(rules.getByRole("button", { name: "Cancel" }))
     await expect(args.onOpenChange).toHaveBeenCalledWith(false)
     await expect(args.onSave).not.toHaveBeenCalled()
-  }
-})
-
-// A price field that reports the amount it holds, as the forms that use it keep it.
-function PriceField() {
-  const [value, setValue] = useState<number | null>(425)
-  return (
-    <div className="flex w-64 flex-col gap-2">
-      <MoneyInput label="Unit price" currency="EUR" value={value} onValueChange={setValue} />
-      <output aria-label="Amount">{value === null ? "blank" : value}</output>
-      <button type="button" onClick={() => setValue(890)}>
-        Reset
-      </button>
-    </div>
-  )
-}
-
-export const Money = meta.story({
-  render: () => <PriceField />,
-  play: async ({ canvas }) => {
-    const field = canvas.getByRole("textbox", { name: "Unit price" })
-    await expect(field).toHaveValue("4.25")
-    await expect(canvas.getByText("€")).toBeVisible()
-    await userEvent.clear(field)
-    await userEvent.type(field, "1,234.5")
-    await userEvent.tab()
-    await expect(field).toHaveValue("1234.50")
-    await expect(canvas.getByRole("status", { name: "Amount" })).toHaveTextContent("123450")
-    await userEvent.clear(field)
-    await userEvent.type(field, "12.345")
-    await userEvent.tab()
-    // What isn't an amount stays as typed and marked, and isn't reported.
-    await expect(field).toHaveAttribute("aria-invalid", "true")
-    await expect(canvas.getByRole("status", { name: "Amount" })).toHaveTextContent("123450")
-    await userEvent.clear(field)
-    await userEvent.tab()
-    await expect(canvas.getByRole("status", { name: "Amount" })).toHaveTextContent("blank")
-    // A value set from outside replaces what's typed.
-    await userEvent.click(canvas.getByRole("button", { name: "Reset" }))
-    await expect(field).toHaveValue("8.90")
-    await expect(parseMoney("abc")).toBeUndefined()
   }
 })

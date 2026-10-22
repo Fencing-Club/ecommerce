@@ -6,17 +6,6 @@
       "archived": "已归档"
     },
     "range": "{low} – {high}",
-    "pager": {
-      "range": "第 {first, number}–{last, number} 条，共 {total, number} 条",
-      "previous": "上一页",
-      "next": "下一页"
-    },
-    "saveBar": {
-      "unsaved": "有未保存的更改",
-      "discard": "放弃",
-      "save": "保存",
-      "saving": "正在保存…"
-    },
     "couldNotSave": "保存失败，请重试。",
     "tryAnother": "换个标签页或搜索词试试。",
     "all": "全部",
@@ -26,7 +15,6 @@
     "noPrice": "未定价",
     "moreActions": "更多操作",
     "exportExcel": "导出到 Excel",
-    "selected": "已选 {count, number} 项",
     "selectAllOnPage": "选择本页所有产品",
     "select": "选择 {name}",
     "variantCount": "{count, plural, other {# 个变体}}"

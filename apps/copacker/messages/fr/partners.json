@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "Ajouter un transitaire",
       "title": "Ajouter un transitaire",
       "description": "Récupère la marchandise chez votre fournisseur et l’achemine jusqu’à Amazon ou votre entrepôt.",
       "submit": "Ajouter le transitaire",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "Ajouter un fournisseur",
       "title": "Ajouter un fournisseur",
       "description": "Pour un fournisseur qui n’est pas encore dans Shopify."
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} gère ses coordonnées dans son propre espace de travail.",
       "leadTime": "Délai de livraison (jours)",
       "leadTimeDescription": "Du bon de commande au stock vendable. Vide : {days}.",
-      "cancel": "Annuler",
       "save": "Enregistrer",
-      "saving": "Enregistrement…",
       "failed": "Impossible d’enregistrer le fournisseur. Réessayez."
     },
     "invite": {
       "title": "Inviter {name}",
       "description": "Il verra les bons de commande que vous partagez et recevra un e-mail lorsqu’un bon de commande nécessite des documents.",
       "email": "E-mail du fournisseur",
-      "cancel": "Annuler",
       "submit": "Envoyer l’invitation",
-      "sending": "Envoi…",
       "failed": "Impossible d’inviter {name}. Réessayez."
     }
   },
@@ -131,7 +125,6 @@
     "add": "Ajouter une adresse pour {name}",
     "saveChanges": "Enregistrer les modifications",
     "save": "Enregistrer l’adresse",
-    "name": "Nom de l’adresse",
     "pickupPlaceholder": "Usine",
     "placeholder": "Entrepôt de Yiwu",
     "sheet": {

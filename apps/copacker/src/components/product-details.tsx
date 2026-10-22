@@ -1,14 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { PrepCategory } from "@repo/copacker-orders"
 import { prepCategories } from "@repo/copacker-orders"
-import { amazonNetworkNames, amazonNetworks } from "@repo/copacker-shipments"
+import { amazonNetworks } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { ImageOff, Plus, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
-import { FormError, SubmitButton } from "@/components/form-feedback"
+import { FormServerError, SubmitButton } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -436,7 +437,7 @@ function DetailsForm({
           )}
         </div>
         <SheetFooter className="border-t">
-          <FormError message={form.formState.errors.root?.server?.message} />
+          <FormServerError />
           <div className="flex justify-end gap-2">
             <SheetClose render={<Button type="button" variant="outline" />}>
               {editable ? t("details.cancel") : t("details.close")}

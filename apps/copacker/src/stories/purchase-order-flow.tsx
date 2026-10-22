@@ -1,8 +1,8 @@
 import { Toast } from "@base-ui/react/toast"
-import { type OrderInput } from "@repo/copacker-orders"
+import { type OrderInput, orderSubtotal } from "@repo/copacker-orders"
 import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
-import { packingSchema, type Packing } from "@repo/copacker-shipments"
+import { packingSchema, type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import { documentSettingsForLocale, type ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
 import {
   ArrowLeft,
@@ -28,19 +28,28 @@ import { useId, useState } from "react"
 import { match } from "ts-pattern"
 import { useLocale } from "use-intl"
 import { AddProductsDialog } from "@/components/add-products-dialog"
+import { CartonList } from "@/components/carton-list"
 import { StatusBadge } from "@/components/common"
 import { DetailFields } from "@/components/detail-fields"
 import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
+import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
+import { PalletList } from "@/components/pallet-list"
 import { PoTimeline, type TimelineEntry } from "@/components/po-timeline"
 import { ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentDocuments } from "@/components/shipment-documents"
-import { ShipmentAddress, ShipmentTransportLegs } from "@/components/shipment-packing-details"
+import { ShipmentLayout } from "@/components/shipment-layout"
+import {
+  ShipmentAddress,
+  ShipmentOrigin,
+  ShipmentPackingDetails,
+  ShipmentTransportLegs
+} from "@/components/shipment-packing-details"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -54,14 +63,21 @@ import {
   DialogTitle
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
+import { Input, NumberInput } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupNumberInput
+} from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMoney } from "@/hooks/use-money"
+import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { orderLine } from "@/lib/order-lines"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
@@ -89,14 +105,13 @@ function QuantityInput({
 }) {
   const [value, setValue] = useState(String(item.pieces))
   return (
-    <Input
-      type="number"
+    <NumberInput
       min={item.piecesPerSet}
       step={item.piecesPerSet}
       aria-invalid={!!quantityError(item)}
       aria-describedby={quantityError(item) ? `quantity-error-${shipmentId}-${item.id}` : undefined}
       aria-label={`${item.buyerSku} quantity`}
-      className="px-2 text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      className="px-2 text-end"
       value={value}
       onChange={(event) => {
         setValue(event.target.value)
@@ -119,10 +134,9 @@ function TaxInput({
   const [value, setValue] = useState(String(taxRate))
   return (
     <InputGroup>
-      <InputGroupInput
+      <InputGroupNumberInput
         id={id}
         aria-label={label}
-        type="number"
         min={0}
         max={100}
         step="any"
@@ -132,7 +146,7 @@ function TaxInput({
           setValue(event.target.value)
           onChange(Math.min(100, Math.max(0, event.target.valueAsNumber || 0)))
         }}
-        className="min-w-0 px-2 text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="min-w-0 px-2 text-end"
       />
       <InputGroupAddon align="inline-end" className="pe-2">
         %
@@ -236,7 +250,6 @@ const products = [
 const readyDate = daysAgo(-14).toISOString().slice(0, 10)
 const packingCharge = { id: "packing", name: "Packing", amount: 12000 }
 const handlingCharge = { id: "handling", name: "Handling", amount: 2500 }
-const lineTotal = (items: Item[]) => items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
 const productImages = [
   "https://images.unsplash.com/photo-1636714573130-bbb1d4b19cc1?w=160&fit=crop",
   "https://images.unsplash.com/photo-1784371542080-0d38a43bcf23?w=160&fit=crop",
@@ -507,10 +520,10 @@ export function PurchaseOrderFlow({
   const [costSources, setCostSources] = useState<Record<string, string>>({})
   const [proposalMessage, setProposalMessage] = useState("")
   const allItems = shipments.flatMap((shipment) => shipment.items)
-  const subtotal = lineTotal(allItems)
+  const subtotal = orderSubtotal(allItems)
   const total = subtotal + adjustments.reduce((sum, row) => sum + row.amount, 0)
   const acceptedTotal =
-    lineTotal(acceptedShipments.flatMap((shipment) => shipment.items)) +
+    orderSubtotal(acceptedShipments.flatMap((shipment) => shipment.items)) +
     acceptedAdjustments.reduce((sum, row) => sum + row.amount, 0)
   const hasProposalChanges =
     JSON.stringify(shipments) !== JSON.stringify(acceptedShipments) ||
@@ -579,8 +592,8 @@ export function PurchaseOrderFlow({
           .with("removedAdjustment", () => [packingCharge])
           .with("price", "both", "quantity", () => [packingCharge, handlingCharge])
           .otherwise(() => [])
-  const originalTotal = lineTotal(beforeItems) + oldAdjustments.reduce((sum, row) => sum + row.amount, 0)
-  const proposedTotal = lineTotal(afterItems) + newAdjustments.reduce((sum, row) => sum + row.amount, 0)
+  const originalTotal = orderSubtotal(beforeItems) + oldAdjustments.reduce((sum, row) => sum + row.amount, 0)
+  const proposedTotal = orderSubtotal(afterItems) + newAdjustments.reduce((sum, row) => sum + row.amount, 0)
   const changedProductIds = [...new Set([...afterItems, ...beforeItems].map((item) => item.id))].filter((id) => {
     const before = beforeItems.find((item) => item.id === id)
     const after = afterItems.find((item) => item.id === id)
@@ -1025,11 +1038,101 @@ export function PurchaseOrderFlow({
     }
   }
   if (packing) {
+    const packingOrder: OrderInput = {
+      ...order,
+      reference: "PO38",
+      items: packing.items.map((item) => ({
+        ...item,
+        receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
+      }))
+    }
+    const draft: PackingDraft = packingRecords[packing.id]?.packing ?? {
+      origin: pickupAddress,
+      readyDate,
+      cartons: packingCartons()
+    }
+    const route = ["Northwind Textiles", ...(packing.stop ? [receivingStop(packing).name] : []), packing.destination]
+    const shipTo = (
+      <ShipmentAddress
+        readOnly={packingFinished}
+        label="Ship to"
+        name={packing.stop ? receivingStop(packing).name : packing.destination}
+        address={
+          packing.stop
+            ? receivingStop(packing).address
+            : "Amazon assigns the receiving warehouse when the shipment is confirmed."
+        }
+      />
+    )
+    const transport = (
+      <ShipmentTransportLegs
+        legs={[
+          ...(packing.stop
+            ? [
+                packing.firstLeg?.endsWith("pickup")
+                  ? `${receivingStop(packing).name} picks up from Northwind Textiles.`
+                  : `Supplier ships to ${receivingStop(packing).location}.`
+              ]
+            : []),
+          packing.transport === "Amazon pickup"
+            ? `Amazon pickup from ${packing.stop ? receivingStop(packing).location : "Northwind Textiles"}.`
+            : `${onwardShipper(packing)} ships to ${packing.destination}.`
+        ]}
+      />
+    )
+    const productActions = (item: OrderInput["items"][number]) => (
+      <ProductDownloadsMenu
+        productName={item.supplierSku || item.buyerSku}
+        items={productDownloads([item])}
+        busy={downloadingPacking}
+        onDownload={(ids) =>
+          void downloadProductLabels([item], ids, `Shipment-${packing.id}-${item.supplierSku || item.buyerSku}`)
+        }
+      />
+    )
+    const sidebar = (summary: React.ComponentProps<typeof ShipmentDetails>) => (
+      <div className="space-y-6">
+        <ShipmentDocuments
+          busy={downloadingPacking}
+          productLabels={productDownloads(packing.items)}
+          onProductDownload={(ids) => void downloadProductLabels(packing.items, ids, `Shipment-${packing.id}`)}
+          onDownload={(id) => void downloadShipmentDocument(id)}
+          onDownloadPacket={labelsReady ? () => void downloadSupplierPack(packing.id) : undefined}
+          documents={[
+            ...(packingFinished ? [{ id: "packing", label: "Packing list" }] : []),
+            ...(labelsReady
+              ? [
+                  { id: "carton", label: "Carton labels" },
+                  ...(packing.transport !== "Amazon pickup" ? [{ id: "carrier", label: "Carrier labels" }] : []),
+                  { id: "checklist", label: "Packing checklist" },
+                  { id: "reference", label: "Carton label reference" }
+                ]
+              : [])
+          ]}
+        />
+        <ShipmentDetails {...summary} />
+      </div>
+    )
+    const heading = (
+      <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
+        <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
+        <StatusBadge tone={packingFinished ? "success" : "info"}>{packingFinished ? "Packed" : "Packing"}</StatusBadge>
+        {packingFinished && (
+          <div className="ms-auto flex w-full flex-wrap gap-2 sm:w-auto">
+            <Button variant="outline" onClick={() => setPackingFinished(false)}>
+              Edit packing
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+    const cartons = groupCartons(draft.cartons)
+    const pallets = draft.palletized ? editorPallets(draft.pallets) : undefined
     return (
       <div className={pageLayout}>
-        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-meta text-muted-foreground">
           <button
-            className="rounded-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="focus-ring rounded-sm hover:text-foreground"
             aria-label="Back to order"
             onClick={() => setPacking(null)}
           >
@@ -1043,116 +1146,58 @@ export function PurchaseOrderFlow({
           <ChevronRight className="size-3" />
           <span>Shipment {packing.id}</span>
         </div>
-        <PackingForm
-          renderProductActions={(item) => (
-            <ProductDownloadsMenu
-              productName={item.supplierSku || item.buyerSku}
-              items={productDownloads([item])}
-              busy={downloadingPacking}
-              onDownload={(ids) =>
-                void downloadProductLabels([item], ids, `Shipment-${packing.id}-${item.supplierSku || item.buyerSku}`)
-              }
-            />
-          )}
-          renderSidebar={(summary) => (
-            <div className="space-y-6">
-              <ShipmentDocuments
-                busy={downloadingPacking}
-                productLabels={productDownloads(packing.items)}
-                onProductDownload={(ids) => void downloadProductLabels(packing.items, ids, `Shipment-${packing.id}`)}
-                onDownload={(id) => void downloadShipmentDocument(id)}
-                onDownloadPacket={labelsReady ? () => void downloadSupplierPack(packing.id) : undefined}
-                documents={[
-                  ...(packingFinished ? [{ id: "packing", label: "Packing list" }] : []),
-                  ...(labelsReady
-                    ? [
-                        { id: "carton", label: "Carton labels" },
-                        ...(packing.transport !== "Amazon pickup" ? [{ id: "carrier", label: "Carrier labels" }] : []),
-                        { id: "checklist", label: "Packing checklist" },
-                        { id: "reference", label: "Carton label reference" }
-                      ]
-                    : [])
-                ]}
+        {packingFinished ? (
+          <ShipmentLayout
+            header={<div className="flex flex-wrap items-center justify-between gap-3">{heading}</div>}
+            details={
+              <ShipmentPackingDetails
+                route={route}
+                shipFrom={<ShipmentOrigin origin={draft.origin} addresses={pickupLocations} />}
+                shipTo={shipTo}
+                transport={transport}
               />
-              <ShipmentDetails {...summary} />
-            </div>
-          )}
-          heading={
-            <div className={cn("flex flex-wrap items-center gap-3", packingFinished && "w-full")}>
-              <h1 className="text-2xl font-semibold">Shipment {packing.id}</h1>
-              <StatusBadge tone={packingFinished ? "success" : "info"}>
-                {packingFinished ? "Packed" : "Packing"}
-              </StatusBadge>
-              {packingFinished && (
-                <div className="ms-auto flex w-full flex-wrap gap-2 sm:w-auto">
-                  <Button variant="outline" onClick={() => setPackingFinished(false)}>
-                    Edit packing
-                  </Button>
-                </div>
-              )}
-            </div>
-          }
-          readOnly={packingFinished}
-          onSubmitted={(completed) => {
-            setPackingRecords((current) => ({
-              ...current,
-              [packing.id]: { shipment: packing, packing: completed }
-            }))
-            setPackingFinished(true)
-          }}
-          shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
-          shipmentName={`Shipment ${packing.id}`}
-          revision={1}
-          orderRevision={1}
-          order={{
-            ...order,
-            reference: "PO38",
-            items: packing.items.map((item) => ({
-              ...item,
-              receiver: packing.destination === "Amazon AWD US" ? "awd_us" : "fba"
-            }))
-          }}
-          availablePieces={Object.fromEntries(packing.items.map((item) => [item.id, item.pieces]))}
-          initial={
-            packingRecords[packing.id]?.packing ?? {
-              origin: pickupAddress,
-              readyDate,
-              cartons: packingCartons()
             }
-          }
-          addresses={pickupLocations}
-          shippingDetails={{
-            route: ["Northwind Textiles", ...(packing.stop ? [receivingStop(packing).name] : []), packing.destination],
-            shipTo: (
-              <ShipmentAddress
-                readOnly={packingFinished}
-                label="Ship to"
-                name={packing.stop ? receivingStop(packing).name : packing.destination}
-                address={
-                  packing.stop
-                    ? receivingStop(packing).address
-                    : "Amazon assigns the receiving warehouse when the shipment is confirmed."
-                }
+            products={
+              <PackedProductsTable
+                order={packingOrder}
+                cartons={cartons}
+                reserved={{}}
+                renderActions={productActions}
               />
-            ),
-            transport: (
-              <ShipmentTransportLegs
-                legs={[
-                  ...(packing.stop
-                    ? [
-                        packing.firstLeg?.endsWith("pickup")
-                          ? `${receivingStop(packing).name} picks up from Northwind Textiles.`
-                          : `Supplier ships to ${receivingStop(packing).location}.`
-                      ]
-                    : []),
-                  packing.transport === "Amazon pickup"
-                    ? `Amazon pickup from ${packing.stop ? receivingStop(packing).location : "Northwind Textiles"}.`
-                    : `${onwardShipper(packing)} ships to ${packing.destination}.`
-                ]}
-              />
-            )
-          }}
-        />
+            }
+            sidebar={sidebar({ readyDate: draft.readyDate ?? "", ...cartonMeasures(cartons, pallets) })}
+          >
+            <CartonList readOnly showErrors order={packingOrder} cartons={cartons} reserved={{}} />
+            {pallets && <PalletList readOnly order={packingOrder} cartons={cartons} pallets={pallets} />}
+          </ShipmentLayout>
+        ) : (
+          <PackingForm
+            renderHeader={(actions) => (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {heading}
+                {actions}
+              </div>
+            )}
+            renderProductActions={productActions}
+            renderSidebar={sidebar}
+            onSubmitted={(completed) => {
+              setPackingRecords((current) => ({
+                ...current,
+                [packing.id]: { shipment: packing, packing: completed }
+              }))
+              setPackingFinished(true)
+            }}
+            shipmentId="6a2d4f1e-0b3c-4d5e-8f7a-000000000001"
+            shipmentName={`Shipment ${packing.id}`}
+            revision={1}
+            orderRevision={1}
+            order={packingOrder}
+            reserved={{}}
+            initial={draft}
+            addresses={pickupLocations}
+            shippingDetails={{ route, shipTo, transport }}
+          />
+        )}
       </div>
     )
   }
@@ -1161,7 +1206,7 @@ export function PurchaseOrderFlow({
       <header className="flex flex-col gap-3">
         <a
           href={reviewing || proposing ? "/orders/po38" : "/orders"}
-          className="flex w-fit items-center gap-2 rounded-sm text-[13px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="focus-ring flex w-fit items-center gap-2 rounded-sm text-meta text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft aria-hidden className="size-4 rtl:rotate-180" />
           {reviewing || proposing ? "PO38" : { supplier: "Orders", buyer: "Purchase orders" }[viewer]}
@@ -1291,7 +1336,7 @@ export function PurchaseOrderFlow({
         <div className="grid min-w-0 items-start gap-6 @5xl/po:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="flex min-w-0 flex-col gap-6">
             <div className="flex gap-3">
-              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs text-primary sm:flex">
+              <span className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs text-primary sm:flex">
                 {reviewOwn ? "You" : { buyer: "ML", supplier: "AR" }[viewer]}
               </span>
               <div>
@@ -1499,7 +1544,7 @@ export function PurchaseOrderFlow({
                     Accepted total {cash(total)}. Proposed total{" "}
                     {cash(
                       proposal
-                        ? lineTotal(proposal.shipments.flatMap((shipment) => shipment.items)) +
+                        ? orderSubtotal(proposal.shipments.flatMap((shipment) => shipment.items)) +
                             proposal.adjustments.reduce((sum, row) => sum + row.amount, 0)
                         : proposedTotal
                     )}
@@ -2013,7 +2058,7 @@ export function PurchaseOrderFlow({
                       <span className={cn("text-end whitespace-nowrap @lg/shipment:col-span-2", editable && "pe-2")}>
                         {shipment.items.reduce((sum, item) => sum + item.pieces, 0)} items
                       </span>
-                      <span className="text-end @lg/shipment:col-start-5">{cash(lineTotal(shipment.items))}</span>
+                      <span className="text-end @lg/shipment:col-start-5">{cash(orderSubtotal(shipment.items))}</span>
                     </div>
                     {editable && (
                       <div className="flex items-center gap-2 border-t p-3">
@@ -2800,10 +2845,9 @@ export function PurchaseOrderFlow({
                 </Combobox>
                 <InputGroup>
                   <InputGroupAddon>$</InputGroupAddon>
-                  <InputGroupInput
-                    type="number"
+                  <InputGroupNumberInput
                     step="0.01"
-                    className="text-end [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="text-end"
                     aria-label={`${row.name || "Adjustment"} amount`}
                     value={row.amount / 100}
                     onChange={(event) =>

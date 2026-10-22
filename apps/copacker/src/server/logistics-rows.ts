@@ -1,10 +1,11 @@
 import { type OrderInput } from "@repo/copacker-orders"
-import { amazonNetworkNames, orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { inArray } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
-import type { ListParty, ListStage, LogisticsRow } from "@/components/logistics-list"
 import { db } from "@/db"
 import { forwarders, orderProposals, type ShipmentState, type shipments } from "@/db/schema"
+import type { ListParty, ListStage, LogisticsRow } from "@/lib/logistics-list"
 import type { AmazonShipment } from "@/server/amazon-shipments"
 
 type Shipment = Pick<

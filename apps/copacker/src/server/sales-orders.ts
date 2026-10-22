@@ -13,13 +13,16 @@ import {
   orderSales,
   shopifyOrderFees
 } from "@repo/copacker-marketplaces/sales"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
-import { z } from "zod"
+import { objectValues } from "ts-extras"
 import { db } from "@/db"
+import { chunked, excluded } from "@/db/helpers"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
-import { LocalizedError } from "@/i18n/errors"
+import { type ErrorKey, LocalizedError } from "@/i18n/errors"
 import type { ServerKey } from "@/i18n/server-text"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
@@ -28,31 +31,29 @@ import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
 import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
 import { syncAmazonFees } from "./amazon-fees"
-import { syncAmazonFulfillmentShipments } from "./amazon-fulfillment-shipments"
-import { amazonInventoryMovementsStatus, syncAmazonInventoryMovements } from "./amazon-inventory-movements"
+import { amazonMonthlyReports, amazonReportCoverage } from "./amazon-monthly-reports"
 import { syncAmazonReceipts } from "./amazon-receipts"
-import { amazonReimbursementsStatus, syncAmazonReimbursements } from "./amazon-reimbursements"
-import { amazonRemovalsStatus, syncAmazonRemovals } from "./amazon-removals"
-import { amazonReturnsStatus, syncAmazonReturns } from "./amazon-returns"
 import { syncInboundShipments } from "./amazon-shipments"
-import { amazonStorageFeesStatus, syncAmazonStorageFees } from "./amazon-storage-fees"
 import { queueShopifyEconomics } from "./analytics-jobs"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
-import { ReconnectRequiredError } from "./errors"
+import { errorText, ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
 import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
-import { PollAgain } from "./job-handlers"
-import { logLine } from "./log"
+import { jobRow, type JobInput } from "./job-payloads"
+import { PollAgain, type JobContext } from "./job-runtime"
+import { describeError, logEvent } from "./log"
 import { orderUnits } from "./overview-sales"
+import { connectedAccount, shopifyStoreSnapshot } from "./provider-accounts"
 import type { DemandGap } from "./sales-attribution"
 import type { DemandRow } from "./sales-attribution"
 import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps } from "./sales-attribution"
+import { extendCoverage, lockSyncScope, salesSyncScope } from "./sales-sync-coverage"
 import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
-import { describeError, stockErrorCode } from "./stock"
+import { stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
@@ -65,15 +66,13 @@ export type SalesSource = (typeof salesSources)[number]
 // earlier, and its order search and order reports return nothing older. One day short, so a long sync's later reads
 // still start within the two years.
 export const salesHistoryDays = 2 * 365 - 1
-export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
+export const hasCustomerScope = (scopes: string) => grantedScopes(scopes).has("read_customers")
 
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
 
 export class SalesSyncError extends LocalizedError {}
-
-const sourceNames: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
 // The marketplaces each seller's orders are read from, kept for a few hours: they rarely change, and Amazon allows few
 // requests for them.
@@ -92,9 +91,9 @@ export async function amazonSalesMarketplaces(
   return ids
 }
 
-// How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
+// How far back a source's orders are copied. Without read_all_orders Shopify shares only its recent orders.
 export function historyDaysFor(source: SalesSource, scopes: string) {
-  return source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
+  return source === "shopify" && !grantedScopes(scopes).has("read_all_orders") ? recentOrderDays : salesHistoryDays
 }
 
 // How much of a running first sync's history is copied, from 0 to 1, or null when no sync is copying history. A
@@ -121,15 +120,12 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
   }
   return withJobWake(
     db().transaction(async (tx) => {
-      const [account] = await tx
-        .select({ externalId: connections.externalId, scopes: connections.scopes })
-        .from(connections)
-        .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
+      const account = await connectedAccount(org.id, source, { executor: tx })
       if (!account) {
         throw new SalesSyncError("connectInSettings", { provider: source })
       }
       if (source === "shopify") {
-        const scopes = new Set(account.scopes.split(/[,\s]+/))
+        const scopes = grantedScopes(account.scopes)
         if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
           throw new SalesSyncError("reconnectShopifyOrders")
         }
@@ -170,11 +166,7 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
         .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
       await tx
         .insert(jobs)
-        .values({
-          key: `sales:${org.id}:${source}:${revision}`,
-          kind: "sales",
-          payload: { orgId: org.id, source, revision }
-        })
+        .values(jobRow("sales", `sales:${org.id}:${source}:${revision}`, { orgId: org.id, source, revision }))
         .onConflictDoNothing()
       return { status: "queued" }
     })
@@ -233,32 +225,21 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const period = z.object({ from: z.iso.datetime(), to: z.iso.datetime() })
-const payloadSchema = z.object({
-  orgId: z.uuid(),
-  source: z.enum(salesSources),
-  revision: z.number().int().positive(),
-  // Where a paused sync picks up: the periods still to read, and the unbroken period stored so far in this sync.
-  resume: z
-    .object({
-      remaining: z.array(period),
-      covered: period.nullable(),
-      customersIncluded: z.boolean().optional(),
-      after: z.number().int().min(0).max(32).optional()
-    })
-    .optional()
-})
-
 // How long Amazon's order report can take to include a new order.
 const reportLagMs = 2 * day
 // Amazon's order search allows about one request every three minutes once its burst of 20 is spent.
 const amazonSearchInterval = 180000
 
+// One step after a sync's orders, and what its failure does: fail the sync, or log it under an event and go on.
+type AfterOrders = { run: () => Promise<unknown>; onFailure: "fail" | { log: string } }
+
 // Worker job: copies one source's orders into sales_orders, a chunk at a time. Each chunk replaces the stored orders
 // in its period, so cancelled or test orders that disappear from the source disappear here too.
-export async function salesJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId, source, revision, resume: savedResume } = payloadSchema.parse(payload)
-  const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, source), eq(salesSyncs.revision, revision))
+export async function salesJob(
+  { orgId, source, revision, resume: savedResume }: JobInput<"sales">,
+  { assertOwned }: Pick<JobContext, "assertOwned">
+) {
+  const scope = salesSyncScope({ orgId, source, revision })
   const [sync] = await db().select().from(salesSyncs).where(scope)
   if (!sync || !["queued", "running"].includes(sync.status)) {
     return
@@ -281,13 +262,17 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       resume?.remaining.map((chunk) => ({ from: new Date(chunk.from), to: new Date(chunk.to) })) ?? planned!.chunks
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale | EbaySale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
-    // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
-    let afterOrders: (() => Promise<unknown>)[] = []
+    // The steps after the orders, one per run. A resumed sync continues from its saved step's index, so steps are only
+    // ever added at the end.
+    let afterOrders: AfterOrders[] = []
     if (source === "shopify") {
       // Shopify Payments' labels, bills and dispute fees are copied after the orders.
       afterOrders = [
-        () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned),
-        () => queueShopifyEconomics({ orgId, externalAccountId: account, revision })
+        {
+          run: () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned),
+          onFailure: "fail"
+        },
+        { run: () => queueShopifyEconomics({ orgId, externalAccountId: account, revision }), onFailure: "fail" }
       ]
       // Read one period per attempt instead of buffering a whole historical bulk export in Worker memory.
       const customers = hasCustomerScope(scopes)
@@ -298,14 +283,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     } else if (source === "ebay") {
       const client = await ebayFor(orgId, account)
       // Orders in another currency are converted at each day's rate.
-      afterOrders = [
-        () =>
-          syncExchangeRates(orgId).then(
-            () => undefined,
-            (error: unknown) =>
-              console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
-          )
-      ]
+      afterOrders = [{ run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } }]
       read = async (window) =>
         (await collectEbaySales(client, window, assertOwned)).map((order) => ({
           orderId: order.orderId,
@@ -322,27 +300,20 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         }) as typeof client.request
       }
       const input = { orgId, externalAccountId: account, revision, amazon: client }
+      // Amazon's monthly reports, then daily FBA stock (so restock can leave out days an item was out of stock), fees,
+      // inbound shipments and receipts, and seller-fulfilled returns. The reports, the stock and the fees record their
+      // provider failures themselves, so what fails the sync is a disconnect, a newer sync or the database.
       afterOrders = [
-        () => syncAmazonFulfillmentShipments(input, assertOwned),
-        () => syncAmazonReturns(input, assertOwned),
-        () => syncAmazonReimbursements(input, assertOwned),
-        () => syncAmazonInventoryMovements(input, assertOwned),
-        () => syncAmazonStorageFees(input, "monthly", assertOwned),
-        () => syncAmazonStorageFees(input, "aged", assertOwned),
-        () => syncAmazonRemovals(input, "orders", assertOwned),
-        () => syncAmazonRemovals(input, "shipments", assertOwned),
-        () => syncLedger(input, assertOwned),
-        () => syncAmazonFees(input, assertOwned),
-        () =>
-          syncInboundShipments(input, assertOwned).catch((error) =>
-            console.error(JSON.stringify({ event: "inbound_shipments_failed", orgId, error: describeError(error) }))
-          ),
-        () => syncAmazonReceipts(input, assertOwned),
-        () => syncAmazonExtraEvidence(input, assertOwned),
-        () =>
-          syncExchangeRates(orgId).catch((error) =>
-            console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
-          )
+        ...objectValues(amazonMonthlyReports).map((report): AfterOrders => ({
+          run: () => report.sync(input, assertOwned),
+          onFailure: "fail"
+        })),
+        { run: () => syncLedger(input, assertOwned), onFailure: "fail" },
+        { run: () => syncAmazonFees(input, assertOwned), onFailure: "fail" },
+        { run: () => syncInboundShipments(input, assertOwned), onFailure: { log: "inbound_shipments_failed" } },
+        { run: () => syncAmazonReceipts(input, assertOwned), onFailure: "fail" },
+        { run: () => syncAmazonExtraEvidence(input, assertOwned), onFailure: "fail" },
+        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } }
       ]
       const marketplaces = await amazonSalesMarketplaces(account, client)
       // Older periods come from Amazon's order report, one report per period, which is much faster than the order
@@ -426,21 +397,18 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         orders = await throttled(() => read(window), assertOwned)
       }
       await assertOwned()
-      logLine(
-        `Copied ${orders.length} ${sourceNames[source]} orders, ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)} (period ${index + 1} of ${chunks.length})`
-      )
-      covered = covered
-        ? {
-            from: chunk.from < covered.from ? chunk.from : covered.from,
-            to: chunk.to > covered.to ? chunk.to : covered.to
-          }
-        : chunk
+      logEvent("info", "sales_orders_copied", {
+        source,
+        orders: orders.length,
+        from: window.from,
+        to: window.to,
+        period: index + 1,
+        periods: chunks.length
+      })
+      covered = extendCoverage(covered, chunk)
       const range = covered
       await db().transaction(async (tx) => {
-        const [current] = await tx.select({ revision: salesSyncs.revision }).from(salesSyncs).where(scope).for("update")
-        if (!current) {
-          throw new Error("A newer sync replaced this one")
-        }
+        await lockSyncScope(tx, { orgId, source, revision })
         const stored = and(
           eq(salesOrders.orgId, orgId),
           eq(salesOrders.source, source),
@@ -459,16 +427,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
               : undefined
           )
         )
-        for (let index = 0; index < orders.length; index += 200) {
+        for (const batch of chunked(orders, 200)) {
           await tx
             .insert(salesOrders)
-            .values(
-              orders.slice(index, index + 200).map((order) => ({ orgId, source, externalAccountId: account, ...order }))
-            )
+            .values(batch.map((order) => ({ orgId, source, externalAccountId: account, ...order })))
             .onConflictDoUpdate({
               target: [salesOrders.orgId, salesOrders.source, salesOrders.externalAccountId, salesOrders.orderId],
               // An order whose time moved into another chunk; the newer copy wins.
-              set: { orderedAt: sql`excluded."orderedAt"`, data: sql`excluded.data`, syncedAt: new Date() }
+              set: { ...excluded(salesOrders, "orderedAt", "data"), syncedAt: new Date() }
             })
         }
         // Extend coverage only after the complete period has been stored.
@@ -479,7 +445,16 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     const after = resume?.after ?? 0
     const next = afterOrders[after]
     if (next) {
-      await next()
+      const { onFailure } = next
+      if (onFailure === "fail") {
+        await next.run()
+      } else {
+        await next
+          .run()
+          .catch((error: unknown) =>
+            console.error(JSON.stringify({ event: onFailure.log, orgId, error: describeError(error) }))
+          )
+      }
       throw checkpoint([], after + 1)
     }
     if (source === "shopify" || source === "amazon") {
@@ -545,23 +520,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
       .groupBy(recentOrders.source, recentOrders.externalAccountId)
   ])
   const amazonAccount = accounts.find((account) => account.provider === "amazon")
-  const removals = amazonAccount
-    ? {
-        orders: await amazonRemovalsStatus(orgId, amazonAccount.externalId, "orders", now),
-        shipments: await amazonRemovalsStatus(orgId, amazonAccount.externalId, "shipments", now)
-      }
-    : null
-  const storageFees = amazonAccount
-    ? {
-        monthly: await amazonStorageFeesStatus(orgId, amazonAccount.externalId, "monthly", now),
-        aged: await amazonStorageFeesStatus(orgId, amazonAccount.externalId, "aged", now)
-      }
-    : null
-  const returns = amazonAccount ? await amazonReturnsStatus(orgId, amazonAccount.externalId, now) : null
-  const reimbursements = amazonAccount ? await amazonReimbursementsStatus(orgId, amazonAccount.externalId, now) : null
-  const inventoryMovements = amazonAccount
-    ? await amazonInventoryMovementsStatus(orgId, amazonAccount.externalId, now)
-    : null
+  const amazonReports = amazonAccount ? await amazonReportCoverage(orgId, amazonAccount.externalId, now) : null
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
     if (!account) {
@@ -576,11 +535,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
         externalAccountId: account.externalId,
         ...(source === "amazon"
           ? {
-              returns,
-              reimbursements,
-              inventoryMovements,
-              storageFees,
-              removals,
+              ...amazonReports,
               fees: {
                 coveredFrom: sync?.feesCoveredFrom?.toISOString() ?? null,
                 coveredTo: sync?.feesCoveredTo?.toISOString() ?? null,
@@ -605,10 +560,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
 // Demand from one source's stored orders over the last `days` days of the stored period. Throws a SalesSyncError
 // that says what to do when the orders aren't copied yet or don't reach back far enough.
 export async function storedDemand(orgId: string, source: SalesSource, days: number) {
-  const [account] = await db()
-    .select({ externalId: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, source)))
+  const account = await connectedAccount(orgId, source)
   if (!account) {
     throw new SalesSyncError("connectInSettings", { provider: source })
   }
@@ -841,6 +793,9 @@ export const salesOrdersPageSize = 50
 // Drizzle writes an array as a parenthesized list of values; an empty one would be invalid SQL.
 const listed = (values: string[]) => (values.length ? values : [""])
 
+// A variant in the synced Shopify catalog, read from its snapshot's rows.
+type CatalogRow = { variantId: string | null; sku: string | null }
+
 // The listed items' product names from the synced Shopify catalog, by variant and by SKU (Amazon items only have a
 // SKU). Read from the snapshot in the database, so only the listed items' rows are returned.
 async function productNames(orgId: string, domain: string, orders: SalesOrderSummary[]) {
@@ -851,25 +806,23 @@ async function productNames(orgId: string, domain: string, orders: SalesOrderSum
   if (variantIds.length === 0 && skus.length === 0) {
     return { byVariant, bySku }
   }
-  const result = await db().execute(sql`
+  const { rows } = await db().execute<CatalogRow & { product: string | null; variant: string | null }>(sql`
     select r->>'variantId' as "variantId", r->>'buyerSku' as sku, r->>'productTitle' as product,
       r->>'variantTitle' as variant
-    from ${stockSnapshots} s, jsonb_array_elements(s.data->'rows') r
-    where s."orgId" = ${orgId} and s.source = 'shopify' and s."externalAccountId" = ${domain} and s."scopeKey" = 'store'
+    from ${stockSnapshots}, jsonb_array_elements(${stockSnapshots.data}->'rows') r
+    where ${shopifyStoreSnapshot(orgId, domain)}
       and (r->>'variantId' in ${listed(variantIds)} or r->>'buyerSku' in ${listed(skus)})`)
-  for (const row of (result as unknown as { rows: Record<string, unknown>[] }).rows) {
-    if (typeof row.product !== "string") {
+  for (const row of rows) {
+    if (row.product === null) {
       continue
     }
-    const name =
-      typeof row.variant === "string" && row.variant !== "Default Title"
-        ? `${row.product}, ${row.variant}`
-        : row.product
-    if (typeof row.variantId === "string") {
+    const variant = variantName(row.variant)
+    const name = variant ? `${row.product}, ${variant}` : row.product
+    if (row.variantId !== null) {
       byVariant.set(row.variantId, name)
     }
     // A SKU several variations share can't name one.
-    if (typeof row.sku === "string") {
+    if (row.sku !== null) {
       bySku.set(row.sku, bySku.has(row.sku) && bySku.get(row.sku) !== name ? "" : name)
     }
   }
@@ -888,19 +841,18 @@ const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (match) => `\\
 // catalog, so orders can be found by product name.
 async function matchingProducts(orgId: string, domain: string, q: string) {
   const words = q.split(/ +/).map(likePattern)
-  const result = await db().execute(sql`
+  const { rows } = await db().execute<CatalogRow>(sql`
     select distinct r->>'variantId' as "variantId", r->>'buyerSku' as sku
-    from ${stockSnapshots} s, jsonb_array_elements(s.data->'rows') r
-    where s."orgId" = ${orgId} and s.source = 'shopify' and s."externalAccountId" = ${domain} and s."scopeKey" = 'store'
+    from ${stockSnapshots}, jsonb_array_elements(${stockSnapshots.data}->'rows') r
+    where ${shopifyStoreSnapshot(orgId, domain)}
       and ${sql.join(
         words.map((word) => sql`concat_ws(' ', r->>'productTitle', r->>'variantTitle') ilike ${word}`),
         sql` and `
       )}
     limit 1000`)
-  const rows = (result as unknown as { rows: Record<string, unknown>[] }).rows
   return {
-    variantIds: rows.flatMap((row) => (typeof row.variantId === "string" ? [row.variantId] : [])),
-    skus: rows.flatMap((row) => (typeof row.sku === "string" && row.sku ? [row.sku] : []))
+    variantIds: rows.flatMap((row) => row.variantId ?? []),
+    skus: rows.flatMap((row) => row.sku || [])
   }
 }
 
@@ -1054,15 +1006,20 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
         gapReasons: summarizeDemandGaps(result.gaps)
       })
     } catch (error) {
-      const needsSetup = error instanceof SalesSyncError || error instanceof ReconnectRequiredError
-      // Missing history and account setup are expected availability states, already surfaced to the buyer.
-      if (!needsSetup) {
+      // Missing history and account setup are expected availability states, already surfaced to the buyer. They say
+      // what to do; anything else is logged and summarized.
+      let failure: { key: ErrorKey; values?: Record<string, string | number> } = { key: "salesReadFailed" }
+      if (error instanceof SalesSyncError) {
+        failure = error
+      } else if (error instanceof ReconnectRequiredError) {
+        failure = { key: "reconnectInSettings", values: { provider: source } }
+      } else {
         console.error(JSON.stringify({ event: "sales_read_failed", source, orgId, error: describeError(error) }))
       }
       sources.push({
         source,
-        // Setup problems say what to do; anything else is logged and summarized.
-        error: needsSetup ? error.message : "Sales couldn't be read. Try again.",
+        // In the request's language: the Overview and restock show it as it is.
+        error: (await errorText())(failure.key, failure.values),
         window: null,
         saleDays: new Map<string, Set<string>>(),
         gapUnits: 0,

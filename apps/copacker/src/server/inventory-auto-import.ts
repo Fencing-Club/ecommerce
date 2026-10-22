@@ -4,7 +4,6 @@ import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import {
   organizations,
-  connections,
   salesOrders,
   amazonFulfillmentShipments,
   inventoryBasisRecords,
@@ -14,9 +13,10 @@ import {
 } from "@/db/schema"
 import type { InventoryBasisInput } from "@/lib/inventory-basis"
 import { AnalyticsProblem, analyticsPagination } from "./analytics-contract"
-import { analyticsSnapshot } from "./analytics-snapshot"
+import { analyticsPage } from "./analytics-snapshot"
 import { saveInventoryBasisInTransaction } from "./inventory-basis"
 import { resolveSaleEvidence } from "./inventory-sale-evidence"
+import { connectedAccount } from "./provider-accounts"
 type Source = "amazon" | "shopify"
 type Depletion = Extract<InventoryBasisInput, { kind: "depletion" }>
 type Candidate = {
@@ -226,11 +226,7 @@ export async function syncAutomaticDepletions(
     await assertOwned()
     const advanced = await db().transaction(async (tx) => {
       await tx.select().from(organizations).where(eq(organizations.id, orgId)).for("update")
-      const [connected] = await tx
-        .select()
-        .from(connections)
-        .where(and(eq(connections.orgId, orgId), eq(connections.provider, source), eq(connections.externalId, account)))
-        .for("share")
+      const connected = await connectedAccount(orgId, source, { executor: tx, externalId: account, lock: "share" })
       if (!connected) {
         return false
       }
@@ -388,14 +384,11 @@ export const importResultQuery = z.object({
   externalAccountId: z.string().min(1).max(200)
 })
 export async function listImportResults(orgId: string, input: z.infer<typeof importResultQuery>) {
-  return db().transaction(
-    async (tx) => {
-      const snapshot = await analyticsSnapshot(
-        tx,
-        orgId,
-        input,
-        JSON.stringify(["depletion-imports", input.source, input.externalAccountId])
-      )
+  return analyticsPage(
+    orgId,
+    input,
+    JSON.stringify(["depletion-imports", input.source, input.externalAccountId]),
+    async (tx, snapshot) => {
       const rows = await tx
         .select()
         .from(inventoryImportResults)
@@ -430,7 +423,6 @@ export async function listImportResults(orgId: string, input: z.infer<typeof imp
           "Gap details are limited to 100 per order; blocked orders are revisited on subsequent scan cycles."
         ]
       }
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" }
+    }
   )
 }

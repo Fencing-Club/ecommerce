@@ -1,3 +1,5 @@
+import { reportDay } from "./report-tsv"
+
 // Amazon's FBA inventory ledger summary (GET_LEDGER_SUMMARY_VIEW_DATA), aggregated daily for the country. Each row is
 // one day, one FNSKU and one disposition; only sellable units count as stock a customer can buy.
 export const ledgerReportType = "GET_LEDGER_SUMMARY_VIEW_DATA"
@@ -11,13 +13,9 @@ function normalize(header: string) {
 
 // Dates arrive as MM/DD/YYYY or YYYY-MM-DD; both become YYYY-MM-DD.
 function isoDay(value: string) {
-  const text = value.trim().replace(/^"|"$/g, "")
-  const us = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text)
-  if (us) {
-    return `${us[3]}-${us[1]}-${us[2]}`
-  }
-  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
-    return text.slice(0, 10)
+  const day = reportDay(value.trim().replace(/^"|"$/g, ""))
+  if (/^\d{4}-\d{2}-\d{2}/.test(day)) {
+    return day.slice(0, 10)
   }
   throw new Error("Amazon's inventory ledger has a date Copacker can't read")
 }

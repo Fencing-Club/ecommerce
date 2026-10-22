@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { usePermissions } from "@/components/access"
+import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Area } from "@/lib/access"
 import { can } from "@/lib/access"
@@ -34,8 +35,8 @@ export function CreateMenu({ kind }: { kind: string }) {
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium text-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted">
-        <Plus className="size-4" aria-hidden />
+      <DropdownMenuTrigger render={<Button variant="outline" />}>
+        <Plus data-icon="inline-start" aria-hidden />
         {t("button")}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} className="w-56">

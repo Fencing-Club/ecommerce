@@ -1,4 +1,4 @@
-import type { Address } from "@repo/copacker-orders"
+import type { Address, SupplierCatalogStatus } from "@repo/copacker-orders"
 import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, waitFor, within } from "storybook/test"
@@ -8,7 +8,6 @@ import type { events } from "@/db/schema"
 import type { orderRevisions } from "@/db/schema"
 import type { contacts, documents, orders, shipments, suppliers } from "@/db/schema"
 import type { CatalogProduct } from "@/lib/api"
-import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import type { ForwarderAddress } from "@/server/forwarders"
 import type { ImportProposal } from "@/server/import-proposal"
@@ -364,7 +363,7 @@ export function productHandlers(seen: (url: URL) => void = () => undefined) {
 }
 
 type Quote = {
-  status: BundleQuoteStatus
+  status: SupplierCatalogStatus
   unitPriceMinor: number | null
   available: number | null
   tiers?: Array<{ minimumPieces: number; unitPriceMinor: number }>
@@ -373,7 +372,8 @@ type Quote = {
 const matchBody = z.object({ supplierId: z.string(), currency: z.string(), supplierSkus: z.array(z.string()) })
 
 // The supplier's catalog as the purchase order editor looks up its lines: each supplier SKU's quote from `quotes`, or
-// none when the supplier keeps no catalog. Each lookup is reported.
+// none when the supplier keeps no catalog, without volume prices or rules unless the quote has them, as the server
+// answers. Each lookup is reported.
 export function catalogMatches(
   quotes: Record<string, Quote> = {},
   seen: (body: z.infer<typeof matchBody>) => void = () => undefined
@@ -385,6 +385,8 @@ export function catalogMatches(
       body.supplierSkus.map((sku) => ({
         sku,
         product: null,
+        tiers: [],
+        rules: null,
         ...(quotes[sku] ?? { status: "supplier_catalog_unavailable", unitPriceMinor: null, available: null })
       }))
     )

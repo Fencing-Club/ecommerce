@@ -1,16 +1,17 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
 import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
-import { type CartonGroup, groupCartonIds } from "@/lib/carton-groups"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { type CartonGroup, cartonGroupSchema, groupCartonIds } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { CartonProductsDialog } from "./carton-products-dialog"
 import { DimensionsField, FieldError, IssueBadge, NumberField, type RuleSource, useMeasure } from "./packing-fields"
 import { useCartonIssueErrors } from "./packing-issues"
-import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 type Place = "carton" | "count" | "dimensions" | "weight" | number
 // A problem with a carton configuration: where it shows (under the row, a field or a product, by its index), and the
@@ -22,6 +23,18 @@ type CartonError = { message: string; place: Place; outlines: string[]; source?:
 // and contents takes the rest; from 44rem the columns give a little.
 const columns =
   "wide:grid-cols-[2rem_minmax(3.5rem,4.5rem)_minmax(3.5rem,4rem)_minmax(10.75rem,14.75rem)_minmax(5.5rem,6.5rem)_minmax(7.5rem,1fr)_2rem] wide:gap-x-3 wider:grid-cols-[2rem_4.5rem_4rem_14.75rem_6.5rem_minmax(8rem,1fr)_2rem] wider:gap-x-[clamp(1rem,calc(1rem+(100cqi-52.5rem)/8),2rem)]"
+
+// The field a schema issue names, as a row outlines it: count, length, width, height, weight, items (a carton with no
+// products) or items.0 (a product's quantity). The rest, such as the carton's ID, aren't fields of the row.
+function fieldOf([field, index, key]: PropertyKey[]) {
+  if (field !== "items") {
+    return String(field)
+  }
+  if (index === undefined) {
+    return "items"
+  }
+  return key === "pieces" ? `items.${String(index)}` : undefined
+}
 
 // The cartons of a shipment, a row per carton configuration (A1–A10), each opening onto its products. From 44rem the
 // rows are a table; narrower, each is a card.
@@ -64,7 +77,7 @@ export function CartonTable({
       <div className="flex flex-col gap-3 wide:gap-0 wide:overflow-hidden wide:rounded-lg wide:border wide:bg-card">
         <div
           aria-hidden
-          className={cn("hidden bg-muted/60 px-4 py-2.5 text-[13px] text-muted-foreground wide:grid", columns)}
+          className={cn("hidden bg-muted/60 px-4 py-2.5 text-meta text-muted-foreground wide:grid", columns)}
         >
           <span className="col-start-2">{t("columns.cartons")}</span>
           <span className={readOnly ? undefined : "text-end"}>{t("columns.count")}</span>
@@ -160,26 +173,25 @@ function CartonRow({
 
   function cartonErrors() {
     const found: CartonError[] = issueErrors(issues, value, products)
-    // Blank or impossible numbers, once they've been entered, left or submitted.
-    const shown = (field: string, number: number) => showErrors || touched.includes(field) || Number.isFinite(number)
-    const positive = (number: number) => Number.isFinite(number) && number > 0
-    if (shown("count", value.count) && !(Number.isInteger(value.count) && value.count > 0 && value.count <= 1000)) {
+    // The fields the carton's schema rejects, blank or impossible, once they've been entered, left or submitted.
+    const invalid = new Set((cartonGroupSchema.safeParse(value).error?.issues ?? []).map(({ path }) => fieldOf(path)))
+    const shown = (field: string, number: number) =>
+      invalid.has(field) && (showErrors || touched.includes(field) || Number.isFinite(number))
+    if (shown("count", value.count)) {
       found.push({ place: "count", outlines: ["count"], message: t("enterCount") })
     }
-    const blankSides = (["length", "width", "height"] as const).filter(
-      (side) => shown(side, value[side]) && !positive(value[side])
-    )
+    const blankSides = (["length", "width", "height"] as const).filter((side) => shown(side, value[side]))
     if (blankSides.length) {
       found.push({ place: "dimensions", outlines: blankSides, message: t("enterDimensions") })
     }
-    if (shown("weight", value.weight) && !positive(value.weight)) {
+    if (shown("weight", value.weight)) {
       found.push({ place: "weight", outlines: ["weight"], message: t("enterWeight") })
     }
     for (const [index, content] of value.items.entries()) {
       const field = `items.${index}`
       const product = products.find((item) => item.id === content.itemId)
       const pack = product?.piecesPerSet ?? 1
-      if (shown(field, content.pieces) && !(Number.isInteger(content.pieces) && content.pieces > 0)) {
+      if (shown(field, content.pieces)) {
         found.push({ place: index, outlines: [field], message: t("enterUnits") })
       } else if (Number.isFinite(content.pieces) && content.pieces % pack !== 0) {
         found.push({
@@ -189,7 +201,7 @@ function CartonRow({
         })
       }
     }
-    if (showErrors && !value.items.length) {
+    if (showErrors && invalid.has("items")) {
       found.push({ place: "carton", outlines: [], message: t("addProductRequired") })
     }
     // A group's cartons break the same rules, so each shows once.
@@ -345,7 +357,7 @@ function CartonRow({
       <div className="hidden wide:col-start-6 wide:row-start-1 wide:flex wide:flex-wrap wide:items-center wide:justify-between wide:gap-x-3 wide:gap-y-1 wide:self-center wide:py-3.5">
         <div>
           <p className="tabular-nums">{units}</p>
-          <p className="text-[13px] text-muted-foreground">{detail}</p>
+          <p className="text-meta text-muted-foreground">{detail}</p>
         </div>
         {!open && errors.length > 0 && <IssueBadge count={errors.length} />}
       </div>
@@ -379,8 +391,8 @@ function CartonRow({
                 <div className="col-span-3 min-w-0 [overflow-wrap:anywhere]">
                   {first && <p className={cn(caption, "mb-2 hidden wide:block")}>{packing("product")}</p>}
                   <p className="font-medium">{item.name}</p>
-                  {item.variant && item.variant !== "Default Title" && (
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">{item.variant}</p>
+                  {variantName(item.variant) && (
+                    <p className="mt-0.5 text-meta text-muted-foreground">{item.variant}</p>
                   )}
                 </div>
                 <div className="min-w-0">

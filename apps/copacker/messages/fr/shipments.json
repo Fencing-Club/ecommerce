@@ -141,7 +141,6 @@
     "freightCost": "Frais de transport",
     "carrier": "Transporteur",
     "reference": "Numéro de suivi ou de réservation",
-    "cancel": "Annuler",
     "enterCarrier": "Saisissez le transporteur",
     "enterReference": "Saisissez le numéro de suivi ou de réservation",
     "enterFreightCost": "Saisissez les frais de transport"

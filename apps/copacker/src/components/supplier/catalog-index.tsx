@@ -3,11 +3,13 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
+import { IndexToolbar } from "@/components/list/index-toolbar"
+import { matches } from "@/components/list/matches"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { adjustmentLabel } from "@/lib/catalog-pricing"
 import { cn } from "@/lib/utils"
-import { IndexToolbar, matches, rowLink, StatusBadge } from "./shared"
+import { rowLink, StatusBadge } from "./shared"
 
 type CatalogRow = {
   id: string

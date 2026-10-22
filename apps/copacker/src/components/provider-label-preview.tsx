@@ -2,8 +2,8 @@
 
 import { Download } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"
-import { Button } from "./ui/button"
 
 export function ProviderLabelPreview({ file, title }: { file: File; title: string }) {
   const [result, setResult] = useState<{ file: File; url: string; pages: PagePreview[] } | null>(null)

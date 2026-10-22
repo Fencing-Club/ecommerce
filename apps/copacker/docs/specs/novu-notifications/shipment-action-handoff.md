@@ -14,9 +14,9 @@ not email delivery. The names in the Template column are the canonical planned f
 
 | Committed action | Canonical event/workflow ID | Template family | Recipients | Email default | Actor success toast | Implementation status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Submit packing or resubmit corrections | `shipment-packing-submitted` | Action required, packing-review variant | Buyer users authorized to review the shipment; price-aware content only for authorized approvers | Immediate when review is required; otherwise optional | Packing submitted. | Submission exists; Novu notification is new. Emit once per accepted packing revision, not on draft save. |
+| Submit packing | `shipment-packing-submitted` | Action required, packing-review variant | Buyer users authorized to review the shipment; price-aware content only for authorized approvers | Immediate when review is required; otherwise optional | Packing submitted. | Submission exists; Novu notification is new. Emit once per accepted packing revision, not on draft save. An edit finished after booking sends `shipment-packing-edited` instead. |
 | Approve invoice | `shipment-invoice-approved` | Order change decision, invoice-approved variant | Responsible supplier users | Immediate | Invoice approved. | Approval exists; standalone decision notification is new. Preserve existing revised-PO email when approval creates a PO revision. |
-| Request packing changes | `shipment-correction-requested` | Action required, packing-correction variant | Responsible supplier users | Immediate | Changes requested. | Correction action exists; delivery is new. Include reason and superseded packing revision. |
+| Supplier edits packing after booking | `shipment-packing-edited` | Action required, packing-edited variant | Buyer users who book shipping for the shipment | Immediate | Packing updated. | New. The supplier edits finished packing with no request or reason, replacing Request a correction (`correctShipment`). Emit when edited packing is finished on a shipment whose shipping was booked, after Copacker cancels its Amazon shipment and moves it back to Packed; not when packing reopens. Name the cancelled Amazon shipment, say what changed and link Book shipping. See the [packing changes spec](../packing-changes/README.md). |
 | Labels sent to supplier | `shipment-documents-released` | Labels ready, existing `labelsReadyEmail` | Existing parity: saved email of joined supplier; planned in-app routing to responsible authorized supplier users | Immediate | Carrier labels sent to the supplier. | `sendLabelsWhenComplete` queues `ready` once the packet is complete, with no buyer step; migrate it. No packet attachment today; link opens shipment. |
 | Supplier confirms dispatch | `shipment-supplier-dispatched` | Shipment update, supplier-dispatched variant | Buyer and assigned forwarder when this leg goes to that forwarder | Optional for buyer; immediate for forwarder responsible for receiving the inbound leg | Dispatch confirmed. | `shipShipment` records `supplierShipped`; delivery is new. This is not a confirmed physical pickup or destination receipt. |
 | Supplier or authorized carrier confirms physical pickup | `shipment-pickup-confirmed` | Pickup, pickup-confirmed variant | Buyer and assigned forwarder; supplier contacts other than actor where applicable | Immediate | Pickup confirmed. | Missing authoritative pickup-specific action/evidence. Do not emit merely because status becomes `shipped` or the button says Confirm pickup. |
@@ -56,9 +56,9 @@ has persistent status feedback rather than a toast falsely attributed to a user 
 ## Payload and delivery requirements
 
 Every event carries immutable event ID, workspace relationships, actor, order/shipment IDs, leg, revision, occurrence
-time and evidence source where applicable. Include correction reason, current authorized action link and relevant
-quantities only when allowed. Deduplicate per event, recipient and workflow. Do not send stale corrections/releases
-after a newer revision supersedes them. Recheck current partner membership, record access and preferences at delivery.
+time and evidence source where applicable. Include the current authorized action link and relevant quantities only
+when allowed. Deduplicate per event, recipient and workflow. Do not send stale packing edits or releases after a newer
+revision supersedes them. Recheck current partner membership, record access and preferences at delivery.
 
 Forwarders receive only notifications about their assigned legs. Existing contact-only email eligibility must be
 explicitly expanded before member-based routing is presented as live behavior. Invoice/pricing copy respects price

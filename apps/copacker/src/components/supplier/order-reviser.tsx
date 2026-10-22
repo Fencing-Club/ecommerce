@@ -1,27 +1,27 @@
-import { commonPaymentTerms } from "@repo/copacker-orders"
+import { commonPaymentTerms, orderSubtotal } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
-import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
+import { CircleAlert, Plus, Undo2, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageHeader, StatusBadge } from "@/components/common"
 import { DateInput } from "@/components/form-controls"
 import { SelectControl } from "@/components/form-select"
+import { matches } from "@/components/list/matches"
+import { SearchField } from "@/components/list/search-field"
+import { MoneyInput } from "@/components/money-input"
 import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { useProposeChangesMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
-import { MoneyInput } from "./pricing-controls"
 import type { LineChange } from "./proposal-panel"
 import { ChangeBadge } from "./proposal-panel"
-import { matches } from "./shared"
 
 type Line = {
   key: string
@@ -100,7 +100,7 @@ export function OrderReviser({
 
   const kept = lines.filter((line) => !line.removed)
   const named = (line: Line) => (line.variant ? `${line.name}, ${line.variant}` : line.name)
-  const after = kept.reduce((sum, line) => sum + line.pieces * line.unitPrice, 0)
+  const after = orderSubtotal(kept)
   const available = products.filter(
     (product) =>
       !lines.some((line) => line.supplierSku === product.supplierSku) &&
@@ -186,8 +186,8 @@ export function OrderReviser({
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="@container gap-0 py-0">
-          <CardHeader className="border-b pt-4">
+        <Card flush className="@container">
+          <CardHeader>
             <CardTitle>{t("products")}</CardTitle>
             <CardAction>
               <Button
@@ -361,18 +361,7 @@ export function OrderReviser({
             <DialogTitle>{t("addProducts")}</DialogTitle>
             <DialogDescription>{t("atPrices", { customer })}</DialogDescription>
           </DialogHeader>
-          <InputGroup>
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              value={query}
-              placeholder={t("search")}
-              aria-label={t("searchLabel")}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </InputGroup>
+          <SearchField label={t("searchLabel")} placeholder={t("search")} value={query} onChange={setQuery} />
           <ul className="-mx-2 max-h-80 overflow-y-auto">
             {available.slice(0, 100).map((product) => (
               <li key={product.supplierSku}>

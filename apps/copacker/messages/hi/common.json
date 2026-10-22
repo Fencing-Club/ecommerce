@@ -8,7 +8,9 @@
     "offline": "Copacker से कनेक्ट नहीं हो सका। अपना कनेक्शन जांचें और फिर से कोशिश करें।"
   },
   "actions": {
-    "cancel": "रद्द करें"
+    "cancel": "रद्द करें",
+    "save": "सेव करें",
+    "saved": "सेव हो गया"
   },
   "status": {
     "draft": "ड्राफ़्ट",
@@ -89,7 +91,8 @@
     "addressLine2": "पता लाइन 2",
     "city": "शहर",
     "stateOrProvince": "राज्य या प्रांत",
-    "postalCode": "पिन कोड"
+    "postalCode": "पिन कोड",
+    "addressName": "पते का नाम"
   },
   "sync": {
     "actions": "{label} के ऐक्शन",
@@ -154,9 +157,6 @@
       "text": "आपका डेटा सुरक्षित है, और हमारे लौटते ही यह पेज फिर से लोड होगा।",
       "contact": "हमसे संपर्क करें"
     }
-  },
-  "banner": {
-    "dismiss": "खारिज करें"
   },
   "actionBar": {
     "label": "कार्रवाइयाँ",
@@ -308,5 +308,21 @@
         "all": "कोई शिपमेंट नहीं"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{total, number} में से {first, number}–{last, number}",
+      "previous": "पिछला पेज",
+      "next": "अगला पेज",
+      "previousShort": "पिछला",
+      "nextShort": "अगला"
+    },
+    "saveBar": {
+      "unsaved": "बदलाव सेव नहीं हुए",
+      "discard": "छोड़ें",
+      "save": "सेव करें",
+      "saving": "सेव हो रहा है…"
+    },
+    "selected": "{count, number} चुने गए"
   }
 }

@@ -6,7 +6,7 @@ import * as tables from "../src/db/schema"
 import { reimbursementReport } from "./fixtures/amazon-reimbursements"
 import { database, setUpTestDatabase } from "./test-db"
 vi.mock("@/db", () => import("./test-db"))
-import { amazonReimbursementsStatus, syncAmazonReimbursements } from "../src/server/amazon-reimbursements"
+import { amazonMonthlyReports } from "../src/server/amazon-monthly-reports"
 
 const orgId = randomUUID(),
   otherId = randomUUID()
@@ -55,7 +55,7 @@ beforeEach(async () => {
 
 describe("Amazon reimbursement ingestion", () => {
   it("backfills cash, inventory and reversal evidence without affecting the financial ledger", async () => {
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(13)
     expect(report.mock.calls[0]?.[0]).toMatchObject({
       reportType: "GET_FBA_REIMBURSEMENTS_DATA",
@@ -83,17 +83,19 @@ describe("Amazon reimbursement ingestion", () => {
       ])
     )
     expect(await database.select().from(tables.amazonTransactions)).toEqual([])
-    expect((await amazonReimbursementsStatus(orgId, "SELLER1", now)).windows.every((window) => window.complete)).toBe(
-      true
-    )
+    expect(
+      (await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)).windows.every(
+        (window) => window.complete
+      )
+    ).toBe(true)
     report.mockClear()
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(2)
     expect(await database.select().from(tables.amazonReimbursements)).toHaveLength(3)
   })
 
   it("replaces corrections and removed rows while preserving unrelated account and workspace evidence", async () => {
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     await database.insert(tables.amazonReimbursements).values([
       {
         orgId: otherId,
@@ -117,27 +119,29 @@ describe("Amazon reimbursement ingestion", () => {
           : []
       )
     )
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     const rows = await database.select().from(tables.amazonReimbursements)
     expect(rows).toHaveLength(3)
     expect(rows.find((row) => row.reimbursementId === "R1")?.amountTotal).toBe("9007199254740993.123456")
     report.mockResolvedValue(reimbursementReport())
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect((await database.select().from(tables.amazonReimbursements)).map((row) => row.reimbursementId)).toEqual([
       "other",
       "other"
     ])
     expect(
-      (await amazonReimbursementsStatus(otherId, "SELLER1", now)).windows.every((window) => window.rows === null)
+      (await amazonMonthlyReports.reimbursements.status(otherId, "SELLER1", now)).windows.every(
+        (window) => window.rows === null
+      )
     ).toBe(true)
   })
 
   it("retains prior data on failure and distinguishes unavailable months from verified zero", async () => {
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     report.mockImplementation(async (request) => (request.dataStartTime.startsWith("2026-10") ? null : "broken"))
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(await database.select().from(tables.amazonReimbursements)).toHaveLength(3)
-    const status = await amazonReimbursementsStatus(orgId, "SELLER1", now)
+    const status = await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)
     expect(status.windows[0]).toMatchObject({
       status: "unavailable",
       complete: false,
@@ -146,8 +150,8 @@ describe("Amazon reimbursement ingestion", () => {
     })
     expect(status.windows[1]).toMatchObject({ status: "failed", complete: false, rows: 0 })
     report.mockResolvedValue(reimbursementReport())
-    await syncAmazonReimbursements(input, owned, now)
-    expect((await amazonReimbursementsStatus(orgId, "SELLER1", now)).windows[0]).toMatchObject({
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
+    expect((await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)).windows[0]).toMatchObject({
       status: "imported",
       complete: true,
       rows: 0,
@@ -161,9 +165,9 @@ describe("Amazon reimbursement ingestion", () => {
         request.dataStartTime.startsWith("2026-10") ? [{}, { "quantity-reimbursed-cash": "bad" }] : []
       )
     )
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(await database.select().from(tables.amazonReimbursements)).toEqual([])
-    const status = await amazonReimbursementsStatus(orgId, "SELLER1", now)
+    const status = await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)
     expect(status.windows[0]).toMatchObject({ status: "failed", coveredTo: null, rows: null })
     expect(status.windows.slice(1).every((window) => window.complete)).toBe(true)
   })
@@ -173,20 +177,20 @@ describe("Amazon reimbursement ingestion", () => {
       await database.update(tables.salesSyncs).set({ revision: 2 }).where(eq(tables.salesSyncs.orgId, orgId))
       return reimbursementReport([{}])
     })
-    await expect(syncAmazonReimbursements(input, owned, now)).rejects.toThrow("superseded")
+    await expect(amazonMonthlyReports.reimbursements.sync(input, owned, now)).rejects.toThrow("superseded")
     expect(await database.select().from(tables.amazonReimbursementReports)).toEqual([])
     await database.update(tables.salesSyncs).set({ revision: 1 }).where(eq(tables.salesSyncs.orgId, orgId))
     owned.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("Lease lost"))
-    await expect(syncAmazonReimbursements(input, owned, now)).rejects.toThrow("Lease lost")
+    await expect(amazonMonthlyReports.reimbursements.sync(input, owned, now)).rejects.toThrow("Lease lost")
     await database.delete(tables.connections).where(eq(tables.connections.orgId, orgId))
     report.mockClear()
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(report).not.toHaveBeenCalled()
     expect(await database.select().from(tables.amazonReimbursements)).toEqual([])
   })
 
   it("rotates old successful months and marks a newer day incomplete until refreshed", async () => {
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     await database
       .update(tables.amazonReimbursementReports)
       .set({ checkedAt: new Date("2026-08-01") })
@@ -197,18 +201,22 @@ describe("Amazon reimbursement ingestion", () => {
         )
       )
     const tomorrow = new Date("2026-10-17T12:00:00Z")
-    expect((await amazonReimbursementsStatus(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(false)
+    expect((await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(
+      false
+    )
     report.mockClear()
-    await syncAmazonReimbursements(input, owned, tomorrow)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, tomorrow)
     expect(report).toHaveBeenCalledTimes(3)
-    expect((await amazonReimbursementsStatus(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(true)
+    expect((await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", tomorrow)).windows[0]?.complete).toBe(
+      true
+    )
   })
 
   it.each([403, 429])("stops issuing more requests after Amazon rejects access or throttles (%s)", async (status) => {
     report.mockRejectedValue(new ProviderError(status, null, "unavailable"))
-    await syncAmazonReimbursements(input, owned, now)
+    await amazonMonthlyReports.reimbursements.sync(input, owned, now)
     expect(report).toHaveBeenCalledTimes(1)
-    const state = await amazonReimbursementsStatus(orgId, "SELLER1", now)
+    const state = await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)
     expect(state.windows[0]).toMatchObject({
       status: "failed",
       rows: null,
@@ -219,7 +227,7 @@ describe("Amazon reimbursement ingestion", () => {
 })
 
 it("recovers a failed repeat refresh using exact recent daily reports without creating duplicates", async () => {
-  await syncAmazonReimbursements(input, owned, now)
+  await amazonMonthlyReports.reimbursements.sync(input, owned, now)
   await database
     .update(tables.amazonReimbursementReports)
     .set({ status: "failed", errorCode: "report_failed" })
@@ -269,12 +277,12 @@ it("recovers a failed repeat refresh using exact recent daily reports without cr
     throw new Error("Unexpected provider request")
   })
   const amazon = new Amazon({ clientId: "test", clientSecret: "test", refreshToken: "test" }, transport)
-  await syncAmazonReimbursements({ ...input, amazon }, owned, now)
+  await amazonMonthlyReports.reimbursements.sync({ ...input, amazon }, owned, now)
   expect(calls.every((call) => call.method === "GET")).toBe(true)
   expect(calls[0]?.url.searchParams.get("createdSince")).toBe("2026-10-16T08:00:00.000Z")
-  expect((await amazonReimbursementsStatus(orgId, "SELLER1", now)).windows.every((window) => window.complete)).toBe(
-    true
-  )
+  expect(
+    (await amazonMonthlyReports.reimbursements.status(orgId, "SELLER1", now)).windows.every((window) => window.complete)
+  ).toBe(true)
   expect(await database.select().from(tables.amazonReimbursements)).toHaveLength(1)
   expect(await database.select().from(tables.amazonTransactions)).toEqual([])
 })

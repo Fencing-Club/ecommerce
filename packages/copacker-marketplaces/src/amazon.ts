@@ -340,6 +340,17 @@ export class ProviderError extends Error {
   }
 }
 
+// How long a response's Retry-After asks to wait, in milliseconds, given in seconds or as an HTTP date; null without one.
+export function retryAfterMs(response: Response) {
+  const header = response.headers.get("retry-after")
+  if (header === null) {
+    return null
+  }
+  const seconds = Number(header)
+  const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now()
+  return Number.isFinite(delay) ? Math.max(0, delay) : null
+}
+
 export type AmazonConnectionHealth = "connected" | "reconnect" | "configuration" | "unavailable"
 
 // Token failures retain a safe recovery category, never credentials or Amazon's raw response.
@@ -509,14 +520,11 @@ export class Amazon {
             .map((error) => [error.code, error.message, error.details].filter(Boolean).join(" ").slice(0, 500))
             .join("; ")}`
         : ""
-      const retryAfter = response.headers.get("retry-after")
-      const retryAfterMs = retryAfter === null ? NaN : Number(retryAfter) * 1000
-      const delay = Number.isFinite(retryAfterMs) ? retryAfterMs : Date.parse(retryAfter ?? "") - Date.now()
       throw new ProviderError(
         response.status,
         response.headers.get("x-amzn-RequestId"),
         `Amazon request failed (${response.status})${reason}`,
-        Number.isFinite(delay) ? Math.max(0, delay) : null
+        retryAfterMs(response)
       )
     }
     if (response.status === 204) {
@@ -1297,14 +1305,11 @@ export class Amazon {
             }
             return this.request("POST", "/reports/2021-06-30/reports", input, async (response) => {
               const rate = Number(response.headers.get("x-amzn-RateLimit-Limit"))
-              const retry = response.headers.get("retry-after")
-              const seconds = retry === null ? NaN : Number(retry)
-              const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retry ?? "") - Date.now()
               await this.reportPolicy?.observe({
                 reportType: input.reportType,
                 status: response.status,
                 rateLimit: Number.isFinite(rate) && rate > 0 ? rate : null,
-                retryAfterMs: Number.isFinite(delay) ? Math.max(0, delay) : null,
+                retryAfterMs: retryAfterMs(response),
                 requestId: response.headers.get("x-amzn-RequestId")
               })
             })

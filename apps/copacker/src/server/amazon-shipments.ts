@@ -1,6 +1,6 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
 import { addressSchema } from "@repo/copacker-orders"
-import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-shipments"
+import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-packing-rules"
 import { freightShipment, sellerCentralShipment } from "@repo/copacker-shipments/amazon-inbound"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -115,7 +115,7 @@ export async function syncInboundShipments(
 ) {
   const { orgId, externalAccountId, amazon } = input
   const [charged, stored] = await Promise.all([
-    db().execute(sql`
+    db().execute<{ reference: string | null }>(sql`
       select distinct "orderId" as reference from amazon_transactions
       where "orgId" = ${orgId} and "externalAccountId" = ${externalAccountId}
         and data->>'description' in (${freightDescriptions})`),
@@ -132,7 +132,7 @@ export async function syncInboundShipments(
   ])
   const known = new Map(stored.map((row) => [row.shipmentId, row]))
   const wanted = new Map<string, NonNullable<ReturnType<typeof freightShipment>>>()
-  for (const row of (charged as unknown as { rows: { reference: string | null }[] }).rows) {
+  for (const row of charged.rows) {
     const shipment = freightShipment(row.reference)
     const previous = shipment && known.get(shipment.shipmentId)
     if (shipment && (!previous || (!previous.found && now.getTime() - previous.fetchedAt.getTime() > retryMissingMs))) {
@@ -168,7 +168,7 @@ export async function syncInboundShipments(
 // the Amazon shipment (or its inbound order), which Copacker records when it creates the shipment. An FBA inbound plan
 // can split into several Amazon shipments, recorded comma-separated.
 export async function amazonFreightByOrder(orgId: string) {
-  const result = await db().execute(sql`
+  const { rows } = await db().execute<{ orderId: string; reference: string; currency: string; freight: string }>(sql`
     select s."orderId" as "orderId", t."orderId" as reference, t.currency, -sum(t."totalMinor") as freight
     from shipments s
     join orders o on o.id = s."orderId"
@@ -176,10 +176,10 @@ export async function amazonFreightByOrder(orgId: string) {
       and (t."orderId" = any(string_to_array(s."amazonShipmentId", ', ')) or t."orderId" = s."amazonOrderId")
     where o."buyerOrgId" = ${orgId} and t.data->>'description' in (${freightDescriptions})
     group by 1, 2, 3`)
-  return (result as unknown as { rows: Record<string, unknown>[] }).rows.map((row) => ({
-    orderId: String(row.orderId),
-    reference: String(row.reference),
-    currency: String(row.currency),
+  return rows.map((row) => ({
+    orderId: row.orderId,
+    reference: row.reference,
+    currency: row.currency,
     freightMinor: Number(row.freight)
   }))
 }

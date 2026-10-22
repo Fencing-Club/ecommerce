@@ -1,20 +1,25 @@
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink, Loader2 } from "lucide-react"
+import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"
 import { Fragment } from "react"
 import { useTranslations, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
 import { Attachment } from "@/components/attachment"
 import { UploadCarrierLabels } from "@/components/carrier-labels-dialog"
+import { CartonList } from "@/components/carton-list"
 import { DocumentList, PageHeader, Status } from "@/components/common"
+import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
+import { PalletList } from "@/components/pallet-list"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ApproveInvoice, CorrectionForm, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentDetails } from "@/components/shipment-details"
-import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
+import { ShipmentLayout } from "@/components/shipment-layout"
+import { ShipmentOrigin, ShipmentPackingDetails, ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -22,7 +27,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
+import { Spinner } from "@/components/ui/spinner"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
+import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { printableLabelTypes } from "@/lib/printable-labels"
 import { finishedStates, packedStates } from "@/server/readiness"
 import type { shipmentPage } from "@/server/shipment-page"
@@ -152,9 +159,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         allHref={labelsHref({ item: item.id })}
       />
     )
-  const availablePieces = Object.fromEntries(
-    order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
-  )
   const parents = [
     {
       label: isBuyer ? t("parents.purchaseOrders") : t("parents.orders"),
@@ -242,7 +246,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           key={`${id}:${order.revision}`}
           revision={shipment.revision}
           orderRevision={order.revision}
-          availablePieces={availablePieces}
+          reserved={reserved}
           order={packingOrder}
           packingGroups={packingGroups}
           initial={shipment.packingDraft ?? shipment.packing}
@@ -264,7 +268,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         href={link.url}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
+        className="focus-ring inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
       >
         {link.id}
         <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
@@ -275,14 +279,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const viewOrder = isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")
   // Finished packing prints its packing list, before Amazon's labels or the supplier packet exist.
   const packed = !!shipment.packing && packedStates.includes(shipment.status)
+  const packing = shipment.packing ?? shipment.packingDraft
+  const cartons = groupCartons(packing?.cartons)
+  const pallets = packing?.palletized ? editorPallets(packing.pallets) : undefined
 
   // After packing, the same layout without the form: the state's alerts and next step lead the column beside the
   // documents and totals, and the cartons follow as packed.
   return (
-    <PackingForm
-      readOnly
-      shipmentName={title}
-      renderHeader={() => (
+    <ShipmentLayout
+      key={`${id}:${order.revision}:${shipment.revision}`}
+      header={
         <PageHeader
           parents={[...parents, { label: title }]}
           title={title}
@@ -328,7 +334,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           )}
           {editsShipments ? nextAction[step.next.step] || null : null}
         </PageHeader>
-      )}
+      }
       notices={
         <>
           {notices}
@@ -352,11 +358,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                   {changes.map(({ item, change }) => (
                     <Item key={change.itemId} variant="muted">
                       <ItemContent>
-                        <ItemTitle>
-                          {[item.name, item.variant === "Default Title" ? "" : item.variant]
-                            .filter(Boolean)
-                            .join(" / ")}
-                        </ItemTitle>
+                        <ItemTitle>{[item.name, variantName(item.variant)].filter(Boolean).join(" / ")}</ItemTitle>
                         {prices && change.unitPrice !== item.unitPrice && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
                             {t("invoiceChanges.pricePerUnit")} {money(item.unitPrice, snapshot.currency, locale)}
@@ -400,7 +402,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
 
           {["queued", "creating"].includes(shipment.status) && (
             <Alert role="note">
-              <Loader2 className="animate-spin" />
+              <Spinner />
               <AlertTitle>{t("creating.title")}</AlertTitle>
               <AlertDescription>{t("creating.description")}</AlertDescription>
             </Alert>
@@ -426,35 +428,40 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           )}
         </>
       }
-      footer={
-        <>
-          {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
-          {/* A supplier changes finished packing with Edit packing instead. */}
-          {editsShipments &&
-            !finishedStates.includes(shipment.status) &&
-            shipment.status !== "creating" &&
-            step.next.step !== "reconcile" &&
-            !(canReopen && !isBuyer) && <CorrectionForm id={id} />}
-        </>
-      }
-      renderCartonNote={
-        amazon && shipment.labels.length > 0
-          ? (cartonIds) => (
-              <p className="text-sm text-muted-foreground">
-                {t("cartons.amazonLabel")}:{" "}
-                <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
-                  {cartonIds.map((cartonId) => (
-                    <span key={cartonId} className="whitespace-nowrap">
-                      {cartonId}: {shipment.labels.find((label) => label.cartonId === cartonId)?.labelNumber ?? "—"}
-                    </span>
-                  ))}
-                </span>
-              </p>
+      details={
+        <ShipmentPackingDetails
+          route={route}
+          shipFrom={<ShipmentOrigin origin={packing?.origin} addresses={addresses} />}
+          shipTo={<ShipmentDestination {...delivery} compact readOnly />}
+          transport={
+            (legs.length > 0 || (shipment.transport && transportEditable)) && (
+              <div className="flex flex-col gap-3">
+                {legs.length > 0 && <ShipmentTransportLegs legs={legs} />}
+                {shipment.transport && transportEditable && (
+                  <ShipmentTransportSettings
+                    compact
+                    key={JSON.stringify(shipment.transport)}
+                    id={id}
+                    revision={shipment.revision}
+                    initial={shipment.transport}
+                    hasForwarder={!!snapshot.via}
+                    editable
+                  />
+                )}
+              </div>
             )
-          : undefined
+          }
+        />
       }
-      renderProductActions={productActions}
-      renderSidebar={(totals) => (
+      products={
+        <PackedProductsTable
+          order={packingOrder}
+          cartons={cartons}
+          reserved={reserved}
+          renderActions={productActions}
+        />
+      }
+      sidebar={
         <div className="flex flex-col gap-6">
           <section aria-label={t("documents.title")} className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
@@ -481,38 +488,43 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
             )}
           </section>
-          <ShipmentDetails {...totals} />
+          <ShipmentDetails readyDate={packing?.readyDate ?? ""} {...cartonMeasures(cartons, pallets)} />
         </div>
-      )}
-      shippingDetails={{
-        route,
-        shipTo: <ShipmentDestination {...delivery} compact readOnly />,
-        transport: (legs.length > 0 || (shipment.transport && transportEditable)) && (
-          <div className="flex flex-col gap-3">
-            {legs.length > 0 && <ShipmentTransportLegs legs={legs} />}
-            {shipment.transport && transportEditable && (
-              <ShipmentTransportSettings
-                compact
-                key={JSON.stringify(shipment.transport)}
-                id={id}
-                revision={shipment.revision}
-                initial={shipment.transport}
-                hasForwarder={!!snapshot.via}
-                editable
-              />
-            )}
-          </div>
-        )
-      }}
-      shipmentId={id}
-      key={`${id}:${order.revision}:${shipment.revision}`}
-      revision={shipment.revision}
-      orderRevision={order.revision}
-      availablePieces={availablePieces}
-      order={packingOrder}
-      initial={shipment.packing ?? shipment.packingDraft}
-      addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
-    />
+      }
+    >
+      <CartonList
+        readOnly
+        order={packingOrder}
+        cartons={cartons}
+        reserved={reserved}
+        // A saved draft's cartons show what they still lack, as they do while packing.
+        showErrors
+        renderNote={
+          amazon && shipment.labels.length > 0
+            ? (cartonIds) => (
+                <p className="text-sm text-muted-foreground">
+                  {t("cartons.amazonLabel")}:{" "}
+                  <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
+                    {cartonIds.map((cartonId) => (
+                      <span key={cartonId} className="whitespace-nowrap">
+                        {cartonId}: {shipment.labels.find((label) => label.cartonId === cartonId)?.labelNumber ?? "—"}
+                      </span>
+                    ))}
+                  </span>
+                </p>
+              )
+            : undefined
+        }
+      />
+      {pallets && <PalletList readOnly order={packingOrder} cartons={cartons} pallets={pallets} />}
+      {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
+      {/* A supplier changes finished packing with Edit packing instead. */}
+      {editsShipments &&
+        !finishedStates.includes(shipment.status) &&
+        shipment.status !== "creating" &&
+        step.next.step !== "reconcile" &&
+        !(canReopen && !isBuyer) && <CorrectionForm id={id} />}
+    </ShipmentLayout>
   )
 }
 

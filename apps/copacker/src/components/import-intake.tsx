@@ -44,9 +44,6 @@ function isKnownStatus(status: string): status is keyof typeof statuses {
   return Object.hasOwn(statuses, status)
 }
 
-// The table's first and last columns line up with the card's header.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
-
 export function ImportIntake() {
   const t = useTranslations("orders.intake")
   const errorMessage = useErrorMessage()
@@ -71,8 +68,8 @@ export function ImportIntake() {
   const items = imports.data?.items ?? []
   const listError = imports.isError ? errorMessage(imports.error) : changeError
   return (
-    <Card className="@container gap-0 overflow-hidden py-0">
-      <CardHeader className="px-4 pt-4">
+    <Card flush className="@container">
+      <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
@@ -119,7 +116,7 @@ export function ImportIntake() {
       )}
       {imports.isLoading && <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("loading")}</p>}
       {items.length > 0 && (
-        <Table aria-label={t("imports")} framed={false} className={edgeTable}>
+        <Table aria-label={t("imports")} framed={false} inset>
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.file")}</TableHead>
@@ -141,7 +138,11 @@ export function ImportIntake() {
                 <>
                   <TableCell className="w-full max-w-0">
                     {href ? (
-                      <Link to="." href={href} className="block truncate font-medium hover:underline">
+                      <Link
+                        to="."
+                        href={href}
+                        className="focus-ring block truncate rounded-sm font-medium underline-offset-4 hover:underline"
+                      >
                         {fileName(item.filename, { title: item.filename })}
                       </Link>
                     ) : (

@@ -176,7 +176,7 @@ function Segmented<T extends string>({
         <Toggle
           key={option.value}
           value={option.value}
-          className="h-7 cursor-pointer rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-xs dark:data-pressed:bg-input/40"
+          className="focus-ring h-7 cursor-pointer rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-xs dark:data-pressed:bg-input/40"
         >
           {option.label}
         </Toggle>
@@ -415,13 +415,7 @@ export function CoverChart({
         return (
           <li key={bucket.key}>
             {bucket.href ? (
-              <a
-                href={bucket.href}
-                className={cn(
-                  row,
-                  "transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-                )}
-              >
+              <a href={bucket.href} className={cn(row, "focus-ring transition-colors hover:bg-muted/60")}>
                 {content}
               </a>
             ) : (

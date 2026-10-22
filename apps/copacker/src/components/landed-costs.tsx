@@ -1,30 +1,21 @@
-import { Ellipsis, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { Plus, Trash2 } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import { Spinner } from "@/components/ui/spinner"
 import { useAction } from "@/hooks/use-action"
 import { useMoney } from "@/hooks/use-money"
-import { useActionForm } from "@/hooks/useActionForm"
 import { cn } from "@/lib/utils"
-import { ActionForm } from "./action-form"
 import { FormInput, FormMoney } from "./form-controls"
+import { FormDialog } from "./form-dialog"
 import { FormSelect } from "./form-select"
 import { InfoTip } from "./info-tip"
+import { RowActionsMenu } from "./row-actions-menu"
 
 const schema = z.object({
   kind: z.enum(["freight", "duty", "other"]),
@@ -155,27 +146,12 @@ function CostRow({
         </span>
         <span className="tabular-nums">{money(cost.amount, currency)}</span>
         {editable && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={pending}
-                  aria-busy={pending}
-                  aria-label={t("moreActions", { kind: kindName })}
-                />
-              }
-            >
-              {pending ? <Spinner /> : <Ellipsis />}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem variant="destructive" onClick={() => void remove.run({ id: cost.id })}>
-                <Trash2 />
-                {t("remove")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <RowActionsMenu label={t("moreActions", { kind: kindName })} pending={pending}>
+            <DropdownMenuItem variant="destructive" onClick={() => void remove.run({ id: cost.id })}>
+              <Trash2 />
+              {t("remove")}
+            </DropdownMenuItem>
+          </RowActionsMenu>
         )}
       </div>
       <FormError message={error} />
@@ -186,46 +162,34 @@ function CostRow({
 // Records a freight, duty or other bill against the PO, in the PO's currency, from a dialog.
 function AddLandedCost({ orderId, currency }: { orderId: string; currency: string }) {
   const t = useTranslations("overview.landedCosts")
-  const [open, setOpen] = useState(false)
-  const { form, submit } = useActionForm({
-    schema,
-    action: "landedCost.create",
-    defaultValues: { kind: "freight", description: "" },
-    toPayload: (values) => ({ ...values, orderId }),
-    onSuccess: () => setOpen(false)
-  })
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) {
-          form.reset()
-        }
+    <FormDialog
+      trigger={
+        <DialogTrigger render={<Button variant="outline" size="sm" />}>
+          <Plus data-icon="inline-start" />
+          {t("add")}
+        </DialogTrigger>
+      }
+      title={t("addTitle")}
+      description={t("addDescription", { currency })}
+      submitLabel={t("add")}
+      form={{
+        schema,
+        action: "landedCost.create",
+        defaultValues: { kind: "freight", description: "" },
+        toPayload: (values) => ({ ...values, orderId })
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <Plus data-icon="inline-start" />
-        {t("add")}
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("addTitle")}</DialogTitle>
-          <DialogDescription>{t("addDescription", { currency })}</DialogDescription>
-        </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label={t("add")} dialog>
-          <div className="grid gap-5 sm:grid-cols-2 sm:gap-3">
-            <FormSelect
-              name="kind"
-              required
-              label={t("type")}
-              options={kinds.map((value) => ({ value, label: t(`kinds.${value}`) }))}
-            />
-            <FormMoney name="amount" required label={t("amount")} currency={currency} />
-          </div>
-          <FormInput name="description" label={t("description")} placeholder={t("descriptionPlaceholder")} />
-        </ActionForm>
-      </DialogContent>
-    </Dialog>
+      <div className="grid gap-5 sm:grid-cols-2 sm:gap-3">
+        <FormSelect
+          name="kind"
+          required
+          label={t("type")}
+          options={kinds.map((value) => ({ value, label: t(`kinds.${value}`) }))}
+        />
+        <FormMoney name="amount" required label={t("amount")} currency={currency} />
+      </div>
+      <FormInput name="description" label={t("description")} placeholder={t("descriptionPlaceholder")} />
+    </FormDialog>
   )
 }

@@ -61,7 +61,14 @@ export const Required = meta.story({
     await waitFor(() => expect(canvas.getByLabelText(/Reference/)).toHaveAttribute("aria-invalid", "true"))
     await expect(canvas.getAllByText("Fill in this field")).toHaveLength(2)
     await expect(canvas.getAllByText("Enter a number")).toHaveLength(2)
-    await expect(canvas.getByLabelText(/Reference/)).toHaveAccessibleDescription("Fill in this field")
+    // A field's hint and its error both describe it.
+    await expect(canvas.getByLabelText(/Reference/)).toHaveAccessibleDescription(
+      "As your supplier knows it Fill in this field"
+    )
+    await expect(canvas.getByLabelText(/Ship by/)).toHaveAccessibleDescription("Fill in this field")
+    await expect(canvas.getByRole("checkbox", { name: "Suffocation warning" })).toHaveAccessibleDescription(
+      "Printed on each polybag"
+    )
     await expect(args.onSubmit).not.toHaveBeenCalled()
   }
 })

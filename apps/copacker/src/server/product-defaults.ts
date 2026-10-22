@@ -1,8 +1,7 @@
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
-import { piecesPerUnit } from "@repo/copacker-marketplaces/shopify"
+import { piecesPerUnit, productIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { prepCategories } from "@repo/copacker-orders"
-import type { AmazonNetwork } from "@repo/copacker-shipments"
-import { amazonNetworks } from "@repo/copacker-shipments"
+import { type AmazonNetwork, amazonNetworks } from "@repo/copacker-packing-rules"
 import { and, eq, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -12,7 +11,7 @@ import { casePackSchema } from "@/lib/case-packs"
 import type { ProductLabel } from "@/lib/product-label"
 import { productLabels } from "@/lib/product-label"
 import { requireBuyer } from "./authorization"
-import { StatusError } from "./errors"
+import { requestInput, StatusError } from "./errors"
 import { refreshStoredStockFields } from "./product-fields"
 import type { Session } from "./workspace-session"
 
@@ -47,7 +46,7 @@ export const noDefaults: ProductDefaults = {
 }
 
 export const productDefaultsInputSchema = z.strictObject({
-  productId: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+  productId: productIdSchema,
   description: z.string().trim().max(2000),
   prepCategory: z.enum(prepCategories).nullable(),
   casePacks: z.array(casePackSchema).max(10),
@@ -65,10 +64,7 @@ export const productDefaultsInputSchema = z.strictObject({
 })
 
 export const assignSupplierInputSchema = z.strictObject({
-  productIds: z
-    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
-    .min(1)
-    .max(500),
+  productIds: z.array(productIdSchema).min(1).max(500),
   supplierId: z.uuid().nullable()
 })
 
@@ -98,7 +94,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
 
 export async function saveProductDefaults(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = productDefaultsInputSchema.parse(raw)
+  const input = requestInput(productDefaultsInputSchema, raw)
   let domain = ""
   const saved = await db().transaction(async (tx) => {
     const [account] = await tx
@@ -193,7 +189,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
 // details are kept.
 export async function assignProductSupplier(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = assignSupplierInputSchema.parse(raw)
+  const input = requestInput(assignSupplierInputSchema, raw)
   let domain = ""
   const result = await db().transaction(async (tx) => {
     const [account] = await tx
@@ -234,10 +230,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
 }
 
 export const assignProductLabelInputSchema = z.strictObject({
-  productIds: z
-    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
-    .min(1)
-    .max(500),
+  productIds: z.array(productIdSchema).min(1).max(500),
   productLabel: z.enum(productLabels)
 })
 
@@ -245,7 +238,7 @@ export const assignProductLabelInputSchema = z.strictObject({
 // product details are kept.
 export async function assignProductLabel(s: Session, raw: unknown) {
   requireBuyer(s)
-  const input = assignProductLabelInputSchema.parse(raw)
+  const input = requestInput(assignProductLabelInputSchema, raw)
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })

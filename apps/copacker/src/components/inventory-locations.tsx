@@ -1,27 +1,18 @@
 import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"
-import { useState } from "react"
+import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { FormError } from "@/components/form-feedback"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
+import { DialogTrigger } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAction } from "@/hooks/use-action"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
+import { FormDialog } from "./form-dialog"
 
 type LocationSetting = {
   locationId: string
@@ -159,90 +150,78 @@ export function InventoryLocations() {
   )
 }
 
+// The ticked locations' ids, in the order the dialog lists every location, so ticking one off and on again is no change.
+const locationsSchema = z.object({ included: z.array(z.string()) })
+
 // Ticks are kept in the dialog until Save, which saves each location whose tick changed.
 function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]; snapshotId: string }) {
   const t = useTranslations("inventory.locations")
-  const [open, setOpen] = useState(false)
-  const [ticked, setTicked] = useState(new Set<string>())
   const [saveLocation] = locationsApi.useSaveInventoryLocationMutation()
-  const saved = new Set(
-    locations.filter((location) => location.classification === "merchant").map((location) => location.locationId)
+  // The store's own locations first, then those run by apps.
+  const listed = locations.toSorted(
+    (a, b) => Number(Boolean(a.kind && notes[a.kind])) - Number(Boolean(b.kind && notes[b.kind]))
   )
-  const changed = locations.filter((location) => ticked.has(location.locationId) !== saved.has(location.locationId))
-  // Each changed location saves through its own endpoint, whose cache tags refresh the settings and restock.
-  const save = useAction(
-    async () => {
-      for (const location of changed) {
-        await saveLocation({
-          locationId: location.locationId,
-          classification: ticked.has(location.locationId) ? "merchant" : leftOut(location.kind),
-          snapshotId,
-          expectedRevision: location.revision
-        }).unwrap()
-      }
-    },
-    { fallback: t("saveFailed"), onSuccess: () => setOpen(false) }
-  )
+  const saved = listed
+    .filter((location) => location.classification === "merchant")
+    .map((location) => location.locationId)
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setTicked(saved)
-          save.reset()
-        }
-        setOpen(next)
+    <FormDialog
+      trigger={
+        <DialogTrigger
+          render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+        >
+          {t("edit")}
+        </DialogTrigger>
+      }
+      title={t("title")}
+      description={t("description")}
+      submitLabel={t("save")}
+      requireChange
+      form={{
+        schema: locationsSchema,
+        defaultValues: { included: saved },
+        // Each changed location saves through its own endpoint, whose cache tags refresh the settings and restock.
+        run: async (_, { included }) => {
+          for (const location of locations) {
+            const ticked = included.includes(location.locationId)
+            if (ticked !== saved.includes(location.locationId)) {
+              await saveLocation({
+                locationId: location.locationId,
+                classification: ticked ? "merchant" : leftOut(location.kind),
+                snapshotId,
+                expectedRevision: location.revision
+              }).unwrap()
+            }
+          }
+        },
+        fallback: t("saveFailed")
       }}
     >
-      <DialogTrigger
-        render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
-      >
-        {t("edit")}
-      </DialogTrigger>
-      <DialogContent>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void save.run()
-          }}
-          className="flex flex-col gap-4"
-        >
-          <DialogHeader>
-            <DialogTitle>{t("title")}</DialogTitle>
-            <DialogDescription>{t("description")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3">
-            {/* The store's own locations first, then those run by apps. */}
-            {locations
-              .toSorted((a, b) => Number(Boolean(a.kind && notes[a.kind])) - Number(Boolean(b.kind && notes[b.kind])))
-              .map((location) => (
-                <LocationRow
-                  key={location.locationId}
-                  location={location}
-                  checked={ticked.has(location.locationId)}
-                  onCheckedChange={(checked) =>
-                    setTicked((current) => {
-                      const next = new Set(current)
-                      if (checked) {
-                        next.add(location.locationId)
-                      } else {
-                        next.delete(location.locationId)
-                      }
-                      return next
-                    })
-                  }
-                />
-              ))}
-          </div>
-          <FormError message={save.error} />
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
-            <Button type="submit" disabled={save.pending || changed.length === 0}>
-              {save.pending ? t("saving") : t("save")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <LocationChoices locations={listed} />
+    </FormDialog>
+  )
+}
+
+function LocationChoices({ locations }: { locations: LocationSetting[] }) {
+  const {
+    field: { value, onChange }
+  } = useController<z.input<typeof locationsSchema>, "included">({ name: "included" })
+  return (
+    <div className="flex flex-col gap-3">
+      {locations.map((location) => (
+        <LocationRow
+          key={location.locationId}
+          location={location}
+          checked={value.includes(location.locationId)}
+          onCheckedChange={(checked) =>
+            onChange(
+              locations
+                .map((entry) => entry.locationId)
+                .filter((id) => (id === location.locationId ? checked : value.includes(id)))
+            )
+          }
+        />
+      ))}
+    </div>
   )
 }

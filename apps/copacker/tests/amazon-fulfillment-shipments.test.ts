@@ -5,10 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import { database, setUpTestDatabase } from "./test-db"
 vi.mock("@/db", () => import("./test-db"))
-import {
-  amazonFulfillmentShipmentsStatus,
-  syncAmazonFulfillmentShipments
-} from "../src/server/amazon-fulfillment-shipments"
+import { amazonFulfillmentShipmentsReport } from "../src/server/amazon-fulfillment-shipments"
 
 const orgId = randomUUID(),
   otherId = randomUUID()
@@ -38,32 +35,32 @@ beforeEach(async () => {
 })
 
 it("budgets requests across runs and persists shipment evidence without stock postings", async () => {
-  await syncAmazonFulfillmentShipments(input, owned, now)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, now)
   expect(report).toHaveBeenCalledTimes(10)
   expect(await database.select().from(tables.amazonFulfillmentShipments)).toHaveLength(1)
   expect(await database.select().from(tables.amazonShipmentRequests)).toHaveLength(10)
   expect(await database.select().from(tables.inventoryBasisRecords)).toHaveLength(0)
   report.mockClear()
-  await syncAmazonFulfillmentShipments(input, owned, now)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, now)
   expect(report).not.toHaveBeenCalled()
   expect(
-    (await amazonFulfillmentShipmentsStatus(orgId, "SELLER1", now)).windows.filter(
+    (await amazonFulfillmentShipmentsReport.status(orgId, "SELLER1", now)).windows.filter(
       (row) => row.status === "not_imported"
     )
   ).toHaveLength(3)
   const later = new Date(Math.max(now.getTime(), Date.now()) + 9 * 3600000)
-  await syncAmazonFulfillmentShipments(input, owned, later)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, later)
   expect(report.mock.calls.length).toBeLessThanOrEqual(10)
   expect(await database.select().from(tables.amazonFulfillmentShipments)).toHaveLength(1)
 })
 it("keeps prior evidence when a refresh is cancelled or malformed", async () => {
-  await syncAmazonFulfillmentShipments(input, owned, now)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, now)
   await database.delete(tables.amazonShipmentRequests)
   await database.update(tables.amazonShipmentReports).set({ checkedAt: new Date("2020-01-01") })
   report.mockResolvedValue(null)
-  await syncAmazonFulfillmentShipments(input, owned, now)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, now)
   expect(await database.select().from(tables.amazonFulfillmentShipments)).toHaveLength(1)
-  const status = await amazonFulfillmentShipmentsStatus(orgId, "SELLER1", now)
+  const status = await amazonFulfillmentShipmentsReport.status(orgId, "SELLER1", now)
   expect(status.windows[0]).toMatchObject({ status: "unavailable", complete: false })
 })
 it("cannot publish after the connected seller changes", async () => {
@@ -74,7 +71,7 @@ it("cannot publish after the connected seller changes", async () => {
       .where(eq(tables.connections.orgId, orgId))
     return `${header}\n${row}`
   })
-  await expect(syncAmazonFulfillmentShipments(input, owned, now)).rejects.toThrow("superseded")
+  await expect(amazonFulfillmentShipmentsReport.sync(input, owned, now)).rejects.toThrow("superseded")
   expect(await database.select().from(tables.amazonFulfillmentShipments)).toHaveLength(0)
 })
 
@@ -102,11 +99,11 @@ it("moves a corrected shipment identity across months without duplication", asyn
     rowCount: 1,
     checkedAt: now
   })
-  await syncAmazonFulfillmentShipments(input, owned, now)
+  await amazonFulfillmentShipmentsReport.sync(input, owned, now)
   const rows = await database.select().from(tables.amazonFulfillmentShipments)
   expect(rows).toHaveLength(1)
   expect(rows[0]?.shippedAt).toEqual(new Date("2026-10-02"))
-  expect((await amazonFulfillmentShipmentsStatus(orgId, "SELLER1", now)).windows[1]).toMatchObject({
+  expect((await amazonFulfillmentShipmentsReport.status(orgId, "SELLER1", now)).windows[1]).toMatchObject({
     complete: false,
     errorCode: "shipment_date_changed"
   })

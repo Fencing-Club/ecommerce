@@ -1,6 +1,6 @@
 import { type PrepCategory } from "@repo/copacker-orders"
+import type { AmazonNetwork } from "@repo/copacker-packing-rules"
 import { cartonLimits, cartonPolicies } from "@repo/copacker-packing-rules/carton-policies"
-import type { AmazonNetwork } from "@repo/copacker-shipments"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import type { Requirement } from "@repo/copacker-shipments/requirements"
 import { match, P } from "ts-pattern"

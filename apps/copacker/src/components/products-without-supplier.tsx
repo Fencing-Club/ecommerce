@@ -1,11 +1,12 @@
+import { useSet } from "@mantine/hooks"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { IssuePanel } from "@/components/inventory-products"
+import { OptionSelect } from "@/components/option-select"
 import { ProductImage } from "@/components/product-details"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api, useSuppliersQuery } from "@/lib/api"
@@ -27,7 +28,7 @@ const productSuppliersApi = api.injectEndpoints({
 
 function partnersLink(chunks: React.ReactNode) {
   return (
-    <PageLink href="/partners" className="text-foreground underline underline-offset-4">
+    <PageLink href="/partners" className="text-link text-foreground">
       {chunks}
     </PageLink>
   )
@@ -40,8 +41,8 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
   const errorMessage = useErrorMessage()
   const { currentData: products = [] } = productSuppliersApi.useProductsWithoutSupplierQuery(syncKey)
   const { data: suppliers = [] } = useSuppliersQuery()
-  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
-  const [supplierId, setSupplierId] = useState("")
+  const ticked = useSet<string>()
+  const [supplierId, setSupplierId] = useState<string | null>(null)
   const [assign, result] = productSuppliersApi.useAssignSupplierMutation()
   // Assigning suppliers changes products, so the panel is for those who can.
   const editable = useCan("products", "edit")
@@ -62,29 +63,25 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         {suppliers.length ? (
           <>
-            <Select items={options} value={supplierId || null} onValueChange={(value) => setSupplierId(value ?? "")}>
-              <SelectTrigger size="sm" aria-label={t("supplierLabel")} className="w-56">
-                <SelectValue>
-                  {(value: string | null) =>
-                    options.find((option) => option.value === value)?.label ?? t("chooseSupplier")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              options={options}
+              value={supplierId}
+              onChange={setSupplierId}
+              placeholder={t("chooseSupplier")}
+              label={t("supplierLabel")}
+              size="sm"
+              className="w-56"
+            />
             <Button
               size="sm"
               disabled={!supplierId || !chosen.length || result.isLoading}
               onClick={async () => {
+                if (!supplierId) {
+                  return
+                }
                 try {
                   await assign({ productIds: chosen, supplierId }).unwrap()
-                  setTicked(new Set())
+                  ticked.clear()
                 } catch {
                   // RTK Query keeps the failure for the message below.
                 }
@@ -113,9 +110,14 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
               <Checkbox
                 checked={allTicked}
                 indeterminate={chosen.length > 0 && !allTicked}
-                onCheckedChange={(checked) =>
-                  setTicked(checked ? new Set(products.map((product) => product.productId)) : new Set())
-                }
+                onCheckedChange={(checked) => {
+                  ticked.clear()
+                  if (checked) {
+                    for (const product of products) {
+                      ticked.add(product.productId)
+                    }
+                  }
+                }}
                 aria-label={t("selectAll")}
               />
             </TableHead>
@@ -129,17 +131,13 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
               <TableCell className="w-10 ps-4">
                 <Checkbox
                   checked={ticked.has(product.productId)}
-                  onCheckedChange={(checked) =>
-                    setTicked((current) => {
-                      const next = new Set(current)
-                      if (checked) {
-                        next.add(product.productId)
-                      } else {
-                        next.delete(product.productId)
-                      }
-                      return next
-                    })
-                  }
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      ticked.add(product.productId)
+                    } else {
+                      ticked.delete(product.productId)
+                    }
+                  }}
                   aria-label={t("select", { product: product.title })}
                 />
               </TableCell>

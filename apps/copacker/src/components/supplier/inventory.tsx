@@ -1,8 +1,14 @@
 import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
+import { arrayIncludes } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
+import { IndexToolbar } from "@/components/list/index-toolbar"
+import { matches } from "@/components/list/matches"
+import { Pager } from "@/components/list/pager"
+import { SaveBar } from "@/components/list/save-bar"
+import { usePagedRows } from "@/components/list/use-paged-rows"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,7 +16,7 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveStockMutation, useSetTrackingMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { InventoryRow } from "@/server/supplier-workspace"
-import { IndexToolbar, matches, Pager, ProductThumb, SaveBar } from "./shared"
+import { ProductThumb } from "./shared"
 
 // A typed count as a whole number, or null for anything else.
 function count(text: string) {
@@ -42,7 +48,7 @@ function OnHand({
           <span
             className={cn(
               "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
-              delta > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+              delta > 0 ? "bg-success-soft text-success" : "bg-destructive-soft text-destructive"
             )}
           >
             {delta > 0 ? "+" : "−"}
@@ -108,7 +114,8 @@ function Toggle({
   )
 }
 
-type Tab = "all" | "tracked" | "short" | "untracked"
+const tabs = ["all", "tracked", "short", "untracked"] as const
+type Tab = (typeof tabs)[number]
 const tests: Record<Tab, (row: InventoryRow) => boolean> = {
   all: () => true,
   tracked: (row) => row.trackInventory,
@@ -119,9 +126,8 @@ const pageSize = 100
 
 export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; initialTab?: string }) {
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>(initialTab && initialTab in tests ? (initialTab as Tab) : "all")
+  const [tab, setTab] = useState<Tab>(arrayIncludes(tabs, initialTab) ? initialTab : "all")
   const [query, setQuery] = useState("")
-  const [page, setPage] = useState(0)
   // Counts typed but not saved, by variant.
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [saveStock, { isLoading: pending }] = useSaveStockMutation()
@@ -138,6 +144,8 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     return row.trackInventory && text !== undefined && next !== row.onHand ? [{ id: row.id, onHand: next }] : []
   })
   const invalid = changes.some((change) => change.onHand === null)
+  const shown = rows.filter((row) => tests[tab](row) && matches(query, row.title, row.variant, row.supplierSku))
+  const paged = usePagedRows(shown, pageSize)
 
   function edit(id: string, value: string | undefined) {
     setError("")
@@ -164,9 +172,6 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
   if (!rows.length) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
   }
-  const shown = rows.filter((row) => tests[tab](row) && matches(query, row.title, row.variant, row.supplierSku))
-  const pages = Math.max(1, Math.ceil(shown.length / pageSize))
-  const current = Math.min(page, pages - 1)
   return (
     <div className="@container flex flex-col gap-3">
       <IndexToolbar
@@ -179,12 +184,12 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
         tab={tab}
         onTabChange={(value) => {
           setTab(value)
-          setPage(0)
+          paged.reset()
         }}
         query={query}
         onQueryChange={(value) => {
           setQuery(value)
-          setPage(0)
+          paged.reset()
         }}
         placeholder={t("search")}
       />
@@ -202,7 +207,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shown.slice(current * pageSize, (current + 1) * pageSize).map((row) => {
+            {paged.rows.map((row) => {
               const next = edits[row.id] === undefined ? row.onHand : count(edits[row.id]!)
               const available = next === null ? row.available : next - row.committed
               return (
@@ -214,7 +219,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                       <div className="min-w-0">
                         <PageLink
                           href={`/products/${row.groupId}`}
-                          className="line-clamp-2 font-medium underline-offset-4 hover:underline"
+                          className="focus-ring line-clamp-2 rounded-sm font-medium underline-offset-4 hover:underline"
                         >
                           {row.title}
                         </PageLink>
@@ -271,7 +276,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
       ) : (
         <EmptyState title={t("nothingHere")} description={shared("tryAnother")} />
       )}
-      <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
+      <Pager {...paged.pager} />
       <SaveBar
         dirty={changes.length > 0}
         pending={pending}

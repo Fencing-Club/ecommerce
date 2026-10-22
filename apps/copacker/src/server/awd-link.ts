@@ -1,4 +1,5 @@
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
+import { awdShipmentIdPattern } from "@repo/copacker-shipments/amazon-inbound"
 import { and, eq, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -12,13 +13,7 @@ import type { Session } from "./workspace-session"
 
 export async function linkExistingAwd(s: Session, id: string, revision: number, raw: unknown) {
   requireBuyer(s)
-  const shipmentId = z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^STAR-[A-Z0-9]+$/)
-    .nullable()
-    .parse(raw)
+  const shipmentId = z.string().trim().toUpperCase().regex(awdShipmentIdPattern).nullable().parse(raw)
   const [initial] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!initial) {
     throw new LocalizedError("shipmentNotFound")

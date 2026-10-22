@@ -1,4 +1,4 @@
-import { orderDestination } from "@repo/copacker-shipments"
+import { orderDestination } from "@repo/copacker-packing-rules"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"

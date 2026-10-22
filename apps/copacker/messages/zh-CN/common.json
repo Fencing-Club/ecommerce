@@ -8,7 +8,9 @@
     "offline": "无法连接到 Copacker。请检查网络连接后重试。"
   },
   "actions": {
-    "cancel": "取消"
+    "cancel": "取消",
+    "save": "保存",
+    "saved": "已保存"
   },
   "status": {
     "draft": "草稿",
@@ -89,7 +91,8 @@
     "addressLine2": "地址第 2 行",
     "city": "城市",
     "stateOrProvince": "州/省",
-    "postalCode": "邮政编码"
+    "postalCode": "邮政编码",
+    "addressName": "地址名称"
   },
   "sync": {
     "actions": "{label}操作",
@@ -154,9 +157,6 @@
       "text": "你的数据安全无虞，我们回来后此页面会自动刷新。",
       "contact": "联系我们"
     }
-  },
-  "banner": {
-    "dismiss": "关闭"
   },
   "actionBar": {
     "label": "操作",
@@ -308,5 +308,21 @@
         "all": "没有货件"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "第 {first, number}–{last, number} 条，共 {total, number} 条",
+      "previous": "上一页",
+      "next": "下一页",
+      "previousShort": "上一页",
+      "nextShort": "下一页"
+    },
+    "saveBar": {
+      "unsaved": "有未保存的更改",
+      "discard": "放弃",
+      "save": "保存",
+      "saving": "正在保存…"
+    },
+    "selected": "已选 {count, number} 项"
   }
 }

@@ -4,12 +4,14 @@ import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { IndexToolbar } from "@/components/list/index-toolbar"
+import { matches } from "@/components/list/matches"
+import { OptionSelect } from "@/components/option-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { formatDate } from "@/lib/format"
 import { useAssignCatalogMutation } from "@/lib/supplier-api"
-import { Amounts, IndexToolbar, matches } from "./shared"
+import { Amounts } from "./shared"
 
 type CatalogOption = { id: string; title: string; status: "active" | "draft" | "archived" }
 const none = "none"
@@ -41,7 +43,7 @@ export function CatalogPicker({
   // Someone who can only view customers sees each one's catalog without changing it.
   const editable = useCan("customers", "edit")
   const options = [
-    { value: none, label: t("noCatalog") },
+    { value: none, label: t("noCatalog"), description: t("noCatalogHint") },
     ...catalogs.map((catalog) => ({
       value: catalog.id,
       label:
@@ -66,30 +68,14 @@ export function CatalogPicker({
 
   return (
     <div className={className}>
-      <Select
-        items={options}
+      <OptionSelect
+        options={options}
         value={current}
-        onValueChange={(next) => next && void choose(next)}
+        onChange={(next) => void choose(next)}
         disabled={pending || !editable}
-      >
-        <SelectTrigger aria-label={t("catalogFor", { customer })} className="w-full min-w-44">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.value === none ? (
-                <span className="flex flex-col">
-                  {option.label}
-                  <span className="text-xs text-muted-foreground">{t("noCatalogHint")}</span>
-                </span>
-              ) : (
-                option.label
-              )}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        label={t("catalogFor", { customer })}
+        className="w-full min-w-44"
+      />
       {hint && current === none && !error && <p className="mt-2 text-xs text-muted-foreground">{t("noCatalogHint")}</p>}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
@@ -157,7 +143,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                   <Link
                     to="/customers/$id"
                     params={{ id: customer.id }}
-                    className="font-medium underline-offset-4 hover:underline"
+                    className="focus-ring rounded-sm font-medium underline-offset-4 hover:underline"
                   >
                     {customer.name}
                   </Link>

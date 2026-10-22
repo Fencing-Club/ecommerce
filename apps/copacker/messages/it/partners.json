@@ -60,7 +60,6 @@
   },
   "forwarder": {
     "add": {
-      "trigger": "Aggiungi spedizioniere",
       "title": "Aggiungi uno spedizioniere",
       "description": "Ritira dal tuo fornitore e spedisce ad Amazon o al tuo magazzino.",
       "submit": "Aggiungi spedizioniere",
@@ -92,7 +91,6 @@
   },
   "supplier": {
     "add": {
-      "trigger": "Aggiungi fornitore",
       "title": "Aggiungi un fornitore",
       "description": "Per un fornitore che non è ancora su Shopify."
     },
@@ -109,18 +107,14 @@
       "websiteJoined": "{name} gestisce i propri recapiti nel suo workspace.",
       "leadTime": "Tempo di consegna (giorni)",
       "leadTimeDescription": "Dall’ordine di acquisto alla giacenza vendibile. Se vuoto: {days}.",
-      "cancel": "Annulla",
       "save": "Salva",
-      "saving": "Salvataggio…",
       "failed": "Impossibile salvare il fornitore. Riprova."
     },
     "invite": {
       "title": "Invita {name}",
       "description": "Vedrà gli ordini di acquisto che condividi e riceverà un’email quando uno richiede documenti.",
       "email": "Email del fornitore",
-      "cancel": "Annulla",
       "submit": "Invia invito",
-      "sending": "Invio in corso…",
       "failed": "Impossibile invitare {name}. Riprova."
     }
   },
@@ -131,7 +125,6 @@
     "add": "Aggiungi un indirizzo per {name}",
     "saveChanges": "Salva modifiche",
     "save": "Salva indirizzo",
-    "name": "Nome dell’indirizzo",
     "pickupPlaceholder": "Stabilimento",
     "placeholder": "Magazzino di Yiwu",
     "sheet": {

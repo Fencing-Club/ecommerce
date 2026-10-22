@@ -54,7 +54,6 @@
     "ship": "Stampa il pacchetto, imballa i cartoni e segnali come spediti",
     "forward": "Lo spedizioniere inoltra la merce e aggiunge costo del trasporto, corriere e tracciamento",
     "receive": "Segna la merce come ricevuta quando arriva",
-    "complete": "Spedizione completata",
     "cancellation": "Annulla la spedizione Amazon esistente prima di crearne una sostitutiva",
     "reconcile": "Trova e collega l’ordine Amazon prima di continuare",
     "retry": "Risolvi il problema segnalato, poi riprova la spedizione",

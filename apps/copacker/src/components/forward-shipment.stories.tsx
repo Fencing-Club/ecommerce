@@ -61,6 +61,23 @@ export const Validation = meta.story({
   }
 })
 
+// Cancelling drops what was typed and the errors: the next opening starts empty.
+export const CancelStartsOver = meta.story({
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
+    await screen.findByRole("dialog")
+    await userEvent.type(screen.getByRole("textbox", { name: "Carrier" }), "Maersk")
+    await userEvent.click(screen.getAllByRole("button", { name: "Mark shipped" }).at(-1)!)
+    await screen.findByText("Enter the freight cost")
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
+    await screen.findByRole("dialog")
+    await expect(screen.getByRole("textbox", { name: "Carrier" })).toHaveValue("")
+    await expect(screen.queryByText("Enter the freight cost")).toBeNull()
+    await expect(sent).toHaveLength(0)
+  }
+})
+
 export const ServerError = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(recordActions(sent, () => serverError("This shipment was already marked shipped.")))

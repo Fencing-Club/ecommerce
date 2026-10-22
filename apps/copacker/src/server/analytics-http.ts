@@ -4,7 +4,7 @@ import { can } from "@/lib/access"
 import { AnalyticsProblem } from "./analytics-contract"
 import { ApiSessionError, session } from "./auth"
 import { requireBuyer } from "./authorization"
-import { describeError } from "./stock"
+import { describeError } from "./log"
 import type { Session } from "./workspace-session"
 
 const titles = new Map([

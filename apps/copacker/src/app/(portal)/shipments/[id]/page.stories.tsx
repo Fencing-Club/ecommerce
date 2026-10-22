@@ -1,5 +1,5 @@
 import { type Address, type OrderInput, type OrderItem } from "@repo/copacker-orders"
-import { type AmazonNetwork, orderDestination } from "@repo/copacker-shipments"
+import { type AmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { http, HttpResponse } from "msw/http"
@@ -953,7 +953,7 @@ export const WaitingForLabels = meta.story({
     )
     // The cartons go to the AWD warehouse Amazon chose, each with Amazon's label.
     await expect(canvas.getByText("Amazon IUSP")).toBeVisible()
-    await expect(canvas.getByText("200 Distribution Road, Hesperia, CA, 92344, US")).toBeVisible()
+    await expect(canvas.getByText("200 Distribution Road, Hesperia, CA 92344, US")).toBeVisible()
     await expect(canvas.getByRole("button", { name: /^Products \(2\)/ })).toBeVisible()
     await expect(canvas.getByText("C1: 201952611540373988")).toBeVisible()
   }
@@ -1071,7 +1071,7 @@ export const ReadySupplier = meta.story({
     await expect(canvas.queryByText("Supplier packet ready")).toBeNull()
     // The cartons go to the FBA warehouse their labels name.
     await expect(canvas.getByText("Amazon ONT8")).toBeVisible()
-    await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA, 92551, US")).toBeVisible()
+    await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     await expect(canvas.getByText(/C2: FBA18ABCD123U000002/)).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Download Carrier labels" })).toHaveAttribute(
@@ -1102,7 +1102,7 @@ export const ReadyIncomplete = meta.story({
     // A warehouse shipment has no Amazon labels, and ships to the buyer's warehouse.
     await expect(canvas.queryByRole("columnheader", { name: "Carton label" })).toBeNull()
     await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
-    await expect(canvas.getByText("2400 NW Front Ave, Portland, OR, 97209, US")).toBeVisible()
+    await expect(canvas.getByText("2400 NW Front Ave, Portland, OR 97209, US")).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
   }
 })
@@ -1159,7 +1159,7 @@ export const ShippedToForwarder = meta.story({
     ).toBeVisible()
     // Until the forwarder sends the goods on, its warehouse is the next stop.
     await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
-    await expect(canvas.getByText("18 Gangqiao Road, Beilun, Ningbo, Zhejiang, 315800, CN")).toBeVisible()
+    await expect(canvas.getByText("18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, CN")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()
   }

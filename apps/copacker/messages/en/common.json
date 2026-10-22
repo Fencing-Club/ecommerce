@@ -8,7 +8,9 @@
     "offline": "Couldn’t reach Copacker. Check your connection and try again."
   },
   "actions": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Saved"
   },
   "status": {
     "draft": "Draft",
@@ -89,7 +91,8 @@
     "addressLine2": "Address line 2",
     "city": "City",
     "stateOrProvince": "State or province",
-    "postalCode": "Postal code"
+    "postalCode": "Postal code",
+    "addressName": "Address name"
   },
   "sync": {
     "actions": "{label} actions",
@@ -154,9 +157,6 @@
       "text": "Your data is safe, and this page reloads when we’re back.",
       "contact": "Contact us"
     }
-  },
-  "banner": {
-    "dismiss": "Dismiss"
   },
   "actionBar": {
     "label": "Actions",
@@ -308,5 +308,21 @@
         "all": "No shipments"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} of {total, number}",
+      "previous": "Previous page",
+      "next": "Next page",
+      "previousShort": "Previous",
+      "nextShort": "Next"
+    },
+    "saveBar": {
+      "unsaved": "Unsaved changes",
+      "discard": "Discard",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "selected": "{count, number} selected"
   }
 }

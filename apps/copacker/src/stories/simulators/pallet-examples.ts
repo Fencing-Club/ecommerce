@@ -1,4 +1,4 @@
-import { packingRuleDescriptions } from "@repo/copacker-packing-rules"
+import { type AmazonNetwork, packingRuleDescriptions } from "@repo/copacker-packing-rules"
 import {
   footprintLimit,
   heightLimit,
@@ -7,7 +7,6 @@ import {
   palletPolicies,
   palletWeightLimit
 } from "@repo/copacker-packing-rules/pallet-policies"
-import type { AmazonNetwork } from "@repo/copacker-shipments"
 import { shippingMessage } from "@repo/copacker-shipments/shipping-copy"
 import { documentSettingsForLocale } from "@repo/copacker-shipments/shipping-model"
 import { palletPolicyChecks } from "@repo/copacker-shipments/shipping-rules"

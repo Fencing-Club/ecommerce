@@ -1,7 +1,7 @@
 import { palletRules, validatePacking } from "@repo/copacker-packing-rules"
-import { useMessages, useTranslations } from "use-intl"
+import { useMessages } from "use-intl"
 import { FieldError } from "@/components/packing-fields"
-import { usePalletIssueErrors } from "@/components/packing-issues"
+import { usePackingIssueText, usePalletIssueErrors } from "@/components/packing-issues"
 import { expandCartonGroups } from "@/lib/carton-groups"
 import { dataSetOrder, palletCartonSet } from "./data"
 import { type ErrorRow, ErrorTable, simulatorHref } from "./error-table"
@@ -13,7 +13,7 @@ const palletCodes = new Set<string>(palletRules)
 // it, under the field or row of the pallet it names, or below the pallets. Each row opens its example in the simulator.
 // A new policy or rule adds its rows.
 export function PalletCatalog() {
-  const readiness = useTranslations("server.readiness.packing")
+  const readiness = usePackingIssueText()
   const issueErrors = usePalletIssueErrors()
   const messages = useMessages()
   const examples = usePalletExamples()
@@ -38,7 +38,7 @@ export function PalletCatalog() {
             {error.message}
           </FieldError>
         )),
-        readiness: "values" in issue ? readiness(issue.code, issue.values) : readiness(issue.code),
+        readiness: readiness(issue),
         simulator: simulatorHref("simulators-pallet-validation--error-example", example.id)
       }))
   )

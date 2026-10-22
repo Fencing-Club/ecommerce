@@ -8,7 +8,9 @@
     "offline": "Не вдалося з’єднатися з Copacker. Перевірте підключення й спробуйте ще раз."
   },
   "actions": {
-    "cancel": "Скасувати"
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "saved": "Збережено"
   },
   "status": {
     "draft": "Чернетка",
@@ -89,7 +91,8 @@
     "addressLine2": "Адреса, рядок 2",
     "city": "Місто",
     "stateOrProvince": "Область або регіон",
-    "postalCode": "Поштовий індекс"
+    "postalCode": "Поштовий індекс",
+    "addressName": "Назва адреси"
   },
   "sync": {
     "actions": "Дії: {label}",
@@ -154,9 +157,6 @@
       "text": "Ваші дані в безпеці, а ця сторінка оновиться, щойно ми повернемося.",
       "contact": "Зв’язатися з нами"
     }
-  },
-  "banner": {
-    "dismiss": "Закрити"
   },
   "actionBar": {
     "label": "Дії",
@@ -308,5 +308,21 @@
         "all": "Немає відправлень"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{first, number}–{last, number} з {total, number}",
+      "previous": "Попередня сторінка",
+      "next": "Наступна сторінка",
+      "previousShort": "Назад",
+      "nextShort": "Далі"
+    },
+    "saveBar": {
+      "unsaved": "Незбережені зміни",
+      "discard": "Відкинути",
+      "save": "Зберегти",
+      "saving": "Збереження…"
+    },
+    "selected": "Вибрано: {count, number}"
   }
 }

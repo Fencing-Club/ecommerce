@@ -8,8 +8,8 @@ import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useActionForm } from "@/hooks/use-action-form"
 import { useMessageText } from "@/hooks/use-error-text"
-import { useActionForm } from "@/hooks/useActionForm"
 import { cn } from "@/lib/utils"
 
 export type PostedComment = { message: string; visibility: "internal" | "shared" }
@@ -76,7 +76,7 @@ export function TimelineComment({
             className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint has-data-[slot=alert-action]:pe-10"
           >
             <CircleAlert aria-hidden />
-            <AlertDescription className="text-[13px]/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
+            <AlertDescription className="text-meta/5 whitespace-pre-line">{messageText(error)}</AlertDescription>
             <AlertAction className="top-1.5 end-1.5">
               <Button
                 type="button"

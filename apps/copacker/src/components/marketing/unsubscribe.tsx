@@ -46,10 +46,7 @@ export function Unsubscribe({
             </Button>
           </form>
         ) : (
-          <Link
-            to="/"
-            className="group mt-8 inline-flex w-fit items-center gap-2 rounded-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
+          <Link to="/" className="focus-ring group mt-8 inline-flex w-fit items-center gap-2 rounded-sm font-medium">
             {t("home")}
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
           </Link>

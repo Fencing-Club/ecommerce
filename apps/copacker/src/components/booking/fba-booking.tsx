@@ -412,7 +412,7 @@ export function FbaBookingDialog({
             }}
           />
           {quote && (
-            <p className="flex items-center gap-1 px-0.5 text-[13px] text-muted-foreground">
+            <p className="flex items-center gap-1 px-0.5 text-meta text-muted-foreground">
               {t.rich("fba.review.terms", { terms: termsLink(booking.termsUrl, t("newTab")) })}
             </p>
           )}
@@ -494,7 +494,7 @@ function termsLink(href: string, newTab: string) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 rounded-sm text-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="focus-ring inline-flex items-center gap-1 rounded-sm text-foreground underline-offset-4 hover:underline"
     >
       {chunks}
       <ExternalLink className="size-3 text-muted-foreground" aria-hidden />

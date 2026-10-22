@@ -3,7 +3,8 @@ import type { AdsProfile } from "@repo/copacker-marketplaces/amazon-ads"
 import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { type Address, type OrderInput, prepCategories } from "@repo/copacker-orders"
-import { amazonNetworks, type Packing, type PackingDraft } from "@repo/copacker-shipments"
+import { amazonNetworks } from "@repo/copacker-packing-rules"
+import { type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
 import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
 import { sql } from "drizzle-orm"
@@ -590,7 +591,10 @@ export const jobs = pgTable(
       ]
     }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),
-    status: text().notNull().default("pending"),
+    // A correction cancels a shipment's Amazon job that hasn't run or has failed.
+    status: text({ enum: ["pending", "running", "complete", "failed", "cancelled"] })
+      .notNull()
+      .default("pending"),
     attempts: integer().notNull().default(0),
     runAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     leaseAt: timestamp({ withTimezone: true }),

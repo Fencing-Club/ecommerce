@@ -16,11 +16,28 @@ function ruleSource(issue: ValidationIssue): RuleSource | undefined {
     : undefined
 }
 
+// A packing rule as the packing form states it. The carton and pallet tables word the rules they place themselves, and
+// fall back to this for the rest.
+export function usePackingIssueText() {
+  const t = useTranslations("orders.cartonEditor")
+  const rules = useTranslations("server.readiness.packing")
+  return (issue: ValidationIssue) => {
+    switch (issue.code) {
+      case "overQuantity":
+        return t("rules.overQuantity", { ...issue.values, extra: issue.values.packed - issue.values.remaining })
+      case "unknownChange":
+        return t("rules.unknownChange")
+      default:
+        return "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
+    }
+  }
+}
+
 // The packing rules a carton row breaks, as the carton table words and places them: each names the field, says what's
 // wrong with the row's own numbers and what to do, and sits under the field or product it names, outlining it.
 export function useCartonIssueErrors() {
   const t = useTranslations("orders.cartonEditor")
-  const rules = useTranslations("server.readiness.packing")
+  const issueText = usePackingIssueText()
   const errorOf = (
     issue: ValidationIssue,
     value: CartonGroup,
@@ -93,12 +110,7 @@ export function useCartonIssueErrors() {
       case "unknownProduct":
         return { place: "carton", outlines: [], message: t(`rules.${issue.code}`) }
       default:
-        // Anything else reads as the server states it.
-        return {
-          place: product,
-          outlines: [],
-          message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-        }
+        return { place: product, outlines: [], message: issueText(issue) }
     }
   }
   return (issues: ValidationIssue[], value: CartonGroup, products: OrderInput["items"]) =>
@@ -106,22 +118,6 @@ export function useCartonIssueErrors() {
       const source = ruleSource(issue)
       return { ...errorOf(issue, value, products), ...(source && { source }) }
     })
-}
-
-// A packing rule no one carton breaks, as the packing form states it below the cartons.
-export function usePackingIssueText() {
-  const t = useTranslations("orders.cartonEditor")
-  const rules = useTranslations("server.readiness.packing")
-  return (issue: ValidationIssue) => {
-    switch (issue.code) {
-      case "overQuantity":
-        return t("rules.overQuantity", { ...issue.values, extra: issue.values.packed - issue.values.remaining })
-      case "unknownChange":
-        return t("rules.unknownChange")
-      default:
-        return "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-    }
-  }
 }
 
 // Where a pallet issue shows: under a field of the pallet's row, under the row, or below the pallets when no one
@@ -139,7 +135,7 @@ export type PalletIssueError = {
 // below the pallets.
 export function usePalletIssueErrors() {
   const t = useTranslations("orders.pallets.rules")
-  const rules = useTranslations("server.readiness.packing")
+  const issueText = usePackingIssueText()
   const errorsOf = (issue: ValidationIssue, value?: PalletValue): Omit<PalletIssueError, "fields">[] => {
     switch (issue.code) {
       case "palletFootprint":
@@ -167,12 +163,7 @@ export function usePalletIssueErrors() {
       case "cartonsOffPallets":
         return [{ place: "pallets", message: t(issue.code, issue.values) }]
       default:
-        return [
-          {
-            place: issue.palletId ? "pallet" : "pallets",
-            message: "values" in issue ? rules(issue.code, issue.values) : rules(issue.code)
-          }
-        ]
+        return [{ place: issue.palletId ? "pallet" : "pallets", message: issueText(issue) }]
     }
   }
   return (issues: ValidationIssue[], value?: PalletValue) =>

@@ -8,7 +8,9 @@
     "offline": "Copacker تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
   },
   "actions": {
-    "cancel": "منسوخ کریں"
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "saved": "محفوظ ہو گیا"
   },
   "status": {
     "draft": "ڈرافٹ",
@@ -89,7 +91,8 @@
     "addressLine2": "پتہ لائن 2",
     "city": "شہر",
     "stateOrProvince": "ریاست یا صوبہ",
-    "postalCode": "پوسٹل کوڈ"
+    "postalCode": "پوسٹل کوڈ",
+    "addressName": "پتے کا نام"
   },
   "sync": {
     "actions": "{label} کی کارروائیاں",
@@ -154,9 +157,6 @@
       "text": "آپ کا ڈیٹا محفوظ ہے، اور ہماری واپسی پر یہ صفحہ دوبارہ لوڈ ہو جائے گا۔",
       "contact": "ہم سے رابطہ کریں"
     }
-  },
-  "banner": {
-    "dismiss": "بند کریں"
   },
   "actionBar": {
     "label": "کارروائیاں",
@@ -308,5 +308,21 @@
         "all": "کوئی شپمنٹ نہیں"
       }
     }
+  },
+  "list": {
+    "pager": {
+      "range": "{total, number} میں سے {first, number}–{last, number}",
+      "previous": "پچھلا صفحہ",
+      "next": "اگلا صفحہ",
+      "previousShort": "پچھلا",
+      "nextShort": "اگلا"
+    },
+    "saveBar": {
+      "unsaved": "غیر محفوظ تبدیلیاں",
+      "discard": "رد کریں",
+      "save": "محفوظ کریں",
+      "saving": "محفوظ ہو رہا ہے…"
+    },
+    "selected": "{count, number} منتخب"
   }
 }

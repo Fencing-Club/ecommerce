@@ -40,9 +40,7 @@
     "none": "无",
     "edit": "编辑",
     "editLabel": "编辑库存地点",
-    "cancel": "取消",
     "save": "保存",
-    "saving": "正在保存…",
     "saveFailed": "无法保存地点，请重试。"
   },
   "list": {
@@ -92,8 +90,6 @@
     "rowsPerPage": "每页行数",
     "pages": "产品分页",
     "pageOf": "第 {page} 页，共 {total} 页",
-    "previousPage": "上一页",
-    "nextPage": "下一页",
     "duplicateSkus": "{count, plural, other {# 个 SKU 被多个变体使用}}",
     "duplicateSkusHint": "请在 Shopify 中为每个变体设置不同的 SKU",
     "productVariant": "{product}，{variant}",

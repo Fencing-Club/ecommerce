@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
+import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 
 export type Workspace = { id: string; name: string; kind: string }
@@ -23,15 +24,6 @@ const kinds = {
 
 function isKind(kind: string): kind is keyof typeof kinds {
   return Object.hasOwn(kinds, kind)
-}
-
-export function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 // A 28px tile at the start of each of the menu's items.
@@ -86,7 +78,7 @@ export function WorkspaceMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+        className="focus-ring flex h-11 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-sm font-semibold hover:bg-muted aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
         aria-label={t("label", { name: current })}
       >
         <span

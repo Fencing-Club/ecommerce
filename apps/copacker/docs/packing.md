@@ -4,6 +4,20 @@ The supplier's packing page lists a shipment's cartons, and its pallets when the
 (`components/packing-form.tsx`). The designs are copacker.pen's section 06: 06.27 to 06.30 for the tables, 06.10 B
 for pallets and 06.10 B1 for choosing a pallet's cartons.
 
+## The page's parts
+
+A shipment has one layout, packing or packed (`ShipmentLayout`): the header, then a column of the notices, the route
+and addresses, the products (`PackedProductsTable`), the cartons (`CartonList`) and the pallets (`PalletList`), beside
+the documents and Shipment details. While the shipment is being packed, `PackingForm` fills the layout with the form: the
+pickup address and ready date (`PackingDetailsFields`), the tables to edit and the actions (`PackingActionBar`), and
+`usePackingDraft` saves, finishes and links the packing. A packed shipment builds no form: the shipment page fills the
+layout with the same parts, read-only, and the pickup address as `ShipmentOrigin`.
+
+The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
+packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the
+cartons' count, units, gross weight and volume, the pallets' when packed on them, as Shipment details shows them).
+Each takes the pieces the purchase order's other shipments hold (`reserved`), as the readiness checks do.
+
 ## The ready date
 
 A supplier fills in a packing list for each shipment: where the cartons leave from, the cartons themselves, and the
@@ -101,7 +115,8 @@ panel's, so there's no summary bar.
 
 Each draft save moves the shipment to its next revision. The form stays pending until the page has read the shipment
 again (`router.invalidate({ sync: true })`), so the next save, a link to an existing AWD shipment and the buyer's
-transport settings beside the form all send the new revision. The form keeps no copy of the revision or the link.
+transport settings beside the form all send the new revision. The form keeps no copy of the revision or the link
+(`usePackingDraft`).
 
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.
 

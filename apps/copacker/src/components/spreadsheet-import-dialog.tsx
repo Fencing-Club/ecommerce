@@ -1,12 +1,13 @@
-import { CircleAlert, Download, LoaderCircle } from "lucide-react"
-import { type ReactNode, useId, useRef, useState } from "react"
+import { CircleAlert, Download } from "lucide-react"
+import { type ReactNode, useId, useReducer } from "react"
 import { useTranslations } from "use-intl"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Spinner } from "@/components/ui/spinner"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { FileDropzone } from "./file-dropzone"
-import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 
 export type ImportMode = "add" | "replace"
 export type ImportMessage = { location: string; message: string }
@@ -21,11 +22,55 @@ export type ImportCheck = {
   rows: number
 }
 // A list that scrolls inside the dialog, focusable so it scrolls from the keyboard too.
-export const scrollList =
-  "overflow-y-auto outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+export const scrollList = "focus-ring overflow-y-auto focus-visible:ring-inset"
 const fileTypes = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "text/csv": [".csv"]
+}
+
+// Where the import is: choosing a file, which it reads once chosen, then reviewing what the file holds, importing it, or
+// failed to. Whether to add or replace stays as chosen until the dialog closes, and the template downloads alongside.
+type ImportState<T> = (
+  | { step: "upload"; file: File | null; result: T | null }
+  | { step: "review" | "loading" | "failed"; file: File; result: T }
+) & { mode: ImportMode; template: "idle" | "downloading" | "failed" }
+type ImportAction<T> =
+  | { type: "choose"; file: File | null }
+  | { type: "read"; file: File; result: T }
+  | { type: "mode"; mode: ImportMode }
+  | { type: "review" | "back" | "import" | "failed" | "reset" | "download" }
+  | { type: "downloaded"; failed: boolean }
+
+const startImport = { step: "upload", file: null, result: null, mode: "add", template: "idle" } as const
+// A template download that failed says so until the next file or the dialog closes.
+const keepDownload = (template: ImportState<unknown>["template"]) => (template === "failed" ? "idle" : template)
+
+function importReducer<T>(state: ImportState<T>, action: ImportAction<T>): ImportState<T> {
+  switch (action.type) {
+    case "choose":
+      return { ...state, step: "upload", file: action.file, result: null, template: keepDownload(state.template) }
+    case "read":
+      // A file read after another was chosen, or the dialog closed, is out of date.
+      return state.step === "upload" && state.file === action.file ? { ...state, result: action.result } : state
+    case "mode":
+      return { ...state, mode: action.mode }
+    case "review":
+      return state.step === "upload" && state.file && state.result !== null
+        ? { ...state, step: "review", file: state.file, result: state.result }
+        : state
+    case "back":
+      return state.step === "review" ? { ...state, step: "upload" } : state
+    case "import":
+      return state.step === "review" ? { ...state, step: "loading" } : state
+    case "failed":
+      return state.step === "loading" ? { ...state, step: "failed" } : state
+    case "reset":
+      return { ...startImport, template: keepDownload(state.template) }
+    case "download":
+      return { ...state, template: "downloading" }
+    case "downloaded":
+      return { ...state, template: action.failed ? "failed" : "idle" }
+  }
 }
 
 // The spreadsheet import that cartons and pallets share (section 07): download the template, upload a file, review what
@@ -61,78 +106,52 @@ export function SpreadsheetImportDialog<T>({
   // The dialog's own copy is the carton import's, where it began.
   const t = useTranslations("orders.cartonImport")
   const id = useId()
-  const [file, setFile] = useState<File | null>(null)
-  const [result, setResult] = useState<T | null>(null)
-  const [step, setStep] = useState<"upload" | "review" | "loading" | "failed">("upload")
-  const [mode, setMode] = useState<ImportMode>("add")
-  const [isReading, setReading] = useState(false)
-  const [isDownloading, setDownloading] = useState(false)
-  const [downloadError, setDownloadError] = useState(false)
-  const operation = useRef(0)
+  const [state, dispatch] = useReducer(importReducer<T>, startImport)
+  const { step, file, result, mode } = state
+  const isReading = step === "upload" && file !== null && result === null
   const isBusy = isReading || step === "loading"
+  const isDownloading = state.template === "downloading"
   const checked = result === null ? null : check(result, mode)
   const messages = checked ? [...checked.fileIssues, ...checked.issues] : []
   const submitLabel = step === "review" ? text[mode === "replace" ? "replace" : "import"] : text.review
   const hasTemplateError = checked && !checked.templateMatches
 
-  function reset() {
-    operation.current++
-    setFile(null)
-    setResult(null)
-    setStep("upload")
-    setReading(false)
-    setMode("add")
-    setDownloadError(false)
-  }
   function close() {
     if (!isBusy) {
-      reset()
+      dispatch({ type: "reset" })
       onOpenChange(false)
     }
   }
 
   async function choose(next: File | null) {
-    const ticket = ++operation.current
-    setFile(next)
-    setResult(null)
-    setStep("upload")
-    setDownloadError(false)
-    if (!next) {
-      setReading(false)
-      return
+    dispatch({ type: "choose", file: next })
+    if (next) {
+      dispatch({ type: "read", file: next, result: await read(next) })
     }
-    setReading(true)
-    const parsed = await read(next)
-    if (ticket !== operation.current) {
-      return
-    }
-    setResult(parsed)
-    setReading(false)
   }
 
   async function download() {
-    setDownloading(true)
-    setDownloadError(false)
+    dispatch({ type: "download" })
     // No finally clause: the React Compiler can't compile a component with one.
     try {
       downloadSpreadsheet(await template.build(), [template.title, reference, shipmentName])
+      dispatch({ type: "downloaded", failed: false })
     } catch {
-      setDownloadError(true)
+      dispatch({ type: "downloaded", failed: true })
     }
-    setDownloading(false)
   }
 
   async function commit() {
     if (isBusy || messages.length || !checked?.rows || result === null) {
       return
     }
-    setStep("loading")
+    dispatch({ type: "import" })
     try {
       await onImport(result, mode)
-      reset()
+      dispatch({ type: "reset" })
       onOpenChange(false)
     } catch {
-      setStep("failed")
+      dispatch({ type: "failed" })
     }
   }
 
@@ -158,10 +177,10 @@ export function SpreadsheetImportDialog<T>({
         {step === "upload" && (
           <div className="flex flex-col items-start gap-2">
             <Button type="button" variant="outline" disabled={isDownloading || isBusy} onClick={() => void download()}>
-              {isDownloading ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
+              {isDownloading ? <Spinner /> : <Download aria-hidden />}
               {t("downloadTemplate")}
             </Button>
-            {downloadError && (
+            {state.template === "failed" && (
               <p role="alert" className="text-xs text-destructive">
                 {t("downloadFailed")}
               </p>
@@ -178,7 +197,7 @@ export function SpreadsheetImportDialog<T>({
         />
         {isBusy && (
           <output className="flex items-center gap-3 py-4">
-            <LoaderCircle aria-hidden className="size-5 animate-spin" />
+            <Spinner className="size-5" />
             <span>{isReading ? t("checking") : text.importing}</span>
           </output>
         )}
@@ -193,7 +212,7 @@ export function SpreadsheetImportDialog<T>({
             value={mode}
             onValueChange={(value) => {
               if (value === "add" || value === "replace") {
-                setMode(value)
+                dispatch({ type: "mode", mode: value })
               }
             }}
             aria-label={t("mode")}
@@ -214,7 +233,7 @@ export function SpreadsheetImportDialog<T>({
             role="alert"
             className={cn("flex min-h-0 flex-col overflow-hidden rounded-lg border", messages.length > 3 && "min-h-48")}
           >
-            <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-[13px] font-semibold">
+            <h3 id={`${id}-issues`} className="shrink-0 border-b bg-muted px-3 py-2 text-meta font-semibold">
               {hasTemplateError ? t("templateMismatch") : t("issues", { count: messages.length })}
             </h3>
             {!hasTemplateError && checked?.hint && (
@@ -252,7 +271,7 @@ export function SpreadsheetImportDialog<T>({
                   type="button"
                   variant="outline"
                   disabled={isBusy}
-                  onClick={() => (step === "review" ? setStep("upload") : close())}
+                  onClick={() => (step === "review" ? dispatch({ type: "back" }) : close())}
                 >
                   {step === "review" ? t("back") : t("cancel")}
                 </Button>
@@ -262,7 +281,7 @@ export function SpreadsheetImportDialog<T>({
                 disabled={
                   isBusy || !checked?.templateMatches || (step === "review" && (messages.length > 0 || !checked.rows))
                 }
-                onClick={() => (step === "review" ? void commit() : setStep("review"))}
+                onClick={() => (step === "review" ? void commit() : dispatch({ type: "review" }))}
               >
                 {step === "loading" ? t("importingButton") : submitLabel}
               </Button>

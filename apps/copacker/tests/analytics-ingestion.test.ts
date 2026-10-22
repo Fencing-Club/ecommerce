@@ -422,16 +422,18 @@ it("queues financial backfills once and retries failures independently of comple
   await queueShopifyEconomics(input)
   expect(await database.select().from(tables.jobs)).toHaveLength(1)
   context.graphql.mockRejectedValue(new Error("Throttled"))
-  await expect(analyticsJob(input, async () => undefined)).rejects.toMatchObject({ options: { delayMs: 60000 } })
+  await expect(analyticsJob(input, { assertOwned: async () => undefined })).rejects.toMatchObject({
+    options: { delayMs: 60000 }
+  })
   expect((await database.select().from(tables.salesSyncs))[0]?.status).toBe("idle")
   context.graphql.mockResolvedValue({
     shop: { myshopifyDomain: "shop" },
     orders: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }
   })
-  await analyticsJob(input, async () => undefined)
+  await analyticsJob(input, { assertOwned: async () => undefined })
   expect((await database.select().from(tables.analyticsFeeds))[0]?.state.error).toBeNull()
   context.graphql.mockClear()
-  await analyticsJob({ ...input, revision: 2 }, async () => undefined)
+  await analyticsJob({ ...input, revision: 2 }, { assertOwned: async () => undefined })
   expect(context.graphql).not.toHaveBeenCalled()
 })
 it("attempts every missing FBM month and preserves prior coverage when refresh fails", async () => {
@@ -558,7 +560,7 @@ it("stops receipt requests when the sync revision changes before a checkpoint", 
       },
       async () => undefined
     )
-  ).rejects.toThrow("Analytics account changed")
+  ).rejects.toThrow("superseded")
   expect(receipt).toHaveBeenCalledTimes(1)
   expect(awdShipments).not.toHaveBeenCalled()
   expect(await database.select().from(tables.analyticsEvidence)).toEqual([])

@@ -2,7 +2,8 @@ import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { ShopifyPermissionError, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { describe, expect, it } from "vitest"
 import { ReconnectRequiredError } from "../src/server/errors"
-import { describeError, stockErrorCode } from "../src/server/stock"
+import { describeError } from "../src/server/log"
+import { stockErrorCode } from "../src/server/stock"
 
 describe("Stock refresh failures", () => {
   it("says what the person can do about the failure", () => {

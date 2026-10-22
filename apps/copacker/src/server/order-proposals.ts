@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto"
 import type { OrderInput } from "@repo/copacker-orders"
-import { itemSchema, orderInputSchema, orderTotal } from "@repo/copacker-orders"
-import { orderDestination, packingSchema, receiverFor } from "@repo/copacker-shipments"
+import { itemSchema, orderInputSchema, orderSubtotal, orderTotal, lineName } from "@repo/copacker-orders"
+import { orderDestination, receiverFor } from "@repo/copacker-packing-rules"
+import { packingSchema } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -24,8 +25,9 @@ import { requireBuyer, requireSupplier } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor } from "./connections"
 import { generateInvoice, generatePo } from "./documents"
+import { jobRow } from "./job-payloads"
+import { describeError } from "./log"
 import { checkOrder, prepareOrder } from "./orders"
-import { describeError } from "./stock"
 import type { Session } from "./workspace-session"
 
 export const proposalSchema = z.object({
@@ -83,9 +85,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     const item = order.items.find((candidate) => candidate.id === line.itemId)
     return {
       key: line.itemId ?? line.supplierSku,
-      name: item
-        ? [item.name, item.variant && item.variant !== "Default Title" ? item.variant : ""].filter(Boolean).join(" / ")
-        : line.title,
+      name: item ? lineName(item.name, item.variant) : line.title,
       supplierSku: line.supplierSku,
       change: lineChange(item, line),
       before: item ? { pieces: item.pieces, unitPrice: item.unitPrice } : null,
@@ -96,17 +96,13 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     .filter((item) => !proposal.lines.some((line) => line.itemId === item.id))
     .map((item) => ({
       key: item.id,
-      name: [item.name, item.variant && item.variant !== "Default Title" ? item.variant : ""]
-        .filter(Boolean)
-        .join(" / "),
+      name: lineName(item.name, item.variant),
       supplierSku: item.supplierSku,
       change: "removed" as const,
       before: { pieces: item.pieces, unitPrice: item.unitPrice },
       after: null
     }))
-  const addedTotal = proposal.lines
-    .filter((line) => !line.itemId)
-    .reduce((sum, line) => sum + line.pieces * line.unitPrice, 0)
+  const addedTotal = orderSubtotal(proposal.lines.filter((line) => !line.itemId))
   return {
     lines: [...lines, ...removed],
     paymentTerms:
@@ -375,11 +371,14 @@ export async function approveProposal(s: Session, proposalId: string) {
       if (supplier.supplierOrgId && supplier.email) {
         await tx
           .insert(jobs)
-          .values({
-            key: `po:${locked.id}:${revision}`,
-            kind: "email",
-            payload: { type: "po", orderId: locked.id, revision, to: supplier.email }
-          })
+          .values(
+            jobRow("email", `po:${locked.id}:${revision}`, {
+              type: "po",
+              orderId: locked.id,
+              revision,
+              to: supplier.email
+            })
+          )
           .onConflictDoNothing()
       }
       await tx.insert(events).values({

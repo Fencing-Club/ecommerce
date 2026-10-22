@@ -1,12 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { z } from "zod"
+import { jobQueueConfig } from "./integration-config"
+import { describeError, logEvent } from "./log"
+import { providerRequest } from "./provider-request"
 
-const configuration = z.object({
-  account: z.string().regex(/^[a-f0-9]{32}$/),
-  queue: z.string().regex(/^[a-f0-9]{32}$/),
-  token: z.string().min(1)
-})
-const envelope = z.object({ success: z.literal(true), result: z.unknown().optional() })
+const envelope = z.object({ success: z.literal(true) })
 export const jobSignal = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("wake") }),
   z.object({ kind: z.literal("reconcile") }),
@@ -23,26 +21,23 @@ export function jobDeliveryConfigured() {
   return Boolean(publisher.getStore() || process.env.CLOUDFLARE_JOBS_QUEUE_ID)
 }
 
-async function request(action: string, body: unknown, queue = process.env.CLOUDFLARE_JOBS_QUEUE_ID) {
-  const config = configuration.parse({
-    account: process.env.CLOUDFLARE_ACCOUNT_ID,
-    queue,
-    token: process.env.CLOUDFLARE_JOBS_TOKEN
-  })
-  const response = await fetch(
+async function request(action: string, body: unknown) {
+  const config = jobQueueConfig()
+  if (!config) {
+    throw new Error("Cloudflare job delivery is not configured")
+  }
+  // Cloudflare can answer 200 with `success: false`, which the envelope rejects.
+  await providerRequest(
+    "Cloudflare Queues",
     `https://api.cloudflare.com/client/v4/accounts/${config.account}/queues/${config.queue}/messages${action}`,
     {
       method: "POST",
       headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000)
-    }
+      timeoutMs: 15000
+    },
+    envelope
   )
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new Error(`Job delivery failed (${response.status})`)
-  }
-  return envelope.parse(await response.json()).result
 }
 
 export async function signalJobs(delaySeconds = 0) {
@@ -69,8 +64,8 @@ export async function withJobWake<T>(work: PromiseLike<T>): Promise<T> {
   const result = await work
   try {
     await signalJobs()
-  } catch {
-    console.error(JSON.stringify({ event: "job_signal_failed", recovery: "hourly" }))
+  } catch (error) {
+    logEvent("error", "job_signal_failed", { recovery: "hourly", error: describeError(error) })
   }
   return result
 }
