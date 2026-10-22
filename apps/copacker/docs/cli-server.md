@@ -1,6 +1,6 @@
 # CLI server
 
-The server implements interactive CLI authentication and eleven operations against Copacker's database.
+The server implements interactive CLI authentication and twenty-seven operations against Copacker's database and connectors.
 It is not the entire planned command inventory. Discovery publishes only implemented, authorized handlers.
 
 ## Available operations
@@ -10,6 +10,8 @@ It is not the entire planned command inventory. Discovery publishes only impleme
 - `connection.list`, `connection.show`
 - `connection.settings.show`, `connection.settings.update`
 - `restock.channel.list`, `report.restock` ([report behavior and current boundaries](cli-restock.md))
+- Product, inventory/location, customer order, PO, shipment, partner and catalog reads
+  ([commands, permissions and current projection limits](cli-resource-reads.md)).
 
 Connections include saved Shopify, Amazon, eBay and Amazon Ads accounts. Reads omit provider credentials and do not
 probe providers. `authorization_unchecked` distinguishes a saved connection from freshly verified provider access.
