@@ -163,6 +163,11 @@ export function matchBoxes(
   })
 }
 
+// The ID Amazon gives an AWD inbound shipment, such as STAR-ABC123, and an FBA inbound plan, such as
+// wf0a1b2c3d-0000-4000-8000-0123456789ab.
+export const awdShipmentIdPattern = /^STAR-[A-Z0-9]+$/
+export const fbaInboundPlanIdPattern = /^wf[0-9a-f-]{36}$/
+
 // The inbound shipment a freight charge names: an FBA shipment (FBA15ABC12) or an AWD shipment (STAR-ABC123, sometimes
 // with a date before it). Transfers from AWD to FBA (repl-...) and other references name no inbound shipment.
 export function freightShipment(reference: string | null) {
