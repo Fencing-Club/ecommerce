@@ -34,6 +34,11 @@ The app reads these from the package rather than restating them: the currencies 
 `cartonInputSchema.shape`, `palletInputSchema.shape`, `packingSchema.shape`) and an address as documents print it
 (`addressLines` in `/documents`).
 
+A line's product goes by `productLabel(name, variant)`, such as "Canvas tote bag / Natural", and its variant alone by
+`variantTitle(variant)`; both leave out Shopify's "Default Title" for a product's only variant. `shipmentGroups(lines)`
+splits a PO's lines into the shipments they become, one per receiver, Amazon's networks in `amazonNetworks`' order and
+then the buyer's location; the PO editor and the PO's page both show them that way.
+
 ## Supplier service costs
 
 `OrderItem.supplierCharges` stores supplier services assigned to that product. Each charge has a description,
@@ -42,6 +47,8 @@ Pack quantities come from Shopify bundle components (`pieces / piecesPerSet`).
 
 `supplierChargeTotal` calculates one service, `itemTotal` includes a product's services, and `orderTotal` adds
 all product totals and PO-level adjustments. `orderCharges` supplies consistent summary rows for the app and PDFs.
+`orderSubtotal` is the products at their unit prices alone and `orderUnits` their pieces, as the cost summary's first
+row shows them.
 Product unit prices remain separate from service rates. Removing or moving a product removes or moves its costs;
 changing its quantity recalculates per-piece and per-pack charges. Flat charges remain fixed.
 

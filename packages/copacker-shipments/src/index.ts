@@ -11,6 +11,7 @@ import {
   receiverFor,
   type ReceiverGroup,
   receiverGroups,
+  type ReceiverId,
   receiverIds,
   receivers,
   validatePacking
@@ -657,4 +658,35 @@ export function orderTotal(order: OrderCosts) {
     order.items.reduce((sum, item) => sum + itemTotal(item), 0) +
     (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
   )
+}
+
+// What a PO's products come to at their unit prices, before supplier services and the PO's charges, which orderTotal
+// adds.
+export function orderSubtotal(order: { items: readonly Pick<OrderItem, "pieces" | "unitPrice">[] }) {
+  return order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+}
+
+// How many pieces a PO's lines order in all.
+export function orderUnits(order: { items: readonly Pick<OrderItem, "pieces">[] }) {
+  return order.items.reduce((sum, item) => sum + item.pieces, 0)
+}
+
+// A PO's lines as the shipments they become: one for each receiver they go to, Amazon's networks in amazonNetworks'
+// order, then the buyer's location. Each keeps its lines in the PO's order.
+export function shipmentGroups<Line extends { receiver: ReceiverId }>(lines: readonly Line[]) {
+  return [...amazonNetworks, ...groupReceivers("warehouse")].flatMap((receiver) => {
+    const grouped = lines.filter((line) => line.receiver === receiver)
+    return grouped.length ? [{ receiver, lines: grouped }] : []
+  })
+}
+
+// A variant's own title, or null for a product's only variant, which Shopify titles "Default Title".
+export function variantTitle(variant: string | null | undefined) {
+  return variant && variant !== "Default Title" ? variant : null
+}
+
+// A product as a PO line names it: with its variant, such as "Canvas tote bag / Natural", or alone when it has only one.
+export function productLabel(name: string, variant: string | null | undefined) {
+  const title = variantTitle(variant)
+  return title ? `${name} / ${title}` : name
 }

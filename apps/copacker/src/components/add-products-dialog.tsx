@@ -1,5 +1,7 @@
+import { useDebouncedValue, useSelection } from "@mantine/hooks"
+import { skipToken } from "@reduxjs/toolkit/query"
 import { Search } from "lucide-react"
-import { useEffect, useId, useMemo, useState } from "react"
+import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
@@ -16,23 +18,14 @@ import {
 } from "@/components/ui/dialog"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import type { CatalogProduct } from "@/lib/api"
-
-type Level = { locationId: string; available: number | null }
-type Variant = {
-  variantId: string
-  title: string | null
-  sku: string | null
-  available: number | null
-  levels: Level[]
-}
-type Product = { productId: string; title: string; imageUrl: string | null; variants: Variant[] }
+import { type CatalogProduct, type ListedVariant, useInventoryProductsQuery, useLazyCatalogQuery } from "@/lib/api"
 
 // Where stock counts toward a destination: Amazon's pools for Amazon, a Shopify location for the buyer's own address.
 export type StockAt = { locationIds: string[] | null; label: string }
 
 // Searches the store's products and adds the chosen variations to a PO, showing each one's stock where the PO ships
-// and in total, like Shopify's purchase order product picker.
+// and in total, like Shopify's purchase order product picker. The search waits for a pause in typing, and each opening
+// asks again.
 export function AddProductsDialog({
   added,
   stockAt,
@@ -56,89 +49,56 @@ export function AddProductsDialog({
   const id = useId()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [error, setError] = useState<{ failure: unknown; fallback: "loadFailed" | "addFailed" } | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [q] = useDebouncedValue(query.trim(), 250)
+  const search = useInventoryProductsQuery(open ? { pageSize: 50, q } : skipToken, {
+    refetchOnMountOrArgChange: true
+  })
+  // The last results stay while the next search loads.
+  const products = search.data?.products ?? []
+  const [loadCatalog, { isFetching: adding }] = useLazyCatalogQuery()
+  const [addFailure, setAddFailure] = useState<unknown>(null)
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    const controller = new AbortController()
-    const timer = setTimeout(() => {
-      setLoading(true)
-      setError(null)
-      const params = new URLSearchParams({ pageSize: "50", ...(query.trim() && { q: query.trim() }) })
-      fetch(`/api/inventory/products?${params}`, { signal: controller.signal })
-        .then(async (response) => {
-          if (!response.ok) {
-            throw new Error(t("loadFailed"))
-          }
-          const data = (await response.json()) as { products: Product[] }
-          setProducts(data.products)
-        })
-        .catch((failure: unknown) => {
-          if (!controller.signal.aborted) {
-            setError({ failure, fallback: "loadFailed" })
-          }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setLoading(false)
-          }
-        })
-    }, 250)
-    return () => {
-      clearTimeout(timer)
-      controller.abort()
-    }
-  }, [open, query, t])
-
-  const atDestination = (variant: Variant) =>
+  const atDestination = (variant: ListedVariant) =>
     stockAt.locationIds === null
       ? null
       : variant.levels
           .filter((level) => stockAt.locationIds?.includes(level.locationId))
           .reduce((sum, level) => sum + (level.available ?? 0), 0)
 
-  const choosable = useMemo(
-    () =>
-      new Map(products.map((product) => [product.productId, product.variants.filter((v) => !added.has(v.variantId))])),
-    [products, added]
+  // Each product's variations that aren't on the PO yet.
+  const choosable = new Map(
+    products.map((product) => [product.productId, product.variants.filter((v) => !added.has(v.variantId))])
   )
-
+  const [selection, selecting] = useSelection({
+    data: [...choosable.values()].flat().map((variant) => variant.variantId)
+  })
+  const selected = new Set(selection)
   function toggle(ids: string[], on: boolean) {
-    setSelected((current) => {
-      const next = new Set(current)
-      for (const id of ids) {
-        if (on) {
-          next.add(id)
-        } else {
-          next.delete(id)
-        }
+    for (const variantId of ids) {
+      if (on) {
+        selecting.select(variantId)
+      } else {
+        selecting.deselect(variantId)
       }
-      return next
-    })
+    }
   }
 
   async function add() {
-    setAdding(true)
-    setError(null)
+    setAddFailure(null)
     try {
-      const response = await fetch(`/api/catalog?${new URLSearchParams({ ids: [...selected].join(",") })}`)
-      if (!response.ok) {
-        throw new Error(t("addFailed"))
-      }
-      onAdd((await response.json()) as CatalogProduct[])
-      setSelected(new Set())
+      onAdd(await loadCatalog(selection).unwrap())
+      selecting.resetSelection()
       setOpen(false)
     } catch (failure) {
-      setError({ failure, fallback: "addFailed" })
-    } finally {
-      setAdding(false)
+      setAddFailure(failure)
     }
+  }
+
+  let failure: string | undefined
+  if (addFailure) {
+    failure = errorMessage(addFailure, t("addFailed"))
+  } else if (search.error) {
+    failure = errorMessage(search.error, t("loadFailed"))
   }
 
   return (
@@ -146,8 +106,9 @@ export function AddProductsDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
+        setAddFailure(null)
         if (!next) {
-          setSelected(new Set())
+          selecting.resetSelection()
         }
       }}
     >
@@ -192,7 +153,9 @@ export function AddProductsDialog({
               {products.map((product) => {
                 const open = choosable.get(product.productId) ?? []
                 const allOn = open.length > 0 && open.every((variant) => selected.has(variant.variantId))
-                const single = product.variants.length === 1 && !product.variants[0]!.title
+                // A product with one untitled variation is chosen on its own row.
+                const only = product.variants.length === 1 ? product.variants[0] : undefined
+                const single = only && !only.title ? only : undefined
                 const titleId = `${id}-${product.productId}`
                 return [
                   <tr key={product.productId} className="border-t">
@@ -221,12 +184,12 @@ export function AddProductsDialog({
                         <span id={titleId} className="font-medium">
                           {product.title}
                         </span>
-                        {single && added.has(product.variants[0]!.variantId) && (
+                        {single && added.has(single.variantId) && (
                           <span className="text-xs text-muted-foreground">{t("alreadyAdded")}</span>
                         )}
                       </label>
                     </td>
-                    {single && <Stock variant={product.variants[0]!} at={atDestination(product.variants[0]!)} />}
+                    {single && <Stock variant={single} at={atDestination(single)} />}
                   </tr>,
                   ...(single
                     ? []
@@ -256,19 +219,19 @@ export function AddProductsDialog({
               })}
             </tbody>
           </table>
-          {!loading && !products.length && !error && (
+          {!search.isFetching && !products.length && !search.error && (
             <p className="p-8 text-center text-sm text-muted-foreground">{t("noMatches")}</p>
           )}
-          {loading && !products.length && (
+          {search.isFetching && !products.length && (
             <p className="p-8 text-center text-sm text-muted-foreground">{t("loading")}</p>
           )}
         </div>
         <DialogFooter className="mt-0 sm:items-center sm:justify-between">
-          <span className="text-muted-foreground">{t("selected", { count: selected.size })}</span>
-          <FormError message={error ? errorMessage(error.failure, t(error.fallback)) : undefined} />
+          <span className="text-muted-foreground">{t("selected", { count: selection.length })}</span>
+          <FormError message={failure} />
           <div className="flex justify-end gap-2">
             <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
-            <Button type="button" disabled={!selected.size || adding} onClick={() => void add()}>
+            <Button type="button" disabled={!selection.length || adding} onClick={() => void add()}>
               {adding ? t("adding") : (addLabel ?? t("add"))}
             </Button>
           </div>
@@ -278,7 +241,7 @@ export function AddProductsDialog({
   )
 }
 
-function Stock({ variant, at }: { variant: Variant; at: number | null }) {
+function Stock({ variant, at }: { variant: { available: number | null }; at: number | null }) {
   return (
     <>
       <td className="px-4 py-1.5 text-end tabular-nums">{at ?? "—"}</td>

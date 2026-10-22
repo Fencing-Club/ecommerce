@@ -6,6 +6,7 @@ import {
   orderInputSchema,
   orderTotal,
   packingSchema,
+  productLabel,
   receiverFor
 } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray } from "drizzle-orm"
@@ -89,9 +90,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     const item = order.items.find((candidate) => candidate.id === line.itemId)
     return {
       key: line.itemId ?? line.supplierSku,
-      name: item
-        ? [item.name, item.variant && item.variant !== "Default Title" ? item.variant : ""].filter(Boolean).join(" / ")
-        : line.title,
+      name: item ? productLabel(item.name, item.variant) : line.title,
       supplierSku: line.supplierSku,
       change: lineChange(item, line),
       before: item ? { pieces: item.pieces, unitPrice: item.unitPrice } : null,
@@ -102,9 +101,7 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
     .filter((item) => !proposal.lines.some((line) => line.itemId === item.id))
     .map((item) => ({
       key: item.id,
-      name: [item.name, item.variant && item.variant !== "Default Title" ? item.variant : ""]
-        .filter(Boolean)
-        .join(" / "),
+      name: productLabel(item.name, item.variant),
       supplierSku: item.supplierSku,
       change: "removed" as const,
       before: { pieces: item.pieces, unitPrice: item.unitPrice },

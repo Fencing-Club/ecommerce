@@ -29,7 +29,9 @@ each hook.
   recovery forms pass `navigation: "document"`.
 - `useSwitchWorkspace` (`use-switch-workspace.ts`): opens another workspace as a fresh document and tells the browser's
   other tabs. Used by the workspace menu, which shows a failure as a toast, and the workspace picker.
-- `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total.
+- `useMoney` (`use-money.ts`): formats minor-unit amounts in the page's locale. Use it for any price or total. An amount
+  typed outside a form's `FormMoney` goes in `MoneyInput` (`components/money-input.tsx`), which reports minor units as
+  they're typed.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.

@@ -1,4 +1,4 @@
-import { money } from "@repo/copacker-shipments"
+import { money, orderSubtotal, orderUnits } from "@repo/copacker-shipments"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
@@ -159,8 +159,6 @@ async function OrderPage(args: Args) {
   const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
     text.requirement
   )
-  const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
-  const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
   const place = (addressId: string | undefined) => args.places.find((candidate) => candidate.id === addressId)?.name
   const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   let noteLabel = t("detail.noteToSupplier")
@@ -224,8 +222,8 @@ async function OrderPage(args: Args) {
           })),
           leg,
           instructions,
-          units,
-          subtotal: prices ? subtotal : 0,
+          units: orderUnits(order.data),
+          subtotal: prices ? orderSubtotal(order.data) : 0,
           places: args.places,
           stop,
           noteLabel,
@@ -491,6 +489,10 @@ export const AmazonShipmentGroups = meta.story({
   },
   // A multipack shows its pack size beneath the product and its pack count beneath the quantity.
   play: async ({ canvas }) => {
+    // FBA first, then AWD US, as the packing rules list Amazon's networks.
+    await expect(
+      canvas.getAllByRole("heading", { level: 2, name: /shipment$/ }).map((heading) => heading.textContent)
+    ).toEqual(["FBA shipment", "AWD US shipment"])
     const awdToggle = canvas.getByRole("button", { name: /AWD US shipment/ })
     const awd = within(awdToggle.closest("[data-slot=collapsible]")!)
     const fba = within(canvas.getByRole("button", { name: /FBA shipment/ }).closest("[data-slot=collapsible]")!)

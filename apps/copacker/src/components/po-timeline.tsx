@@ -4,6 +4,7 @@ import { ChevronDown, Lock, Users } from "lucide-react"
 import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { initials } from "@/lib/initials"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { TimelineComment, type PostedComment } from "./timeline-comment"
 
@@ -22,14 +23,6 @@ export type TimelineEntry = {
   revisionNumber: number | null
   details?: ReactNode
 }
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("")
 
 function Avatar({ name }: { name: string }) {
   return (

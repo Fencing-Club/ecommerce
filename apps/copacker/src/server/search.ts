@@ -1,3 +1,4 @@
+import { variantTitle } from "@repo/copacker-shipments"
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 import { isPresent } from "ts-extras"
 import { db } from "@/db"
@@ -175,9 +176,7 @@ async function searchProducts(orgId: string): Promise<SearchProduct[]> {
       keywords: []
     }
     product.imageUrl ??= row.imageUrl ?? null
-    product.keywords.push(
-      ...[row.variantTitle === "Default Title" ? null : row.variantTitle, row.buyerSku].filter(isPresent)
-    )
+    product.keywords.push(...[variantTitle(row.variantTitle), row.buyerSku].filter(isPresent))
     products.set(id, product)
   }
   return [...products.values()].toSorted((a, b) => a.title.localeCompare(b.title))

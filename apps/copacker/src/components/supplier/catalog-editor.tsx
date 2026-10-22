@@ -3,6 +3,7 @@ import { ChevronDown, Download, Ellipsis, Pencil, SlidersHorizontal, Trash2 } fr
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
+import { moneyText, parseMoney } from "@/components/money-input"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +49,7 @@ import { currencySymbol } from "@/lib/currency"
 import { useDeleteCatalogMutation, useSaveCatalogMutation } from "@/lib/supplier-api"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
-import { moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
+import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar, StatusBadge } from "./shared"
 
 type Product = CatalogEditorData["products"][number]

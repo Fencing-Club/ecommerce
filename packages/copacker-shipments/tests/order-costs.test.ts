@@ -1,6 +1,17 @@
 import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
-import { itemTotal, orderCharges, orderInputSchema, orderTotal, supplierChargeTotal } from "../src/index"
+import {
+  itemTotal,
+  orderCharges,
+  orderInputSchema,
+  orderSubtotal,
+  orderTotal,
+  orderUnits,
+  productLabel,
+  shipmentGroups,
+  supplierChargeTotal,
+  variantTitle
+} from "../src/index"
 
 const order = () =>
   orderInputSchema.parse({
@@ -56,6 +67,15 @@ describe("product supplier costs", () => {
     expect(supplierChargeTotal(item, { description: "Setup", amount: 5000, basis: "flat" })).toBe(5000)
   })
 
+  it("adds up the products before services and charges", () => {
+    const data = order()
+    expect(orderUnits(data)).toBe(3120)
+    expect(orderSubtotal(data)).toBe(800 * 408 + 1120 * 423 + 1200 * 113)
+    const withFreight = { ...data, adjustments: [{ description: "Freight", amount: 5000 }] }
+    expect(orderSubtotal(withFreight)).toBe(orderSubtotal(data))
+    expect(orderUnits({ items: [] })).toBe(0)
+  })
+
   it("rejects negative service rates and unsafe totals", () => {
     const data = order()
     expect(
@@ -75,5 +95,34 @@ describe("product supplier costs", () => {
       supplierCharges: [{ description: "Packing", amount: 100000000, basis: "piece" }]
     }))
     expect(orderInputSchema.safeParse({ ...data, items }).success).toBe(false)
+  })
+})
+
+describe("shipment groups", () => {
+  it("lists Amazon's networks in their own order, then the buyer's location, keeping each line's place", () => {
+    const lines = [
+      { id: "tote", receiver: "awd_us" },
+      { id: "apron", receiver: "fba" },
+      { id: "basket", receiver: "awd_us" }
+    ] as const
+    expect(shipmentGroups(lines)).toEqual([
+      { receiver: "fba", lines: [lines[1]] },
+      { receiver: "awd_us", lines: [lines[0], lines[2]] }
+    ])
+    expect(shipmentGroups([{ receiver: "warehouse" }])).toEqual([
+      { receiver: "warehouse", lines: [{ receiver: "warehouse" }] }
+    ])
+    expect(shipmentGroups([])).toEqual([])
+  })
+})
+
+describe("product names", () => {
+  it("leaves out Shopify's Default Title", () => {
+    expect(variantTitle("Natural")).toBe("Natural")
+    expect(variantTitle("Default Title")).toBeNull()
+    expect(variantTitle("")).toBeNull()
+    expect(variantTitle(null)).toBeNull()
+    expect(productLabel("Canvas tote bag", "Natural")).toBe("Canvas tote bag / Natural")
+    expect(productLabel("Linen apron", "Default Title")).toBe("Linen apron")
   })
 })

@@ -1,3 +1,4 @@
+import { orderSubtotal, orderUnits } from "@repo/copacker-shipments"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
@@ -162,8 +163,6 @@ export async function orderPage(input: { id: string; query: Record<string, strin
     text.requirement
   )
 
-  const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
-  const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
   // The route's names: the forwarder stop and the delivery address.
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
   const places = addressIds.length
@@ -235,8 +234,8 @@ export async function orderPage(input: { id: string; query: Record<string, strin
       })),
       leg,
       instructions,
-      units,
-      subtotal: prices ? subtotal : 0,
+      units: orderUnits(order.data),
+      subtotal: prices ? orderSubtotal(order.data) : 0,
       places,
       stop,
       noteLabel,

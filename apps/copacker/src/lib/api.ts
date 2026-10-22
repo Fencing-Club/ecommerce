@@ -1,8 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
+import type { OrderCurrency } from "@repo/copacker-shipments"
 import type { ShippingDocumentData } from "@repo/copacker-shipments/shipping-model"
+import type { AmazonOnlyStock, InventoryProduct, InventoryVariant } from "@/server/inventory-products"
+import type { ProductBarcode } from "@/server/product-barcodes"
+import type { ProductDefaults } from "@/server/product-defaults"
 import type { SalesOrderSummary } from "@/server/sales-orders"
 import type { SearchIndex } from "@/server/search"
+import type { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import type { LineDefaults } from "./order-lines"
 
 export type ActionResult = { ok?: boolean; error?: string; redirect?: string; id?: string } & Record<string, unknown>
@@ -23,9 +28,44 @@ export type SupplierOption = {
   leadTimeDays: number | null
 }
 
-// Server-rendered pages refresh with router.refresh(). Data cached here is tagged, so a change made anywhere re-renders
-// every view that shows it: "Supplier" for supplier names and lead times, "Restock" for restock results, and
-// "ProductSupplier" for which products have a supplier, and "InventoryLocation" for which Shopify locations count.
+// A supplier SKU's quote from the supplier's catalog, as /api/supplier-catalog/match answers for each SKU it's asked:
+// the match, and the pieces the supplier can still sell (null when there's no limit).
+export type SupplierCatalogMatch = ReturnType<typeof matchSupplierCatalog> & { sku: string; available: number | null }
+
+// A product on the Products page, or in a purchase order's product picker, with the details and labels Copacker keeps
+// for it.
+export type ListedVariant = InventoryVariant & {
+  barcode: ProductBarcode | null
+  fnsku: string | null
+  supplierSku: string | null
+  asin: string | null
+  storeStockTarget: number | null
+  // ISO code from Shopify; null when none is recorded, left out before a sync collects it.
+  countryOfOrigin?: string | null
+}
+// A SKU more than one Shopify variation uses.
+export type DuplicateSku = { sku: string; variants: { variantId: string; product: string; variant: string | null }[] }
+export type ListedProduct = Omit<InventoryProduct, "variants"> & {
+  defaults: ProductDefaults
+  variants: ListedVariant[]
+}
+export type InventoryProductsPage = {
+  observedAt: string | null
+  page: number
+  pageSize: number
+  totalPages: number
+  totalProducts: number
+  totalVariants: number
+  missingBarcodes: number
+  missingCountries: number
+  duplicateSkus: DuplicateSku[]
+  products: ListedProduct[]
+  amazonOnly: AmazonOnlyStock[]
+}
+
+// Data cached here is tagged, so a change made anywhere re-renders every view that shows it: "Supplier" for supplier
+// names and lead times, "Restock" for restock results, "ProductSupplier" for which products have a supplier, and
+// "InventoryLocation" for which Shopify locations count. Pages refresh their own data with router.invalidate().
 // Follow session redirects as document navigation, never inside a background request. In particular, fetching
 // through recovery could change the workspace cookie while leaving the old company's screen and caches visible.
 const fetchQuery = fetchBaseQuery({ baseUrl: "/api", redirect: "manual" })
@@ -53,9 +93,44 @@ export const api = createApi({
       query: () => "restock/suppliers",
       providesTags: ["Supplier"]
     }),
-    catalog: build.query<CatalogProduct[], string>({
-      query: (q) => ({ url: "catalog", params: { q } }),
+    // Shopify variations by ID with their purchase order line defaults, for the lines a purchase order adds.
+    catalog: build.query<CatalogProduct[], string[]>({
+      query: (ids) => ({ url: "catalog", params: { ids: ids.join(",") } }),
       keepUnusedDataFor: 0
+    }),
+    // Each supplier SKU's quote from the supplier's catalog, in the order asked, for a purchase order's lines. Asked
+    // afresh each time, since the supplier can change its prices and stock.
+    supplierCatalogMatch: build.query<
+      SupplierCatalogMatch[],
+      { supplierId: string; currency: OrderCurrency; supplierSkus: string[] }
+    >({
+      query: (body) => ({ url: "supplier-catalog/match", method: "POST", body }),
+      keepUnusedDataFor: 0
+    }),
+    // A page of the store's products with their stock, for the Products page and the purchase order product picker.
+    // `syncKey` only keys the cache, so a finished sync of any source loads fresh results.
+    inventoryProducts: build.query<
+      InventoryProductsPage,
+      {
+        q?: string
+        page?: number
+        pageSize?: number
+        missingBarcode?: boolean
+        missingCountry?: boolean
+        syncKey?: string
+      }
+    >({
+      query: ({ page, pageSize, q, missingBarcode, missingCountry }) => ({
+        url: "inventory/products",
+        params: {
+          ...(page !== undefined && { page }),
+          ...(pageSize !== undefined && { pageSize }),
+          ...(q && { q }),
+          ...(missingBarcode && { barcode: "missing" }),
+          ...(missingCountry && { country: "missing" })
+        }
+      }),
+      keepUnusedDataFor: 60
     }),
     uploadDocument: build.mutation<ActionResult, FormData>({
       query: (body) => ({ url: "documents", method: "POST", body })
@@ -81,12 +156,14 @@ export const api = createApi({
 
 export const {
   useActionMutation,
+  useInventoryProductsQuery,
   useLazyCatalogQuery,
   useLazyPackingListQuery,
   useMaintenanceQuery,
   useSalesSearchQuery,
   useSaveCarrierLabelsMutation,
   useSearchQuery,
+  useSupplierCatalogMatchQuery,
   useSuppliersQuery,
   useUploadDocumentMutation
 } = api

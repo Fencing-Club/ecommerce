@@ -14,7 +14,11 @@ A supplier can work for several buyers.
   (`via`), never a destination.
 - Quantities and prices are per piece. A pack size converts pieces into Amazon's sellable units.
   The order editor and detail page show the pack size beneath the product and the pack count beneath the quantity.
-- The draft editor and saved PO group Amazon products into separate AWD US and FBA shipment cards. The group names
+- In the editor, a new line's price starts at its product's Shopify unit cost. Once the supplier's catalog answers, its
+  quote replaces that, at the volume price for the line's quantity, and follows the quantity across price breaks.
+  A price the buyer types, or a saved draft's price, stays; a draft line without a price takes the quote.
+- The draft editor and saved PO group Amazon products into separate FBA and AWD US shipment cards, in the order the
+  packing rules list Amazon's networks (`shipmentGroups` in `@repo/copacker-shipments`). The group names
   carry the destination and shipment total, so product rows do not repeat the destination. Totals include the product's
   supplier service costs and update with quantities, costs and product moves; PO-level charges remain in the overall
   total. Members without price access do not see shipment totals. At narrower widths the cost and details panels move below

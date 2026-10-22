@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/copacker-shipments"
+import { type OrderInput, orderSubtotal, variantTitle } from "@repo/copacker-shipments"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
@@ -45,7 +45,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
     return {
       itemId: line.itemId,
       name: item?.name ?? line.title,
-      variant: item?.variant && item.variant !== "Default Title" ? item.variant : "",
+      variant: variantTitle(item?.variant) ?? "",
       supplierSku: line.supplierSku,
       piecesPerSet: item?.piecesPerSet ?? 1,
       pieces: line.pieces,
@@ -60,7 +60,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
         .map((item) => ({
           itemId: item.id,
           name: item.name,
-          variant: item.variant !== "Default Title" ? item.variant : "",
+          variant: variantTitle(item.variant) ?? "",
           supplierSku: item.supplierSku,
           piecesPerSet: item.piecesPerSet,
           pieces: item.pieces,
@@ -79,7 +79,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
         customer: customer ?? t("yourCustomer"),
         currency: data.currency,
         items: [...items, ...removed],
-        subtotal: data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+        subtotal: orderSubtotal(data),
         current: current,
         terms: proposal
           ? { paymentTerms: proposal.paymentTerms, readyDate: proposal.readyDate, note: proposal.note }
