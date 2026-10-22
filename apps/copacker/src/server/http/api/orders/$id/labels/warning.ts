@@ -7,7 +7,7 @@ import { warningLabelFile } from "@/server/product-barcodes"
 
 // The PO's sheet of suffocation warning labels, when any of its lines needs them.
 export async function GET(_request: Request, context: { params: { id: string } }) {
-  const id = z.uuid().safeParse((await context.params).id)
+  const id = z.uuid().safeParse(context.params.id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404)
   }

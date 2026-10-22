@@ -7,10 +7,11 @@ import { database, setUpTestDatabase } from "./test-db"
 import { signedIn, testSession } from "./test-session"
 vi.mock("@/db", () => import("./test-db"))
 vi.mock("../src/server/auth", async (original) => (await import("./test-session")).mockAuth(original))
-import { POST as purchaseRoute } from "../src/server/http/api/analytics/purchase-costs"
-import { DELETE as purchaseDelete } from "../src/server/http/api/analytics/purchase-costs/$id"
 import { saveInventoryBasis } from "../src/server/inventory-basis"
+import { inventoryBasisCollection, inventoryBasisResource } from "../src/server/inventory-basis-http"
 import { appUrl } from "../src/server/security"
+const { POST: purchaseRoute } = inventoryBasisCollection("purchase")
+const { DELETE: purchaseDelete } = inventoryBasisResource("purchase")
 const orgId = randomUUID(),
   otherId = randomUUID()
 
@@ -79,11 +80,11 @@ beforeEach(async () => {
 })
 import { inventoryMicros } from "../src/lib/inventory-money"
 import { allocateLandedCharge } from "../src/lib/landed-allocation"
-import { POST as depletionPost } from "../src/server/http/api/analytics/depletions"
 import { GET as fifoGet } from "../src/server/http/api/analytics/fifo"
 import { POST as landedPost, GET as landedList } from "../src/server/http/api/analytics/landed-charges"
 import { DELETE as landedDelete, GET as landedGet } from "../src/server/http/api/analytics/landed-charges/$id"
 import { inventoryFifo } from "../src/server/inventory-fifo"
+const { POST: depletionPost } = inventoryBasisCollection("depletion")
 const range = {
   shopifyDomain: "store",
   variantId: "v1",

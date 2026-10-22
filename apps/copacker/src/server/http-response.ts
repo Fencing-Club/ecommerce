@@ -2,12 +2,13 @@ import { isNotFound, isRedirect } from "@tanstack/react-router"
 import type { CsrfMiddlewareOptions } from "@tanstack/react-start"
 import { z } from "zod"
 import { AccessError, NotFoundError, type ErrorKey } from "@/i18n/errors"
-import { errorResponse, failureMessage, StatusError } from "./errors"
+import { errorResponse, failureMessage, InvalidRequestError, StatusError } from "./errors"
+import { describeError, logEvent } from "./log"
 import { isAppOrigin } from "./security"
 
 const isMissing = (error: unknown) => error instanceof NotFoundError || isNotFound(error)
 
-// The status httpResponse answers a failure with, or null for an unexpected one, which goes on to Start.
+// The status httpResponse answers a failure with, or null for an unexpected one.
 function mappedStatus(error: unknown) {
   if (isMissing(error)) {
     return 404
@@ -19,16 +20,27 @@ function mappedStatus(error: unknown) {
     return error.status
   }
   // The request's body, query or path didn't parse.
-  if (error instanceof z.ZodError || error instanceof SyntaxError) {
+  if (error instanceof InvalidRequestError) {
     return 400
   }
   return null
 }
 
-async function failureResponse(error: unknown) {
+// Something other than the request didn't parse: stored data, or a provider's answer, no longer fits its schema.
+const isParseFailure = (error: unknown) => error instanceof z.ZodError || error instanceof SyntaxError
+
+async function failureResponse(request: Request, error: unknown) {
   const status = mappedStatus(error)
   if (status === null) {
-    throw error
+    if (!isParseFailure(error)) {
+      throw error
+    }
+    logEvent("error", "api_request_failed", {
+      method: request.method,
+      path: new URL(request.url).pathname,
+      error: describeError(error)
+    })
+    return errorResponse("requestFailed", 500)
   }
   if (isMissing(error)) {
     return errorResponse("notFound", 404)
@@ -37,8 +49,9 @@ async function failureResponse(error: unknown) {
 }
 
 // Domain handlers return standard Fetch responses. This boundary turns their failures into HTTP errors, and keeps
-// responses private unless a handler chose its own cache policy, such as an immutable photo.
-export async function httpResponse(run: () => Response | Promise<Response>) {
+// responses private unless a handler chose its own cache policy, such as an immutable photo. A parse failure that isn't
+// the request's is logged and answered 500; any other unexpected failure goes on to Start.
+export async function httpResponse(request: Request, run: () => Response | Promise<Response>) {
   let response: Response
   try {
     response = await run()
@@ -46,7 +59,7 @@ export async function httpResponse(run: () => Response | Promise<Response>) {
     if (isRedirect(error)) {
       throw error
     }
-    response = await failureResponse(error)
+    response = await failureResponse(request, error)
   }
   const headers = new Headers(response.headers)
   if (!headers.has("Cache-Control")) {
@@ -56,10 +69,27 @@ export async function httpResponse(run: () => Response | Promise<Response>) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
 }
 
+const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const
+type Method = (typeof methods)[number]
+type Handler<P> = (request: Request, context: { params: P }) => Response | Promise<Response>
+
+// A route's server handlers: each HTTP method its handler module exports, answered through httpResponse. A route file
+// is `server: { handlers: apiHandlers(handlers) }`, with `import * as handlers` from its module in `server/http`.
+export function apiHandlers<P extends Record<string, string>>(module: Partial<Record<Method, Handler<P>>>) {
+  const handlers: Partial<Record<Method, (route: { request: Request; params: P }) => Promise<Response>>> = {}
+  for (const method of methods) {
+    const handler = module[method]
+    if (handler) {
+      handlers[method] = ({ request, params }) => httpResponse(request, () => handler(request, { params }))
+    }
+  }
+  return handlers
+}
+
 // A route's answer to a failure httpResponse doesn't know, such as a provider being down: the route's own message, 500
-// unless it says otherwise. The failures httpResponse does know go on to it.
+// unless it says otherwise. The failures httpResponse does know go on to it, and so does a parse failure, which it logs.
 export async function fallbackResponse(error: unknown, key: ErrorKey, status = 500) {
-  if (isRedirect(error) || mappedStatus(error) !== null) {
+  if (isRedirect(error) || mappedStatus(error) !== null || isParseFailure(error)) {
     throw error
   }
   return errorResponse(key, status)

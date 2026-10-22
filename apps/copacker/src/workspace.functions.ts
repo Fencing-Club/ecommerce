@@ -55,7 +55,7 @@ export const readNewCatalog = createServerFn()
   )
 
 export const readCatalog = createServerFn()
-  .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
+  .validator(z.object({ query: urlQuery, id: z.string() }))
   .handler(({ data }) =>
     localizedPage(async () => {
       const s = await session()
@@ -89,7 +89,7 @@ export const readCustomers = createServerFn()
   )
 
 export const readCustomer = createServerFn()
-  .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
+  .validator(z.object({ query: urlQuery, id: z.string() }))
   .handler(({ data }) =>
     localizedPage(async () => {
       const s = await session()
@@ -188,7 +188,7 @@ export const readNewProduct = createServerFn()
   )
 
 export const readProduct = createServerFn()
-  .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
+  .validator(z.object({ query: urlQuery, id: z.string() }))
   .handler(({ data }) =>
     localizedPage(async () => {
       const s = await session()

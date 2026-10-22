@@ -3,12 +3,12 @@ import { getLandedCharge, retireLandedCharge } from "@/server/inventory-landed-c
 type Context = { params: { id: string } }
 export async function GET(request: Request, context: Context) {
   return analyticsRoute(request, false, async (s) =>
-    Response.json({ charge: await getLandedCharge(s.org.id, analyticsId((await context.params).id)) })
+    Response.json({ charge: await getLandedCharge(s.org.id, analyticsId(context.params.id)) })
   )
 }
 export async function DELETE(request: Request, context: Context) {
   return analyticsRoute(request, true, async (s) => {
-    await retireLandedCharge(s.org.id, s.user.id, analyticsId((await context.params).id))
+    await retireLandedCharge(s.org.id, s.user.id, analyticsId(context.params.id))
     return new Response(null, { status: 204 })
   })
 }

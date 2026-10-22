@@ -61,7 +61,7 @@ import {
 } from "@/server/orders"
 import { saveProfile } from "@/server/profile"
 import { dayRange } from "@/server/restock-report"
-import { token, hash, isAppOrigin } from "@/server/security"
+import { token, hash } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { signInActions } from "@/server/sign-in-actions"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
@@ -78,9 +78,6 @@ import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 export async function POST(request: Request) {
-  if (!isAppOrigin(request.headers.get("origin"))) {
-    return errorResponse("invalidOrigin", 403)
-  }
   try {
     const { action, data } = inputSchema.parse(await request.json())
     // Signing in and up, before anyone is signed in.

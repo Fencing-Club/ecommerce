@@ -6,7 +6,7 @@ export async function GET(request: Request, context: { params: { id: string } })
   try {
     return await downloadDocument(
       await session(),
-      (await context.params).id,
+      context.params.id,
       undefined,
       new URL(request.url).searchParams.get("bundle") === "true"
     )

@@ -14,7 +14,7 @@ export async function GET(request: Request, context: { params: { id: string } })
       kind: z.enum(["sku", "fnsku", "suffocation", "all"]).default("all")
     })
     .safeParse({
-      id: (await context.params).id,
+      id: context.params.id,
       item: query.get("item") ?? undefined,
       kind: query.get("kind") ?? undefined
     })

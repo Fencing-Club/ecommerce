@@ -7,7 +7,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const s = await session()
   try {
     requireAccess(s, "orders", "edit")
-    const { id } = await params
+    const { id } = params
     const order = await saveImportedOrder(s, id, await request.json())
     return Response.json({ id: order.id, redirect: `/orders/${order.id}` })
   } catch (error) {
