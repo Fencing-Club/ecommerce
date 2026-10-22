@@ -1,10 +1,10 @@
 import { collectShopifyBalanceTransactions } from "@repo/copacker-marketplaces/sales"
+import { grantedScopes } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq, gte, lt } from "drizzle-orm"
 import { db } from "@/db"
 import { chunked, excluded } from "@/db/helpers"
 import { salesSyncs, shopifyBalanceTransactions } from "@/db/schema"
 import { shopifyFor } from "./connections"
-import { grantedScopes } from "./provider-accounts"
 import { syncChunks } from "./sales-orders"
 import { salesSyncScope, syncCoveredPeriods } from "./sales-sync-coverage"
 

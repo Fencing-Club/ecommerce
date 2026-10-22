@@ -1,4 +1,5 @@
 import { collectAmazonSales, collectShopifySales, salesWindowSchema } from "@repo/copacker-marketplaces/sales"
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -26,11 +27,11 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
   }
   const account = await connection(s.org.id, source)
   if (source === "shopify") {
-    const scopes = new Set(account.scopes.split(/[,\s]+/))
+    const scopes = grantedScopes(account.scopes)
     if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
       throw new DemandAccessError("reconnectShopifyOrders")
     }
-    if (Date.parse(window.from) < now - 60 * 86400000 && !scopes.has("read_all_orders")) {
+    if (Date.parse(window.from) < now - recentOrderDays * 86400000 && !scopes.has("read_all_orders")) {
       throw new DemandAccessError("shopify60Days")
     }
   }

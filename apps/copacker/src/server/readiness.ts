@@ -1,7 +1,7 @@
 import type { OrderInput } from "@repo/copacker-orders"
-import { validatePacking } from "@repo/copacker-packing-rules"
+import { orderDestination, validatePacking } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
-import { packingSchema, orderDestination } from "@repo/copacker-shipments"
+import { packedItemIds, packingSchema } from "@repo/copacker-shipments"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
@@ -190,7 +190,7 @@ export function releaseIssues(
   if (shipmentLabelRequirements(orderDestination(shipment.snapshot), shipment.transport).needsTransport) {
     issues.push({ code: "missing_transport", message: t("readiness.missingTransport") })
   }
-  const shipped = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const shipped = packedItemIds(shipment.packing)
   for (const item of shipment.snapshot.items) {
     if (shipped.has(item.id) && missingLabels.has(item.id)) {
       issues.push({

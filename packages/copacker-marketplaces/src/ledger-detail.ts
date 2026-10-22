@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { reportRows } from "./report-tsv"
+import { reportDay, reportQuantity, reportRows } from "./report-tsv"
 
 export const ledgerDetailReportType = "GET_LEDGER_DETAIL_VIEW_DATA"
 const required = [
@@ -17,11 +17,6 @@ const required = [
   "Reconciled Quantity",
   "Unreconciled Quantity"
 ]
-const quantity = z
-  .string()
-  .regex(/^-?\d+$/)
-  .transform(Number)
-  .pipe(z.number().int().min(-2147483648).max(2147483647))
 const item = z.object({
   eventDay: z.iso.date(),
   sku: z.string().nullable(),
@@ -29,22 +24,17 @@ const item = z.object({
   asin: z.string().nullable(),
   eventType: z.string().min(1),
   referenceId: z.string().nullable(),
-  quantity,
+  quantity: reportQuantity,
   fulfillmentCenterId: z.string().nullable(),
   disposition: z.string().nullable(),
   reason: z.string().nullable(),
   country: z.string().nullable(),
-  reconciledQuantity: quantity.nullable(),
-  unreconciledQuantity: quantity.nullable(),
+  reconciledQuantity: reportQuantity.nullable(),
+  unreconciledQuantity: reportQuantity.nullable(),
   // Retain the source clock text; do not invent a timezone or midnight event timestamp from the calendar date.
   dateAndTime: z.string().nullable(),
   store: z.string().nullable()
 })
-
-function eventDay(value: string) {
-  const us = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
-  return us ? `${us[3]}-${us[1]}-${us[2]}` : value
-}
 
 // Includes all event types and dispositions. Preserve signed transfers/adjustments, unknown codes and unmatched
 // product/reference values. A reference can span multiple rows; it is not a unique movement identifier.
@@ -52,7 +42,7 @@ export function parseLedgerDetail(text: string) {
   return reportRows(text, required).map((row) => {
     const optional = (name: string) => row[name] || null
     return item.parse({
-      eventDay: eventDay(row.Date!),
+      eventDay: reportDay(row.Date!),
       sku: optional("MSKU"),
       fnsku: optional("FNSKU"),
       asin: optional("ASIN"),

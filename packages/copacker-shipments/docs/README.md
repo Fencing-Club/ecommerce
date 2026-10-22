@@ -9,12 +9,18 @@ its subpaths. Purchase orders, their lines and their costs live in
 
 The carton and pallet rules, and `validatePacking`, live in
 [`@repo/copacker-packing-rules`](../../copacker-packing-rules/docs/README.md). This package uses it to check a packing before
-building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`), and re-exports its receivers. Each PO line names
-its `receiver`; `orderDestination` reads where the PO goes from them.
+building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`). Each PO line names its `receiver`; import the
+receivers and `orderDestination`, which reads where the PO goes from them, from that package.
 
 ## Amazon inbound shipments
 
 Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).
+
+## Carrier labels
+
+A buyer's own parcel carrier labels go on cartons by what they print. `tracking-numbers` reads a label's tracking number
+from its text or barcodes and names its carrier (`trackingCarrier`). `label-measurements` reads the weight and size it
+prints and checks they fit a carton configuration (`fitsConfiguration`).
 
 ## Shipping documents
 

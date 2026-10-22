@@ -13,6 +13,8 @@ import {
   orderSales,
   shopifyOrderFees
 } from "@repo/copacker-marketplaces/sales"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, count, desc, eq, gte, inArray, notInArray, lt, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
@@ -43,7 +45,7 @@ import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
 import { orderUnits } from "./overview-sales"
-import { connectedAccount, grantedScopes, shopifyStoreSnapshot } from "./provider-accounts"
+import { connectedAccount, shopifyStoreSnapshot } from "./provider-accounts"
 import type { DemandGap } from "./sales-attribution"
 import type { DemandRow } from "./sales-attribution"
 import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
@@ -91,9 +93,9 @@ export async function amazonSalesMarketplaces(
   return ids
 }
 
-// How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
+// How far back a source's orders are copied. Without read_all_orders Shopify shares only its recent orders.
 export function historyDaysFor(source: SalesSource, scopes: string) {
-  return source === "shopify" && !grantedScopes(scopes).has("read_all_orders") ? 60 : salesHistoryDays
+  return source === "shopify" && !grantedScopes(scopes).has("read_all_orders") ? recentOrderDays : salesHistoryDays
 }
 
 // How much of a running first sync's history is copied, from 0 to 1, or null when no sync is copying history. A
@@ -829,8 +831,8 @@ async function productNames(orgId: string, domain: string, orders: SalesOrderSum
     if (row.product === null) {
       continue
     }
-    const name =
-      row.variant !== null && row.variant !== "Default Title" ? `${row.product}, ${row.variant}` : row.product
+    const variant = variantName(row.variant)
+    const name = variant ? `${row.product}, ${variant}` : row.product
     if (row.variantId !== null) {
       byVariant.set(row.variantId, name)
     }

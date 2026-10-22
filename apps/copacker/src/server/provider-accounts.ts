@@ -42,11 +42,6 @@ export async function requireConnectedAccount(orgId: string, provider: Provider,
   return account
 }
 
-// The permissions a connection was granted, from its stored list (separated by commas or spaces).
-export function grantedScopes(scopes: string): ReadonlySet<string> {
-  return new Set(scopes.split(/[,\s]+/))
-}
-
 // The Shopify store's catalog snapshot, the stock refresh that reads every product and variant, as a condition for a
 // query builder or raw SQL.
 export function shopifyStoreSnapshot(orgId: string, domain: string) {

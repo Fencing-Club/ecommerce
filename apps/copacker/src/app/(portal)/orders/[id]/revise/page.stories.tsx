@@ -1,3 +1,4 @@
+import { orderSubtotal } from "@repo/copacker-orders"
 import type { OrderInput } from "@repo/copacker-orders"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
@@ -79,7 +80,7 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
         customer: customer ?? t("yourCustomer"),
         currency: data.currency,
         items: [...items, ...removed],
-        subtotal: data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+        subtotal: orderSubtotal(data.items),
         current: current,
         terms: proposal
           ? { paymentTerms: proposal.paymentTerms, readyDate: proposal.readyDate, note: proposal.note }

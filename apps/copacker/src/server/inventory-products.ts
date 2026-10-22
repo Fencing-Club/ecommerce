@@ -1,7 +1,9 @@
 import type { Amazon } from "@repo/copacker-marketplaces/amazon"
+import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { type Destination, type OrderInput } from "@repo/copacker-orders"
-import { type AmazonNetwork, amazonNetworkNames, isAmazonNetwork, orderDestination } from "@repo/copacker-shipments"
+import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
+import { amazonNetworkNames } from "@repo/copacker-shipments"
 import type { LocationClassification } from "./inventory-locations"
 
 type OrderItem = OrderInput["items"][number]
@@ -301,7 +303,7 @@ export function groupInventory(
       continue
     }
     const title = row.productTitle
-    const variantTitle = row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
+    const variantTitle = variantName(row.variantTitle)
     if (search && ![title, variantTitle, row.buyerSku].some((text) => text?.toLocaleLowerCase().includes(search))) {
       continue
     }

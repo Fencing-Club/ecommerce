@@ -11,10 +11,13 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 - `packages/copacker-orders`: Copacker's purchase orders, their lines and their costs
   ([orders](packages/copacker-orders/docs/README.md)).
 - `packages/copacker-shipments`: Copacker's packing, labels and shipping documents.
+- `packages/copacker-packing-rules`: what Copacker's cartons and pallets may be, for each receiver
+  ([packing rules](packages/copacker-packing-rules/docs/README.md)).
 - `packages/copacker-marketplaces`: Copacker's Amazon, Shopify and eBay clients, sales collectors and report parsers.
 - `packages/copacker-cli`, `packages/copacker-client` and `packages/copacker-contract`: the `copacker` command line, its
   API client and the shared operation contract. Not usable until the app serves the operation API.
-- `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them.
+- `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them
+  ([emails](packages/copacker-emails/docs/README.md)).
 - `packages/fc-templates`: Fencing Club email and print templates.
 - `packages/fc-theme` and `packages/fc-theme-base`: Shopify themes.
 - `packages/shopify-emails` and `packages/shopify-content`: the supporting Shopify toolkits.
@@ -24,5 +27,6 @@ Use Node 24+ and pnpm 12. Run `pnpm install`, `pnpm dev`, and `pnpm verify` from
 applicable packages. [Setup](docs/setup.md) covers the registry; Copacker's releases and credentials are in
 [its operations guide](apps/copacker/docs/operations.md).
 
-The monorepo's engineering docs are indexed in [docs](docs/README.md). Each app and package keeps the docs specific to
-it in its own `docs/` folder, such as [Copacker's](apps/copacker/docs/README.md).
+The monorepo's engineering docs are indexed in [docs](docs/README.md); [what goes where](docs/packages.md) covers the
+Copacker packages. Each app and package keeps the docs specific to it in its own `docs/` folder, such as
+[Copacker's](apps/copacker/docs/README.md).

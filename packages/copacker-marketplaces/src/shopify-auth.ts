@@ -24,6 +24,13 @@ function storedToken(response: z.infer<typeof shopifyTokenResponse>): ShopifyTok
   }
 }
 
+// The access scopes Shopify granted a token, from the comma- or space-separated list it returns with it.
+export function grantedScopes(scopes: string) {
+  return new Set(scopes.split(/[,\s]+/).filter(Boolean))
+}
+// How many days of orders Shopify shares without the read_all_orders scope.
+export const recentOrderDays = 60
+
 // Trades the code Shopify returns after the merchant approves the app for an expiring offline token and its scopes.
 export async function exchangeShopifyCode(
   credentials: ShopifyAppCredentials,

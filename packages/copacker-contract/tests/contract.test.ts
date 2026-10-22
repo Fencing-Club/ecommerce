@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { commands } from "./commands.ts"
-import { canonicalJson, parseInput } from "./json.ts"
-import { exitCode, isQuery, pageInfoSchema } from "./protocol.ts"
-import { createRegistry, defineOperation } from "./registry.ts"
+import { commands } from "../src/commands.ts"
+import { canonicalJson, parseInput } from "../src/json.ts"
+import { exitCode, isQuery, pageInfoSchema } from "../src/protocol.ts"
+import { createRegistry, defineOperation } from "../src/registry.ts"
 
 const definition = (name = "product.update") =>
   defineOperation(

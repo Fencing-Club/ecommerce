@@ -251,6 +251,18 @@ export const countries = [
   { value: "ZW", label: "Zimbabwe" }
 ]
 
+// The name of a two-letter country code in a language, such as "China" for CN in English; null when there's no code.
+export function countryName(code: string | null | undefined, locale = "en") {
+  if (!code || !/^[a-z]{2}$/i.test(code)) {
+    return null
+  }
+  try {
+    return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? null
+  } catch {
+    return null
+  }
+}
+
 // The countries named in a language, such as "Allemagne" for DE in French, from the runtime's own names, sorted by
 // name as that language sorts them. A code the runtime can't name keeps its English name.
 export function countriesIn(locale: string) {

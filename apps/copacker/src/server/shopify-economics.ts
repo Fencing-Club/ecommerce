@@ -1,3 +1,4 @@
+import { grantedScopes, recentOrderDays } from "@repo/copacker-marketplaces/shopify-auth"
 import { collectShopifyEconomics, economicsQueries } from "@repo/copacker-marketplaces/shopify-economics"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -5,7 +6,6 @@ import { db } from "@/db"
 import { analyticsFeeds } from "@/db/schema"
 import { publishAnalyticsFeed } from "./analytics-feed-store"
 import { shopifyFor } from "./connections"
-import { grantedScopes } from "./provider-accounts"
 const dataset = "order_economics"
 export async function syncShopifyEconomics(
   input: { orgId: string; externalAccountId: string; revision: number; scopes: string },
@@ -30,7 +30,7 @@ export async function syncShopifyEconomics(
     : {
         from: previous?.coveredTo
           ? new Date(Date.parse(previous.coveredTo) - 86400000).toISOString()
-          : new Date(now.getTime() - 60 * 86400000).toISOString(),
+          : new Date(now.getTime() - recentOrderDays * 86400000).toISOString(),
         to: end,
         after: null,
         coveredFrom: previous?.coveredFrom,

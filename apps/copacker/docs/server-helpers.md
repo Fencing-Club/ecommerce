@@ -18,7 +18,6 @@ writing the query again.
 - `connectedAccount(orgId, provider, { executor, externalId, lock })` is the workspace's connection, or null.
   `externalId` limits it to one account; `lock` locks the row for the rest of the transaction.
 - `requireConnectedAccount` throws "Connect … in Settings first" instead of returning null.
-- `grantedScopes(scopes)` is the set of permissions a connection was granted.
 - `shopifyStoreSnapshot(orgId, domain)` is the condition for the Shopify store's catalog snapshot.
 
 `connection()` (`src/server/connections.ts`) adds the access token. It locks the row only to renew an expiring

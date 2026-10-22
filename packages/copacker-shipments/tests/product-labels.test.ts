@@ -1,11 +1,11 @@
 import { PDFDocument } from "pdf-lib"
 import { describe, expect, it } from "vitest"
+import { countryName } from "../src/countries"
 import { readLabelPdfPages } from "../src/label-pdf-reader"
 import {
   code128B,
   code128Modules,
   code128Patterns,
-  countryName,
   madeIn,
   labelTitle,
   standardProductLabels,
@@ -80,6 +80,7 @@ describe("country of origin", () => {
     expect(countryName("us")).toBe("United States")
     expect(countryName(null)).toBeNull()
     expect(countryName("not a country")).toBeNull()
+    expect(countryName("DE", "fr")).toBe("Allemagne")
   })
 })
 

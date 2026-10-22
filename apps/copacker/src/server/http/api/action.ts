@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto"
+import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { addressSchema } from "@repo/copacker-orders"
-import { amazonReference, fbaPlanName } from "@repo/copacker-shipments/amazon-inbound"
+import {
+  amazonReference,
+  awdShipmentIdPattern,
+  fbaInboundPlanIdPattern,
+  fbaPlanName
+} from "@repo/copacker-shipments/amazon-inbound"
 import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
@@ -283,11 +289,7 @@ export async function POST(request: Request) {
           name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
-          shopifyLocationId: z
-            .string()
-            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
-            .nullable()
-            .default(null)
+          shopifyLocationId: locationIdSchema.nullable().default(null)
         })
         .transform((contact) => ({
           ...contact,
@@ -365,11 +367,7 @@ export async function POST(request: Request) {
           name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
-          shopifyLocationId: z
-            .string()
-            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
-            .nullable()
-            .default(null)
+          shopifyLocationId: locationIdSchema.nullable().default(null)
         })
         .transform((contact) => ({
           ...contact,
@@ -539,7 +537,7 @@ export async function POST(request: Request) {
       const amazonOrderId = z
         .string()
         .trim()
-        .regex(fba ? /^wf[0-9a-f-]{36}$/ : /^STAR-[A-Z0-9]+$/)
+        .regex(fba ? fbaInboundPlanIdPattern : awdShipmentIdPattern)
         .parse(data.amazonOrderId)
       if (shipment.amazonOrderId && shipment.amazonOrderId !== amazonOrderId) {
         throw new LocalizedError("shipmentLinkedToOtherAmazonOrder")

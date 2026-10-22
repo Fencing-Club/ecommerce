@@ -5,27 +5,11 @@ import {
   type AmazonNetwork,
   amazonNetworks,
   cartonReceivers,
-  groupReceivers,
-  isAmazonNetwork,
-  orderDestination,
-  receiverFor,
-  receiverIds,
   receivers,
   validatePacking
 } from "@repo/copacker-packing-rules"
 import { z } from "zod"
 
-export {
-  amazonNetworks,
-  type AmazonNetwork,
-  groupReceivers,
-  isAmazonNetwork,
-  orderDestination,
-  receiverFor,
-  receiverIds,
-  receivers
-}
-export type { ReceiverId } from "@repo/copacker-packing-rules"
 export const amazonNetworkNames: Record<AmazonNetwork, string> = {
   fba: receivers.fba.name,
   awd_us: receivers.awd_us.name
@@ -143,6 +127,12 @@ export const packingDraftSchema = z
   .strict()
 export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
+// The PO lines a packing's cartons hold, by their IDs.
+export function packedItemIds(
+  packing: { cartons: readonly { items: readonly { itemId: string }[] }[] } | null | undefined
+) {
+  return new Set(packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+}
 export type Pallet = z.infer<typeof palletInputSchema>
 // A pallet's place in the Amazon shipment its cartons travel in, as Amazon numbers its pallet labels: the shipment's
 // pallets in packing order, from 1.
