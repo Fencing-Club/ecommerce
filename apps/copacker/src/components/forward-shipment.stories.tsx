@@ -1,4 +1,4 @@
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
@@ -48,7 +48,7 @@ export const Validation = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     const dialog = await screen.findByRole("dialog")
-    await expect(dialog).toHaveTextContent("EUR")
+    await expect(within(dialog).getByRole("textbox", { name: "Freight cost" })).toHaveAccessibleDescription("€")
     await userEvent.click(screen.getAllByRole("button", { name: "Mark shipped" }).at(-1)!)
     await expect(await screen.findByText("Enter the freight cost")).toBeInTheDocument()
     await expect(screen.getByText("Enter the carrier")).toBeInTheDocument()
