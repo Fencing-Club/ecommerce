@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, type PDFFont, rgb } from "pdf-lib"
+import { countryName } from "./countries"
 import { drawableText } from "./documents"
 
 // Code 128 symbols as bar and space widths in modules, bar first. Values 0-102 are data, 103-105 start codes A-C,
@@ -161,18 +162,6 @@ function fitTitle(title: string, font: PDFFont, size: number, width: number) {
     }
   }
   return title.slice(0, 4)
-}
-
-// The English name of an ISO 3166 country code, such as "China" for "CN", for a label's "Made in" line.
-export function countryName(code: string | null | undefined) {
-  if (!code) {
-    return null
-  }
-  try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? null
-  } catch {
-    return null
-  }
 }
 
 // The countries a label's "Made in" line names, such as "China" or "China and Pakistan"; null when none is known.
