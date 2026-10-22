@@ -14,7 +14,8 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 - `packages/copacker-marketplaces`: Copacker's Amazon, Shopify and eBay clients, sales collectors and report parsers.
 - `packages/copacker-cli`, `packages/copacker-client` and `packages/copacker-contract`: the `copacker` command line, its
   API client and the shared operation contract. Not usable until the app serves the operation API.
-- `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them.
+- `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them
+  ([emails](packages/copacker-emails/docs/README.md)).
 - `packages/fc-templates`: Fencing Club email and print templates.
 - `packages/fc-theme` and `packages/fc-theme-base`: Shopify themes.
 - `packages/shopify-emails` and `packages/shopify-content`: the supporting Shopify toolkits.
