@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { reportDecimal, reportRows } from "./report-tsv"
+export const fbmReturnsReportType = "GET_FLAT_FILE_RETURNS_DATA_BY_RETURN_DATE"
 const required = [
   "Order ID",
   "Return request date",

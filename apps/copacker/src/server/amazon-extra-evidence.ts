@@ -1,5 +1,5 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
-import { parseFbmReturns } from "@repo/copacker-marketplaces/fbm-returns"
+import { fbmReturnsReportType, parseFbmReturns } from "@repo/copacker-marketplaces/fbm-returns"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { analyticsFeeds, amazonTransactions } from "@/db/schema"
@@ -11,6 +11,7 @@ export async function syncAmazonExtraEvidence(
   assertOwned: () => Promise<void>,
   now = new Date()
 ) {
+  const feed = { ...input, source: "amazon" as const }
   const feeds = await db()
     .select()
     .from(analyticsFeeds)
@@ -25,7 +26,7 @@ export async function syncAmazonExtraEvidence(
   let failure: string | null = null
   for (const [index, window] of windows.entries()) {
     const periodDataset = `fbm_returns:${window.from.toISOString().slice(0, 7)}`
-    const prior = feeds.find((feed) => feed.dataset === periodDataset)
+    const prior = feeds.find((row) => row.dataset === periodDataset)
     const refreshMs = (index < 2 || prior?.state.error ? 1 : 30) * 86400000
     if (
       prior &&
@@ -42,7 +43,7 @@ export async function syncAmazonExtraEvidence(
       await assertOwned()
       const text = await input.amazon.report(
         {
-          reportType: "GET_FLAT_FILE_RETURNS_DATA_BY_RETURN_DATE",
+          reportType: fbmReturnsReportType,
           marketplaceIds: [usMarketplaceId],
           dataStartTime: window.from.toISOString(),
           dataEndTime: new Date(window.to.getTime() - 1000).toISOString()
@@ -68,7 +69,7 @@ export async function syncAmazonExtraEvidence(
       }
       stage = "request"
       await publishAnalyticsFeed(
-        input,
+        feed,
         "fbm_returns",
         [
           {
@@ -80,7 +81,7 @@ export async function syncAmazonExtraEvidence(
         assertOwned
       )
       await publishAnalyticsFeed(
-        input,
+        feed,
         periodDataset,
         [],
         {
@@ -100,7 +101,7 @@ export async function syncAmazonExtraEvidence(
       })
       failure = errorCode
       await publishAnalyticsFeed(
-        input,
+        feed,
         periodDataset,
         [],
         {
@@ -114,7 +115,7 @@ export async function syncAmazonExtraEvidence(
       }
     }
   }
-  await publishAnalyticsFeed(input, "fbm_returns", [], { error: failure }, assertOwned)
+  await publishAnalyticsFeed(feed, "fbm_returns", [], { error: failure }, assertOwned)
   // Reuse signed finance records. These are evidence references, not additional expense postings.
   const rows = await db()
     .select()
@@ -129,7 +130,7 @@ export async function syncAmazonExtraEvidence(
     .orderBy(amazonTransactions.postedAt)
     .limit(10001)
   await publishAnalyticsFeed(
-    input,
+    feed,
     "awd_costs",
     rows.slice(0, 10000).map((r) => ({
       id: r.transactionId,

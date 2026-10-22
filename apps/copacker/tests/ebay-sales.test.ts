@@ -223,7 +223,7 @@ describe("Restock sales availability", () => {
     try {
       const demand = await restockDemand(orgId, ["shopify", "ebay"], 28)
       expect(demand.sources).toEqual([
-        expect.objectContaining({ source: "shopify", error: "Sales couldn't be read. Try again.", window: null }),
+        expect.objectContaining({ source: "shopify", error: "Sales couldn’t be read. Try again.", window: null }),
         expect.objectContaining({ source: "ebay", error: "Sync eBay orders in Settings first", window: null })
       ])
       expect(errorLog).toHaveBeenCalledExactlyOnceWith(
