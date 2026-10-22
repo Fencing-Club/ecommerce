@@ -61,6 +61,10 @@ A navigation reloads only what it changes.
   such as after an action. Each page's loader checks the session itself, and `WorkspaceWatch` checks on every page change
   that the workspace is still the one the shell shows.
 - **A page** reloads when it's entered, when its `loaderDeps` change, or on invalidation.
+- **A page that reads some of its search itself** shares one loaded result across those URLs, so it sets
+  `shouldReload: reloadOnEnter` (`routes/-page-route.tsx`). Opening it again then always loads it, as a new URL would. A
+  page's age can't be trusted for this: a page rendered on the server carries the server's clock, and one ahead of the
+  browser's makes the page look fresh, such as a list opened again after an action deleted one of its rows.
 
 ## Error pages
 

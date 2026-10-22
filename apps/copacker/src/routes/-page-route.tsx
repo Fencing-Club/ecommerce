@@ -18,6 +18,13 @@ export function pageHead({ loaderData }: { loaderData?: { title: string } }) {
   return { meta: loaderData ? [{ title: pageTitle(loaderData.title) }] : [] }
 }
 
+// For a page that reads some of its search itself, so one loaded result serves several URLs: opening the page again
+// always loads it, as a new URL would. Its age alone can't say so: a page rendered on the server carries the server's
+// clock, and one ahead of the browser's makes it look fresh. Changing the search while on the page loads nothing.
+export function reloadOnEnter({ cause }: { cause: "preload" | "enter" | "stay" }) {
+  return cause === "enter" ? true : undefined
+}
+
 // A portal page: No access when the viewer's role can't open it, or else the page with its data.
 export function PortalPage<R extends PageResult<unknown>>({
   result,

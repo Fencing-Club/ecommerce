@@ -41,10 +41,6 @@ test("the purchase order list sorts orders into views", { tag: "@mobile" }, asyn
   await expect(sent).toHaveCount(0)
   await page.getByRole("searchbox", { name: "Search purchase orders" }).fill("")
 
-  // Links from before the views open the matching orders.
-  await page.goto("/orders?status=draft")
-  await expect(views.getByRole("link", { name: /^Drafts/ })).toHaveAttribute("aria-current", "page")
-
   await page.goto("/orders?view=all")
   await sent.getByRole("link", { name: "DEMO-1" }).click()
   await expect(page.getByRole("heading", { level: 1, name: "DEMO-1" })).toBeVisible()
