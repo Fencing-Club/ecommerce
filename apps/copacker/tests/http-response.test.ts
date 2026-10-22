@@ -245,4 +245,14 @@ describe("app origin", () => {
     expect(response.status).toBe(403)
     expect(await response.json()).toEqual({ error: "Refresh the page and try again" })
   })
+  it("exempts only CLI bearer endpoints while keeping browser approval protected", async () => {
+    for (const path of ["/api/cli/token", "/api/cli/revoke", "/api/operations/account.show"]) {
+      expect(await allowed(post(path))).toBe(true)
+    }
+    for (const path of ["/api/cli/consent", "/api/cli/token/extra", "/api/action"]) {
+      expect(await allowed(post(path))).toBe(false)
+    }
+    expect(await allowed(post("/api/cli/consent", { Origin: "https://copacker.example" }))).toBe(true)
+    expect(await allowed(post("/api/operations/account.show"), "serverFn")).toBe(false)
+  })
 })

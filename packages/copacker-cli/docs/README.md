@@ -3,9 +3,10 @@
 The private `@repo/copacker-cli` package supplies the `copacker` executable on Node 24+. It implements the command
 vocabulary in [the application spec](../../../apps/copacker/docs/specs/cli/commands.md) through the shared operation client.
 
-**Integration status:** the executable, command adapters and protocol tests exist. Copacker's web application still
-needs the planned operation registry, bearer authorization, CLI authentication routes and domain handlers. Commands
-are not usable against the current production web app yet. Local help works without a server. The CLI checks deployed
+**Integration status:** the executable and command adapters exist, together with the first
+[server authentication and real-data handlers](../../../apps/copacker/docs/cli-server.md). Account/workspace/schema
+discovery and connection reads/settings are implemented. Business-resource handlers and automation issuance remain
+unfinished. These changes have not been deployed. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
 claim that a server has enabled that capability. No npm release or deployment has been performed.
 
@@ -18,12 +19,19 @@ pnpm --filter @repo/copacker-cli build
 node packages/copacker-cli/dist/bin.js --version
 ```
 
-Once the operation API is deployed:
+After the first server slice is deployed:
 
 ```sh
 copacker login
 copacker workspace list --json
 copacker workspace use <workspace-id>
+copacker connection list --json
+copacker connection settings show <connection-id> --json
+```
+
+The remaining planned workflows require their resource handlers before they can run:
+
+```sh
 copacker report restock --json
 copacker order show 1043 --connection <connection-id> --json
 copacker po show <po-id> --json

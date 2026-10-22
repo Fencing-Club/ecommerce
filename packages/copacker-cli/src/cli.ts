@@ -17,7 +17,7 @@ import {
 } from "@repo/copacker-contract"
 import { Command, CommanderError } from "commander"
 import { z } from "zod"
-import { login, logout, profileToken } from "./auth.ts"
+import { login, logout, profileToken, requireProfileOrigin } from "./auth.ts"
 import { atomicWrite, fileFingerprint, saveArtifact, uploadFile } from "./files.ts"
 import { booleanFlags, buildInput, camel, optionsSchema, type Options } from "./input.ts"
 import { render, safeMessage } from "./output.ts"
@@ -148,8 +148,11 @@ async function deliverCredential(
     if (sink) {
       await sink.write(secret.token)
     } else if (options.storeAs) {
-      await environment.store.saveCredential(options.storeAs, { kind: "automation", accessToken: secret.token })
-      await environment.store.saveProfile(options.storeAs, { baseUrl: client.baseUrl, workspaceId: client.workspaceId })
+      await environment.store.replaceCredential(
+        options.storeAs,
+        { baseUrl: client.baseUrl, workspaceId: client.workspaceId },
+        { kind: "automation", accessToken: secret.token }
+      )
     }
   } catch {
     throw clientError(
@@ -403,7 +406,10 @@ export function createProgram(environment: CliEnvironment, completed: (code: num
       const options = optionsSchema.parse(command.optsWithGlobals())
       const { client, profile, baseUrl } = await context({ ...options, workspace: id }, environment)
       await client.call("workspace.show", {})
-      await environment.store.saveProfile(profile, { baseUrl, workspaceId: id })
+      await environment.store.withCredentialLock(profile, async () => {
+        await requireProfileOrigin(environment.store, profile, baseUrl)
+        await environment.store.saveProfile(profile, { baseUrl, workspaceId: id })
+      })
       environment.stdout(render(localResult({ workspaceId: id }, id), options.json ? "json" : "table"))
       completed(0)
     })

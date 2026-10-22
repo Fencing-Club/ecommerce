@@ -118,7 +118,12 @@ export function fileResponse(body: BodyInit, { filename, contentType, dispositio
 
 // Requests other sites send on purpose, each proven another way: a provider's webhook by its signature, and a mail
 // app's one-click unsubscribe (RFC 8058) by its link's.
-const crossSite = [/^\/api\/webhooks\//, /^\/api\/mailing-list\/unsubscribe$/]
+const crossSite = [
+  /^\/api\/webhooks\//,
+  /^\/api\/mailing-list\/unsubscribe$/,
+  /^\/api\/cli\/(token|revoke)$/,
+  /^\/api\/operations\/[a-z][a-z0-9.-]*$/
+]
 
 type OriginCheck = { request: Request; pathname: string; handlerType: "serverFn" | "router" }
 

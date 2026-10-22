@@ -58,6 +58,7 @@ import { Route as LoginProviderRouteImport } from './routes/login.$provider'
 import { Route as WorkspacesIndexRouteImport } from './routes/workspaces.index'
 import { Route as WorkspacesNewRouteImport } from './routes/workspaces.new'
 import { Route as WorkspacesRecoverRouteImport } from './routes/workspaces.recover'
+import { Route as AuthCliAuthorizeRouteImport } from './routes/_auth.cli.authorize'
 import { Route as PortalCatalogsIdRouteImport } from './routes/_portal.catalogs_.$id'
 import { Route as PortalCatalogsNewRouteImport } from './routes/_portal.catalogs_.new'
 import { Route as PortalCustomersIdRouteImport } from './routes/_portal.customers_.$id'
@@ -82,6 +83,10 @@ import { Route as ApiAnalyticsReceiptsRouteImport } from './routes/api.analytics
 import { Route as ApiAnalyticsSalesOrdersRouteImport } from './routes/api.analytics.sales-orders'
 import { Route as ApiAnalyticsUnitMappingsRouteImport } from './routes/api.analytics.unit-mappings'
 import { Route as ApiCatalogsIdRouteImport } from './routes/api.catalogs.$id'
+import { Route as ApiCliAuthorizeRouteImport } from './routes/api.cli.authorize'
+import { Route as ApiCliConsentRouteImport } from './routes/api.cli.consent'
+import { Route as ApiCliRevokeRouteImport } from './routes/api.cli.revoke'
+import { Route as ApiCliTokenRouteImport } from './routes/api.cli.token'
 import { Route as ApiConnectionsProviderRouteImport } from './routes/api.connections.$provider'
 import { Route as ApiConnectionsAmazonAdsRouteImport } from './routes/api.connections.amazon-ads'
 import { Route as ApiDocumentsIdRouteImport } from './routes/api.documents.$id'
@@ -97,6 +102,7 @@ import { Route as ApiInventoryRefreshRouteImport } from './routes/api.inventory.
 import { Route as ApiInventoryStatusRouteImport } from './routes/api.inventory.status'
 import { Route as ApiInventoryVariantFieldsRouteImport } from './routes/api.inventory.variant-fields'
 import { Route as ApiMailingListUnsubscribeRouteImport } from './routes/api.mailing-list.unsubscribe'
+import { Route as ApiOperationsOperationRouteImport } from './routes/api.operations.$operation'
 import { Route as ApiOrdersSummaryRouteImport } from './routes/api.orders.summary'
 import { Route as ApiProductsWithoutSupplierRouteImport } from './routes/api.products.without-supplier'
 import { Route as ApiProposalsIdRouteImport } from './routes/api.proposals.$id'
@@ -390,6 +396,11 @@ const WorkspacesRecoverRoute = WorkspacesRecoverRouteImport.update({
   path: '/workspaces/recover',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCliAuthorizeRoute = AuthCliAuthorizeRouteImport.update({
+  id: '/cli/authorize',
+  path: '/cli/authorize',
+  getParentRoute: () => AuthRoute,
+} as any)
 const PortalCatalogsIdRoute = PortalCatalogsIdRouteImport.update({
   id: '/catalogs_/$id',
   path: '/catalogs/$id',
@@ -518,6 +529,26 @@ const ApiCatalogsIdRoute = ApiCatalogsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiCatalogsRoute,
 } as any)
+const ApiCliAuthorizeRoute = ApiCliAuthorizeRouteImport.update({
+  id: '/api/cli/authorize',
+  path: '/api/cli/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCliConsentRoute = ApiCliConsentRouteImport.update({
+  id: '/api/cli/consent',
+  path: '/api/cli/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCliRevokeRoute = ApiCliRevokeRouteImport.update({
+  id: '/api/cli/revoke',
+  path: '/api/cli/revoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCliTokenRoute = ApiCliTokenRouteImport.update({
+  id: '/api/cli/token',
+  path: '/api/cli/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiConnectionsProviderRoute = ApiConnectionsProviderRouteImport.update({
   id: '/api/connections/$provider',
   path: '/api/connections/$provider',
@@ -597,6 +628,11 @@ const ApiMailingListUnsubscribeRoute =
     path: '/unsubscribe',
     getParentRoute: () => ApiMailingListRoute,
   } as any)
+const ApiOperationsOperationRoute = ApiOperationsOperationRouteImport.update({
+  id: '/api/operations/$operation',
+  path: '/api/operations/$operation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOrdersSummaryRoute = ApiOrdersSummaryRouteImport.update({
   id: '/api/orders/summary',
   path: '/api/orders/summary',
@@ -913,6 +949,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/new': typeof WorkspacesNewRoute
   '/workspaces/recover': typeof WorkspacesRecoverRoute
   '/workspaces/': typeof WorkspacesIndexRoute
+  '/cli/authorize': typeof AuthCliAuthorizeRoute
   '/catalogs/$id': typeof PortalCatalogsIdRoute
   '/catalogs/new': typeof PortalCatalogsNewRoute
   '/customers/$id': typeof PortalCustomersIdRoute
@@ -937,6 +974,10 @@ export interface FileRoutesByFullPath {
   '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
   '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
+  '/api/cli/authorize': typeof ApiCliAuthorizeRoute
+  '/api/cli/consent': typeof ApiCliConsentRoute
+  '/api/cli/revoke': typeof ApiCliRevokeRoute
+  '/api/cli/token': typeof ApiCliTokenRoute
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
   '/api/documents/$id': typeof ApiDocumentsIdRoute
@@ -952,6 +993,7 @@ export interface FileRoutesByFullPath {
   '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
+  '/api/operations/$operation': typeof ApiOperationsOperationRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
   '/api/products/without-supplier': typeof ApiProductsWithoutSupplierRoute
   '/api/proposals/$id': typeof ApiProposalsIdRoute
@@ -1050,6 +1092,7 @@ export interface FileRoutesByTo {
   '/workspaces/new': typeof WorkspacesNewRoute
   '/workspaces/recover': typeof WorkspacesRecoverRoute
   '/workspaces': typeof WorkspacesIndexRoute
+  '/cli/authorize': typeof AuthCliAuthorizeRoute
   '/catalogs/$id': typeof PortalCatalogsIdRoute
   '/catalogs/new': typeof PortalCatalogsNewRoute
   '/customers/$id': typeof PortalCustomersIdRoute
@@ -1074,6 +1117,10 @@ export interface FileRoutesByTo {
   '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
   '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
+  '/api/cli/authorize': typeof ApiCliAuthorizeRoute
+  '/api/cli/consent': typeof ApiCliConsentRoute
+  '/api/cli/revoke': typeof ApiCliRevokeRoute
+  '/api/cli/token': typeof ApiCliTokenRoute
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
   '/api/documents/$id': typeof ApiDocumentsIdRoute
@@ -1089,6 +1136,7 @@ export interface FileRoutesByTo {
   '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
+  '/api/operations/$operation': typeof ApiOperationsOperationRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
   '/api/products/without-supplier': typeof ApiProductsWithoutSupplierRoute
   '/api/proposals/$id': typeof ApiProposalsIdRoute
@@ -1190,6 +1238,7 @@ export interface FileRoutesById {
   '/workspaces/new': typeof WorkspacesNewRoute
   '/workspaces/recover': typeof WorkspacesRecoverRoute
   '/workspaces/': typeof WorkspacesIndexRoute
+  '/_auth/cli/authorize': typeof AuthCliAuthorizeRoute
   '/_portal/catalogs_/$id': typeof PortalCatalogsIdRoute
   '/_portal/catalogs_/new': typeof PortalCatalogsNewRoute
   '/_portal/customers_/$id': typeof PortalCustomersIdRoute
@@ -1214,6 +1263,10 @@ export interface FileRoutesById {
   '/api/analytics/sales-orders': typeof ApiAnalyticsSalesOrdersRoute
   '/api/analytics/unit-mappings': typeof ApiAnalyticsUnitMappingsRouteWithChildren
   '/api/catalogs/$id': typeof ApiCatalogsIdRouteWithChildren
+  '/api/cli/authorize': typeof ApiCliAuthorizeRoute
+  '/api/cli/consent': typeof ApiCliConsentRoute
+  '/api/cli/revoke': typeof ApiCliRevokeRoute
+  '/api/cli/token': typeof ApiCliTokenRoute
   '/api/connections/$provider': typeof ApiConnectionsProviderRoute
   '/api/connections/amazon-ads': typeof ApiConnectionsAmazonAdsRoute
   '/api/documents/$id': typeof ApiDocumentsIdRoute
@@ -1229,6 +1282,7 @@ export interface FileRoutesById {
   '/api/inventory/status': typeof ApiInventoryStatusRoute
   '/api/inventory/variant-fields': typeof ApiInventoryVariantFieldsRoute
   '/api/mailing-list/unsubscribe': typeof ApiMailingListUnsubscribeRoute
+  '/api/operations/$operation': typeof ApiOperationsOperationRoute
   '/api/orders/summary': typeof ApiOrdersSummaryRoute
   '/api/products/without-supplier': typeof ApiProductsWithoutSupplierRoute
   '/api/proposals/$id': typeof ApiProposalsIdRoute
@@ -1329,6 +1383,7 @@ export interface FileRouteTypes {
     | '/workspaces/new'
     | '/workspaces/recover'
     | '/workspaces/'
+    | '/cli/authorize'
     | '/catalogs/$id'
     | '/catalogs/new'
     | '/customers/$id'
@@ -1353,6 +1408,10 @@ export interface FileRouteTypes {
     | '/api/analytics/sales-orders'
     | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
+    | '/api/cli/authorize'
+    | '/api/cli/consent'
+    | '/api/cli/revoke'
+    | '/api/cli/token'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
     | '/api/documents/$id'
@@ -1368,6 +1427,7 @@ export interface FileRouteTypes {
     | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
+    | '/api/operations/$operation'
     | '/api/orders/summary'
     | '/api/products/without-supplier'
     | '/api/proposals/$id'
@@ -1466,6 +1526,7 @@ export interface FileRouteTypes {
     | '/workspaces/new'
     | '/workspaces/recover'
     | '/workspaces'
+    | '/cli/authorize'
     | '/catalogs/$id'
     | '/catalogs/new'
     | '/customers/$id'
@@ -1490,6 +1551,10 @@ export interface FileRouteTypes {
     | '/api/analytics/sales-orders'
     | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
+    | '/api/cli/authorize'
+    | '/api/cli/consent'
+    | '/api/cli/revoke'
+    | '/api/cli/token'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
     | '/api/documents/$id'
@@ -1505,6 +1570,7 @@ export interface FileRouteTypes {
     | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
+    | '/api/operations/$operation'
     | '/api/orders/summary'
     | '/api/products/without-supplier'
     | '/api/proposals/$id'
@@ -1605,6 +1671,7 @@ export interface FileRouteTypes {
     | '/workspaces/new'
     | '/workspaces/recover'
     | '/workspaces/'
+    | '/_auth/cli/authorize'
     | '/_portal/catalogs_/$id'
     | '/_portal/catalogs_/new'
     | '/_portal/customers_/$id'
@@ -1629,6 +1696,10 @@ export interface FileRouteTypes {
     | '/api/analytics/sales-orders'
     | '/api/analytics/unit-mappings'
     | '/api/catalogs/$id'
+    | '/api/cli/authorize'
+    | '/api/cli/consent'
+    | '/api/cli/revoke'
+    | '/api/cli/token'
     | '/api/connections/$provider'
     | '/api/connections/amazon-ads'
     | '/api/documents/$id'
@@ -1644,6 +1715,7 @@ export interface FileRouteTypes {
     | '/api/inventory/status'
     | '/api/inventory/variant-fields'
     | '/api/mailing-list/unsubscribe'
+    | '/api/operations/$operation'
     | '/api/orders/summary'
     | '/api/products/without-supplier'
     | '/api/proposals/$id'
@@ -1742,8 +1814,13 @@ export interface RootRouteChildren {
   ApiAnalyticsReceiptsRoute: typeof ApiAnalyticsReceiptsRouteWithChildren
   ApiAnalyticsSalesOrdersRoute: typeof ApiAnalyticsSalesOrdersRoute
   ApiAnalyticsUnitMappingsRoute: typeof ApiAnalyticsUnitMappingsRouteWithChildren
+  ApiCliAuthorizeRoute: typeof ApiCliAuthorizeRoute
+  ApiCliConsentRoute: typeof ApiCliConsentRoute
+  ApiCliRevokeRoute: typeof ApiCliRevokeRoute
+  ApiCliTokenRoute: typeof ApiCliTokenRoute
   ApiConnectionsProviderRoute: typeof ApiConnectionsProviderRoute
   ApiConnectionsAmazonAdsRoute: typeof ApiConnectionsAmazonAdsRoute
+  ApiOperationsOperationRoute: typeof ApiOperationsOperationRoute
   ApiOrdersSummaryRoute: typeof ApiOrdersSummaryRoute
   ApiProductsWithoutSupplierRoute: typeof ApiProductsWithoutSupplierRoute
   ApiProposalsIdRoute: typeof ApiProposalsIdRoute
@@ -2120,6 +2197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspacesRecoverRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/cli/authorize': {
+      id: '/_auth/cli/authorize'
+      path: '/cli/authorize'
+      fullPath: '/cli/authorize'
+      preLoaderRoute: typeof AuthCliAuthorizeRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_portal/catalogs_/$id': {
       id: '/_portal/catalogs_/$id'
       path: '/catalogs/$id'
@@ -2288,6 +2372,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCatalogsIdRouteImport
       parentRoute: typeof ApiCatalogsRoute
     }
+    '/api/cli/authorize': {
+      id: '/api/cli/authorize'
+      path: '/api/cli/authorize'
+      fullPath: '/api/cli/authorize'
+      preLoaderRoute: typeof ApiCliAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cli/consent': {
+      id: '/api/cli/consent'
+      path: '/api/cli/consent'
+      fullPath: '/api/cli/consent'
+      preLoaderRoute: typeof ApiCliConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cli/revoke': {
+      id: '/api/cli/revoke'
+      path: '/api/cli/revoke'
+      fullPath: '/api/cli/revoke'
+      preLoaderRoute: typeof ApiCliRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cli/token': {
+      id: '/api/cli/token'
+      path: '/api/cli/token'
+      fullPath: '/api/cli/token'
+      preLoaderRoute: typeof ApiCliTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/connections/$provider': {
       id: '/api/connections/$provider'
       path: '/api/connections/$provider'
@@ -2392,6 +2504,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/mailing-list/unsubscribe'
       preLoaderRoute: typeof ApiMailingListUnsubscribeRouteImport
       parentRoute: typeof ApiMailingListRoute
+    }
+    '/api/operations/$operation': {
+      id: '/api/operations/$operation'
+      path: '/api/operations/$operation'
+      fullPath: '/api/operations/$operation'
+      preLoaderRoute: typeof ApiOperationsOperationRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/orders/summary': {
       id: '/api/orders/summary'
@@ -2746,6 +2865,7 @@ interface AuthRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignupRoute: typeof AuthSignupRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
+  AuthCliAuthorizeRoute: typeof AuthCliAuthorizeRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -2755,6 +2875,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignupRoute: AuthSignupRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
+  AuthCliAuthorizeRoute: AuthCliAuthorizeRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -3107,8 +3228,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAnalyticsReceiptsRoute: ApiAnalyticsReceiptsRouteWithChildren,
   ApiAnalyticsSalesOrdersRoute: ApiAnalyticsSalesOrdersRoute,
   ApiAnalyticsUnitMappingsRoute: ApiAnalyticsUnitMappingsRouteWithChildren,
+  ApiCliAuthorizeRoute: ApiCliAuthorizeRoute,
+  ApiCliConsentRoute: ApiCliConsentRoute,
+  ApiCliRevokeRoute: ApiCliRevokeRoute,
+  ApiCliTokenRoute: ApiCliTokenRoute,
   ApiConnectionsProviderRoute: ApiConnectionsProviderRoute,
   ApiConnectionsAmazonAdsRoute: ApiConnectionsAmazonAdsRoute,
+  ApiOperationsOperationRoute: ApiOperationsOperationRoute,
   ApiOrdersSummaryRoute: ApiOrdersSummaryRoute,
   ApiProductsWithoutSupplierRoute: ApiProductsWithoutSupplierRoute,
   ApiProposalsIdRoute: ApiProposalsIdRoute,

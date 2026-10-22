@@ -9,6 +9,7 @@ const publicPages = [
   "/unsubscribe",
   "/maintenance",
   "/login",
+  "/cli/authorize",
   "/signup",
   "/forgot-password",
   "/reset-password",

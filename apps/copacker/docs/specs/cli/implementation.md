@@ -22,21 +22,25 @@ The audit checkout was fast-forwarded from `262e5e85` to `8e29fb12`. Existing lo
 
 - CLI vocabulary: 138 operation commands plus local login, logout and workspace selection.
 - Client protocol: schema discovery, validated inputs/results, retained execution keys, pagination, read-only polling,
-  structured output and protected entity transfers. CLI sign-in is a PKCE client; the server flow is still absent.
+  structured output and protected entity transfers. CLI sign-in now has the matching server PKCE flow.
 - Ten executable setup schemas: account show, workspace list/show, schema list/show and credential list/show/create/
   rotate/revoke. Workspace definitions receive the app's canonical access schema. Credential schemas contain metadata
   and protected handoffs only; their policies still require enforcement by application handlers.
 - Recovery-pass fixes: account schema inspection before workspace selection; result-schema compatibility and per-operation
   byte checks before effects; execution classification after defaults; complete OpenAPI envelopes, working local schema
   references and mutation-key requirements; a body deadline for one-use secret delivery after the transfer timeout refactor.
+- First server slice: browser consent, durable grants, hashed access/refresh tokens, refresh-family replay revocation,
+  logout revocation and current WorkOS identity/workspace checks. Local profile locking prevents concurrent refresh reuse.
+- Nine authorized database handlers: account show, workspace list/show, schema list/show, connection list/show and
+  connection settings show/update. Only these are advertised. The settings write shares the browser service and uses
+  revisions and durable atomic idempotency receipts. See [server behavior and release instructions](../../cli-server.md).
 
 ## Next implementation work
 
-1. Add durable interactive grants, authorization codes, rotating refresh families and automation credential/delivery
-   records. Build the browser consent and `/api/cli/authorize`, `/api/cli/token`, `/api/cli/revoke` endpoints. Use the
-   current framework-independent workspace membership and authorization helpers, with explicit workspace selection.
-2. Add the authorized operation dispatcher and handler registration. Implement the setup handlers against current
-   memberships; publish only deployed operations. Add durable idempotency receipts and guarded mutation transactions.
+1. Release the generated schema change through CI and perform deployed WorkOS/CLI login acceptance. No migration or
+   deployment was run locally. Complete automation credential/delivery records and lifecycle handlers.
+2. Expand the authorized operation registry with resource schemas and handlers. Keep discovery limited to deployed
+   capabilities and preserve guarded transactions, permission checks and execution receipts.
 3. Connect the advertised restock, purchase-order detail and shipment list commands to real application data, with
    provenance, permissions and the contract's typed results. Then migrate each browser workflow onto the same handlers.
 4. Implement the remaining entity contracts and handlers, including supplier catalogs/stock, customer catalog assignments,
@@ -44,11 +48,20 @@ The audit checkout was fast-forwarded from `262e5e85` to `8e29fb12`. Existing lo
    and entity transfers. Preserve per-target outcomes and never substitute optimistic local success for a provider result.
 5. Add the hosted MCP adapter and native Linux/macOS credential-store acceptance before release.
 
-The packages remain private and are not a live, publishable CLI release. No hosted API or provider write was deployed
-by this audit. CodeRabbit could not run: its CLI was absent, its installer supports Linux/macOS, and this Windows host
+The packages remain private and are not a live, publishable CLI release. No hosted API or provider write was deployed.
+During the recovery audit, CodeRabbit could not run: its CLI was absent, its installer supports Linux/macOS, and this Windows host
 had no general-purpose WSL distribution. Local tests establish client/contract behavior, not live provider compatibility.
 
 ## Verification
+
+Server slice verification (2026-10-22): `pnpm verify` passes in the isolated implementation checkout, including 2,750
+application tests and 41 package tests. Fourteen database/HTTP/client integration tests exercise the new server;
+focused server coverage was also collected. Both consent stories pass their play tests, and the integrated browser
+was used to inspect the desktop and 320-pixel phone layouts and keyboard focus. The production application build passes.
+WorkOS/provider network calls in tests are mocked. The generated migration was neither applied nor tested, and no
+production sign-in or provider operation was performed.
+
+Recovery audit verification, before the server slice:
 
 - All 40 package tests passed with coverage: contract 12, client 10, CLI 18. This includes native Windows credential
   protection, a real loopback PKCE exchange against a test server and actual CLI process execution.

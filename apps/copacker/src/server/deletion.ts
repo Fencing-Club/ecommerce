@@ -2,7 +2,15 @@ import { deleteCookie } from "@tanstack/react-start/server"
 import { and, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, memberships, oauthStates, organizations, profiles } from "@/db/schema"
+import {
+  cliAuthorizations,
+  cliGrants,
+  connections,
+  memberships,
+  oauthStates,
+  organizations,
+  profiles
+} from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { clearAuthentication } from "./auth-session"
 import { disconnect } from "./connections"
@@ -73,6 +81,8 @@ export async function deleteAccount(user: { id: string; email: string }, raw: un
     await tx.delete(memberships).where(eq(memberships.userId, user.id))
     await tx.delete(oauthStates).where(eq(oauthStates.userId, user.id))
     await tx.delete(profiles).where(eq(profiles.userId, user.id))
+    await tx.delete(cliAuthorizations).where(eq(cliAuthorizations.userId, user.id))
+    await tx.delete(cliGrants).where(eq(cliGrants.userId, user.id))
   })
   await signedOut()
   return { redirect: "/" }

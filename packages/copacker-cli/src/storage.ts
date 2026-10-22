@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto"
 import { open, readFile, rm } from "node:fs/promises"
 import { homedir } from "node:os"
 import { dirname, isAbsolute, join } from "node:path"
+import { setTimeout as delay } from "node:timers/promises"
 import { apiOrigin, clientError } from "@repo/copacker-client"
 import { canonicalJson, type JsonObject } from "@repo/copacker-contract"
 import { z } from "zod"
@@ -90,8 +91,50 @@ export class LocalStore {
   constructor(directory = process.env.COPACKER_CONFIG_DIR ?? join(homedir(), ".config", "copacker")) {
     this.directory = directory
   }
+  async withCredentialLock<T>(profile: string, run: () => Promise<T>): Promise<T> {
+    const path = join(this.directory, "credentials", `${profileName.parse(profile)}.lock`)
+    await privateDirectory(dirname(path))
+    const deadline = Date.now() + 60_000
+    for (;;) {
+      let handle
+      try {
+        handle = await open(path, "wx", 0o600)
+      } catch (error) {
+        if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") {
+          throw error
+        }
+        if (Date.now() >= deadline) {
+          throw clientError(
+            "credential_busy",
+            `Another command is updating this profile. If it stopped unexpectedly, confirm no Copacker command is running before removing ${path}.`
+          )
+        }
+        await delay(100)
+        continue
+      }
+      try {
+        return await run()
+      } finally {
+        await handle.close()
+        await rm(path)
+      }
+    }
+  }
   private profilePath(name: string) {
     return join(this.directory, "profiles", `${profileName.parse(name)}.json`)
+  }
+  async replaceCredential(name: string, settings: z.infer<typeof profileSchema>, secret: LoginSecret) {
+    const parsed = profileSchema.parse(settings)
+    await this.withCredentialLock(name, async () => {
+      const previous = await this.profile(name)
+      const sameOrigin = apiOrigin(previous.baseUrl) === apiOrigin(parsed.baseUrl)
+      // A failed replacement must never bind one origin's secret to another origin.
+      if (!sameOrigin) {
+        await this.clearCredential(name)
+      }
+      await this.saveProfile(name, sameOrigin ? { ...previous, ...parsed } : parsed)
+      await this.saveCredential(name, secret)
+    })
   }
   private secretPath(name: string) {
     return join(this.directory, "credentials", `${profileName.parse(name)}.dpapi`)
