@@ -8,7 +8,9 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
   private documents.
 - `apps/video`: the Copacker ad, made with Remotion ([video](apps/video/docs/README.md)).
 - `apps/turbo-cache`: the Turborepo remote cache the monorepos share ([turbo cache](apps/turbo-cache/docs/README.md)).
-- `packages/copacker-shipments`: Copacker's purchase orders, packing, labels and shipping documents.
+- `packages/copacker-orders`: Copacker's purchase orders, their lines and their costs
+  ([orders](packages/copacker-orders/docs/README.md)).
+- `packages/copacker-shipments`: Copacker's packing, labels and shipping documents.
 - `packages/copacker-marketplaces`: Copacker's Amazon, Shopify and eBay clients, sales collectors and report parsers.
 - `packages/copacker-cli`, `packages/copacker-client` and `packages/copacker-contract`: the `copacker` command line, its
   API client and the shared operation contract. Not usable until the app serves the operation API.
