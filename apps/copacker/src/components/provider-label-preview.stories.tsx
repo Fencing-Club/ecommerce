@@ -32,6 +32,8 @@ function Example() {
 const meta = preview.meta({
   component: Example,
   title: "Unused/Shipments/Provider label preview",
+  // It renders a real PDF, so test runs leave it out.
+  tags: ["documents"],
   render: () => <Example />,
   parameters: { layout: "fullscreen" }
 })

@@ -769,7 +769,12 @@ describe("sales queries", () => {
         currency: "USD",
         totalMinor: 2000,
         feesMinor: 450,
-        data: {}
+        data: {
+          transactionStatus: "DEFERRED_RELEASED",
+          relatedIdentifiers: [
+            { relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "t1-release" }
+          ]
+        }
       },
       // Amazon's release of t1, deferred: the same fees again, which aren't counted twice.
       {
@@ -783,10 +788,8 @@ describe("sales queries", () => {
         totalMinor: 2000,
         feesMinor: 450,
         data: {
-          relatedIdentifiers: [
-            { relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "a1" },
-            { relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "t1" }
-          ]
+          transactionStatus: "RELEASED",
+          relatedIdentifiers: [{ relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "a1" }]
         }
       },
       {

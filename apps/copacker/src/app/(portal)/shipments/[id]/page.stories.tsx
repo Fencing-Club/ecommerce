@@ -2,6 +2,7 @@ import { type Address, type OrderInput, type OrderItem } from "@repo/copacker-or
 import { type AmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
+import { canEditPacking, canReopenPacking, releasedStates } from "@repo/copacker-shipments/states"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
@@ -11,7 +12,7 @@ import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
 import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
-import { canEditPacking, canReopenPacking, releasedLabelKinds, releasedStates } from "@/lib/shipment-states"
+import { releasedLabelKinds } from "@/lib/shipment-states"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { knownPackingGroups } from "@/server/readiness"
@@ -31,7 +32,7 @@ import {
 import { daysAgo } from "@/stories/fixtures/orders"
 import { bagOrder, bagPacking, towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
 import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
-import { shownDialog } from "@/stories/play"
+import { closeMenu, shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
 import { shipmentDestinations } from "../destination"
@@ -438,7 +439,7 @@ export const DraftPacking = meta.story({
       "href",
       `/api/shipments/${shipmentId}/labels`
     )
-    await userEvent.keyboard("{Escape}")
+    await closeMenu()
 
     // Each product's row prints just its own labels.
     const [towel, , teaTowel] = towelOrder.items
@@ -460,7 +461,7 @@ export const DraftPacking = meta.story({
       "href",
       `/api/shipments/${shipmentId}/labels?item=${towel!.id}`
     )
-    await userEvent.keyboard("{Escape}")
+    await closeMenu()
     // Copacker doesn't make choking hazard labels, so the buyer provides them.
     await userEvent.click(canvas.getByRole("button", { name: "Labels for NT-CT-3100" }))
     const teaTowelMenu = within(await screen.findByRole("menu"))
@@ -474,7 +475,7 @@ export const DraftPacking = meta.story({
     )
     // The menu shows from the frame after it opens.
     await waitFor(() => expect(teaTowelMenu.getByText("Label not provided")).toBeVisible())
-    await userEvent.keyboard("{Escape}")
+    await closeMenu()
   }
 })
 
@@ -747,7 +748,7 @@ export const DraftPackingMissingLabel = meta.story({
       `/api/shipments/${shipmentId}/labels?item=${towelOrder.items[0]!.id}&kind=suffocation`
     )
     await expect(menu.queryByRole("menuitem", { name: "Download all product labels" })).toBeNull()
-    await userEvent.keyboard("{Escape}")
+    await closeMenu()
   }
 })
 

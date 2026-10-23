@@ -6,6 +6,7 @@ import {
   cliAuthorizations,
   cliGrants,
   restockReports,
+  operationReceipts,
   connections,
   memberships,
   oauthStates,
@@ -85,6 +86,7 @@ export async function deleteAccount(user: { id: string; email: string }, raw: un
     await tx.delete(cliAuthorizations).where(eq(cliAuthorizations.userId, user.id))
     await tx.delete(cliGrants).where(eq(cliGrants.userId, user.id))
     await tx.delete(restockReports).where(eq(restockReports.userId, user.id))
+    await tx.delete(operationReceipts).where(eq(operationReceipts.userId, user.id))
   })
   await signedOut()
   return { redirect: "/" }

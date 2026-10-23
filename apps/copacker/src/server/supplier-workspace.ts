@@ -1,7 +1,7 @@
 import { orderTotal } from "@repo/copacker-orders"
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { db } from "@/db"
-import type { ShipmentState } from "@/db/schema"
 import {
   catalogs,
   organizations,

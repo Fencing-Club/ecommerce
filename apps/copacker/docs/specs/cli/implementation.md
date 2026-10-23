@@ -31,8 +31,8 @@ The audit checkout was fast-forwarded from `262e5e85` to `8e29fb12`. Existing lo
   references and mutation-key requirements; a body deadline for one-use secret delivery after the transfer timeout refactor.
 - First server slice: browser consent, durable grants, hashed access/refresh tokens, refresh-family replay revocation,
   logout revocation and current WorkOS identity/workspace checks. Local profile locking prevents concurrent refresh reuse.
-- Nine authorized database handlers: account show, workspace list/show, schema list/show, connection list/show and
-  connection settings show/update. Only these are advertised. The settings write shares the browser service and uses
+- Authorized handlers now include setup, connections, restock and the first sixteen
+  [resource reads](../../cli-resource-reads.md). Only implemented, authorized handlers are advertised. The settings write shares the browser service and uses
   revisions and durable atomic idempotency receipts. See [server behavior and release instructions](../../cli-server.md).
 
 ## Next implementation work

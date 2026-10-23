@@ -28,6 +28,28 @@ const reversal: ReimbursementRecord = {
   quantityInventory: 1,
   quantityTotal: 0
 }
+it("distinguishes reported cash from inventory recovery after corrections", () => {
+  expect(reimbursementAccounting(original, [original], false).recoveryOutcome).toBe("cash_reported")
+  const returned = reimbursementAccounting(original, [original, reversal], false)
+  expect(returned).toMatchObject({
+    recoveryOutcome: "inventory_reported",
+    financialPostingReconciled: false,
+    inventoryRestorationConfirmed: false,
+    additionalRecognizedAmount: null
+  })
+  expect(reimbursementAccounting(reversal, [reversal], false).recoveryOutcome).toBe("unresolved")
+  expect(reimbursementAccounting(original, [original], true).recoveryOutcome).toBe("unresolved")
+})
+it.each([
+  [1, 1, "cash_and_inventory_reported"],
+  [0, 0, "no_net_units_reported"],
+  [-1, 0, "net_negative_adjustment_reported"]
+])("describes net reported quantities %s and %s without confirming a payment", (cash, inventory, outcome) => {
+  const source = { ...original, quantityCash: cash, quantityInventory: inventory, quantityTotal: cash + inventory }
+  const result = reimbursementAccounting(source, [source], false)
+  expect(result.recoveryOutcome).toBe(outcome)
+  expect(result.financialPostingReconciled).toBe(false)
+})
 it("distinguishes an absent original from a contradictory original type", () => {
   const missing = reimbursementAccounting(reversal, [reversal], false)
   expect(missing.blockers).toEqual(["missing_original"])
