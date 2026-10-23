@@ -36,6 +36,7 @@ const emailPayload = z.discriminatedUnion("type", [
 ])
 
 export const jobPayloads = {
+  "provider-write": z.object({ orgId, executionId: z.uuid() }),
   listings: z.object({
     orgId,
     connectionId: z.uuid(),

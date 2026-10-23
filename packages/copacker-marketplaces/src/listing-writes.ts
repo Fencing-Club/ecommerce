@@ -1,7 +1,37 @@
 import { z } from "zod"
 import type { Amazon } from "./amazon"
 import { usMarketplaceId } from "./amazon-marketplaces"
-import type { Shopify } from "./shopify"
+import { costMinor, type Shopify } from "./shopify"
+
+export const shopifyWriteReadQuery = `query WriteObservation($id:ID!){shop{myshopifyDomain currencyCode} currentAppInstallation{accessScopes{handle}} productVariant(id:$id){id sku price requiresComponents product{id} inventoryItem{id tracked unitCost{amount currencyCode}}}}`
+export async function readShopifyWrite(api: Pick<Shopify, "graphql">, domain: string, variantId: string) {
+  const result = z
+    .object({
+      shop: z.object({ myshopifyDomain: z.literal(domain), currencyCode: z.literal("USD") }),
+      currentAppInstallation: z.object({ accessScopes: z.array(z.object({ handle: z.string() })) }),
+      productVariant: z.object({
+        id: z.literal(variantId),
+        sku: z.string().nullable(),
+        price: z.string(),
+        requiresComponents: z.boolean(),
+        product: z.object({ id: z.string() }),
+        inventoryItem: z.object({
+          id: z.string(),
+          tracked: z.boolean(),
+          unitCost: z.object({ amount: z.string(), currencyCode: z.literal("USD") }).nullable()
+        })
+      })
+    })
+    .parse(await api.graphql(shopifyWriteReadQuery, { id: variantId }))
+  return {
+    ...result.productVariant,
+    amountMinor: costMinor(result.productVariant.price),
+    costMinor: result.productVariant.inventoryItem.unitCost
+      ? costMinor(result.productVariant.inventoryItem.unitCost.amount)
+      : null,
+    scopes: result.currentAppInstallation.accessScopes.map((scope) => scope.handle)
+  }
+}
 
 const money = z.object({ currencyCode: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/) })
 export const amazonListing = z.object({
@@ -80,6 +110,12 @@ export async function writeAmazonListing(
     | { field: "inventory"; quantity: number }
   )
 ) {
+  if (input.field === "price") {
+    z.number().int().nonnegative().max(2147483647).parse(input.amountMinor)
+    z.literal("USD").parse(input.currency)
+  } else {
+    z.number().int().nonnegative().max(2147483647).parse(input.quantity)
+  }
   const patch =
     input.field === "price"
       ? {
@@ -126,7 +162,6 @@ export async function writeShopifyField(
   api: Pick<Shopify, "graphql">,
   input:
     | { field: "sku"; inventoryItemId: string; sku: string }
-    | { field: "cost"; inventoryItemId: string; amountMinor: number }
     | { field: "price"; productId: string; variantId: string; amountMinor: number }
     | {
         field: "inventory"
@@ -138,6 +173,13 @@ export async function writeShopifyField(
         key: string
       }
 ) {
+  if (input.field === "price") {
+    z.number().int().nonnegative().max(2147483647).parse(input.amountMinor)
+  }
+  if (input.field === "inventory") {
+    z.number().int().min(-2147483648).max(2147483647).parse(input.quantity)
+    z.number().int().min(-2147483648).max(2147483647).parse(input.expectedQuantity)
+  }
   let response: unknown
   let operation: string
   if (input.field === "price") {
@@ -168,7 +210,7 @@ export async function writeShopifyField(
     operation = "inventoryItemUpdate"
     response = await api.graphql(shopifyWriteQueries.item, {
       id: input.inventoryItemId,
-      input: input.field === "sku" ? { sku: input.sku } : { cost: (input.amountMinor / 100).toFixed(2) }
+      input: { sku: input.sku }
     })
   }
   const payload = z.record(z.string(), z.object({ userErrors: errors })).parse(response)[operation]

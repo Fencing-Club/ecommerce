@@ -22,6 +22,7 @@ export const listingSchema = z.strictObject({
   inventoryOwner: z.enum(["external", "manual"]),
   price: z.strictObject({ amountMinor: z.number().int(), currency: z.string() }).nullable(),
   availability: z.number().int().nullable(),
+  availabilityLocationId: z.string().nullable(),
   active: z.boolean(),
   observedAt: z.iso.datetime(),
   capabilities: z.array(

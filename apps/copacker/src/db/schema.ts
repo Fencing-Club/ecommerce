@@ -158,6 +158,30 @@ export const connectionSyncRuns = pgTable("connection_sync_runs", {
   jobIds: jsonb().$type<string[]>().notNull(),
   createdAt: createdAt()
 })
+export const providerWrites = pgTable("provider_writes", {
+  id: uuid().defaultRandom().primaryKey(),
+  orgId: orgRef({ onDelete: "cascade" }),
+  userId: text().notNull(),
+  grantId: uuid().notNull(),
+  operation: text().notNull(),
+  variantId: text().notNull(),
+  intent: jsonb().$type<unknown>().notNull(),
+  targets: jsonb().$type<unknown>().notNull(),
+  status: text({
+    enum: ["preview", "queued", "running", "succeeded", "partially_succeeded", "failed", "needs_attention"]
+  }).notNull(),
+  jobId: uuid(),
+  createdAt: createdAt(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  startedAt: timestamp({ withTimezone: true }),
+  completedAt: timestamp({ withTimezone: true })
+})
+export const providerWriteLocks = pgTable("provider_write_locks", {
+  key: text().primaryKey(),
+  executionId: uuid()
+    .notNull()
+    .references(() => providerWrites.id, { onDelete: "restrict" })
+})
 export const channelListings = pgTable(
   "channel_listings",
   {
@@ -675,6 +699,7 @@ export const jobs = pgTable(
         "import",
         "stock",
         "listings",
+        "provider-write",
         "sales",
         "analytics",
         "evidence-recovery",

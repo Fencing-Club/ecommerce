@@ -206,17 +206,22 @@ export const commands: readonly CommandDefinition[] = [
   read("product.settings.show", "Show Copacker-owned product settings and their revision."),
   command("product.create", "Create a supplier-owned product.", [], { write: true }),
   controlled("product.update", "Update permitted product fields or supplier product data.", guarded, "id"),
-  controlled("product.variant.update", "Update metadata or a Shopify-owned SKU.", [...guarded, "sku"], "variantId"),
+  controlled(
+    "product.variant.update",
+    "Update metadata or a Shopify-owned SKU.",
+    [...guarded, "sku", "expected-sku", "connection-revision"],
+    "variantId"
+  ),
   controlled(
     "product.price.update",
     "Update the source and every linked selling-price target.",
-    [...guarded, "amount", "currency"],
+    [...guarded, "amount", "currency", "expected-amount-minor", "connection-revision"],
     "variantId"
   ),
   controlled(
     "product.cost.update",
     "Update the configured unit-cost source.",
-    [...guarded, "amount", "currency"],
+    [...guarded, "amount", "currency", "expected-amount-minor", "connection-revision"],
     "variantId"
   ),
   list("product.listing.list", "Discover linked and unmatched marketplace listings.", [
@@ -267,7 +272,7 @@ export const commands: readonly CommandDefinition[] = [
   controlled(
     "inventory.update",
     "Set a guarded count at one explicit location per row.",
-    [...guarded, "location", "quantity", "state", "reason", "expected-quantity"],
+    [...guarded, "location", "quantity", "state", "reason", "expected-quantity", "connection-revision"],
     "variantId"
   ),
   controlled(

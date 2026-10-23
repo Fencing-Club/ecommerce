@@ -1240,7 +1240,9 @@ describe("Restock operations", () => {
       source: { connectionId },
       variants: [{ price: { amountMinor: 500 } }]
     })
-    expect((await call("product.show", { id: product.id })).body.data).toEqual(product)
+    const detail = (await call("product.show", { id: product.id })).body.data
+    expect(detail).toMatchObject(product)
+    expect(detail.variants[0].writePolicy).toMatchObject({ skuScope: "shopify_only", preflightRequired: true })
     expect((await call("product.search", { query: "SKU-2" })).body.data.items).toHaveLength(1)
     const inventory = await call("inventory.list", { variantId: product.variants[0].id })
     expect(inventory.status).toBe(200)

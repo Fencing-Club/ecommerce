@@ -25,7 +25,36 @@ const variant = z.strictObject({
   cost: money,
   priceBasis: z.string().nullable(),
   piecesPerSellablePack: z.number().int().nullable(),
-  sellablePacksPerCase: z.number().int().nullable()
+  sellablePacksPerCase: z.number().int().nullable(),
+  writePolicy: z
+    .strictObject({
+      source: readSourceSchema,
+      connectionRevision: revision,
+      skuScope: z.literal("shopify_only"),
+      priceAuthority: z.literal("shopify"),
+      costAuthority: z.literal("shopify"),
+      supportedCurrency: z.literal("USD"),
+      preflightRequired: z.literal(true),
+      fieldCapabilities: z.array(
+        z.strictObject({
+          field: z.enum(["sku", "cost", "price", "inventory"]),
+          writable: z.boolean(),
+          reason: z.string()
+        })
+      ),
+      linkedListings: z.array(
+        z.strictObject({
+          id: uuid,
+          revision,
+          linkRevision: revision,
+          piecesPerListing: z.number().int().nullable(),
+          active: z.boolean(),
+          availabilityLocationId: z.string().nullable(),
+          inventoryOwner: z.enum(["external", "manual"])
+        })
+      )
+    })
+    .optional()
 })
 const product = z.strictObject({
   id,
@@ -93,7 +122,7 @@ const stockFilters = {
 const location = z.strictObject({
   id,
   name: z.string(),
-  kind: z.enum(["merchant", "supplier", "amazon_reported"]),
+  kind: z.enum(["merchant", "supplier", "amazon_reported", "channel_availability"]),
   source: readSourceSchema.nullable(),
   snapshotId: id.nullable(),
   observedAt: z.iso.datetime().nullable(),
@@ -115,7 +144,7 @@ export const inventoryReadOperations = {
     readMetadata("location.list", ["inventory:read"], ["buyer", "supplier"]),
     pageInputSchema.extend({
       connectionId: id.optional(),
-      kind: z.enum(["merchant", "supplier", "amazon_reported"]).optional()
+      kind: z.enum(["merchant", "supplier", "amazon_reported", "channel_availability"]).optional()
     }),
     z.strictObject({ items: z.array(location), page: pageInfoSchema })
   )

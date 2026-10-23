@@ -33,6 +33,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Server query helpers](server-helpers.md): connected accounts, sales sync copies, upserts and analytics pages
 - [Historical product mappings and Amazon allocations](amazon-cost-allocation.md)
 - [CLI listing discovery and guarded links](cli-listings.md)
+- [Controlled CLI provider writes](cli-provider-writes.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)

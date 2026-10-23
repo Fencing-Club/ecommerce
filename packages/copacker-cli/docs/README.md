@@ -119,9 +119,9 @@ Tests exercise command parsing, duplicate JSON fields, decimal money, stable exe
 pagination, partial writes, upload phase keys, download integrity and no-overwrite behavior. The client tests use
 contract fixtures; they do not establish live application or provider compatibility.
 
-The [client integration guide](../../copacker-client/docs/README.md) specifies the missing server boundary. The full
-initial release additionally requires the application spec's typed domain schemas, permission-aware readers, revisioned
-handlers, durable idempotency/outbox storage, supplier identity/stock fixes, listing links, controlled Shopify/Amazon
-writes, bulk transactions, entity document handlers and protected credential lifecycle. These have not been replaced
-with raw browser-action forwarding or provider credentials in the CLI. Hosted MCP remains a separate adapter.
+Server coverage and remaining commands are tracked in the [implementation inventory](../../../apps/copacker/docs/specs/cli/implementation.md).
+Controlled provider changes use immutable previews and retained asynchronous executions; see
+[provider writes](../../../apps/copacker/docs/cli-provider-writes.md) for SKU, cost, linked prices and location-routed
+inventory examples and limits. Local supplier counts and product metadata retain their existing contracts. The CLI
+never receives provider credentials. Hosted MCP remains a separate adapter.
 

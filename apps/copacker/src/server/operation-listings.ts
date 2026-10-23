@@ -1,7 +1,7 @@
 import { listingSchema } from "@repo/copacker-contract"
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, sql, inArray, or } from "drizzle-orm"
 import { db } from "@/db"
-import { channelListings, connections, organizations } from "@/db/schema"
+import { channelListings, connections, organizations, providerWrites } from "@/db/schema"
 import { can } from "@/lib/access"
 import { CliError } from "./cli-auth"
 import { readProducts } from "./operation-product-reads"
@@ -30,16 +30,29 @@ function publicListing(s: Session, row: typeof channelListings.$inferSelect) {
         ? { amountMinor: row.amountMinor, currency: row.currency }
         : null,
     availability: row.fulfillmentMode === "fbm" ? row.quantity : null,
+    availabilityLocationId: row.fulfillmentMode === "fbm" ? `listing:${row.id}` : null,
     active: row.active,
     observedAt: row.observedAt.toISOString(),
     capabilities: [
       { field: "sku", writable: false, reason: "Amazon seller SKU renaming is not supported." },
-      { field: "price", writable: false, reason: "Provider writes are not yet enabled." },
+      {
+        field: "price",
+        writable: row.active && row.variantId !== null && can(s, "products", "edit") && can(s, "prices"),
+        reason: "Change the source variant's price through a reviewed provider write."
+      },
       {
         field: "inventory",
-        writable: false,
+        writable:
+          row.active &&
+          row.variantId !== null &&
+          row.inventoryOwner === "manual" &&
+          row.fulfillmentMode === "fbm" &&
+          can(s, "products", "edit") &&
+          can(s, "inventory", "edit"),
         reason:
-          row.fulfillmentMode === "fba" ? "Reported Amazon stock is read-only." : "Provider writes are not yet enabled."
+          row.fulfillmentMode === "fba"
+            ? "Reported Amazon stock is read-only."
+            : "Only explicitly manual merchant availability can be written; preflight checks current ownership."
       }
     ]
   })
@@ -87,6 +100,24 @@ export async function linkListing(
   }
   if (row.revision !== input.expectedRevision || row.linkRevision !== input.expectedLinkRevision) {
     throw new CliError("revision_conflict", "Read the listing again before changing its link.", 409)
+  }
+  const [busy] = await db()
+    .select({ id: providerWrites.id })
+    .from(providerWrites)
+    .where(
+      and(
+        eq(providerWrites.orgId, s.org.id),
+        inArray(providerWrites.status, ["queued", "running", "needs_attention"]),
+        or(eq(providerWrites.variantId, row.variantId ?? ""), eq(providerWrites.variantId, input.variantId ?? ""))
+      )
+    )
+    .limit(1)
+  if (busy) {
+    throw new CliError(
+      "write_in_progress",
+      "Resolve the variant's pending provider change before modifying its listing links.",
+      409
+    )
   }
   if (input.variantId) {
     if (!row.active) {
