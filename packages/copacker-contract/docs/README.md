@@ -23,6 +23,9 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
 - `connections.ts`: connection reads/settings, sync requests, retained sync-run status and workspace operational status.
 - `listings.ts`: observed Amazon listing reads and guarded local variant links, including separate observation/link
   revisions, unit mapping and explicit write-capability limits. No provider dispatch is authorized by a listing link.
+- `provider-writes.ts`: strict single-record preview/direct/apply/read inputs and per-destination execution states.
+  Local metadata and supplier counts remain separate input branches. Server routing and current permissions, not a
+  client-supplied destination, authorize dispatch; see [provider writes](../../../apps/copacker/docs/cli-provider-writes.md).
 
 The registry is a framework, not a deployed catalog. Setup, connection, restock, targets, listing and resource-read operations have executable schemas;
 the [server guide](../../../apps/copacker/docs/cli-server.md) lists implemented handlers. Credential lifecycle handlers

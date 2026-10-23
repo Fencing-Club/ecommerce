@@ -22,15 +22,26 @@ wakes follow the outer commit. Production acceptance passed status, connection r
 product/inventory ingestion through a succeeded retained run, and replay of the same execution key without a new run.
 See [connection sync](../../cli-connections.md). No upstream product or inventory values were written.
 
+PR #197 adds Amazon US discovery, guarded variant links and provider adapter primitives; see
+[CLI listings](../../cli-listings.md). It shipped in production commit `159777395c01d550be4f95689b72bd6ab112774a`.
+Production listing/schema reads and retained sync request/status/replay passed. Initial discovery exposed an overly
+strict decimal-price parser; PR #200 accepts exact cent values with extra trailing zeros without rounding sub-cent prices.
+
+PR #200 implements [controlled provider writes](../../cli-provider-writes.md): destination discovery, retained
+single-record previews/executions, Shopify-only SKU changes, existing Shopify cost writes, linked Shopify/Amazon
+prices and location-routed inventory. Amazon FBM availability requires explicit manual ownership; FBA/AWD remain
+read-only. Provider reads happen outside the commit transaction; local revisions and permissions are rechecked before
+enqueue. Unknown dispatch outcomes retain their locks and are not resent. No Amazon SKU rename handler is planned.
+Production commit `adc07e9a9638bdd1ccba56880bf9ea19428e2e8e` passed unchanged-value Shopify SKU, cost and price
+preview/apply/status acceptance. This exercised real provider observations and retained execution without dispatching
+a business-value change. Follow-up boundary handling accepts signed Shopify balances and exact Amazon exponent-form
+decimals; an unsupported observed price remains unavailable and blocks price dispatch without hiding the listing.
+
 ## Remaining
 
-PR #197 adds Amazon US discovery, guarded variant links and provider adapter primitives; see
-[CLI listings](../../cli-listings.md). It is merged and deployed to staging. That release keeps upstream writes disabled.
-
-- The [controlled provider-write slice](../../cli-provider-writes.md) implements destination discovery, retained single-record previews/executions, Shopify SKU/cost/price/inventory and linked Amazon price/manual-FBM writes. It still requires review, migration and deployment. No Amazon SKU rename handler is planned. General bulk writes, automatic supersession, inventory adjustments and unknown-outcome reconciliation remain unfinished.
+- General bulk writes, automatic supersession, inventory adjustments and unknown-outcome reconciliation.
 - Connection authorization lifecycle (connect/reconnect/disconnect).
 - Expenses, demand reporting, additional read/export coverage, buyer metadata imports/exports, labels/images, catalog removal/export, partner invitations/removal and addresses.
-- General bulk execution; single-record provider previews are included in the controlled write slice above.
 - Automation credential lifecycle, hosted MCP, publishable package distribution and native Linux/macOS credential-store acceptance. Packages remain private.
 - PO and shipment lifecycle commands, coordinated with their active app workflows.
 
@@ -38,4 +49,4 @@ PR #185 provides internal restock draft preparation only. Durable reviewed plans
 
 ## Recovery history
 
-PR #117 preserved the original CLI/client/contract packages and specification, and fixed client transfer/output/recovery issues. PR #139 aligned tests and package verification. Subsequent releases added real server authentication and handlers. Older statements that no hosted API exists or no production authentication was tested are obsolete; provider writes remain unfinished.
+PR #117 preserved the original CLI/client/contract packages and specification, and fixed client transfer/output/recovery issues. PR #139 aligned tests and package verification. Subsequent releases added real server authentication and handlers. Older statements that no hosted API exists or no production authentication was tested are obsolete. Command availability is determined by the deployed schema, not local help.

@@ -37,8 +37,17 @@ function publicListing(s: Session, row: typeof channelListings.$inferSelect) {
       { field: "sku", writable: false, reason: "Amazon seller SKU renaming is not supported." },
       {
         field: "price",
-        writable: row.active && row.variantId !== null && can(s, "products", "edit") && can(s, "prices"),
-        reason: "Change the source variant's price through a reviewed provider write."
+        writable:
+          row.active &&
+          row.variantId !== null &&
+          row.amountMinor !== null &&
+          row.currency === "USD" &&
+          can(s, "products", "edit") &&
+          can(s, "prices"),
+        reason:
+          row.amountMinor === null || row.currency !== "USD"
+            ? "No supported USD price observation is available."
+            : "Change the source variant's price through a reviewed provider write."
       },
       {
         field: "inventory",

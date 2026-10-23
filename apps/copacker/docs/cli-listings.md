@@ -9,6 +9,8 @@ durable jobs and Workflow delivery.
 account-scoped listing identity, observed values, observation revision, link revision and write capabilities. These
 are stored observations, not live reads or a guarantee of complete catalog coverage. Price values require price access.
 Retired listings remain visible with `active: false`; listings from replaced accounts are hidden.
+Decimal prices accept exact exponent forms and trailing zeros. Unsupported currency or sub-cent precision leaves the
+price unavailable instead of hiding the whole catalog. Price dispatch requires a supported live USD cent value.
 
 ```sh
 copacker product listing list --unlinked --json

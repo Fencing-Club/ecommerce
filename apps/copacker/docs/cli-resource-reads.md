@@ -21,6 +21,10 @@ catalogs additionally require Prices. Forwarders see only purchasing records rou
 Supplier drafts and removed relationships remain hidden. Invitation hashes, provider credentials and storage keys
 are never public fields. Price redaction occurs before output validation and pagination.
 
+The provider-write release adds variant write policies to `product show` and linked FBM availability to inventory
+reads. Offer availability is explicitly `channel_availability`, in seller-offer units, and is excluded from physical
+restock totals. Writable capabilities are eligibility hints; preview checks live provider values and ownership.
+
 ## Identities and quantities
 
 Supplier products and variants use their database UUIDs. Buyer products use an explicitly provider-scoped identifier:

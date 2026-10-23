@@ -2,7 +2,7 @@ import { z } from "zod"
 import { asyncResultSchema, id, revision } from "./protocol.ts"
 
 const amount = z.number().int().min(0).max(2147483647)
-const quantity = z.number().int().min(0).max(2147483647)
+const quantity = z.number().int().min(-2147483648).max(2147483647)
 export const providerChange = z.discriminatedUnion("field", [
   z.strictObject({
     field: z.literal("sku"),

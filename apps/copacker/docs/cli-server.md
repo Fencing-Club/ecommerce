@@ -9,6 +9,10 @@ It is not the entire planned command inventory. Discovery publishes only impleme
 - `schema.list`, `schema.show`
 - `connection.list`, `connection.show`
 - `connection.settings.show`, `connection.settings.update`
+- `connection.sync`, `connection.sync.show`, `status` ([ingestion and retained runs](cli-connections.md))
+- `product.listing.list/show/link/unlink` ([observed offers and guarded links](cli-listings.md))
+- Provider branches of `product.variant.update`, `product.price.update`, `product.cost.update`, `inventory.update`
+  ([routing, previews and execution outcomes](cli-provider-writes.md)).
 - `restock.channel.list`, `report.restock` ([report behavior and current boundaries](cli-restock.md))
 - Product, inventory/location, customer order, PO, shipment, partner and catalog reads
   ([commands, permissions and current projection limits](cli-resource-reads.md)).

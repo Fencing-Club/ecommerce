@@ -65,8 +65,9 @@ cannot apply the same upload twice. A new upload is a new import and is checked 
 
 ## Boundaries
 
-This slice does not implement Shopify/Amazon SKU, price, cost or inventory writes, customer creation/invitations,
-catalog deletion, supplier product image uploads, or retained inventory dry-run application. Unsupported shapes fail
-validation and unimplemented commands are absent from server discovery. Provider writes still need durable listing
-identity and per-target execution outcomes; local metadata success must never stand in for provider acceptance.
+Provider-owned fields use the separate [controlled write contract](cli-provider-writes.md), with listing identity,
+retained previews and per-target execution outcomes. Local metadata success never stands in for provider acceptance.
+Customer creation/invitations, catalog deletion, supplier product image uploads and retained supplier-count dry-run
+application remain unimplemented. Supplier count previews return rows for a guarded direct save, not a preview ID.
+Unsupported shapes fail validation and unimplemented commands are absent from server discovery.
 Purchase-order and shipment operations remain deferred. No production data or provider writes are used by the tests.

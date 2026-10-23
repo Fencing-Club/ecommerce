@@ -46,6 +46,7 @@ and classification, allow only tracked non-bundle merchant locations, and send `
 key. App-owned/mirror locations, FBA and AWD are read-only. Amazon FBM accepts only `available` at `listing:<id>` after
 explicit manual ownership is recorded on its link. This is seller-offer units, not warehouse pieces. The ownership flag
 does not disable another application's sync; keep externally controlled offers marked external.
+Shopify accepts signed 32-bit quantities, including negative available balances; Amazon FBM quantities must be nonnegative.
 
 Execution is retained before dispatch. All targets are preflighted before the first effect and again individually
 before sending. Request-time provider reads run outside database transactions; the short commit rechecks local routing

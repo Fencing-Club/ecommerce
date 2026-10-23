@@ -115,6 +115,17 @@ beforeEach(async () => {
 })
 const preview = (change: unknown) => writeIntent.parse({ mode: "preview", variantId: "variant", change })
 describe("provider field routing", () => {
+  it("refuses price dispatch when the live offer has no supported cent value", async () => {
+    api.request.mockResolvedValue({
+      sku: "OFFER",
+      summaries: [{ marketplaceId: "ATVPDKIKX0DER", productType: "PRODUCT" }],
+      offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { currencyCode: "USD", amount: "1.0001" } }],
+      fulfillmentAvailability: [{ fulfillmentChannelCode: "DEFAULT", quantity: 4 }]
+    })
+    await expect(resolveWrite(s, preview({ field: "price", amountMinor: 1200, currency: "USD" }))).rejects.toThrow(
+      "no supported live USD price"
+    )
+  })
   it("omits links from replaced accounts and identifies retired links that need unlinking", async () => {
     const change = { field: "price", amountMinor: 1200, currency: "USD" }
     await database.update(channelListings).set({ active: false }).where(eq(channelListings.id, listingId))
@@ -154,6 +165,7 @@ describe("provider field routing", () => {
       quantityState: "available",
       locationExternalId: "gid://shopify/Location/1"
     })
+    expect((await resolveWrite(s, preview({ ...change, quantity: -1 })))[0]?.desired).toBe(-1)
     api.stockLevelsPage.mockResolvedValue({
       nodes: [
         {
@@ -187,5 +199,6 @@ describe("provider field routing", () => {
       unit: "amazon_sellable_unit"
     })
     await expect(resolveWrite(s, preview({ ...change, quantityState: "on_hand" }))).rejects.toThrow("not physical")
+    await expect(resolveWrite(s, preview({ ...change, quantity: -1 }))).rejects.toThrow("cannot be negative")
   })
 })
