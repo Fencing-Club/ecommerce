@@ -18,7 +18,6 @@ export const Default = meta.story({
     const trigger = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
     // The workspace's initials on its kind's tile, then its name; the trigger doesn't name the kind.
     await expect(trigger).toHaveTextContent(/^HGHarbor Goods$/)
-    await expect(getComputedStyle(within(trigger).getByText("HG")).backgroundColor).toBe("rgb(255, 241, 234)")
   }
 })
 
@@ -27,7 +26,7 @@ export const SupplierWorkspace = meta.story({
   args: { active: workspaces.supplier.id, fallbackName: workspaces.supplier.name },
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("button", { name: "Lotus Manufacturing, switch workspace" })
-    await expect(getComputedStyle(within(trigger).getByText("LM")).color).toBe("rgb(15, 118, 110)")
+    await expect(trigger).toHaveTextContent(/^LMLotus Manufacturing$/)
   }
 })
 

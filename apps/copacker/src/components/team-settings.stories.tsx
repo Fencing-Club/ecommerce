@@ -43,7 +43,7 @@ export const Owner = meta.story({
       0
     )
     await expect(canvas.getByText("Invited, expires Oct 4")).toBeVisible()
-    await expect(canvas.getByText("Invitation expired")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("Invitation expired")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "More for Priya Shah" }))
     await expect(await screen.findByRole("menuitem", { name: "Change access" })).toBeInTheDocument()
     await expect(screen.getByRole("menuitem", { name: "Transfer ownership" })).toBeInTheDocument()

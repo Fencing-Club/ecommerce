@@ -24,7 +24,8 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Amazon storage and aged-inventory fees](amazon-storage-fees.md): acquisition, unavailable-month backoff and safe failure diagnostics
 - [Amazon removal and disposal evidence](amazon-removals.md): date-range collection and monthly coverage
 - [Amazon reconciliation evidence](amazon-reconciliation.md): continued search, reimbursement chains and fee comparisons
-- [Stored payment and recovery reconciliation](payment-reconciliation.md): linked payment currencies, receipt coverage, saved shipment units, shared payment candidates and orderless reversal evidence
+- [Targeted ingestion recovery](targeted-ingestion-recovery.md): bounded related-record lookups, coverage and retry limits
+- [Stored payment and recovery reconciliation](payment-reconciliation.md): linked payment currencies, receipt coverage, saved shipment units, shared payment candidates, orderless reversal evidence and overview duplicate counting
 - [Historical inventory cost inputs](historical-inventory-basis.md): unknown cost basis and historical product validation
 - [Analytics HTTP contract](analytics-api.md)
 - [Server query helpers](server-helpers.md): connected accounts, sales sync copies, upserts and analytics pages
@@ -33,6 +34,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
 - [CLI server: authentication, deployed handlers and release acceptance](cli-server.md)
+- [CLI resource reads: products, stock, orders, purchasing and partners](cli-resource-reads.md)
 - [CLI restock reports](cli-restock.md): shared planning, report evidence, permissions and current boundaries.
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
@@ -72,3 +74,5 @@ See [shipment-date evidence](shipment-date-evidence.md) for Shopify fulfillment 
 [Dated conversions and automatic depletion imports](automatic-depletion-imports.md) now provide opt-in processing after sales sync; live coverage and return-to-stock accounting remain pending.
 
 - [Expanded analytics ingestion](analytics-ingestion.md): cost batches, merchant expenses, inbound receipts, Shopify financial events, Amazon evidence, receipt checkpoints and quota-aware report retry diagnostics.
+
+- [Remaining analytics evidence gaps](specs/analytics/remaining-evidence-gaps.md): shared payment IDs, warehouse candidates and genuinely missing inputs.

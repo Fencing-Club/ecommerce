@@ -5,10 +5,11 @@ vocabulary in [the application spec](../../../apps/copacker/docs/specs/cli/comma
 
 **Integration status:** the executable and command adapters exist, together with the first
 [server authentication and real-data handlers](../../../apps/copacker/docs/cli-server.md). Account/workspace/schema
-discovery and connection reads/settings are implemented. Business-resource handlers and automation issuance remain
-unfinished. These changes have not been deployed. Local help works without a server. The CLI checks deployed
+discovery, connection reads/settings and restock are implemented, along with the first
+[resource reads](../../../apps/copacker/docs/cli-resource-reads.md). Business writes and automation issuance remain
+unfinished. Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
-claim that a server has enabled that capability. No npm release or deployment has been performed.
+claim that a server has enabled that capability. No npm release or production deployment has been performed.
 
 ## Run locally
 
@@ -27,15 +28,17 @@ copacker workspace list --json
 copacker workspace use <workspace-id>
 copacker connection list --json
 copacker connection settings show <connection-id> --json
+copacker report restock --json
+copacker product list --json
+copacker inventory list --json
+copacker order show "#1043" --connection <connection-id> --json
+copacker po show <po-id> --json
+copacker shipment list --json
 ```
 
 The remaining planned workflows require their resource handlers before they can run:
 
 ```sh
-copacker report restock --json
-copacker order show 1043 --connection <connection-id> --json
-copacker po show <po-id> --json
-copacker shipment list --json
 copacker product price update <variant-id> --amount 19.95 --currency USD --dry-run --json
 copacker product price update <variant-id> --preview <preview-id> --wait --json
 copacker inventory update --input reviewed-counts.json --json
@@ -63,6 +66,11 @@ Identical reruns reuse the key even after completion. Supply a new `--idempotenc
 Bulk row order does not change its identity. Relative credential expiry is pinned for a retained issuance intent.
 An expired retained intent fails instead of silently acquiring a new key; inspect its entity before deliberately
 starting another execution. Old receipt fingerprints contain no business payload and remain as replay-expiry markers.
+
+Browser sign-in waits ten minutes by default, matching the server approval intent. `login --timeout <seconds>` can
+set this to 1 through 600 seconds. Keep the command running while approving the fresh browser page. After expiry, run
+`copacker login` again; the old callback listener has closed. The callback acknowledges receipt of approval, while
+the terminal confirms successful token exchange and protected credential storage.
 
 Interactive secrets use Windows CurrentUser DPAPI, Linux Secret Service (`secret-tool`) or macOS Keychain (`security`).
 Missing system credential services fail closed; there is no plaintext fallback. Windows protection is exercised by an
@@ -109,3 +117,4 @@ initial release additionally requires the application spec's typed domain schema
 handlers, durable idempotency/outbox storage, supplier identity/stock fixes, listing links, controlled Shopify/Amazon
 writes, bulk transactions, entity document handlers and protected credential lifecycle. These have not been replaced
 with raw browser-action forwarding or provider credentials in the CLI. Hosted MCP remains a separate adapter.
+

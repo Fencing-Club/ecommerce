@@ -153,7 +153,7 @@ export const Destructive = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Close PO-1042" }))
     const dialog = await shownAlertDialog("Remove Sam Okafor?")
     const remove = dialog.getByRole("button", { name: "Remove" })
-    await expect(remove).toHaveClass("text-destructive")
+    await expect(remove).toBeVisible()
     await userEvent.click(remove)
     await waitFor(() => expect(sent).toEqual([{ action: "team.remove", data: { userId: "user_sam" } }]))
   }

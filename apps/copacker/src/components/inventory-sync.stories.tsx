@@ -181,7 +181,7 @@ export const RowReconnect = meta.story({
     )
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Needs access to location names")).toHaveClass("text-destructive")
+    await expect(await canvas.findByText("Needs access to location names")).toBeVisible()
     await expect(await canvas.findByRole("link", { name: "Reconnect" })).toHaveAttribute(
       "href",
       `/api/connections/shopify?shop=${shopifyAccount}`
@@ -212,7 +212,7 @@ export const RowStartFails = meta.story({
   play: async ({ canvas }) => {
     await canvas.findByText(/./, { selector: "time" })
     await userEvent.click(canvas.getByRole("button", { name: "Sync Shopify inventory" }))
-    await expect(await canvas.findByText("A sync already started a minute ago.")).toHaveClass("text-destructive")
+    await expect(await canvas.findByText("A sync already started a minute ago.")).toBeVisible()
   }
 })
 

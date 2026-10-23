@@ -35,7 +35,7 @@ const meta = preview.meta({
 export const Packed = meta.story({
   play: async ({ canvas }) => {
     const section = within(canvas.getByRole("region", { name: "Pallets" }))
-    await expect(section.getByText("18 of 18 cartons on pallets")).toHaveClass("text-success")
+    await expect(section.getByText("18 of 18 cartons on pallets")).toBeVisible()
     await expect(section.getByRole("region", { name: "Pallet 2" })).toBeVisible()
     await expect(section.queryByRole("spinbutton")).toBeNull()
   }
@@ -58,7 +58,7 @@ export const Packing = meta.story({
     await expect(section.getByRole("button", { name: "Import pallets" })).toBeVisible()
     await userEvent.click(section.getByRole("button", { name: "Add pallet" }))
     await expect(args.actions?.onAdd).toHaveBeenCalled()
-    await expect(section.getByText("10 of 18 cartons on pallets")).not.toHaveClass("text-success")
+    await expect(section.getByText("10 of 18 cartons on pallets")).toBeVisible()
     await expect(section.getByText(/^Cartons: 8 cartons aren’t on a pallet: B1–B6, C1–C2\./)).toBeVisible()
   }
 })

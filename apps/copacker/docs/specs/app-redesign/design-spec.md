@@ -21,22 +21,25 @@ like (F4) point at the [findings](information-architecture.md#findings).
 
 ## Visual foundations
 
-The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Tokens stay in `src/styles/theme.css.ts`.
+The redesign keeps Copacker's brand and shadcn/ui on Base UI. Colors are shadcn's tokens only, with values from
+Tailwind v4's palette; a color shadcn has no token for is a palette color. Tokens stay in `src/styles/theme.css.ts`,
+and [styling](../../styling.md#theme) maps each palette role. Each value is the Tailwind v4 color named: code writes
+its oklch, and Pen files its sRGB hex.
 
-| Token                  | Value (light)                   | Use                                                                     |
+| Token or role          | Tailwind v4 color (Pen hex)     | Use                                                                     |
 | ---------------------- | ------------------------------- | ----------------------------------------------------------------------- |
-| `primary`              | `#C2410C` (oklch 0.553 0.195 38.4) | One primary action per view, the active nav item's marker, links     |
-| `background`           | `#FFFFFF`                       | Page                                                                    |
-| `sidebar`              | `#FAFAFA`                       | Sidebar and settings navigation                                         |
-| `muted`                | `#F5F5F5`                       | Table header band, inactive segments                                   |
-| `border`               | `#E5E5E5`                       | Card and table rules                                                    |
-| `foreground`           | `#0A0A0A`                       | Text                                                                    |
-| `muted-foreground`     | `#6B6B6B`                       | Secondary text, never below 12 px                                       |
-| `info` (new name for `chart-1`) | `#2A78D6`              | In progress statuses                                                    |
-| `success`              | `#006300`                       | Done statuses                                                           |
-| `warning`              | `#FAB219`                       | Needs action; text on it is `foreground`, never white                   |
-| `destructive`          | `#DC2626`                       | Failed, lost, delete                                                    |
-| Workspace kind accents | Buyer `#C2410C`, Supplier `#0F766E`, Forwarder `#4338CA` | The workspace menu only. Never on actions.       |
+| `primary`              | orange-700 (`#CA3500`)          | One primary action per view, links                                      |
+| `background`           | white (`#FFFFFF`)               | Page                                                                    |
+| `sidebar`              | neutral-50 (`#FAFAFA`)          | Sidebar and settings navigation                                         |
+| `muted`                | neutral-100 (`#F5F5F5`)         | Table header band, inactive segments                                   |
+| `border`               | neutral-200 (`#E5E5E5`)         | Card and table rules                                                    |
+| `foreground`           | neutral-950 (`#0A0A0A`)         | Text                                                                    |
+| `muted-foreground`     | `#6B6B6B`, darker than neutral-500 for contrast | Secondary text, never below 12 px                       |
+| `destructive`          | red-600 (`#E7000B`)             | Failed, lost, delete                                                    |
+| Info                   | sky-700 (`#0069A8`)             | In progress statuses                                                    |
+| Success                | green-800 (`#016630`)           | Done statuses                                                           |
+| Warning                | amber-400 (`#FFB900`), text amber-800 (`#973C00`) | Needs action; text on it is `foreground`, never white |
+| Workspace kind accents | Buyer orange-700, Supplier teal-700 (`#00786F`), Forwarder indigo-700 (`#432DD7`) | The workspace menu only. Never on actions. |
 
 - **Type:** Geist Sans, Geist Mono for SKUs, references and tracking numbers. Page title 24/32 semibold, section
   title 16/24 semibold, body 14/20, meta 12/16. Numbers are tabular.
@@ -219,7 +222,7 @@ three builds each, and segmented controls at four heights; they're now single co
 
 ### Action bar
 
-**RD Action Bar** is the only bar for committing or acting on a page: unsaved changes, task flows (packing, new PO,
+**The action bar** is the only bar for committing or acting on a page: unsaved changes, task flows (packing, new PO,
 propose changes, import), proposal review and bulk selection. It replaces the edge-to-edge white bars, the dark
 settings bar and the dark bulk bar.
 
@@ -238,7 +241,7 @@ settings bar and the dark bulk bar.
 
 ### Lifecycle tracker
 
-**RD Lifecycle Stage** in a row: a bar, an icon and the stage's name, and a date or state under it. Stages are done
+**Lifecycle Stage** in a row: a bar, an icon and the stage's name, and a date or state under it. Stages are done
 (success green), current (info blue: someone is working on it), needs attention (warning amber: the viewer's move) or
 upcoming (border gray), the same meanings the status tones use. The bars keep working at any width,
 which is why they replaced the circle steppers. On a phone the row becomes a compact card: "Step 3 of 6", the current
@@ -260,7 +263,7 @@ A shipment's stages follow its route and who arranges shipping, as the
 
 ### Next step card
 
-**RD Next Step**: a lead icon, an eyebrow ("Your next step", or "Waiting on Lotus Manufacturing" in the quiet tone), the
+**Next Step**: a lead icon, an eyebrow ("Your next step", or "Waiting on Lotus Manufacturing" in the quiet tone), the
 title, a detail line, an optional warning line, an optional meta (days left, window) and the step's actions, at most
 a secondary and a primary. A waiting card (quiet tone) has no primary; it may keep one secondary that opens where the
 other party works (**Open in Seller Central**). On a phone the card keeps its eyebrow, title and meta, and its actions
@@ -352,7 +355,7 @@ and when, download, and replace where the person can. Downloads stay behind auth
 
 ### Optional marker
 
-**RD Optional** marks an item the purchase order flow spec only proposes: the Incoterm field, Amazon's partnered
+**An outline Badge named Optional** marks an item the purchase order flow spec only proposes: the Incoterm field, Amazon's partnered
 carrier, the delivery window from the expected arrival, tracking sent to Amazon, prep categories set through Amazon,
 HS codes and unit weights from Shopify, the ISF draft, the pickup phone rule and forwarder emails. The screens draw it
 where it would go; it's built once it's decided. It's a designer's annotation, not product UI.
@@ -464,7 +467,7 @@ is a cognitive accessibility problem as much as a visual one. Every screen follo
 
 | Kind of information                          | Where it goes                                                                   |
 | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| A definition ("Production runs from…")       | **RD Info Tip** beside the label or title; the text shows in **RD Tooltip** on hover or focus |
+| A definition ("Production runs from…")       | **Info Tip** beside the label or title; the text shows in a **Tooltip** on hover or focus |
 | A long list of rules or details              | A summary (the 3 key rules as chips) and **Show all** to expand                 |
 | What happens after an action                 | The action's **confirm dialog** ("Submit packing list?" lists the next steps)    |
 | A consequence of one choice                  | Next to that choice only (a checkbox label), not as a paragraph                 |
@@ -480,10 +483,9 @@ the text is the instance's name after "Info Tip: ".
 
 **Notices.**
 
-- **RD Banner** is the only notice: one line, an optional action, and a dismiss button. Dismissing hides it for that
-  person until the state changes.
-- At most one banner per page, above the content. Only a blocking error (a store disconnected, a failed Amazon
-  shipment) may drop the dismiss button, and it must carry the action that fixes it.
+- **Alert** is the only notice: one line, tinted warning, info or destructive, with its action in the Alert Action slot.
+  It has no dismiss button: it shows only while its state stands, and its action is what deals with it.
+- At most one Alert per page, above the content.
 - Validation stays inline next to the field or row it's about, and counts in the action bar.
 - Informational notes ("Tasks leave by themselves when…", "Members see these details read-only…") are removed; the
   interface shows that behavior instead (View only badge, tasks disappearing).

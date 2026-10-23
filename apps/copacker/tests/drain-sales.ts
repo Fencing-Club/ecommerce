@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, lte } from "drizzle-orm"
 import { db } from "../src/db/index"
 import { jobs } from "../src/db/schema"
 import { runNextJob } from "../src/server/queue"
@@ -13,7 +13,16 @@ export async function drainSales() {
       .where(and(eq(jobs.kind, "sales"), eq(jobs.status, "pending"), eq(jobs.error, "Sales import checkpoint saved")))
       .returning({ id: jobs.id })
     if (!resumed.length) {
-      return
+      // Another job (including evidence recovery) can precede a newly queued sales
+      // sync. Stop only when there is no runnable sales work left.
+      const [pending] = await db()
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(and(eq(jobs.kind, "sales"), eq(jobs.status, "pending"), lte(jobs.runAt, new Date())))
+        .limit(1)
+      if (!pending) {
+        return
+      }
     }
   }
   throw new Error("Sales fixture exceeded its checkpoint budget")

@@ -68,7 +68,7 @@ function ChartTooltip({
   return (
     <ChartTooltipFrame title={point.title}>
       <ChartTooltipRow
-        mark={<span className="size-2 rounded-[2px] bg-chart-1" />}
+        mark={<span className="size-2 rounded-[2px] bg-chart-4" />}
         label={t("ordered")}
         value={money(point.value, currency)}
       />
@@ -107,7 +107,7 @@ export function OrdersChart({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-chart-1" aria-hidden />
+          <span className="size-2.5 rounded-[3px] bg-chart-4" aria-hidden />
           {t("thisPeriod")}
         </span>
         {compared && (
@@ -140,7 +140,7 @@ export function OrdersChart({
           />
           <Bar
             dataKey="value"
-            fill={vars.color.chart1}
+            fill={vars.color.chart4}
             radius={[4, 4, 0, 0]}
             maxBarSize={28}
             isAnimationActive={false}

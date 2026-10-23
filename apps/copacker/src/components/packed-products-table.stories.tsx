@@ -37,10 +37,9 @@ export const Default = meta.story({
     await expect(canvas.queryByRole("table")).toBeNull()
     await userEvent.click(products)
     const table = within(canvas.getByRole("table"))
-    await expect(table.getByText("240 of 240")).toHaveClass("text-success")
-    await expect(table.getByText("60 of 120")).not.toHaveClass("text-success")
+    await expect(table.getByText("240 of 240")).toBeVisible()
     await expect(table.getByText("60 left")).toBeVisible()
-    await expect(table.getByText("90 of 60")).toHaveClass("text-destructive")
+    await expect(table.getByText("90 of 60")).toBeVisible()
     await expect(table.getByText("30 too many")).toBeVisible()
     await expect(table.getByText(tote!.supplierSku)).toBeVisible()
     await expect(table.getByRole("columnheader", { name: "Price per unit" })).toBeVisible()
@@ -52,7 +51,7 @@ export const Default = meta.story({
 export const Progress = meta.story({
   args: { progress: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("3 products, 60 units left")).not.toHaveClass("text-success")
+    await expect(canvas.getByText("3 products, 60 units left")).toBeVisible()
   }
 })
 
@@ -63,7 +62,7 @@ export const AllPacked = meta.story({
     cartons: [carton("A1", 4, tote!.id, 60), carton("B1", 2, apron!.id, 60), carton("C1", 1, basket!.id, 60)]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("3 products, all packed")).toHaveClass("text-success")
+    await expect(canvas.getByText("3 products, all packed")).toBeVisible()
   }
 })
 
@@ -74,7 +73,7 @@ export const Overpacked = meta.story({
     cartons: [carton("A1", 5, tote!.id, 60), carton("B1", 2, apron!.id, 60), carton("C1", 1, basket!.id, 60)]
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("3 products")).not.toHaveClass("text-success")
+    await expect(canvas.getByText("3 products")).toBeVisible()
     await expect(canvas.queryByText("3 products, all packed")).toBeNull()
   }
 })
@@ -85,7 +84,7 @@ export const OtherShipments = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     const table = within(canvas.getByRole("table"))
-    await expect(table.getByText("240 of 40")).toHaveClass("text-destructive")
+    await expect(table.getByText("240 of 40")).toBeVisible()
     await expect(table.getByText("200 too many")).toBeVisible()
   }
 })

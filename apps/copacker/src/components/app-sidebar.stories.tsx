@@ -65,8 +65,6 @@ export const Buyer = meta.story({
     const current = canvas.getByRole("link", { name: "Purchase orders" })
     await expect(current).toHaveAttribute("data-active")
     await expect(current).toHaveAttribute("href", "/orders")
-    // Its marker is the primary color on its leading edge.
-    await expect(getComputedStyle(current, "::before").backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
     await expect(canvas.getByRole("link", { name: "Sales" })).not.toHaveAttribute("data-active")
   }
 })

@@ -184,3 +184,45 @@ A read-only October 22 investigation found a saved -$21.18 released clawback for
 September 2 reversal, posted 46 seconds after report approval. SKU, ASIN and currency match; it was the only saved
 negative report and payment of that amount. The financial record contains settlement and financial-event-group IDs,
 not an order or reimbursement ID. This supports a candidate, not a confirmed link. No provider acquisition was run.
+
+## Overview deferred-payment deduplication
+
+Overview order fees, platform charges and the order list use `countedAmazonTransaction` to retain the original
+posting and exclude its later released copy. A saved `DEFERRED_TRANSACTION_ID` on the copy continues to exclude it;
+a `RELEASE_TRANSACTION_ID` on the original now also excludes the copy when workspace, seller, transaction type,
+currency, signed total, marketplace and available order identities agree, with deferred-released/original and
+released/copy statuses. Reference lookup spans all saved dates so a later release does not add a second cost in a
+new period. Equal amounts alone never deduplicate unrelated transactions. Conflicting forward links remain visible
+for review rather than silently removing money. No stored records are rewritten or acquired.
+
+The October 22 audit found 22 one-sided Shipment pairs duplicating USD 117.28 of fees, and one Refund pair duplicating
+USD 32.52. Amazon supplied the forward reference but omitted the reverse one. The old filters only checked the reverse
+reference, and existing overview tests modeled only that case. Regression tests now cover either/both directions,
+period boundaries, missing copies, account isolation and conflicting evidence. This fixes counting using saved data;
+it does not establish bank settlement or confirmed reimbursement allocation.
+
+## Shared shipment/refund identifiers
+
+Some historical deferred/released pairs have no explicit release link. `sharedReleaseOriginal` proves a pair from
+all saved dates within the workspace and seller, using a single nonblank SHIPMENT_ID or REFUND_ID appropriate to the
+transaction type. Exactly two saved transactions may carry that reference. They must have deferred-released/released
+statuses, a nondecreasing date, equal nonempty order and marketplace IDs, currency, signed total, fees, and identical
+nonempty item arrays. Neither record may have an outgoing or incoming explicit release link. Extra copies, conflicting
+references or missing details prevent deduplication. Equal amounts, products and nearby dates alone do not qualify.
+
+Overview and order queries retain the original date. Reconciliation uses the same database proof, exposes both
+transaction IDs and `linkBasis=unique_shared_shipment_or_refund_id`, and counts the released record once subject to
+its existing balance checks. These are different date bases, not two contributions to one total. Bounded linked
+searches disclose truncation and block reconciliation. No saved references are rewritten.
+
+## Orderless warehouse reimbursement candidates
+
+`warehousePaymentCandidate` identifies positive Lost_Warehouse/Damaged_Warehouse report candidates when both sides
+lack an order reference, exact SKU and ASIN match throughout the payment, marketplace/currency/signed total agree,
+and one item and the root totals balance. The payment must be released and have no release link. These rank after
+order-backed stronger candidates and before weaker candidates. They remain unconfirmed: product and amount are not
+unique identifiers, even with one candidate. No payment assignment or additional income is created.
+
+Competition searches include all saved dates for candidate products, within the account and marketplace. Other
+matching report row IDs, the 1,000-row search cap and candidate-page limits remain visible. Missing originals, blank
+quantities and repeated report lines remain unresolved; see [remaining evidence gaps](specs/analytics/remaining-evidence-gaps.md).

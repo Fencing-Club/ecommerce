@@ -45,7 +45,11 @@ export function PackingSection({
           </h2>
           {summary && (
             <span
-              className={cn("text-xs tabular-nums text-muted-foreground", done && "text-success", summaryClassName)}
+              className={cn(
+                "text-xs tabular-nums text-muted-foreground",
+                done && "text-green-800 dark:text-green-400",
+                summaryClassName
+              )}
             >
               {summary}
             </span>

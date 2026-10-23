@@ -24,36 +24,6 @@
 
 /* The color values themselves, light and dark, live in src/styles/theme.css.ts, which vanilla-extract styles share. */
 @theme inline {
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-info: var(--info);
-  --color-primary-soft: var(--primary-soft);
-  --color-info-soft: var(--info-soft);
-  --color-success-soft: var(--success-soft);
-  --color-warning-soft: var(--warning-soft);
-  --color-destructive-soft: var(--destructive-soft);
-  --color-primary-tint: var(--primary-tint);
-  --color-primary-border: var(--primary-border);
-  --color-warning-tint: var(--warning-tint);
-  --color-warning-border: var(--warning-border);
-  --color-destructive-tint: var(--destructive-tint);
-  --color-destructive-border: var(--destructive-border);
-  --color-success-tint: var(--success-tint);
-  --color-border-strong: var(--border-strong);
-  --color-disabled-foreground: var(--disabled-foreground);
-  --color-kind-buyer: var(--kind-buyer);
-  --color-kind-buyer-soft: var(--kind-buyer-soft);
-  --color-kind-supplier: var(--kind-supplier);
-  --color-kind-supplier-soft: var(--kind-supplier-soft);
-  --color-kind-forwarder: var(--kind-forwarder);
-  --color-kind-forwarder-soft: var(--kind-forwarder-soft);
-  --color-scrim: var(--scrim);
-  --color-chart-1-soft: var(--chart-1-soft);
-  --color-chart-muted: var(--chart-muted);
-  --color-handoff-pickup: var(--handoff-pickup);
-  --color-handoff-forwarder-soft: var(--handoff-forwarder-soft);
-  --color-on-light-info: var(--on-light-info);
   --shadow-menu: var(--elevation-menu);
   --shadow-dialog: var(--elevation-dialog);
   --shadow-command: var(--elevation-command);

@@ -114,7 +114,8 @@ export const ProductStatusInUkrainian = meta.story({
   }
 })
 
-// Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color.
+// Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color. The colors are for
+// visual tests; the play checks each pill takes its tone.
 export const TonesMatchTheKit = meta.story({
   render: () => (
     <div className="flex flex-wrap gap-2">
@@ -126,16 +127,11 @@ export const TonesMatchTheKit = meta.story({
     </div>
   ),
   play: async ({ canvas }) => {
-    const look = (text: string) => {
-      const pill = canvas.getByText(text)
-      return [getComputedStyle(pill).backgroundColor, getComputedStyle(pill).color]
-    }
-    await expect(look("In transit")).toEqual(["rgb(234, 242, 252)", "rgb(31, 99, 184)"])
-    await expect(look("To pack")).toEqual(["rgb(255, 245, 220)", "rgb(122, 75, 0)"])
-    await expect(look("Ready for pickup")).toEqual(["rgb(231, 244, 231)", "rgb(0, 99, 0)"])
-    // Muted is oklch(0.97 0 0), the kit's #F5F5F5.
-    await expect(look("Draft")).toEqual(["oklch(0.97 0 0)", "rgb(107, 107, 107)"])
-    await expect(look("Out of stock")).toEqual(["rgb(253, 236, 236)", "rgb(220, 38, 38)"])
+    await expect(canvas.getByText("In transit")).toHaveAttribute("data-tone", "info")
+    await expect(canvas.getByText("To pack")).toHaveAttribute("data-tone", "warning")
+    await expect(canvas.getByText("Ready for pickup")).toHaveAttribute("data-tone", "success")
+    await expect(canvas.getByText("Draft")).toHaveAttribute("data-tone", "neutral")
+    await expect(canvas.getByText("Out of stock")).toHaveAttribute("data-tone", "destructive")
   }
 })
 

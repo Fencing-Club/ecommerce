@@ -15,6 +15,7 @@ export type AmazonEvidence = {
   orderId: string | null
   currency: string | null
   amount: string | null
+  reimbursement?: { reason: string | null }
 }
 type Product = { sku: string; asin: string | null; fnsku: string | null }
 export type ReconciliationPosting = {
@@ -106,6 +107,7 @@ export function postingEvidence(posting: ReconciliationPosting) {
     status: text(posting.data.transactionStatus),
     references,
     products,
+    itemCount: items.length,
     hasReleaseLink: references.some(
       (ref) => ref.name === "DEFERRED_TRANSACTION_ID" || ref.name === "RELEASE_TRANSACTION_ID"
     ),
@@ -144,6 +146,34 @@ export function isStrongerPaymentCandidate(row: AmazonEvidence, posting: Financi
   )
 }
 
+// Warehouse losses are not customer orders. Product/amount agreement is evidence, never a payment assignment.
+export function isWarehousePaymentCandidate(row: AmazonEvidence, posting: FinancialEvidence) {
+  const amount = exactMoney(row.amount, row.currency)
+  return (
+    row.source === "reimbursements" &&
+    !row.orderId &&
+    ["Lost_Warehouse", "Damaged_Warehouse"].includes(row.reimbursement?.reason ?? "") &&
+    Boolean(amount && amount.integer > 0n) &&
+    !posting.orderId &&
+    !posting.references.some((ref) => ref.name === "ORDER_ID") &&
+    posting.type === "FBAInventoryReimbursement" &&
+    posting.status === "RELEASED" &&
+    !posting.hasReleaseLink &&
+    posting.marketplaceId === row.marketplaceId &&
+    posting.currency === row.currency &&
+    posting.itemCount === 1 &&
+    Boolean(
+      row.sku &&
+      row.asin &&
+      posting.products.length &&
+      posting.products.every((item) => item.sku === row.sku && item.asin === row.asin)
+    ) &&
+    posting.totals.items === "balanced" &&
+    posting.totals.breakdowns === "balanced" &&
+    checkPostingTotal(posting.total, [{ currencyAmount: row.amount, currencyCode: row.currency }]) === "balanced"
+  )
+}
+
 // Orderless reversals remain a separate diagnostic, never an order-backed stronger candidate.
 function isPossibleReversalPayment(row: AmazonEvidence, posting: FinancialEvidence) {
   const amount = exactMoney(row.amount, row.currency)
@@ -176,7 +206,13 @@ function isPossibleReversalPayment(row: AmazonEvidence, posting: FinancialEviden
 // All-time stored report context is bounded separately from transaction and candidate pagination.
 function paymentCompetition(rows: AmazonEvidence[], context: ReimbursementCompetition | undefined) {
   const reportsByOrder = new Map<string, AmazonEvidence[]>()
+  const reportsBySku = new Map<string, AmazonEvidence[]>()
   for (const row of new Map([...(context?.rows ?? []), ...rows].map((row) => [row.id, row])).values()) {
+    if (row.sku) {
+      const reports = reportsBySku.get(row.sku) ?? []
+      reports.push(row)
+      reportsBySku.set(row.sku, reports)
+    }
     if (row.orderId) {
       const reports = reportsByOrder.get(row.orderId) ?? []
       reports.push(row)
@@ -191,9 +227,14 @@ function paymentCompetition(rows: AmazonEvidence[], context: ReimbursementCompet
         posting.orderId,
         ...posting.references.filter((ref) => ref.name === "ORDER_ID").map((ref) => ref.value)
       ])
-      ids = [...orders]
-        .flatMap((order) => (order ? (reportsByOrder.get(order) ?? []) : []))
-        .filter((report) => isStrongerPaymentCandidate(report, posting))
+      const possible = new Map(
+        [
+          ...[...orders].flatMap((order) => (order ? (reportsByOrder.get(order) ?? []) : [])),
+          ...posting.products.flatMap((item) => (item.sku ? (reportsBySku.get(item.sku) ?? []) : []))
+        ].map((report) => [report.id, report])
+      )
+      ids = [...possible.values()]
+        .filter((report) => isStrongerPaymentCandidate(report, posting) || isWarehousePaymentCandidate(report, posting))
         .map((report) => report.id)
         .sort()
       matches.set(posting.transactionId, ids)
@@ -211,7 +252,9 @@ function paymentCompetition(rows: AmazonEvidence[], context: ReimbursementCompet
     }
     return {
       status,
-      scope: "stored_reimbursements_for_candidate_orders_all_dates",
+      scope: isWarehousePaymentCandidate(row, posting)
+        ? "stored_reimbursements_for_candidate_products_all_dates"
+        : "stored_reimbursements_for_candidate_orders_all_dates",
       otherReportRowCount: context ? others.length : null,
       otherReportRowIds: context ? others.slice(0, 20) : [],
       returnedIdsTruncated: Boolean(context && others.length > 20),
@@ -267,12 +310,15 @@ export function reconcileAmazonEvidence(
           return []
         }
         const strongerPaymentCandidate = isStrongerPaymentCandidate(row, posting)
+        const warehousePaymentCandidate = isWarehousePaymentCandidate(row, posting)
         return [
           {
             ...postingEvidenceFields(posting),
             strongerPaymentCandidate,
+            warehousePaymentCandidate,
             possibleReversalPayment: isPossibleReversalPayment(row, posting),
-            paymentCompetition: strongerPaymentCandidate ? competingReports(row, posting) : null,
+            paymentCompetition:
+              strongerPaymentCandidate || warehousePaymentCandidate ? competingReports(row, posting) : null,
             basis: orderReference ? "order_reference" : "product_only",
             itemIndexes: [...new Set(matchedItems.map((item) => item.itemIndex))],
             currencyMatches: row.currency ? row.currency === posting.currency : null,
@@ -283,6 +329,7 @@ export function reconcileAmazonEvidence(
       .sort(
         (a, b) =>
           Number(b.strongerPaymentCandidate) - Number(a.strongerPaymentCandidate) ||
+          Number(b.warehousePaymentCandidate) - Number(a.warehousePaymentCandidate) ||
           Number(b.possibleReversalPayment) - Number(a.possibleReversalPayment) ||
           Number(b.basis === "order_reference") - Number(a.basis === "order_reference") ||
           Number(b.type === preferredPostingType(row.source)) - Number(a.type === preferredPostingType(row.source)) ||
@@ -308,10 +355,14 @@ export function reconcileAmazonEvidence(
           scope: "current_posting_search_page",
           candidateCount: candidates.length,
           strongerPaymentCandidateCount: candidates.filter((candidate) => candidate.strongerPaymentCandidate).length,
+          warehousePaymentCandidateCount: candidates.filter((candidate) => candidate.warehousePaymentCandidate).length,
+          warehousePaymentCandidateBasis: "orderless_warehouse_sku_asin_marketplace_currency_signed_balanced_payment",
           possibleReversalPaymentCount: candidates.filter((candidate) => candidate.possibleReversalPayment).length,
           reversalPaymentCompetition: "not_assessed_across_report_pages",
           strongerPaymentCandidateBasis: "order_sku_marketplace_currency_signed_whole_transaction_amount",
-          competingReportRows: competition ? "assessed_for_stronger_candidates" : "not_assessed_across_report_pages",
+          competingReportRows: competition
+            ? "assessed_for_stronger_and_warehouse_candidates"
+            : "not_assessed_across_report_pages",
           sharedPaymentCandidateCount: competition
             ? candidates.filter((candidate) => candidate.paymentCompetition?.status === "shared_candidate").length
             : null,

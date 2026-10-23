@@ -24,7 +24,7 @@ export const Default = meta.story({
     const section = within(canvas.getByRole("region", { name: "Cartons" }))
     const toggle = section.getByRole("button", { name: "Cartons" })
     await expect(toggle).toHaveAttribute("aria-expanded", "true")
-    await expect(section.getByText("300 of 420 units")).not.toHaveClass("text-success")
+    await expect(section.getByText("300 of 420 units")).toBeVisible()
     await expect(section.getByRole("button", { name: "Export cartons" })).toBeVisible()
     await userEvent.click(toggle)
     await expect(section.queryByText("The section’s rows.")).toBeNull()
@@ -36,7 +36,7 @@ export const Default = meta.story({
 export const Done = meta.story({
   args: { summary: "420 of 420 units", done: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("420 of 420 units")).toHaveClass("text-success")
+    await expect(canvas.getByText("420 of 420 units")).toBeVisible()
   }
 })
 

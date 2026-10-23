@@ -37,9 +37,9 @@ export function IssueSummary({ title, description, action, retry = false, onActi
     <Item
       variant="outline"
       data-slot="issue-summary"
-      className={cn("border-warning-border bg-warning-tint", className)}
+      className={cn("border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950", className)}
     >
-      <ItemMedia variant="icon" className="text-warning-foreground">
+      <ItemMedia variant="icon" className="text-amber-800 dark:text-amber-300">
         <TriangleAlert aria-hidden />
       </ItemMedia>
       <ItemContent className="min-w-0">
