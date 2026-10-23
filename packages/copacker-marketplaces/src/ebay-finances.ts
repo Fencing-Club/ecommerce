@@ -48,6 +48,7 @@ export const ebayPayout = z.object({
 })
 export type EbayFinancialTransaction = z.infer<typeof ebayFinancialTransaction>
 export type EbayPayout = z.infer<typeof ebayPayout>
+// Transaction lookups are typed by eBay; retain that type in the saved identity as well.
 export const ebayTransactionKey = (row: EbayFinancialTransaction) =>
   JSON.stringify([row.transactionType, row.transactionId])
 const windowSchema = z
@@ -57,6 +58,7 @@ const windowSchema = z
     "eBay financial reads require a window of at most 31 days"
   )
 
+// Read fixed-offset pages with a finite bound, rejecting pagination drift rather than claiming complete coverage.
 async function collect<T>(
   client: Pick<Ebay, "request">,
   kind: "transaction" | "payout",
@@ -108,6 +110,7 @@ async function collect<T>(
   throw new Error("eBay financial pagination exceeded its bound")
 }
 
+// Collect only the requested date window, preserving transactions and payouts as separate evidence.
 export async function collectEbayFinances(
   client: Pick<Ebay, "request">,
   window: { from: string; to: string },
@@ -138,6 +141,7 @@ export async function collectEbayFinances(
   return { transactions, payouts }
 }
 
+// Follow one exact payout reference; its related transactions may predate the ordinary rolling window.
 export async function collectEbayPayoutTransactions(
   client: Pick<Ebay, "request">,
   payoutId: string,
@@ -162,6 +166,7 @@ export async function collectEbayPayoutTransactions(
   return rows
 }
 
+// Refresh an older saved payout's status without expanding the financial-history date window.
 export async function readEbayPayout(
   client: Pick<Ebay, "request">,
   payoutId: string,

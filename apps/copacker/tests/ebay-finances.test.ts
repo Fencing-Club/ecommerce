@@ -87,6 +87,21 @@ it("does not query finance endpoints until permission is granted", async () => {
   expect(context.request).not.toHaveBeenCalled()
   expect((await database.select().from(tables.analyticsFeeds))[0]?.state.error).toBe("finance_permission_required")
 })
+it("does not copy transaction coverage to previously unsaved payouts after an interrupted run", async () => {
+  await database.insert(tables.analyticsFeeds).values({
+    orgId,
+    source: "ebay",
+    externalAccountId: "seller",
+    dataset: "financial_transactions",
+    state: { coveredFrom: "2026-09-01T00:00:00Z", coveredTo: "2026-09-30T00:00:00Z" },
+    checkedAt: new Date("2026-09-30")
+  })
+  context.request.mockResolvedValue({ total: 0 })
+  await syncEbayFinances(input, async () => undefined, now)
+  const feeds = await database.select().from(tables.analyticsFeeds)
+  expect(feeds.find((row) => row.dataset === "financial_transactions")?.state.coveredFrom).toBe("2026-09-01T00:00:00Z")
+  expect(feeds.find((row) => row.dataset === "payouts")?.state.coveredFrom).toBe("2026-09-22T00:00:00.000Z")
+})
 it("honors a payout Retry-After longer than the daily refresh", async () => {
   context.request.mockImplementation(async (_method, path) => {
     if (path.includes("/payout/P1")) {
@@ -98,6 +113,9 @@ it("honors a payout Retry-After longer than the daily refresh", async () => {
     return { total: 0, transactions: [] }
   })
   await syncEbayFinances(input, async () => undefined, now)
+  const feeds = await database.select().from(tables.analyticsFeeds)
+  expect(feeds.some((row) => row.dataset === "financial_sync")).toBe(false)
+  expect(feeds.find((row) => row.dataset === "financial_transactions")?.state.error).toBe("payout_collection_failed")
   context.request.mockClear()
   await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 25 * 3600000))
   expect(context.request).not.toHaveBeenCalled()

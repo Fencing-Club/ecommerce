@@ -22,13 +22,15 @@ export async function syncEbayFinances(
   now = new Date()
 ) {
   const feed = { ...input, source: "ebay" as const }
-  const scope = and(
-    eq(analyticsFeeds.orgId, input.orgId),
-    eq(analyticsFeeds.source, "ebay"),
-    eq(analyticsFeeds.externalAccountId, input.externalAccountId),
-    eq(analyticsFeeds.dataset, "financial_transactions")
-  )
-  const [prior] = await db().select().from(analyticsFeeds).where(scope)
+  const scope = (dataset: string) =>
+    and(
+      eq(analyticsFeeds.orgId, input.orgId),
+      eq(analyticsFeeds.source, "ebay"),
+      eq(analyticsFeeds.externalAccountId, input.externalAccountId),
+      eq(analyticsFeeds.dataset, dataset)
+    )
+  const [prior] = await db().select().from(analyticsFeeds).where(scope("financial_transactions"))
+  const [priorPayout] = await db().select().from(analyticsFeeds).where(scope("payouts"))
   const [completed] = await db()
     .select()
     .from(analyticsFeeds)
@@ -51,11 +53,7 @@ export async function syncEbayFinances(
     )
     return
   }
-  if (
-    completed &&
-    (now.getTime() - completed.checkedAt.getTime() < 86400000 ||
-      Date.parse(completed.state.retryAt ?? "") > now.getTime())
-  ) {
+  if (completed && now.getTime() - completed.checkedAt.getTime() < 86400000) {
     return
   }
   if (prior?.state.retryAt && Date.parse(prior.state.retryAt) > now.getTime()) {
@@ -67,6 +65,14 @@ export async function syncEbayFinances(
   const client = await ebayFor(input.orgId, input.externalAccountId)
   const coveredFrom = prior?.state.coveredTo && prior.state.coveredTo >= from ? (prior.state.coveredFrom ?? from) : from
   const state = { coveredFrom, coveredTo: to, error: null }
+  const payoutState = {
+    coveredFrom:
+      priorPayout?.state.coveredTo && priorPayout.state.coveredTo >= from
+        ? (priorPayout.state.coveredFrom ?? from)
+        : from,
+    coveredTo: to,
+    error: null
+  }
   let result: Awaited<ReturnType<typeof collectEbayFinances>>
   try {
     result = await collectEbayFinances(client, { from, to }, assertOwned)
@@ -105,7 +111,7 @@ export async function syncEbayFinances(
     feed,
     "payouts",
     result.payouts.map((data) => ({ id: data.payoutId, data })),
-    state,
+    payoutState,
     assertOwned,
     now
   )
@@ -133,7 +139,6 @@ export async function syncEbayFinances(
     )
     .orderBy(sql`${analyticsFeeds.checkedAt} asc nulls first`, asc(analyticsEvidence.sourceId))
     .limit(5)
-  let retryAt: string | undefined
   for (const saved of payouts) {
     const payoutId = ebayPayout.parse(saved.data).payoutId
     const dataset = `payout_reconciliation:${payoutId}`
@@ -148,8 +153,16 @@ export async function syncEbayFinances(
       }
       await publishAnalyticsFeed(feed, dataset, [], { error: "payout_collection_failed" }, assertOwned, now)
       if (error instanceof ProviderError && [401, 403, 429].includes(error.status)) {
-        retryAt = new Date(now.getTime() + Math.max(86400000, error.retryAfterMs ?? 0)).toISOString()
-        break
+        const retryAt = new Date(now.getTime() + Math.max(900000, error.retryAfterMs ?? 0)).toISOString()
+        await publishAnalyticsFeed(
+          feed,
+          "financial_transactions",
+          [],
+          { ...state, retryAt, error: "payout_collection_failed" },
+          assertOwned,
+          now
+        )
+        return
       }
       continue
     }
@@ -170,7 +183,7 @@ export async function syncEbayFinances(
       now
     )
     await publishAnalyticsFeed(feed, dataset, [], { error: null }, assertOwned, now)
-    await publishAnalyticsFeed(feed, "payouts", [{ id: payout.payoutId, data: payout }], state, assertOwned, now)
+    await publishAnalyticsFeed(feed, "payouts", [{ id: payout.payoutId, data: payout }], payoutState, assertOwned, now)
   }
-  await publishAnalyticsFeed(feed, "financial_sync", [], { error: null, retryAt }, assertOwned, now)
+  await publishAnalyticsFeed(feed, "financial_sync", [], { error: null }, assertOwned, now)
 }

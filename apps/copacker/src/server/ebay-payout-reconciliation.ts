@@ -5,6 +5,7 @@ import {
 } from "@repo/copacker-marketplaces/ebay-finances"
 import { equalMoney, exactMoney, moneyTotals, sumMoney } from "@/lib/financial-money"
 
+// Compare signed net amounts by exact payout reference, without treating a transfer or its fees as new income.
 export function reconcileEbayPayout(payout: EbayPayout, transactions: EbayFinancialTransaction[]) {
   const rows = transactions.filter((row) => row.payoutId === payout.payoutId)
   const amounts = rows.map((row) =>
