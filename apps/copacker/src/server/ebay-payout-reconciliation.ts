@@ -25,7 +25,10 @@ export function reconcileEbayPayout(payout: EbayPayout, transactions: EbayFinanc
     status = "missing_transactions"
   } else if (valid.length !== rows.length || !target) {
     status = "invalid_amount"
-  } else if (valid.some((value) => value.currency !== expected.currency)) {
+  } else if (
+    payout.amount.currency !== expected.currency ||
+    valid.some((value) => value.currency !== expected.currency)
+  ) {
     status = "currency_mismatch"
   } else if (payout.payoutStatus !== "SUCCEEDED") {
     status = "payout_not_succeeded"

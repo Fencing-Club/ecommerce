@@ -57,6 +57,13 @@ it("compares payout net without subtracting sale fees twice or recognizing anoth
   expect(reconcileEbayPayout(payout, [sale, { ...refund, amount: { value: "25", currency: "CAD" } }]).status).toBe(
     "currency_mismatch"
   )
+  expect(
+    reconcileEbayPayout({ ...payout, amount: { value: "150", currency: "CAD" }, totalAmount: payout.amount }, [
+      sale,
+      refund
+    ]).status
+  ).toBe("currency_mismatch")
+  expect(reconcileEbayPayout({ ...payout, totalAmount: payout.amount }, [sale, refund]).status).toBe("balanced")
 })
 it("imports only thirty days and follows exact payout references without duplicating rows", async () => {
   context.request.mockImplementation(async (_method: string, path: string) => {
