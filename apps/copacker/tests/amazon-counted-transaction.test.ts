@@ -208,3 +208,28 @@ it("ignores shared identifiers belonging to other sellers and workspaces", async
     ])
   expect(await counted(orgId)).toEqual(["original"])
 })
+
+it.each([undefined, null, {}, "invalid", 7, false])(
+  "keeps malformed identifier data unresolved without breaking queries: %j",
+  async (value) => {
+    for (const side of ["original", "released"] as const) {
+      const orgId = await scope()
+      const originalData = sharedData("DEFERRED_RELEASED"),
+        releasedData = sharedData("RELEASED")
+      const data = (base: ReturnType<typeof sharedData>, malformed: boolean) => {
+        if (!malformed) {
+          return base
+        }
+        const { relatedIdentifiers: _references, ...rest } = base
+        return value === undefined ? rest : { ...rest, relatedIdentifiers: value }
+      }
+      await database
+        .insert(tables.amazonTransactions)
+        .values([
+          payment(orgId, "original", { data: data(originalData, side === "original") }),
+          payment(orgId, "released", { data: data(releasedData, side === "released") })
+        ])
+      expect(await counted(orgId)).toEqual(["original", "released"])
+    }
+  }
+)
