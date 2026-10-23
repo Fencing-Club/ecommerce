@@ -38,6 +38,7 @@ export const variantStockTargetSchema = z.strictObject({
   stocked: z.boolean().optional(),
   destination: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("location"), location: inventoryLocationRefSchema }),
+    z.strictObject({ kind: z.literal("pool"), locations: z.array(inventoryLocationRefSchema).min(1).max(100) }),
     z.strictObject({ kind: z.literal("group"), groupId: z.uuid() })
   ])
 })
@@ -77,7 +78,12 @@ export function resolveStockTargets(
     seen.add(target.id)
     const destination = target.destination
     const group = destination.kind === "group" ? byGroup.get(destination.groupId) : null
-    const members = destination.kind === "location" ? [destination.location] : (group?.locations ?? [])
+    let members = group?.locations ?? []
+    if (destination.kind === "location") {
+      members = [destination.location]
+    } else if (destination.kind === "pool") {
+      members = destination.locations
+    }
     if (destination.kind === "group" && !group) {
       issues.push({ code: "missing_group", targetId: target.id, locationKey: null })
     }

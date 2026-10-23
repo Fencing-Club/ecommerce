@@ -116,7 +116,9 @@ export function supplierLeadTime(supplier: RestockSupplier | null, fallback: num
   return supplier?.leadTimeDays ?? fallback
 }
 
-function status(line: Pick<RestockLine, "blocked" | "purchaseUnits" | "daysRemaining" | "leadTimeDays" | "available">) {
+export function restockLineStatus(
+  line: Pick<RestockLine, "blocked" | "purchaseUnits" | "daysRemaining" | "leadTimeDays" | "available">
+) {
   if (line.blocked.length || line.purchaseUnits === null) {
     return "blocked" as const
   }
@@ -127,6 +129,78 @@ function status(line: Pick<RestockLine, "blocked" | "purchaseUnits" | "daysRemai
     (line.available !== null && line.available <= 0) ||
     (line.daysRemaining !== null && line.daysRemaining < line.leadTimeDays)
   return runsOut ? ("stockout" as const) : ("reorder" as const)
+}
+
+type CalculationInput = Pick<
+  RestockLine,
+  | "available"
+  | "incoming"
+  | "sold"
+  | "caseQuantity"
+  | "targetStock"
+  | "minimumOrder"
+  | "unitCostMinor"
+  | "leadTimeDays"
+  | "rateDays"
+  | "priceMinor"
+  | "priceCurrency"
+  | "costCurrency"
+  | "blocked"
+>
+export function calculateRestockLine(input: CalculationInput, notStocked: boolean) {
+  const {
+    available,
+    incoming,
+    sold,
+    caseQuantity,
+    targetStock,
+    minimumOrder,
+    unitCostMinor,
+    leadTimeDays,
+    rateDays,
+    priceMinor,
+    priceCurrency,
+    costCurrency,
+    blocked
+  } = input
+  const recommend = (caseQuantityInput: number | null, minimum: number | null) =>
+    restockRecommendation(
+      {
+        available,
+        verifiedIncoming: incoming,
+        soldUnits: sold,
+        caseQuantity: caseQuantityInput,
+        targetStock,
+        minimumOrder: minimum,
+        unitCostMinor,
+        stocked: !notStocked,
+        unitsVerified: !blocked.includes("sku_ambiguous")
+      },
+      { leadTimeDays, salesWindowDays: rateDays }
+    )
+  const result = recommend(caseQuantity, minimumOrder)
+  const need = blocked.length ? null : recommend(null, null).purchaseUnits
+  // Stock and what's already on the way last `covered` days at the sales rate; the rest of the lead time is lost.
+  const perDay = sold !== null && rateDays > 0 ? sold / rateDays : null
+  const covered = perDay && available !== null ? (Math.max(0, available) + (incoming ?? 0)) / perDay : null
+  const lostDays = covered === null ? null : Math.max(0, leadTimeDays - covered)
+  const lostUnits = lostDays === null || perDay === null ? null : Math.round(lostDays * perDay)
+  const lostSalesMinor = lostUnits !== null && priceMinor !== null ? lostUnits * priceMinor : null
+  const lostProfitMinor =
+    lostSalesMinor !== null && lostUnits !== null && unitCostMinor !== null && costCurrency === priceCurrency
+      ? lostSalesMinor - lostUnits * unitCostMinor
+      : null
+  return {
+    need: notStocked ? 0 : need,
+    purchaseUnits: blocked.length && !notStocked ? null : result.purchaseUnits,
+    caseCount: blocked.length && !notStocked ? null : result.caseCount,
+    estimatedCostMinor: blocked.length && !notStocked ? null : result.estimatedCostMinor,
+    daysRemaining: result.daysRemaining === null ? null : Math.floor(result.daysRemaining),
+    lostDays: lostDays === null ? null : Math.ceil(lostDays),
+    lostUnits,
+    lostSalesMinor,
+    lostProfitMinor
+  }
 }
 
 // One suggestion per variation for the chosen channel: what's sold, what's there and on the way, and how many to
@@ -303,35 +377,26 @@ export function restockPlan(input: {
       const caseQuantity = casePack?.units ?? (bundle ? null : (row?.caseQuantity ?? null))
       const minimumOrder = details?.minimumOrder ?? null
       const unitCostMinor = bundle ? null : (row?.unitCostMinor ?? null)
-      const recommend = (caseQuantityInput: number | null, minimum: number | null) =>
-        restockRecommendation(
-          {
-            available,
-            verifiedIncoming: incoming,
-            soldUnits: sold,
-            caseQuantity: caseQuantityInput,
-            targetStock,
-            minimumOrder: minimum,
-            unitCostMinor,
-            stocked: !notStocked,
-            unitsVerified: !blocked.includes("sku_ambiguous")
-          },
-          { leadTimeDays, salesWindowDays: rateDays }
-        )
-      const result = recommend(caseQuantity, minimumOrder)
-      const need = blocked.length ? null : recommend(null, null).purchaseUnits
-      // Stock and what's already on the way last `covered` days at the sales rate; the rest of the lead time is lost.
-      const perDay = sold !== null && rateDays > 0 ? sold / rateDays : null
-      const covered = perDay && available !== null ? (Math.max(0, available) + (incoming ?? 0)) / perDay : null
-      const lostDays = covered === null ? null : Math.max(0, leadTimeDays - covered)
-      const lostUnits = lostDays === null || perDay === null ? null : Math.round(lostDays * perDay)
       const priceMinor = row?.priceMinor ?? null
       const priceCurrency = row?.priceCurrency ?? null
-      const lostSalesMinor = lostUnits !== null && priceMinor !== null ? lostUnits * priceMinor : null
-      const lostProfitMinor =
-        lostSalesMinor !== null && lostUnits !== null && unitCostMinor !== null && row?.costCurrency === priceCurrency
-          ? lostSalesMinor - lostUnits * unitCostMinor
-          : null
+      const calculated = calculateRestockLine(
+        {
+          available,
+          incoming,
+          sold,
+          caseQuantity,
+          targetStock,
+          minimumOrder,
+          unitCostMinor,
+          leadTimeDays,
+          rateDays,
+          priceMinor,
+          priceCurrency,
+          costCurrency: row?.costCurrency ?? null,
+          blocked
+        },
+        notStocked
+      )
       const packOf =
         bundle?.components?.length && channel.kind === "amazon"
           ? bundle.components.reduce((total, component) => total + component.quantity, 0)
@@ -362,26 +427,18 @@ export function restockPlan(input: {
         minimumOrder,
         caseQuantity,
         casePack,
-        need: notStocked ? 0 : need,
-        purchaseUnits: result.purchaseUnits,
-        caseCount: result.caseCount,
         unitCostMinor,
         costCurrency: row?.costCurrency ?? null,
-        estimatedCostMinor: result.estimatedCostMinor,
-        daysRemaining: result.daysRemaining === null ? null : Math.floor(result.daysRemaining),
         priceMinor,
         priceCurrency,
-        lostDays: lostDays === null ? null : Math.ceil(lostDays),
-        lostUnits,
-        lostSalesMinor,
-        lostProfitMinor
+        ...calculated
       }
       if (notStocked) {
         lines.push({ ...line, status: "not_stocked" })
       } else if (noListing) {
         lines.push({ ...line, status: "no_listing", purchaseUnits: null, caseCount: null, estimatedCostMinor: null })
       } else {
-        lines.push({ ...line, status: status(line) })
+        lines.push({ ...line, status: restockLineStatus(line) })
       }
     }
   }

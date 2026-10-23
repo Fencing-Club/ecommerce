@@ -12,7 +12,7 @@ describe("restock operation schemas", () => {
     expect(report.descriptor.execution.csvColumns).toContain("purchaseUnits")
     expect(report.input.parse({})).toEqual({})
     expect(report.input.safeParse({ action: "generate", selection: {}, fileFormat: "csv" }).success).toBe(false)
-    expect(Object.keys(createRegistry(Object.values(operations)).openapi().paths)).toHaveLength(2)
+    expect(Object.keys(createRegistry(Object.values(operations)).openapi().paths)).toHaveLength(3)
   })
   it("rejects ambiguous selections and invalid periods at the server boundary", () => {
     const input = operations["report.restock"].input

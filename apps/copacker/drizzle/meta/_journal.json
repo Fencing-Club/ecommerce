@@ -505,6 +505,13 @@
       "when": 1792701655182,
       "tag": "0071_silent_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792705359074,
+      "tag": "0072_daily_toxin",
+      "breakpoints": true
     }
   ]
 }

@@ -35,10 +35,10 @@ import {
 import { cliTokenResponse } from "../src/server/cli-http"
 import { GET as authorizeResponse } from "../src/server/http/api/cli-authorize"
 import { POST as consentResponse } from "../src/server/http/api/cli-consent"
+import { stockScopes } from "../src/server/inventory-connectors"
 import { operationResponse } from "../src/server/operations"
 import { restockAllChannels } from "../src/server/restock-page"
 import { amazonShipments } from "../src/server/shipments-page"
-import { stockScopes } from "../src/server/stock"
 import { setExcludedShopifyTags } from "../src/server/workspace-settings"
 import { database, setUpTestDatabase } from "./test-db"
 
@@ -637,6 +637,57 @@ describe("Restock operations", () => {
     await database.update(memberships).set({ role: "member", access: { products: "view" } })
     expect((await call("variant.stock-targets.show", selection)).status).toBe(200)
     expect((await call("variant.stock-targets.update", update, workspaceId, "targets-save")).status).toBe(404)
+  })
+
+  it("plans target-owned pools through the dispatcher and honors connection selections and price permissions", async () => {
+    await catalog()
+    const connection = await call("connection.inventory.show", { id: connectionId })
+    expect(connection.status).toBe(200)
+    const member = connection.body.data.locations[0].ref
+    const targetId = randomUUID()
+    expect(
+      (
+        await call(
+          "variant.stock-targets.update",
+          {
+            accountId: "shop.myshopify.com",
+            variantId: "gid://shopify/ProductVariant/1",
+            expectedRevision: 0,
+            targets: [{ id: targetId, quantity: 125, destination: { kind: "pool", locations: [member] } }]
+          },
+          workspaceId,
+          "pool-save"
+        )
+      ).status
+    ).toBe(200)
+    const input = { days: 30, leadTimeDays: 45 }
+    const report = await call("report.restock.targets", input)
+    expect(report.status).toBe(200)
+    expect(report.body.data.rows).toHaveLength(1)
+    expect(report.body.data.rows[0]).toMatchObject({
+      targetId,
+      members: [member],
+      line: { targetStock: 125, purchaseUnits: 110 }
+    })
+    await database.update(memberships).set({ role: "member", access: { restock: "view" } })
+    const redacted = await call("report.restock.targets", input)
+    expect(redacted.body.data.rows[0].line.unitCostMinor).toBeNull()
+    expect(redacted.body.meta.redactedFields).toContain("rows.*.line.unitCostMinor")
+    expect((await call("connection.inventory.show", { id: connectionId })).status).toBe(404)
+    await database.update(memberships).set({ role: "owner", access: {} })
+    expect(
+      (
+        await call(
+          "connection.inventory.update",
+          { id: connectionId, expectedRevision: connection.body.data.revision, locations: [] },
+          workspaceId,
+          "disable-stock"
+        )
+      ).status
+    ).toBe(200)
+    const blocked = await call("report.restock.targets", input)
+    expect(blocked.body.meta.completeness).toBe("partial")
+    expect(blocked.body.data.rows[0].issues).toContain("ineligible_location")
   })
 
   it("reads scoped products and location balances, redacts prices and invalidates changed pages", async () => {

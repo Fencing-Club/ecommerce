@@ -6,11 +6,12 @@ import { queueAdsSync } from "./amazon-ads"
 import { queueAmazonSubscription } from "./amazon-notifications"
 import { demoShopDomain } from "./demo-shopify"
 import { queueEbaySubscription } from "./ebay-events"
+import { stockScopes } from "./inventory-connectors"
 import { jobRow, type JobInput } from "./job-payloads"
 import type { JobContext } from "./job-runtime"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { queueShopifySubscription } from "./shopify-webhooks"
-import { refreshStock, stockScopes, stockSelection } from "./stock"
+import { refreshStock, stockSelection } from "./stock"
 
 // Once a day every connected account's orders and stock are read again. That catches changes whose webhook never
 // arrived and keeps sources without webhooks current. It runs at 07:00 UTC, overnight in the US.

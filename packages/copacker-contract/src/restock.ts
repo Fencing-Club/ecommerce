@@ -1,10 +1,12 @@
 import { z } from "zod"
 import { id, issueSchema, revision, type OperationDescriptor } from "./protocol.ts"
 import { defineOperation } from "./registry.ts"
+import { inventoryLocationRefSchema, unassignedStockTargetSchema } from "./stock-targets.ts"
 
 // Until canonical catalog identities land, these are explicit, workspace-scoped channel keys.
 const channelId = z.string().min(1).max(255)
 const days = z.number().int().min(1).max(730)
+export const targetRestockSelectionSchema = z.strictObject({ days, leadTimeDays: days })
 const quantity = z.number().int().safe().nullable()
 const restockStatusSchema = z.enum(["stockout", "reorder", "stocked", "blocked", "not_stocked", "no_listing"])
 export const restockSelectionSchema = z.strictObject({
@@ -162,6 +164,23 @@ export function restockOperations<C extends z.ZodType>(casePack: C) {
     >
   }
   return {
+    "report.restock.targets": defineOperation(
+      metadata("report.restock.targets"),
+      targetRestockSelectionSchema,
+      z.strictObject({
+        settings: targetRestockSelectionSchema,
+        rows: z.array(
+          z.strictObject({
+            variantId: z.string(),
+            targetId: id,
+            members: z.array(inventoryLocationRefSchema),
+            issues: z.array(z.string()),
+            line: restockLineSchema(casePack).nullable()
+          })
+        ),
+        unassigned: z.array(z.strictObject({ variantId: z.string(), values: z.array(unassignedStockTargetSchema) }))
+      })
+    ),
     "restock.channel.list": defineOperation(
       metadata("restock.channel.list"),
       z.strictObject({}),

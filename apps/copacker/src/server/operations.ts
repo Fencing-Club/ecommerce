@@ -26,7 +26,13 @@ import { cliGrants, memberships, operationReceipts, restockReports } from "@/db/
 import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
 import { boundedBody } from "./cli-http"
-import { connectionSettings, operationConnections, updateConnectionSettings } from "./operation-connections"
+import {
+  connectionSettings,
+  operationConnections,
+  updateConnectionSettings,
+  connectionInventory,
+  updateConnectionInventory
+} from "./operation-connections"
 import { readCustomerOrders } from "./operation-order-reads"
 import { readInventory, readProducts } from "./operation-product-reads"
 import {
@@ -39,6 +45,8 @@ import {
 } from "./operation-purchasing-reads"
 import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { readShipments } from "./operation-shipment-reads"
+import { restockTargetReport } from "./restock-page"
+import { restockPriceFields } from "./restock-plan"
 import { hash, sign, verifySignature } from "./security"
 import {
   listLocationGroups,
@@ -112,6 +120,25 @@ type Entry = {
   execute: (input: unknown, context: Context) => Promise<unknown>
 }
 const entries: Entry[] = [
+  entry(restockDefinitions["report.restock.targets"], restock, async (input, context) => {
+    const s = session(context)
+    const result = await restockTargetReport(s, input)
+    context.responseMeta = {
+      completeness:
+        result.unassigned.length ||
+        result.rows.some((row) => row.issues.length || !row.line || row.line.status === "blocked")
+          ? "partial"
+          : "complete",
+      redactedFields: can(s, "prices") ? [] : restockPriceFields.map((field) => `rows.*.line.${field}`)
+    }
+    return result
+  }),
+  entry(connectionOperations["connection.inventory.show"], admin, (input, context) =>
+    connectionInventory(session(context), input.id, context.executor)
+  ),
+  entry(connectionOperations["connection.inventory.update"], admin, (input, context) =>
+    updateConnectionInventory(session(context), input, context.executor)
+  ),
   entry(stockTargetOperations["variant.stock-targets.show"], productRead, (input, context) =>
     readStockTargets(session(context), input, context.executor)
   ),

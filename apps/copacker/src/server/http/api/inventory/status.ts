@@ -4,7 +4,8 @@ import { connections, stockSnapshots } from "@/db/schema"
 import { requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
-import { stockScopes, stockSelection } from "@/server/stock"
+import { stockScopes } from "@/server/inventory-connectors"
+import { stockSelection } from "@/server/stock"
 
 // Status polling must not transfer the catalog JSON from Postgres on every request.
 export async function GET(request: Request) {
