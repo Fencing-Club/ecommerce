@@ -49,7 +49,7 @@ export function DangerZone({
     accountDescription = t("account.closing", { count: closing.length, workspaces: format.list(closing) })
   }
   return (
-    <Card flush className="divide-y border-destructive-border ring-destructive-border">
+    <Card flush className="divide-y border-destructive/30 ring-destructive/30">
       {owner && (
         <Row title={t("workspace.title")} detail={t("workspace.detail", { workspace })}>
           <Confirm

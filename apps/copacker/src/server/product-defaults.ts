@@ -270,12 +270,13 @@ export async function assignProductLabel(s: Session, raw: unknown) {
 
 // What a new PO line for a Shopify variant starts with: pieces per unit from Shopify, description, preparation and the
 // suffocation warning from the product's saved defaults.
-export async function lineDefaultsFor(orgId: string) {
+export async function lineDefaultsFor(orgId: string, shopifyDomain?: string) {
   const [account] = await db()
     .select({ domain: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
-  const saved = account ? await readProductDefaults(orgId, account.domain) : new Map<string, ProductDefaults>()
+  const domain = shopifyDomain ?? account?.domain
+  const saved = domain ? await readProductDefaults(orgId, domain) : new Map<string, ProductDefaults>()
   return (variant: CatalogVariant) => {
     let piecesPerSet = 1
     try {

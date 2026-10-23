@@ -120,7 +120,7 @@ function AdsSyncStatus({ active, failed }: { active: boolean; failed: boolean })
   }
   return (
     <span className="flex items-center gap-1.5 text-muted-foreground">
-      <CircleCheck className="size-3.5 text-success" aria-hidden />
+      <CircleCheck className="size-3.5 text-green-800 dark:text-green-400" aria-hidden />
       {t("ready")}
     </span>
   )

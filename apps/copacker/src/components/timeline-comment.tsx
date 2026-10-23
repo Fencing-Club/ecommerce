@@ -49,7 +49,7 @@ export function TimelineComment({
       <div
         className={cn(
           "relative overflow-hidden rounded-lg border bg-background focus-within:ring-3 focus-within:ring-ring/50",
-          error ? "border-destructive-border" : "border-input focus-within:border-ring"
+          error ? "border-destructive/30" : "border-input focus-within:border-ring"
         )}
       >
         <Textarea
@@ -70,7 +70,7 @@ export function TimelineComment({
         <FormError
           id={errorId}
           message={error}
-          className="rounded-none border-0 border-t border-destructive-border bg-destructive-tint has-data-[slot=alert-action]:pe-10 *:data-[slot=alert-description]:text-meta/5"
+          className="rounded-none border-0 border-t border-destructive/30 bg-destructive/5 dark:bg-destructive/10 has-data-[slot=alert-action]:pe-10 *:data-[slot=alert-description]:text-meta/5"
           action={
             <AlertAction className="top-1.5 end-1.5">
               <Button

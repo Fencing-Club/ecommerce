@@ -68,7 +68,7 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
           {...handlers}
           data-dragging={isDragging || undefined}
           onClick={browse}
-          className="focus-ring flex w-full items-center gap-3 rounded-lg border border-border-strong bg-sidebar px-3 text-start transition-colors *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring data-dragging:border-ring data-dragging:bg-muted/50"
+          className="focus-ring flex w-full items-center gap-3 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-sidebar px-3 text-start transition-colors *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring data-dragging:border-ring data-dragging:bg-muted/50"
         >
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground">
             <Upload className="size-4" aria-hidden />
@@ -96,9 +96,9 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
           variant="outline"
           {...handlers}
           data-dragging={isDragging || undefined}
-          className="border-success-soft bg-success-tint data-dragging:border-ring"
+          className="border-green-50 dark:border-green-950 bg-green-50 dark:bg-green-950 data-dragging:border-ring"
         >
-          <ItemMedia variant="icon" className="text-success">
+          <ItemMedia variant="icon" className="text-green-800 dark:text-green-400">
             <CircleCheck aria-hidden />
           </ItemMedia>
           <ItemContent className="min-w-0">

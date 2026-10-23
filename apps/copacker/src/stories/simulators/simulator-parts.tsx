@@ -166,7 +166,7 @@ export function IssueReport({
             className={cn(
               "rounded-md border px-2 py-0.5 font-mono text-xs",
               seen.has(code)
-                ? "border-destructive-border bg-destructive-soft text-destructive"
+                ? "border-destructive/30 bg-destructive/10 dark:bg-destructive/20 text-destructive"
                 : "text-muted-foreground"
             )}
           >

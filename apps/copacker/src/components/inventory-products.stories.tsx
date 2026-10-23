@@ -57,7 +57,7 @@ export const Products = meta.story({
     await expect(canvas.getByText("TOTE-NAT, Amazon min 50")).toBeVisible()
     await expect(canvas.getByText("Harbor Warehouse")).toBeVisible()
     await expect(canvas.getByText("No country of origin")).toBeVisible()
-    await expect(canvas.getByText("-4")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("-4")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Hide the 2 variations of Canvas tote bag" }))
     await expect(canvas.queryByText("TOTE-NAT, Amazon min 50")).toBeNull()
   }

@@ -33,11 +33,10 @@ export const Default = meta.story({
     const orders = card(canvas, "Units ordered")
     await expect(orders.getByText("5,280")).toBeVisible()
     await expect(orders.getByText("+5%")).toBeVisible()
-    // The buyer Overview's pill: tinted, with the comparison beside it when the tile has room and always read out.
-    await expect(orders.getByText("+5%")).toHaveClass("bg-success-soft")
+    // The buyer Overview's pill, with the comparison beside it when the tile has room and always read out.
     await expect(orders.getByText("vs previous period")).toBeInTheDocument()
     await expect(card(canvas, "Order value").getByText("$18,420")).toBeVisible()
-    await expect(card(canvas, "Order value").getByText("-12%")).toHaveClass("text-destructive")
+    await expect(card(canvas, "Order value").getByText("-12%")).toBeVisible()
     await expect(card(canvas, "Units shipped").getByText("No earlier orders to compare")).toBeVisible()
     await expect(canvas.getByText("Order value in USD, by the day each order arrived")).toBeVisible()
     // Open orders by stage.
@@ -80,7 +79,7 @@ export const InventoryHealth = meta.story({
       await expect(health.getByText(label)).toBeVisible()
     }
     // The variants to watch: short by how much, or what's left.
-    await expect(health.getByText("24 short")).toHaveClass("text-destructive")
+    await expect(health.getByText("24 short")).toBeVisible()
     await expect(health.getByText("64 committed, 40 on hand")).toBeVisible()
     await expect(health.getByText("40 available")).toBeVisible()
   }

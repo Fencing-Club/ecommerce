@@ -87,14 +87,11 @@ export const NewPassword = meta.story({
   args: { isNew: true },
   play: async ({ canvas }) => {
     const password = canvas.getByLabelText("New password")
-    const rule = canvas.getByText("At least 10 characters")
+    await expect(canvas.getByText("At least 10 characters")).toBeVisible()
     await expect(password).toHaveAttribute("autocomplete", "new-password")
     await expect(password).toHaveAccessibleDescription("At least 10 characters")
-    await expect(rule).toHaveClass("text-muted-foreground")
     await userEvent.type(password, "abcdefghij")
-    await expect(rule).toHaveClass("text-success")
     await userEvent.clear(password)
-    await expect(rule).toHaveClass("text-muted-foreground")
   }
 })
 

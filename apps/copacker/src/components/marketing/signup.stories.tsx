@@ -14,7 +14,7 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (
-      <section className="dark bg-[#c2410c] px-6 py-24 text-white [color-scheme:dark]">
+      <section className="dark bg-orange-700 px-6 py-24 text-white [color-scheme:dark]">
         <Story />
       </section>
     )

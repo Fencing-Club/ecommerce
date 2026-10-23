@@ -14,6 +14,7 @@ import {
 import { GET as searchImportCatalog } from "../../src/server/http/api/imports/$id/catalog"
 import { importJob } from "../../src/server/import-job"
 import { saveImportedOrder } from "../../src/server/import-save"
+import { orderLineCatalog } from "../../src/server/order-line-catalog"
 import { provider, storage } from "../mocks/providers"
 import { served } from "../served"
 import { database } from "../test-db"
@@ -56,6 +57,42 @@ const uploadImport = served(uploadImportHandler)
 
 describe("reviewed import save", () => {
   beforeEach(orderConnections)
+  it("loads draft defaults from the pinned store even if the current connection changes during catalog reads", async () => {
+    await reviewedImport()
+    await database.insert(tables.productDefaults).values([
+      {
+        orgId: buyerId,
+        shopifyDomain: "test.myshopify.com",
+        productId: "gid://shopify/Product/1",
+        description: "Original store",
+        amazonNetwork: "awd_us"
+      },
+      {
+        orgId: buyerId,
+        shopifyDomain: "replacement.myshopify.com",
+        productId: "gid://shopify/Product/1",
+        description: "Replacement store",
+        amazonNetwork: "fba"
+      }
+    ])
+    await database
+      .update(tables.connections)
+      .set({ externalId: "replacement.myshopify.com" })
+      .where(eq(tables.connections.provider, "shopify"))
+    const lines = await orderLineCatalog(
+      buyerId,
+      "test.myshopify.com",
+      [orderData.items[0]!.variantId],
+      "USD",
+      "amazon"
+    )
+    expect(provider.shopifyFor).toHaveBeenCalledWith(buyerId, "test.myshopify.com")
+    expect(lines.get(orderData.items[0]!.variantId)).toMatchObject({
+      instructions: "Original store",
+      receiver: "awd_us",
+      piecesPerSet: 2
+    })
+  })
   it.each(["missing", "other_workspace", "removed"] as const)(
     "rejects a stop at a %s forwarder without saving a draft",
     async (scenario) => {

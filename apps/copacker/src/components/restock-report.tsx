@@ -179,7 +179,7 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
             <h2 id="restock-no-listing" className="font-semibold">
               <GroupTrigger>{t("statuses.noListing")}</GroupTrigger>
             </h2>
-            <AlertTriangle className="size-3.5 text-warning" aria-hidden="true" />
+            <AlertTriangle className="size-3.5 text-amber-400" aria-hidden="true" />
             <span className="text-xs text-muted-foreground">{t("products", { count: lines.length })}</span>
           </div>
           <CardDescription className="ps-6 text-xs">{t("noListingHint")}</CardDescription>

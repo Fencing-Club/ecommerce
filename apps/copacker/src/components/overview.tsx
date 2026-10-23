@@ -26,7 +26,7 @@ import {
   UpcomingSpend,
   useFigures
 } from "./overview-sections"
-import type { PeriodSelection } from "./period-picker"
+import type { PickerPeriod, PeriodSelection } from "./period-picker"
 import { PeriodPicker } from "./period-picker"
 import { DeltaNote, StatCard, StatGrid } from "./stat-card"
 
@@ -321,23 +321,25 @@ export function OverviewDashboard({ data, refresh }: { data: Overview; refresh: 
 // The period and channel every card covers, in the page header once the overview has loaded.
 export function OverviewFilters({
   data,
+  period = data.period,
+  channel = data.channel?.key ?? null,
   onPeriodChange,
   onChannelChange
 }: {
   data: Overview
+  period?: PickerPeriod
+  channel?: string | null
   onPeriodChange: (period: PeriodSelection) => void
   onChannelChange: (channel: string | null) => void
 }) {
-  const { connected, period, channels, channel } = data
+  const { connected, channels } = data
   if (!connected.length) {
     return null
   }
   return (
     <>
       <PeriodPicker period={period} onChange={onPeriodChange} />
-      {channels.length > 1 && (
-        <ChannelFilter channels={channels} value={channel?.key ?? null} onChange={onChannelChange} />
-      )}
+      {channels.length > 1 && <ChannelFilter channels={channels} value={channel} onChange={onChannelChange} />}
     </>
   )
 }

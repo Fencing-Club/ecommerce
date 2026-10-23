@@ -454,7 +454,12 @@ export function Planner() {
                   <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
                     {t("restock")}
                   </text>
-                  <text x={noteRight} y={noteTop + noteSize * 1.7} className="fill-success" style={{ fontWeight: 700 }}>
+                  <text
+                    x={noteRight}
+                    y={noteTop + noteSize * 1.7}
+                    className="fill-green-800 dark:fill-green-400"
+                    style={{ fontWeight: 700 }}
+                  >
                     {t("restockUnits", { count: result.units })}
                   </text>
                 </g>
@@ -576,7 +581,7 @@ export function Planner() {
             term: t("lostSales"),
             value: result.lost > 50 ? money(result.lost) : t("none"),
             note: result.lost > 50 ? t("whileOut") : t("inStockThroughout"),
-            tone: result.lost > 50 ? "text-destructive" : "text-success"
+            tone: result.lost > 50 ? "text-destructive" : "text-green-800 dark:text-green-400"
           }
         ].map((stat, i) => (
           <div

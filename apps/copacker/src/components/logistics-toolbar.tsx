@@ -45,7 +45,10 @@ function FilterMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" className={cn("text-xs", value && "border-primary bg-primary-soft text-primary")} />
+          <Button
+            variant="outline"
+            className={cn("text-xs", value && "border-primary bg-orange-50 dark:bg-orange-950 text-primary")}
+          />
         }
       >
         <PlusCircle className="size-3.5" />

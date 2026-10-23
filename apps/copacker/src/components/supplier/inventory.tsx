@@ -50,7 +50,9 @@ function OnHand({
           <span
             className={cn(
               "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
-              delta > 0 ? "bg-success-soft text-success" : "bg-destructive-soft text-destructive"
+              delta > 0
+                ? "bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-400"
+                : "bg-destructive/10 dark:bg-destructive/20 text-destructive"
             )}
           >
             {delta > 0 ? "+" : "−"}
@@ -68,7 +70,8 @@ function OnHand({
         aria-invalid={next === null || undefined}
         className={cn(
           "w-24 text-end tabular-nums",
-          delta > 0 && "border-success focus-visible:border-success",
+          delta > 0 &&
+            "border-green-800 dark:border-green-400 focus-visible:border-green-800 dark:focus-visible:border-green-400",
           delta < 0 && "border-destructive focus-visible:border-destructive"
         )}
         onChange={(event) => onChange(event.target.value === String(row.onHand) ? undefined : event.target.value)}
