@@ -48,7 +48,7 @@ export const Open = meta.story({
     const trigger = canvas.getByRole("button", { name: "Search" })
     await expect(trigger).toHaveAttribute("aria-keyshortcuts", "Control+K")
     const panel = await openSearch(canvas)
-    await expect(within(panel).getByRole("combobox")).toHaveFocus()
+    await waitFor(() => expect(within(panel).getByRole("combobox")).toHaveFocus())
     await expect(groupNames(panel, "Pages")).toEqual([
       "Overview",
       "Sales",
@@ -77,7 +77,7 @@ export const KeyboardShortcut = meta.story({
   play: async () => {
     await userEvent.keyboard("{Control>}k{/Control}")
     const panel = await shownDialog("Search")
-    await expect(panel.getByRole("combobox")).toHaveFocus()
+    await waitFor(() => expect(panel.getByRole("combobox")).toHaveFocus())
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     await userEvent.keyboard("{Control>}k{/Control}")
