@@ -228,10 +228,12 @@ export const commands: readonly CommandDefinition[] = [
   read("product.listing.show", "Show a listing's identity, values and capabilities."),
   write("product.listing.link", "Link a listing to a durable variant identity.", [
     ...guarded,
+    "link-revision",
     "variant",
-    "pieces-per-listing"
+    "pieces-per-listing",
+    "inventory-owner"
   ]),
-  write("product.listing.unlink", "Detach a listing without renaming its seller SKU.", guarded),
+  write("product.listing.unlink", "Detach a listing without renaming its seller SKU.", [...guarded, "link-revision"]),
   controlled(
     "product.supplier.assign",
     "Assign a supplier to a product or reviewed rows.",

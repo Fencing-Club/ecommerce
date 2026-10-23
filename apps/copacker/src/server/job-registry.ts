@@ -1,6 +1,7 @@
 import { amazonAdsJob } from "./amazon-ads"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
 import { analyticsJob } from "./analytics-jobs"
+import { listingsJob } from "./channel-listings"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { evidenceRecoveryJob } from "./evidence-recovery"
 import { importJob } from "./import-job"
@@ -21,6 +22,7 @@ type JobRegistry = { [K in JobKind]: JobDefinition<K> }
 // Every kind of job: where it runs, what it carries and what runs it. Queue handlers finish within one queue delivery;
 // Workflow handlers can run for hours.
 const jobDefinitions = {
+  listings: defineJob({ kind: "listings", executor: "workflow", payload: jobPayloads.listings, run: listingsJob }),
   amazon: defineJob({
     kind: "amazon",
     executor: "workflow",

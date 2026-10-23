@@ -67,6 +67,28 @@ const find = (name: string) => {
 }
 
 describe("CLI input and output", () => {
+  it("maps both listing guards and explicit ownership", () => {
+    expect(
+      buildInput(
+        find("product.listing.link"),
+        {
+          revision: "4",
+          linkRevision: "2",
+          variant: "variant",
+          piecesPerListing: "6",
+          inventoryOwner: "external"
+        },
+        [workspace]
+      ).input
+    ).toEqual({
+      id: workspace,
+      expectedRevision: 4,
+      expectedLinkRevision: 2,
+      variantId: "variant",
+      piecesPerListing: 6,
+      inventoryOwner: "external"
+    })
+  })
   it("maps advertised commands and exact amounts without confusing entity IDs", () => {
     expect(buildInput(find("order.show"), { connection: workspace }, ["1043"]).input).toEqual({
       reference: "1043",

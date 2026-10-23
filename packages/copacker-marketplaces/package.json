@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./listing-writes": "./src/listing-writes.ts",
     "./amazon": "./src/amazon.ts",
     "./amazon-ads": "./src/amazon-ads.ts",
     "./amazon-marketplaces": "./src/amazon-marketplaces.ts",

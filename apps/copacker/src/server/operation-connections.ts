@@ -4,7 +4,7 @@ import {
   inventoryLocationKey,
   type datasetStatusSchema
 } from "@repo/copacker-contract"
-import { and, eq, count } from "drizzle-orm"
+import { and, eq, count, desc, sql } from "drizzle-orm"
 import type { z } from "zod"
 import { db, type Executor } from "@/db"
 import {
@@ -13,7 +13,8 @@ import {
   connections,
   organizations,
   salesSyncs,
-  stockSnapshots
+  stockSnapshots,
+  jobs
 } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { adsStatus } from "./amazon-ads"
@@ -106,6 +107,22 @@ function datasetState(
   return hasData ? "complete" : "not_started"
 }
 export async function operationConnections(s: Session) {
+  const listingJobs = can(s, "products")
+    ? await db()
+        .selectDistinctOn([sql`${jobs.payload}->>'connectionId'`, sql`${jobs.payload}->>'accountId'`], {
+          accountId: sql<string>`${jobs.payload}->>'accountId'`,
+          connectionId: sql<string>`${jobs.payload}->>'connectionId'`,
+          status: jobs.status
+        })
+        .from(jobs)
+        .where(and(eq(jobs.kind, "listings"), sql`${jobs.payload}->>'orgId' = ${s.org.id}`))
+        .orderBy(
+          sql`${jobs.payload}->>'connectionId'`,
+          sql`${jobs.payload}->>'accountId'`,
+          desc(jobs.createdAt),
+          desc(jobs.id)
+        )
+    : []
   const adsState = can(s, "overview") && can(s, "prices") ? await adsStatus(s.org.id) : null
   const adsEvidence = adsState
     ? await db()
@@ -149,6 +166,34 @@ export async function operationConnections(s: Session) {
   return [...accounts, ...ads.map((a) => ({ ...a, provider: "amazon_ads" as const, scopes: "" }))]
     .map((account) => {
       const datasets: Dataset[] = []
+      if (account.provider === "amazon" && can(s, "products")) {
+        const job = listingJobs.find((row) => row.accountId === account.accountId && row.connectionId === account.id)
+        let state: Dataset["state"] = "not_started"
+        if (job?.status === "complete") {
+          state = "complete"
+        }
+        if (job?.status === "pending") {
+          state = "queued"
+        }
+        if (job?.status === "running") {
+          state = "running"
+        }
+        if (job?.status === "failed" || job?.status === "cancelled") {
+          state = "failed"
+        }
+        datasets.push({
+          name: "products",
+          state,
+          collectedWith: [],
+          observedAt: null,
+          coveredFrom: null,
+          coveredTo: null,
+          issues:
+            state === "failed"
+              ? [issue("sync_failed", "Listing discovery did not finish; prior observations remain available.")]
+              : []
+        })
+      }
       let ordersCollectedWith: string[] = []
       if (account.provider === "shopify") {
         ordersCollectedWith = ["financial_transactions"]

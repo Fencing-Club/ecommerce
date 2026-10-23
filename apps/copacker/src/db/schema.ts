@@ -158,6 +158,36 @@ export const connectionSyncRuns = pgTable("connection_sync_runs", {
   jobIds: jsonb().$type<string[]>().notNull(),
   createdAt: createdAt()
 })
+export const channelListings = pgTable(
+  "channel_listings",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: orgRef({ onDelete: "cascade" }),
+    connectionId: uuid().notNull(),
+    accountId: text().notNull(),
+    marketplaceId: text().notNull(),
+    sellerSku: text().notNull(),
+    productType: text().notNull(),
+    asin: text(),
+    fulfillmentMode: text({ enum: ["fba", "fbm", "other"] }).notNull(),
+    amountMinor: integer(),
+    currency: text(),
+    quantity: integer(),
+    revision: integer().notNull().default(1),
+    linkRevision: integer().notNull().default(0),
+    variantId: text(),
+    piecesPerListing: integer(),
+    inventoryOwner: text({ enum: ["external", "manual"] })
+      .notNull()
+      .default("external"),
+    active: boolean().notNull().default(true),
+    observedAt: timestamp({ withTimezone: true }).notNull(),
+    generation: uuid().notNull()
+  },
+  (t) => [
+    uniqueIndex("channel_listing_identity").on(t.orgId, t.connectionId, t.accountId, t.marketplaceId, t.sellerSku)
+  ]
+)
 export const suppliers = pgTable(
   "suppliers",
   {
@@ -644,6 +674,7 @@ export const jobs = pgTable(
         "shopify",
         "import",
         "stock",
+        "listings",
         "sales",
         "analytics",
         "evidence-recovery",

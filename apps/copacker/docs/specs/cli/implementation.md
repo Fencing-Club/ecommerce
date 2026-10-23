@@ -16,11 +16,18 @@ Production acceptance exercised authenticated reads, unchanged-value guarded pro
 
 ## Current implementation slice
 
-Connection `sync`, `sync show` and operational `status` reuse existing workers. Exact jobs are retained per run, grouped permissions are checked, and worker wakes follow the outer commit. See [connection sync](../../cli-connections.md). These changes require the current PR and its forward migration to pass CI and deployment before they are production capabilities.
+Connection `sync`, `sync show` and operational `status` shipped in PR #196, production commit
+`9dd3e0f031cd84a680223e7eab2abc94b675a4fd`. Exact jobs are retained per run, grouped permissions are checked, and worker
+wakes follow the outer commit. Production acceptance passed status, connection reads, sync schema discovery, Shopify
+product/inventory ingestion through a succeeded retained run, and replay of the same execution key without a new run.
+See [connection sync](../../cli-connections.md). No upstream product or inventory values were written.
 
 ## Remaining
 
-- Durable listing discovery/linking, write destinations, retained per-target execution and controlled Shopify SKU/cost/price/inventory and Amazon price/FBM inventory writes. No Amazon SKU rename handler is planned.
+The following listing slice adds Amazon US discovery, guarded variant links and provider adapter primitives; see
+[CLI listings](../../cli-listings.md). It requires its own forward migration and deployment. Provider writes remain disabled.
+
+- Write destinations, retained per-target execution and controlled Shopify SKU/cost/price/inventory and Amazon price/FBM inventory writes. No Amazon SKU rename handler is planned.
 - Connection authorization lifecycle (connect/reconnect/disconnect).
 - Expenses, demand reporting, additional read/export coverage, buyer metadata imports/exports, labels/images, catalog removal/export, partner invitations/removal and addresses.
 - General bulk execution and immutable provider-write previews.

@@ -526,6 +526,13 @@
       "when": 1792734415222,
       "tag": "0074_last_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792735413635,
+      "tag": "0075_outstanding_rogue",
+      "breakpoints": true
     }
   ]
 }
