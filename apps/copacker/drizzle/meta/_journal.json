@@ -498,6 +498,13 @@
       "when": 1792699688739,
       "tag": "0070_steady_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792701655182,
+      "tag": "0071_silent_masque",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ import {
   shipmentReadOperations,
   requestSchema,
   setupOperations,
+  stockTargetOperations,
   usesAccountContext,
   type OperationDefinition
 } from "@repo/copacker-contract"
@@ -39,6 +40,13 @@ import {
 import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { readShipments } from "./operation-shipment-reads"
 import { hash, sign, verifySignature } from "./security"
+import {
+  listLocationGroups,
+  readStockTargets,
+  removeLocationGroup,
+  saveLocationGroup,
+  saveStockTargets
+} from "./stock-targets"
 import { workspaceMemberships, workspaceSession, type Session } from "./workspace-session"
 
 type Context = {
@@ -54,6 +62,9 @@ const member = (context: Context) => Boolean(context.session)
 const buyer = (context: Context) => context.session?.org.kind === "buyer"
 const admin = (context: Context) => buyer(context) && context.session !== null && isAdmin(context.session)
 const restock = (context: Context) => buyer(context) && context.session !== null && can(context.session, "restock")
+const productRead = (context: Context) => buyer(context) && context.session !== null && can(context.session, "products")
+const productEdit = (context: Context) =>
+  buyer(context) && context.session !== null && can(context.session, "products", "edit")
 const account = () => true
 const poRead = (context: Context) => context.session !== null && can(context.session, "orders")
 const partnersRead = (context: Context) =>
@@ -101,6 +112,21 @@ type Entry = {
   execute: (input: unknown, context: Context) => Promise<unknown>
 }
 const entries: Entry[] = [
+  entry(stockTargetOperations["variant.stock-targets.show"], productRead, (input, context) =>
+    readStockTargets(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["variant.stock-targets.update"], productEdit, (input, context) =>
+    saveStockTargets(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["location.group.list"], productRead, (_, context) =>
+    listLocationGroups(session(context), context.executor)
+  ),
+  entry(stockTargetOperations["location.group.save"], productEdit, (input, context) =>
+    saveLocationGroup(session(context), input, context.executor)
+  ),
+  entry(stockTargetOperations["location.group.remove"], productEdit, (input, context) =>
+    removeLocationGroup(session(context), input, context.executor)
+  ),
   entry(shipmentReadOperations["shipment.list"], shipmentsRead, async (input, context) => {
     const result = await readShipments(session(context), input.origin !== "copacker" && !input.poId)
     context.responseMeta = result.metadata

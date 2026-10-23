@@ -277,6 +277,21 @@ export const commands: readonly CommandDefinition[] = [
     "classification"
   ]),
   read("location.show", "Show quantity states and write capabilities."),
+  read(
+    "variant.stock-targets.show",
+    "Show a variation's stock buffers, locations and groups.",
+    ["account-id"],
+    "variantId"
+  ),
+  write(
+    "variant.stock-targets.update",
+    "Replace a variation's stock targets using JSON input.",
+    ["account-id", ...guarded],
+    "variantId"
+  ),
+  command("location.group.list", "List location groups and connector locations."),
+  write("location.group.save", "Create or update a location group using JSON input.", guarded),
+  write("location.group.remove", "Remove an unused location group.", guarded),
   write("location.update", "Classify an observed Shopify location.", [...guarded, "snapshot", "classification"]),
   list("catalog.list", "List supplier-owned catalogs.", ["state", "query"]),
   read("catalog.show", "Show catalog pricing, members and customer assignments."),
