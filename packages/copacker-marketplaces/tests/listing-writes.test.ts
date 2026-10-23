@@ -10,6 +10,20 @@ import {
 import type { Shopify } from "../src/shopify"
 
 describe("controlled listing adapters", () => {
+  it("parses Amazon's decimal-string money without rounding away precision", () => {
+    const listing = amazonListing.parse({
+      sku: "SKU",
+      summaries: [{ marketplaceId: "ATVPDKIKX0DER", productType: "PRODUCT" }],
+      offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { currencyCode: "USD", amount: "30.0" } }]
+    })
+    expect(amazonListingValues(listing)).toMatchObject({ amountMinor: 3000, currency: "USD" })
+    expect(() =>
+      amazonListing.parse({
+        ...listing,
+        offers: [{ ...listing.offers[0], price: { currencyCode: "USD", amount: "30.001" } }]
+      })
+    ).toThrow(/amount/)
+  })
   it("preserves offer selectors and patches only the requested price", async () => {
     const request = vi
       .fn<Amazon["request"]>()

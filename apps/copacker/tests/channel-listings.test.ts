@@ -21,7 +21,7 @@ const variantId = scopedReadId(shop, "shop.myshopify.com", "gid://shopify/Produc
 const item = (sku: string) => ({
   sku,
   summaries: [{ marketplaceId: "ATVPDKIKX0DER", productType: "PRODUCT" }],
-  offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { amount: 12, currency: "USD" } }],
+  offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { amount: "12.00", currencyCode: "USD" } }],
   fulfillmentAvailability: [{ fulfillmentChannelCode: "DEFAULT", quantity: 3 }]
 })
 beforeEach(async () => {
@@ -77,6 +77,16 @@ async function queued() {
 const save = (input: Parameters<typeof linkListing>[1]) =>
   database.transaction((tx) => withTransaction(tx, () => linkListing(s, input)))
 describe("current listing identities", () => {
+  it("rejects conflicting observations across pages without retiring prior evidence", async () => {
+    const { input, context } = await queued()
+    request.mockResolvedValueOnce({ items: [item("DUPLICATE")], pagination: { nextToken: "second" } })
+    await expect(listingsJob(input, context)).rejects.toThrow("Continue listing discovery")
+    request.mockResolvedValueOnce({ items: [{ ...item("DUPLICATE"), offers: [] }] })
+    await expect(listingsJob({ ...input, pageToken: "second", seenTokens: ["second"] }, context)).rejects.toThrow(
+      "Listing identity changed during pagination"
+    )
+    expect((await readListings(s))[0]).toMatchObject({ active: true, price: { amountMinor: 1200 } })
+  })
   it("isolates workspaces, redacts prices and refuses looping discovery", async () => {
     const { input, context } = await queued()
     request.mockResolvedValueOnce({ items: [item("SKU")] })

@@ -800,7 +800,18 @@ export async function operationResponse(request: Request, operation: string) {
             found.execute(parsed.data, fresh)
           )
         )
-    const data = definition.output.parse(result)
+    let data = definition.output.parse(result)
+    // Apply current price access even when a local mutation returns its retained receipt.
+    if (operation.startsWith("product.listing.") && context.session && !can(context.session, "prices")) {
+      if (operation === "product.listing.list") {
+        const list = listingOperations["product.listing.list"].output.parse(data)
+        data = { ...list, items: list.items.map((item) => ({ ...item, price: null })) }
+        context.responseMeta.redactedFields = ["items.*.price"]
+      } else {
+        data = { ...listingOperations["product.listing.show"].output.parse(data), price: null }
+        context.responseMeta.redactedFields = ["price"]
+      }
+    }
     return Response.json(
       {
         data,

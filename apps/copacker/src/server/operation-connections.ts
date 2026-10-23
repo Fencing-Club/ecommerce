@@ -109,14 +109,19 @@ function datasetState(
 export async function operationConnections(s: Session) {
   const listingJobs = can(s, "products")
     ? await db()
-        .select({
+        .selectDistinctOn([sql`${jobs.payload}->>'connectionId'`, sql`${jobs.payload}->>'accountId'`], {
           accountId: sql<string>`${jobs.payload}->>'accountId'`,
           connectionId: sql<string>`${jobs.payload}->>'connectionId'`,
           status: jobs.status
         })
         .from(jobs)
         .where(and(eq(jobs.kind, "listings"), sql`${jobs.payload}->>'orgId' = ${s.org.id}`))
-        .orderBy(desc(jobs.createdAt))
+        .orderBy(
+          sql`${jobs.payload}->>'connectionId'`,
+          sql`${jobs.payload}->>'accountId'`,
+          desc(jobs.createdAt),
+          desc(jobs.id)
+        )
     : []
   const adsState = can(s, "overview") && can(s, "prices") ? await adsStatus(s.org.id) : null
   const adsEvidence = adsState

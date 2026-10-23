@@ -3,7 +3,7 @@ import type { Amazon } from "./amazon"
 import { usMarketplaceId } from "./amazon-marketplaces"
 import type { Shopify } from "./shopify"
 
-const money = z.object({ currency: z.string(), amount: z.number().nonnegative() })
+const money = z.object({ currencyCode: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/) })
 export const amazonListing = z.object({
   sku: z.string().min(1),
   summaries: z
@@ -11,7 +11,7 @@ export const amazonListing = z.object({
     .default([]),
   offers: z.array(z.object({ marketplaceId: z.string(), offerType: z.string(), price: money })).default([]),
   fulfillmentAvailability: z
-    .array(z.object({ fulfillmentChannelCode: z.string(), quantity: z.number().int().optional() }))
+    .array(z.object({ fulfillmentChannelCode: z.string(), quantity: z.number().int().nonnegative().optional() }))
     .default([])
 })
 export async function amazonListingPage(api: Pick<Amazon, "request">, sellerId: string, pageToken?: string) {
@@ -51,8 +51,9 @@ export function amazonListingValues(item: z.infer<typeof amazonListing>) {
     throw new Error("Amazon listing is ambiguous")
   }
   const offer = offers[0]
-  const amountMinor = offer ? Math.round(offer.price.amount * 100) : null
-  if (offer && (offer.price.currency !== "USD" || !Number.isSafeInteger(amountMinor))) {
+  const decimal = offer?.price.amount.split(".")
+  const amountMinor = decimal ? Number(BigInt(decimal[0]!) * 100n + BigInt((decimal[1] ?? "").padEnd(2, "0"))) : null
+  if (offer && (offer.price.currencyCode !== "USD" || !Number.isSafeInteger(amountMinor))) {
     throw new Error("Unsupported Amazon price basis")
   }
   let fulfillmentMode: "fbm" | "fba" | "other" = "other"
@@ -68,7 +69,7 @@ export function amazonListingValues(item: z.infer<typeof amazonListing>) {
     asin: summaries[0]!.asin ?? null,
     fulfillmentMode,
     amountMinor,
-    currency: offer?.price.currency ?? null,
+    currency: offer?.price.currencyCode ?? null,
     quantity: merchant[0]?.quantity ?? null
   }
 }

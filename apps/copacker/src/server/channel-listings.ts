@@ -78,6 +78,32 @@ export async function listingsJob(
       throw new Error("Listing account changed")
     }
     for (const value of values) {
+      const [prior] = await tx
+        .select()
+        .from(channelListings)
+        .where(
+          and(
+            eq(channelListings.orgId, input.orgId),
+            eq(channelListings.connectionId, input.connectionId),
+            eq(channelListings.accountId, input.accountId),
+            eq(channelListings.marketplaceId, usMarketplaceId),
+            eq(channelListings.sellerSku, value.sellerSku),
+            eq(channelListings.generation, input.generation)
+          )
+        )
+      if (prior) {
+        if (
+          prior.asin !== value.asin ||
+          prior.productType !== value.productType ||
+          prior.fulfillmentMode !== value.fulfillmentMode ||
+          prior.amountMinor !== value.amountMinor ||
+          prior.currency !== value.currency ||
+          prior.quantity !== value.quantity
+        ) {
+          throw new Error("Listing identity changed during pagination; start a fresh discovery")
+        }
+        continue
+      }
       await tx
         .insert(channelListings)
         .values({
