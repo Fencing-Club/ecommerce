@@ -285,7 +285,7 @@ export function OrderReviser({
                       }
                       onClick={() => change(line.key, { removed: !line.removed })}
                     >
-                      {line.removed ? <Undo2 /> : <X />}
+                      {line.removed ? <Undo2 className="rtl:-scale-x-100" /> : <X />}
                     </Button>
                   ) : (
                     <Button

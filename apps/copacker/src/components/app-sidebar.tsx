@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useShadcnLocalization,
   useSidebar
 } from "@buildkitgg/shadcn-baseui-kit"
 import { PanelLeft } from "lucide-react"
@@ -62,12 +63,18 @@ export type AppSidebarProps = {
 export function AppSidebar({ pathname, kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
+  const { direction } = useShadcnLocalization()
   const t = useTranslations("navigation")
   // A member sees only the pages they were given.
   const navigation = navigationFor(kind, usePermissions())
 
   return (
-    <Sidebar collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
+    // shadcn's side is a physical edge, so the sidebar takes the reading direction's start: the right in Urdu.
+    <Sidebar
+      side={direction === "rtl" ? "right" : "left"}
+      collapsible="icon"
+      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
+    >
       <SidebarHeader className="border-b p-3">
         <WorkspaceMenu active={active} fallbackName={name} workspaces={workspaces} />
       </SidebarHeader>

@@ -329,7 +329,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           {/* While the changes wait, opening the order is the next step; otherwise it's under the actions menu. */}
           {seesOrder && awaitingChanges && (
             <Button variant="outline" nativeButton={false} render={<Link to="/orders/$id" params={{ id: order.id }} />}>
-              <ArrowLeft aria-hidden="true" />
+              <ArrowLeft aria-hidden="true" className="rtl:rotate-180" />
               {viewOrder}
             </Button>
           )}

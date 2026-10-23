@@ -30,6 +30,15 @@ mocks the context with its selected toolbar language. The compatibility probe ex
 Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
 Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
 
+Right-to-left pages follow shadcn's rules:
+
+- **Classes are logical:** `ms-`, `pe-`, `start-`, `text-start`, never `ml-`, `pr-`, `left-` or `text-left`.
+- **Sides are physical:** a Sidebar's or Sheet's `side` and a Drawer's `swipeDirection` name a screen edge, so choose
+  them by direction. The sidebar takes `side="right"` in Urdu, from `useShadcnLocalization()`'s `direction`.
+- **Icons that point flip:** arrows and chevrons take `rtl:rotate-180`. An icon that isn't symmetric top to bottom,
+  such as undo, send or a panel, takes `rtl:-scale-x-100` instead. Icons that don't point the way the reader moves stay
+  as they are, such as external links.
+
 Every page preloads Geist's Latin face. Ukrainian, Hindi and Urdu pages also preload one file for their script
 (Geist's Cyrillic, Noto Sans Devanagari, Noto Nastaliq Urdu) from `src/styles/fonts/`, which the root layout names
 first in the page's font stack, so their text doesn't move when the font arrives.

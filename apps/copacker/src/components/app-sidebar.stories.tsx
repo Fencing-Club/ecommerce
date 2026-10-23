@@ -190,3 +190,14 @@ export const Measurements = meta.story({
     await expect(getComputedStyle(canvas.getByRole("link", { name: "Sales" })).fontWeight).toBe("400")
   }
 })
+
+// In Urdu the sidebar takes the reading direction's start, the right, with the page beside it.
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  play: async ({ canvasElement }) => {
+    const sidebar = canvasElement.querySelector("[data-slot=sidebar-container]")
+    const page = canvasElement.querySelector("[data-slot=sidebar-inset]")
+    await expect(sidebar).toHaveAttribute("data-side", "right")
+    await expect(page?.getBoundingClientRect().right).toBeLessThanOrEqual(sidebar?.getBoundingClientRect().left ?? 0)
+  }
+})

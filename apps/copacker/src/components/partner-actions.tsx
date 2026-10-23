@@ -222,13 +222,13 @@ export function SupplierRow({
           {invitable && <DropdownMenuSeparator />}
           {invitable && !supplier.invited && (
             <DropdownMenuItem onClick={() => setOpen("invite")}>
-              <Send />
+              <Send className="rtl:-scale-x-100" />
               {t("menu.invite")}
             </DropdownMenuItem>
           )}
           {invitable && supplier.invited && (
             <DropdownMenuItem disabled={sending} onClick={resend}>
-              <Send />
+              <Send className="rtl:-scale-x-100" />
               {t("menu.resend")}
             </DropdownMenuItem>
           )}
@@ -304,13 +304,13 @@ export function ForwarderRow({
           {invitable && <DropdownMenuSeparator />}
           {invitable && !forwarder.invited && (
             <DropdownMenuItem onClick={() => setOpen("invite")}>
-              <Send />
+              <Send className="rtl:-scale-x-100" />
               {t("menu.invite")}
             </DropdownMenuItem>
           )}
           {invitable && forwarder.invited && (
             <DropdownMenuItem disabled={sending} onClick={resend}>
-              <Send />
+              <Send className="rtl:-scale-x-100" />
               {t("menu.resend")}
             </DropdownMenuItem>
           )}

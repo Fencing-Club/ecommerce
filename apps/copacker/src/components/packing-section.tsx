@@ -41,10 +41,10 @@ export function PackingSection({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
           <h2 className="text-sm font-semibold max-sm:text-base">
-            <CollapsibleTrigger className="focus-ring group flex items-center gap-3 rounded-sm text-start max-sm:gap-2">
+            <CollapsibleTrigger className="focus-ring flex items-center gap-3 rounded-sm text-start max-sm:gap-2">
               <ChevronRight
                 aria-hidden
-                className="size-4 shrink-0 transition-transform group-data-panel-open:rotate-90"
+                className="size-4 shrink-0 transition-transform in-data-panel-open:rotate-90 rtl:not-in-data-panel-open:rotate-180"
               />
               {title}
             </CollapsibleTrigger>

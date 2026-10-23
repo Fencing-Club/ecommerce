@@ -1285,7 +1285,7 @@ function LabelPreview({
     <section aria-labelledby={`${id}-name`} className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button type="button" variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft data-icon="inline-start" />
+          <ArrowLeft data-icon="inline-start" className="rtl:rotate-180" />
           {t("allLabels")}
         </Button>
         {list.length > 1 && (
@@ -1298,7 +1298,7 @@ function LabelPreview({
               disabled={index <= 0}
               onClick={() => row.onPreview(list[index - 1]!)}
             >
-              <ChevronLeft />
+              <ChevronLeft className="rtl:rotate-180" />
             </Button>
             <span className="text-sm text-muted-foreground">
               {t(cartonId ? "positionPlaced" : "positionNotPlaced", { position: index + 1, count: list.length })}
@@ -1311,7 +1311,7 @@ function LabelPreview({
               disabled={index >= list.length - 1}
               onClick={() => row.onPreview(list[index + 1]!)}
             >
-              <ChevronRight />
+              <ChevronRight className="rtl:rotate-180" />
             </Button>
           </div>
         )}
