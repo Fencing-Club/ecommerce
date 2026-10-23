@@ -216,6 +216,7 @@ async function findImport(s: Session, id: string, inventory: boolean) {
         sql`${operationReceipts.result}->>'previewId' = ${id}`
       )
     )
+    .orderBy(operationReceipts.createdAt, operationReceipts.key)
     .limit(1)
   return receipt ? preview.parse(receipt.result) : null
 }
