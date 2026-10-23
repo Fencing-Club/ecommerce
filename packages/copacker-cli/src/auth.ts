@@ -52,9 +52,13 @@ export async function login(
   profile: string,
   baseUrl: string,
   report: (message: string) => void,
-  browser = true
+  browser = true,
+  timeoutMs = 600000
 ) {
   apiOrigin(baseUrl)
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000) {
+    throw clientError("invalid_input", "Login --timeout must be between 1 and 600 seconds.")
+  }
   const probe = `login-probe-${randomUUID()}`
   await store.saveCredential(probe, { kind: "interactive", accessToken: "storage-availability-check" })
   await store.clearCredential(probe)
@@ -83,7 +87,7 @@ export async function login(
       rejectCode(clientError("unauthenticated", "Sign-in was not completed.", 401))
       return
     }
-    response.end("Signed in to Copacker. You can close this tab.")
+    response.end("Approval received. Return to your terminal to check that sign-in completed. You can close this tab.")
     resolveCode(value)
   })
   await new Promise<void>((resolve, reject) => {
@@ -106,11 +110,18 @@ export async function login(
     code_challenge_method: "S256"
   }).toString()
   const timer = setTimeout(
-    () => rejectCode(clientError("wait_timeout", "Sign-in expired. Run login again.", 408)),
-    180000
+    () =>
+      rejectCode(
+        clientError(
+          "wait_timeout",
+          "Sign-in expired and the local callback closed. Run copacker login again, then approve the new browser page while the command is running.",
+          408
+        )
+      ),
+    timeoutMs
   )
   try {
-    report(`Complete sign-in in your browser: ${url.href}`)
+    report(`Complete sign-in within ${Math.ceil(timeoutMs / 1000)} seconds. Keep this command running: ${url.href}`)
     if (browser) {
       await openBrowser(url.href).catch(() => report("Open the sign-in link above to continue."))
     }
