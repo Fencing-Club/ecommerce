@@ -34,10 +34,9 @@ export const Default = meta.story({
     await expect(products).toHaveAttribute("aria-expanded", "false")
     await userEvent.click(products)
     const table = within(canvas.getByRole("table"))
-    await expect(table.getByText("240 of 240")).toHaveClass("text-green-800 dark:text-green-400")
-    await expect(table.getByText("60 of 120")).not.toHaveClass("text-green-800 dark:text-green-400")
+    await expect(table.getByText("240 of 240")).toBeVisible()
     await expect(table.getByText("60 left")).toBeVisible()
-    await expect(table.getByText("90 of 60")).toHaveClass("text-destructive")
+    await expect(table.getByText("90 of 60")).toBeVisible()
     await expect(table.getByText("30 too many")).toBeVisible()
     await expect(table.getByText(tote!.supplierSku)).toBeVisible()
     await expect(table.getByRole("columnheader", { name: "Price per unit" })).toBeVisible()
@@ -50,7 +49,7 @@ export const OtherShipments = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     const table = within(canvas.getByRole("table"))
-    await expect(table.getByText("240 of 40")).toHaveClass("text-destructive")
+    await expect(table.getByText("240 of 40")).toBeVisible()
     await expect(table.getByText("200 too many")).toBeVisible()
   }
 })

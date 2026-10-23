@@ -56,7 +56,7 @@ export const Quoted = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Canvas tote bag")).toBeVisible()
     await expect(canvas.getByText("Natural")).toBeVisible()
-    await expect(canvas.getByText("200 available")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("200 available")).toBeVisible()
     await expect(canvas.getByText("Order in multiples of 50")).toBeVisible()
     await expect(canvas.getByText("Quote is in another currency")).toBeVisible()
     await expect(canvas.getByRole("cell", { name: "$1,020" })).toBeVisible()

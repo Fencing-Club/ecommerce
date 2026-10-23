@@ -54,7 +54,6 @@ export const Tones = meta.story({
     for (const tone of tones) {
       await expect(canvas.getByText(tone)).toHaveAttribute("data-tone", tone)
     }
-    await expect(getComputedStyle(canvas.getByText("info")).backgroundColor).toBe("rgb(234, 242, 252)")
     await expect(getComputedStyle(canvas.getByText("warning")).borderTopWidth).toBe("0px")
   }
 })

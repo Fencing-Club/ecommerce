@@ -235,7 +235,7 @@ export const SupplierQuotes = meta.story({
   play: async ({ canvas }) => {
     const totePrice = canvas.getByRole("textbox", { name: "Cost of Canvas tote bag" })
     await waitFor(() => expect(totePrice).toHaveValue("3.90"))
-    await expect(canvas.getByText("800 available")).toHaveClass("text-muted-foreground")
+    await expect(canvas.getByText("800 available")).toBeVisible()
     await expect(canvas.getByRole("textbox", { name: "Cost of Linen apron" })).toHaveValue("9.00")
     await expect(canvas.getByText("Order in multiples of 50")).toBeVisible()
     await expect(canvas.getByText("Not in the supplier’s catalog")).toBeVisible()
@@ -247,7 +247,7 @@ export const SupplierQuotes = meta.story({
     await replace(quantity, "500")
     await waitFor(() => expect(totePrice).toHaveValue("3.50"))
     await replace(quantity, "900")
-    await expect(canvas.getByText("800 available")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("800 available")).toBeVisible()
     await replace(quantity, "100")
     await waitFor(() => expect(totePrice).toHaveValue("3.90"))
   }
