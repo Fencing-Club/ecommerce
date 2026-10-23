@@ -54,10 +54,41 @@ export function receiptQuantities(
   } else if (!shipmentStatus) {
     reviewState = "status_unknown"
   }
+  const validRows =
+    rows?.length &&
+    rows.every(
+      (r) =>
+        counts.get(r.sku) === 1 &&
+        r.expected !== null &&
+        r.received !== null &&
+        r.expectedUnit === r.receivedUnit &&
+        ["UNITS", "CASES"].includes(r.expectedUnit)
+    )
+  let receiptOutcome = "quantities_unknown"
+  if (reviewState === "inactive") {
+    receiptOutcome = "inactive_plan"
+  } else if (reviewState === "not_final") {
+    receiptOutcome = "receiving_not_final"
+  } else if (reviewState === "closed_quantity_review" && validRows) {
+    if (rows.every((r) => r.received === 0)) {
+      receiptOutcome = "closed_no_receipt_reported"
+    } else if (rows.every((r) => r.expected === r.received)) {
+      receiptOutcome = "closed_reported_counts_agree"
+    } else {
+      receiptOutcome = "closed_reported_counts_differ"
+    }
+  }
   return {
     status: rows?.length ? "quantity_evidence" : "missing_or_invalid_items",
     shipmentStatus,
     reviewState,
+    receiptOutcome,
+    unusedPlanConfirmed: null,
+    transferToFbaConfirmed: false,
+    unitConversion: {
+      status: "not_established",
+      reason: "dated_product_and_pack_evidence_required"
+    },
     costBasis: "unknown",
     receiptDate: null,
     inventoryAcquisitionConfirmed: false,

@@ -30,6 +30,7 @@ import { presetRange } from "@/lib/date-range"
 import { stores, type Store } from "@/lib/stores"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
+import { countedAmazonTransaction } from "./amazon-counted-transaction"
 import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
 import { syncAmazonFees } from "./amazon-fees"
 import { amazonMonthlyReports, amazonReportCoverage } from "./amazon-monthly-reports"
@@ -39,6 +40,7 @@ import { queueShopifyEconomics } from "./analytics-jobs"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { errorText, ReconnectRequiredError } from "./errors"
+import { queueEvidenceRecovery } from "./evidence-recovery"
 import { syncExchangeRates } from "./exchange-rates"
 import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
@@ -311,7 +313,11 @@ export async function salesJob(
         { run: () => syncInboundShipments(input, assertOwned), onFailure: { log: "inbound_shipments_failed" } },
         { run: () => syncAmazonReceipts(input, assertOwned), onFailure: "fail" },
         { run: () => syncAmazonExtraEvidence(input, assertOwned), onFailure: "fail" },
-        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } }
+        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } },
+        {
+          run: () => queueEvidenceRecovery({ orgId, source: "amazon", externalAccountId: account, revision }),
+          onFailure: "fail"
+        }
       ]
       const marketplaces = await amazonSalesMarketplaces(account, client)
       // Older periods come from Amazon's order report, one report per period, which is much faster than the order
@@ -938,7 +944,7 @@ export async function listSalesOrders(
             eq(amazonTransactions.orgId, orgId),
             inArray(amazonTransactions.orderId, amazonIds),
             // A release of a deferred payment repeats that payment's fees.
-            sql`not coalesce(${amazonTransactions.data}->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'`
+            countedAmazonTransaction(sql.identifier("amazon_transactions"))
           )
         )
         .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)

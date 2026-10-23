@@ -2,12 +2,16 @@ import type { OrderInput } from "@repo/copacker-orders"
 import { orderDestination, validatePacking } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
 import { packedItemIds, packingSchema } from "@repo/copacker-shipments"
+import {
+  canEditPacking,
+  canReopenPacking,
+  openPackingStates,
+  type ShipmentState
+} from "@repo/copacker-shipments/states"
 import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { issueValues } from "@/lib/packing-messages"
-import { canEditPacking, canReopenPacking } from "@/lib/shipment-states"
-import type { ShipmentState } from "../db/schema"
 import type { documents, shipments } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
@@ -123,7 +127,7 @@ export function packingReadiness(
   const packing = parsed.data
   // Finishing packing needs a ready date that hasn't passed. Once packed, the date stays as the supplier gave it: the
   // FBA booking starts its ready-to-ship window no sooner than now.
-  if (["packing", "correction"].includes(shipment.status) && packing.readyDate < earliestToday(now)) {
+  if (openPackingStates.includes(shipment.status) && packing.readyDate < earliestToday(now)) {
     issues.push({ code: "ready_date_passed", field: "readyDate", message: t("readiness.readyDatePassed") })
   }
   if (

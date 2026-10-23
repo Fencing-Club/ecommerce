@@ -6,6 +6,7 @@ import { type Address, type OrderInput, prepCategories, priceBases } from "@repo
 import { amazonNetworks } from "@repo/copacker-packing-rules"
 import { type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
 import { sql } from "drizzle-orm"
 import {
@@ -460,22 +461,6 @@ export const orderRevisions = pgTable(
   },
   (t) => [uniqueIndex("order_revision").on(t.orderId, t.revision)]
 )
-export type ShipmentState =
-  | "packed"
-  | "packing"
-  | "approval"
-  | "queued"
-  | "creating"
-  | "waiting_labels"
-  | "ready"
-  // The supplier shipped the goods, to the forwarder on the way or straight to the destination.
-  | "shipped"
-  // A forwarder on the way shipped them on, with its freight cost, carrier and tracking.
-  | "forwarded"
-  | "received"
-  | "correction"
-  | "needs_attention"
-  | "cancelled"
 // Changes a supplier proposes to a sent PO: quantities, prices, added and removed products, payment terms and when the
 // goods are ready. The buyer approves them into the PO's next revision, which comes with the supplier's commercial
 // invoice, or declines them. One can be pending at a time.
@@ -649,6 +634,7 @@ export const jobs = pgTable(
         "stock",
         "sales",
         "analytics",
+        "evidence-recovery",
         "shopify-event",
         "shopify-subscribe",
         "shopify-compliance",
@@ -1451,6 +1437,15 @@ export const analyticsFeeds = pgTable(
         coveredFrom?: string
         error?: string | null
         scopes?: string
+        recovery?: {
+          attempts: number
+          status: "pending" | "resolved" | "unresolved" | "exhausted"
+          nextAttemptAt: string
+          anchor: string | null
+          searched: string[]
+          outcome: string
+          reconciliation?: { checkedAt: string; blockers: string[] }
+        }
       }>()
       .notNull(),
     checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow()

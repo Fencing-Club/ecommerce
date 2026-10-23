@@ -5,7 +5,7 @@ import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { buyerContacts, shopifyLocations, supplierContacts } from "@/stories/fixtures/logistics"
 import { harborWarehouse } from "@/stories/fixtures/parties"
-import { shownDialog, chooseOption } from "@/stories/play"
+import { chooseMenuItem, chooseOption, shownDialog } from "@/stories/play"
 import { SavedAddresses } from "./saved-addresses"
 
 const sent: ActionRequest[] = []
@@ -189,14 +189,12 @@ export const SupplierEditPickup = meta.story({
 export const EditCancelled = meta.story({
   args: { contacts: [warehouse!] },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More for Portland warehouse" }), "Edit")
     let dialog = await shownDialog("Edit address")
     await userEvent.clear(dialog.getByRole("textbox", { name: "City" }))
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More for Portland warehouse" }), "Edit")
     dialog = await shownDialog("Edit address")
     await expect(dialog.getByRole("textbox", { name: "City" })).toHaveValue("Portland")
     await expect(sent).toHaveLength(0)

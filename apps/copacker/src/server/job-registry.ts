@@ -2,6 +2,7 @@ import { amazonAdsJob } from "./amazon-ads"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
 import { analyticsJob } from "./analytics-jobs"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
+import { evidenceRecoveryJob } from "./evidence-recovery"
 import { importJob } from "./import-job"
 import { amazonShipmentFailed, amazonShipmentJob } from "./job-amazon-shipment"
 import { emailJob } from "./job-email"
@@ -33,6 +34,12 @@ const jobDefinitions = {
   stock: defineJob({ kind: "stock", executor: "workflow", payload: jobPayloads.stock, run: stockJob }),
   sales: defineJob({ kind: "sales", executor: "workflow", payload: jobPayloads.sales, run: salesJob }),
   analytics: defineJob({ kind: "analytics", executor: "queue", payload: jobPayloads.analytics, run: analyticsJob }),
+  "evidence-recovery": defineJob({
+    kind: "evidence-recovery",
+    executor: "workflow",
+    payload: jobPayloads["evidence-recovery"],
+    run: evidenceRecoveryJob
+  }),
   "shopify-event": defineJob({
     kind: "shopify-event",
     executor: "queue",

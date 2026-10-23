@@ -12,6 +12,10 @@ copacker report restock --state blocked --json
 copacker report restock --format csv --output restock.csv
 ```
 
+Report creation declares a local write and requires an idempotency key, supplied by the CLI. Repeating the same
+execution returns the retained report and its original coverage metadata. Changed permissions reject replay.
+Channel discovery marks destinations ineligible until the Shopify catalog is available.
+
 Omitted channels select every eligible channel. Use returned channel keys verbatim: `amazon` or
 `shopify:gid://shopify/Location/...`. `--channel` is repeatable; empty, duplicate and inaccessible selections fail.
 Days and lead time default to workspace settings, with a supplier's lead time taking precedence. SKU filtering is
@@ -29,10 +33,11 @@ or attribution gaps mark the report partial. `--require-complete` makes the CLI 
 timestamps come from the snapshot data itself, never the request time or the latest failed refresh. Freshness is
 unknown unless a failed refresh makes it explicitly stale; no fresh-provider verification is implied.
 
-Each call retains its exact result and metadata under a new report ID for a 24-hour validity period. It makes no
+Each new execution retains its exact result and metadata under a new report ID for a 24-hour validity period. It makes no
 reservation, provider change or PO. Expired records in that workspace are removed on subsequent report generation;
-workspace deletion cascades and account deletion removes the user's retained reports. There is no report replay/read
-operation yet. This is a query from the caller's perspective and needs no idempotency key. Reports exceeding 10,000 rows
+workspace deletion cascades and account deletion removes the user's retained reports. Same-key replays return the original report until expiry. Receipts retain only its ID, not a second copy of report data;
+an expired or removed report cannot be replayed. The receipt remains an expiry marker so its key cannot create another
+report. There is no separate report read operation yet. Reports exceeding 10,000 rows
 or 24 MiB fail with `result_too_large` rather than silently dropping rows.
 
 ## Boundaries of this implementation

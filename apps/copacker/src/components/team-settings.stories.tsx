@@ -4,7 +4,7 @@ import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { team } from "@/stories/fixtures/logistics"
-import { shownDialog, chooseOption, shownAlertDialog } from "@/stories/play"
+import { chooseMenuItem, chooseOption, shownAlertDialog, shownDialog } from "@/stories/play"
 import { person } from "@/stories/workspace"
 import { TeamSettings } from "./team-settings"
 
@@ -213,8 +213,7 @@ export const RemoveFails = meta.story({
     msw.use(recordActions(sent, failWith("Sam Okafor already left Harbor Goods.")))
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More for Sam Okafor" }), "Remove")
     const dialog = await shownAlertDialog()
     await userEvent.click(dialog.getByRole("button", { name: "Remove" }))
     await expect(await dialog.findByText("Sam Okafor already left Harbor Goods.")).toBeInTheDocument()
@@ -222,8 +221,7 @@ export const RemoveFails = meta.story({
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     // The error was the removal's own: transferring to them starts without it.
-    await userEvent.click(canvas.getByRole("button", { name: "More for Sam Okafor" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Transfer ownership" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More for Sam Okafor" }), "Transfer ownership")
     const transfer = await shownAlertDialog("Transfer ownership to Sam Okafor?")
     await expect(transfer.queryByText("Sam Okafor already left Harbor Goods.")).toBeNull()
   }

@@ -23,9 +23,11 @@ it("compares explicit shipment/SKU receipt movements without treating agreement 
     false
   )
   expect(result?.rows[0]).toMatchObject({
-    status: "quantity_agrees",
-    movementQuantity: 8,
-    difference: 0,
+    status: "requires_review",
+    observationStatus: "quantity_agrees",
+    observedMovementQuantity: 8,
+    observedDifference: 0,
+    difference: null,
     receiptDate: null,
     lossConfirmed: false
   })
@@ -37,7 +39,13 @@ it("compares explicit shipment/SKU receipt movements without treating agreement 
     [{ ...movement, quantity: 7 }],
     false
   )
-  expect(different?.rows[0]).toMatchObject({ status: "quantity_differs", difference: -1 })
+  expect(different?.rows[0]).toMatchObject({
+    status: "requires_review",
+    observationStatus: "quantity_differs",
+    observedDifference: -1,
+    difference: null
+  })
+  expect(different?.rows[0]?.blockers).toContain("receipt_period_unknown")
 })
 it("withholds totals for incomplete searches, absent references and AWD units", () => {
   for (const [dataset, rows, truncated] of [
@@ -47,7 +55,26 @@ it("withholds totals for incomplete searches, absent references and AWD units", 
     ["fba_inbound_receipts", [movement, { ...movement, id: "unknown", sku: null }], false]
   ] as const) {
     expect(
-      reconcileReceiptMovements(dataset, "SHIP", receipt, [...rows], truncated)?.rows[0]?.movementQuantity
+      reconcileReceiptMovements(dataset, "SHIP", receipt, [...rows], truncated)?.rows[0]?.observedMovementQuantity
     ).toBeNull()
+  }
+})
+it("keeps late positive adjustments and negative receipt corrections from becoming confirmed discrepancies", () => {
+  for (const quantity of [1, -1]) {
+    const result = reconcileReceiptMovements(
+      "fba_inbound_receipts",
+      "SHIP",
+      receipt,
+      [{ ...movement, quantity }],
+      false
+    )
+    expect(result?.rows[0]).toMatchObject({
+      status: "requires_review",
+      difference: null,
+      receiptDate: null,
+      lossConfirmed: false
+    })
+    expect(result?.rows[0]?.blockers).toContain("receipt_period_unknown")
+    expect(result?.rows[0]?.blockers.includes("invalid_net_receipt_quantity")).toBe(quantity < 0)
   }
 })

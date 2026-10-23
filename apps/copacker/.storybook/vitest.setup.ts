@@ -11,3 +11,8 @@ still.textContent = `
   }
 `
 document.head.append(still)
+
+// Each story file mocks its requests in its own frame. Vitest runs several files at once, and MSW's one service worker
+// for all of them loses track of which frame asked: a story would get another file's answer, or none. Without the
+// Service Worker API, MSW intercepts the frame's own fetch and XMLHttpRequest calls instead.
+Reflect.deleteProperty(Navigator.prototype, "serviceWorker")

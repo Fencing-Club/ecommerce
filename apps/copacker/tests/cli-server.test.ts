@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { CopackerClient } from "@repo/copacker-client"
-import { eq } from "drizzle-orm"
+import { orderInputSchema } from "@repo/copacker-orders"
+import { eq, sql } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   cliAuthorizations,
@@ -14,7 +15,13 @@ import {
   salesSyncs,
   suppliers,
   restockReports,
-  salesOrders
+  salesOrders,
+  orders,
+  shipments,
+  catalogs,
+  catalogProducts,
+  supplierProductGroups,
+  supplierProducts
 } from "../src/db/schema"
 import {
   approveCliConsent,
@@ -30,11 +37,13 @@ import { GET as authorizeResponse } from "../src/server/http/api/cli-authorize"
 import { POST as consentResponse } from "../src/server/http/api/cli-consent"
 import { operationResponse } from "../src/server/operations"
 import { restockAllChannels } from "../src/server/restock-page"
+import { amazonShipments } from "../src/server/shipments-page"
 import { stockScopes } from "../src/server/stock"
 import { setExcludedShopifyTags } from "../src/server/workspace-settings"
 import { database, setUpTestDatabase } from "./test-db"
 
 vi.mock("@/db", () => import("./test-db"))
+vi.mock("@/server/shipments-page", () => ({ amazonShipments: vi.fn<typeof amazonShipments>() }))
 const user = {
   id: "user_cli",
   email: "alex@example.com",
@@ -78,7 +87,12 @@ const request = (token = access, extra: HeadersInit = {}) =>
   new Request("https://copacker.example/api/operations/account.show", {
     headers: { Authorization: `Bearer ${token}`, ...extra }
   })
-async function call(name: string, input: object = {}, workspace: string | null = workspaceId, key?: string) {
+async function call(
+  name: string,
+  input: object = {},
+  workspace: string | null = workspaceId,
+  key: string | undefined = name === "report.restock" ? randomUUID() : undefined
+) {
   const response = await operationResponse(
     new Request(`https://copacker.example/api/operations/${name}`, {
       method: "POST",
@@ -94,6 +108,7 @@ async function call(name: string, input: object = {}, workspace: string | null =
   return { status: response.status, body: await response.json() }
 }
 beforeEach(async () => {
+  vi.mocked(amazonShipments).mockReset().mockResolvedValue([])
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
   identity.getUser.mockReset().mockResolvedValue(user)
   await database.insert(organizations).values([
@@ -128,6 +143,7 @@ describe("CLI authorization", () => {
         body: form
       })
     expect((await consentResponse(post("https://foreign.example"))).status).toBe(403)
+    expect((await consentResponse(post("null"))).status).toBe(403)
     const approved = await consentResponse(post("http://localhost:3000"))
     expect(approved.status).toBe(303)
     const callback = new URL(approved.headers.get("location") ?? "")
@@ -339,6 +355,195 @@ describe("Real-data operation handlers", () => {
   })
 })
 
+describe("Operational resource reads", () => {
+  it("distinguishes external Amazon shipments and reports provider outages as partial", async () => {
+    await database
+      .insert(connections)
+      .values({ orgId: workspaceId, provider: "amazon", externalId: "SELLER", encryptedToken: "never-public" })
+    vi.mocked(amazonShipments).mockResolvedValue([
+      {
+        shipmentId: "FBA123",
+        network: "fba",
+        status: "SHIPPED",
+        name: "Inbound",
+        createdAt: null,
+        url: "https://sellercentral.amazon.com/"
+      }
+    ])
+    const result = await call("shipment.list")
+    expect(result.status).toBe(200)
+    expect(result.body.data.items).toMatchObject([
+      {
+        origin: "external",
+        id: null,
+        providerReferences: [{ accountId: "SELLER", network: "fba", externalId: "FBA123" }],
+        allowedActions: []
+      }
+    ])
+    vi.mocked(amazonShipments).mockRejectedValue(new Error("sensitive upstream error"))
+    const failed = await call("shipment.list")
+    expect(failed.status).toBe(200)
+    expect(failed.body.meta.completeness).toBe("partial")
+    expect(JSON.stringify(failed.body)).not.toContain("sensitive upstream error")
+    expect((await call("shipment.list", { origin: "copacker" })).body.meta.completeness).toBe("complete")
+  })
+  it("reads partners without invitation secrets and isolates supplier catalogs and stock", async () => {
+    const supplierOrg = randomUUID(),
+      partnerId = randomUUID(),
+      groupId = randomUUID(),
+      variantId = randomUUID(),
+      catalogId = randomUUID()
+    await database.insert(organizations).values({ id: supplierOrg, name: "Supplier workspace", kind: "supplier" })
+    await database.insert(memberships).values({ orgId: supplierOrg, userId: user.id, email: user.email, role: "owner" })
+    await database.insert(suppliers).values({
+      id: partnerId,
+      buyerOrgId: workspaceId,
+      supplierOrgId: supplierOrg,
+      name: "Factory",
+      invitationHash: "secret-invitation"
+    })
+    const partner = await call("partners.show", { id: partnerId })
+    expect(partner.status).toBe(200)
+    expect(JSON.stringify(partner.body)).not.toContain("secret-invitation")
+    expect((await call("partners.list", { type: "supplier" })).body.data.items).toHaveLength(1)
+    expect((await call("partners.show", { id: partnerId, type: "forwarder" })).status).toBe(404)
+    await database.insert(supplierProductGroups).values({ id: groupId, supplierOrgId: supplierOrg, title: "Widget" })
+    await database.insert(supplierProducts).values({
+      id: variantId,
+      groupId,
+      supplierOrgId: supplierOrg,
+      supplierSku: "S1",
+      title: "Widget",
+      currency: "USD",
+      priceMinor: 100,
+      trackInventory: true,
+      onHand: 24
+    })
+    await database.insert(catalogs).values({ id: catalogId, supplierOrgId: supplierOrg, title: "Wholesale" })
+    await database.insert(catalogProducts).values({ catalogId, productId: variantId })
+    await database.update(suppliers).set({ catalogId }).where(eq(suppliers.id, partnerId))
+    expect((await call("catalog.show", { id: catalogId }, supplierOrg)).body.data).toMatchObject({
+      customerIds: [partnerId],
+      products: [{ variantId }]
+    })
+    expect((await call("catalog.list", {}, supplierOrg)).body.data.items).toHaveLength(1)
+    expect((await call("catalog.show", { id: catalogId })).status).toBe(404)
+    expect((await call("partners.list", { type: "customer" }, supplierOrg)).body.data.items).toMatchObject([
+      { id: partnerId, catalogId }
+    ])
+    expect((await call("product.show", { id: groupId }, supplierOrg)).body.data).toMatchObject({
+      identityBasis: "copacker",
+      variants: [{ id: variantId }]
+    })
+    expect((await call("inventory.list", {}, supplierOrg)).body.data.items).toContainEqual(
+      expect.objectContaining({ quantityState: "available", quantity: 24, unit: "piece" })
+    )
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { products: "view", inventory: "view", customers: "view" } })
+      .where(eq(memberships.orgId, supplierOrg))
+    expect((await call("catalog.list", {}, supplierOrg)).status).toBe(404)
+    expect((await call("partners.show", { id: partnerId }, supplierOrg)).body.data.catalogId).toBeNull()
+  })
+  it("shares PO and shipment visibility, hides supplier drafts and redacts commercial fields", async () => {
+    const supplierOrg = randomUUID(),
+      supplierId = randomUUID(),
+      poId = randomUUID(),
+      shipmentId = randomUUID()
+    await database.insert(organizations).values({ id: supplierOrg, name: "Supplier", kind: "supplier" })
+    await database.insert(memberships).values({ orgId: supplierOrg, userId: user.id, email: user.email, role: "owner" })
+    await database
+      .insert(suppliers)
+      .values({ id: supplierId, buyerOrgId: workspaceId, supplierOrgId: supplierOrg, name: "Factory" })
+    const data = orderInputSchema.parse({
+      supplierId,
+      reference: "PO-READ",
+      currency: "USD",
+      items: [
+        {
+          id: randomUUID(),
+          variantId: "gid://shopify/ProductVariant/1",
+          inventoryItemId: "gid://shopify/InventoryItem/1",
+          name: "Widget",
+          variant: "Default Title",
+          buyerSku: "SKU-1",
+          supplierSku: "SUP-1",
+          asin: "",
+          fnsku: "",
+          pieces: 10,
+          piecesPerSet: 1,
+          unitPrice: 250,
+          receiver: "fba"
+        }
+      ]
+    })
+    await database
+      .insert(orders)
+      .values({ id: poId, buyerOrgId: workspaceId, supplierId, shopifyDomain: "shop.myshopify.com", data })
+    await database.insert(shipments).values({ id: shipmentId, orderId: poId, orderRevision: 1 })
+    expect((await call("po.show", { id: poId })).body.data.lines[0].unitPriceMinor).toBe(250)
+    expect((await call("po.show", { id: poId }, supplierOrg)).status).toBe(404)
+    expect((await call("shipment.show", { id: shipmentId }, supplierOrg)).status).toBe(404)
+    await database.update(orders).set({ status: "submitted" }).where(eq(orders.id, poId))
+    expect((await call("po.list", { state: "sent" }, supplierOrg)).body.data.items).toHaveLength(1)
+    expect((await call("shipment.list", { origin: "copacker" }, supplierOrg)).body.data.items).toHaveLength(1)
+    expect((await call("shipment.show", { id: shipmentId }, supplierOrg)).body.data.poId).toBe(poId)
+    await database.update(orders).set({ status: "closed" }).where(eq(orders.id, poId))
+    expect((await call("po.show", { id: poId })).body.data.state).toBe("closed")
+    await database.execute(sql`update orders set status = 'unsupported' where id = ${poId}::uuid`)
+    expect((await call("po.list")).body.error.code).toBe("source_invalid")
+    await database.update(orders).set({ status: "submitted" }).where(eq(orders.id, poId))
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { orders: "view" } })
+      .where(eq(memberships.orgId, workspaceId))
+    const redacted = await call("po.show", { id: poId })
+    expect(redacted.body.data.lines[0].unitPriceMinor).toBeNull()
+    expect(redacted.body.meta.redactedFields).toContain("lines.unitPriceMinor")
+    expect((await call("shipment.list")).status).toBe(404)
+    await database.update(suppliers).set({ removedAt: new Date() }).where(eq(suppliers.id, supplierId))
+    expect((await call("po.show", { id: poId }, supplierOrg)).status).toBe(404)
+  })
+  it("reads customer orders separately from POs and binds them to the current connection", async () => {
+    const orderId = randomUUID()
+    await database.insert(salesOrders).values({
+      id: orderId,
+      orgId: workspaceId,
+      source: "shopify",
+      externalAccountId: "shop.myshopify.com",
+      orderId: "gid://shopify/Order/1",
+      orderedAt: new Date("2026-10-01"),
+      data: {
+        id: "gid://shopify/Order/1",
+        name: "#1043",
+        tags: [],
+        createdAt: "2026-10-01T00:00:00Z",
+        cancelledAt: null,
+        lines: [],
+        fulfillments: [],
+        transactions: [],
+        test: false,
+        sourceName: "web"
+      }
+    })
+    // Unrelated orders must be filtered before the 10,000-row read limit and before summary parsing.
+    await database.execute(sql`insert into sales_orders ("orgId", source, "externalAccountId", "orderId", "orderedAt", data)
+      select ${workspaceId}::uuid, 'shopify', 'shop.myshopify.com', 'noise-' || n, '2020-01-01'::timestamptz,
+      '{"tags":[]}'::jsonb from generate_series(1, 10001) n`)
+    const row = await call("order.show", { reference: "#1043", connectionId })
+    expect(row.status).toBe(200)
+    expect(row.body.data.id).toBe(orderId)
+    expect(row.body.meta.completeness).toBe("partial")
+    expect((await call("order.list", { from: "2026-10-01", to: "2026-10-01" })).body.data.items).toHaveLength(1)
+    expect((await call("order.list", { from: "2026-10-01" })).status).toBe(400)
+    expect((await call("order.show", { id: orderId })).status).toBe(200)
+    await database.update(memberships).set({ role: "member", access: { sales: "view" } })
+    expect((await call("order.show", { id: orderId })).body.data.netProductSales).toBeNull()
+    await database.update(connections).set({ externalId: "other.myshopify.com" })
+    expect((await call("order.show", { id: orderId })).status).toBe(404)
+  })
+})
+
 describe("Restock operations", () => {
   const locationId = "gid://shopify/Location/1"
   const channelId = `shopify:${locationId}`
@@ -434,6 +639,54 @@ describe("Restock operations", () => {
     expect((await call("variant.stock-targets.update", update, workspaceId, "targets-save")).status).toBe(404)
   })
 
+  it("reads scoped products and location balances, redacts prices and invalidates changed pages", async () => {
+    await catalog()
+    const first = await call("product.list", { limit: 1 })
+    expect(first.status).toBe(200)
+    const product = first.body.data.items[0]
+    expect(product).toMatchObject({
+      title: "Product 1",
+      identityBasis: "provider",
+      source: { connectionId },
+      variants: [{ price: { amountMinor: 500 } }]
+    })
+    expect((await call("product.show", { id: product.id })).body.data).toEqual(product)
+    expect((await call("product.search", { query: "SKU-2" })).body.data.items).toHaveLength(1)
+    const inventory = await call("inventory.list", { variantId: product.variants[0].id })
+    expect(inventory.status).toBe(200)
+    expect(inventory.body.data.items).toContainEqual(
+      expect.objectContaining({ quantityState: "on_hand", quantity: 20, unit: "shopify_inventory_unit", snapshotId })
+    )
+    expect((await call("inventory.show", { id: product.variants[0].id })).body.data.items).toHaveLength(4)
+    expect((await call("location.list")).body.data.items).toHaveLength(1)
+    expect((await call("product.list", { cursor: first.body.data.page.nextCursor })).status).toBe(200)
+    await database.update(memberships).set({ role: "member", access: { products: "view" } })
+    expect((await call("product.show", { id: product.id })).body.data.variants[0]).toMatchObject({
+      price: null,
+      cost: null
+    })
+    expect((await call("product.list", { cursor: first.body.data.page.nextCursor })).status).toBe(409)
+    await database.update(connections).set({ externalId: "replacement.myshopify.com" })
+    expect((await call("product.show", { id: product.id })).status).toBe(404)
+    expect((await call("inventory.list")).body.meta.completeness).toBe("partial")
+  })
+  it("retains one report and its coverage metadata across replays", async () => {
+    await catalog()
+    const first = await call("report.restock", {}, workspaceId, "same-report")
+    const replay = await call("report.restock", {}, workspaceId, "same-report")
+    expect(first.status).toBe(200)
+    expect(replay.body.data).toEqual(first.body.data)
+    expect(replay.body.meta.sources).toEqual(first.body.meta.sources)
+    expect(replay.body.meta.completeness).toBe(first.body.meta.completeness)
+    expect(await database.select().from(restockReports)).toHaveLength(1)
+    expect((await call("report.restock", { days: 10 }, workspaceId, "same-report")).status).toBe(409)
+    const [receipt] = await database.select().from(operationReceipts)
+    expect(receipt?.result).toEqual({ reportId: first.body.data.reportId })
+    await database.update(restockReports).set({ expiresAt: new Date(0) })
+    expect((await call("report.restock", {}, workspaceId, "same-report")).body.error.code).toBe("idempotency_expired")
+    await database.delete(restockReports)
+    expect((await call("report.restock", {}, workspaceId, "same-report")).body.error.code).toBe("idempotency_expired")
+  })
   it("uses workspace defaults and the shared planner, retains missing suppliers and immutable report evidence", async () => {
     await catalog()
     const client = new CopackerClient({
@@ -449,7 +702,7 @@ describe("Restock operations", () => {
     expect((await client.call("restock.channel.list", {})).data).toMatchObject({
       items: [{ id: channelId, connectionId, kind: "warehouse", locationId }]
     })
-    const response = await client.call("report.restock", {})
+    const response = await client.call("report.restock", {}, { idempotencyKey: "report-client" })
     const report = (await call("report.restock")).body.data
     const shared = await restockAllChannels(workspaceId, 30, 45)
     expect(report.settings).toEqual({ days: 30, leadTimeDays: 45 })
@@ -662,6 +915,14 @@ describe("Restock operations", () => {
     expect(response.body.meta.completeness).toBe("partial")
     expect(response.body.meta.warnings).toContainEqual(expect.objectContaining({ code: "pooled_target" }))
     expect(response.body.data.coverage.map((row: { provider: string }) => row.provider)).toEqual(["amazon"])
+    await database.delete(stockSnapshots).where(eq(stockSnapshots.source, "shopify"))
+    expect((await call("restock.channel.list")).body.data.items).toContainEqual(
+      expect.objectContaining({
+        id: "amazon",
+        eligible: false,
+        issues: [expect.objectContaining({ code: "source_unavailable" })]
+      })
+    )
   })
   it("retains snapshot observation time after a failed refresh and prunes expired reports only in this workspace", async () => {
     await catalog()
