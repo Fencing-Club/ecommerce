@@ -17,7 +17,8 @@ ID. Monetary values remain exact strings; booking entry supplies their sign. Buy
 free-text memos are excluded. Pagination checks totals, duplicates, range and a 5,000-row bound. Oversized or changing
 windows fail explicitly rather than claiming complete coverage.
 
-Each successful daily collection also checks up to five saved payouts, least recently checked first. Exact payout-ID
+Each daily collection also checks up to five saved payouts, failed reads first and then least recently checked. A run
+does not mark financial sync complete while any saved payout read remains failed. Exact payout-ID
 queries may retrieve related transactions outside the rolling window. They do not extend date-window coverage.
 `payout_reconciliation` saves the transaction references, counts, signed net total and comparison against the payout's
 total before express-payout fees. Missing counts, incomplete records, currency differences and split payouts remain

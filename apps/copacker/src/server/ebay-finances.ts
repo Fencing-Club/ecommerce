@@ -137,7 +137,11 @@ export async function syncEbayFinances(
         eq(analyticsEvidence.dataset, "payouts")
       )
     )
-    .orderBy(sql`${analyticsFeeds.checkedAt} asc nulls first`, asc(analyticsEvidence.sourceId))
+    .orderBy(
+      sql`case when ${analyticsFeeds.state}->>'error' = 'payout_collection_failed' then 0 else 1 end`,
+      sql`${analyticsFeeds.checkedAt} asc nulls first`,
+      asc(analyticsEvidence.sourceId)
+    )
     .limit(5)
   let payoutRetryAt = 0
   for (const saved of payouts) {
@@ -190,12 +194,29 @@ export async function syncEbayFinances(
     await publishAnalyticsFeed(feed, dataset, [], { error: null }, assertOwned, now)
     await publishAnalyticsFeed(feed, "payouts", [{ id: payout.payoutId, data: payout }], payoutState, assertOwned, now)
   }
-  if (payoutRetryAt) {
+  const [outstandingFailure] = await db()
+    .select({ dataset: analyticsFeeds.dataset })
+    .from(analyticsFeeds)
+    .where(
+      and(
+        eq(analyticsFeeds.orgId, input.orgId),
+        eq(analyticsFeeds.source, "ebay"),
+        eq(analyticsFeeds.externalAccountId, input.externalAccountId),
+        sql`starts_with(${analyticsFeeds.dataset}, 'payout_reconciliation:')`,
+        sql`${analyticsFeeds.state}->>'error' = 'payout_collection_failed'`
+      )
+    )
+    .limit(1)
+  if (payoutRetryAt || outstandingFailure) {
     await publishAnalyticsFeed(
       feed,
       "financial_transactions",
       [],
-      { ...state, retryAt: new Date(payoutRetryAt).toISOString(), error: "payout_collection_failed" },
+      {
+        ...state,
+        retryAt: new Date(payoutRetryAt || now.getTime() + 900000).toISOString(),
+        error: "payout_collection_failed"
+      },
       assertOwned,
       now
     )

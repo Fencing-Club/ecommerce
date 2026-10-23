@@ -155,6 +155,55 @@ it("keeps the run incomplete after a payout server error while checking other pa
   await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 960000))
   expect(context.request).toHaveBeenCalled()
 })
+it("prioritizes saved payout failures and waits for failures outside the five-payout batch", async () => {
+  const saved = Array.from({ length: 7 }, (_, index) => ({ ...payout, payoutId: `P${index}`, transactionCount: 0 }))
+  await database.insert(tables.analyticsEvidence).values(
+    saved.map((data) => ({
+      orgId,
+      source: "ebay" as const,
+      externalAccountId: "seller",
+      dataset: "payouts",
+      sourceId: data.payoutId,
+      data,
+      observedAt: now
+    }))
+  )
+  await database.insert(tables.analyticsFeeds).values(
+    saved.slice(1).map((data) => ({
+      orgId,
+      source: "ebay" as const,
+      externalAccountId: "seller",
+      dataset: `payout_reconciliation:${data.payoutId}`,
+      state: { error: "payout_collection_failed" },
+      checkedAt: now
+    }))
+  )
+  context.request.mockImplementation(async (_method, path) => {
+    const match = /\/payout\/(P\d)/.exec(path)
+    if (match) {
+      return saved.find((row) => row.payoutId === match[1])
+    }
+    if (path.includes("/payout?")) {
+      return { total: 0, payouts: [] }
+    }
+    return { total: 0, transactions: [] }
+  })
+  await syncEbayFinances(input, async () => undefined, now)
+  expect(
+    context.request.mock.calls
+      .filter(([, path]) => /\/payout\/P\d/.test(path))
+      .map(([, path]) => path.slice(path.lastIndexOf("/payout/")))
+  ).toEqual(["/payout/P1", "/payout/P2", "/payout/P3", "/payout/P4", "/payout/P5"])
+  expect((await database.select().from(tables.analyticsFeeds)).some((row) => row.dataset === "financial_sync")).toBe(
+    false
+  )
+  context.request.mockClear()
+  await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 960000))
+  expect(context.request.mock.calls.find(([, path]) => /\/payout\/P\d/.test(path))?.[1]).toMatch(/\/payout\/P6$/)
+  expect(
+    (await database.select().from(tables.analyticsFeeds)).find((row) => row.dataset === "financial_sync")?.state.error
+  ).toBeNull()
+})
 it("preserves coverage on failed collection and rejects superseded writes", async () => {
   await database.insert(tables.analyticsFeeds).values({
     orgId,
