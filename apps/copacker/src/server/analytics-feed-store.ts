@@ -5,7 +5,7 @@ import { lockSyncScope } from "./sales-sync-coverage"
 // Saves a page of provider evidence and its feed's state together. Only the sales sync revision that collected them
 // may publish, and only while its account is still connected.
 export async function publishAnalyticsFeed(
-  input: { orgId: string; source: "amazon" | "shopify"; externalAccountId: string; revision: number },
+  input: { orgId: string; source: "amazon" | "shopify" | "ebay"; externalAccountId: string; revision: number },
   dataset: string,
   rows: { id: string; data: Record<string, unknown> }[],
   state: typeof analyticsFeeds.$inferInsert.state,

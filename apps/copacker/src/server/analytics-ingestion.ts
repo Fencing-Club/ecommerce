@@ -24,7 +24,7 @@ import { reconcileShopifyPayments } from "./shopify-payment-reconciliation"
 import { normalizeTags, taggedWith } from "./shopify-tags"
 export const ingestionQuery = z.strictObject({
   ...analyticsPagination,
-  source: z.enum(["amazon", "shopify"]),
+  source: z.enum(["amazon", "shopify", "ebay"]),
   externalAccountId: z.string().min(1).max(200),
   dataset: z.enum([
     "order_economics",
@@ -32,7 +32,10 @@ export const ingestionQuery = z.strictObject({
     "awd_inbound_receipts",
     "fbm_returns",
     "awd_costs",
-    "advertising_products"
+    "advertising_products",
+    "financial_transactions",
+    "payouts",
+    "payout_reconciliation"
   ])
 })
 export async function listIngestionEvidence(orgId: string, input: z.infer<typeof ingestionQuery>) {

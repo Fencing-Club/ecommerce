@@ -18,6 +18,7 @@
     "./returns": "./src/returns.ts",
     "./reimbursements": "./src/reimbursements.ts",
     "./ebay": "./src/ebay.ts",
+    "./ebay-finances": "./src/ebay-finances.ts",
     "./removals": "./src/removals.ts",
     "./fulfillment-shipments": "./src/fulfillment-shipments.ts"
   },

@@ -39,6 +39,7 @@ import { syncInboundShipments } from "./amazon-shipments"
 import { queueShopifyEconomics } from "./analytics-jobs"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
+import { syncEbayFinances } from "./ebay-finances"
 import { errorText, ReconnectRequiredError } from "./errors"
 import { queueEvidenceRecovery } from "./evidence-recovery"
 import { syncExchangeRates } from "./exchange-rates"
@@ -283,7 +284,13 @@ export async function salesJob(
     } else if (source === "ebay") {
       const client = await ebayFor(orgId, account)
       // Orders in another currency are converted at each day's rate.
-      afterOrders = [{ run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } }]
+      afterOrders = [
+        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } },
+        {
+          run: () => syncEbayFinances({ orgId, externalAccountId: account, revision, scopes }, assertOwned),
+          onFailure: "fail"
+        }
+      ]
       read = async (window) =>
         (await collectEbaySales(client, window, assertOwned)).map((order) => ({
           orderId: order.orderId,

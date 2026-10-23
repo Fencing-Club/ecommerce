@@ -1410,6 +1410,7 @@ export const analyticsFeeds = pgTable(
         coveredTo?: string
         history?: "available"
         coveredFrom?: string
+        retryAt?: string
         error?: string | null
         scopes?: string
         recovery?: {
