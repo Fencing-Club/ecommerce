@@ -39,7 +39,9 @@ export const Default = meta.story({
     await expect(canvas.getByText("1 unsaved change")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
-    await expect(counts).toEqual([{ counts: [{ id: supplierInventory[0]!.id, onHand: 1500 }] }])
+    await expect(counts).toEqual([
+      { counts: [{ id: supplierInventory[0]!.id, onHand: 1500, expectedRevision: supplierInventory[0]!.revision }] }
+    ])
   }
 })
 
