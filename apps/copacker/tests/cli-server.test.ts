@@ -979,6 +979,17 @@ describe("Restock operations", () => {
         )
       ).status
     ).toBe(409)
+    await database.update(suppliers).set({ removedAt: new Date() }).where(eq(suppliers.id, supplierId))
+    expect(
+      (
+        await call(
+          "product.supplier.assign",
+          { ...input, expectedRevision: 2 },
+          workspaceId,
+          "removed-current-supplier"
+        )
+      ).status
+    ).toBe(409)
     expect(
       (
         await call(
@@ -989,7 +1000,6 @@ describe("Restock operations", () => {
         )
       ).body.data.revision
     ).toBe(3)
-    await database.update(suppliers).set({ removedAt: new Date() }).where(eq(suppliers.id, supplierId))
     expect(
       (await call("product.supplier.assign", { ...input, expectedRevision: 3 }, workspaceId, "removed-supplier")).status
     ).toBe(409)

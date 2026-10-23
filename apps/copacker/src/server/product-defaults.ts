@@ -131,8 +131,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       throw new StatusError("productChangedReload", 409)
     }
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
-    if (supplierId && supplierId !== previous?.supplierId) {
-      await requireCurrentSupplier(tx, s.org.id, supplierId)
+    if (input.supplierId) {
+      await requireCurrentSupplier(tx, s.org.id, input.supplierId)
     }
     const value = {
       description: input.description,
