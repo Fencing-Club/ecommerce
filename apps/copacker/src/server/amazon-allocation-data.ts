@@ -7,6 +7,8 @@ import { allocateAmazonPosting } from "./amazon-cost-allocation"
 import { amazonPostingAccounting, postingLinks } from "./amazon-posting-accounting"
 import { amazonPostingDetail } from "./amazon-posting-detail"
 import type { ReconciliationPosting } from "./amazon-reconciliation"
+import { postingReferences } from "./amazon-reconciliation"
+import { sharedReleaseOriginal } from "./amazon-shared-release"
 import { analyticsPagination } from "./analytics-contract"
 import { analyticsPage } from "./analytics-snapshot"
 import { connectedAccount } from "./provider-accounts"
@@ -55,9 +57,37 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
         .orderBy(desc(amazonTransactions.postedAt), amazonTransactions.transactionId)
         .limit(101)
         .offset(input.page * 100)
-      const linkedResult = await releaseFamily(tx, orgId, account.externalId, rows.slice(0, 100))
+      const references = rows
+        .slice(0, 100)
+        .flatMap((row) => postingReferences(row.data))
+        .filter((ref) => ["SHIPMENT_ID", "REFUND_ID"].includes(ref.name))
+      const pairResult = references.length
+        ? await tx.execute(sql`
+        select t."transactionId" as "releasedId", ${sharedReleaseOriginal(sql.identifier("t"))} as "originalId"
+        from amazon_transactions t where t."orgId"=${orgId} and t."externalAccountId"=${account.externalId}
+          and t.data->>'transactionStatus'='RELEASED' and (${sql.join(
+            references.map(
+              (ref) =>
+                sql`t.data->'relatedIdentifiers' @> ${JSON.stringify([{ relatedIdentifierName: ref.name, relatedIdentifierValue: ref.value }])}::jsonb`
+            ),
+            sql` or `
+          )}) order by t."transactionId" limit 1001
+      `)
+        : null
+      const sharedPairs = z
+        .array(z.object({ originalId: z.string().nullable(), releasedId: z.string() }))
+        .parse(pairResult?.rows ?? [])
+        .slice(0, 1000)
+        .flatMap((pair) => (pair.originalId ? [{ ...pair, originalId: pair.originalId }] : []))
+      const linkedResult = await releaseFamily(
+        tx,
+        orgId,
+        account.externalId,
+        rows.slice(0, 100),
+        sharedPairs.flatMap((pair) => [pair.originalId, pair.releasedId])
+      )
       const linked = linkedResult.rows
-      const linkedTruncated = linkedResult.truncated
+      const linkedTruncated = linkedResult.truncated || (pairResult?.rows.length ?? 0) > 1000
       const accountingRows = [...rows.slice(0, 100), ...linked]
       const linkedIds = [...new Set(rows.slice(0, 100).flatMap((row) => postingLinks(row).map((ref) => ref.value)))]
       const reportTotals = await tx.execute(sql`
@@ -97,7 +127,7 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
         postings: rows.slice(0, 100).map((row) => ({
           ...allocateAmazonPosting(row, mappings),
           evidence: amazonPostingDetail(row),
-          accounting: amazonPostingAccounting(row, accountingRows, linkedTruncated)
+          accounting: amazonPostingAccounting(row, accountingRows, linkedTruncated, sharedPairs)
         })),
         linkedPostings: linked.slice(0, 1000).map(amazonPostingDetail),
         linkedPostingsTruncated: linkedTruncated,
@@ -124,7 +154,13 @@ export async function amazonAllocations(orgId: string, input: z.infer<typeof all
   )
 }
 
-async function releaseFamily(tx: Executor, orgId: string, externalAccountId: string, seeds: ReconciliationPosting[]) {
+async function releaseFamily(
+  tx: Executor,
+  orgId: string,
+  externalAccountId: string,
+  seeds: ReconciliationPosting[],
+  sharedIds: string[] = []
+) {
   const query = (ids: string[]) =>
     tx
       .select()
@@ -150,7 +186,12 @@ async function releaseFamily(tx: Executor, orgId: string, externalAccountId: str
   const seedIds = new Set(seeds.map((seed) => seed.transactionId))
   const linkedRows = () => [...records.values()].filter((row) => !seedIds.has(row.transactionId))
   const visited = new Set<string>()
-  let pending = [...new Set(seeds.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)]))]
+  let pending = [
+    ...new Set([
+      ...sharedIds,
+      ...seeds.flatMap((row) => [row.transactionId, ...postingLinks(row).map((ref) => ref.value)])
+    ])
+  ]
   for (let depth = 0; depth < 8 && pending.length; depth++) {
     const rows = await query(pending)
     pending.forEach((id) => visited.add(id))

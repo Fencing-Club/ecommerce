@@ -472,3 +472,74 @@ it("does not infer reversal allocations from mixed multi-item payments", () => {
   )[0]!
   expect(result.finance.matching.possibleReversalPaymentCount).toBe(0)
 })
+
+it("ranks orderless warehouse candidates and checks other saved report dates without confirming payment", () => {
+  const source = { ...row, source: "reimbursements", orderId: null, reimbursement: { reason: "Lost_Warehouse" } }
+  const payment = { ...posting, type: "FBAInventoryReimbursement", orderId: null }
+  const other = { ...source, id: "older-report", occurredAt: "2025-01-01T00:00:00Z" }
+  const result = reconcileAmazonEvidence([source], [], [payment], 0, { rows: [source, other], truncated: false })[0]!
+  expect(result.finance).toMatchObject({ reconciled: false, matching: { warehousePaymentCandidateCount: 1 } })
+  expect(result.finance.candidates[0]).toMatchObject({
+    warehousePaymentCandidate: true,
+    strongerPaymentCandidate: false,
+    paymentCompetition: {
+      status: "shared_candidate",
+      otherReportRowIds: ["older-report"],
+      paymentAssignmentConfirmed: false
+    }
+  })
+  expect(
+    reconcileAmazonEvidence([source], [], [payment], 0, { rows: [source], truncated: true })[0]?.finance.candidates[0]
+      ?.paymentCompetition?.status
+  ).toBe("search_incomplete")
+})
+it.each(["order", "reason", "negative", "unbalanced", "asin", "deferred", "link"])(
+  "does not promote unsafe warehouse evidence: %s",
+  (conflict) => {
+    const source = {
+      ...row,
+      source: "reimbursements",
+      orderId: null,
+      reimbursement: { reason: conflict === "reason" ? "CustomerReturn" : "Damaged_Warehouse" },
+      amount: conflict === "negative" ? "-0.3" : "0.3"
+    }
+    const payment = {
+      ...posting,
+      type: "FBAInventoryReimbursement",
+      orderId: conflict === "order" ? "ORDER" : null,
+      data: { ...posting.data }
+    }
+    if (conflict === "unbalanced") {
+      payment.data.breakdowns = []
+    }
+    if (conflict === "asin") {
+      source.asin = null
+    }
+    if (conflict === "deferred") {
+      payment.data.transactionStatus = "DEFERRED_RELEASED"
+    }
+    if (conflict === "link") {
+      payment.data.relatedIdentifiers = [
+        { relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "D" }
+      ]
+    }
+    expect(reconcileAmazonEvidence([source], [], [payment])[0]?.finance.matching.warehousePaymentCandidateCount).toBe(0)
+  }
+)
+
+it("does not treat an unidentified second payment item as warehouse evidence", () => {
+  const source = { ...row, source: "reimbursements", orderId: null, reimbursement: { reason: "Lost_Warehouse" } }
+  const payment = {
+    ...posting,
+    type: "FBAInventoryReimbursement",
+    orderId: null,
+    data: {
+      ...posting.data,
+      items: [
+        { totalAmount: money("0.1"), contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] },
+        { totalAmount: money("0.2") }
+      ]
+    }
+  }
+  expect(reconcileAmazonEvidence([source], [], [payment])[0]?.finance.matching.warehousePaymentCandidateCount).toBe(0)
+})

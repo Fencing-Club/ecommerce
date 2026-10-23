@@ -452,3 +452,53 @@ it("excludes page postings from truncated linked context without consuming its l
   expect(result.linkedPostings?.some((row) => row.transactionId === "A-SEED")).toBe(false)
   expect(result.postings[0]?.accounting.blockers).toContain("linked_search_truncated")
 })
+
+it("uses the shared-ID proof across dates and rejects a later collision", async () => {
+  const amount = { currencyCode: "USD", currencyAmount: "20.45" }
+  const data = {
+    totalAmount: amount,
+    marketplaceDetails: { marketplaceId: "US" },
+    breakdowns: [{ breakdownAmount: amount }],
+    items: [{ totalAmount: amount }],
+    relatedIdentifiers: [{ relatedIdentifierName: "SHIPMENT_ID", relatedIdentifierValue: "SHIP" }]
+  }
+  const base = {
+    orgId,
+    externalAccountId: "SELLER1",
+    orderId: "ORDER",
+    type: "Shipment",
+    currency: "USD",
+    totalMinor: 2045,
+    feesMinor: 300
+  }
+  await database.insert(tables.amazonTransactions).values([
+    {
+      ...base,
+      transactionId: "D",
+      postedAt: new Date("2026-08-01"),
+      data: { ...data, transactionStatus: "DEFERRED_RELEASED" }
+    },
+    { ...base, transactionId: "R", postedAt: new Date("2026-10-01"), data: { ...data, transactionStatus: "RELEASED" } }
+  ])
+  const query = { from: "2026-10-01", to: "2026-11-01", page: 0, transactionId: "R" }
+  const result = await amazonAllocations(orgId, query)
+  expect(result.postings[0]?.accounting).toMatchObject({
+    status: "included_released_posting",
+    linkedTransactionIds: ["D"],
+    linkBasis: "unique_shared_shipment_or_refund_id"
+  })
+  const original = await amazonAllocations(orgId, { from: "2026-08-01", to: "2026-09-01", page: 0, transactionId: "D" })
+  expect(original.postings[0]?.accounting).toMatchObject({
+    status: "excluded_deferred_copy",
+    linkedTransactionIds: ["R"]
+  })
+  await database.insert(tables.amazonTransactions).values({
+    ...base,
+    transactionId: "collision",
+    postedAt: new Date("2026-12-01"),
+    data: { ...data, transactionStatus: "RELEASED" }
+  })
+  const changed = await amazonAllocations(orgId, query)
+  expect(changed.postings[0]?.accounting.linkedTransactionIds).toEqual([])
+  expect(changed.postings[0]?.accounting.linkBasis).toBeNull()
+})
