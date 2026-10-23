@@ -1,5 +1,5 @@
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
-import { and, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import {
@@ -17,6 +17,7 @@ import { analyticsPagination } from "./analytics-contract"
 import { importedProductCatalog } from "./analytics-product-evidence"
 import { analyticsPage } from "./analytics-snapshot"
 import { declaredShipmentUnits } from "./declared-shipment-units"
+import { ebayProfitTreatment } from "./ebay-profit-charges"
 import { reconcileReceiptMovements } from "./receipt-movement-reconciliation"
 import { receiptQuantities } from "./receipt-quantities"
 import { shopifyBalanceComparison } from "./shopify-balance-comparison"
@@ -49,7 +50,13 @@ export async function listIngestionEvidence(orgId: string, input: z.infer<typeof
         .from(organizations)
         .where(eq(organizations.id, orgId))
       const rows = await tx
-        .select()
+        .select({
+          ...getTableColumns(analyticsEvidence),
+          profitTreatment:
+            input.source === "ebay" && input.dataset === "financial_transactions"
+              ? ebayProfitTreatment(sql`${analyticsEvidence.data}`)
+              : sql<null>`null`
+        })
         .from(analyticsEvidence)
         .where(
           and(

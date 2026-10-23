@@ -117,6 +117,7 @@
     "marketplace": "Amazon {code, select, us {USA} ca {Canada} mx {Messico} br {Brasile} other {{code}}}"
   },
   "charges": {
+    "ebay": "Addebiti eBay",
     "amazonFreight": "Trasporto in entrata Amazon",
     "amazon": "Addebiti Amazon",
     "shopify": "Addebiti Shopify",

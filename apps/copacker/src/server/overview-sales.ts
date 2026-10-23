@@ -14,6 +14,7 @@ import { adsCharge } from "./amazon-ads"
 import { countedAmazonTransaction } from "./amazon-counted-transaction"
 import { freightDescriptions } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
+import { ebayProfitTreatment } from "./ebay-profit-charges"
 import { taggedWith } from "./shopify-tags"
 import { serverText } from "./text"
 
@@ -773,6 +774,26 @@ export async function platformCharges(
       }
       if (advertising !== null) {
         lines.push({ key: "amazon-ads", label: t("charges.amazonAds"), minor: advertising, currency })
+      }
+    } else if (account.provider === "ebay") {
+      const result = await db().execute(sql`
+        with charges as (
+          select (data->'amount'->>'value')::numeric * 100 *
+              case when data->>'bookingEntry' = 'DEBIT' then -1 else 1 end as minor,
+            fx_rate(data->'amount'->>'currency', ${currency}, (data->>'transactionDate')::timestamptz) as rate
+          from analytics_evidence
+          where "orgId" = ${orgId} and source = 'ebay' and "externalAccountId" = ${account.externalId}
+            and dataset = 'financial_transactions'
+            and (data->>'transactionDate')::timestamptz >= ${from}
+            and (data->>'transactionDate')::timestamptz < ${to}
+            and ${ebayProfitTreatment(sql`data`)} = 'additional_charge'
+        )
+        select case when count(*) filter (where rate is null) = 0 then round(sum(minor * rate)) end as minor
+        from charges`)
+      const value = rows(result)[0]?.minor
+      // Never report a partial converted total when one of the included charges has no exchange rate.
+      if (value !== null && value !== undefined) {
+        lines.push({ key: "ebay-charges", label: t("charges.ebay"), minor: Number(value), currency })
       }
     } else if (account.provider === "shopify" && !account.locationId && !account.locationIds) {
       const result = await db().execute(sql`

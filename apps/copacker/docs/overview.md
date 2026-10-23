@@ -4,6 +4,10 @@ Connected [Amazon Ads reporting](amazon-ads.md) replaces posted ad payments with
 the entire selected period has imported reports and exchange rates. Incomplete periods retain posted payments;
 the two sources are never added together.
 
+Saved [eBay financial charges](ebay-finances.md#profit-accounting) add only identified standalone costs and shipping
+labels, net of their credits, using their transaction dates. Sales, refunds, payouts and order selling fees are not
+added a second time. Unclassified records remain available for review through the evidence API.
+
 `/overview` is where buyers land (`/` redirects buyers there and suppliers to `/orders`). It summarizes data Copacker
 already stores and reads nothing from Shopify or Amazon directly. `overview()` in `apps/copacker/src/server/overview.ts`
 assembles it, with the sales queries and maths in `overview-sales.ts`. The page renders `components/overview.tsx`, the
