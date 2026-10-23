@@ -20,7 +20,7 @@ permission model and the stack (shadcn/ui on Base UI, Tailwind v4); it changes w
 | [Settings and account](settings.md)                       | Account settings, Workspace settings, Team and member access, Integrations      |
 | [Consistency](consistency.md)                             | One component or token per concept, canonical scenario data, the audit and how to repeat it |
 
-The canvas in `apps/copacker/copacker.pen` holds the designs in frames named **Redesign**: a read me, the kit (top bar,
+The canvas in `apps/copacker/designs/copacker.pen` holds the designs in frames named **Redesign**: a read me, the kit (top bar,
 navigation item, status, buttons, tab), the as-built and proposed IA maps, and a row of desktop screens per area: buyer
 home and lists, buyer purchasing records, buyer store, partners and analytics, supplier orders and fulfillment, supplier
 products and catalogs, forwarder and shared surfaces (Inbox, command menu), Settings and account, and phone layouts (`Redesign — Mobile`).
