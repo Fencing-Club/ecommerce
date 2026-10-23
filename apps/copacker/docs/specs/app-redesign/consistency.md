@@ -35,6 +35,9 @@ When a concept needs a new shape, change the component, so every screen moves to
 | Tooltip                  | Tooltip Bubble        | Dark bubble                                                                      | What an info tip reveals on hover or focus                   |
 | Optional marker          | Badge / Outline, named Optional | A design annotation, never shipped                                     | Proposed items the specs haven't committed to yet            |
 
+Sizes are base-vega's, as the designs draw them. The app's `components/ui/button.tsx` still has the old 34 px buttons
+(28 small, 36 large) until it moves to base-vega.
+
 Patterns built from these, with one construction each: page header, filter bar (search field and filter chips at
 34 px), cards (10 px radius, 15/600 title, 14 by 16 header padding), tables (header band `muted`, 9 by 16 padding,
 12/500 labels), segmented controls (32 px, 3 px inset, 26 px segments), packing requirements card, pipeline (row on
@@ -114,8 +117,8 @@ Before handing screens over, and after anyone adds one:
 6. **Every page with a horizontal visualization has a phone screen** ([Responsive](design-spec.md#horizontal-visualizations-on-a-phone)).
 7. **Copy**: sentence case, no dot glyph separators, limits written the same way.
 8. **Quiet**: a page description only where it adds something the page doesn't show, no card subtitle restating its
-   title, no paragraph under a next step, no notice
-   without a dismiss button except a blocking error, definitions in info tips
+   title, no paragraph under a next step, a notice only while its state stands and with the action that deals with
+   it (Alerts have no dismiss button), definitions in info tips
    ([Content and disclosure](design-spec.md#content-and-disclosure)).
 9. **Optional marked**: every item the specs list as Proposed carries the Optional marker, and nothing else does
    ([Optional marker](design-spec.md#optional-marker)).

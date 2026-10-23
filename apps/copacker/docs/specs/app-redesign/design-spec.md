@@ -222,7 +222,7 @@ three builds each, and segmented controls at four heights; they're now single co
 
 ### Action bar
 
-**RD Action Bar** is the only bar for committing or acting on a page: unsaved changes, task flows (packing, new PO,
+**The action bar** is the only bar for committing or acting on a page: unsaved changes, task flows (packing, new PO,
 propose changes, import), proposal review and bulk selection. It replaces the edge-to-edge white bars, the dark
 settings bar and the dark bulk bar.
 
@@ -241,7 +241,7 @@ settings bar and the dark bulk bar.
 
 ### Lifecycle tracker
 
-**RD Lifecycle Stage** in a row: a bar, an icon and the stage's name, and a date or state under it. Stages are done
+**Lifecycle Stage** in a row: a bar, an icon and the stage's name, and a date or state under it. Stages are done
 (success green), current (info blue: someone is working on it), needs attention (warning amber: the viewer's move) or
 upcoming (border gray), the same meanings the status tones use. The bars keep working at any width,
 which is why they replaced the circle steppers. On a phone the row becomes a compact card: "Step 3 of 6", the current
@@ -263,7 +263,7 @@ A shipment's stages follow its route and who arranges shipping, as the
 
 ### Next step card
 
-**RD Next Step**: a lead icon, an eyebrow ("Your next step", or "Waiting on Lotus Manufacturing" in the quiet tone), the
+**Next Step**: a lead icon, an eyebrow ("Your next step", or "Waiting on Lotus Manufacturing" in the quiet tone), the
 title, a detail line, an optional warning line, an optional meta (days left, window) and the step's actions, at most
 a secondary and a primary. A waiting card (quiet tone) has no primary; it may keep one secondary that opens where the
 other party works (**Open in Seller Central**). On a phone the card keeps its eyebrow, title and meta, and its actions
@@ -355,7 +355,7 @@ and when, download, and replace where the person can. Downloads stay behind auth
 
 ### Optional marker
 
-**RD Optional** marks an item the purchase order flow spec only proposes: the Incoterm field, Amazon's partnered
+**An outline Badge named Optional** marks an item the purchase order flow spec only proposes: the Incoterm field, Amazon's partnered
 carrier, the delivery window from the expected arrival, tracking sent to Amazon, prep categories set through Amazon,
 HS codes and unit weights from Shopify, the ISF draft, the pickup phone rule and forwarder emails. The screens draw it
 where it would go; it's built once it's decided. It's a designer's annotation, not product UI.
@@ -467,7 +467,7 @@ is a cognitive accessibility problem as much as a visual one. Every screen follo
 
 | Kind of information                          | Where it goes                                                                   |
 | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| A definition ("Production runs from…")       | **RD Info Tip** beside the label or title; the text shows in **RD Tooltip** on hover or focus |
+| A definition ("Production runs from…")       | **Info Tip** beside the label or title; the text shows in a **Tooltip** on hover or focus |
 | A long list of rules or details              | A summary (the 3 key rules as chips) and **Show all** to expand                 |
 | What happens after an action                 | The action's **confirm dialog** ("Submit packing list?" lists the next steps)    |
 | A consequence of one choice                  | Next to that choice only (a checkbox label), not as a paragraph                 |
@@ -483,10 +483,9 @@ the text is the instance's name after "Info Tip: ".
 
 **Notices.**
 
-- **RD Banner** is the only notice: one line, an optional action, and a dismiss button. Dismissing hides it for that
-  person until the state changes.
-- At most one banner per page, above the content. Only a blocking error (a store disconnected, a failed Amazon
-  shipment) may drop the dismiss button, and it must carry the action that fixes it.
+- **Alert** is the only notice: one line, tinted warning, info or destructive, with its action in the Alert Action slot.
+  It has no dismiss button: it shows only while its state stands, and its action is what deals with it.
+- At most one Alert per page, above the content.
 - Validation stays inline next to the field or row it's about, and counts in the action bar.
 - Informational notes ("Tasks leave by themselves when…", "Members see these details read-only…") are removed; the
   interface shows that behavior instead (View only badge, tasks disappearing).
