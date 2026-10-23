@@ -116,7 +116,7 @@ function BarList({
           </div>
           <div className="h-1.5 rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-chart-1"
+              className="h-full rounded-full bg-chart-4"
               style={{ width: `${Math.max(2, (row.value / max) * 100)}%` }}
             />
           </div>
@@ -227,7 +227,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
                     </span>
                     <span className="h-1.5 rounded-full bg-muted">
                       <span
-                        className="block h-full rounded-full bg-chart-1"
+                        className="block h-full rounded-full bg-chart-4"
                         style={{ width: `${row.pieces ? Math.max(2, (row.pieces / pipelineMax) * 100) : 0}%` }}
                       />
                     </span>

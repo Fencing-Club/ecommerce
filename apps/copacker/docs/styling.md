@@ -37,8 +37,9 @@ examples color a status, with a `dark:` pair:
 | A workspace's kind, in the workspace menu only           | buyer `text-orange-700 bg-orange-50`, supplier `text-teal-700 bg-teal-50`, forwarder `text-indigo-700 bg-indigo-50`, each with its `dark:` pair (`-500` or `-400` text on `-950`) |
 | Behind dialogs, sheets and the command menu              | base-vega's overlay: `bg-black/10 supports-backdrop-filter:backdrop-blur-xs` |
 
-`chart-1` to `chart-5` are chart series only, light to dark; the channel charts draw Amazon, Shopify and eBay as
-`chart-1` to `chart-3`.
+`chart-1` to `chart-5` are chart series only, light to dark. As in the designs, a series that has to stand out against
+the card is `chart-4`, and `chart-1` is the soft one: Amazon, Shopify and eBay are `chart-4`, `chart-2` and `chart-3`,
+and a single series is `chart-4`.
 
 - Shadows are for overlays and the action bar only, each its own token: `shadow-menu` (menus, submenus, popovers,
   selects and toasts), `shadow-dialog` (dialogs and side sheets), `shadow-command`, `shadow-sheet` (a bottom sheet),

@@ -31,8 +31,9 @@ export const vars = createGlobalThemeContract(
       sidebarAccentForeground: "sidebar-accent-foreground",
       sidebarBorder: "sidebar-border",
       sidebarRing: "sidebar-ring",
-      // Chart series: shadcn's orange theme, from light to dark. The channel charts draw Amazon, Shopify and eBay as
-      // chart-1 to chart-3.
+      // Chart series: shadcn's orange theme, from light to dark. As in the designs, a series that has to stand out
+      // against the card is chart-4, and chart-1 is the soft one: Amazon, Shopify and eBay are chart-4, chart-2 and
+      // chart-3, and a single series is chart-4.
       chart1: "chart-1",
       chart2: "chart-2",
       chart3: "chart-3",

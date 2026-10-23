@@ -330,7 +330,7 @@ function potentialProfit(restock: Overview["restock"]) {
 
 // Each channel's bar: on hand in the channel's color, on the way in a lighter step of it.
 const channelFills = {
-  amazon: { onHand: "bg-chart-1", incoming: "bg-chart-1/35" },
+  amazon: { onHand: "bg-chart-4", incoming: "bg-chart-4/35" },
   shopify: { onHand: "bg-chart-2", incoming: "bg-chart-2/35" }
 }
 
