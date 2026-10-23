@@ -39,7 +39,7 @@ import {
   updateConnectionInventory
 } from "./operation-connections"
 import { importDefinitions, importFile, readImport, applyImport, exportFile, entityExport } from "./operation-imports"
-import { inventoryUpdateDefinition, updateSupplierInventory } from "./operation-inventory-writes"
+import { updateSupplierInventory } from "./operation-inventory-writes"
 import { readListings, linkListing } from "./operation-listings"
 import { readCustomerOrders } from "./operation-order-reads"
 import { partnerWriteDefinitions, createPartner, updatePartner } from "./operation-partner-writes"
@@ -52,6 +52,7 @@ import {
   assignCliProductSupplier,
   updateCliVariant
 } from "./operation-product-writes"
+import { providerWriteOperations } from "./operation-provider-writes"
 import {
   catalogDefinitions,
   poDefinitions,
@@ -63,6 +64,8 @@ import {
 import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { readShipments } from "./operation-shipment-reads"
 import { readConnectionSync, startConnectionSync, workspaceSyncStatus } from "./operation-sync"
+import { productWritePolicy } from "./provider-write-routing"
+import { providerWrite, prepareProviderWrite, type PreparedWrite } from "./provider-writes"
 import { restockTargetReport } from "./restock-page"
 import { restockPriceFields } from "./restock-plan"
 import { hash, sign, verifySignature } from "./security"
@@ -82,6 +85,7 @@ type Context = {
   input: unknown
   executor: Executor
   responseMeta: Partial<z.infer<typeof metaSchema>>
+  preparedWrite?: PreparedWrite
 }
 const setup = setupOperations(accessSchema)
 const member = (context: Context) => Boolean(context.session)
@@ -211,8 +215,16 @@ const entries: Entry[] = [
     (context) => productRead(context) || supplierProductsRead(context),
     (input, context) => productSettings(session(context), input.id)
   ),
-  entry(productWriteDefinitions["product.variant.update"], productEdit, (input, context) =>
-    updateCliVariant(session(context), input)
+  entry(providerWriteOperations["product.price.update"], productEdit, (input, context) =>
+    providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
+  ),
+  entry(providerWriteOperations["product.cost.update"], productEdit, (input, context) =>
+    providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
+  ),
+  entry(providerWriteOperations["product.variant.update"], productEdit, (input, context) =>
+    "fields" in input
+      ? updateCliVariant(session(context), input)
+      : providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
   ),
   entry(importDefinitions["product.import"], supplierProductsEdit, (input, context) =>
     importFile(session(context), input, false)
@@ -258,9 +270,14 @@ const entries: Entry[] = [
     updatePartner(session(context), input)
   ),
   entry(
-    inventoryUpdateDefinition,
-    (context) => context.session?.org.kind === "supplier" && can(context.session, "inventory", "edit"),
-    (input, context) => updateSupplierInventory(session(context), input)
+    providerWriteOperations["inventory.update"],
+    (context) =>
+      supplierInventoryEdit(context) ||
+      (productEdit(context) && context.session !== null && can(context.session, "inventory", "edit")),
+    (input, context) =>
+      "change" in input || input.mode === "apply" || input.mode === "read"
+        ? providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
+        : updateSupplierInventory(session(context), input)
   ),
   entry(catalogWriteDefinitions["catalog.create"], catalogEdit, (input, context) =>
     writeCatalog(session(context), input)
@@ -400,7 +417,7 @@ const entries: Entry[] = [
   entry(productReadOperations["product.show"], productsRead, async (input, context) => {
     const result = await readProducts(session(context))
     context.responseMeta = result.metadata
-    return found(result.items.find((row) => row.id === input.id))
+    return productWritePolicy(session(context), found(result.items.find((row) => row.id === input.id)))
   }),
   entry(inventoryReadOperations["inventory.list"], inventoryRead, async (input, context) => {
     const result = await readInventory(session(context))
@@ -665,6 +682,17 @@ async function mutation(
     throw new CliError("idempotency_key_required", "Supply an Idempotency-Key for this change.")
   }
   const s = session(context)
+  const where = and(
+    eq(operationReceipts.userId, s.user.id),
+    eq(operationReceipts.orgId, s.org.id),
+    eq(operationReceipts.operation, context.operation),
+    eq(operationReceipts.key, key)
+  )
+  const [existing] = await db().select({ key: operationReceipts.key }).from(operationReceipts).where(where)
+  // Provider reads must not hold membership, receipt, workspace or connection locks. Replay skips them.
+  if (!existing) {
+    context.preparedWrite = await prepareProviderWrite(s, context.operation, input)
+  }
   return db().transaction(async (tx) => {
     const [grant] = await tx.select().from(cliGrants).where(eq(cliGrants.id, context.principal.grantId)).for("share")
     if (!grant || grant.revokedAt || grant.expiresAt.getTime() <= Date.now()) {
@@ -691,12 +719,6 @@ async function mutation(
     const fingerprint = hash(
       canonicalJson(retainedReport ? { input, role: fresh.session.role, access: fresh.session.access } : input)
     )
-    const where = and(
-      eq(operationReceipts.userId, s.user.id),
-      eq(operationReceipts.orgId, s.org.id),
-      eq(operationReceipts.operation, context.operation),
-      eq(operationReceipts.key, key)
-    )
     const created = await tx
       .insert(operationReceipts)
       .values({ userId: s.user.id, orgId: s.org.id, operation: context.operation, key, fingerprint })
@@ -711,6 +733,25 @@ async function mutation(
         throw new CliError("idempotency_expired", "This execution expired. Review before starting a new one.", 409)
       }
       if (!retainedReport) {
+        if (
+          ["product.variant.update", "product.price.update", "product.cost.update", "inventory.update"].includes(
+            context.operation
+          )
+        ) {
+          const reference = z
+            .object({
+              targets: z.array(z.unknown()),
+              previewId: z.uuid().optional(),
+              operation: z.object({ id: z.uuid() }).optional()
+            })
+            .safeParse(saved.result)
+          const executionId = reference.success ? (reference.data.previewId ?? reference.data.operation?.id) : undefined
+          if (executionId) {
+            return withTransaction(tx, () =>
+              providerWrite(fresh.session, context.principal.grantId, context.operation, { mode: "read", executionId })
+            )
+          }
+        }
         if (context.operation === "connection.sync") {
           const run = z.object({ connectionId: z.uuid(), runId: z.uuid() }).parse(saved.result)
           await withTransaction(tx, () => readConnectionSync(fresh.session, { id: run.connectionId, runId: run.runId }))

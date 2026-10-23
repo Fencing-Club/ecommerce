@@ -11,6 +11,9 @@ is read-only; pooling belongs to each variant's target. See [stock targets](stoc
 CLI listing discovery uses the existing Amazon US Listings Items API credentials and authenticated client; it adds
 no callback or public hostname. Listing price/offer availability observations are separate from physical stock.
 See [CLI listings](cli-listings.md) for current linking and provider-write limits.
+Controlled writes use the same account credentials. Shopify requires `write_products` for selling price and
+`write_inventory` for SKU, cost and inventory, plus read access for preflight. The worker checks the installation's
+actual granted scopes. No callback or OAuth registration is added by this release.
 
 Staging and production application and Storybook domains serve Cloudflare Workers. Staging's `workers.dev` aliases
 address the same deployments; production disables `workers.dev` and preview URLs. Public URLs and provider callbacks

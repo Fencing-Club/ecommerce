@@ -25,7 +25,7 @@ Inventory ownership defaults to `external`. `--inventory-owner manual` is allowe
 and records intended routing; it does not disable another application's synchronization or enable a write. FBA/AWD
 remain reported stock. Offer availability is not a physical warehouse count and is excluded from restock totals.
 
-This slice does not enable provider-write commands. The shared package contains tested Shopify SKU/cost/price/inventory
-and Amazon price/FBM-availability adapters, but dispatch requires retained previews, per-target execution, permission
-and dependency checks, serialization and reconciliation. Capabilities remain explicitly read-only until that path is
-implemented. Amazon SKU renaming has no adapter. Provider credentials remain on the server.
+The following [controlled provider-write slice](cli-provider-writes.md) adds retained previews, per-target execution,
+permission/dependency checks and conservative dispatch recovery. Capabilities require that server release; the original
+listing-discovery release remains read-only upstream. Amazon SKU renaming has no adapter. Provider credentials remain
+on the server.

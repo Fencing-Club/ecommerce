@@ -67,6 +67,41 @@ const find = (name: string) => {
 }
 
 describe("CLI input and output", () => {
+  it("builds provider changes without mixing local metadata", () => {
+    expect(
+      buildInput(
+        find("product.variant.update"),
+        { sku: "NEW", expectedSku: "OLD", connectionRevision: "3", dryRun: true },
+        ["shop:variant"]
+      ).input
+    ).toEqual({
+      mode: "preview",
+      variantId: "shop:variant",
+      expectedConnectionRevision: 3,
+      change: { field: "sku", sku: "NEW", expectedSku: "OLD" }
+    })
+    expect(
+      buildInput(
+        find("inventory.update"),
+        { location: "shop:location", state: "available", quantity: "4", expectedQuantity: "2", dryRun: true },
+        ["shop:variant"]
+      ).input
+    ).toEqual({
+      mode: "preview",
+      variantId: "shop:variant",
+      change: {
+        field: "inventory",
+        locationId: "shop:location",
+        quantityState: "available",
+        quantity: 4,
+        expectedQuantity: 2
+      }
+    })
+    expect(buildInput(find("product.price.update"), { preview: workspace }, []).input).toEqual({
+      mode: "apply",
+      previewId: workspace
+    })
+  })
   it("maps both listing guards and explicit ownership", () => {
     expect(
       buildInput(
@@ -117,8 +152,7 @@ describe("CLI input and output", () => {
     })
     expect(
       buildInput(find("product.price.update"), { amount: "19.95", currency: "USD", dryRun: true }, [workspace]).input
-        .amountMinor
-    ).toBe(1995)
+    ).toMatchObject({ change: { field: "price", amountMinor: 1995 } })
     expect(decimalMinor("123", "JPY")).toBe(123)
     expect(decimalMinor("1.125", "KWD")).toBe(1125)
     for (const amount of ["1.001", "1e2", "-1", "NaN", "9999999999999999"]) {

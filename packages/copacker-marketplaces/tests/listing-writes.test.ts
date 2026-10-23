@@ -10,11 +10,31 @@ import {
 import type { Shopify } from "../src/shopify"
 
 describe("controlled listing adapters", () => {
+  it("rejects invalid numbers before making a provider request", async () => {
+    const request = vi.fn<Amazon["request"]>()
+    const graphql = vi.fn<Shopify["graphql"]>()
+    for (const value of [NaN, Infinity, -1, 1.5, 2147483648]) {
+      await expect(
+        writeAmazonListing(
+          { request },
+          { sellerId: "seller", sku: "sku", productType: "PRODUCT", field: "inventory", quantity: value }
+        )
+      ).rejects.toThrow(/Invalid|Too/)
+      await expect(
+        writeShopifyField(
+          { graphql },
+          { field: "price", productId: "product", variantId: "variant", amountMinor: value }
+        )
+      ).rejects.toThrow(/Invalid|Too/)
+    }
+    expect(request).not.toHaveBeenCalled()
+    expect(graphql).not.toHaveBeenCalled()
+  })
   it("parses Amazon's decimal-string money without rounding away precision", () => {
     const listing = amazonListing.parse({
       sku: "SKU",
       summaries: [{ marketplaceId: "ATVPDKIKX0DER", productType: "PRODUCT" }],
-      offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { currencyCode: "USD", amount: "30.0" } }]
+      offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { currencyCode: "USD", amount: "30.0000" } }]
     })
     expect(amazonListingValues(listing)).toMatchObject({ amountMinor: 3000, currency: "USD" })
     expect(() =>

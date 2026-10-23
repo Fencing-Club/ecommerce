@@ -31,7 +31,10 @@ an Amazon seller ID (`sellerIdSchema` in `/amazon`).
 Amazon price patches preserve other offer audiences; inventory patches address only DEFAULT merchant availability.
 An ACCEPTED submission is not confirmation. Shopify inventory uses `changeFromQuantity` and an idempotency key on
 the pinned 2026-07 API. These primitives are not public write handlers: the app must authorize and retain execution
-before dispatch, then verify outcomes. See [CLI listing limits](../../../apps/copacker/docs/cli-listings.md).
+before dispatch, then verify outcomes. Cost writes reuse `Shopify.unitCost`; SKU, price and compare-and-swap inventory
+use the narrow listing adapters. Current values, identity and actual granted scopes are checked with `readShopifyWrite`.
+See [CLI listing limits](../../../apps/copacker/docs/cli-listings.md) and
+[execution and routing](../../../apps/copacker/docs/cli-provider-writes.md).
 
 `@repo/copacker-marketplaces/returns` parses Amazon's FBA customer returns report with strict headers, quantities and timezone-bearing
 timestamps, including quoted multiline TSV fields. It preserves source rows and unknown codes, omits customer comments,

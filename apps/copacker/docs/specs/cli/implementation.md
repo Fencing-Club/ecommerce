@@ -1,6 +1,6 @@
 # CLI implementation status
 
-Updated 2026-10-22. The original command inventory is the target contract; a command in client help is not proof of a deployed server handler. Use `schema list` and `schema show` for the current workspace's authorized capabilities.
+Updated 2026-10-23. The original command inventory is the target contract; a command in client help is not proof of a deployed server handler. Use `schema list` and `schema show` for the current workspace's authorized capabilities.
 
 ## Released
 
@@ -24,13 +24,13 @@ See [connection sync](../../cli-connections.md). No upstream product or inventor
 
 ## Remaining
 
-The following listing slice adds Amazon US discovery, guarded variant links and provider adapter primitives; see
-[CLI listings](../../cli-listings.md). It requires its own forward migration and deployment. Provider writes remain disabled.
+PR #197 adds Amazon US discovery, guarded variant links and provider adapter primitives; see
+[CLI listings](../../cli-listings.md). It is merged and deployed to staging. That release keeps upstream writes disabled.
 
-- Write destinations, retained per-target execution and controlled Shopify SKU/cost/price/inventory and Amazon price/FBM inventory writes. No Amazon SKU rename handler is planned.
+- The [controlled provider-write slice](../../cli-provider-writes.md) implements destination discovery, retained single-record previews/executions, Shopify SKU/cost/price/inventory and linked Amazon price/manual-FBM writes. It still requires review, migration and deployment. No Amazon SKU rename handler is planned. General bulk writes, automatic supersession, inventory adjustments and unknown-outcome reconciliation remain unfinished.
 - Connection authorization lifecycle (connect/reconnect/disconnect).
 - Expenses, demand reporting, additional read/export coverage, buyer metadata imports/exports, labels/images, catalog removal/export, partner invitations/removal and addresses.
-- General bulk execution and immutable provider-write previews.
+- General bulk execution; single-record provider previews are included in the controlled write slice above.
 - Automation credential lifecycle, hosted MCP, publishable package distribution and native Linux/macOS credential-store acceptance. Packages remain private.
 - PO and shipment lifecycle commands, coordinated with their active app workflows.
 
