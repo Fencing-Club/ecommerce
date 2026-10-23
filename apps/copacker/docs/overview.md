@@ -125,3 +125,16 @@ bill is paid from Shopify Payments payouts: Shopify's API doesn't expose bills o
 by card or the Shopify Balance card never appears in payouts. Shopify only takes a card or PayPal for bills, so apps and
 the plan go in Settings as monthly costs; Shopify Shipping labels bought through the bill stay out. The gross profit
 card says so.
+
+## Filter loading and query performance
+
+Changing the period or channel immediately shows the requested selection and an “Updating overview…” status with
+skeletons in place of the old figures. Both controls stay usable; another change keeps the pending selection from
+the other control. The router owns completion, cancellation, errors and browser-history navigation.
+
+The Amazon reverse release-reference check uses a bounded scalar lookup, retaining all account and payment checks.
+An anti join could instead scan the seller's whole transaction history for each charge. A read-only October 22, 2026
+production investigation found 127 such scans of 17,410 records, taking 6.8 seconds. With the indexed lookup, local
+reads of production's last-30-day Overview fell from 8.8 to 1.7 seconds for Amazon and 7.7 to 0.8 seconds for all
+channels. These include network time and are measurements, not latency guarantees. All 890 records in that period
+had identical counting decisions before and after; no amounts or ingestion coverage changed.
