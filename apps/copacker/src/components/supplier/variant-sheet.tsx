@@ -23,6 +23,7 @@ import { RequiredMark } from "@/components/form-controls"
 import { MoneyInput } from "@/components/money-input"
 import { OptionSelect } from "@/components/option-select"
 import { useDraft } from "@/hooks/use-draft"
+import { useEdge } from "@/hooks/use-edge"
 import type { PriceBreak, QuantityRules } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
 import { PricingRulesDialog, useRulesSummary } from "./pricing-controls"
@@ -263,9 +264,10 @@ export function VariantSheet({
   onSave: (variant: EditorVariant) => void
 }) {
   const t = useTranslations("supplier.productEditor")
+  const side = useEdge("end")
   return (
     <Sheet open={!!variant} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent side={side} className="w-full overflow-y-auto sm:max-w-md">
         {variant ? (
           // A fresh form for each variant opened.
           <VariantForm

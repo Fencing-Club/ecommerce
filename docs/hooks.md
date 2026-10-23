@@ -47,6 +47,8 @@ each hook.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.
 - `useIsMobile` (from `@buildkitgg/shadcn-baseui-kit`, the kit's sidebar's own): `true` below 768px. Use it for
   layout switches that CSS can't handle.
+- `useEdge` (`use-edge.ts`): the reading direction's `"start"` or `"end"` edge as the physical `"left"` or `"right"`
+  that a Sidebar's or Sheet's `side` takes. Urdu's start is the right.
 - Effects a page or layout runs, which render nothing (hooks, never components that return `null`):
   - `useRefreshWhile(active, refresh)` (`use-refresh-while.ts`): calls `refresh` every 5 seconds while `active` and the
     tab is in view, such as the Overview's setup checklist while a first sync runs.

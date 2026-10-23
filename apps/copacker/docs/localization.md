@@ -34,7 +34,8 @@ Right-to-left pages follow shadcn's rules:
 
 - **Classes are logical:** `ms-`, `pe-`, `start-`, `text-start`, never `ml-`, `pr-`, `left-` or `text-left`.
 - **Sides are physical:** a Sidebar's or Sheet's `side` and a Drawer's `swipeDirection` name a screen edge, so choose
-  them by direction. The sidebar takes `side="right"` in Urdu, from `useShadcnLocalization()`'s `direction`.
+  them by direction with `useEdge("start" | "end")` from `@/hooks/use-edge`. The sidebar takes the start and record
+  sheets the end, so in Urdu the sidebar is on the right and sheets open from the left.
 - **Icons that point flip:** arrows and chevrons take `rtl:rotate-180`. An icon that isn't symmetric top to bottom,
   such as undo, send or a panel, takes `rtl:-scale-x-100` instead. Icons that don't point the way the reader moves stay
   as they are, such as external links.

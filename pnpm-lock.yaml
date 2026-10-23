@@ -221,8 +221,8 @@ importers:
         specifier: 0.1.1
         version: 0.1.1(react@19.2.7)
       '@buildkitgg/shadcn-baseui-kit':
-        specifier: npm:@buildkitgg/shadcn-baseui-vega@^0.3.0
-        version: '@buildkitgg/shadcn-baseui-vega@0.3.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)'
+        specifier: npm:@buildkitgg/shadcn-baseui-vega@^0.4.0
+        version: '@buildkitgg/shadcn-baseui-vega@0.4.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)'
       '@buildkitgg/shadcn-theme':
         specifier: 0.1.1
         version: 0.1.1
@@ -1354,14 +1354,14 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  '@buildkitgg/shadcn-baseui-vega@0.3.0':
-    resolution: {integrity: sha512-oCipCcnNGko+/y5lr/N/HU7oPXVv9oPp+gG13cdRaEw0wc6LNhjs/aH4HcDEAX2OAwa3/7EpFhO+GGh9YPeBXw==}
+  '@buildkitgg/shadcn-baseui-vega@0.4.0':
+    resolution: {integrity: sha512-iJyZfJDkWf8iV7R67RTOYFFvYMQwREeMmzZvZNdBqCJptHdxAxlE60Ej7rY9L6vcy8HI6CUhBIcLAZFqrZYpIQ==}
     peerDependencies:
       react: 19.2.7
       react-dom: 19.2.7
 
-  '@buildkitgg/shadcn-runtime@0.1.0':
-    resolution: {integrity: sha512-Kse6W+ezlKn/m1rtvqfbsrv9wrbJHJXpkjQPj7S+bO8AY4tm80rf5QXJo3NITR+EJu0CTVozx669GzE3+Np+Jg==}
+  '@buildkitgg/shadcn-runtime@0.1.1':
+    resolution: {integrity: sha512-7oW9266us/Mr/J4aameyHEPYm45QlZYxwW6vSAz9iGlgYzSojbfDk4Oocpg3k0zr4DOX2LNL3TydXFTgVifx+A==}
     peerDependencies:
       react: 19.2.7
       react-dom: 19.2.7
@@ -9296,10 +9296,10 @@ snapshots:
       '@buildkitgg/theme-core': 0.1.1
       react: 19.2.7
 
-  '@buildkitgg/shadcn-baseui-vega@0.3.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)':
+  '@buildkitgg/shadcn-baseui-vega@0.4.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)':
     dependencies:
       '@base-ui/react': 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@buildkitgg/shadcn-runtime': 0.1.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@buildkitgg/shadcn-runtime': 0.1.1(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@shadcn/react': 0.3.1(@types/react@19.3.0)(react@19.2.7)
       class-variance-authority: 0.7.1
       cmdk: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -9322,7 +9322,7 @@ snapshots:
       - react-is
       - redux
 
-  '@buildkitgg/shadcn-runtime@0.1.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@buildkitgg/shadcn-runtime@0.1.1(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@base-ui/react': 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       cn: 0.5.0

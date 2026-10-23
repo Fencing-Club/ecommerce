@@ -45,6 +45,16 @@ export const SupplierPickups = meta.story({
   }
 })
 
+// In Urdu the sheet opens from the reading direction's end, the left.
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  play: async () => {
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.element).toHaveAttribute("data-side", "left")
+    await expect(sheet.element.getBoundingClientRect().left).toBeLessThan(window.innerWidth / 2)
+  }
+})
+
 export const EditPickup = meta.story({
   play: async () => {
     await userEvent.click(await screen.findByRole("button", { name: "More actions for Factory" }))

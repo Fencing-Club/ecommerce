@@ -15,6 +15,7 @@ import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { CircleCheck, UploadCloud } from "lucide-react"
 import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
+import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
@@ -94,6 +95,7 @@ function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string)
 // Uploads many barcode PDFs at once, matching each to a variation by the SKU in its file name.
 export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
   const t = useTranslations("products.bulkUpload")
+  const side = useEdge("end")
   const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
@@ -195,7 +197,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
         <UploadCloud data-icon="inline-start" />
         {t("title")}
       </SheetTrigger>
-      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+      <SheetContent side={side} className="gap-0 w-full! sm:max-w-md!">
         <SheetHeader className="border-b">
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>{t("description")}</SheetDescription>

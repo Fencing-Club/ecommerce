@@ -23,6 +23,7 @@ import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormServerError, SubmitButton } from "@/components/form-feedback"
 import { ProductThumb } from "@/components/product-thumb"
+import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { api, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
@@ -436,9 +437,10 @@ export function ProductDetails({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
+  const side = useEdge("end")
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
+      <SheetContent side={side} className="gap-0 w-full! sm:max-w-2xl!">
         {product && (
           <DetailsForm key={product.productId} product={product} onSaved={onSaved} onDone={() => onOpenChange(false)} />
         )}
