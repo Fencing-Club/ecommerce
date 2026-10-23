@@ -184,3 +184,19 @@ A read-only October 22 investigation found a saved -$21.18 released clawback for
 September 2 reversal, posted 46 seconds after report approval. SKU, ASIN and currency match; it was the only saved
 negative report and payment of that amount. The financial record contains settlement and financial-event-group IDs,
 not an order or reimbursement ID. This supports a candidate, not a confirmed link. No provider acquisition was run.
+
+## Overview deferred-payment deduplication
+
+Overview order fees, platform charges and the order list use `countedAmazonTransaction` to retain the original
+posting and exclude its later released copy. A saved `DEFERRED_TRANSACTION_ID` on the copy continues to exclude it;
+a `RELEASE_TRANSACTION_ID` on the original now also excludes the copy when workspace, seller, transaction type,
+currency, signed total, marketplace and available order identities agree, with deferred-released/original and
+released/copy statuses. Reference lookup spans all saved dates so a later release does not add a second cost in a
+new period. Equal amounts alone never deduplicate unrelated transactions. Conflicting forward links remain visible
+for review rather than silently removing money. No stored records are rewritten or acquired.
+
+The October 22 audit found 22 one-sided Shipment pairs duplicating USD 117.28 of fees, and one Refund pair duplicating
+USD 32.52. Amazon supplied the forward reference but omitted the reverse one. The old filters only checked the reverse
+reference, and existing overview tests modeled only that case. Regression tests now cover either/both directions,
+period boundaries, missing copies, account isolation and conflicting evidence. This fixes counting using saved data;
+it does not establish bank settlement or confirmed reimbursement allocation.
