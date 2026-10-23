@@ -214,6 +214,31 @@ describe("on order", () => {
     expect(onOrder.get("gid://shopify/ProductVariant/1")?.[0]?.units).toBe(7)
   })
 
+  it("keeps the same variant's FBA and AWD quantities separate on a mixed-destination PO", () => {
+    const onOrder = onOrderByVariant([
+      {
+        id: "mixed",
+        data: {
+          reference: "PO-MIXED",
+          items: [
+            { ...item(1, 24, 2), receiver: "fba" },
+            { ...item(1, 40, 2), receiver: "awd_us" },
+            { ...item(1, 8, 2), receiver: "fba" }
+          ]
+        },
+        received: { "item-1-24": 4 }
+      }
+    ])
+    expect(onOrder.get("gid://shopify/ProductVariant/1")).toEqual([
+      { id: "mixed", reference: "PO-MIXED", units: 14, locationIds: ["amazon:fba"], destination: "amazon" },
+      { id: "mixed", reference: "PO-MIXED", units: 20, locationIds: ["amazon:awd"], destination: "amazon" }
+    ])
+    const variant = groupInventory(rows, { onOrder })
+      .flatMap((product) => product.variants)
+      .find((candidate) => candidate.variantId === "gid://shopify/ProductVariant/1")
+    expect(variant?.onOrder).toEqual({ units: 34, orders: [{ id: "mixed", reference: "PO-MIXED" }] })
+  })
+
   it("shows units only at the location the PO will stock", () => {
     const onOrder = onOrderByVariant([order("a", "PO-1", [item(1, 10)]), order("b", "PO-2", [item(1, 4)], "warehouse")])
     const pooled = withAmazonStock(rows, null, [

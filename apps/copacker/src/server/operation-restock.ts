@@ -141,13 +141,17 @@ export async function operationRestockReport(
           inventorySnapshotIds: snapshots
             .filter((snapshot) => option.channel.kind === "amazon" || snapshot.source === "shopify")
             .flatMap((snapshot) => (snapshot.snapshotId ? [snapshot.snapshotId] : [])),
-          openPoIds: (evidence.onOrder.get(line.variantId) ?? [])
-            .filter((order) =>
-              option.channel.kind === "amazon"
-                ? order.destination === "amazon"
-                : order.locationIds.includes(option.channel.locationId)
+          openPoIds: [
+            ...new Set(
+              (evidence.onOrder.get(line.variantId) ?? [])
+                .filter((order) =>
+                  option.channel.kind === "amazon"
+                    ? order.destination === "amazon"
+                    : order.locationIds.includes(option.channel.locationId)
+                )
+                .map((order) => order.id)
             )
-            .map((order) => order.id),
+          ],
           issues: [
             ...line.blocked.map((code) => issue(code, "The shared restock planner could not verify this input.")),
             ...(!line.supplier
