@@ -60,8 +60,8 @@ export const vars = createGlobalThemeContract(
 
 const radius = "0.625rem"
 
-// shadcn's orange theme on neutral, in Tailwind v4's colors, as in designs/CopackerShadcn.lib.pen. Two values are
-// darker than shadcn's for contrast: primary and sidebar-primary are orange-700, and muted-foreground is #6b6b6b.
+// shadcn's orange theme on neutral, in Tailwind v4's colors, as in designs/CopackerShadcn.lib.pen. Two values differ
+// from shadcn's on purpose, for contrast: sidebar-primary is orange-700, and muted-foreground is #6b6b6b.
 const chart = {
   chart1: "oklch(0.837 0.128 66.29)",
   chart2: "oklch(0.705 0.213 47.604)",
@@ -81,8 +81,8 @@ const light = {
   popoverForeground: "oklch(0.145 0 0)",
   primary: "oklch(0.553 0.195 38.402)",
   primaryForeground: "oklch(0.98 0.016 73.684)",
-  secondary: "oklch(0.97 0 0)",
-  secondaryForeground: "oklch(0.205 0 0)",
+  secondary: "oklch(0.967 0.001 286.375)",
+  secondaryForeground: "oklch(0.21 0.006 285.885)",
   muted: "oklch(0.97 0 0)",
   mutedForeground: "#6b6b6b",
   accent: "oklch(0.97 0 0)",
@@ -90,7 +90,7 @@ const light = {
   destructive: "oklch(0.577 0.245 27.325)",
   border: "oklch(0.922 0 0)",
   input: "oklch(0.922 0 0)",
-  ring: "oklch(0.75 0.183 55.934)",
+  ring: "oklch(0.708 0 0)",
   sidebar: "oklch(0.985 0 0)",
   sidebarForeground: "oklch(0.145 0 0)",
   sidebarPrimary: "oklch(0.553 0.195 38.402)",
@@ -98,7 +98,7 @@ const light = {
   sidebarAccent: "oklch(0.97 0 0)",
   sidebarAccentForeground: "oklch(0.205 0 0)",
   sidebarBorder: "oklch(0.922 0 0)",
-  sidebarRing: "oklch(0.75 0.183 55.934)",
+  sidebarRing: "oklch(0.708 0 0)",
   ...chart
 }
 
@@ -140,9 +140,9 @@ createGlobalTheme(".dark", vars.color, {
   cardForeground: "oklch(0.985 0 0)",
   popover: "oklch(0.205 0 0)",
   popoverForeground: "oklch(0.985 0 0)",
-  primary: "oklch(0.553 0.195 38.402)",
+  primary: "oklch(0.47 0.157 37.304)",
   primaryForeground: "oklch(0.98 0.016 73.684)",
-  secondary: "oklch(0.269 0 0)",
+  secondary: "oklch(0.274 0.006 286.033)",
   secondaryForeground: "oklch(0.985 0 0)",
   muted: "oklch(0.269 0 0)",
   mutedForeground: "oklch(0.708 0 0)",
@@ -151,7 +151,7 @@ createGlobalTheme(".dark", vars.color, {
   destructive: "oklch(0.704 0.191 22.216)",
   border: "oklch(1 0 0 / 10%)",
   input: "oklch(1 0 0 / 15%)",
-  ring: "oklch(0.408 0.123 38.172)",
+  ring: "oklch(0.556 0 0)",
   sidebar: "oklch(0.205 0 0)",
   sidebarForeground: "oklch(0.985 0 0)",
   sidebarPrimary: "oklch(0.553 0.195 38.402)",
@@ -159,7 +159,7 @@ createGlobalTheme(".dark", vars.color, {
   sidebarAccent: "oklch(0.269 0 0)",
   sidebarAccentForeground: "oklch(0.985 0 0)",
   sidebarBorder: "oklch(1 0 0 / 10%)",
-  sidebarRing: "oklch(0.408 0.123 38.172)",
+  sidebarRing: "oklch(0.556 0 0)",
   ...chart
 })
 
