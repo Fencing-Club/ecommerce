@@ -244,7 +244,7 @@ export function OnboardingWizard({
               >
                 <div className="flex flex-col gap-2">
                   {invitedBy && (
-                    <span className="w-fit rounded-full bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary">
+                    <span className="w-fit rounded-full bg-orange-50 dark:bg-orange-950 px-2.5 py-1 text-xs font-medium text-primary">
                       {t("wizard.invitedBy", { name: invitedBy })}
                     </span>
                   )}

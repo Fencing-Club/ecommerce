@@ -57,14 +57,14 @@ export function NextStepCard({
       aria-labelledby={titleId}
       className={cn(
         "flex items-center gap-3.5 rounded-lg border p-4 max-md:flex-col max-md:items-start max-md:gap-2.5 max-md:p-3.5",
-        yours ? "border-primary-border bg-primary-tint" : "bg-background",
+        yours ? "border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950" : "bg-background",
         className
       )}
     >
       <span
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-[9px] max-md:hidden",
-          yours ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground"
+          yours ? "bg-orange-50 dark:bg-orange-950 text-primary" : "bg-muted text-muted-foreground"
         )}
         aria-hidden
       >
@@ -77,7 +77,7 @@ export function NextStepCard({
         </h2>
         {detail && <p className="text-meta leading-[1.45] text-muted-foreground">{detail}</p>}
         {alert && (
-          <p className="flex items-center gap-1.5 pt-1 text-xs font-medium text-warning-foreground">
+          <p className="flex items-center gap-1.5 pt-1 text-xs font-medium text-amber-800 dark:text-amber-300">
             <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
             {alert}
           </p>

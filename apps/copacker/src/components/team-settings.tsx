@@ -219,7 +219,7 @@ function AccessFields({ kind }: { kind: string }) {
             <FieldLabel
               key={choice}
               htmlFor={`${id}-${choice}`}
-              className="w-full cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-primary-border has-data-checked:bg-primary-tint has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+              className="w-full cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-orange-200 dark:has-data-checked:border-orange-900 has-data-checked:bg-orange-50 dark:has-data-checked:bg-orange-950 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
             >
               {/* Base UI's radio isn't a labelable element, so it's named by its text. */}
               <RadioGroupItem

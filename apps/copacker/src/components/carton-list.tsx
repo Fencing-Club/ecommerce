@@ -52,7 +52,7 @@ export function CartonList({
           <span
             className={cn(
               "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-              totals.pieces === available && "text-success"
+              totals.pieces === available && "text-green-800 dark:text-green-400"
             )}
           >
             {t("packedUnits", { count: totals.pieces, available })}

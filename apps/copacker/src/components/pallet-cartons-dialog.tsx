@@ -137,7 +137,7 @@ export function PalletCartonsDialog({
                   <div
                     className={cn(
                       "grid grid-cols-[1rem_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-3 @lg/chooser:grid-cols-[1rem_minmax(0,1fr)_11rem_6rem]",
-                      tint(ids) && "bg-primary-tint"
+                      tint(ids) && "bg-orange-50 dark:bg-orange-950"
                     )}
                   >
                     <Checkbox
@@ -188,7 +188,7 @@ export function PalletCartonsDialog({
                           key={carton.id}
                           className={cn(
                             "grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-x-3 py-2.5 ps-11 pe-4 @lg/chooser:grid-cols-[1rem_minmax(0,1fr)_11rem_6rem]",
-                            tint([carton.id]) && "bg-primary-tint"
+                            tint([carton.id]) && "bg-orange-50 dark:bg-orange-950"
                           )}
                         >
                           <Checkbox

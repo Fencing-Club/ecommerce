@@ -215,7 +215,7 @@ export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh
             <li key={step.key}>
               {step.done ? (
                 <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground">
-                  <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />
+                  <CircleCheck className="size-4 shrink-0 text-green-800 dark:text-green-400" aria-hidden />
                   <span className="truncate text-sm font-medium">{step.title}</span>
                   <span className="sr-only">{t("done")}</span>
                 </div>
@@ -257,7 +257,7 @@ export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh
 // One icon per tone, all the same size and weight, colored by how urgent the item is.
 const toneIcons = {
   critical: { icon: CircleAlert, className: "text-destructive" },
-  warning: { icon: TriangleAlert, className: "text-warning" },
+  warning: { icon: TriangleAlert, className: "text-amber-400" },
   info: { icon: Info, className: "text-muted-foreground" }
 }
 
@@ -311,7 +311,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
         </ul>
       ) : (
         <div className="flex items-center gap-3 px-4 py-3 text-sm font-medium">
-          <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />
+          <CircleCheck className="size-4 shrink-0 text-green-800 dark:text-green-400" aria-hidden />
           {t("caughtUp")}
         </div>
       )}
@@ -330,7 +330,7 @@ function potentialProfit(restock: Overview["restock"]) {
 
 // Each channel's bar: on hand in the channel's color, on the way in a lighter step of it.
 const channelFills = {
-  amazon: { onHand: "bg-chart-1", incoming: "bg-chart-1/35" },
+  amazon: { onHand: "bg-chart-4", incoming: "bg-chart-4/35" },
   shopify: { onHand: "bg-chart-2", incoming: "bg-chart-2/35" }
 }
 

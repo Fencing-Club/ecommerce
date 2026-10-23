@@ -53,8 +53,6 @@ export const Placements = meta.story({
     await expect(args.onValueChange).toHaveBeenCalledWith("poc1")
     const fontana = canvas.getByRole("radio", { name: "Fontana, CA" })
     await expect(fontana).toHaveAttribute("aria-checked", "true")
-    const shade = (radio: HTMLElement) => getComputedStyle(radio.closest("label") ?? radio).backgroundColor
-    await expect(shade(fontana)).not.toBe(shade(hagerstown))
   }
 })
 

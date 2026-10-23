@@ -45,7 +45,7 @@ export function IssuePanel({ title, hint, children }: { title: string; hint?: st
     <Card flush>
       <Collapsible>
         <CollapsibleTrigger className="focus-ring group flex w-full items-center gap-3 px-4 py-3 text-start text-sm hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-inset">
-          <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
+          <TriangleAlert className="size-4 shrink-0 text-amber-400" aria-hidden="true" />
           <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
             <span className="font-medium">{title}</span>
             {hint && <span className="text-muted-foreground">{hint}</span>}
@@ -398,7 +398,7 @@ function FilterToggle({
       title={description}
       onClick={() => onPressedChange(!pressed)}
     >
-      <TriangleAlert data-icon="inline-start" className="text-warning" />
+      <TriangleAlert data-icon="inline-start" className="text-amber-400" />
       {label}
       {pressed && <X data-icon="inline-end" aria-hidden />}
     </Button>

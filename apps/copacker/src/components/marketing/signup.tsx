@@ -12,7 +12,7 @@ function Subscribed() {
   useEffect(() => ref.current?.focus(), [])
   return (
     <output ref={ref} tabIndex={-1} className="flex h-12 items-center gap-3 text-lg font-medium outline-none">
-      <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#c2410c]">
+      <span className="flex size-8 items-center justify-center rounded-full bg-white text-orange-700">
         <Check className="size-5" strokeWidth={3} />
       </span>
       {t("done")}

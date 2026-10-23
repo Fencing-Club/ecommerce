@@ -30,7 +30,9 @@ export type TimelineEntry = {
 function AuthorAvatar({ name }: { name: string }) {
   return (
     <Avatar aria-hidden className="size-7">
-      <AvatarFallback className="bg-primary-soft text-xs font-semibold text-primary">{initials(name)}</AvatarFallback>
+      <AvatarFallback className="bg-orange-50 dark:bg-orange-950 text-xs font-semibold text-primary">
+        {initials(name)}
+      </AvatarFallback>
     </Avatar>
   )
 }

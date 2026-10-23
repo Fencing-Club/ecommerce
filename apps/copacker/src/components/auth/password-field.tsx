@@ -64,7 +64,7 @@ export function PasswordField({
           id={ruleId}
           className={cn(
             "flex items-center gap-1.5 text-xs transition-colors",
-            long ? "text-success" : "text-muted-foreground"
+            long ? "text-green-800 dark:text-green-400" : "text-muted-foreground"
           )}
         >
           <Check className={cn("size-3.5 transition-opacity", long ? "opacity-100" : "opacity-40")} aria-hidden />

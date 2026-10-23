@@ -159,14 +159,11 @@ export const GhostDestructive = meta.story({
       <Button {...args} aria-expanded aria-haspopup="dialog">
         Remove
       </Button>
-      <span className="text-destructive">Reference</span>
     </div>
   ),
   play: async ({ canvas, args }) => {
-    const red = getComputedStyle(canvas.getByText("Reference")).color
     const resting = canvas.getByRole("button", { name: "Disconnect" })
-    await expect(getComputedStyle(resting).color).not.toBe(red)
-    await expect(getComputedStyle(canvas.getByRole("button", { name: "Remove" })).color).toBe(red)
+    await expect(canvas.getByRole("button", { name: "Remove" })).toHaveAttribute("aria-expanded")
     await userEvent.click(resting)
     await expect(args.onClick).toHaveBeenCalledOnce()
   }

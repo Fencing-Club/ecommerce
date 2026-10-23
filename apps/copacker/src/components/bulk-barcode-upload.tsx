@@ -72,7 +72,7 @@ function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string)
       {result.status === "uploading" && <span className="text-xs text-muted-foreground">{t("uploading")}</span>}
       {result.status === "saved" && (
         <span className="inline-flex items-start gap-1 text-xs">
-          <CircleCheck className="mt-px size-3.5 shrink-0 text-success" aria-hidden="true" />
+          <CircleCheck className="mt-px size-3.5 shrink-0 text-green-800 dark:text-green-400" aria-hidden="true" />
           <span>
             {result.replaced
               ? t("replacedFor", { target: targetLabel(result.target) })

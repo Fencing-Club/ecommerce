@@ -109,7 +109,7 @@ export function LogisticsTable({
               aria-label={t("shippedLabel", { reference: row.reference })}
               max={row.quantity || 1}
               value={row.shipped ?? 0}
-              className="mt-1 block h-1 w-full appearance-none overflow-hidden rounded-full border-0 bg-muted [&::-moz-progress-bar]:bg-info [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-info"
+              className="mt-1 block h-1 w-full appearance-none overflow-hidden rounded-full border-0 bg-muted [&::-moz-progress-bar]:bg-sky-700 dark:[&::-moz-progress-bar]:bg-sky-400 [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-sky-700 dark:[&::-webkit-progress-value]:bg-sky-400"
             />
           </div>
         )

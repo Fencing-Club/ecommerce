@@ -16,7 +16,7 @@ import { vars } from "@/styles/theme.css"
 
 // Each source keeps its color everywhere: Amazon first, then Shopify, then eBay.
 export const sourceSeries: Record<Store, { label: string; color: string }> = {
-  amazon: { label: "Amazon", color: vars.color.chart1 },
+  amazon: { label: "Amazon", color: vars.color.chart4 },
   shopify: { label: "Shopify", color: vars.color.chart2 },
   ebay: { label: "eBay", color: vars.color.chart3 }
 }
@@ -218,7 +218,7 @@ export function SalesTrend({
   const shown = sourceOrder.filter((source) => sources.includes(source))
   // One source keeps its name and color; several read as all channels together.
   const single = shown.length === 1 ? sourceSeries[shown[0]!] : null
-  const series = { label: single?.label ?? channels("all"), color: single?.color ?? vars.color.chart1 }
+  const series = { label: single?.label ?? channels("all"), color: single?.color ?? vars.color.chart4 }
   const previousName = t("previousSeries", { source: series.label, comparison })
   const data = points(daily, previous, shown, metric, step, dates, (date) => t("weekOf", { date }))
   const compared = data.some((point) => isPresent(point.previous))
@@ -400,7 +400,7 @@ export function CoverChart({
             <span className="truncate">{bucket.label}</span>
             <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
               <span
-                className="block h-full min-w-0.5 rounded-full bg-chart-1"
+                className="block h-full min-w-0.5 rounded-full bg-chart-4"
                 style={{ width: `${(bucket.items / largest) * 100}%` }}
               />
             </span>
