@@ -9,7 +9,8 @@ discovery, connection reads/settings and restock are implemented, along with the
 [resource reads](../../../apps/copacker/docs/cli-resource-reads.md). Business writes and automation issuance remain
 unfinished. Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
-claim that a server has enabled that capability. No npm release or production deployment has been performed.
+claim that a server has enabled that capability. Authentication, restock reports and the first resource reads were
+promoted to production on October 22, 2026. No npm release has been performed.
 
 ## Run locally
 
