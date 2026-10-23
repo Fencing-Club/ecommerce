@@ -307,3 +307,32 @@ export const NoLocations = meta.story({
     await expect(plans).toEqual([])
   }
 })
+
+const pooledChannel = {
+  kind: "pool" as const,
+  id: "pool:warehouses",
+  members: ["1", "2"].map((id) => ({
+    provider: "shopify",
+    accountId: "shop.myshopify.com",
+    scope: "store",
+    externalId: `gid://shopify/Location/${id}`
+  }))
+}
+export const PooledTarget = meta.story({
+  beforeEach: ({ msw }) => {
+    msw.use(
+      http.get("/api/restock/channels", () =>
+        HttpResponse.json([{ key: pooledChannel.id, label: "Main + Outlet", channel: pooledChannel }])
+      ),
+      planApi(() => ({ ...restockReport(), channel: pooledChannel }))
+    )
+  },
+  play: async ({ canvas }) => {
+    const lotus = await lotusGroup()
+    await expect(canvas.getByRole("combobox", { name: "Restock location" })).toHaveTextContent("Main + Outlet")
+    await expect(plans[0]).toEqual(expect.objectContaining({ channel: pooledChannel }))
+    const reorder = within(lotus).getByRole("button", { name: "Reorder" })
+    await expect(reorder).toHaveAttribute("href", expect.stringContaining("destination=warehouse"))
+    await expect(reorder.getAttribute("href")).not.toContain("locationId=")
+  }
+})

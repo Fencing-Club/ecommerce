@@ -1,5 +1,8 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
+import { db } from "@/db"
+import { variantStockTargetSets } from "@/db/schema"
 import { AccessError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { session } from "@/server/auth"
@@ -11,6 +14,8 @@ import { groupInventory, isCollective, pageSizes } from "@/server/inventory-prod
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 import { readVariantFields } from "@/server/product-fields"
+import { stockTargetFormValues } from "@/server/stock-target-fields"
+import { stockTargetContext } from "@/server/stock-targets"
 
 const querySchema = z.strictObject({
   q: z.string().trim().max(100).optional(),
@@ -85,6 +90,16 @@ export async function GET(request: Request) {
         readVariantFields(s.org.id, domain)
       ])
     : [new Map(), new Map<string, ProductBarcode>(), new Map()]
+  const targetContext = await stockTargetContext(s.org.id)
+  const targetSets = domain
+    ? await db()
+        .select()
+        .from(variantStockTargetSets)
+        .where(and(eq(variantStockTargetSets.orgId, s.org.id), eq(variantStockTargetSets.shopifyDomain, domain)))
+    : []
+  const targetsByVariant = new Map(
+    targetSets.map((set) => [set.variantId, stockTargetFormValues(set, targetContext.groups, targetContext.locations)])
+  )
   // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one.
   // Others get the standard FNSKU label.
   const unlabelled = (product: (typeof grouped)[number]) =>
@@ -145,6 +160,7 @@ export async function GET(request: Request) {
         supplierSku: supplierSkus.get(variant.variantId) ?? null,
         asin: fields.get(variant.variantId)?.asin ?? null,
         storeStockTarget: fields.get(variant.variantId)?.storeStockTarget ?? null,
+        stockTargets: targetsByVariant.get(variant.variantId),
         // ISO codes from Shopify (a bundle's come from its components), null when none is recorded, or left out
         // before a sync collects it.
         countryOfOrigin: countries.get(variant.variantId)

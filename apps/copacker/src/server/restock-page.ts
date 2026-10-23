@@ -1,4 +1,10 @@
-import { resolveStockTargets, targetRestockSelectionSchema } from "@repo/copacker-contract"
+import { createHash } from "node:crypto"
+import {
+  inventoryLocationKey,
+  inventoryLocationRefSchema,
+  resolveStockTargets,
+  targetRestockSelectionSchema
+} from "@repo/copacker-contract"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
@@ -36,7 +42,12 @@ export const restockInputSchema = z.strictObject({
   leadTimeDays: days,
   channel: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("amazon") }),
-    z.strictObject({ kind: z.literal("shopify"), locationId: locationIdSchema })
+    z.strictObject({ kind: z.literal("shopify"), locationId: locationIdSchema }),
+    z.strictObject({
+      kind: z.literal("pool"),
+      id: z.string().min(1).max(255),
+      members: z.array(inventoryLocationRefSchema).max(100)
+    })
   ]),
   // Every supplier, one supplier's products, or products never ordered from a supplier.
   supplier: z.union([z.literal("all"), z.uuid()]).default("all")
@@ -58,10 +69,21 @@ export async function restockChannels(orgId: string) {
 
 export async function restockChannelDiscovery(orgId: string) {
   const context = await inventoryContext(orgId)
-  return { channels: channelsIn(context), catalogAvailable: context.data !== null }
+  const targetContext = await stockTargetContext(orgId)
+  const targetSets = context.domain
+    ? await db()
+        .select()
+        .from(variantStockTargetSets)
+        .where(and(eq(variantStockTargetSets.orgId, orgId), eq(variantStockTargetSets.shopifyDomain, context.domain)))
+    : []
+  return { channels: channelsIn(context, targetSets, targetContext), catalogAvailable: context.data !== null }
 }
 
-function channelsIn(context: InventoryContext) {
+function channelsIn(
+  context: InventoryContext,
+  sets: Awaited<ReturnType<typeof restockInputs>>["targetSets"],
+  targetContext: Awaited<ReturnType<typeof stockTargetContext>>
+) {
   const channels: RestockChannelOption[] = []
   if (context.fbaRows || context.awdRows) {
     channels.push({ key: "amazon", label: "Amazon", channel: { kind: "amazon" } })
@@ -75,7 +97,38 @@ function channelsIn(context: InventoryContext) {
       })
     }
   }
+  for (const set of sets) {
+    for (const target of resolveStockTargets(set.targets, targetContext.groups, targetContext.locations).targets) {
+      const option = targetChannel(target)
+      if (!channels.some((existing) => existing.key === option.key)) {
+        channels.push(option)
+      }
+    }
+  }
   return channels
+}
+
+function targetChannel(target: ReturnType<typeof resolveStockTargets>["targets"][number]): RestockChannelOption {
+  const members = target.members
+  if (members.length === 1 && members[0]!.provider === "shopify") {
+    return {
+      key: `shopify:${members[0]!.externalId}`,
+      label: target.name ?? members[0]!.externalId,
+      channel: { kind: "shopify", locationId: members[0]!.externalId }
+    }
+  }
+  if (
+    members.length === 2 &&
+    members.every((member) => member.provider === "amazon") &&
+    members.some((member) => member.externalId === "fba") &&
+    members.some((member) => member.externalId === "awd")
+  ) {
+    return { key: "amazon", label: "Amazon", channel: { kind: "amazon" } }
+  }
+  const id = `pool:${createHash("sha256")
+    .update(members.length ? JSON.stringify(members.map(inventoryLocationKey).sort()) : target.id)
+    .digest("hex")}`
+  return { key: id, label: target.name ?? "Stock target", channel: { kind: "pool", id, members } }
 }
 
 // The buyer's suppliers with their lead times, and each variation's supplier. The product's supplier comes first (the
@@ -180,6 +233,9 @@ async function channelStockouts(
     saleDays: ReadonlyMap<string, ReadonlySet<string>>
   }[]
 ) {
+  if (channel.kind === "pool") {
+    return new Map<string, number>()
+  }
   const source = channel.kind === "amazon" ? "amazon" : "shopify"
   const sales = sources.find((row) => row.source === source)
   const window = sales?.window
@@ -248,6 +304,7 @@ async function restockInputs(orgId: string, days: number) {
         .where(and(eq(variantStockTargetSets.orgId, orgId), eq(variantStockTargetSets.shopifyDomain, context.domain)))
     : []
   return {
+    targetPlans: new Map<number, ReturnType<typeof restockTargetPlan>>(),
     targetContext,
     targetSets,
     orgId,
@@ -282,8 +339,7 @@ async function channelPlan(
 ) {
   const { context, demand } = inputs
   const stockouts = await channelStockouts(inputs.orgId, channel, context.rows, demand.sources)
-  const plan = restockPlan({
-    channel,
+  const basis = {
     catalog: context.rows,
     classifications: context.classifications,
     onOrder: context.onOrder,
@@ -297,68 +353,134 @@ async function channelPlan(
     leadTimeDays,
     productDefaults: inputs.productDefaults,
     supplierFor: inputs.lookup.supplierFor,
-    externalSupplierFor: inputs.lookup.externalSupplierFor,
-    // Amazon history is by seller SKU, Shopify's by variant.
+    externalSupplierFor: inputs.lookup.externalSupplierFor
+  }
+  let mapped = inputs.targetPlans.get(leadTimeDays)
+  if (!mapped) {
+    mapped = restockTargetPlan(basis, inputs.targetSets, inputs.targetContext.groups, inputs.targetContext.locations)
+    inputs.targetPlans.set(leadTimeDays, mapped)
+  }
+  let selectedKey = "amazon"
+  if (channel.kind === "pool") {
+    selectedKey = channel.id
+  }
+  if (channel.kind === "shopify") {
+    selectedKey = `shopify:${channel.locationId}`
+  }
+  const matching = new Map<string, NonNullable<(typeof mapped)[number]["line"]>>()
+  for (const set of inputs.targetSets) {
+    for (const target of resolveStockTargets(set.targets, inputs.targetContext.groups, inputs.targetContext.locations)
+      .targets) {
+      if (targetChannel(target).key !== selectedKey) {
+        continue
+      }
+      const line = mapped.find((row) => row.variantId === set.variantId && row.targetId === target.id)?.line
+      if (line) {
+        if (line.status === "blocked") {
+          matching.set(set.variantId, line)
+          continue
+        }
+        // Retain the established stockout adjustment for the existing single-location and Amazon channels.
+        const stockoutDays = stockouts.get(channel.kind === "amazon" ? (line.sku ?? "") : line.variantId) ?? 0
+        const base = { ...line, stockoutDays, rateDays: Math.max(Math.min(inputs.days, 7), inputs.days - stockoutDays) }
+        const calculated = calculateRestockLine(base, target.stocked === false)
+        matching.set(set.variantId, {
+          ...base,
+          ...calculated,
+          status: line.status === "not_stocked" ? line.status : restockLineStatus({ ...base, ...calculated })
+        })
+      }
+    }
+  }
+  if (channel.kind === "pool") {
+    return [...matching.values()]
+  }
+  const plan = restockPlan({
+    ...basis,
+    channel,
     stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
   })
-  // The existing channel UI can express one warehouse or the US Amazon pool. Other pools remain available through
-  // the target report, never silently assigned to one warehouse or duplicated across channel recommendations.
-  return plan.map((line) => {
-    const set = inputs.targetSets.find((set) => set.variantId === line.variantId)
-    if (!set) {
-      return line
-    }
-    const resolved = resolveStockTargets(set.targets, inputs.targetContext.groups, inputs.targetContext.locations)
-    const relevant = resolved.targets.filter((target) =>
-      target.members.some((member) =>
-        channel.kind === "amazon"
-          ? member.provider === "amazon"
-          : member.provider === "shopify" && member.externalId === channel.locationId
-      )
-    )
-    const target = relevant[0]
-    const exact =
-      target &&
-      relevant.length === 1 &&
-      !target.issues.length &&
-      (channel.kind === "amazon"
-        ? target.members.length === 2 &&
-          target.members.every((member) => member.provider === "amazon") &&
-          target.members.some((member) => member.externalId === "fba") &&
-          target.members.some((member) => member.externalId === "awd")
-        : target.members.length === 1)
-    const unresolved = set.unassigned.some((value) => value.source === (channel.kind === "amazon" ? "amazon" : "store"))
-    if (!exact && (target || unresolved || resolved.issues.length)) {
-      return {
-        ...line,
-        status: "blocked" as const,
-        blocked: [...new Set([...line.blocked, "stock_unknown" as const])],
-        targetStock: null,
-        need: null,
-        purchaseUnits: null,
-        caseCount: null,
-        estimatedCostMinor: null
+  return plan
+    .flatMap((line) => {
+      const mappedLine = matching.get(line.variantId)
+      if (mappedLine) {
+        matching.delete(line.variantId)
+        return [mappedLine]
       }
-    }
-    const base = { ...line, targetStock: target?.quantity ?? null, targetWhere: target?.name ?? line.targetWhere }
-    const notStocked = !target || target.stocked === false
-    const calculated = calculateRestockLine(base, notStocked)
-    const status = restockLineStatus({ ...base, ...calculated })
-    if (notStocked) {
-      return { ...base, ...calculated, status: "not_stocked" as const }
-    }
-    if (line.status === "no_listing") {
-      return {
-        ...base,
-        ...calculated,
-        status: "no_listing" as const,
-        purchaseUnits: null,
-        caseCount: null,
-        estimatedCostMinor: null
+      const set = inputs.targetSets.find((set) => set.variantId === line.variantId)
+      if (!set) {
+        return [line]
       }
-    }
-    return { ...base, ...calculated, status }
-  })
+      const resolved = resolveStockTargets(set.targets, inputs.targetContext.groups, inputs.targetContext.locations)
+      // Preserve unassigned Amazon balances when only one Amazon member has its own target.
+      if (channel.kind === "amazon") {
+        const assigned = new Set(
+          resolved.targets.flatMap((target) =>
+            target.members.filter((member) => member.provider === "amazon").map(inventoryLocationKey)
+          )
+        )
+        if (assigned.size) {
+          const remaining = inputs.targetContext.locations.filter(
+            (location) =>
+              location.ref.provider === "amazon" &&
+              location.role === "authoritative" &&
+              location.available &&
+              !assigned.has(inventoryLocationKey(location.ref))
+          )
+          if (!remaining.length) {
+            return []
+          }
+          const balance = restockTargetPlan(
+            basis,
+            [
+              {
+                variantId: set.variantId,
+                targets: [
+                  {
+                    id: set.targets[0]!.id,
+                    quantity: 0,
+                    stocked: false,
+                    destination: { kind: "pool", locations: remaining.map((location) => location.ref) }
+                  }
+                ]
+              }
+            ],
+            inputs.targetContext.groups,
+            inputs.targetContext.locations
+          )[0]?.line
+          return balance ? [{ ...balance, targetStock: null }] : []
+        }
+      }
+      // A member's stock is already represented by its target's pool, never repeated in its physical channel.
+      if (
+        resolved.targets.some((target) =>
+          target.members.some((member) =>
+            channel.kind === "amazon"
+              ? member.provider === "amazon"
+              : member.provider === "shopify" && member.externalId === channel.locationId
+          )
+        )
+      ) {
+        return []
+      }
+      if (set.unassigned.some((value) => value.source === (channel.kind === "amazon" ? "amazon" : "store"))) {
+        return [
+          {
+            ...line,
+            status: "blocked" as const,
+            blocked: [...new Set([...line.blocked, "stock_unknown" as const])],
+            targetStock: null,
+            need: null,
+            purchaseUnits: null,
+            caseCount: null,
+            estimatedCostMinor: null
+          }
+        ]
+      }
+      const base = { ...line, targetStock: null }
+      return [{ ...base, ...calculateRestockLine(base, true), status: "not_stocked" as const }]
+    })
+    .concat([...matching.values()])
 }
 
 export async function restockTargetReport(s: Session, raw: unknown) {
@@ -409,7 +531,14 @@ export async function restockReport(s: Session, raw: unknown) {
   const input = requestInput(restockInputSchema, raw)
   const inputs = await restockInputs(s.org.id, input.days)
   const { context } = inputs
-  const { channel } = input
+  const options = channelsIn(context, inputs.targetSets, inputs.targetContext)
+  const channel =
+    input.channel.kind === "pool"
+      ? options.find((option) => option.key === (input.channel.kind === "pool" ? input.channel.id : ""))?.channel
+      : input.channel
+  if (!channel) {
+    throw new RestockInputError("chooseIncludedLocation")
+  }
   if (
     channel.kind === "shopify" &&
     !inventoryLocations(context.rows, context.classifications).some(
@@ -434,10 +563,24 @@ export async function restockReport(s: Session, raw: unknown) {
       line.externalSupplier === null &&
       (line.status === "stockout" || line.status === "reorder")
   ).length
-  const salesSources: Store[] =
-    channel.kind === "amazon"
-      ? ["amazon"]
-      : ["shopify", ...(channel.locationId === inputs.ebayLocationId ? (["ebay"] as const) : [])]
+  let salesSources: Store[] = ["amazon"]
+  if (channel.kind === "shopify") {
+    salesSources = ["shopify", ...(channel.locationId === inputs.ebayLocationId ? (["ebay"] as const) : [])]
+  }
+  if (channel.kind === "pool") {
+    salesSources = []
+    if (channel.members.some((member) => member.provider === "amazon")) {
+      salesSources.push("amazon")
+    }
+    if (channel.members.some((member) => member.provider === "shopify")) {
+      salesSources.push("shopify")
+    }
+    if (
+      channel.members.some((member) => member.provider === "shopify" && member.externalId === inputs.ebayLocationId)
+    ) {
+      salesSources.push("ebay")
+    }
+  }
   return {
     days: input.days,
     leadTimeDays: input.leadTimeDays,
@@ -475,7 +618,7 @@ export async function periodStockouts(
 export async function restockAllChannels(orgId: string, days: number, leadTimeDays: number) {
   const inputs = await restockInputs(orgId, days)
   const channels = await Promise.all(
-    channelsIn(inputs.context).map(async (option) => ({
+    channelsIn(inputs.context, inputs.targetSets, inputs.targetContext).map(async (option) => ({
       ...option,
       lines: await channelPlan(inputs, option.channel, leadTimeDays)
     }))

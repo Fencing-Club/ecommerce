@@ -25,7 +25,7 @@ export const restockSelectionSchema = z.strictObject({
 const restockChannelSchema = z.strictObject({
   id: channelId,
   name: z.string(),
-  kind: z.enum(["amazon", "warehouse"]),
+  kind: z.enum(["amazon", "warehouse", "pool"]),
   connectionId: id.nullable(),
   locationId: z.string().nullable(),
   eligible: z.boolean(),

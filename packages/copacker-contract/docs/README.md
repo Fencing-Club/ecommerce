@@ -13,7 +13,8 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
   membership resolution rejects mirrors, missing locations and overlapping target membership before planning.
 - `stock-target-operations.ts`: generic revision-checked variant-target and location-group operations. The server
   applies workspace authorization, connector eligibility and overlap validation. The target report plans each saved
-  target through the app's shared recommendation calculation; connection inventory operations control location eligibility.
+  target through the app's shared recommendation calculation. Connection inventory reads expose `editable`; only Shopify
+  location selection is editable. Amazon always exposes FBA and AWD US, with target membership controlling pooling.
 - `restock.ts`: executable channel/report schemas; the app injects its existing carton schema. Current provider-scoped
   identities and pooled targets are explicit, with report evidence and a declared CSV projection.
 - `setup.ts`: executable schemas for account reads, workspace reads, discovery and the five credential operations.

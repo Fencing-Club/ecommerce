@@ -101,6 +101,26 @@ describe("inventory and product defaults", () => {
     )
   const readFba = () =>
     readInventory(new Request("http://localhost/api/inventory?source=fba&marketplaceId=ATVPDKIKX0DER"))
+  it("queues both Amazon inventory refreshes despite an old empty connection selection", async () => {
+    await stockAccount()
+    await database
+      .update(tables.connections)
+      .set({ inventoryLocations: [] })
+      .where(and(eq(tables.connections.orgId, buyerId), eq(tables.connections.provider, "amazon")))
+    expect((await refreshFba()).status).toBe(202)
+    expect((await refreshInventory(refreshRequest())).status).toBe(202)
+    const snapshots = await database
+      .select()
+      .from(tables.stockSnapshots)
+      .where(eq(tables.stockSnapshots.orgId, buyerId))
+    expect(snapshots.map(({ source, status }) => ({ source, status }))).toEqual(
+      expect.arrayContaining([
+        { source: "fba", status: "queued" },
+        { source: "awd", status: "queued" }
+      ])
+    )
+    expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "stock"))).toHaveLength(2)
+  })
   it("publishes isolated FBA stock and preserves it on failed refresh", async () => {
     await stockAccount()
     provider.api.fbaStock.mockResolvedValue(fbaData)

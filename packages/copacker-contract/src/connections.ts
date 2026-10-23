@@ -51,6 +51,7 @@ export const connectionInventoryInput = z.strictObject({
 const inventoryResult = z.strictObject({
   connectionId: id,
   revision,
+  editable: z.boolean(),
   selected: z.array(inventoryLocationRefSchema).nullable(),
   locations: z.array(inventoryLocationSchema.extend({ enabled: z.boolean() }))
 })
@@ -100,7 +101,7 @@ export const connectionOperations = {
         workspaceKinds: ["buyer"],
         description: "Current buyer owner/admin membership."
       },
-      effects: [{ kind: "local_write", description: "Select inventory locations on this connection." }]
+      effects: [{ kind: "local_write", description: "Select inventory locations on a Shopify connection." }]
     },
     connectionInventoryInput,
     inventoryResult

@@ -18,7 +18,7 @@ function channel(option: RestockChannelOption, accounts: Account[], eligible: bo
   return {
     id: option.key,
     name: option.label,
-    kind: option.channel.kind === "amazon" ? "amazon" : "warehouse",
+    kind: option.channel.kind === "shopify" ? "warehouse" : option.channel.kind,
     connectionId: accounts.find((account) => account.provider === option.channel.kind)?.id ?? null,
     locationId: option.channel.kind === "shopify" ? option.channel.locationId : null,
     eligible,
@@ -78,10 +78,23 @@ export async function operationRestockReport(
       409
     )
   }
-  const amazon = selected.some((option) => option.channel.kind === "amazon")
-  const warehouse = selected.some((option) => option.channel.kind === "shopify")
-  const ebay = selected.some(
-    (option) => option.channel.kind === "shopify" && option.channel.locationId === result.ebayLocationId
+  const amazon = selected.some(
+    (option) =>
+      option.channel.kind === "amazon" ||
+      (option.channel.kind === "pool" && option.channel.members.some((member) => member.provider === "amazon"))
+  )
+  const warehouse = selected.some(
+    (option) =>
+      option.channel.kind === "shopify" ||
+      (option.channel.kind === "pool" && option.channel.members.some((member) => member.provider === "shopify"))
+  )
+  const ebay = selected.some((option) =>
+    option.channel.kind === "shopify"
+      ? option.channel.locationId === result.ebayLocationId
+      : option.channel.kind === "pool" &&
+        option.channel.members.some(
+          (member) => member.provider === "shopify" && member.externalId === result.ebayLocationId
+        )
   )
   const sources = result.sources.filter((source) => {
     if (source.source === "amazon") {
@@ -109,7 +122,15 @@ export async function operationRestockReport(
     )
   }
   const missingPools = amazon
-    ? ["fba", "awd"].filter((pool) => !snapshots.some((snapshot) => snapshot.source === pool && snapshot.available))
+    ? ["fba", "awd"].filter(
+        (pool) =>
+          selected.some(
+            (option) =>
+              option.channel.kind === "amazon" ||
+              (option.channel.kind === "pool" &&
+                option.channel.members.some((member) => member.provider === "amazon" && member.externalId === pool))
+          ) && !snapshots.some((snapshot) => snapshot.source === pool && snapshot.available)
+      )
     : []
   const prices = can(s, "prices")
   const defaultLeadTimeOrigin = input.leadTimeDays === undefined ? "workspace" : "request"
@@ -139,16 +160,32 @@ export async function operationRestockReport(
               ? "supplier"
               : defaultLeadTimeOrigin,
           inventorySnapshotIds: snapshots
-            .filter((snapshot) => option.channel.kind === "amazon" || snapshot.source === "shopify")
+            .filter(
+              (snapshot) =>
+                snapshot.source === "shopify" ||
+                option.channel.kind === "amazon" ||
+                (option.channel.kind === "pool" &&
+                  option.channel.members.some(
+                    (member) => member.provider === "amazon" && member.externalId === snapshot.source
+                  ))
+            )
             .flatMap((snapshot) => (snapshot.snapshotId ? [snapshot.snapshotId] : [])),
           openPoIds: [
             ...new Set(
               (evidence.onOrder.get(line.variantId) ?? [])
-                .filter((order) =>
-                  option.channel.kind === "amazon"
-                    ? order.destination === "amazon"
-                    : order.locationIds.includes(option.channel.locationId)
-                )
+                .filter((order) => {
+                  if (option.channel.kind === "pool") {
+                    return option.channel.members.some((member) =>
+                      order.locationIds.includes(
+                        member.provider === "amazon" ? `amazon:${member.externalId}` : member.externalId
+                      )
+                    )
+                  }
+                  if (option.channel.kind === "amazon") {
+                    return order.destination === "amazon"
+                  }
+                  return order.locationIds.includes(option.channel.locationId)
+                })
                 .map((order) => order.id)
             )
           ],
@@ -203,14 +240,6 @@ export async function operationRestockReport(
       "provider_identities",
       "Product, variant, and location IDs are provider identifiers scoped to the returned connection."
     ),
-    ...(amazon
-      ? [
-          issue(
-            "pooled_target",
-            "Amazon uses the existing pooled stock target; separate FBA/AWD targets are not yet available."
-          )
-        ]
-      : []),
     ...missingPools.map((pool) =>
       issue("inventory_unavailable", `${pool} inventory has not been synced; pooled coverage is incomplete.`)
     ),

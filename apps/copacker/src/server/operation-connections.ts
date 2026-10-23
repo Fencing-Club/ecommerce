@@ -35,13 +35,18 @@ export async function connectionInventory(s: Session, id: string, executor: Exec
     throw new CliError("not_found", "Connection not found.", 404)
   }
   const context = await stockTargetContext(s.org.id, executor, true)
+  const locations = context.locations.filter(
+    (location) => location.ref.provider === account.provider && location.ref.accountId === account.externalId
+  )
   return {
     connectionId: id,
     revision: account.revision,
-    selected: account.selected,
-    locations: context.locations
-      .filter((location) => location.ref.provider === account.provider && location.ref.accountId === account.externalId)
-      .map((location) => ({ ...location, enabled: inventoryLocationEnabled(account.selected, location.ref) }))
+    editable: account.provider === "shopify",
+    selected: account.provider === "amazon" ? locations.map((location) => location.ref) : account.selected,
+    locations: locations.map((location) => ({
+      ...location,
+      enabled: account.provider === "amazon" || inventoryLocationEnabled(account.selected, location.ref)
+    }))
   }
 }
 
@@ -55,6 +60,13 @@ export async function updateConnectionInventory(s: Session, raw: unknown, execut
       .where(and(eq(connections.id, input.id), eq(connections.orgId, s.org.id)))
       .for("update")
     const current = await connectionInventory(s, input.id, tx)
+    if (!current.editable) {
+      throw new CliError(
+        "fixed_locations",
+        "This connection's inventory locations are fixed and cannot be changed.",
+        409
+      )
+    }
     if (current.revision !== input.expectedRevision) {
       throw new CliError("revision_conflict", "Read the connection again before changing its locations.", 409)
     }

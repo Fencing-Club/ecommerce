@@ -35,6 +35,7 @@ import type { BarcodeVariation } from "./product-barcodes"
 import { ProductBarcodes } from "./product-barcodes"
 import type { VariationFields } from "./variation-details"
 import {
+  TargetQuantityFields,
   sameVariation,
   useSaveVariationDetailsMutation,
   VariationDetails,
@@ -263,7 +264,18 @@ function DetailsForm({
         continue
       }
       try {
-        await saveVariation({ variantId: variation.variantId, ...fields }).unwrap()
+        const targetChanged = JSON.stringify(fields.stockTargets) !== JSON.stringify(before?.stockTargets)
+        const result = await saveVariation({
+          variantId: variation.variantId,
+          ...fields,
+          stockTargets: targetChanged ? fields.stockTargets : undefined
+        }).unwrap()
+        if (result.stockTargets) {
+          const mappedValues = variationValues({ ...result, variantId: variation.variantId })
+          fields.stockTargets = variationInput(mappedValues).stockTargets
+          const index = values.variations.findIndex((value) => value.variantId === variation.variantId)
+          form.setValue(`variations.${index}.stockTargets`, mappedValues.stockTargets)
+        }
         next.variations.set(variation.variantId, fields)
         changed = true
       } catch (error) {
@@ -314,14 +326,7 @@ function DetailsForm({
                   />
                 )}
                 <FormNumber name="minimumOrder" label={t("details.minimumOrder")} min={1} step={1} />
-                {only && (
-                  <FormNumber
-                    name="variations.0.storeStockTarget"
-                    label={t("details.warehouseMinimum")}
-                    min={0}
-                    step={1}
-                  />
-                )}
+                {only && <TargetQuantityFields index={0} provider="store" />}
               </div>
             </Section>
             <Separator />
@@ -342,15 +347,7 @@ function DetailsForm({
                     spellCheck={false}
                   />
                 )}
-                {only && (
-                  <FormNumber
-                    name="variations.0.amazonStockTarget"
-                    label={t("details.amazonMinimum")}
-                    description={t("details.amazonMinimumHint")}
-                    min={0}
-                    step={1}
-                  />
-                )}
+                {only && <TargetQuantityFields index={0} provider="amazon" />}
               </div>
             </Section>
             <Separator />

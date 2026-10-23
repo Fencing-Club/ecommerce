@@ -2,7 +2,7 @@ import type { z } from "zod"
 import { matches } from "@/components/list/matches"
 import { type CoverBucket, coverBucket } from "@/lib/cover"
 import type { restockInputSchema, restockReport } from "@/server/restock-page"
-import type { RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
+import type { RestockLine, RestockStatus } from "@/server/restock-plan"
 import { dayRange } from "@/server/restock-report"
 
 // Restock's request for a plan, and the report it answers with, as the server defines them.
@@ -21,7 +21,13 @@ export function wholeDays(text: string) {
 // A report's settings as a key, so a new report starts its selections afresh while the same one fetched again keeps
 // them.
 export function reportKey(report: Pick<RestockReportData, "channel" | "supplier" | "days" | "leadTimeDays">) {
-  const channel = report.channel.kind === "shopify" ? `shopify:${report.channel.locationId}` : "amazon"
+  let channel = "amazon"
+  if (report.channel.kind === "pool") {
+    channel = report.channel.id
+  }
+  if (report.channel.kind === "shopify") {
+    channel = `shopify:${report.channel.locationId}`
+  }
   return [channel, report.supplier, report.days, report.leadTimeDays].join("|")
 }
 
@@ -113,7 +119,7 @@ export function lostSales(lines: readonly RestockLine[]) {
 export function createPoHref(
   lines: readonly RestockLine[],
   edits: LineEdits,
-  channel: RestockChannel,
+  channel: RestockReportData["channel"],
   supplierId: string | null
 ) {
   const chosen = lines
@@ -121,7 +127,13 @@ export function createPoHref(
     .filter(([, units]) => units > 0)
   const included = chosen.slice(0, poLineLimit)
   const params = new URLSearchParams(included.map(([id, units]) => ["variant", `${id}@${units}`]))
-  params.set("destination", channel.kind === "amazon" ? "amazon" : "warehouse")
+  if (channel.kind !== "pool") {
+    params.set("destination", channel.kind === "amazon" ? "amazon" : "warehouse")
+  } else if (channel.members.every((member) => member.provider === "amazon")) {
+    params.set("destination", "amazon")
+  } else if (channel.members.every((member) => member.provider === "shopify")) {
+    params.set("destination", "warehouse")
+  }
   if (channel.kind === "shopify") {
     params.set("locationId", channel.locationId)
   }
