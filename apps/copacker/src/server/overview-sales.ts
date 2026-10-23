@@ -726,6 +726,7 @@ export async function platformCharges(
 ): Promise<ChargeLine[]> {
   const t = await serverText()
   const lines: ChargeLine[] = []
+  let ebayMissingRate = false
   for (const account of accounts) {
     if (account.provider === "amazon") {
       const advertising = await adsCharge(
@@ -788,8 +789,10 @@ export async function platformCharges(
             and (data->>'transactionDate')::timestamptz < ${to}
             and ${ebayProfitTreatment(sql`data`)} = 'additional_charge'
         )
-        select case when count(*) filter (where rate is null) = 0 then round(sum(minor * rate)) end as minor
+        select count(*) filter (where rate is null) > 0 as "missingRate",
+          case when count(*) filter (where rate is null) = 0 then round(sum(minor * rate)) end as minor
         from charges`)
+      ebayMissingRate ||= rows(result)[0]?.missingRate === true
       const value = rows(result)[0]?.minor
       // Never report a partial converted total when one of the included charges has no exchange rate.
       if (value !== null && value !== undefined) {
@@ -818,7 +821,7 @@ export async function platformCharges(
       }
     }
   }
-  return lines.filter((line) => line.minor !== 0)
+  return lines.filter((line) => line.minor !== 0 && !(ebayMissingRate && line.key === "ebay-charges"))
 }
 
 const amazonChargeLabels: Record<string, ServerKey> = {

@@ -172,4 +172,13 @@ it("converts each charge at its posted date and never returns a partial total wi
   expect(await charges()).toMatchObject([{ minor: -300 }])
   await save(transaction("no-rate", "3", { amount: { value: "3", currency: "ZZZ" } }))
   expect(await charges()).toEqual([])
+  await save(transaction("other-seller", "5"), { externalAccountId: "other-seller" })
+  const otherAccount = { provider: "ebay" as const, externalId: "other-seller" }
+  expect(await platformCharges(orgId, [otherAccount], from, to, "USD")).toMatchObject([{ minor: -500 }])
+  for (const accounts of [
+    [account, otherAccount],
+    [otherAccount, account]
+  ]) {
+    expect(await platformCharges(orgId, accounts, from, to, "USD")).toEqual([])
+  }
 })
