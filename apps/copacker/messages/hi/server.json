@@ -117,6 +117,7 @@
     "marketplace": "Amazon {code, select, us {US} ca {कनाडा} mx {मेक्सिको} br {ब्राज़ील} other {{code}}}"
   },
   "charges": {
+    "ebay": "eBay शुल्क",
     "amazonFreight": "Amazon इनबाउंड फ़्रेट",
     "amazon": "Amazon शुल्क",
     "shopify": "Shopify शुल्क",

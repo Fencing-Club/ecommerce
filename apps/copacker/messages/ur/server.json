@@ -117,6 +117,7 @@
     "marketplace": "Amazon {code, select, us {US} ca {کینیڈا} mx {میکسیکو} br {برازیل} other {{code}}}"
   },
   "charges": {
+    "ebay": "eBay چارجز",
     "amazonFreight": "Amazon ان باؤنڈ فریٹ",
     "amazon": "Amazon چارجز",
     "shopify": "Shopify چارجز",

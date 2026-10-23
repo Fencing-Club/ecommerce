@@ -117,6 +117,7 @@
     "marketplace": "Amazon {code, select, us {США} ca {Канада} mx {Мексика} br {Бразилія} other {{code}}}"
   },
   "charges": {
+    "ebay": "Комісії eBay",
     "amazonFreight": "Вхідний фрахт Amazon",
     "amazon": "Збори Amazon",
     "shopify": "Збори Shopify",

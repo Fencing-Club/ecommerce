@@ -117,6 +117,7 @@
     "marketplace": "Amazon {code, select, us {美国站} ca {加拿大站} mx {墨西哥站} br {巴西站} other {{code}}}"
   },
   "charges": {
+    "ebay": "eBay 费用",
     "amazonFreight": "Amazon 入库运费",
     "amazon": "Amazon 费用",
     "shopify": "Shopify 费用",
