@@ -33,7 +33,7 @@ export async function readShopifyWrite(api: Pick<Shopify, "graphql">, domain: st
   }
 }
 
-const money = z.object({ currencyCode: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/) })
+const money = z.object({ currencyCode: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2}0*)?$/) })
 export const amazonListing = z.object({
   sku: z.string().min(1),
   summaries: z
@@ -82,7 +82,9 @@ export function amazonListingValues(item: z.infer<typeof amazonListing>) {
   }
   const offer = offers[0]
   const decimal = offer?.price.amount.split(".")
-  const amountMinor = decimal ? Number(BigInt(decimal[0]!) * 100n + BigInt((decimal[1] ?? "").padEnd(2, "0"))) : null
+  const amountMinor = decimal
+    ? Number(BigInt(decimal[0]!) * 100n + BigInt((decimal[1] ?? "").slice(0, 2).padEnd(2, "0")))
+    : null
   if (offer && (offer.price.currencyCode !== "USD" || !Number.isSafeInteger(amountMinor))) {
     throw new Error("Unsupported Amazon price basis")
   }
