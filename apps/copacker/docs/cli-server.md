@@ -82,4 +82,10 @@ Use `COPACKER_API_URL` for another trusted deployment. Never place access tokens
 Tests build the schema directly from `src/db/schema.ts`. They exercise consent/PKCE, expiry, rotation/replay,
 revocation, credential separation, live membership checks, redaction, cursor binding, guarded changes, rollback,
 idempotency and the actual shared client's schema discovery and result validation. Provider/WorkOS network calls
-are mocked; signing in against a deployed WorkOS environment still needs release acceptance.
+are mocked. Separate PR #170 preview acceptance completed real WorkOS sign-in, consent, account read, refresh,
+logout and revoked-token rejection. That preview returned no workspaces, so it did not qualify business-data reads.
+
+Production promotion of `93aa9f9bba3bffad34916e6d103cc3b132376833` completed on October 22, 2026
+([release run](https://github.com/Fencing-Club/ecommerce/actions/runs/39879377317)). Health reported that exact commit,
+release smoke tests passed, and signed-out resource reads returned `401 unauthenticated`. Authenticated production
+workspace reads remain pending a production CLI login; these signed-out checks do not establish data correctness.

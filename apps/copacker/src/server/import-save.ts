@@ -1,5 +1,4 @@
-import { randomUUID } from "node:crypto"
-import { destinationSchema, orderInputSchema, orderLine } from "@repo/copacker-orders"
+import { destinationSchema, orderInputSchema } from "@repo/copacker-orders"
 import { and, eq } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { z } from "zod"
@@ -9,11 +8,9 @@ import { LocalizedError } from "@/i18n/errors"
 import { importProposalSchema } from "@/lib/import-proposal"
 import { chargeInMinorUnits, importTotals, priceInMinorUnits } from "@/lib/import-totals"
 import { requireBuyer } from "./authorization"
-import { shopifyFor } from "./connections"
 import { requestInput } from "./errors"
+import { orderLineCatalog } from "./order-line-catalog"
 import { prepareOrder, persistOrder } from "./orders"
-import { lineDefaultsFor } from "./product-defaults"
-import { withVariantFields } from "./product-fields"
 import type { Session } from "./workspace-session"
 
 const saveSchema = z
@@ -69,20 +66,19 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   })
   // Each line starts as one added in the PO editor would, with the product's saved defaults and Amazon network, at the
   // document's quantity and price.
-  const shopify = await shopifyFor(s.org.id, record.shopifyDomain)
-  const [variants, defaultsFor] = await Promise.all([
-    shopify
-      .variants(lines.map((line) => line.variantId))
-      .then((found) => withVariantFields(s.org.id, record.shopifyDomain, found)),
-    lineDefaultsFor(s.org.id)
-  ])
-  const currency = proposal.currency
+  const catalog = await orderLineCatalog(
+    s.org.id,
+    record.shopifyDomain,
+    lines.map((line) => line.variantId),
+    proposal.currency,
+    input.destination
+  )
   const items = lines.map(({ variantId, ...line }, index) => {
-    const variant = variants.find((candidate) => candidate?.id === variantId)
-    if (!variant) {
+    const item = catalog.get(variantId)
+    if (!item) {
       throw new LocalizedError("resolveImportLine", { line: index + 1 })
     }
-    return { ...orderLine(variant, randomUUID(), defaultsFor(variant), currency, input.destination), ...line }
+    return { ...item, ...line }
   })
   const { destination: _, ...order } = input
   const proposed = orderInputSchema.parse({ ...order, currency: proposal.currency, items, adjustments })
