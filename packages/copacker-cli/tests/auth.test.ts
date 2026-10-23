@@ -25,6 +25,32 @@ class MemoryStore extends LocalStore {
 }
 
 describe("interactive credentials", () => {
+  it("closes an expired listener without saving a credential and explains recovery", async () => {
+    const root = await mkdtemp(join(tmpdir(), "copacker-auth-expiry-"))
+    directories.push(root)
+    const store = new MemoryStore(root)
+    let callback = ""
+    await expect(
+      login(
+        store,
+        "test",
+        "https://copacker.example",
+        (message) => {
+          callback = new URL(message.slice(message.indexOf("http"))).searchParams.get("redirect_uri")!
+        },
+        false,
+        1000
+      )
+    ).rejects.toThrow("local callback closed")
+    expect(store.secret).toBeUndefined()
+    await expect(fetch(callback)).rejects.toThrow("fetch failed")
+  })
+  it("rejects invalid login deadlines before starting a listener", async () => {
+    const store = new MemoryStore("unused")
+    await expect(login(store, "test", "https://copacker.example", () => undefined, false, 601000)).rejects.toThrow(
+      "between 1 and 600"
+    )
+  })
   it("leaves no old secret bound to a new origin when protected replacement fails", async () => {
     const root = await mkdtemp(join(tmpdir(), "copacker-auth-origin-"))
     directories.push(root)
@@ -107,7 +133,7 @@ describe("interactive credentials", () => {
             }).toString()
             const accepted = await fetch(target)
             expect(accepted.status).toBe(200)
-            await accepted.text()
+            expect(await accepted.text()).toContain("Return to your terminal")
           })()
         },
         false
