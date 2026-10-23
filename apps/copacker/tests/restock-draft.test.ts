@@ -132,7 +132,7 @@ describe("restock draft preparation", () => {
         row.unitCostMinor = null
       }
       if (reason === "pack") {
-        row.packOf = null
+        row.packOf = 0
       }
       if (reason === "ineligible") {
         current.channels[0]!.eligible = false
@@ -210,5 +210,16 @@ describe("restock draft preparation", () => {
       return { input: prepared, shopifyDomain: "shop.myshopify.com", amazonSellerId: null }
     })
     await expect(prepareRestockDraft(session, report(), input)).rejects.toMatchObject({ code: "stale_plan" })
+  })
+  it("accepts an ordinary single-piece row whose report pack is null, but rejects a catalog pack mismatch", async () => {
+    const current = report()
+    current.rows[0]!.packOf = null
+    const catalog = await orderLineCatalog(session.org.id, "shop.myshopify.com", [variantId], "USD", "amazon")
+    const line = catalog.get(variantId)!
+    vi.mocked(orderLineCatalog).mockResolvedValue(new Map([[variantId, { ...line, pieces: 1, piecesPerSet: 1 }]]))
+    const prepared = await prepareRestockDraft(session, current, input)
+    expect(prepared.input.items[0]).toMatchObject({ pieces: 24, piecesPerSet: 1, unitPrice: 500 })
+    vi.mocked(orderLineCatalog).mockResolvedValue(catalog)
+    await expect(prepareRestockDraft(session, current, input)).rejects.toMatchObject({ code: "stale_plan" })
   })
 })

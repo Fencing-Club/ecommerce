@@ -13,6 +13,7 @@ introduced here: the shared restock report remains the source of recommendations
 Selected sellable units become pieces using the catalog's pack definition. A changed SKU or pack size fails, and a
 sellable-unit cost that cannot be expressed exactly as integer minor units per piece requires review. Clients never
 supply product names, inventory-item IDs, ASINs or FNSKUs.
+A null report pack value is accepted only when the catalog confirms a single piece.
 
 ## Reused services
 

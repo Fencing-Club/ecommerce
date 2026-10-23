@@ -48,8 +48,7 @@ export async function prepareRestockDraft(s: Session, report: Report, raw: unkno
       row.supplier?.id !== selection.supplierId ||
       row.unitCostMinor === null ||
       row.costCurrency !== selection.currency ||
-      row.packOf === null ||
-      row.packOf < 1
+      (row.packOf ?? 1) < 1
     ) {
       throw new CliError(
         "validation_failed",
@@ -89,7 +88,8 @@ export async function prepareRestockDraft(s: Session, report: Report, raw: unkno
   )
   const items = rows.map(({ selected, row }) => {
     const line = catalog.get(row.variantId)
-    if (!line || line.piecesPerSet !== row.packOf || line.buyerSku !== row.sku) {
+    // Reports use null for ordinary single-piece products. The authoritative catalog must still agree.
+    if (!line || line.piecesPerSet !== (row.packOf ?? 1) || line.buyerSku !== row.sku) {
       throw new CliError("stale_plan", "Product identity or pack size changed. Request a new report.", 409)
     }
     // The report quotes sellable units; the shared PO model prices pieces. Never hide a rounding discrepancy.
