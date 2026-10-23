@@ -19,9 +19,10 @@ The colors are shadcn's tokens and nothing else: `background`, `primary`, `muted
 `ring`, `chart-1` to `chart-5`, the `sidebar-*` family and the rest. Their light and dark values live once, in
 `src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`. `src/app/globals.css` maps those
 variables into Tailwind's theme (`bg-primary`, `text-muted-foreground`), so both systems read the same tokens. The
-values are shadcn's orange theme on neutral, in Tailwind v4's colors, as in `designs/CopackerShadcn.lib.pen`. Two are
-darker than shadcn's on purpose, for contrast: `primary` and `sidebar-primary` are orange-700, and `muted-foreground`
-is `#6b6b6b`. Don't change them back.
+values are shadcn's orange theme on neutral, in Tailwind v4's colors, as in `designs/CopackerShadcn.lib.pen`. Two
+differ from shadcn's on purpose, for contrast: `sidebar-primary` is orange-700, where shadcn's is lighter, and
+`muted-foreground` is `#6b6b6b`. Don't change them back, and don't add other differences: every other value, `ring`
+included, is shadcn's.
 
 Never add a token of our own. A color shadcn has no token for comes from Tailwind v4's palette, the way shadcn's own
 examples color a status, with a `dark:` pair:
