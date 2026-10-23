@@ -16,7 +16,11 @@ Production acceptance exercised authenticated reads, unchanged-value guarded pro
 
 ## Current implementation slice
 
-Connection `sync`, `sync show` and operational `status` reuse existing workers. Exact jobs are retained per run, grouped permissions are checked, and worker wakes follow the outer commit. See [connection sync](../../cli-connections.md). These changes require the current PR and its forward migration to pass CI and deployment before they are production capabilities.
+Connection `sync`, `sync show` and operational `status` shipped in PR #196, production commit
+`9dd3e0f031cd84a680223e7eab2abc94b675a4fd`. Exact jobs are retained per run, grouped permissions are checked, and worker
+wakes follow the outer commit. Production acceptance passed status, connection reads, sync schema discovery, Shopify
+product/inventory ingestion through a succeeded retained run, and replay of the same execution key without a new run.
+See [connection sync](../../cli-connections.md). No upstream product or inventory values were written.
 
 ## Remaining
 
