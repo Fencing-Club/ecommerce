@@ -4,9 +4,11 @@ import { createRegistry, isQuery, restockOperations } from "../src/index.ts"
 
 describe("restock operation schemas", () => {
   const operations = restockOperations(z.strictObject({ units: z.number().int().positive() }))
-  it("publishes read operations and a declared CSV projection without promising exports or PO creation", () => {
+  it("publishes channel discovery and retained report creation and a declared CSV projection without promising exports or PO creation", () => {
     const report = operations["report.restock"]
-    expect(isQuery(report.descriptor, {})).toBe(true)
+    expect(isQuery(report.descriptor, {})).toBe(false)
+    expect(isQuery(operations["restock.channel.list"].descriptor, {})).toBe(true)
+    expect(report.descriptor.effects[0]?.kind).toBe("local_write")
     expect(report.descriptor.execution.csvColumns).toContain("purchaseUnits")
     expect(report.input.parse({})).toEqual({})
     expect(report.input.safeParse({ action: "generate", selection: {}, fileFormat: "csv" }).success).toBe(false)

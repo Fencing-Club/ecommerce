@@ -1,10 +1,11 @@
 import { type OrderInput } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { shippedStates, type ShipmentState } from "@repo/copacker-shipments/states"
 import { inArray } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
-import { forwarders, orderProposals, type ShipmentState, type shipments } from "@/db/schema"
+import { forwarders, orderProposals, type shipments } from "@/db/schema"
 import type { ListParty, ListStage, LogisticsRow } from "@/lib/logistics-list"
 import type { AmazonShipment } from "@/server/amazon-shipments"
 
@@ -86,8 +87,6 @@ const urgency: ShipmentState[] = [
   "forwarded",
   "received"
 ]
-
-const shippedStates: ShipmentState[] = ["shipped", "forwarded", "received"]
 
 // A purchase order's place in the lists. A pending proposal waits on the buyer before anything its shipments need.
 export function orderProgress(

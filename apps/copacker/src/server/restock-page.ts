@@ -64,6 +64,10 @@ export type RestockChannelOption = {
 
 // The channels a buyer can restock: Amazon once its stock has synced, and each Shopify location it counts.
 export async function restockChannels(orgId: string) {
+  return (await restockChannelDiscovery(orgId)).channels
+}
+
+export async function restockChannelDiscovery(orgId: string) {
   const context = await inventoryContext(orgId)
   const targetContext = await stockTargetContext(orgId)
   const targetSets = context.domain
@@ -72,7 +76,7 @@ export async function restockChannels(orgId: string) {
         .from(variantStockTargetSets)
         .where(and(eq(variantStockTargetSets.orgId, orgId), eq(variantStockTargetSets.shopifyDomain, context.domain)))
     : []
-  return channelsIn(context, targetSets, targetContext)
+  return { channels: channelsIn(context, targetSets, targetContext), catalogAvailable: context.data !== null }
 }
 
 function channelsIn(

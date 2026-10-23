@@ -12,7 +12,7 @@ import { shipmentListRows } from "./logistics-rows"
 import { hash } from "./security"
 
 const cachedAmazonShipments = amazonShipmentCache()
-async function amazonShipments(orgId: string) {
+export async function amazonShipments(orgId: string) {
   const [account] = await db()
     .select({ id: connections.id, externalId: connections.externalId, encryptedToken: connections.encryptedToken })
     .from(connections)

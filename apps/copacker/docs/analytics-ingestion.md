@@ -85,3 +85,19 @@ piece quantity, receipt date and cost basis remain unknown. These snapshots do n
 Receipt `reviewState` distinguishes inactive (cancelled/deleted), not-final, closed-quantity-review and unknown-status
 shipments. Raw differences remain visible for audit but only closed shipments become quantity-review candidates;
 closed status still does not prove loss, completed receiving, or reimbursement eligibility.
+
+`receiptOutcome` separates inactive plans, receiving not final, closed with no receipts reported, closed with matching
+counts, closed with differing counts and unknown quantities. Closed comparisons require unique SKUs, nonmissing counts
+and compatible supported units. A closed zero-receipt plan is not automatically an unused plan: `unusedPlanConfirmed`
+remains null without recorded merchant evidence. `transferToFbaConfirmed` remains false. `unitConversion` explains that
+dated product and pack evidence is still required; no current catalog pack size is applied to historical case receipts.
+
+## Stored-evidence acceptance and remaining work
+
+PR #71 deployed as `dae10ab0` on October 19, 2026. Its read-only production checks verified reimbursement diagnostics,
+Shopify payment differences and FBA receipt comparisons without starting a sync or backfill. AWD receipt data was
+observed, but its comparison remains pending explicit network and unit mapping. The dated results and
+remaining coverage, payment-classification and transfer-accounting work are tracked in the
+[analytics data backlog](specs/analytics/analytics-data-backlog.md#next-stored-evidence-work-no-backfill-or-ux).
+Receipt movement sums are partial-history observations until coverage of the receipt period is established. They do not
+prove loss, acquisition or cost basis. All cost basis remains unknown unless separately supported by recorded evidence.

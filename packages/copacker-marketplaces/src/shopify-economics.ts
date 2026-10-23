@@ -4,6 +4,7 @@ const money = "shopMoney{amount currencyCode} presentmentMoney{amount currencyCo
 const page = "pageInfo{hasNextPage endCursor}"
 const transaction = `id kind status gateway createdAt processedAt parentTransaction{id} amountSet{${money}} fees{amount{amount currencyCode} taxAmount{amount currencyCode}}`
 export const economicsQueries = {
+  parent: `query RecoveryTransaction($id:ID!){node(id:$id){... on OrderTransaction{${transaction} order{id}}}}`,
   earliest: `query EarliestEconomicsOrder { shop { myshopifyDomain } orders(first:1,sortKey:UPDATED_AT) { nodes { updatedAt } } }`,
   orders: `query EconomicsOrders($query:String!,$after:String){shop{myshopifyDomain} orders(first:50,after:$after,query:$query,sortKey:UPDATED_AT){nodes{id updatedAt} ${page}}}`,
   order: `query EconomicsOrder($id:ID!){order(id:$id){id createdAt updatedAt cancelledAt test sourceName tags currentTotalPriceSet{${money}} currentTotalTaxSet{${money}} currentTotalDutiesSet{${money}} totalShippingPriceSet{${money}} totalDiscountsSet{${money}} transactions(first:100){${transaction}} refunds{id createdAt updatedAt processedAt totalRefundedSet{${money}}} }}`,
@@ -24,7 +25,8 @@ export async function collectShopifyEconomics(
   client: Pick<Shopify, "graphql">,
   orderId: string,
   returns: boolean,
-  assertActive: () => Promise<void>
+  assertActive: () => Promise<void>,
+  options: { recoverParents?: boolean } = {}
 ) {
   let requests = 0,
     bytes = 0
@@ -88,6 +90,34 @@ export async function collectShopifyEconomics(
     refund.shipping = await connection(economicsQueries.refundShipping, "refund", "refundShippingLines", refund.id)
     refund.adjustments = await connection(economicsQueries.refundAdjustments, "refund", "orderAdjustments", refund.id)
     refund.payments = await connection(economicsQueries.refundPayments, "refund", "transactions", refund.id)
+  }
+  // Point recovery follows only IDs already named by this order. Do not attach a
+  // transaction merely because its amount resembles a missing payment.
+  if (options.recoverParents) {
+    const payments = [...order.transactions, ...order.refunds.flatMap((refund) => z.array(node).parse(refund.payments))]
+    const known = new Set(payments.map((payment) => payment.id))
+    const attempted = new Set<string>()
+    for (const payment of payments) {
+      const parent = z.object({ id: z.string().min(1) }).safeParse(payment.parentTransaction).data?.id
+      if (!parent || known.has(parent) || attempted.has(parent)) {
+        continue
+      }
+      if (attempted.size >= 10) {
+        break
+      }
+      attempted.add(parent)
+      const raw = (await read(economicsQueries.parent, { id: parent })).node
+      if (raw === null) {
+        continue
+      }
+      const recovered = node.and(z.object({ order: z.object({ id: z.literal(orderId) }) })).parse(raw)
+      if (recovered.id !== parent) {
+        throw new Error("Shopify payment identity changed")
+      }
+      known.add(parent)
+      order.transactions.push(recovered)
+      payments.push(recovered)
+    }
   }
   const returnRows = returns ? await connection(economicsQueries.returns, "order", "returns", orderId) : null
   for (const row of returnRows ?? []) {

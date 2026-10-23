@@ -514,3 +514,154 @@ it("discloses a truncated reimbursement family instead of returning a partial ne
     blockers: expect.arrayContaining(["related_records_truncated"])
   })
 })
+
+it("finds competing reports outside the selected month with strict account isolation", async () => {
+  const report = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    approvedAt: new Date("2026-10-02"),
+    reimbursementId: "CURRENT",
+    orderId: "ORDER1",
+    sku: "SKU1",
+    asin: "A1",
+    currency: "USD",
+    amountTotal: "0.3"
+  }
+  await database.insert(tables.amazonReimbursements).values(report)
+  const [older] = await database
+    .insert(tables.amazonReimbursements)
+    .values({ ...report, reimbursementId: "OLDER", orderId: "ORDER2", approvedAt: new Date("2025-01-01") })
+    .returning()
+  await database.insert(tables.amazonReimbursements).values([
+    { ...report, reimbursementId: "FOREIGN-ORG", orgId: otherId },
+    { ...report, reimbursementId: "FOREIGN-SELLER", externalAccountId: "OTHER" },
+    { ...report, reimbursementId: "FOREIGN-MARKET", marketplaceId: "OTHER" }
+  ])
+  await database.insert(tables.amazonTransactions).values({
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "PAYMENT",
+    orderId: null,
+    postedAt: new Date("2026-10-03"),
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 30,
+    feesMinor: 0,
+    data: {
+      marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" },
+      totalAmount: { currencyCode: "USD", currencyAmount: "0.30" },
+      relatedIdentifiers: [
+        { relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "ORDER1" },
+        { relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "ORDER2" }
+      ],
+      items: [{ contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }]
+    }
+  })
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows).toHaveLength(1)
+  expect(result.rows[0]?.finance.candidates[0]?.paymentCompetition).toMatchObject({
+    status: "shared_candidate",
+    otherReportRowCount: 1,
+    otherReportRowIds: [older!.id],
+    reportSearchTruncated: false
+  })
+  await database
+    .insert(tables.amazonReimbursements)
+    .values({ ...report, reimbursementId: "OLDER-2", approvedAt: new Date("2025-01-02") })
+  await expect(
+    amazonReconciliation(orgId, { ...input, source: "reimbursements", snapshot: result.snapshot })
+  ).rejects.toMatchObject({ code: "snapshot_changed" })
+})
+it("discloses the all-date report search cap instead of asserting uniqueness", async () => {
+  await pg.query(
+    `insert into amazon_reimbursements ("orgId","externalAccountId","marketplaceId","reimbursementId","approvedAt","orderId",sku,currency,"amountTotal")
+    select $1,'SELLER1','ATVPDKIKX0DER','REPORT-'||i,'2025-01-01','ORDER1','OTHER','USD',0.3 from generate_series(1,1001) i`,
+    [orgId]
+  )
+  await database.insert(tables.amazonReimbursements).values({
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    reimbursementId: "CURRENT",
+    approvedAt: new Date("2026-10-02"),
+    orderId: "ORDER1",
+    sku: "SKU1",
+    currency: "USD",
+    amountTotal: "0.3"
+  })
+  await database.insert(tables.amazonTransactions).values({
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "PAYMENT",
+    orderId: "ORDER1",
+    postedAt: new Date("2026-10-03"),
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 30,
+    feesMinor: 0,
+    data: {
+      marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" },
+      totalAmount: { currencyCode: "USD", currencyAmount: "0.3" },
+      items: [{ contexts: [{ contextType: "ProductContext", sku: "SKU1" }] }]
+    }
+  })
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows[0]?.finance.candidates[0]?.paymentCompetition).toMatchObject({
+    status: "search_incomplete",
+    otherReportRowCount: 0,
+    reportSearchTruncated: true,
+    countIsLowerBound: true
+  })
+})
+
+it("checks warehouse payment competition across saved dates and isolates account data", async () => {
+  const report = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    approvedAt: new Date("2026-10-02"),
+    reimbursementId: "CURRENT",
+    orderId: null,
+    sku: "SKU1",
+    asin: "A1",
+    currency: "USD",
+    amountTotal: "0.3",
+    reason: "Lost_Warehouse"
+  }
+  await database.insert(tables.amazonReimbursements).values(report)
+  const [older] = await database
+    .insert(tables.amazonReimbursements)
+    .values({ ...report, reimbursementId: "OLDER", approvedAt: new Date("2025-01-01") })
+    .returning()
+  await database.insert(tables.amazonReimbursements).values([
+    { ...report, orgId: otherId },
+    { ...report, externalAccountId: "OTHER" },
+    { ...report, marketplaceId: "OTHER" }
+  ])
+  const amount = { currencyCode: "USD", currencyAmount: "0.3" }
+  await database.insert(tables.amazonTransactions).values({
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "WAREHOUSE",
+    orderId: null,
+    postedAt: new Date("2026-10-03"),
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 30,
+    feesMinor: 0,
+    data: {
+      transactionStatus: "RELEASED",
+      marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" },
+      totalAmount: amount,
+      breakdowns: [{ breakdownAmount: amount }],
+      items: [{ totalAmount: amount, contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }]
+    }
+  })
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows).toHaveLength(1)
+  expect(result.rows[0]?.finance.candidates[0]).toMatchObject({
+    warehousePaymentCandidate: true,
+    paymentCompetition: { status: "shared_candidate", otherReportRowIds: [older!.id] }
+  })
+})

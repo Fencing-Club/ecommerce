@@ -68,12 +68,38 @@ it("reconciles receipt movements only within the seller, workspace and marketpla
     dataset: "fba_inbound_receipts" as const,
     page: 0
   }
+  const coverage = {
+    orgId,
+    externalAccountId: "seller",
+    marketplaceId: "ATVPDKIKX0DER",
+    from: new Date("2026-09-01"),
+    requestedTo: new Date("2026-10-01"),
+    coveredTo: new Date("2026-09-15"),
+    status: "imported" as const
+  }
+  await database
+    .insert(tables.amazonMovementReports)
+    .values([
+      coverage,
+      { ...coverage, orgId: otherId },
+      { ...coverage, externalAccountId: "other" },
+      { ...coverage, marketplaceId: "other" }
+    ])
   const result = await listIngestionEvidence(orgId, query)
-  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
-    status: "quantity_agrees",
-    movementQuantity: 8
+  expect(result.receiptMovementCoverage).toMatchObject({
+    status: "receipt_period_unknown",
+    receiptPeriod: null,
+    windows: [
+      { from: coverage.from, requestedTo: coverage.requestedTo, coveredTo: coverage.coveredTo, status: "imported" }
+    ]
   })
-  await database.insert(tables.amazonInventoryMovements).values({ ...movement, quantity: 1 })
+  expect(result.rows[0]?.receiptReconciliation?.rows[0]).toMatchObject({
+    status: "requires_review",
+    observationStatus: "quantity_agrees",
+    observedMovementQuantity: 8,
+    difference: null
+  })
+  await database.update(tables.amazonMovementReports).set({ coveredTo: new Date("2026-10-01") })
   await expect(listIngestionEvidence(orgId, { ...query, page: 1, snapshot: result.snapshot })).rejects.toThrow(
     "Data changed"
   )
@@ -599,4 +625,49 @@ it("stops both receipt networks after recording a transient checkpoint failure",
   } finally {
     transaction.mockRestore()
   }
+})
+
+it("exposes only exact scoped shipment contents and invalidates snapshots when they change", async () => {
+  await database.insert(tables.analyticsEvidence).values({
+    orgId,
+    source: "amazon",
+    externalAccountId: "seller",
+    dataset: "awd_inbound_receipts",
+    sourceId: "SHIP",
+    data: {}
+  })
+  const saved = {
+    orgId,
+    externalAccountId: "seller",
+    network: "awd" as const,
+    shipmentId: "SHIP",
+    units: { SKU: 80 },
+    fetchedAt: new Date("2026-10-01")
+  }
+  await database.insert(tables.amazonInboundShipments).values([
+    { ...saved, orgId: otherId },
+    { ...saved, externalAccountId: "other" },
+    { ...saved, network: "fba" }
+  ])
+  const query = {
+    source: "amazon" as const,
+    externalAccountId: "seller",
+    dataset: "awd_inbound_receipts" as const,
+    page: 0
+  }
+  const before = await listIngestionEvidence(orgId, query)
+  expect(before.rows[0]?.declaredShipmentUnits).toMatchObject({ status: "unknown", rows: [] })
+  await database
+    .update(tables.amazonInboundShipments)
+    .set({ network: "awd" })
+    .where(sql`"orgId"=${orgId} and "externalAccountId"='seller'`)
+  const after = await listIngestionEvidence(orgId, query)
+  expect(after.rows[0]?.declaredShipmentUnits).toMatchObject({
+    rows: [{ sku: "SKU", quantity: 80 }],
+    receivedUnitsConfirmed: false
+  })
+  expect(after.snapshot).not.toBe(before.snapshot)
+  await expect(listIngestionEvidence(orgId, { ...query, snapshot: before.snapshot })).rejects.toMatchObject({
+    status: 409
+  })
 })

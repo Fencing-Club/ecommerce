@@ -37,7 +37,9 @@ The financial audit, A01-A05 US FBA report importers, report backfill/refresh an
 dated product mappings, direct item/recognized-fee allocations, and [analytics API contract cleanup](../../analytics-api.md)
 are **done locally**. The API cleanup passed 39 focused tests and full `pnpm verify`.
 
-Deployment, live-account validation and large-account pagination performance remain pending. Source-to-posting and
+PR #71 deployed and passed read-only live verification on October 19, 2026; see the
+[dated acceptance record](analytics-data-backlog.md#pr-71-acceptance-october-19-2026-pacific).
+Large-account pagination performance remains unverified. Source-to-posting and
 reversal reconciliation, broader fee classification, returns accounting and FX policy remain open. Supported automatic sale depletion is implemented locally.
 Historical landed-cost allocation and FIFO over explicit depletion records are implemented locally; see
 [historical costing](../../inventory-costing.md).
@@ -62,4 +64,9 @@ For a product and period, explain profit down to source records, account for ret
 duplication, and identify unknown costs. Product totals plus unallocated business amounts must reconcile to the
 business report. No reporting feature is complete merely because its API connection works.
 
-The [expanded ingestion batch](../../analytics-ingestion.md) adds historical cost batches, merchant bills, inbound receipt snapshots, Shopify financial/return evidence, FBM returns, AWD cost evidence and product advertising detail. Live acceptance remains separate.
+The [expanded ingestion batch](../../analytics-ingestion.md) adds historical cost batches, merchant bills, inbound receipt snapshots, Shopify financial/return evidence, FBM returns, AWD cost evidence and product advertising detail.
+The [remaining stored-evidence work](analytics-data-backlog.md#next-stored-evidence-work-no-backfill-or-ux) covers receipt
+coverage, Shopify payment classification, AWD mappings and supported reimbursement allocations. Historical cost basis
+remains unknown; dated live acceptance does not establish complete provider history or validate every accounting capability.
+
+- [Remaining evidence gaps](remaining-evidence-gaps.md): what saved records can resolve and what requires source confirmation.

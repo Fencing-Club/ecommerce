@@ -67,3 +67,17 @@ and movement-reference links, reconcile recoveries to financial postings,
 then build loss/recovery diagnostics with explicit unmatched evidence and coverage gaps.
 
 Source: [Amazon FBA report catalog](https://developer-docs.amazon/sp-api/docs/report-type-values-fba).
+
+## Reported recovery outcome
+
+Reconciliation's `reimbursementAccounting.recoveryOutcome` describes the net cash-unit and inventory-unit counts in an
+unambiguous report family after its linked corrections. It distinguishes cash, inventory, both, no net units and a net
+negative adjustment. Missing originals, conflicting identity, incomplete searches or other accounting blockers leave
+the outcome unresolved. This describes reported units, not payment settlement or physical receipt of replacement stock.
+Signed report amounts remain separate and no additional income or inventory is recorded.
+
+Automatic payment matching remains unimplemented. Amazon's current
+[Finances model](https://github.com/amzn/selling-partner-api-models/blob/main/models/finances-api-model/finances_2024-06-19.json)
+does not list a reimbursement identifier among transaction-level related identifier types. Order, product and amount
+similarity alone cannot confirm which reimbursement caused a payment. No identifier field is invented and no original
+is inferred from an equal amount. Explicit reviewed links or further supporting source evidence are still needed.

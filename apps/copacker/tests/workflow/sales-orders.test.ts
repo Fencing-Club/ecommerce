@@ -253,6 +253,43 @@ describe("stored sales orders", () => {
     expect(orderSyncProgress(copying(60), 60)).toBeNull()
     expect(orderSyncProgress({ ...copying(15), status: "idle" }, 60)).toBeNull()
   })
+  it("lists only the original fee when Amazon supplies a forward-only release link", async () => {
+    const orderedAt = new Date(daysAgo(10))
+    await database.insert(tables.salesOrders).values({
+      orgId: buyerId,
+      source: "amazon",
+      externalAccountId: "A123456789",
+      orderId: "forward-only",
+      orderedAt,
+      data: amazonOrder("forward-only", orderedAt.toISOString(), 1)
+    })
+    const common = {
+      orgId: buyerId,
+      externalAccountId: "A123456789",
+      orderId: "forward-only",
+      type: "Shipment",
+      currency: "USD",
+      totalMinor: 1900,
+      feesMinor: 375
+    }
+    await database.insert(tables.amazonTransactions).values([
+      {
+        ...common,
+        transactionId: "original",
+        postedAt: orderedAt,
+        data: {
+          transactionStatus: "DEFERRED_RELEASED",
+          relatedIdentifiers: [{ relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "released" }]
+        }
+      },
+      { ...common, transactionId: "released", postedAt: new Date(daysAgo(2)), data: { transactionStatus: "RELEASED" } }
+    ])
+    expect(await listSalesOrders(buyerId, { page: 0 })).toMatchObject({
+      total: 1,
+      orders: [{ number: "forward-only", fees: { minor: 375, currency: "USD" } }]
+    })
+    expect(provider.api.request).not.toHaveBeenCalled()
+  })
   it("copies orders, lists them and computes demand without asking Amazon again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
     await expect(storedDemand(buyerId, "amazon", 28)).rejects.toThrow("Sync Amazon orders")
