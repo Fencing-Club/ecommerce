@@ -130,7 +130,8 @@
     "sidebarDescription": "Zeigt die mobile Seitenleiste an.",
     "clear": "Leeren",
     "showOptions": "Optionen anzeigen",
-    "remove": "{label} entfernen"
+    "remove": "{label} entfernen",
+    "loading": "Wird geladen"
   },
   "pages": {
     "error": {

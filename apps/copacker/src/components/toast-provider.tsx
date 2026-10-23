@@ -1,7 +1,7 @@
 import { Toast } from "@base-ui/react/toast"
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, CircleCheck } from "lucide-react"
 import type { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
 
 export function ToastItem({ toast }: { toast: Toast.Root.ToastObject }) {
   return (

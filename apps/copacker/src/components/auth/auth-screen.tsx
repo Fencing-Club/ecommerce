@@ -1,7 +1,6 @@
+import { Alert, AlertDescription, Button } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import type { AuthPageData } from "@/lib/auth-pages"
 import { AuthPage, AuthSwitch } from "./auth-shell"
 import { ForgotPassword, ResetPasswordForm } from "./password-reset"

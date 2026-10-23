@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import type { CartonGroup } from "@/lib/carton-groups"
 import { order } from "@/stories/fixtures/purchase-orders"
 import { member } from "@/stories/workspace"

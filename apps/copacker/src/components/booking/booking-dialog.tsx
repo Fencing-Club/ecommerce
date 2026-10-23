@@ -1,17 +1,18 @@
-import { useDidUpdate, useElementSize } from "@mantine/hooks"
-import { useRef } from "react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
+  DialogTitle,
+  Progress,
+  ProgressLabel
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useDidUpdate, useElementSize } from "@mantine/hooks"
+import { useRef } from "react"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
 // Whether the dialog is open, held by its parent (`open`) or by the dialog (`defaultOpen`).

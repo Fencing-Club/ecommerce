@@ -1,3 +1,4 @@
+import { Alert, AlertAction, AlertDescription, AlertTitle, Button, Card, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Link } from "@tanstack/react-router"
 import { CircleAlert, Package } from "lucide-react"
@@ -6,10 +7,6 @@ import { useIsAdmin } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { InventoryProducts, ProductsSkeleton } from "@/components/inventory-products"
 import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { IntegrationSyncState } from "./integration-sync-card"
@@ -214,7 +211,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
           <EmptyState
             title={t("syncingProducts")}
             description={t("syncingProductsHint")}
-            icon={<Spinner className="size-5" />}
+            icon={<Spinner aria-hidden className="size-5" />}
           />
         </Card>
       )}

@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Site } from "./site"
 import { quiet } from "./site-styles"

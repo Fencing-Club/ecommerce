@@ -1,5 +1,16 @@
 import { Toast } from "@base-ui/react/toast"
 import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
+import {
   type CollisionDetection,
   DndContext,
   DragOverlay,
@@ -43,11 +54,6 @@ import {
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
 import { type CartonGroup, groupCartons } from "@/lib/carton-groups"
@@ -695,7 +701,7 @@ function CarrierLabelsForm({
           disabled={saving || !!reading || (!onCartons.length && !kept.length)}
           onClick={() => void save()}
         >
-          {saving && <Spinner />}
+          {saving && <Spinner aria-hidden />}
           {t("save")}
         </Button>
       </div>
@@ -821,7 +827,7 @@ function NotPlaced({
         <div className="flex items-center gap-2 border-b px-3 py-2 text-xs text-muted-foreground">
           {reading ? (
             <output className="flex flex-1 items-center gap-2">
-              <Spinner className="size-3.5" />
+              <Spinner aria-hidden className="size-3.5" />
               {reading}
             </output>
           ) : (
@@ -1279,7 +1285,7 @@ function LabelPreview({
     <section aria-labelledby={`${id}-name`} className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button type="button" variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft data-icon="inline-start" />
+          <ArrowLeft data-icon="inline-start" className="rtl:rotate-180" />
           {t("allLabels")}
         </Button>
         {list.length > 1 && (
@@ -1292,7 +1298,7 @@ function LabelPreview({
               disabled={index <= 0}
               onClick={() => row.onPreview(list[index - 1]!)}
             >
-              <ChevronLeft />
+              <ChevronLeft className="rtl:rotate-180" />
             </Button>
             <span className="text-sm text-muted-foreground">
               {t(cartonId ? "positionPlaced" : "positionNotPlaced", { position: index + 1, count: list.length })}
@@ -1305,7 +1311,7 @@ function LabelPreview({
               disabled={index >= list.length - 1}
               onClick={() => row.onPreview(list[index + 1]!)}
             >
-              <ChevronRight />
+              <ChevronRight className="rtl:rotate-180" />
             </Button>
           </div>
         )}
@@ -1324,7 +1330,7 @@ function LabelPreview({
               <PrintedText lines={label.lines} />
               {label.picture === "reading" && (
                 <output className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-md bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
-                  <Spinner className="size-3.5" />
+                  <Spinner aria-hidden className="size-3.5" />
                   {t("readingText")}
                 </output>
               )}

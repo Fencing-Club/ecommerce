@@ -1,7 +1,3 @@
-import { useRouter } from "@tanstack/react-router"
-import { useState } from "react"
-import { useFormatter, useTranslations } from "use-intl"
-import { ConfirmDialog } from "@/components/confirm-dialog"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,10 +6,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+  AlertDialogTrigger,
+  Button
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useRouter } from "@tanstack/react-router"
+import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { FlushCard } from "@/components/flush-card"
 import type { ActionName } from "@/server/actions"
 
 // The kinds of workspace, each of which says what deleting it takes with it. The purchase orders are the buyer's, so a
@@ -49,7 +49,7 @@ export function DangerZone({
     accountDescription = t("account.closing", { count: closing.length, workspaces: format.list(closing) })
   }
   return (
-    <Card flush className="divide-y border-destructive/30 ring-destructive/30">
+    <FlushCard className="divide-y border-destructive/30 ring-destructive/30">
       {owner && (
         <Row title={t("workspace.title")} detail={t("workspace.detail", { workspace })}>
           <Confirm
@@ -75,7 +75,7 @@ export function DangerZone({
           blocked={handOver.length > 0}
         />
       </Row>
-    </Card>
+    </FlushCard>
   )
 }
 

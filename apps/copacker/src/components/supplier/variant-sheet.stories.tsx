@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { toteProduct } from "@/stories/fixtures/supplier"
 import { shownDialog, chooseOption } from "@/stories/play"
 import { member } from "@/stories/workspace"

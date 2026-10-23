@@ -1,3 +1,20 @@
+import {
+  Badge,
+  Button,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Field,
+  FieldLabel,
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronDown, Download, Tags } from "lucide-react"
 import { useState } from "react"
 import invariant from "tiny-invariant"
@@ -6,12 +23,7 @@ import { useCan } from "@/components/access"
 import { FormError } from "@/components/form-feedback"
 import { matches } from "@/components/list/matches"
 import { SearchField } from "@/components/list/search-field"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { downloadBlob, fileOrError } from "@/lib/download"
@@ -53,6 +65,7 @@ const labelsApi = api.injectEndpoints({
 // download all their labels as one PDF.
 export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   const t = useTranslations("products")
+  const side = useEdge("end")
   const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -115,7 +128,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
         <Tags data-icon="inline-start" />
         {t("labels.manage")}
       </SheetTrigger>
-      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+      <SheetContent side={side} className="gap-0 w-full! sm:max-w-md!">
         <SheetHeader className="border-b">
           <SheetTitle>{t("labels.manage")}</SheetTitle>
         </SheetHeader>

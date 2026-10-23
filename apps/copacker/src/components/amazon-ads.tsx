@@ -1,10 +1,10 @@
+import { AlertDialogTrigger, Button, buttonVariants, Dialog, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { ArrowRight, CircleCheck, CircleDashed, Unplug, Wallet } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
-import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { api } from "@/lib/api"
+import { touchButton, ghostDestructive } from "@/lib/controls"
+import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"
 import { ConfirmDialog } from "./confirm-dialog"
 import { IntegrationCard } from "./integration-card"
@@ -80,13 +80,13 @@ export function AmazonAdsCard({
       action={
         canManage &&
         (data.connected ? (
-          <DialogTrigger render={<Button variant="outline" size="responsive" />}>
+          <DialogTrigger render={<Button variant="outline" className={touchButton} />}>
             {integrations("manage")}
             <span className="sr-only"> {t("title")}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
           </DialogTrigger>
         ) : (
-          <a href="/api/connections/amazon-ads" className={buttonVariants({ variant: "outline", size: "responsive" })}>
+          <a href="/api/connections/amazon-ads" className={cn(buttonVariants({ variant: "outline" }), touchButton)}>
             {integrations("connect")}
             <span className="sr-only"> {t("title")}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
@@ -182,7 +182,7 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
                   <p className="text-sm text-muted-foreground">{t("description")}</p>
                   <a
                     href="/api/connections/amazon-ads"
-                    className={buttonVariants({ variant: "outline", size: "responsive" })}
+                    className={cn(buttonVariants({ variant: "outline" }), touchButton)}
                   >
                     {t("connect")}
                   </a>
@@ -196,7 +196,7 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
           <a
             href="/api/connections/amazon-ads"
             aria-label={t("reconnect")}
-            className={buttonVariants({ variant: "ghost", size: "responsive", className: "text-muted-foreground" })}
+            className={cn(buttonVariants({ variant: "ghost" }), touchButton, "text-muted-foreground")}
           >
             {syncCopy("reconnect")}
           </a>
@@ -207,8 +207,8 @@ export function AmazonAdsSettings({ available }: { available: boolean }) {
               <AlertDialogTrigger
                 render={
                   <Button
-                    variant="ghost-destructive"
-                    size="responsive"
+                    variant="ghost"
+                    className={cn(touchButton, ghostDestructive)}
                     disabled={action.isLoading}
                     aria-label={t("disconnect")}
                   />

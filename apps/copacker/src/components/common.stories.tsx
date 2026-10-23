@@ -1,9 +1,8 @@
+import { Button, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, Lock, Plus, Repeat } from "lucide-react"
 import { expect, waitFor, within } from "storybook/test"
 import { useTranslations } from "use-intl"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { DocumentList, EmptyState, formatDestination, PageHeader, Status, StatusBadge, WarningNote } from "./common"
 import { TabLinks } from "./tab-links"
 

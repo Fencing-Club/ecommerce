@@ -1,3 +1,19 @@
+import {
+  Button,
+  ButtonGroup,
+  ButtonGroupSeparator,
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useLocalStorage } from "@mantine/hooks"
 import { shippingCopy } from "@repo/copacker-shipments/shipping-copy"
 import {
@@ -13,11 +29,6 @@ import {
 import { ChevronDown, Download, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group"
-import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
 import { renderShippingDocument, ShippingPdf } from "@/documents/shipping-pdf"
 import { localeNames } from "@/i18n/locales"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"
@@ -270,7 +281,7 @@ function DocumentRender({
       {downloadError && <p role="alert">{t("changed")}</p>}
       {result.status === "loading" && (
         <div className="flex min-h-80 items-center justify-center gap-2 text-muted-foreground">
-          <Spinner />
+          <Spinner aria-hidden />
           {t("previewLoading")}
         </div>
       )}

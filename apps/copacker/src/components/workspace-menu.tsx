@@ -1,13 +1,13 @@
 import { Toast } from "@base-ui/react/toast"
-import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
-import { useTranslations } from "use-intl"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
+import { useTranslations } from "use-intl"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
 import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"

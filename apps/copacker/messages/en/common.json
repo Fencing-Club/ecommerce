@@ -130,7 +130,8 @@
     "sidebarDescription": "Displays the mobile sidebar.",
     "clear": "Clear",
     "showOptions": "Show options",
-    "remove": "Remove {label}"
+    "remove": "Remove {label}",
+    "loading": "Loading"
   },
   "pages": {
     "error": {

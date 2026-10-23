@@ -1,7 +1,6 @@
+import { Button, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { DialogTrigger } from "@/components/ui/dialog"
 import { FormInput, FormMoney } from "./form-controls"
 import { FormDialog } from "./form-dialog"
 

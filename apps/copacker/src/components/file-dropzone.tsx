@@ -17,13 +17,13 @@
 //   in place of the zone, with Replace to choose another; a file dropped on it counts too. `href` opens the stored one.
 // - ref: the button that chooses the next file, the zone or Replace, such as for a form to focus when it's required.
 
+import { Button, Field, FieldLabel } from "@buildkitgg/shadcn-baseui-kit"
 import { useMergedRef } from "@mantine/hooks"
 import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { FileText, UploadCloud, Trash2 } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { FieldError } from "@/components/field-error"
 import { fileName } from "./common"
 
 // A size as people read it in the language, such as 240 KB or 1.2 MB.

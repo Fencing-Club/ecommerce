@@ -1,3 +1,4 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { AcceptInvitation } from "@/components/auth/accept-invitation"
@@ -5,7 +6,6 @@ import { AuthPage, AuthSwitch } from "@/components/auth/auth-shell"
 import { SignInForm } from "@/components/auth/sign-in-form"
 import { SignUpForm } from "@/components/auth/sign-up-form"
 import { SocialSignIn } from "@/components/auth/social-sign-in"
-import { Button } from "@/components/ui/button"
 import { initials } from "@/lib/initials"
 import type { invitationPage } from "@/server/invitation-page"
 

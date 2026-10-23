@@ -1,7 +1,5 @@
-import { PanelLeft } from "lucide-react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -14,7 +12,10 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar
-} from "@/components/ui/sidebar"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { PanelLeft } from "lucide-react"
+import { useTranslations } from "use-intl"
+import { useEdge } from "@/hooks/use-edge"
 import { navigationFor, navigationGroups } from "@/lib/navigation"
 import { usePermissions } from "./access"
 import { AccountMenu } from "./account-menu"
@@ -62,12 +63,13 @@ export type AppSidebarProps = {
 export function AppSidebar({ pathname, kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
+  const side = useEdge("start")
   const t = useTranslations("navigation")
   // A member sees only the pages they were given.
   const navigation = navigationFor(kind, usePermissions())
 
   return (
-    <Sidebar collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
+    <Sidebar side={side} collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader className="border-b p-3">
         <WorkspaceMenu active={active} fallbackName={name} workspaces={workspaces} />
       </SidebarHeader>

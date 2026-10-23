@@ -1,6 +1,6 @@
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { shownDialog } from "@/stories/play"
 import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { AppSidebar } from "./app-sidebar"
@@ -161,8 +161,8 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, the sidebar's width (Create stays on desktop; each list page has its own primary
-// action). It closes once a page is chosen.
+// On a phone the sidebar is a sheet, in the kit's width, with the page still showing beside it (Create stays on
+// desktop; each list page has its own primary action). It closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
@@ -170,7 +170,7 @@ export const Phone = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
     const sheet = await shownDialog()
     await waitFor(() => expect(sheet.getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
-    await expect(sheet.element.getBoundingClientRect().width).toBe(240)
+    await expect(sheet.element.getBoundingClientRect().width).toBeLessThan(window.innerWidth)
     await expect(sheet.getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
     await expect(sheet.queryByRole("button", { name: "Create" })).toBeNull()
     await expect(sheet.getByText("alex@example.com")).toBeVisible()
@@ -188,5 +188,16 @@ export const Measurements = meta.story({
     await expect(current.getBoundingClientRect().height).toBe(34)
     await expect(getComputedStyle(current).fontWeight).toBe("600")
     await expect(getComputedStyle(canvas.getByRole("link", { name: "Sales" })).fontWeight).toBe("400")
+  }
+})
+
+// In Urdu the sidebar takes the reading direction's start, the right, with the page beside it.
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  play: async ({ canvasElement }) => {
+    const sidebar = canvasElement.querySelector("[data-slot=sidebar-container]")
+    const page = canvasElement.querySelector("[data-slot=sidebar-inset]")
+    await expect(sidebar).toHaveAttribute("data-side", "right")
+    await expect(page?.getBoundingClientRect().right).toBeLessThanOrEqual(sidebar?.getBoundingClientRect().left ?? 0)
   }
 })

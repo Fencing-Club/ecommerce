@@ -1,14 +1,15 @@
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
+import { FramedTable } from "@/components/framed-table"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { formatDate } from "@/lib/format"
 import { useAssignCatalogMutation } from "@/lib/supplier-api"
@@ -127,7 +128,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
         placeholder={t("search")}
       />
       {shown.length ? (
-        <Table>
+        <FramedTable>
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.customer")}</TableHead>
@@ -176,7 +177,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
               </LinkRow>
             ))}
           </TableBody>
-        </Table>
+        </FramedTable>
       ) : (
         <EmptyState title={t("noneHere")} description={shared("tryAnother")} />
       )}

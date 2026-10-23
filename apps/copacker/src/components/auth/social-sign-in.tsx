@@ -1,9 +1,7 @@
+import { Button, FieldSeparator, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { useState } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { FieldSeparator } from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
 import { type OAuthProvider, oauthProviders } from "@/lib/sign-in"
 
 function GoogleLogo() {
@@ -68,7 +66,7 @@ export function SocialSignIn({ next, email }: { next: string; email?: string }) 
                 />
               }
             >
-              {opening === provider ? <Spinner /> : <Logo />}
+              {opening === provider ? <Spinner aria-hidden /> : <Logo />}
               {oauthProviders[provider].name}
             </Button>
           )

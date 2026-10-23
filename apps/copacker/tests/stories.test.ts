@@ -10,6 +10,7 @@ const app = fileURLToPath(new URL("..", import.meta.url))
 const withoutStories = new Set([
   "src/components/access.tsx",
   "src/components/app-providers.tsx",
+  "src/components/kit-provider.tsx",
   "src/components/providers.tsx",
   "src/components/theme-script.tsx"
 ])
@@ -97,21 +98,17 @@ for (let file = pending.pop(); file !== undefined; file = pending.pop()) {
   }
 }
 
-// The sidebar has six sections: Foundations (the ui primitives), Components (grouped by product area), Pages (the
-// real routes), Prototypes (designs built only in Storybook), Simulators (the real rules and documents, run on sample
-// data) and Unused (components no app code renders yet).
+// The sidebar has five sections: Components (grouped by product area), Pages (the real routes), Prototypes (designs
+// built only in Storybook), Simulators (the real rules and documents, run on sample data) and Unused (components no
+// app code renders yet).
 describe("story titles", () => {
   const stories = sources
     .filter((file) => file.endsWith(".stories.tsx"))
     .map((file) => ({ file, title: read(file).match(/\.meta\(\{[\s\S]*?\btitle: "([^"]+)"/)?.[1] }))
-  const sections = ["Foundations", "Components", "Pages", "Prototypes", "Simulators", "Unused"]
+  const sections = ["Components", "Pages", "Prototypes", "Simulators", "Unused"]
 
   it.each(stories)("$file is titled within a section", ({ title }) => {
     expect(sections).toContain(title?.split("/")[0])
-  })
-
-  it.each(stories.filter(({ file }) => file.startsWith("src/components/ui/")))("$file is a foundation", ({ title }) => {
-    expect(title).toMatch(/^Foundations\//)
   })
 
   // A simulator lives in src/stories/simulators, and only there.
@@ -154,7 +151,7 @@ describe("story titles", () => {
   })
 
   // Wiring a component into the app, or dropping its last use, moves its stories between Components and Unused.
-  it.each(stories.filter(({ file }) => file.startsWith("src/components/") && !file.startsWith("src/components/ui/")))(
+  it.each(stories.filter(({ file }) => file.startsWith("src/components/")))(
     "$file is in Unused only while no app code renders it",
     ({ file, title }) => {
       const source = file.replace(/(\.\w+)?\.stories\.tsx$/, ".tsx")

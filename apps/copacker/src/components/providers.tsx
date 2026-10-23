@@ -1,6 +1,6 @@
+import { TooltipProvider } from "@buildkitgg/shadcn-baseui-kit"
 import { ApiProvider } from "@reduxjs/toolkit/query/react"
 import { useEffect } from "react"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import { api } from "@/lib/api"
 import { themeStore } from "@/lib/theme"
 import { ToastProvider } from "./toast-provider"

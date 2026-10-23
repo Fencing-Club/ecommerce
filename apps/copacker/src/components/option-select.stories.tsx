@@ -1,8 +1,8 @@
+import { Field, FieldLabel } from "@buildkitgg/shadcn-baseui-kit"
 import { ArrowDownUp } from "lucide-react"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Field, FieldLabel } from "@/components/ui/field"
 import { chooseOption } from "@/stories/play"
 import { OptionSelect, type SelectOption } from "./option-select"
 

@@ -1,4 +1,44 @@
 import { Toast } from "@base-ui/react/toast"
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  RadioGroup,
+  RadioGroupItem,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { type OrderInput, orderLine, orderSubtotal } from "@repo/copacker-orders"
 import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
@@ -34,6 +74,7 @@ import { DetailFields } from "@/components/detail-fields"
 import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
+import { NumberInput, InputGroupNumberInput } from "@/components/number-input"
 import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
 import { PalletList } from "@/components/pallet-list"
@@ -50,32 +91,6 @@ import {
   ShipmentPackingDetails,
   ShipmentTransportLegs
 } from "@/components/shipment-packing-details"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input, NumberInput } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-  InputGroupNumberInput
-} from "@/components/ui/input-group"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMoney } from "@/hooks/use-money"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
@@ -1892,18 +1907,20 @@ export function PurchaseOrderFlow({
                           </span>
                           <div className="grid grid-cols-1 items-start gap-3 @3xl/shipment:grid-cols-[minmax(0,1fr)_5rem] @3xl/shipment:gap-2">
                             {editable ? (
-                              <InputGroup className="min-w-0 flex-1">
-                                <InputGroupAddon>$</InputGroupAddon>
-                                <PriceInput
-                                  value={item.unitPrice}
-                                  label={`${item.buyerSku} cost`}
-                                  onChange={(unitPrice) => {
-                                    updateItem(shipment, item.id, { unitPrice })
-                                    setCostSources((current) => ({ ...current, [item.id]: "Custom cost" }))
-                                  }}
-                                />
-                                <InputGroupAddon align="inline-end">
-                                  <Popover>
+                              // The popover wraps the group, so its content isn't inside the addon, which focuses the
+                              // input on a click.
+                              <Popover>
+                                <InputGroup className="min-w-0 flex-1">
+                                  <InputGroupAddon>$</InputGroupAddon>
+                                  <PriceInput
+                                    value={item.unitPrice}
+                                    label={`${item.buyerSku} cost`}
+                                    onChange={(unitPrice) => {
+                                      updateItem(shipment, item.id, { unitPrice })
+                                      setCostSources((current) => ({ ...current, [item.id]: "Custom cost" }))
+                                    }}
+                                  />
+                                  <InputGroupAddon align="inline-end">
                                     <PopoverTrigger
                                       render={
                                         <InputGroupButton size="icon-xs" aria-label={`${item.buyerSku} cost source`} />
@@ -1911,73 +1928,72 @@ export function PurchaseOrderFlow({
                                     >
                                       <ChevronDown />
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-80" align="end">
-                                      <RadioGroup
-                                        aria-label="Cost source"
-                                        value={costSources[item.id] ?? "Supplier purchase price"}
-                                        onValueChange={(value) => {
-                                          if (value) {
-                                            setCostSources((current) => ({ ...current, [item.id]: value }))
-                                            if (value !== "Custom cost") {
-                                              updateItem(shipment, item.id, {
-                                                unitPrice:
-                                                  value === "Cost per item"
+                                  </InputGroupAddon>
+                                </InputGroup>
+                                <PopoverContent className="w-80" align="end">
+                                  <RadioGroup
+                                    aria-label="Cost source"
+                                    value={costSources[item.id] ?? "Supplier purchase price"}
+                                    onValueChange={(value) => {
+                                      if (value) {
+                                        setCostSources((current) => ({ ...current, [item.id]: value }))
+                                        if (value !== "Custom cost") {
+                                          updateItem(shipment, item.id, {
+                                            unitPrice:
+                                              value === "Cost per item"
+                                                ? 950
+                                                : (products.find((product) => product.id === item.id)?.unitPrice ??
+                                                  item.unitPrice)
+                                          })
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    {["Cost per item", "Supplier purchase price", "Custom cost"].map((source) => (
+                                      <label
+                                        key={source}
+                                        htmlFor={`${controlId}-${item.id}-${source.replaceAll(" ", "-")}`}
+                                        className="flex items-start gap-3 rounded p-2"
+                                      >
+                                        <RadioGroupItem
+                                          id={`${controlId}-${item.id}-${source.replaceAll(" ", "-")}`}
+                                          value={source}
+                                        />
+                                        <span>
+                                          <span className="inline-flex flex-wrap items-center gap-2">
+                                            {source}
+                                            {source !== "Custom cost" && (
+                                              <Badge variant="secondary">
+                                                {cash(
+                                                  source === "Cost per item"
                                                     ? 950
                                                     : (products.find((product) => product.id === item.id)?.unitPrice ??
-                                                      item.unitPrice)
-                                              })
-                                            }
-                                          }
-                                        }}
-                                      >
-                                        {["Cost per item", "Supplier purchase price", "Custom cost"].map((source) => (
-                                          <label
-                                            key={source}
-                                            htmlFor={`${controlId}-${item.id}-${source.replaceAll(" ", "-")}`}
-                                            className="flex items-start gap-3 rounded p-2"
-                                          >
-                                            <RadioGroupItem
-                                              id={`${controlId}-${item.id}-${source.replaceAll(" ", "-")}`}
-                                              value={source}
-                                            />
-                                            <span>
-                                              <span className="inline-flex flex-wrap items-center gap-2">
-                                                {source}
-                                                {source !== "Custom cost" && (
-                                                  <Badge variant="secondary">
-                                                    {cash(
-                                                      source === "Cost per item"
-                                                        ? 950
-                                                        : (products.find((product) => product.id === item.id)
-                                                            ?.unitPrice ?? item.unitPrice)
-                                                    )}
-                                                  </Badge>
+                                                        item.unitPrice)
                                                 )}
-                                              </span>
-                                              <span className="mt-1 block text-xs text-muted-foreground">
-                                                {match(source)
-                                                  .with("Cost per item", () => "From product details")
-                                                  .with("Supplier purchase price", () => (
-                                                    <>
-                                                      Last ordered from Northwind Textiles on{" "}
-                                                      <a className="underline" href="/orders/po31">
-                                                        #PO31
-                                                      </a>
-                                                    </>
-                                                  ))
-                                                  .otherwise(
-                                                    () =>
-                                                      "Once agreed, the default for your next order from this supplier"
-                                                  )}
-                                              </span>
-                                            </span>
-                                          </label>
-                                        ))}
-                                      </RadioGroup>
-                                    </PopoverContent>
-                                  </Popover>
-                                </InputGroupAddon>
-                              </InputGroup>
+                                              </Badge>
+                                            )}
+                                          </span>
+                                          <span className="mt-1 block text-xs text-muted-foreground">
+                                            {match(source)
+                                              .with("Cost per item", () => "From product details")
+                                              .with("Supplier purchase price", () => (
+                                                <>
+                                                  Last ordered from Northwind Textiles on{" "}
+                                                  <a className="underline" href="/orders/po31">
+                                                    #PO31
+                                                  </a>
+                                                </>
+                                              ))
+                                              .otherwise(
+                                                () => "Once agreed, the default for your next order from this supplier"
+                                              )}
+                                          </span>
+                                        </span>
+                                      </label>
+                                    ))}
+                                  </RadioGroup>
+                                </PopoverContent>
+                              </Popover>
                             ) : (
                               <span>{cash(item.unitPrice)}</span>
                             )}

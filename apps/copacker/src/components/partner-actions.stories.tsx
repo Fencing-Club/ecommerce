@@ -1,6 +1,7 @@
+import { TableBody } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Table, TableBody } from "@/components/ui/table"
+import { FramedTable } from "@/components/framed-table"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { forwarderRecordId, partnerAddresses, supplierRecordId } from "@/stories/fixtures/logistics"
 import { shownDialog } from "@/stories/play"
@@ -43,9 +44,9 @@ const forwarder: ForwarderDetails = {
 function Rows({ children }: { children: React.ReactNode }) {
   return (
     <div className="@container">
-      <Table className="@max-md:block">
+      <FramedTable className="@max-md:block">
         <TableBody className="@max-md:block">{children}</TableBody>
-      </Table>
+      </FramedTable>
     </div>
   )
 }

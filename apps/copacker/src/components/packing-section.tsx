@@ -1,8 +1,14 @@
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronRight, Download, Plus, Upload } from "lucide-react"
 import type { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "./common"
 
@@ -35,10 +41,10 @@ export function PackingSection({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:flex-col max-sm:items-start">
           <h2 className="text-sm font-semibold max-sm:text-base">
-            <CollapsibleTrigger className="focus-ring group flex items-center gap-3 rounded-sm text-start max-sm:gap-2">
+            <CollapsibleTrigger className="focus-ring flex items-center gap-3 rounded-sm text-start max-sm:gap-2">
               <ChevronRight
                 aria-hidden
-                className="size-4 shrink-0 transition-transform group-data-panel-open:rotate-90"
+                className="size-4 shrink-0 transition-transform in-data-panel-open:rotate-90 rtl:not-in-data-panel-open:rotate-180"
               />
               {title}
             </CollapsibleTrigger>
@@ -123,7 +129,7 @@ export function PackingActions({
       <IconAction label={labels.import} onClick={actions.onImport}>
         <Upload />
       </IconAction>
-      <Button type="button" variant="outline" className="max-sm:w-[34px] max-sm:px-0" onClick={actions.onAdd}>
+      <Button type="button" variant="outline" className="max-sm:w-9 max-sm:px-0" onClick={actions.onAdd}>
         <Plus />
         <span className="max-sm:sr-only">{labels.add}</span>
       </Button>

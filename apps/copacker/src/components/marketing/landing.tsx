@@ -1,5 +1,5 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { useFormatter, useTranslations } from "use-intl"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
 import { Connect } from "./connect"

@@ -1,10 +1,18 @@
+import {
+  Button,
+  buttonVariants,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Check, Download, ExternalLink } from "lucide-react"
 import { createContext, use, useId } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
 // The id of the row's title, which finishes its action's name for screen readers: "Download Carton labels", "Open
@@ -54,7 +62,7 @@ export function DownloadAction(props: { href: string } | { pending: string }) {
   if ("pending" in props) {
     return (
       <Button variant="outline" size="sm" disabled>
-        <Spinner data-icon="inline-start" />
+        <Spinner aria-hidden data-icon="inline-start" />
         {props.pending}
       </Button>
     )

@@ -1,6 +1,6 @@
+import { Badge } from "@buildkitgg/shadcn-baseui-kit"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { useTranslations } from "use-intl"
-import { Badge } from "@/components/ui/badge"
 
 // The same product identity in purchase orders, their editor and shipment packing.
 export function ProductIdentity({

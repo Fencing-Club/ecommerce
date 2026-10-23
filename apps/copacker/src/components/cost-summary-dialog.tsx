@@ -1,11 +1,23 @@
+import {
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@buildkitgg/shadcn-baseui-kit"
 import { adjustmentTypes } from "@repo/copacker-orders"
 import { Plus, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { MoneyInput } from "@/components/money-input"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { adjustmentKeys, knownName } from "@/lib/order-lines"
 
 type Adjustment = { description: string; amount: number }

@@ -130,7 +130,8 @@
     "sidebarDescription": "Affiche la barre latérale mobile.",
     "clear": "Effacer",
     "showOptions": "Afficher les options",
-    "remove": "Retirer {label}"
+    "remove": "Retirer {label}",
+    "loading": "Chargement"
   },
   "pages": {
     "error": {

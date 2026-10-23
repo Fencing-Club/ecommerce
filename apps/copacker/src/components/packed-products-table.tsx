@@ -1,10 +1,12 @@
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { money, type OrderInput } from "@repo/copacker-orders"
 import { CircleCheck } from "lucide-react"
 import type { ReactNode } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FramedTable } from "@/components/framed-table"
 import { type CartonGroup, packedPieces, physicalCartons, piecesLeft } from "@/lib/carton-groups"
+import { insetTable } from "@/lib/controls"
 import { cn } from "@/lib/utils"
 import { PackingSection } from "./packing-section"
 import { ProductIdentity } from "./product-identity"
@@ -51,7 +53,7 @@ export function PackedProductsTable({
   return (
     <PackingSection title={detail("columns.products")} summary={summary} done={done} defaultOpen={false}>
       <div className="@container/packing">
-        <Table inset className="table-fixed narrow:block">
+        <FramedTable className={cn(insetTable, "table-fixed narrow:block")}>
           <TableHeader className="bg-muted/60 narrow:hidden [&_th]:h-8 [&_th]:text-xs [&_th]:font-normal [&_th]:text-muted-foreground">
             <TableRow className="hover:bg-transparent">
               <TableHead>{t("product")}</TableHead>
@@ -129,7 +131,7 @@ export function PackedProductsTable({
               )
             })}
           </TableBody>
-        </Table>
+        </FramedTable>
       </div>
     </PackingSection>
   )

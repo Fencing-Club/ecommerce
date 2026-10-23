@@ -1,11 +1,19 @@
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Search } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import { TabLinks } from "@/components/tab-links"
-import { Card } from "@/components/ui/card"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { partnersPage } from "@/server/partners-page"
 import { PartnerCreation } from "./add"
 const tabs = [{ key: "all" }, { key: "supplier" }, { key: "forwarder" }] as const
@@ -22,7 +30,7 @@ export default function PartnersPage({ page }: { page: Awaited<ReturnType<typeof
   return (
     <>
       <PageHeader title={t("title")}>{editable && <PartnerCreation />}</PageHeader>
-      <Card flush>
+      <FlushCard>
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks
             label={t("tabsLabel")}
@@ -53,7 +61,7 @@ export default function PartnersPage({ page }: { page: Awaited<ReturnType<typeof
         {shown.length ? (
           <div className="@container">
             {/* On a phone each row stacks, as its row says. */}
-            <Table framed={false} className="@max-md:block">
+            <Table className="@max-md:block">
               <TableHeader className="@max-md:hidden">
                 <TableRow>
                   <TableHead className="ps-4">{t("columns.name")}</TableHead>
@@ -90,7 +98,7 @@ export default function PartnersPage({ page }: { page: Awaited<ReturnType<typeof
         ) : (
           <EmptyState title={q ? t("empty.noMatch", { query: q }) : t(`empty.${tab}`)} description={emptyHint} />
         )}
-      </Card>
+      </FlushCard>
     </>
   )
 }

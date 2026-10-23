@@ -1,21 +1,22 @@
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+  RadioGroup,
+  RadioGroupItem
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Factory, Ship, Store } from "lucide-react"
 import { useController } from "react-hook-form"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { AddressFields } from "@/components/address-fields"
+import { FieldError } from "@/components/field-error"
 import { FormInput } from "@/components/form-controls"
 import { FormSelect } from "@/components/form-select"
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-  FieldTitle
-} from "@/components/ui/field"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { WorkspaceKind } from "@/lib/onboarding"
 import { positionKeys } from "@/lib/onboarding"
 import { formatPhone } from "@/lib/phone"

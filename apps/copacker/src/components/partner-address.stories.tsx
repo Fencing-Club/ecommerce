@@ -1,8 +1,8 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { Button } from "@/components/ui/button"
 import { type ActionRequest, recordActions, failWith } from "@/stories/actions"
 import { forwarderRecordId, partnerAddresses, supplierRecordId } from "@/stories/fixtures/logistics"
 import { lotusFactory, harborWarehouse } from "@/stories/fixtures/parties"
@@ -42,6 +42,16 @@ export const SupplierPickups = meta.story({
     await expect(sheet.getByRole("button", { name: "Add address" })).toBeInTheDocument()
     await userEvent.click(sheet.getByRole("button", { name: "Close" }))
     await expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
+  }
+})
+
+// In Urdu the sheet opens from the reading direction's end, the left.
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  play: async () => {
+    const sheet = await shownDialog("Lotus Manufacturing")
+    await expect(sheet.element).toHaveAttribute("data-side", "left")
+    await expect(sheet.element.getBoundingClientRect().left).toBeLessThan(window.innerWidth / 2)
   }
 })
 

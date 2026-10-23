@@ -1,3 +1,4 @@
+import { Button, Checkbox, Input, TableCell, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { match } from "ts-pattern"
 import { useFormatter, useTranslations } from "use-intl"
@@ -5,10 +6,6 @@ import { useCan } from "@/components/access"
 import { Status, StatusBadge } from "@/components/common"
 import { NoValue } from "@/components/no-value"
 import { ProductThumb } from "@/components/product-thumb"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { TableCell, TableRow } from "@/components/ui/table"
 import {
   calculationSteps,
   isOrderable,

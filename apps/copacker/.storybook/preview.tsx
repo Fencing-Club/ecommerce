@@ -9,6 +9,7 @@ import { INITIAL_VIEWPORTS } from "storybook/viewport"
 import { IntlProvider } from "use-intl"
 import { getStoryRouter } from "#.storybook/router"
 import { AccessProvider } from "@/components/access"
+import { KitProvider } from "@/components/kit-provider"
 import { Providers } from "@/components/providers"
 import { direction, localeNames, locales, type Locale } from "@/i18n/locales"
 import type { Messages } from "@/i18n/messages"
@@ -19,9 +20,10 @@ import { prepareIntl, storyTimeZone } from "./intl"
 import { mockRows } from "./mocks/db"
 import { handlers } from "./mocks/handlers"
 import { prepareStoryRouter, StoryRouter } from "./router"
-// The app's stylesheet, as AppProviders brings it: the theme's colors, then Tailwind.
-import "@/styles/theme.css"
+// The app's stylesheet, as the root route brings it: Tailwind with the kit's stylesheet, then the theme's colors, which
+// override the kit's defaults.
 import "@/app/globals.css"
+import "@/styles/theme.css"
 
 // findBy and waitFor give a mocked response and its render 5 seconds, not 1: under a full test run, a busy machine
 // can take longer than a second, and a story then fails although nothing is wrong.
@@ -81,13 +83,15 @@ function StoryFrame({
   }, [locale])
   return (
     <IntlProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
-      <Providers>
-        <NuqsTestingAdapter searchParams={query} hasMemory>
-          <AccessProvider permissions={permissions}>
-            <StoryRouter router={router}>{children}</StoryRouter>
-          </AccessProvider>
-        </NuqsTestingAdapter>
-      </Providers>
+      <KitProvider>
+        <Providers>
+          <NuqsTestingAdapter searchParams={query} hasMemory>
+            <AccessProvider permissions={permissions}>
+              <StoryRouter router={router}>{children}</StoryRouter>
+            </AccessProvider>
+          </NuqsTestingAdapter>
+        </Providers>
+      </KitProvider>
     </IntlProvider>
   )
 }
@@ -134,7 +138,7 @@ export default definePreview({
     layout: "padded",
     // The sidebar's sections, described in docs/storybook.md. Stories keep their file order within each component.
     options: {
-      storySort: { method: "alphabetical", order: ["Foundations", "Components", "Pages", "Prototypes", "Unused"] }
+      storySort: { method: "alphabetical", order: ["Components", "Pages", "Prototypes", "Unused"] }
     },
     router: {},
     viewport: { options: INITIAL_VIEWPORTS },

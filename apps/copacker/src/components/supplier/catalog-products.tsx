@@ -1,8 +1,22 @@
+import {
+  Button,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useSet } from "@mantine/hooks"
 import { ChevronDown, SlidersHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { EmptyState } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
@@ -10,11 +24,6 @@ import { SelectionBar } from "@/components/list/selection-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
 import { NoValue } from "@/components/no-value"
 import { ProductThumb } from "@/components/product-thumb"
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
@@ -170,7 +179,7 @@ export function CatalogProducts({
   const editingPricing = editing ? pricing(editing.variant) : null
 
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <div className="flex flex-col gap-3 border-b p-4">
         {/* The switch moves under the title when the two don't fit on one line, instead of squeezing its label. */}
         <CardHeader className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-0">
@@ -220,7 +229,7 @@ export function CatalogProducts({
         </SelectionBar>
       </div>
       {paged.rows.length ? (
-        <Table framed={false}>
+        <Table>
           <TableHeader>
             <TableRow>
               {!readOnly && (
@@ -380,6 +389,6 @@ export function CatalogProducts({
           }}
         />
       )}
-    </Card>
+    </FlushCard>
   )
 }

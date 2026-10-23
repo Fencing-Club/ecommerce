@@ -1,3 +1,10 @@
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"
@@ -5,8 +12,6 @@ import { cartonGroupLabel } from "@repo/copacker-shipments/shipping-model"
 import { ChevronRight, Copy, Ellipsis, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { type CartonGroup, cartonGroupSchema, groupCartonIds } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { CartonProductsDialog } from "./carton-products-dialog"

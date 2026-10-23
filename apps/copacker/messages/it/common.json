@@ -130,7 +130,8 @@
     "sidebarDescription": "Mostra la barra laterale mobile.",
     "clear": "Cancella",
     "showOptions": "Mostra opzioni",
-    "remove": "Rimuovi {label}"
+    "remove": "Rimuovi {label}",
+    "loading": "Caricamento"
   },
   "pages": {
     "error": {

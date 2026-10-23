@@ -1,28 +1,41 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { PageHeader, Status } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { RequiredMark } from "@/components/form-controls"
 import { SaveBar } from "@/components/list/save-bar"
 import { MoneyInput } from "@/components/money-input"
 import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
 import { useDraft } from "@/hooks/use-draft"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { defaultQuantityRules } from "@/lib/catalog-pricing"
@@ -245,7 +258,7 @@ export function ProductEditor({
 
             <ProductMedia images={product.images} onChange={(images) => change({ images })} />
 
-            <Card flush>
+            <FlushCard>
               <div className="flex flex-col gap-3 border-b p-4">
                 <CardHeader className="px-0">
                   <CardTitle>{t("variants")}</CardTitle>
@@ -305,7 +318,7 @@ export function ProductEditor({
               {/* An editing grid: when it's wider than the card it scrolls sideways, keeping the first column and the
                 row actions in view. */}
               <div className="@container">
-                <Table framed={false} className={grid.table}>
+                <Table className={grid.table}>
                   <TableHeader>
                     <TableRow>
                       {product.optionNames.map((name, index) => (
@@ -450,7 +463,7 @@ export function ProductEditor({
                   <p className="text-xs text-muted-foreground">{t("newVariantsJoin")}</p>
                 )}
               </div>
-            </Card>
+            </FlushCard>
           </div>
 
           <div className="flex flex-col gap-4">

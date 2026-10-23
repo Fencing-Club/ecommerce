@@ -1,20 +1,24 @@
-import type { PriceBasis } from "@repo/copacker-orders"
-import { Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
-import { useLocale, useTranslations } from "use-intl"
-import { moneyText, parseMoney } from "@/components/money-input"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
+  DialogTitle,
+  Field,
+  FieldLabel,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText
+} from "@buildkitgg/shadcn-baseui-kit"
+import type { PriceBasis } from "@repo/copacker-orders"
+import { Plus, Trash2 } from "lucide-react"
+import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
+import { moneyText, parseMoney } from "@/components/money-input"
 import { useMoney } from "@/hooks/use-money"
 import { countOf, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"

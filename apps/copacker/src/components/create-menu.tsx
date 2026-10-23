@@ -1,9 +1,14 @@
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import type { LucideIcon } from "lucide-react"
 import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { usePermissions } from "@/components/access"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Area } from "@/lib/access"
 import { can } from "@/lib/access"
 

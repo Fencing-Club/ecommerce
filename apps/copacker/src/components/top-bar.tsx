@@ -1,8 +1,7 @@
+import { Button, useSidebar } from "@buildkitgg/shadcn-baseui-kit"
 import { Menu } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"
-import { Button } from "@/components/ui/button"
-import { useSidebar } from "@/components/ui/sidebar"
 import { CreateMenu } from "./create-menu"
 import { NotificationsMenu } from "./notifications-menu"
 import { SearchCommand } from "./search-command"
@@ -26,10 +25,10 @@ export function TopBar({ kind, navigate }: TopBarProps) {
       <div className="flex min-w-0 flex-1 items-center">
         <Button
           variant="ghost"
-          size="icon-touch"
+          size="icon"
           onClick={toggleSidebar}
           aria-label={t("toggleSidebar")}
-          className="md:hidden"
+          className="size-11 md:hidden"
         >
           <Menu className="size-5" aria-hidden />
         </Button>

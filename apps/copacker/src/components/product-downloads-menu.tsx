@@ -1,13 +1,13 @@
-import { ChevronDown, Download, MoreHorizontal } from "lucide-react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { ChevronDown, Download, MoreHorizontal } from "lucide-react"
+import { useTranslations } from "use-intl"
 import { Attachment, AttachmentContent, attachmentClassName } from "./attachment"
 
 // A label type to download: a file at href, or one the onDownload callback makes.

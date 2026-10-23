@@ -1,3 +1,13 @@
+import {
+  Button,
+  DialogTrigger,
+  DropdownMenuItem,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from "@buildkitgg/shadcn-baseui-kit"
 import type { Address } from "@repo/copacker-orders"
 import { addressLine, addressSchema } from "@repo/copacker-orders"
 import { originSchema } from "@repo/copacker-shipments"
@@ -5,12 +15,9 @@ import { MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { useAction } from "@/hooks/use-action"
 import type { ActionFormOptions, FormSchema } from "@/hooks/use-action-form"
+import { useEdge } from "@/hooks/use-edge"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { AddressFields, emptyAddress } from "./address-fields"
@@ -229,6 +236,7 @@ export function PartnerAddressSheet({
   children?: React.ReactNode
 }) {
   const t = useTranslations("partners.address")
+  const side = useEdge("end")
   const supplier = partner.kind === "supplier"
   let description = supplier ? t("sheet.supplier") : t("sheet.forwarder")
   if (joined) {
@@ -236,7 +244,7 @@ export function PartnerAddressSheet({
   }
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4 sm:max-w-md">
+      <SheetContent side={side} className="flex flex-col gap-4 sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{partner.name}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

@@ -1,16 +1,23 @@
+import {
+  Button,
+  Checkbox,
+  DialogTrigger,
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  Skeleton
+} from "@buildkitgg/shadcn-baseui-kit"
 import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { DialogTrigger } from "@/components/ui/dialog"
-import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
+import { touchButton } from "@/lib/controls"
+import { cn } from "@/lib/utils"
 import type { LocationClassification } from "@/server/inventory-locations"
 import { FormDialog } from "./form-dialog"
 
@@ -168,7 +175,7 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
     <FormDialog
       trigger={
         <DialogTrigger
-          render={<Button variant="outline" size="responsive" className="shrink-0" aria-label={t("editLabel")} />}
+          render={<Button variant="outline" className={cn(touchButton, "shrink-0")} aria-label={t("editLabel")} />}
         >
           {t("edit")}
         </DialogTrigger>

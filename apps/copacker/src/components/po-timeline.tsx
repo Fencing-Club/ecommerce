@@ -1,10 +1,15 @@
+import {
+  Avatar,
+  AvatarFallback,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import type { OrderInput } from "@repo/copacker-orders"
 import { money } from "@repo/copacker-orders"
 import { ChevronDown, Lock, Users } from "lucide-react"
 import { useId, type ReactNode } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { initials } from "@/lib/initials"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { cn } from "@/lib/utils"

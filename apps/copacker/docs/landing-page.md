@@ -56,7 +56,7 @@ parts live in `apps/copacker/src/components/marketing/`:
 - Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
   order, and the journey steps from chapter to chapter instead of moving.
 - Animations move only transform and opacity where they can, so the compositor runs them off the main thread.
-  `globals.css` drops tw-animate-css's blur from `animate-in` and `animate-out`, a hidden FAQ answer doesn't play its
+  `globals.css` drops the kit's blur from `animate-in` and `animate-out`, a hidden FAQ answer doesn't play its
   close animation as the page loads, and a tint that changes (the nav bar's tone, the journey's latest document) is a
   layer that fades. The FAQ answers opening and closing and the journey's documents joining the list still animate
   height, since the content below has to move with them.

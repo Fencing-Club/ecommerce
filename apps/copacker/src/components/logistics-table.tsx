@@ -1,12 +1,22 @@
+import {
+  Button,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, Check, Ellipsis, ExternalLink, Factory, Package, Ship, Truck, User } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Status } from "@/components/common"
+import { FramedTable } from "@/components/framed-table"
 import { NoValue } from "@/components/no-value"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   columnKeys,
   type ListColumn,
@@ -135,7 +145,7 @@ export function LogisticsTable({
 
   return (
     <section className="min-w-0" aria-label={k("table")}>
-      <Table
+      <FramedTable
         className={cn(
           "[&_td]:px-4 [&_td]:py-2.5 [&_th]:h-[34px] [&_th]:px-4 [&_th]:text-xs [&_th]:text-muted-foreground",
           "table-fixed @min-[640px]/list:table-auto @max-[480px]/list:block"
@@ -282,7 +292,7 @@ export function LogisticsTable({
             </TableRow>
           )}
         </TableBody>
-      </Table>
+      </FramedTable>
     </section>
   )
 }

@@ -130,7 +130,8 @@
     "sidebarDescription": "Показує бічну панель на мобільному пристрої.",
     "clear": "Очистити",
     "showOptions": "Показати варіанти",
-    "remove": "Вилучити {label}"
+    "remove": "Вилучити {label}",
+    "loading": "Завантаження"
   },
   "pages": {
     "error": {

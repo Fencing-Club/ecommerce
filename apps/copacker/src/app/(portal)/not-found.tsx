@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
-import { Button } from "@/components/ui/button"
 
 // Shown in the shell when a portal page calls notFound(), such as for a malformed link or another workspace's purchase
 // order. The header row comes first, so it sits beside the sidebar's collapse button, and the empty state below doesn't

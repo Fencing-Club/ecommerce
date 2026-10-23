@@ -1,5 +1,5 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 
 // Getting started's corner: who's signed in, and signing out to use another account.
 export function SignedInAs({ email }: { email: string }) {

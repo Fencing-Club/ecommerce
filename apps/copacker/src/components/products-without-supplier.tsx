@@ -1,3 +1,13 @@
+import {
+  Button,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useSet } from "@mantine/hooks"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
@@ -6,9 +16,6 @@ import { IssuePanel } from "@/components/inventory-products"
 import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
 import { ProductThumb } from "@/components/product-thumb"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api, useSuppliersQuery } from "@/lib/api"
 import type { ProductWithoutSupplier } from "@/server/product-suppliers"
@@ -104,7 +111,7 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
           </p>
         )}
       </div>
-      <Table framed={false}>
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-10 ps-4">

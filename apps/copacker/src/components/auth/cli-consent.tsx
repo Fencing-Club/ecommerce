@@ -1,5 +1,5 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import { AuthPage } from "./auth-shell"
 
 export function CliConsent({ email, intent, state }: { email: string; intent: string; state: string }) {

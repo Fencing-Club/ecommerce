@@ -1,3 +1,24 @@
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  Checkbox,
+  Collapsible,
+  CollapsibleContent,
+  Field,
+  FieldLabel,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useDebouncedValue, useLocalStorage, useMap, useSet, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { Link } from "@tanstack/react-router"
@@ -17,17 +38,10 @@ import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { SearchField } from "@/components/list/search-field"
 import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { Alert, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api, useSuppliersQuery } from "@/lib/api"
 import type { CoverBucket } from "@/lib/cover"
@@ -173,7 +187,7 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
   }
   return (
     <Collapsible open={open} onOpenChange={setOpen} render={<section aria-labelledby="restock-no-listing" />}>
-      <Card flush>
+      <FlushCard>
         <CardHeader className="flex flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-x-2">
             <h2 id="restock-no-listing" className="font-semibold">
@@ -185,7 +199,7 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
           <CardDescription className="ps-6 text-xs">{t("noListingHint")}</CardDescription>
         </CardHeader>
         <CollapsibleContent>
-          <Table framed={false}>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="ps-4">{t("columns.product")}</TableHead>
@@ -210,7 +224,7 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
             </TableBody>
           </Table>
         </CollapsibleContent>
-      </Card>
+      </FlushCard>
     </Collapsible>
   )
 }
@@ -384,7 +398,7 @@ function ResultSummary({ report }: { report: RestockReportData }) {
 // Placeholder rows while the suggestions are calculated.
 function Loading() {
   return (
-    <Card flush aria-hidden="true">
+    <FlushCard aria-hidden="true">
       <div className="border-b p-4">
         <Skeleton className="h-5 w-48" />
       </div>
@@ -396,7 +410,7 @@ function Loading() {
           <Skeleton className="ms-auto h-4 w-16" />
         </div>
       ))}
-    </Card>
+    </FlushCard>
   )
 }
 

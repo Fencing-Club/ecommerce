@@ -1,9 +1,16 @@
+import {
+  Button,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
 import { RefreshCw, TriangleAlert } from "lucide-react"
 import { useId } from "react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { BookingStep, type BookingStepCount } from "./booking-dialog"
 
@@ -91,7 +98,11 @@ export function IssuesView({
             </Button>
           )}
           <Button onClick={onCheckAgain} disabled={checking} focusableWhenDisabled>
-            {checking ? <Spinner data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" aria-hidden />}
+            {checking ? (
+              <Spinner aria-hidden data-icon="inline-start" />
+            ) : (
+              <RefreshCw data-icon="inline-start" aria-hidden />
+            )}
             {t("checkAgain")}
           </Button>
         </>

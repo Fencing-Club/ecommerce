@@ -616,6 +616,7 @@ export const UploadLabelsFromThePage = meta.story({
       }
     ])
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
+    // By name: the toast saying the labels went out is a dialog too, and stays for its own few seconds.
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Upload carrier labels" })).toBeNull())
   }
 })

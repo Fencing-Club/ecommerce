@@ -1,23 +1,39 @@
+import {
+  Badge,
+  Button,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { Ellipsis, Plus, Search, X } from "lucide-react"
 import { Fragment, useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
+import { FlushCard } from "@/components/flush-card"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { SearchField } from "@/components/list/search-field"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
+import { insetTable } from "@/lib/controls"
 import { currencySymbol } from "@/lib/currency"
 import type { ImportProposal } from "@/lib/import-proposal"
 import { lineTotals } from "@/lib/import-totals"
+import { cn } from "@/lib/utils"
 import { WarningNote } from "./common"
 
 const linesApi = api.injectEndpoints({
@@ -188,12 +204,12 @@ export function ImportLines({
   }
 
   return (
-    <Card flush className="@5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
+    <FlushCard className="@5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
       <CardHeader>
         <CardTitle>{tr("lines")}</CardTitle>
       </CardHeader>
       {/* An editing grid: on a phone it scrolls sideways rather than squeezing the inputs. */}
-      <Table framed={false} inset className="min-w-3xl">
+      <Table className={cn(insetTable, "min-w-3xl")}>
         <TableHeader>
           <TableRow>
             <TableHead>{tr("columns.product")}</TableHead>
@@ -454,6 +470,6 @@ export function ImportLines({
           {tr("addLine")}
         </Button>
       </div>
-    </Card>
+    </FlushCard>
   )
 }

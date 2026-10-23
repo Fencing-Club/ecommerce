@@ -1,9 +1,9 @@
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@buildkitgg/shadcn-baseui-kit"
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react"
 import { Children } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { InfoTip } from "@/components/info-tip"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { type StatusTone, toneBadge } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 
 // The KPI cards, apart from the rest of @/components/common: their info tips bring Base UI's tooltip, which a client
@@ -60,7 +60,7 @@ export function StatCard({
   )
 }
 
-function deltaTone(value: number | null) {
+function deltaTone(value: number | null): StatusTone & keyof typeof deltaIcons {
   if (value === null) {
     return "success"
   }
@@ -80,7 +80,12 @@ export function DeltaPill({ value, title }: { value: number | null; title?: stri
   const tone = deltaTone(value)
   const Icon = deltaIcons[tone]
   return (
-    <Badge tone={tone} title={title} className="gap-0.5 px-1.5 tabular-nums">
+    <Badge
+      variant="secondary"
+      data-tone={tone}
+      title={title}
+      className={cn(toneBadge(tone), "gap-0.5 px-1.5 tabular-nums")}
+    >
       <Icon aria-hidden />
       {value === null
         ? t("new")

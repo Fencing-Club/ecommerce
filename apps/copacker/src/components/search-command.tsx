@@ -1,26 +1,31 @@
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
-import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
-import { defaultFilter } from "cmdk"
-import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
-import { useDeferredValue, useRef, useState } from "react"
-import { useTranslations } from "use-intl"
-import { Status } from "@/components/common"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-  CommandLoading
-} from "@/components/ui/command"
-import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { Skeleton } from "@/components/ui/skeleton"
+  Kbd,
+  KbdGroup,
+  Skeleton
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
+import { Command as CommandPrimitive, defaultFilter } from "cmdk"
+import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
+import { useDeferredValue, useRef, useState } from "react"
+import { useTranslations } from "use-intl"
+import { Status } from "@/components/common"
 import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
 import { navigationFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { useCan, usePermissions } from "./access"
+
+// cmdk's loading row, which the kit's Command doesn't wrap, padded like its groups.
+function CommandLoading(props: React.ComponentProps<typeof CommandPrimitive.Loading>) {
+  return <CommandPrimitive.Loading data-slot="command-loading" className="p-1" {...props} />
+}
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5

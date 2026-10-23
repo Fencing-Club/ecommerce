@@ -1,6 +1,6 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { type OrderInput } from "@repo/copacker-orders"
 import { useFormatter, useTranslations } from "use-intl"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCartonTemplate } from "@/hooks/use-import-templates"
 import { type CartonGroup, cartonTotals, checkCartons, maxCartons } from "@/lib/carton-groups"
 import { readCartonFile, type CartonImportResult } from "@/lib/carton-import"
