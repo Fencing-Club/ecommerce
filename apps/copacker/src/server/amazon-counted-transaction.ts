@@ -1,4 +1,5 @@
 import { sql, type SQLWrapper } from "drizzle-orm"
+import { sharedReleaseOriginal } from "./amazon-shared-release"
 
 // Accrual-style totals retain the original posting date, excluding its later released copy.
 // Amazon may provide the link on either copy; never join across sellers or workspaces.
@@ -19,5 +20,5 @@ export function countedAmazonTransaction(row: SQLWrapper) {
         and (original."orderId" is null or ${row}."orderId" is null or original."orderId" = ${row}."orderId")
         and original.data->'marketplaceDetails'->>'marketplaceId'
           is not distinct from ${row}.data->'marketplaceDetails'->>'marketplaceId'
-    )`
+    ) and ${sharedReleaseOriginal(row)} is null`
 }

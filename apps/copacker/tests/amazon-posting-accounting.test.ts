@@ -55,3 +55,20 @@ it("keeps missing links, deferred events, malformed totals and unknown statuses 
     expect(amazonPostingAccounting(row, [row], truncated).releasedPostingAmount).toBeNull()
   }
 })
+
+it("uses database-proven shared identifiers for both sides without inventing release references", () => {
+  const d = posting("D", "DEFERRED_RELEASED"),
+    r = posting("R", "RELEASED")
+  const pairs = [{ originalId: "D", releasedId: "R" }]
+  expect(amazonPostingAccounting(d, [d, r], false, pairs)).toMatchObject({
+    status: "excluded_deferred_copy",
+    linkedTransactionIds: ["R"],
+    linkBasis: "unique_shared_shipment_or_refund_id"
+  })
+  expect(amazonPostingAccounting(r, [d, r], false, pairs)).toMatchObject({
+    status: "included_released_posting",
+    countingKey: "R",
+    linkedTransactionIds: ["D"]
+  })
+  expect(amazonPostingAccounting(r, [d, r], true, pairs).releasedPostingAmount).toBeNull()
+})

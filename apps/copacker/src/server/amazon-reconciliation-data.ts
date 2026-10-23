@@ -13,6 +13,7 @@ import {
 import { historicalProductMatch } from "./amazon-product-mappings"
 import {
   isStrongerPaymentCandidate,
+  isWarehousePaymentCandidate,
   postingEvidence,
   preferredPostingType,
   reconcileAmazonEvidence
@@ -178,11 +179,25 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
               )
             ]
           : []
-      const competingReportResult = candidateOrders.length
-        ? await tx.execute(sql`select * from (${sources.reimbursements}) evidence
-            where "orderId"=any(${sql.param(candidateOrders)}::text[])
+      const candidateSkus =
+        input.source === "reimbursements"
+          ? [
+              ...new Set(
+                postings.slice(0, postingLimit).flatMap((posting) => {
+                  const detail = { ...postingEvidence(posting), total: posting.data.totalAmount }
+                  return pageRows.some((row) => isWarehousePaymentCandidate(row, detail))
+                    ? detail.products.flatMap((product) => (product.sku ? [product.sku] : []))
+                    : []
+                })
+              )
+            ]
+          : []
+      const competingReportResult =
+        candidateOrders.length || candidateSkus.length
+          ? await tx.execute(sql`select * from (${sources.reimbursements}) evidence
+            where "orderId"=any(${sql.param(candidateOrders)}::text[]) or sku=any(${sql.param(candidateSkus)}::text[])
             order by id limit 1001`)
-        : null
+          : null
       const competingReports = competingReportResult ? z.array(evidence).parse(competingReportResult.rows) : []
       const mappings = await tx
         .select()

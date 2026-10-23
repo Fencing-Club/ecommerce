@@ -1,5 +1,6 @@
 import { equalMoney, formatMoney } from "@/lib/financial-money"
 import { postingAmount, postingEvidence, postingReferences, type ReconciliationPosting } from "./amazon-reconciliation"
+import type { SharedReleasePair } from "./amazon-shared-release"
 
 export function postingLinks(row: ReconciliationPosting) {
   return postingReferences(row.data).filter((ref) =>
@@ -10,7 +11,8 @@ export function postingLinks(row: ReconciliationPosting) {
 export function amazonPostingAccounting(
   row: ReconciliationPosting,
   related: ReconciliationPosting[],
-  truncated: boolean
+  truncated: boolean,
+  sharedPairs: SharedReleasePair[] = []
 ) {
   const evidence = postingEvidence(row),
     total = postingAmount(row.data.totalAmount)
@@ -29,6 +31,16 @@ export function amazonPostingAccounting(
     }
   }
   const pending = [row.transactionId]
+  for (const pair of sharedPairs) {
+    for (const [from, to] of [
+      [pair.originalId, pair.releasedId],
+      [pair.releasedId, pair.originalId]
+    ] as const) {
+      const outgoing = edges.get(from) ?? new Set<string>()
+      outgoing.add(to)
+      edges.set(from, outgoing)
+    }
+  }
   for (let index = 0; index < pending.length; index++) {
     for (const id of edges.get(pending[index]!) ?? []) {
       if (!connectedIds.has(id)) {
@@ -80,7 +92,10 @@ export function amazonPostingAccounting(
       ownLinks.some((ref) => ref.value !== other.transactionId) ||
       postingLinks(deferred).some((ref) => ref.name !== "RELEASE_TRANSACTION_ID") ||
       postingLinks(released).some((ref) => ref.name !== "DEFERRED_TRANSACTION_ID")
-    if (!directed || contradictory) {
+    const shared = sharedPairs.some(
+      (pair) => pair.originalId === deferred.transactionId && pair.releasedId === released.transactionId
+    )
+    if ((!directed && !shared) || contradictory) {
       blockers.push("inconsistent_release_reference")
     }
     if (
@@ -111,12 +126,17 @@ export function amazonPostingAccounting(
   } else if (included) {
     status = "included_released_posting"
   }
+  let linkBasis = ownLinks.length || relatedRows.length ? "explicit_release_reference" : null
+  if (sharedPairs.some((pair) => pair.originalId === row.transactionId || pair.releasedId === row.transactionId)) {
+    linkBasis = "unique_shared_shipment_or_refund_id"
+  }
   return {
     status,
     blockers: [...new Set(blockers)],
     countingKey: included ? row.transactionId : null,
     releasedPostingAmount: included && total ? { amount: formatMoney(total), currency: total.currency } : null,
     linkedTransactionIds: relatedRows.map((other) => other.transactionId).sort(),
+    linkBasis,
     basis: "released_posting_once_not_bank_settlement",
     reportAmountsAdded: false,
     costBasis: "unknown"

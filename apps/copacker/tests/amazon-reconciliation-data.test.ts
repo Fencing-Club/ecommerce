@@ -614,3 +614,54 @@ it("discloses the all-date report search cap instead of asserting uniqueness", a
     countIsLowerBound: true
   })
 })
+
+it("checks warehouse payment competition across saved dates and isolates account data", async () => {
+  const report = {
+    orgId,
+    externalAccountId: "SELLER1",
+    marketplaceId: "ATVPDKIKX0DER",
+    approvedAt: new Date("2026-10-02"),
+    reimbursementId: "CURRENT",
+    orderId: null,
+    sku: "SKU1",
+    asin: "A1",
+    currency: "USD",
+    amountTotal: "0.3",
+    reason: "Lost_Warehouse"
+  }
+  await database.insert(tables.amazonReimbursements).values(report)
+  const [older] = await database
+    .insert(tables.amazonReimbursements)
+    .values({ ...report, reimbursementId: "OLDER", approvedAt: new Date("2025-01-01") })
+    .returning()
+  await database.insert(tables.amazonReimbursements).values([
+    { ...report, orgId: otherId },
+    { ...report, externalAccountId: "OTHER" },
+    { ...report, marketplaceId: "OTHER" }
+  ])
+  const amount = { currencyCode: "USD", currencyAmount: "0.3" }
+  await database.insert(tables.amazonTransactions).values({
+    orgId,
+    externalAccountId: "SELLER1",
+    transactionId: "WAREHOUSE",
+    orderId: null,
+    postedAt: new Date("2026-10-03"),
+    type: "FBAInventoryReimbursement",
+    currency: "USD",
+    totalMinor: 30,
+    feesMinor: 0,
+    data: {
+      transactionStatus: "RELEASED",
+      marketplaceDetails: { marketplaceId: "ATVPDKIKX0DER" },
+      totalAmount: amount,
+      breakdowns: [{ breakdownAmount: amount }],
+      items: [{ totalAmount: amount, contexts: [{ contextType: "ProductContext", sku: "SKU1", asin: "A1" }] }]
+    }
+  })
+  const result = await amazonReconciliation(orgId, { ...input, source: "reimbursements" })
+  expect(result.rows).toHaveLength(1)
+  expect(result.rows[0]?.finance.candidates[0]).toMatchObject({
+    warehousePaymentCandidate: true,
+    paymentCompetition: { status: "shared_candidate", otherReportRowIds: [older!.id] }
+  })
+})

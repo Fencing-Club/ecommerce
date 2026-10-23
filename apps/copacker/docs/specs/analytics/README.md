@@ -68,3 +68,5 @@ The [expanded ingestion batch](../../analytics-ingestion.md) adds historical cos
 The [remaining stored-evidence work](analytics-data-backlog.md#next-stored-evidence-work-no-backfill-or-ux) covers receipt
 coverage, Shopify payment classification, AWD mappings and supported reimbursement allocations. Historical cost basis
 remains unknown; dated live acceptance does not establish complete provider history or validate every accounting capability.
+
+- [Remaining evidence gaps](remaining-evidence-gaps.md): what saved records can resolve and what requires source confirmation.
