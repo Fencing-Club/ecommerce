@@ -139,6 +139,7 @@ export async function syncEbayFinances(
     )
     .orderBy(sql`${analyticsFeeds.checkedAt} asc nulls first`, asc(analyticsEvidence.sourceId))
     .limit(5)
+  let payoutRetryAt = 0
   for (const saved of payouts) {
     const payoutId = ebayPayout.parse(saved.data).payoutId
     const dataset = `payout_reconciliation:${payoutId}`
@@ -152,6 +153,10 @@ export async function syncEbayFinances(
         throw error
       }
       await publishAnalyticsFeed(feed, dataset, [], { error: "payout_collection_failed" }, assertOwned, now)
+      payoutRetryAt = Math.max(
+        payoutRetryAt,
+        now.getTime() + Math.max(900000, error instanceof ProviderError ? (error.retryAfterMs ?? 0) : 0)
+      )
       if (error instanceof ProviderError && [401, 403, 429].includes(error.status)) {
         const retryAt = new Date(now.getTime() + Math.max(900000, error.retryAfterMs ?? 0)).toISOString()
         await publishAnalyticsFeed(
@@ -184,6 +189,17 @@ export async function syncEbayFinances(
     )
     await publishAnalyticsFeed(feed, dataset, [], { error: null }, assertOwned, now)
     await publishAnalyticsFeed(feed, "payouts", [{ id: payout.payoutId, data: payout }], payoutState, assertOwned, now)
+  }
+  if (payoutRetryAt) {
+    await publishAnalyticsFeed(
+      feed,
+      "financial_transactions",
+      [],
+      { ...state, retryAt: new Date(payoutRetryAt).toISOString(), error: "payout_collection_failed" },
+      assertOwned,
+      now
+    )
+    return
   }
   await publishAnalyticsFeed(feed, "financial_sync", [], { error: null }, assertOwned, now)
 }

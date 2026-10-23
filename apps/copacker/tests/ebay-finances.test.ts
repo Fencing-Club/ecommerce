@@ -127,6 +127,34 @@ it("honors a payout Retry-After longer than the daily refresh", async () => {
   await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 25 * 3600000))
   expect(context.request).not.toHaveBeenCalled()
 })
+it("keeps the run incomplete after a payout server error while checking other payouts", async () => {
+  context.request.mockImplementation(async (_method, path) => {
+    if (path.includes("/payout/P1")) {
+      throw new ProviderError(500, null, "unavailable")
+    }
+    if (path.includes("/payout/P2")) {
+      return { ...payout, payoutId: "P2", transactionCount: 0 }
+    }
+    if (path.includes("/payout?")) {
+      return { total: 2, payouts: [payout, { ...payout, payoutId: "P2" }] }
+    }
+    return { total: 0, transactions: [] }
+  })
+  await syncEbayFinances(input, async () => undefined, now)
+  const feeds = await database.select().from(tables.analyticsFeeds)
+  expect(feeds.some((row) => row.dataset === "financial_sync")).toBe(false)
+  expect(feeds.find((row) => row.dataset === "payout_reconciliation:P2")?.state.error).toBeNull()
+  expect(feeds.find((row) => row.dataset === "financial_transactions")?.state).toMatchObject({
+    error: "payout_collection_failed",
+    retryAt: new Date(now.getTime() + 900000).toISOString(),
+    coveredTo: now.toISOString()
+  })
+  context.request.mockClear()
+  await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 60000))
+  expect(context.request).not.toHaveBeenCalled()
+  await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 960000))
+  expect(context.request).toHaveBeenCalled()
+})
 it("preserves coverage on failed collection and rejects superseded writes", async () => {
   await database.insert(tables.analyticsFeeds).values({
     orgId,
