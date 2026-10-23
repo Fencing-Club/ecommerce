@@ -34,6 +34,9 @@ export const booleanFlags = new Set(["unlinked", "joined", "reviewed", "update-c
 export const numberFlags = new Set([
   "limit",
   "revision",
+  "link-revision",
+  "connection-revision",
+  "expected-amount-minor",
   "po-revision",
   "days",
   "lead-time-days",
@@ -62,6 +65,8 @@ const fieldNames: Record<string, string> = {
   line: "lineId",
   document: "documentId",
   revision: "expectedRevision",
+  "link-revision": "expectedLinkRevision",
+  "connection-revision": "expectedConnectionRevision",
   "po-revision": "expectedPoRevision",
   snapshot: "snapshotId",
   "expected-account": "expectedAccountId",
@@ -248,6 +253,40 @@ export function buildInput(
   }
   if (definition.upload && !file && input.source !== "shopify" && input.phase !== "complete") {
     throw clientError("invalid_input", "Supply a local file path for this upload.")
+  }
+  let providerField: string | null = null
+  if (definition.operation === "product.price.update") {
+    providerField = "price"
+  }
+  if (definition.operation === "product.cost.update") {
+    providerField = "cost"
+  }
+  if (definition.operation === "product.variant.update" && input.sku !== undefined) {
+    providerField = "sku"
+  }
+  if (
+    definition.operation === "inventory.update" &&
+    typeof input.variantId === "string" &&
+    input.variantId.includes(":")
+  ) {
+    providerField = "inventory"
+  }
+  if (providerField && input.mode !== "read" && input.mode !== "apply" && !input.change) {
+    let fields = ["amountMinor", "currency", "expectedAmountMinor", "targetPrices"]
+    if (providerField === "sku") {
+      fields = ["sku", "expectedSku"]
+    }
+    if (providerField === "inventory") {
+      fields = ["locationId", "quantityState", "quantity", "expectedQuantity", "reason"]
+    }
+    const change: JsonObject = { field: providerField }
+    for (const key of fields) {
+      if (input[key] !== undefined) {
+        change[key] = input[key]
+        delete input[key]
+      }
+    }
+    input.change = change
   }
   return { input, file }
 }

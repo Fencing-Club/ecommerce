@@ -526,6 +526,27 @@
       "when": 1792734415222,
       "tag": "0074_last_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792735413635,
+      "tag": "0075_outstanding_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792738352680,
+      "tag": "0076_aromatic_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1792740319979,
+      "tag": "0077_dry_ronan",
+      "breakpoints": true
     }
   ]
 }

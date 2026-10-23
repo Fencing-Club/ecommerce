@@ -23,7 +23,8 @@ import {
   supplierProductGroups,
   supplierProducts,
   jobs,
-  connectionSyncRuns
+  connectionSyncRuns,
+  channelListings
 } from "../src/db/schema"
 import {
   approveCliConsent,
@@ -150,6 +151,38 @@ beforeEach(async () => {
   access = (await login()).tokens.access_token
 })
 describe("CLI ingestion", () => {
+  it("reports listing price redactions and reapplies them to retained mutation receipts", async () => {
+    const id = randomUUID(),
+      amazonId = randomUUID()
+    await database
+      .insert(connections)
+      .values({ id: amazonId, orgId: workspaceId, provider: "amazon", externalId: "SELLER", encryptedToken: "private" })
+    await database.insert(channelListings).values({
+      id,
+      orgId: workspaceId,
+      connectionId: amazonId,
+      accountId: "SELLER",
+      marketplaceId: "ATVPDKIKX0DER",
+      sellerSku: "SKU",
+      productType: "PRODUCT",
+      fulfillmentMode: "fbm",
+      amountMinor: 3000,
+      currency: "USD",
+      observedAt: new Date(),
+      generation: randomUUID()
+    })
+    const input = { id, expectedRevision: 1, expectedLinkRevision: 0 }
+    expect((await call("product.listing.unlink", input, workspaceId, "unlink")).body.data.price.amountMinor).toBe(3000)
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { products: "edit" } })
+      .where(eq(memberships.orgId, workspaceId))
+    const replay = await call("product.listing.unlink", input, workspaceId, "unlink")
+    expect(replay.body.data.price).toBeNull()
+    expect(replay.body.meta.redactedFields).toEqual(["price"])
+    expect((await call("product.listing.show", { id })).body.meta.redactedFields).toEqual(["price"])
+    expect((await call("product.listing.list")).body.meta.redactedFields).toEqual(["items.*.price"])
+  })
   it("queues shared workers atomically, joins active work, and retains exact job identity", async () => {
     const key = randomUUID()
     const input = { id: connectionId, dataset: "all" }
@@ -1207,7 +1240,9 @@ describe("Restock operations", () => {
       source: { connectionId },
       variants: [{ price: { amountMinor: 500 } }]
     })
-    expect((await call("product.show", { id: product.id })).body.data).toEqual(product)
+    const detail = (await call("product.show", { id: product.id })).body.data
+    expect(detail).toMatchObject(product)
+    expect(detail.variants[0].writePolicy).toMatchObject({ skuScope: "shopify_only", preflightRequired: true })
     expect((await call("product.search", { query: "SKU-2" })).body.data.items).toHaveLength(1)
     const inventory = await call("inventory.list", { variantId: product.variants[0].id })
     expect(inventory.status).toBe(200)

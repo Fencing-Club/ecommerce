@@ -1,6 +1,6 @@
 # CLI implementation status
 
-Updated 2026-10-22. The original command inventory is the target contract; a command in client help is not proof of a deployed server handler. Use `schema list` and `schema show` for the current workspace's authorized capabilities.
+Updated 2026-10-23. The original command inventory is the target contract; a command in client help is not proof of a deployed server handler. Use `schema list` and `schema show` for the current workspace's authorized capabilities.
 
 ## Released
 
@@ -16,14 +16,21 @@ Production acceptance exercised authenticated reads, unchanged-value guarded pro
 
 ## Current implementation slice
 
-Connection `sync`, `sync show` and operational `status` reuse existing workers. Exact jobs are retained per run, grouped permissions are checked, and worker wakes follow the outer commit. See [connection sync](../../cli-connections.md). These changes require the current PR and its forward migration to pass CI and deployment before they are production capabilities.
+Connection `sync`, `sync show` and operational `status` shipped in PR #196, production commit
+`9dd3e0f031cd84a680223e7eab2abc94b675a4fd`. Exact jobs are retained per run, grouped permissions are checked, and worker
+wakes follow the outer commit. Production acceptance passed status, connection reads, sync schema discovery, Shopify
+product/inventory ingestion through a succeeded retained run, and replay of the same execution key without a new run.
+See [connection sync](../../cli-connections.md). No upstream product or inventory values were written.
 
 ## Remaining
 
-- Durable listing discovery/linking, write destinations, retained per-target execution and controlled Shopify SKU/cost/price/inventory and Amazon price/FBM inventory writes. No Amazon SKU rename handler is planned.
+PR #197 adds Amazon US discovery, guarded variant links and provider adapter primitives; see
+[CLI listings](../../cli-listings.md). It is merged and deployed to staging. That release keeps upstream writes disabled.
+
+- The [controlled provider-write slice](../../cli-provider-writes.md) implements destination discovery, retained single-record previews/executions, Shopify SKU/cost/price/inventory and linked Amazon price/manual-FBM writes. It still requires review, migration and deployment. No Amazon SKU rename handler is planned. General bulk writes, automatic supersession, inventory adjustments and unknown-outcome reconciliation remain unfinished.
 - Connection authorization lifecycle (connect/reconnect/disconnect).
 - Expenses, demand reporting, additional read/export coverage, buyer metadata imports/exports, labels/images, catalog removal/export, partner invitations/removal and addresses.
-- General bulk execution and immutable provider-write previews.
+- General bulk execution; single-record provider previews are included in the controlled write slice above.
 - Automation credential lifecycle, hosted MCP, publishable package distribution and native Linux/macOS credential-store acceptance. Packages remain private.
 - PO and shipment lifecycle commands, coordinated with their active app workflows.
 

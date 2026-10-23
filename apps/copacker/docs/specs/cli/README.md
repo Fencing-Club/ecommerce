@@ -1,12 +1,12 @@
 # Copacker CLI and MCP contract proposal
 
-Status: **application contract proposed; CLI client packages implemented**. The
+Status: **partially implemented and deployed; remaining operations proposed**. The
 [CLI package](../../../../../packages/copacker-cli/docs/README.md), shared client and portable registry now implement
-the command vocabulary and client protocol. The first server slice implements bearer/CLI authentication and account,
-workspace, discovery and connection handlers; see [CLI server](../../cli-server.md). The remaining domain handlers
-and hosted MCP are not yet implemented. This specification describes the full intended operational release.
-Ten setup operations now have executable schemas; see the [implementation and recovery audit](implementation.md)
-for the restored commits, current gaps and next work.
+the command vocabulary and client protocol. Server authentication, primary reads, restock reports, stock targets,
+supplier catalog/stock management and guarded local writes are implemented; see [CLI server](../../cli-server.md).
+Hosted MCP and several business workflows remain unimplemented. This specification describes the full intended
+operational release. See [implementation status](implementation.md) for deployed coverage and remaining work;
+client help alone does not prove that a command has a deployed handler.
 
 Copacker should expose its primary business data and the operations that maintain it: ingested customer orders,
 products, inventory, purchase orders, shipments, partners, connections and expenses. Restock adds Copacker's

@@ -1,6 +1,7 @@
 import { amazonAdsJob } from "./amazon-ads"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
 import { analyticsJob } from "./analytics-jobs"
+import { listingsJob } from "./channel-listings"
 import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { evidenceRecoveryJob } from "./evidence-recovery"
 import { importJob } from "./import-job"
@@ -10,6 +11,7 @@ import { jobPayloads, type JobKind } from "./job-payloads"
 import { defineJob, type JobDefinition } from "./job-runtime"
 import { shopifyCostJob } from "./job-shopify-cost"
 import { labelsJob } from "./label-release"
+import { providerWriteJob, providerWriteFailed } from "./provider-writes"
 import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
 import { shopifyComplianceJob } from "./shopify-compliance"
@@ -21,6 +23,14 @@ type JobRegistry = { [K in JobKind]: JobDefinition<K> }
 // Every kind of job: where it runs, what it carries and what runs it. Queue handlers finish within one queue delivery;
 // Workflow handlers can run for hours.
 const jobDefinitions = {
+  "provider-write": defineJob({
+    kind: "provider-write",
+    executor: "workflow",
+    payload: jobPayloads["provider-write"],
+    run: providerWriteJob,
+    onFailure: providerWriteFailed
+  }),
+  listings: defineJob({ kind: "listings", executor: "workflow", payload: jobPayloads.listings, run: listingsJob }),
   amazon: defineJob({
     kind: "amazon",
     executor: "workflow",

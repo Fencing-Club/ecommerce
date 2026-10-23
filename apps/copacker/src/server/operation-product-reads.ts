@@ -1,10 +1,10 @@
 import { inventoryReadOperations, productReadOperations, type metaSchema } from "@repo/copacker-contract"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import type { z } from "zod"
 import { db } from "@/db"
-import { connections, stockSnapshots } from "@/db/schema"
+import { connections, stockSnapshots, channelListings, inventoryLocationMappings } from "@/db/schema"
 import { can } from "@/lib/access"
-import { stockScopes } from "./inventory-connectors"
+import { stockScopes, inventoryLocationEnabled } from "./inventory-connectors"
 import { noDefaults, readProductDefaults } from "./product-defaults"
 import { readVariantFields } from "./product-fields"
 import { productList } from "./supplier-products"
@@ -17,7 +17,13 @@ export const scopedReadId = (connectionId: string, accountId: string, externalId
 
 export async function currentStock(orgId: string) {
   const accounts = await db()
-    .select({ id: connections.id, provider: connections.provider, accountId: connections.externalId })
+    .select({
+      id: connections.id,
+      provider: connections.provider,
+      accountId: connections.externalId,
+      scopes: connections.scopes,
+      inventoryLocations: connections.inventoryLocations
+    })
     .from(connections)
     .where(eq(connections.orgId, orgId))
   const snapshots = await db().select().from(stockSnapshots).where(eq(stockSnapshots.orgId, orgId))
@@ -217,6 +223,10 @@ export async function readInventory(s: Session) {
     }
   } else {
     const stocks = await currentStock(s.org.id)
+    const mappings = await db()
+      .select()
+      .from(inventoryLocationMappings)
+      .where(eq(inventoryLocationMappings.orgId, s.org.id))
     metadata = stockReadMeta(stocks)
     for (const { account, snapshot, source: stockSource } of stocks) {
       if (!snapshot?.data) {
@@ -237,7 +247,8 @@ export async function readInventory(s: Session) {
         values: Record<string, number | null>,
         unit: string,
         tracking: boolean | null,
-        kind: Balance["kind"]
+        kind: Balance["kind"],
+        writable = false
       ) => {
         const locationId = scopedReadId(account.id, account.accountId, location)
         locations.set(locationId, {
@@ -247,7 +258,7 @@ export async function readInventory(s: Session) {
           source: { ...source, externalId: location },
           ...evidence,
           quantityStates: Object.keys(values),
-          writable: false
+          writable: writable || (locations.get(locationId)?.writable ?? false)
         })
         for (const [quantityState, quantity] of Object.entries(values)) {
           items.push({
@@ -262,7 +273,7 @@ export async function readInventory(s: Session) {
             revision: null,
             ...evidence,
             tracking,
-            writable: false
+            writable: writable && (quantityState === "available" || quantityState === "on_hand")
           })
         }
       }
@@ -282,7 +293,22 @@ export async function readInventory(s: Session) {
               },
               row.unit,
               row.tracked,
-              row.bundle ? "channel_availability" : "reported"
+              row.bundle ? "channel_availability" : "reported",
+              row.tracked &&
+                !row.bundle &&
+                level.locationKind === "merchant" &&
+                can(s, "products", "edit") &&
+                can(s, "inventory", "edit") &&
+                account.scopes.split(/[ ,]+/).includes("write_inventory") &&
+                (mappings.find(
+                  (mapping) => mapping.shopifyDomain === account.accountId && mapping.locationId === level.locationId
+                )?.classification ?? "merchant") === "merchant" &&
+                inventoryLocationEnabled(account.inventoryLocations, {
+                  provider: "shopify",
+                  accountId: account.accountId,
+                  scope: "store",
+                  externalId: level.locationId
+                })
             )
           }
         }
@@ -327,6 +353,68 @@ export async function readInventory(s: Session) {
           )
         }
       }
+    }
+  }
+  if (s.org.kind === "buyer") {
+    const offers = await db()
+      .select({ listing: channelListings })
+      .from(channelListings)
+      .innerJoin(
+        connections,
+        and(
+          eq(connections.id, channelListings.connectionId),
+          eq(connections.orgId, channelListings.orgId),
+          eq(connections.externalId, channelListings.accountId)
+        )
+      )
+      .where(
+        and(
+          eq(channelListings.orgId, s.org.id),
+          eq(channelListings.active, true),
+          eq(channelListings.fulfillmentMode, "fbm")
+        )
+      )
+    const variants = new Set(
+      (await readProducts(s)).items.flatMap((product) => product.variants.map((variant) => variant.id))
+    )
+    for (const { listing } of offers) {
+      if (!listing.variantId || !variants.has(listing.variantId)) {
+        continue
+      }
+      const locationId = `listing:${listing.id}`
+      const writable = listing.inventoryOwner === "manual" && can(s, "products", "edit") && can(s, "inventory", "edit")
+      const source = {
+        connectionId: listing.connectionId,
+        accountId: listing.accountId,
+        provider: "amazon",
+        externalId: listing.sellerSku
+      }
+      const observedAt = listing.observedAt.toISOString()
+      locations.set(locationId, {
+        id: locationId,
+        name: `Amazon offer ${listing.sellerSku}`,
+        kind: "channel_availability",
+        source,
+        snapshotId: null,
+        observedAt,
+        quantityStates: ["available"],
+        writable
+      })
+      items.push({
+        variantId: listing.variantId,
+        locationId,
+        sku: listing.sellerSku,
+        source,
+        kind: "channel_availability",
+        quantityState: "available",
+        quantity: listing.quantity,
+        unit: "amazon_sellable_unit",
+        revision: listing.revision,
+        snapshotId: null,
+        observedAt,
+        tracking: true,
+        writable
+      })
     }
   }
   return { items, locations: [...locations.values()], metadata }

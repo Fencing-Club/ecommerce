@@ -133,7 +133,7 @@ function supplierName(field: { value: string } | null) {
   return value && value.toLowerCase() !== "none" ? value : null
 }
 
-function costMinor(amount: string, name = "unit cost") {
+export function costMinor(amount: string, name = "unit cost") {
   // Shopify returns prices such as "12.5" or "12.50".
   const match = amount.match(/^(\d+)(?:\.(\d{1,2})0*)?$/)
   if (!match) {
@@ -188,6 +188,7 @@ export function piecesPerUnit(catalog: Pick<CatalogVariant, "requiresComponents"
   return components.reduce((sum, component) => sum + component.quantity, 0)
 }
 export class ShopifyPermissionError extends Error {}
+export class ShopifyWriteRejected extends Error {}
 // Shopify answered with an HTTP error; the status says whether reconnecting (401, 403) or waiting (429, 5xx) helps.
 export class ShopifyRequestError extends Error {
   constructor(readonly status: number) {
@@ -594,7 +595,7 @@ export class Shopify {
         )
       )
     if (response.inventoryItemUpdate.userErrors.length) {
-      throw new Error("Shopify rejected unit cost update")
+      throw new ShopifyWriteRejected("Shopify rejected unit cost update")
     }
   }
   // Has Shopify send each topic's events to the address, adding only the subscriptions that are missing. Subscriptions

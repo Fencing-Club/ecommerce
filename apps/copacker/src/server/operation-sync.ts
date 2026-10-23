@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { amazonAdsConnections, connections, connectionSyncRuns, jobs, salesSyncs } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { queueAdsSync } from "./amazon-ads"
+import { queueListings } from "./channel-listings"
 import { CliError } from "./cli-auth"
 import { operationConnections } from "./operation-connections"
 import { requestSalesSync } from "./sales-orders"
@@ -18,7 +19,7 @@ const groups = {
     ["products", "inventory"],
     ["orders", "financial_transactions"]
   ],
-  amazon: [["inventory"], ["orders", "financial_transactions", "stock_history"]],
+  amazon: [["products"], ["inventory"], ["orders", "financial_transactions", "stock_history"]],
   ebay: [["orders"]],
   amazon_ads: [["ad_spend"]]
 } satisfies Record<string, Dataset[][]>
@@ -75,6 +76,9 @@ export async function startConnectionSync(
   if (provider === "amazon_ads") {
     jobIds.push(...(await queueAdsSync(s.org.id)))
   } else {
+    if (provider === "amazon" && datasets.includes("products")) {
+      jobIds.push(...(await queueListings(s.org.id, input.id, accountId)))
+    }
     if (datasets.includes("orders")) {
       await requestSalesSync(s.org, provider)
       const [sync] = await db()

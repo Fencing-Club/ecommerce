@@ -20,8 +20,11 @@ to publish operation descriptions and OpenAPI. It has no database, framework, pr
 - `setup.ts`: executable schemas for account reads, workspace reads, discovery and the five credential operations.
   Call `setupOperations(accessSchema)` with the application's existing access schema; page grants are not copied here.
   Credential result schemas reject secret fields, and credential administration has no MCP tool name.
+- `connections.ts`: connection reads/settings, sync requests, retained sync-run status and workspace operational status.
+- `listings.ts`: observed Amazon listing reads and guarded local variant links, including separate observation/link
+  revisions, unit mapping and explicit write-capability limits. No provider dispatch is authorized by a listing link.
 
-The registry is a framework, not a deployed catalog. Setup, connection, restock and sixteen resource-read operations have executable schemas;
+The registry is a framework, not a deployed catalog. Setup, connection, restock, targets, listing and resource-read operations have executable schemas;
 the [server guide](../../../apps/copacker/docs/cli-server.md) lists implemented handlers. Credential lifecycle handlers
 and the remaining domain schemas from [the spec](../../../apps/copacker/docs/specs/cli/operations/README.md) still need
 implementation and registration. Credential handlers must enforce current interactive-admin authority,
