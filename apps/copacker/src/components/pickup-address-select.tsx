@@ -35,16 +35,18 @@ export function PickupAddressSelect({
     <span className="flex min-w-0 flex-col gap-1 text-start whitespace-normal">
       <span className="font-medium">{location.name}</span>
       <span className="text-xs leading-relaxed text-muted-foreground">
-        {[
-          location.address.addressLine1,
-          location.address.addressLine2,
-          location.address.city,
-          location.address.stateOrRegion,
-          location.address.postalCode,
-          location.address.countryCode
-        ]
-          .filter(Boolean)
-          .join(", ")}
+        <bdi>
+          {[
+            location.address.addressLine1,
+            location.address.addressLine2,
+            location.address.city,
+            location.address.stateOrRegion,
+            location.address.postalCode,
+            location.address.countryCode
+          ]
+            .filter(Boolean)
+            .join(", ")}
+        </bdi>
       </span>
     </span>
   )

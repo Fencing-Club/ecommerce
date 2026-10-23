@@ -18,9 +18,10 @@ import { z } from "zod"
 import { useAction } from "@/hooks/use-action"
 import type { ActionFormOptions, FormSchema } from "@/hooks/use-action-form"
 import { useEdge } from "@/hooks/use-edge"
-import { formatPhone, phoneHref } from "@/lib/phone"
+import { formatPhone } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { AddressFields, emptyAddress } from "./address-fields"
+import { PhoneLink } from "./common"
 import { FormInput } from "./form-controls"
 import { FormDialog } from "./form-dialog"
 import { RowActionsMenu } from "./row-actions-menu"
@@ -45,14 +46,24 @@ export function AddressSummary({
   address: Partial<Address>
   className?: string
 }) {
-  const contact = [address.name, address.phoneNumber && formatPhone(address.phoneNumber)].filter(Boolean).join(", ")
+  const phone = address.phoneNumber && formatPhone(address.phoneNumber)
   return (
     <div className={cn("flex min-w-0 items-start gap-3 text-sm", className)}>
       <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="flex min-w-0 flex-col">
         {name && <span className="font-medium">{name}</span>}
-        <span className={cn(name && "text-muted-foreground")}>{addressLine(address)}</span>
-        {contact && <span className="text-xs text-muted-foreground">{contact}</span>}
+        <span className={cn(name && "text-muted-foreground")}>
+          <bdi>{addressLine(address)}</bdi>
+        </span>
+        {(address.name || phone) && (
+          <span className="text-xs text-muted-foreground">
+            <bdi>
+              {address.name}
+              {address.name && phone && ", "}
+              {phone && <span dir="ltr">{phone}</span>}
+            </bdi>
+          </span>
+        )}
       </div>
     </div>
   )
@@ -82,13 +93,13 @@ export function AddressRow({
           {name}
           {badge}
         </p>
-        <p className="text-muted-foreground">{addressLine(address)}</p>
+        <p className="text-muted-foreground">
+          <bdi>{addressLine(address)}</bdi>
+        </p>
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
           <span>{address.name}</span>
           {address.phoneNumber && (
-            <a className="tabular-nums hover:text-foreground hover:underline" href={phoneHref(address.phoneNumber)}>
-              {formatPhone(address.phoneNumber)}
-            </a>
+            <PhoneLink number={address.phoneNumber} className="hover:text-foreground hover:underline" />
           )}
           {address.email && (
             <a className="hover:text-foreground hover:underline" href={`mailto:${address.email}`}>

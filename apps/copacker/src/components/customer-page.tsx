@@ -33,7 +33,7 @@ export function CustomerPageView({
       icon: Phone,
       value: contact.phone ? formatPhone(contact.phone) : null,
       href: contact.phone ? phoneHref(contact.phone) : null,
-      numeric: true
+      phone: true
     },
     { icon: Globe, value: contact.website, href: contact.website }
   ].filter((row) => row.value)
@@ -84,7 +84,11 @@ export function CustomerPageView({
                     <li key={row.value} className="flex items-center gap-2">
                       <row.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                       {row.href ? (
-                        <a href={row.href} className={cn("truncate hover:underline", row.numeric && "tabular-nums")}>
+                        <a
+                          href={row.href}
+                          dir={row.phone ? "ltr" : undefined}
+                          className={cn("truncate hover:underline", row.phone && "tabular-nums")}
+                        >
                           {row.value}
                         </a>
                       ) : (

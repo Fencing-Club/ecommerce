@@ -10,6 +10,7 @@ import {
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import type { Messages } from "@/i18n/messages"
+import { formatPhone, phoneHref } from "@/lib/phone"
 import { type StatusTone, toneBadge } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
@@ -330,6 +331,24 @@ export function fileName(name: React.ReactNode, { title }: { title?: string } = 
     <span dir="ltr" title={title}>
       {name}
     </span>
+  )
+}
+
+// A phone number that calls it. The number runs left to right in every language: in Urdu, +86 579 8555 1234 would read
+// 1234 8555 579 86+.
+export function PhoneLink({
+  number,
+  countryCode,
+  className
+}: {
+  number: string
+  countryCode?: string
+  className?: string
+}) {
+  return (
+    <a dir="ltr" className={cn("tabular-nums", className)} href={phoneHref(number)}>
+      {formatPhone(number, countryCode)}
+    </a>
   )
 }
 

@@ -5,8 +5,8 @@ import { ArrowRight, Building2, CornerDownRight, MapPin, Truck, Warehouse } from
 import { Fragment, type ReactNode } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
-import { formatPhone, phoneHref } from "@/lib/phone"
 import { emptyAddress } from "./address-fields"
+import { PhoneLink } from "./common"
 import type { PartnerAddress } from "./partner-address"
 
 /** The same card surrounds editable packing fields and the submitted shipment details. */
@@ -92,7 +92,7 @@ export function ShipmentAddress({
         <div className="flex min-w-0 flex-col gap-1">
           {name && <p className="font-medium">{name}</p>}
           <p className={readOnly ? "text-sm text-muted-foreground" : "text-xs leading-relaxed text-muted-foreground"}>
-            {address}
+            <bdi>{address}</bdi>
           </p>
           {contact && <div className="text-xs text-muted-foreground">{contact}</div>}
         </div>
@@ -126,15 +126,11 @@ export function ShipmentOrigin({ origin, addresses }: { origin?: Partial<Address
       address={addressLine(shown)}
       contact={
         (shown.name || shown.phoneNumber) && (
-          <>
+          <bdi>
             {shown.name && <span>{shown.name}</span>}
             {shown.name && shown.phoneNumber && ", "}
-            {shown.phoneNumber && (
-              <a className="tabular-nums" href={phoneHref(shown.phoneNumber)}>
-                {formatPhone(shown.phoneNumber, shown.countryCode)}
-              </a>
-            )}
-          </>
+            {shown.phoneNumber && <PhoneLink number={shown.phoneNumber} countryCode={shown.countryCode} />}
+          </bdi>
         )
       }
     />

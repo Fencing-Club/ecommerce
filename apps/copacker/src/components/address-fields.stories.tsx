@@ -117,6 +117,17 @@ export const Filled = meta.story({
   }
 })
 
+// In Urdu what's typed reads in its own direction, so the street keeps its number first. The menus stay in Urdu.
+export const Urdu = meta.story({
+  args: { address: filled },
+  globals: { locale: "ur" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByDisplayValue("88 Harbor Road").matches(":dir(ltr)")).toBe(true)
+    await expect(canvas.getByDisplayValue("+86 574 8765 4321").matches(":dir(ltr)")).toBe(true)
+    await expect(canvas.getAllByRole("combobox").every((menu) => menu.matches(":dir(rtl)"))).toBe(true)
+  }
+})
+
 export const InternationalPhone = meta.story({
   args: { address: { ...filled, countryCode: "US", phoneNumber: "" } },
   play: async ({ canvas }) => {
