@@ -1,6 +1,6 @@
 # CLI server
 
-The server implements interactive CLI authentication and eleven operations against Copacker's database.
+The server implements interactive CLI authentication and twenty-seven operations against Copacker's database and connectors.
 It is not the entire planned command inventory. Discovery publishes only implemented, authorized handlers.
 
 ## Available operations
@@ -10,6 +10,8 @@ It is not the entire planned command inventory. Discovery publishes only impleme
 - `connection.list`, `connection.show`
 - `connection.settings.show`, `connection.settings.update`
 - `restock.channel.list`, `report.restock` ([report behavior and current boundaries](cli-restock.md))
+- Product, inventory/location, customer order, PO, shipment, partner and catalog reads
+  ([commands, permissions and current projection limits](cli-resource-reads.md)).
 
 Connections include saved Shopify, Amazon, eBay and Amazon Ads accounts. Reads omit provider credentials and do not
 probe providers. `authorization_unchecked` distinguishes a saved connection from freshly verified provider access.
@@ -43,6 +45,9 @@ Copacker's WorkOS sign-in, while CLI access has separate database grants and opa
 Token/revoke/operation routes are narrowly exempted from browser CSRF middleware because they authenticate independently.
 They reject browser cookies, Origin and Fetch Metadata headers; token forms also reject Authorization headers.
 Browser consent remains protected by both the middleware and its own exact-origin check. No CORS access is enabled.
+The approval page uses `same-origin` referrer policy so its native form retains the Origin header. Its redirect to
+the loopback callback uses `no-referrer`. The browser acceptance test exercises approval, token exchange, refresh and
+revocation; hand-built request fixtures alone cannot detect a browser suppressing the form's origin.
 Token and operation responses are private/no-store; errors never include provider failures, credentials or request bodies.
 
 The client serializes refresh, credential replacement and logout per local profile across processes. A crashed process

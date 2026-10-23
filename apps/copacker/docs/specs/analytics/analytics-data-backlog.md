@@ -377,9 +377,49 @@ pair contributing only once. No sync or backfill was started.
 - [x] Expose exact Shopify order/refund payment differences and pending/failed/foreign-presentment context without inferring causes.
 - [x] Expose signed financial-candidate differences and ambiguity; rank equal-signed reimbursement candidates without confirming links.
 - [x] Compare FBA received units to stored receipt movements by exact shipment/SKU, with account isolation and truncation blockers.
-- [ ] Deploy and verify this diagnostics follow-up against saved live evidence.
+- [x] Deploy and verify this diagnostics follow-up against saved live evidence (PR #71, October 19).
 
 Missing original `19235273231` remains unconfirmed. Its reversal is -$6.80; a same-SKU +$6.80 financial posting exists
 on September 11, 2025, before the report collection horizon of October 2025. The financial posting lacks the
 reimbursement ID, so this remains a candidate explanation. No older report was requested. AWD-to-FBA mappings,
 confirmed source/posting allocations, receipt dates, physical restoration and cost basis remain unresolved.
+
+### PR #71 acceptance: October 19, 2026 (Pacific)
+
+Deployed commit `dae10ab073f33a27324bda45ab9bbc5d808491c4` passed PR CI, staging and production release checks.
+Read-only live verification found the missing-original reversal now has only `missing_original`, without a false
+type mismatch. Ten of eleven September reimbursement families calculate; the missing original still withholds totals.
+All 13 stored report coverage windows are exposed. Neither missing product identifiers nor equal candidate amounts
+establish a confirmed original or posting allocation.
+
+The first 100 Shopify order snapshots contain 90 balanced current-total comparisons and ten differences, with 16
+duplicate payment copies excluded. FBA receipt comparisons cover 64 shipments and 475 item rows: 266 agree with stored
+movements, two differ, and 207 require review. The 12 AWD snapshots contain 33 item rows; FBA movement comparisons
+remain withheld pending explicit network and unit mapping. These are dated observations, not an October 22 refresh.
+No UX changes, sync, backfill or accounting writes were performed for this acceptance.
+
+### Next stored-evidence work (no backfill or UX)
+
+- [x] Implement FBA receipt coverage diagnostics (deployment and live acceptance pending). Shipment `FBA1911TQ9V7` records 59 mask-cord units received but has
+  only a +1 movement on October 18, 2025; `FBA1911VYJ2V` records 40 body-cord units received but has only a +1 movement
+  on October 25. Both shipment names indicate September, while stored movement coverage starts October 1. This is
+  evidence of a coverage concern, not proof of a 58- or 39-unit loss. Do not derive a receipt date from shipment names
+  or fabricate missing movements. Unknown receipt-period coverage must remain explicit, including for a lone -1
+  November movement on June-labelled shipment `FBA18XTP79L4`.
+- [x] Implement Shopify payment observations from explicit links and both currency representations (deployment and live acceptance pending). Six of the ten
+  sampled differences have equal CAD sale/refund amounts with differing stored USD values. One order has a pending
+  $14.38 refund, another a pending $15.86 manual sale, and another a failed PayPal refund. Preserve amounts and distinguish
+  observed payment state from confirmed settlement, FX accounting or a proven explanation for the full order difference.
+- [ ] Separate AWD inactive/not-final plans and balanced case receipts from unresolved physical transfers. The October 19
+  sample has five cancelled plans, three merchant-confirmed unused January 28 plans, three closed shipments with matching
+  case counts and one created plan. The merchant confirmation above applies only to those named plans; never infer that
+  every closed zero-receipt plan was unused. Case balance alone does not establish FBA transfers or per-case unit counts.
+- [ ] Resolve reimbursement allocations only when stored source identifiers or explicit reviewed allocation evidence
+  support the link. Original `19235273231` remains unresolved; same-SKU amount/date candidates are insufficient.
+
+### Open PR cleanup: October 22, 2026 (Pacific)
+
+PRs #69, #70 and #71 are merged and their dated acceptance is recorded above. PR #32 restores credential-safe Amazon Ads
+callback diagnostics on the current marketplace-package architecture; its refreshed implementation has local verification,
+but CI/review and deployment remain separate gates. PR #31 is documentation-only: the original migration-test additions
+are withdrawn under the repository's no-migration-tests rule. This backlog is specific to analytics, not overall app readiness.

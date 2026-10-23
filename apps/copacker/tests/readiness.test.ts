@@ -1,5 +1,5 @@
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import { describe, expect, it } from "vitest"
-import type { ShipmentState } from "../src/db/schema"
 import { knownPackingGroups, packingReadiness, releaseIssues } from "../src/server/readiness"
 import { documentRow, orderRecords, packingFor, shipmentRow } from "../src/stories/fixtures/logistics"
 import { daysAgo } from "../src/stories/fixtures/orders"

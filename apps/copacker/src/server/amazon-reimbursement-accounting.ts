@@ -103,6 +103,28 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     blockers.push("conflicting_item_identity")
   }
   const available = blockers.length === 0
+  const quantities = available
+    ? {
+        cash: family.reduce((sum, other) => sum + other.quantityCash!, 0),
+        inventory: family.reduce((sum, other) => sum + other.quantityInventory!, 0),
+        total: family.reduce((sum, other) => sum + other.quantityTotal!, 0),
+        unit: "provider_units"
+      }
+    : null
+  let recoveryOutcome = "unresolved"
+  if (quantities) {
+    if (quantities.cash < 0 || quantities.inventory < 0 || quantities.total < 0) {
+      recoveryOutcome = "net_negative_adjustment_reported"
+    } else if (quantities.cash > 0 && quantities.inventory > 0) {
+      recoveryOutcome = "cash_and_inventory_reported"
+    } else if (quantities.cash > 0) {
+      recoveryOutcome = "cash_reported"
+    } else if (quantities.inventory > 0) {
+      recoveryOutcome = "inventory_reported"
+    } else {
+      recoveryOutcome = "no_net_units_reported"
+    }
+  }
   return {
     rootReimbursementId: rootId,
     originalLookup: {
@@ -115,14 +137,9 @@ export function reimbursementAccounting(row: ReimbursementRecord, records: Reimb
     status: available ? "report_family_calculated" : "requires_review",
     blockers,
     signedReportAmounts: available ? moneyTotals(amounts.filter((value) => value !== null)) : null,
-    quantities: available
-      ? {
-          cash: family.reduce((sum, other) => sum + other.quantityCash!, 0),
-          inventory: family.reduce((sum, other) => sum + other.quantityInventory!, 0),
-          total: family.reduce((sum, other) => sum + other.quantityTotal!, 0),
-          unit: "provider_units"
-        }
-      : null,
+    quantities,
+    recoveryOutcome,
+    recoveryOutcomeMeaning: "net_reported_units_not_confirmed_payment_or_stock_receipt",
     totalsMeaning: "family_context_repeated_per_row_do_not_sum",
     coverage: "stored_records_only",
     financialPostingReconciled: false,

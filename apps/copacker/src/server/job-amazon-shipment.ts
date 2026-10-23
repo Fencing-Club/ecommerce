@@ -2,6 +2,7 @@ import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
 import { buildAwdRequest } from "@repo/copacker-shipments"
 import { amazonReference } from "@repo/copacker-shipments/amazon-inbound"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
+import { amazonRequestStates } from "@repo/copacker-shipments/states"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { shipments, orders } from "@/db/schema"
@@ -20,7 +21,7 @@ export async function amazonShipmentJob(input: JobInput<"amazon">, { assertOwned
   await assertOwned()
   const { shipmentId, revision } = input
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
-  if (!shipment || shipment.revision !== revision || !["queued", "creating"].includes(shipment.status)) {
+  if (!shipment || shipment.revision !== revision || !amazonRequestStates.includes(shipment.status)) {
     return
   }
   if (!shipment.packing || !shipment.snapshot) {
@@ -33,7 +34,7 @@ export async function amazonShipmentJob(input: JobInput<"amazon">, { assertOwned
       and(
         eq(shipments.id, shipmentId),
         eq(shipments.revision, revision),
-        inArray(shipments.status, ["queued", "creating"])
+        inArray(shipments.status, [...amazonRequestStates])
       )
     )
     .returning({ id: shipments.id })
@@ -206,7 +207,7 @@ export async function amazonShipmentFailed(
       and(
         eq(shipments.id, shipmentId),
         eq(shipments.revision, revision),
-        inArray(shipments.status, ["queued", "creating"])
+        inArray(shipments.status, [...amazonRequestStates])
       )
     )
 }

@@ -11,7 +11,7 @@ import {
   newCatalog,
   wholesaleCatalog
 } from "@/stories/fixtures/supplier"
-import { shownDialog, chooseOption, shownAlertDialog } from "@/stories/play"
+import { chooseMenuItem, chooseOption, shownAlertDialog, shownDialog } from "@/stories/play"
 import { CatalogEditor } from "./catalog-editor"
 
 // What the form sent: each save's body and each delete's catalog.
@@ -387,8 +387,7 @@ export const DeleteOffline = meta.story({
     msw.use(http.delete("/api/catalogs/:id", () => HttpResponse.error()))
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More actions" }), "Delete catalog")
     await userEvent.click((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" }))
     // The confirmation hides the rest of the page until it closes, save bar included.
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
@@ -396,8 +395,7 @@ export const DeleteOffline = meta.story({
       await saveBar().findByText("Couldn’t reach Copacker. Check your connection and try again.")
     ).toBeVisible()
     await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
-    await userEvent.click(canvas.getByRole("button", { name: "More actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete catalog" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "More actions" }), "Delete catalog")
     await expect((await shownAlertDialog()).getByRole("button", { name: "Delete catalog" })).toBeEnabled()
   }
 })

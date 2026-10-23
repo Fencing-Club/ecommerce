@@ -1,6 +1,6 @@
 import { gzipSync } from "node:zlib"
 import { describe, expect, it, vi } from "vitest"
-import { AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "../src/amazon-ads"
+import { AdsProfileError, AdsRequestError, adsToken, AmazonAds, downloadAdsReport } from "../src/amazon-ads"
 
 const app = { clientId: "ads-client", clientSecret: "ads-secret" }
 const profile = {
@@ -12,6 +12,17 @@ const profile = {
 }
 
 describe("Amazon Ads client", () => {
+  it.each([
+    { profiles: [], reason: "no_profiles" },
+    { profiles: [{ ...profile, accountInfo: { ...profile.accountInfo, type: "vendor" } }], reason: "seller_mismatch" },
+    { profiles: [{ ...profile, countryCode: "DE" }], reason: "unsupported_region" }
+  ])("rejects $reason before requesting account mappings", async ({ profiles, reason }) => {
+    const transport = vi.fn<typeof fetch>(async () => Response.json(profiles))
+    const result = new AmazonAds(app, "access", transport).profiles("SELLER1")
+    await expect(result).rejects.toBeInstanceOf(AdsProfileError)
+    await expect(result).rejects.toMatchObject({ reason, received: profiles.length })
+    expect(transport).toHaveBeenCalledTimes(1)
+  })
   it("asks for tokens with the Ads app's own credentials, form-encoded", async () => {
     const transport = vi.fn<typeof fetch>(async () => Response.json({ access_token: "access" }))
     await expect(adsToken(app, { grant_type: "refresh_token", refresh_token: "r" }, transport)).resolves.toEqual({
