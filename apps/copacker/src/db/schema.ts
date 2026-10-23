@@ -180,7 +180,7 @@ export const providerWriteLocks = pgTable("provider_write_locks", {
   key: text().primaryKey(),
   executionId: uuid()
     .notNull()
-    .references(() => providerWrites.id, { onDelete: "restrict" })
+    .references(() => providerWrites.id, { onDelete: "cascade" })
 })
 export const channelListings = pgTable(
   "channel_listings",

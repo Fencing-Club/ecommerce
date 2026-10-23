@@ -2,7 +2,7 @@ import { canonicalJson, type productReadOperations } from "@repo/copacker-contra
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { amazonListingValues, readAmazonListing, readShopifyWrite } from "@repo/copacker-marketplaces/listing-writes"
 import { shopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import type { z } from "zod"
 import { db } from "@/db"
 import { channelListings, connections, inventoryLocationMappings } from "@/db/schema"
@@ -24,7 +24,10 @@ export async function productWritePolicy(
     return product
   }
   const accounts = await db().select().from(connections).where(eq(connections.orgId, s.org.id))
-  const links = await db().select().from(channelListings).where(eq(channelListings.orgId, s.org.id))
+  const links = await currentLinks(
+    s.org.id,
+    product.variants.map((variant) => variant.id)
+  )
   return {
     ...product,
     variants: product.variants.map((variant) => {
@@ -81,6 +84,61 @@ export async function productWritePolicy(
       }
     })
   }
+}
+
+async function currentLinks(orgId: string, variantIds: string[]) {
+  if (!variantIds.length) {
+    return []
+  }
+  return (
+    await db()
+      .select({ listing: channelListings })
+      .from(channelListings)
+      .innerJoin(
+        connections,
+        and(
+          eq(connections.id, channelListings.connectionId),
+          eq(connections.orgId, channelListings.orgId),
+          eq(connections.externalId, channelListings.accountId)
+        )
+      )
+      .where(and(eq(channelListings.orgId, orgId), inArray(channelListings.variantId, variantIds)))
+  ).map(({ listing }) => listing)
+}
+
+// Only local revisions and routing choices belong in the short enqueue transaction.
+export async function writeDependencies(orgId: string, variantId: string) {
+  const accounts = await db()
+    .select({
+      id: connections.id,
+      provider: connections.provider,
+      accountId: connections.externalId,
+      revision: connections.revision,
+      inventoryLocations: connections.inventoryLocations
+    })
+    .from(connections)
+    .where(eq(connections.orgId, orgId))
+    .orderBy(connections.id)
+  const links = await db()
+    .select({
+      id: channelListings.id,
+      revision: channelListings.revision,
+      linkRevision: channelListings.linkRevision,
+      active: channelListings.active
+    })
+    .from(channelListings)
+    .where(and(eq(channelListings.orgId, orgId), eq(channelListings.variantId, variantId)))
+    .orderBy(channelListings.id)
+  const locations = await db()
+    .select({
+      domain: inventoryLocationMappings.shopifyDomain,
+      locationId: inventoryLocationMappings.locationId,
+      revision: inventoryLocationMappings.revision
+    })
+    .from(inventoryLocationMappings)
+    .where(eq(inventoryLocationMappings.orgId, orgId))
+    .orderBy(inventoryLocationMappings.shopifyDomain, inventoryLocationMappings.locationId)
+  return hash(canonicalJson({ accounts, links, locations }))
 }
 
 export async function targetAccount(
@@ -303,10 +361,7 @@ export async function resolveWrite(s: Session, input: z.infer<typeof writeIntent
     submissionId: null,
     attempts: 0
   }
-  const linked = await db()
-    .select()
-    .from(channelListings)
-    .where(and(eq(channelListings.orgId, s.org.id), eq(channelListings.variantId, input.variantId)))
+  const linked = await currentLinks(s.org.id, [input.variantId])
   let requiredLinks: typeof linked = []
   if (change.field === "price") {
     requiredLinks = linked
@@ -356,7 +411,11 @@ export async function resolveWrite(s: Session, input: z.infer<typeof writeIntent
   }
   for (const link of requiredLinks) {
     if (!link.active || link.marketplaceId !== usMarketplaceId || !link.piecesPerListing) {
-      throw new CliError("unsupported_target", "A linked listing is inactive or has an unsupported basis.", 409)
+      throw new CliError(
+        "unsupported_target",
+        `Unlink or correct listing ${link.id}: it is inactive or has an unsupported basis.`,
+        409
+      )
     }
     const [destination] = await db()
       .select()

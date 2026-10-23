@@ -8,8 +8,9 @@ vocabulary in [the application spec](../../../apps/copacker/docs/specs/cli/comma
 discovery, connection reads/settings and restock are implemented, along with the first
 [resource reads](../../../apps/copacker/docs/cli-resource-reads.md). Supplier catalogs, partner edits, supplier products,
 buyer product metadata, supplier inventory and entity import/export handlers are implemented
-([supported writes](../../../apps/copacker/docs/cli-entity-writes.md)). Provider writes and automation issuance remain
-unfinished. Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
+([supported writes](../../../apps/copacker/docs/cli-entity-writes.md)). Controlled provider writes require the
+[provider-write server release](../../../apps/copacker/docs/cli-provider-writes.md); automation issuance remains unfinished.
+Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
 claim that a server has enabled that capability. The package remains private. Authentication, resource reads, restock,
 targets and the documented guarded entity writes have been deployed and accepted against production. See
@@ -44,13 +45,14 @@ copacker po show <po-id> --json
 copacker shipment list --json
 ```
 
-The remaining planned workflows require their resource handlers before they can run:
+The provider-write server release supports retained preview/apply:
 
 ```sh
 copacker product price update <variant-id> --amount 19.95 --currency USD --dry-run --json
 copacker product price update <variant-id> --preview <preview-id> --wait --json
-copacker order export --file-format csv --wait --output ./orders.csv --json
 ```
+
+Other planned workflows, such as `order export`, still require their corresponding resource handlers.
 
 Use `--input file.json` or `--input -` for complete structured inputs and bulk rows. Schemas from `schema show` determine
 required revisions, dependencies, allowed fields and permissions. Supplying a field both in JSON and as a flag fails.

@@ -12,8 +12,8 @@ import {
   providerWrites
 } from "../src/db/schema"
 import { writeDestinations, writeIntent, type WriteDestination } from "../src/server/provider-write-model"
-import { providerWrite, providerWriteJob } from "../src/server/provider-writes"
-import { database, setUpTestDatabase, withTransaction } from "./test-db"
+import { providerWrite, providerWriteJob, prepareProviderWrite } from "../src/server/provider-writes"
+import { database, db, setUpTestDatabase, withTransaction } from "./test-db"
 import { testSession } from "./test-session"
 
 vi.mock("@/db", () => import("./test-db"))
@@ -23,7 +23,11 @@ const io = vi.hoisted(() => ({
   shopify: vi.fn<() => Promise<void>>(),
   amazon: vi.fn<() => Promise<{ sku: string; status: "ACCEPTED"; submissionId: string }>>()
 }))
-vi.mock("../src/server/provider-write-routing", () => ({ resolveWrite: io.resolve, observeTarget: io.observe }))
+vi.mock("../src/server/provider-write-routing", async (original) => ({
+  ...(await original<typeof import("../src/server/provider-write-routing")>()),
+  resolveWrite: io.resolve,
+  observeTarget: io.observe
+}))
 vi.mock("../src/server/connections", () => ({
   shopifyFor: async () => ({ unitCost: io.shopify }),
   amazonFor: async () => ({})
@@ -76,8 +80,12 @@ const intent = () =>
     expectedConnectionRevision: 0,
     change: { field: "price", amountMinor: 1200, currency: "USD", expectedAmountMinor: 1000 }
   })
-const call = (input: Parameters<typeof providerWrite>[3]) =>
-  database.transaction((tx) => withTransaction(tx, () => providerWrite(s, grantId, "product.price.update", input)))
+const call = async (input: Parameters<typeof providerWrite>[3]) => {
+  const prepared = await prepareProviderWrite(s, "product.price.update", input)
+  return database.transaction((tx) =>
+    withTransaction(tx, () => providerWrite(s, grantId, "product.price.update", input, prepared))
+  )
+}
 beforeEach(async () => {
   await database.delete(jobs)
   await database.delete(cliGrants)
@@ -103,6 +111,30 @@ async function run() {
   return { write: write!, context, input: { orgId, executionId: write!.id } }
 }
 describe("retained provider execution", () => {
+  it("reads providers outside the transaction and rejects local routing changes before commit", async () => {
+    io.resolve.mockImplementation(async () => {
+      expect(db()).toBe(database)
+      return [target("shopify"), target("amazon")]
+    })
+    const input = intent()
+    const prepared = await prepareProviderWrite(s, "product.price.update", input)
+    await database.update(connections).set({ revision: 1 }).where(eq(connections.id, connectionId))
+    await expect(
+      database.transaction((tx) =>
+        withTransaction(tx, () => providerWrite(s, grantId, "product.price.update", input, prepared))
+      )
+    ).rejects.toThrow("Routing changed")
+    expect(await database.select().from(providerWrites)).toEqual([])
+    expect(await database.select().from(jobs)).toEqual([])
+  })
+  it("removes retained locks when their workspace is deleted", async () => {
+    await call(intent())
+    await database.delete(connections).where(eq(connections.orgId, orgId))
+    await database.delete(memberships).where(eq(memberships.orgId, orgId))
+    await database.delete(organizations).where(eq(organizations.id, orgId))
+    expect(await database.select().from(providerWriteLocks)).toEqual([])
+    expect(await database.select().from(providerWrites)).toEqual([])
+  })
   it("rejects expired previews, mismatched variants and changed destinations without queuing", async () => {
     const preview = await call({ ...intent(), mode: "preview" })
     if (!("previewId" in preview)) {

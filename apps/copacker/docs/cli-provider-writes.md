@@ -38,6 +38,8 @@ only `previewId` and an optional matching variant ID; it rechecks dependencies a
 Direct mode requires `expectedConnectionRevision` and the expected source value (`expectedSku`, `expectedAmountMinor`
 or `expectedQuantity`). `expectedLinks` contains every affected listing's ID, observation revision and link revision.
 Local metadata and supplier count contracts remain separate branches; do not mix local fields and provider changes.
+Supplier count previews return reviewed rows, not a retained provider preview ID. Save those rows in direct mode with
+their expected revisions; `--preview <id>` applies only the retained provider workflow described here.
 
 Inventory writes require an explicit location and quantity state. Shopify writes use the existing location selection
 and classification, allow only tracked non-bundle merchant locations, and send `changeFromQuantity` plus an idempotency
@@ -46,7 +48,8 @@ explicit manual ownership is recorded on its link. This is seller-offer units, n
 does not disable another application's sync; keep externally controlled offers marked external.
 
 Execution is retained before dispatch. All targets are preflighted before the first effect and again individually
-before sending. Requests to the same provider field serialize across CLI executions; an overlapping new execution
+before sending. Request-time provider reads run outside database transactions; the short commit rechecks local routing
+revisions, permissions and field ownership before retaining the execution. Requests to the same provider field serialize across CLI executions; an overlapping new execution
 returns `write_in_progress`. A source failure prevents dependent channel writes. Accepted Amazon submissions remain
 pending until readback confirms the desired value. Results report every destination and partial outcomes.
 

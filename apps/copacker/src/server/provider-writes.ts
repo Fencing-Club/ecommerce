@@ -21,7 +21,7 @@ import { withJobWake, withDeferredJobWake } from "./job-delivery"
 import { jobRow } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
 import { writeDestinations, writeIntent, type WriteDestination } from "./provider-write-model"
-import { observeTarget, resolveWrite } from "./provider-write-routing"
+import { observeTarget, resolveWrite, writeDependencies } from "./provider-write-routing"
 import { refreshStock } from "./stock"
 import type { Session } from "./workspace-session"
 
@@ -100,11 +100,55 @@ async function readWrite(s: Session, operation: string, id: string) {
   requireWriteAccess(s, writeIntent.parse(row.intent).change.field)
   return row
 }
+export type PreparedWrite = { intent: z.infer<typeof writeIntent>; targets: WriteDestination[]; dependencies: string }
+export async function prepareProviderWrite(
+  s: Session,
+  operation: string,
+  value: unknown
+): Promise<PreparedWrite | undefined> {
+  if (
+    !["product.variant.update", "product.price.update", "product.cost.update", "inventory.update"].includes(operation)
+  ) {
+    return
+  }
+  const parsed = providerWriteInput.safeParse(value)
+  if (!parsed.success || parsed.data.mode === "read") {
+    return
+  }
+  const input = parsed.data
+  if (s.org.kind !== "buyer") {
+    throw new CliError("forbidden", "Provider writes require a buyer workspace.", 403)
+  }
+  let intent: z.infer<typeof writeIntent>
+  if (input.mode === "apply") {
+    const row = await readWrite(s, operation, input.previewId)
+    if (row.status !== "preview") {
+      return
+    }
+    if (input.variantId && input.variantId !== row.variantId) {
+      throw new CliError("invalid_input", "This preview belongs to a different variant.")
+    }
+    if (row.expiresAt.getTime() <= Date.now()) {
+      throw new CliError("preview_expired", "Create a fresh preview.", 409)
+    }
+    intent = writeIntent.parse(row.intent)
+  } else {
+    intent = input
+  }
+  requireWriteAccess(s, intent.change.field)
+  const dependencies = await writeDependencies(s.org.id, intent.variantId)
+  const targets = await resolveWrite(s, intent)
+  if (dependencies !== (await writeDependencies(s.org.id, intent.variantId))) {
+    throw new CliError("dependency_changed", "Routing changed during provider reads. Review again.", 409)
+  }
+  return { intent, targets, dependencies }
+}
 export async function providerWrite(
   s: Session,
   grantId: string,
   operation: string,
-  input: z.infer<typeof providerWriteInput>
+  input: z.infer<typeof providerWriteInput>,
+  prepared?: PreparedWrite
 ) {
   if (s.org.kind !== "buyer") {
     throw new CliError("forbidden", "Provider writes require a buyer workspace.", 403)
@@ -145,13 +189,15 @@ export async function providerWrite(
     if (row.expiresAt.getTime() <= Date.now()) {
       throw new CliError("preview_expired", "Create a fresh preview.", 409)
     }
-    const fresh = await resolveWrite(s, writeIntent.parse(row.intent))
-    if (canonicalJson(fresh) !== canonicalJson(row.targets)) {
+    if (!prepared || canonicalJson(prepared.targets) !== canonicalJson(row.targets)) {
       throw new CliError("dependency_changed", "Preview dependencies changed. Review again.", 409)
     }
   } else {
     requireWriteAccess(s, input.change.field)
-    const targets = await resolveWrite(s, input)
+    if (!prepared) {
+      throw new CliError("dependency_changed", "Prepare the provider change before committing it.", 409)
+    }
+    const targets = prepared.targets
     const [created] = await db()
       .insert(providerWrites)
       .values({
@@ -160,16 +206,19 @@ export async function providerWrite(
         grantId,
         operation,
         variantId: input.variantId,
-        intent: input,
+        intent: prepared.intent,
         targets,
         status: "preview",
         expiresAt: new Date(Date.now() + 86400_000)
       })
       .returning()
     row = created!
-    if (input.mode === "preview") {
-      return result(row)
-    }
+  }
+  if (!prepared || prepared.dependencies !== (await writeDependencies(s.org.id, row.variantId))) {
+    throw new CliError("dependency_changed", "Routing changed before this change was retained. Review again.", 409)
+  }
+  if (input.mode === "preview") {
+    return result(row)
   }
   const targets = writeDestinations.parse(row.targets)
   // Acquire every field before any dispatch. Conflicting accepted/uncertain requests retain their locks.

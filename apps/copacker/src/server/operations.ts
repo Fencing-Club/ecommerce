@@ -65,7 +65,7 @@ import { operationRestockChannels, operationRestockReport, restockDefinitions } 
 import { readShipments } from "./operation-shipment-reads"
 import { readConnectionSync, startConnectionSync, workspaceSyncStatus } from "./operation-sync"
 import { productWritePolicy } from "./provider-write-routing"
-import { providerWrite } from "./provider-writes"
+import { providerWrite, prepareProviderWrite, type PreparedWrite } from "./provider-writes"
 import { restockTargetReport } from "./restock-page"
 import { restockPriceFields } from "./restock-plan"
 import { hash, sign, verifySignature } from "./security"
@@ -85,6 +85,7 @@ type Context = {
   input: unknown
   executor: Executor
   responseMeta: Partial<z.infer<typeof metaSchema>>
+  preparedWrite?: PreparedWrite
 }
 const setup = setupOperations(accessSchema)
 const member = (context: Context) => Boolean(context.session)
@@ -215,15 +216,15 @@ const entries: Entry[] = [
     (input, context) => productSettings(session(context), input.id)
   ),
   entry(providerWriteOperations["product.price.update"], productEdit, (input, context) =>
-    providerWrite(session(context), context.principal.grantId, context.operation, input)
+    providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
   ),
   entry(providerWriteOperations["product.cost.update"], productEdit, (input, context) =>
-    providerWrite(session(context), context.principal.grantId, context.operation, input)
+    providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
   ),
   entry(providerWriteOperations["product.variant.update"], productEdit, (input, context) =>
     "fields" in input
       ? updateCliVariant(session(context), input)
-      : providerWrite(session(context), context.principal.grantId, context.operation, input)
+      : providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
   ),
   entry(importDefinitions["product.import"], supplierProductsEdit, (input, context) =>
     importFile(session(context), input, false)
@@ -275,7 +276,7 @@ const entries: Entry[] = [
       (productEdit(context) && context.session !== null && can(context.session, "inventory", "edit")),
     (input, context) =>
       "change" in input || input.mode === "apply" || input.mode === "read"
-        ? providerWrite(session(context), context.principal.grantId, context.operation, input)
+        ? providerWrite(session(context), context.principal.grantId, context.operation, input, context.preparedWrite)
         : updateSupplierInventory(session(context), input)
   ),
   entry(catalogWriteDefinitions["catalog.create"], catalogEdit, (input, context) =>
@@ -681,6 +682,17 @@ async function mutation(
     throw new CliError("idempotency_key_required", "Supply an Idempotency-Key for this change.")
   }
   const s = session(context)
+  const where = and(
+    eq(operationReceipts.userId, s.user.id),
+    eq(operationReceipts.orgId, s.org.id),
+    eq(operationReceipts.operation, context.operation),
+    eq(operationReceipts.key, key)
+  )
+  const [existing] = await db().select({ key: operationReceipts.key }).from(operationReceipts).where(where)
+  // Provider reads must not hold membership, receipt, workspace or connection locks. Replay skips them.
+  if (!existing) {
+    context.preparedWrite = await prepareProviderWrite(s, context.operation, input)
+  }
   return db().transaction(async (tx) => {
     const [grant] = await tx.select().from(cliGrants).where(eq(cliGrants.id, context.principal.grantId)).for("share")
     if (!grant || grant.revokedAt || grant.expiresAt.getTime() <= Date.now()) {
@@ -706,12 +718,6 @@ async function mutation(
     const retainedReport = context.operation === "report.restock"
     const fingerprint = hash(
       canonicalJson(retainedReport ? { input, role: fresh.session.role, access: fresh.session.access } : input)
-    )
-    const where = and(
-      eq(operationReceipts.userId, s.user.id),
-      eq(operationReceipts.orgId, s.org.id),
-      eq(operationReceipts.operation, context.operation),
-      eq(operationReceipts.key, key)
     )
     const created = await tx
       .insert(operationReceipts)

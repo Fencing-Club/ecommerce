@@ -115,6 +115,14 @@ beforeEach(async () => {
 })
 const preview = (change: unknown) => writeIntent.parse({ mode: "preview", variantId: "variant", change })
 describe("provider field routing", () => {
+  it("omits links from replaced accounts and identifies retired links that need unlinking", async () => {
+    const change = { field: "price", amountMinor: 1200, currency: "USD" }
+    await database.update(channelListings).set({ active: false }).where(eq(channelListings.id, listingId))
+    await expect(resolveWrite(s, preview(change))).rejects.toThrow(listingId)
+    await database.update(connections).set({ externalId: "REPLACED" }).where(eq(connections.id, ids.amazon))
+    expect((await resolveWrite(s, preview(change))).map((target) => target.provider)).toEqual(["shopify"])
+    expect(api.request).not.toHaveBeenCalled()
+  })
   it("pins Shopify-only SKU ownership and actual scopes", async () => {
     const input = preview({ field: "sku", sku: "NEW" })
     const targets = await resolveWrite(s, input)
