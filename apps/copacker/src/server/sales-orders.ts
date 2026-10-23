@@ -40,6 +40,7 @@ import { queueShopifyEconomics } from "./analytics-jobs"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { errorText, ReconnectRequiredError } from "./errors"
+import { queueEvidenceRecovery } from "./evidence-recovery"
 import { syncExchangeRates } from "./exchange-rates"
 import { syncAutomaticDepletions } from "./inventory-auto-import"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
@@ -312,7 +313,11 @@ export async function salesJob(
         { run: () => syncInboundShipments(input, assertOwned), onFailure: { log: "inbound_shipments_failed" } },
         { run: () => syncAmazonReceipts(input, assertOwned), onFailure: "fail" },
         { run: () => syncAmazonExtraEvidence(input, assertOwned), onFailure: "fail" },
-        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } }
+        { run: () => syncExchangeRates(orgId), onFailure: { log: "exchange_rates_failed" } },
+        {
+          run: () => queueEvidenceRecovery({ orgId, source: "amazon", externalAccountId: account, revision }),
+          onFailure: "fail"
+        }
       ]
       const marketplaces = await amazonSalesMarketplaces(account, client)
       // Older periods come from Amazon's order report, one report per period, which is much faster than the order

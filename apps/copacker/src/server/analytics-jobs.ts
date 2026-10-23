@@ -1,5 +1,6 @@
 import { db } from "@/db"
 import { jobs, salesSyncs } from "@/db/schema"
+import { queueEvidenceRecovery } from "./evidence-recovery"
 import { withJobWake } from "./job-delivery"
 import { jobRow, type JobInput, type JobPayload } from "./job-payloads"
 import { PollAgain, type JobContext } from "./job-runtime"
@@ -33,4 +34,5 @@ export async function analyticsJob(input: JobInput<"analytics">, { assertOwned }
   if (result.hasMore) {
     throw new PollAgain("Shopify financial history continues from the saved page", { progressed: true })
   }
+  await queueEvidenceRecovery({ ...input, source: "shopify" })
 }

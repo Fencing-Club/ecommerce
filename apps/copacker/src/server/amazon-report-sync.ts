@@ -225,12 +225,12 @@ export function defineMonthlyReport<
       }
     })
 
-  async function sync(input: AmazonReportInput, assertOwned: () => Promise<void>, now = new Date()) {
+  async function sync(input: AmazonReportInput, assertOwned: () => Promise<void>, now = new Date(), target?: Window) {
     const { orgId, externalAccountId, revision } = input
     const startedAt = Date.now()
     const account = { orgId, externalAccountId, marketplaceId: usMarketplaceId }
     const saved = await readReports(db(), account)
-    const windows = monthlyReportWindows(now, source.wholeMonths)
+    const windows = target ? [target] : monthlyReportWindows(now, source.wholeMonths)
     // Spend the provider's limited report budget on missing history before refreshing covered months.
     // Rotate attempted gaps by their last attempt so a throttled recent month cannot starve older history.
     windows.sort((a, b) => {
@@ -260,17 +260,22 @@ export function defineMonthlyReport<
       )
       .sort((a, b) => a.checkedAt.getTime() - b.checkedAt.getTime())[0]
     const scope = { orgId, source: "amazon" as const, revision, externalAccountId }
-    const requests = source.combineMonths
-      ? [
-          {
-            from: new Date(Math.min(...windows.map((window) => window.from.getTime()))),
-            to: new Date(Math.max(...windows.map((window) => window.to.getTime())))
-          }
-        ]
-      : windows
+    const requests =
+      source.combineMonths && !target
+        ? [
+            {
+              from: new Date(Math.min(...windows.map((window) => window.from.getTime()))),
+              to: new Date(Math.max(...windows.map((window) => window.to.getTime())))
+            }
+          ]
+        : windows
     for (const window of requests) {
-      const periods = source.combineMonths ? windows : [window]
+      const periods = source.combineMonths && !target ? windows : [window]
       const previous = saved.find((report) => report.from.getTime() === window.from.getTime())
+      // Targeted recovery never refreshes a period that already has complete evidence.
+      if (target && previous?.coveredTo && previous.coveredTo >= window.to) {
+        continue
+      }
       // Refresh the newest two months and incomplete windows; rotate one older stale successful month per run.
       if (
         !source.combineMonths &&
@@ -403,5 +408,19 @@ export function defineMonthlyReport<
     return { ...source.status, ...monthlyReportStatus(saved, now, source.wholeMonths) }
   }
 
-  return { reportType: source.reportType, sync, status }
+  async function recover(input: AmazonReportInput, assertOwned: () => Promise<void>, window: Window) {
+    const now = new Date()
+    invariant(
+      window.from.getUTCDate() === 1 &&
+        window.from.getTime() === Date.UTC(window.from.getUTCFullYear(), window.from.getUTCMonth(), 1) &&
+        window.to.getTime() === Date.UTC(window.from.getUTCFullYear(), window.from.getUTCMonth() + 1, 1) &&
+        window.to <= now,
+      "Recovery requires one completed calendar month"
+    )
+    await sync(input, assertOwned, now, window)
+    return (await readReports(db(), { ...input, marketplaceId: usMarketplaceId })).find(
+      (row) => row.from.getTime() === window.from.getTime()
+    )
+  }
+  return { reportType: source.reportType, sync, status, recover }
 }

@@ -318,7 +318,7 @@ export async function amazonReconciliation(orgId: string, input: z.infer<typeof 
   )
 }
 
-async function reimbursementFamily(
+export async function reimbursementFamily(
   tx: Executor,
   orgId: string,
   externalAccountId: string,
