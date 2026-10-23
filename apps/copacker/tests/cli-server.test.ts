@@ -21,7 +21,9 @@ import {
   catalogs,
   catalogProducts,
   supplierProductGroups,
-  supplierProducts
+  supplierProducts,
+  jobs,
+  connectionSyncRuns
 } from "../src/db/schema"
 import {
   approveCliConsent,
@@ -128,6 +130,7 @@ async function call(
   return { status: response.status, body: await response.json() }
 }
 beforeEach(async () => {
+  await database.delete(jobs)
   vi.mocked(amazonShipments).mockReset().mockResolvedValue([])
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
   identity.getUser.mockReset().mockResolvedValue(user)
@@ -145,6 +148,65 @@ beforeEach(async () => {
     scopes: "read_products,read_orders"
   })
   access = (await login()).tokens.access_token
+})
+describe("CLI ingestion", () => {
+  it("queues shared workers atomically, joins active work, and retains exact job identity", async () => {
+    const key = randomUUID()
+    const input = { id: connectionId, dataset: "all" }
+    const first = await call("connection.sync", input, workspaceId, key)
+    expect(first.status).toBe(200)
+    expect(first.body.data.operation.status).toBe("queued")
+    expect(first.body.data.requestedDatasets).toEqual(["products", "inventory", "orders", "financial_transactions"])
+    expect((await database.select().from(jobs)).map((job) => job.kind).sort()).toEqual(["sales", "stock"])
+    expect((await call("connection.sync", input, workspaceId, key)).body.data).toEqual(first.body.data)
+    const joined = await call("connection.sync", input, workspaceId, randomUUID())
+    expect(joined.status).toBe(200)
+    expect(await database.select().from(jobs)).toHaveLength(2)
+    await database.update(jobs).set({ status: "complete" })
+    const show = await call("connection.sync.show", first.body.data.statusQuery.input)
+    expect(show.body.data.operation.status).toBe("succeeded")
+    const next = await call("connection.sync", input, workspaceId, randomUUID())
+    expect(next.body.data.operation.status).toBe("queued")
+    expect((await call("connection.sync.show", first.body.data.statusQuery.input)).body.data.operation.status).toBe(
+      "succeeded"
+    )
+    await database.delete(jobs)
+    expect((await call("connection.sync.show", first.body.data.statusQuery.input)).body.data.operation.status).toBe(
+      "needs_attention"
+    )
+  })
+  it("rejects unsupported datasets, foreign connections and missing grouped permissions before queueing", async () => {
+    expect(
+      (await call("connection.sync", { id: connectionId, dataset: "ad_spend" }, workspaceId, randomUUID())).status
+    ).toBe(409)
+    expect((await call("connection.sync", { id: randomUUID() }, workspaceId, randomUUID())).status).toBe(404)
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { sales: "view" } })
+      .where(eq(memberships.orgId, workspaceId))
+    expect(
+      (await call("connection.sync", { id: connectionId, dataset: "orders" }, workspaceId, randomUUID())).status
+    ).toBe(403)
+    expect(await database.select().from(jobs)).toHaveLength(0)
+    expect(await database.select().from(connectionSyncRuns)).toHaveLength(0)
+  })
+  it("rolls back all queued work on a producer error and rejects replaced accounts", async () => {
+    await database.update(connections).set({ scopes: "read_products" })
+    expect((await call("connection.sync", { id: connectionId }, workspaceId, randomUUID())).status).not.toBe(200)
+    expect(await database.select().from(jobs)).toHaveLength(0)
+    await database.update(connections).set({ scopes: "read_products,read_orders" })
+    const queued = await call("connection.sync", { id: connectionId }, workspaceId, randomUUID())
+    await database.update(connections).set({ externalId: "replacement.myshopify.com" })
+    expect((await call("connection.sync.show", queued.body.data.statusQuery.input)).status).toBe(409)
+  })
+  it("shows permission-filtered operational health without provider secrets", async () => {
+    const result = await call("status")
+    expect(result.status).toBe(200)
+    expect(result.body.data.attention.length).toBeGreaterThan(0)
+    expect(JSON.stringify(result.body)).not.toContain("must-never-leak")
+    await database.update(memberships).set({ role: "member", access: {} }).where(eq(memberships.orgId, workspaceId))
+    expect((await call("status")).body.data.connections[0].datasets).toEqual([])
+  })
 })
 describe("CLI authorization", () => {
   it("completes browser approval and token exchange through the HTTP handlers", async () => {

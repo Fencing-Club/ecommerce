@@ -87,7 +87,13 @@ export async function refreshStock(
         throw new Error("Stock scope could not be created")
       }
       if (["queued", "running"].includes(current.status)) {
-        return { id: current.id, revision: current.revision, status: current.status }
+        const [job] = await tx
+          .select({ status: jobs.status })
+          .from(jobs)
+          .where(eq(jobs.key, `stock:${current.id}:${current.revision}`))
+        if (job && ["pending", "running"].includes(job.status)) {
+          return { id: current.id, revision: current.revision, status: current.status }
+        }
       }
       const revision = current.revision + 1
       await tx

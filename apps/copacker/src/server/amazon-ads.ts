@@ -36,11 +36,11 @@ export async function saveAdsConnection(orgId: string, sellerId: string, refresh
 }
 
 export async function queueAdsSync(orgId: string, now = new Date()) {
-  await withJobWake(
+  return withJobWake(
     db().transaction(async (tx) => {
       const [grant] = await tx.select().from(amazonAdsConnections).where(connectionScope(orgId)).for("update")
       if (!grant) {
-        return
+        return []
       }
       // A manual retry can restart failed work, but never race an active generation.
       const active = await tx
@@ -55,7 +55,7 @@ export async function queueAdsSync(orgId: string, now = new Date()) {
           )
         )
       if (active.length) {
-        return
+        return active.map((job) => job.id)
       }
       await tx
         .delete(jobs)
@@ -84,8 +84,10 @@ export async function queueAdsSync(orgId: string, now = new Date()) {
         )
       }
       if (work.length) {
-        await tx.insert(jobs).values(work)
+        const inserted = await tx.insert(jobs).values(work).returning({ id: jobs.id })
+        return inserted.map((job) => job.id)
       }
+      return []
     })
   )
 }

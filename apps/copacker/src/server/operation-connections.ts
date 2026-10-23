@@ -4,11 +4,19 @@ import {
   inventoryLocationKey,
   type datasetStatusSchema
 } from "@repo/copacker-contract"
-import { and, eq } from "drizzle-orm"
+import { and, eq, count } from "drizzle-orm"
 import type { z } from "zod"
 import { db, type Executor } from "@/db"
-import { amazonAdsConnections, connections, organizations, salesSyncs, stockSnapshots } from "@/db/schema"
+import {
+  amazonAdsConnections,
+  amazonAdsDays,
+  connections,
+  organizations,
+  salesSyncs,
+  stockSnapshots
+} from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
+import { adsStatus } from "./amazon-ads"
 import { CliError } from "./cli-auth"
 import { inventoryLocationEnabled } from "./inventory-connectors"
 import { stockTargetContext } from "./stock-targets"
@@ -98,6 +106,14 @@ function datasetState(
   return hasData ? "complete" : "not_started"
 }
 export async function operationConnections(s: Session) {
+  const adsState = can(s, "overview") && can(s, "prices") ? await adsStatus(s.org.id) : null
+  const adsEvidence = adsState
+    ? await db()
+        .select({ sellerId: amazonAdsDays.sellerId, count: count() })
+        .from(amazonAdsDays)
+        .where(eq(amazonAdsDays.orgId, s.org.id))
+        .groupBy(amazonAdsDays.sellerId)
+    : []
   const [accounts, ads, copies, stock] = await Promise.all([
     db()
       .select({
@@ -133,12 +149,19 @@ export async function operationConnections(s: Session) {
   return [...accounts, ...ads.map((a) => ({ ...a, provider: "amazon_ads" as const, scopes: "" }))]
     .map((account) => {
       const datasets: Dataset[] = []
+      let ordersCollectedWith: string[] = []
+      if (account.provider === "shopify") {
+        ordersCollectedWith = ["financial_transactions"]
+      }
+      if (account.provider === "amazon") {
+        ordersCollectedWith = ["financial_transactions", "stock_history"]
+      }
       const copy = copies.find((row) => row.source === account.provider && row.externalAccountId === account.accountId)
       if (can(s, "sales") && account.provider !== "amazon_ads") {
         datasets.push({
           name: "orders",
           state: datasetState(copy?.status, Boolean(copy?.coveredTo)),
-          collectedWith: [],
+          collectedWith: ordersCollectedWith,
           observedAt: iso(copy?.finishedAt),
           coveredFrom: iso(copy?.coveredFrom),
           coveredTo: iso(copy?.coveredTo),
@@ -172,15 +195,52 @@ export async function operationConnections(s: Session) {
           })
         }
       }
-      if (can(s, "overview") && can(s, "prices") && copy && account.provider !== "ebay") {
+      if (can(s, "overview") && can(s, "prices") && account.provider !== "ebay" && account.provider !== "amazon_ads") {
         datasets.push({
           name: "financial_transactions",
-          state: datasetState(copy.feesErrorCode ? "failed" : copy.status, Boolean(copy.feesCoveredTo)),
+          state: datasetState(copy?.feesErrorCode ? "failed" : copy?.status, Boolean(copy?.feesCoveredTo)),
           collectedWith: ["orders"],
-          observedAt: iso(copy.finishedAt),
-          coveredFrom: iso(copy.feesCoveredFrom),
-          coveredTo: iso(copy.feesCoveredTo),
-          issues: copy.feesErrorCode ? [issue("sync_failed", "The last financial sync did not complete.")] : []
+          observedAt: iso(copy?.finishedAt),
+          coveredFrom: iso(copy?.feesCoveredFrom),
+          coveredTo: iso(copy?.feesCoveredTo),
+          issues: copy?.feesErrorCode ? [issue("sync_failed", "The last financial sync did not complete.")] : []
+        })
+      }
+      if (account.provider === "amazon" && can(s, "products")) {
+        datasets.push({
+          name: "stock_history",
+          state: datasetState(copy?.stockErrorCode ? "failed" : copy?.status, Boolean(copy?.stockCoveredTo)),
+          collectedWith: ["orders", "financial_transactions"],
+          observedAt: iso(copy?.finishedAt),
+          coveredFrom: iso(copy?.stockCoveredFrom),
+          coveredTo: iso(copy?.stockCoveredTo),
+          issues: copy?.stockErrorCode ? [issue("sync_failed", "The last stock history sync did not complete.")] : []
+        })
+      }
+      let adsDatasetState: Dataset["state"] = "not_started"
+      if (adsEvidence.some((row) => row.sellerId === account.accountId && row.count > 0)) {
+        adsDatasetState = "complete"
+      }
+      if (adsState?.failed) {
+        adsDatasetState = "failed"
+      }
+      if (adsState?.active) {
+        adsDatasetState = "running"
+      }
+      if (account.provider === "amazon_ads" && adsState) {
+        datasets.push({
+          name: "ad_spend",
+          state: adsDatasetState,
+          collectedWith: [],
+          observedAt: null,
+          coveredFrom: null,
+          coveredTo: null,
+          issues: [
+            issue(
+              "coverage_unknown",
+              "Use the stored Ads evidence for coverage; connection authorization alone does not establish it."
+            )
+          ]
         })
       }
       return connectionSchema.parse({
@@ -193,6 +253,8 @@ export async function operationConnections(s: Session) {
         grantedScopes: account.scopes.split(/[\s,]+/).filter(Boolean),
         capabilities: [
           "connection.show",
+          "connection.sync",
+          "connection.sync.show",
           ...(isAdmin(s)
             ? ["connection.settings.show", ...(account.provider === "shopify" ? ["connection.settings.update"] : [])]
             : [])

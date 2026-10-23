@@ -1,74 +1,34 @@
-# CLI implementation and recovery audit
+# CLI implementation status
 
-Audited on 2026-10-22 against the saved `a658f250` snapshot, restoration `e063768c` (PR #117), and current main
-`8e29fb12`. This records implementation state; the proposal's judge verdict is not an implementation review.
+Updated 2026-10-22. The original command inventory is the target contract; a command in client help is not proof of a deployed server handler. Use `schema list` and `schema show` for the current workspace's authorized capabilities.
 
-## Recovery
+## Released
 
-All three packages and all 18 CLI specification documents from the saved snapshot are tracked on main. The comparison
-has no deleted files after accounting for test moves from `src/` to `tests/`. Package configuration, documentation
-indexes, Knip entries and lockfile entries are present. There was no missing server implementation to recover: the
-saved snapshot already documented authentication routes and operation handlers as unfinished.
+Production release e20497d8 includes interactive browser/PKCE authentication, protected local credentials, refresh/logout, workspace selection, schema discovery, durable local mutation receipts and guarded resource reads/writes.
 
-PR #117 preserved the work and fixed transfer timeouts, empty environment values, printable table keys, deterministic
-sorting, the `copacker_` MCP prefix, restock plan's `--from-report` binding and missing OS-keychain entries. PR #139
-moved tests and aligned package verification. Domain package extractions replaced `aisle` references in the spec.
-The app now runs on TanStack Start. Its newer typed browser action registry still depends on browser sessions; it is
-not the proposed bearer operation API and must not be forwarded blindly from the CLI.
+Implemented areas:
+- Products, inventory, customer orders, PO and shipment reads, partners and supplier catalogs.
+- Restock reports using shared planning, configurable per-variant targets, location groups and connector location selection.
+- Supplier product/catalog saves, buyer metadata and supplier assignment, supplier/forwarder partner creation and updates, customer catalog assignments and supplier stock counts.
+- Supplier product/inventory import previews and reviewed apply, exports and templates, with authenticated entity transfers.
 
-The audit checkout was fast-forwarded from `262e5e85` to `8e29fb12`. Existing local design and page work was preserved.
+Production acceptance exercised authenticated reads, unchanged-value guarded product/partner/catalog saves, supplier stock preview/save/replay/conflicts, inventory CSV upload/preview/apply and exports. Supplier assignment and private non-redirecting stock API authentication were also verified. Business quantities/settings/assignments were unchanged; guarded revisions advanced. Test entities were not created. Validation credentials were revoked.
 
-## Implemented
+## Current implementation slice
 
-- CLI vocabulary: 138 operation commands plus local login, logout and workspace selection.
-- Client protocol: schema discovery, validated inputs/results, retained execution keys, pagination, read-only polling,
-  structured output and protected entity transfers. CLI sign-in now has the matching server PKCE flow.
-- Ten executable setup schemas: account show, workspace list/show, schema list/show and credential list/show/create/
-  rotate/revoke. Workspace definitions receive the app's canonical access schema. Credential schemas contain metadata
-  and protected handoffs only; their policies still require enforcement by application handlers.
-- Recovery-pass fixes: account schema inspection before workspace selection; result-schema compatibility and per-operation
-  byte checks before effects; execution classification after defaults; complete OpenAPI envelopes, working local schema
-  references and mutation-key requirements; a body deadline for one-use secret delivery after the transfer timeout refactor.
-- First server slice: browser consent, durable grants, hashed access/refresh tokens, refresh-family replay revocation,
-  logout revocation and current WorkOS identity/workspace checks. Local profile locking prevents concurrent refresh reuse.
-- Authorized handlers now include setup, connections, restock and the first sixteen
-  [resource reads](../../cli-resource-reads.md). Only implemented, authorized handlers are advertised. The settings write shares the browser service and uses
-  revisions and durable atomic idempotency receipts. See [server behavior and release instructions](../../cli-server.md).
+Connection `sync`, `sync show` and operational `status` reuse existing workers. Exact jobs are retained per run, grouped permissions are checked, and worker wakes follow the outer commit. See [connection sync](../../cli-connections.md). These changes require the current PR and its forward migration to pass CI and deployment before they are production capabilities.
 
-## Next implementation work
+## Remaining
 
-1. Release the generated schema change through CI and perform deployed WorkOS/CLI login acceptance. No migration or
-   deployment was run locally. Complete automation credential/delivery records and lifecycle handlers.
-2. Expand the authorized operation registry with resource schemas and handlers. Keep discovery limited to deployed
-   capabilities and preserve guarded transactions, permission checks and execution receipts.
-3. Restock channel/report handlers now use real stored data; see [their supported scope](../../cli-restock.md).
-   Complete canonical identities, target/dependency planning and export artifacts. Connect purchase-order detail and shipment list commands to real application data, with
-   provenance, permissions and the contract's typed results. Then migrate each browser workflow onto the same handlers.
-4. Implement the remaining entity contracts and handlers, including supplier catalogs/stock, customer catalog assignments,
-   durable listing links, Shopify-only SKU changes, linked price changes, location-routed stock writes, bulk execution
-   and entity transfers. Preserve per-target outcomes and never substitute optimistic local success for a provider result.
-5. Add the hosted MCP adapter and native Linux/macOS credential-store acceptance before release.
+- Durable listing discovery/linking, write destinations, retained per-target execution and controlled Shopify SKU/cost/price/inventory and Amazon price/FBM inventory writes. No Amazon SKU rename handler is planned.
+- Connection authorization lifecycle (connect/reconnect/disconnect).
+- Expenses, demand reporting, additional read/export coverage, buyer metadata imports/exports, labels/images, catalog removal/export, partner invitations/removal and addresses.
+- General bulk execution and immutable provider-write previews.
+- Automation credential lifecycle, hosted MCP, publishable package distribution and native Linux/macOS credential-store acceptance. Packages remain private.
+- PO and shipment lifecycle commands, coordinated with their active app workflows.
 
-The packages remain private and are not a live, publishable CLI release. No hosted API or provider write was deployed.
-During the recovery audit, CodeRabbit could not run: its CLI was absent, its installer supports Linux/macOS, and this Windows host
-had no general-purpose WSL distribution. Local tests establish client/contract behavior, not live provider compatibility.
+PR #185 provides internal restock draft preparation only. Durable reviewed plans, dependency validation and atomic draft creation are still required before advertising `restock plan` operations. It does not enable the end-to-end workflow.
 
-## Verification
+## Recovery history
 
-Server slice verification (2026-10-22): `pnpm verify` passes in the isolated implementation checkout, including 2,750
-application tests and 41 package tests. Fourteen database/HTTP/client integration tests exercise the new server;
-focused server coverage was also collected. Both consent stories pass their play tests, and the integrated browser
-was used to inspect the desktop and 320-pixel phone layouts and keyboard focus. The production application build passes.
-WorkOS/provider network calls in tests are mocked. The generated migration was neither applied nor tested, and no
-production sign-in or provider operation was performed.
-
-Recovery audit verification, before the server slice:
-
-- All 40 package tests passed with coverage: contract 12, client 10, CLI 18. This includes native Windows credential
-  protection, a real loopback PKCE exchange against a test server and actual CLI process execution.
-- All three package builds, type checks and lint checks passed.
-- `pnpm verify` passed in a temporary checkout of `8e29fb12` with only these CLI changes applied. The main checkout's
-  run stopped on two pre-existing, empty, untracked files (`apps/copacker/page.tsx` and `page.stories.tsx`), which also
-  fail Knip. They were left untouched. The temporary checkout was removed after verification.
-- The current `pnpm verify` runs affected tests without coverage; the package coverage run above was separate.
-  No migrations, live provider writes or production data were exercised.
+PR #117 preserved the original CLI/client/contract packages and specification, and fixed client transfer/output/recovery issues. PR #139 aligned tests and package verification. Subsequent releases added real server authentication and handlers. Older statements that no hosted API exists or no production authentication was tested are obsolete; provider writes remain unfinished.

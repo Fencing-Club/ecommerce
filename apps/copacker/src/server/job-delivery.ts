@@ -12,6 +12,21 @@ export const jobSignal = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("notifications"), provider: z.enum(stores) })
 ])
 const publisher = new AsyncLocalStorage<(delaySeconds: number) => Promise<void>>()
+const deferredWake = new AsyncLocalStorage<{ requested: boolean }>()
+
+// Nested domain services may queue inside the operation receipt's transaction. Publish after its outer commit.
+export async function withDeferredJobWake<T>(run: () => Promise<T>): Promise<T> {
+  const existing = deferredWake.getStore()
+  if (existing) {
+    return run()
+  }
+  const state = { requested: false }
+  const result = await deferredWake.run(state, run)
+  if (state.requested) {
+    await withJobWake(Promise.resolve())
+  }
+  return result
+}
 
 // Each Worker invocation owns its binding. Administrative producers use the scoped HTTP credentials below.
 export function withJobPublisher<T>(publish: (delaySeconds: number) => Promise<void>, run: () => T): T {
@@ -63,6 +78,11 @@ export async function signalJobs(delaySeconds = 0) {
 // signal repairs the commit/publish gap without reporting a successfully committed user action as a failure.
 export async function withJobWake<T>(work: PromiseLike<T>): Promise<T> {
   const result = await work
+  const deferred = deferredWake.getStore()
+  if (deferred) {
+    deferred.requested = true
+    return result
+  }
   try {
     await signalJobs()
   } catch (error) {

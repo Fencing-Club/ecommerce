@@ -6,6 +6,9 @@ import {
   pageInfoSchema,
   pageInputSchema,
   revision,
+  operationStateSchema,
+  selectorSchema,
+  jsonObject,
   type OperationDescriptor
 } from "./protocol.ts"
 import { defineOperation } from "./registry.ts"
@@ -55,6 +58,14 @@ const inventoryResult = z.strictObject({
   selected: z.array(inventoryLocationRefSchema).nullable(),
   locations: z.array(inventoryLocationSchema.extend({ enabled: z.boolean() }))
 })
+const syncResult = z.strictObject({
+  connectionId: id,
+  runId: id,
+  requestedDatasets: z.array(datasetStatusSchema.shape.name),
+  datasets: z.array(datasetStatusSchema),
+  operation: operationStateSchema,
+  statusQuery: selectorSchema
+})
 function metadata(operation: string, mutation = false) {
   return {
     operation,
@@ -81,6 +92,35 @@ function metadata(operation: string, mutation = false) {
   } satisfies Omit<OperationDescriptor, "inputSchema" | "outputSchema" | "errorSchema" | "contractVersion" | "mcpName">
 }
 export const connectionOperations = {
+  status: defineOperation(
+    metadata("status"),
+    z.strictObject({}),
+    z.strictObject({
+      connections: z.array(connectionSchema),
+      attention: z.array(
+        z.strictObject({ connectionId: id, dataset: datasetStatusSchema.shape.name, issues: z.array(issueSchema) })
+      )
+    })
+  ),
+  "connection.sync": defineOperation(
+    {
+      ...metadata("connection.sync", true),
+      effects: [{ kind: "local_write", description: "Queue existing ingestion workers; no provider data writes." }],
+      accessPolicy: {
+        scopes: ["sync:run"],
+        workspaceKinds: ["buyer"],
+        description: "Current access to every dataset collected by the selected workers."
+      },
+      asyncStatusSchema: jsonObject.parse(z.toJSONSchema(syncResult))
+    },
+    z.strictObject({ id, dataset: z.union([datasetStatusSchema.shape.name, z.literal("all")]).default("all") }),
+    syncResult
+  ),
+  "connection.sync.show": defineOperation(
+    metadata("connection.sync.show"),
+    z.strictObject({ id, runId: id.optional(), operationId: id.optional() }),
+    syncResult
+  ),
   "connection.inventory.show": defineOperation(
     {
       ...metadata("connection.inventory.show"),
