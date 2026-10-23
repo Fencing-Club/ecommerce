@@ -67,6 +67,11 @@ Bulk row order does not change its identity. Relative credential expiry is pinne
 An expired retained intent fails instead of silently acquiring a new key; inspect its entity before deliberately
 starting another execution. Old receipt fingerprints contain no business payload and remain as replay-expiry markers.
 
+Browser sign-in waits ten minutes by default, matching the server approval intent. `login --timeout <seconds>` can
+shorten this to 1–600 seconds. Keep the command running while approving the fresh browser page. After expiry, run
+`copacker login` again; the old callback listener has closed. The callback acknowledges receipt of approval, while
+the terminal confirms successful token exchange and protected credential storage.
+
 Interactive secrets use Windows CurrentUser DPAPI, Linux Secret Service (`secret-tool`) or macOS Keychain (`security`).
 Missing system credential services fail closed; there is no plaintext fallback. Windows protection is exercised by an
 OS-backed test on Windows. Linux/macOS integration still needs native acceptance testing. Never put tokens in arguments.

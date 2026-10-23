@@ -370,7 +370,8 @@ export function createProgram(environment: CliEnvironment, completed: (code: num
         profile,
         apiOrigin(options.apiUrl ?? setting(environment, "COPACKER_API_URL") ?? saved.baseUrl),
         (text) => environment.stderr(`${text}\n`),
-        options.browser !== false
+        options.browser !== false,
+        options.timeout === undefined ? 600000 : timeout(options)
       )
       environment.stdout(render(localResult(result), options.json ? "json" : "table"))
       completed(0)
