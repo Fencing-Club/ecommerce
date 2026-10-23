@@ -107,7 +107,7 @@ export function SearchCommand({ kind, navigate }: { kind: string; navigate: (hre
         </Kbd>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-scrim duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         {/* The panel's padding is 8px around its text box, so it starts 8px above the bar and is 16px wider. */}
         <PopoverPrimitive.Positioner
           side="bottom"

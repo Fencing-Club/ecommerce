@@ -205,7 +205,7 @@ export function AglBookingDialog({
           }
         >
           <FileRow
-            icon={<FileCheck className="text-success" aria-hidden />}
+            icon={<FileCheck className="text-green-800 dark:text-green-400" aria-hidden />}
             title={fileName(template.file.name, { title: template.file.name })}
             description={t("agl.book.filledFor", { cartons: booking.cartons, units: booking.units })}
           >

@@ -19,7 +19,7 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         // Quiet until pointed at, then red: a remove or disconnect beside other actions.
         "ghost-destructive":
-          "text-muted-foreground hover:bg-destructive-soft hover:text-destructive focus-visible:border-destructive/40 focus-visible:ring-destructive/20 aria-expanded:bg-destructive-soft aria-expanded:text-destructive dark:focus-visible:ring-destructive/40",
+          "text-muted-foreground hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive focus-visible:border-destructive/40 focus-visible:ring-destructive/20 aria-expanded:bg-destructive/10 dark:aria-expanded:bg-destructive/20 aria-expanded:text-destructive dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline"
       },
       size: {

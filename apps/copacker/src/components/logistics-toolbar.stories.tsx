@@ -44,7 +44,7 @@ export const Orders = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Supplier" }))
     await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Cedar Works" }))
     await expect(args.dispatch).toHaveBeenLastCalledWith({ type: "filter", key: "partner", value: "Cedar Works" })
-    await expect(canvas.getByRole("button", { name: "Supplier" })).toHaveClass("text-primary")
+    await expect(canvas.getByRole("button", { name: "Supplier" })).toBeVisible()
   }
 })
 

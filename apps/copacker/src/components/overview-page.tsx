@@ -1,6 +1,9 @@
 import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
+import { readPeriod } from "@/lib/date-range"
+import type { OverviewSearch } from "@/lib/page-search"
 import type { OverviewPageData } from "@/server/overview-page"
 import { EmptyState, PageHeader } from "./common"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "./overview"
@@ -14,22 +17,36 @@ import { SupplierOverview } from "./supplier/overview"
 export function OverviewPageView({
   page,
   refresh,
+  pendingSearch,
   onPeriodChange,
   onChannelChange
 }: {
+  pendingSearch?: OverviewSearch
   page: OverviewPageData
   refresh: () => void
   onPeriodChange: (period: PeriodSelection) => void
   onChannelChange: (channel: string | null) => void
 }) {
   const t = useTranslations("overview")
+  const period = pendingSearch
+    ? { ...page.data.period, ...readPeriod(pendingSearch, page.data.period.today) }
+    : page.data.period
+  const pendingContent = pendingSearch ? (
+    <>
+      <output className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner />
+        {t("updating")}
+      </output>
+      <OverviewSkeleton />
+    </>
+  ) : null
   if (page.kind === "supplier") {
     return (
       <>
         <PageHeader title={t("title")}>
-          <PeriodPicker period={page.data.period} onChange={onPeriodChange} />
+          <PeriodPicker period={period} onChange={onPeriodChange} />
         </PageHeader>
-        <SupplierOverview data={page.data} permissions={page.permissions} />
+        {pendingContent ?? <SupplierOverview data={page.data} permissions={page.permissions} />}
       </>
     )
   }
@@ -37,32 +54,39 @@ export function OverviewPageView({
   return (
     <>
       <PageHeader title={t("title")}>
-        <OverviewFilters data={data} onPeriodChange={onPeriodChange} onChannelChange={onChannelChange} />
+        <OverviewFilters
+          data={data}
+          period={period}
+          channel={pendingSearch ? (pendingSearch.channel ?? null) : (data.channel?.key ?? null)}
+          onPeriodChange={onPeriodChange}
+          onChannelChange={onChannelChange}
+        />
       </PageHeader>
-      {data.connected.length ? (
-        <OverviewDashboard data={data} refresh={refresh} />
-      ) : (
-        <div className="flex flex-col gap-6">
-          {admin && <SetupChecklist steps={data.setup} refresh={refresh} />}
-          <Card>
-            <CardContent>
-              <EmptyState
-                title={t("noStores.title")}
-                description={admin ? t("noStores.connectDescription") : t("noStores.askAdmin")}
-              >
-                {admin && (
-                  <Button
-                    nativeButton={false}
-                    render={<a href="/settings#integrations" aria-label={t("noStores.connect")} />}
-                  >
-                    {t("noStores.connect")}
-                  </Button>
-                )}
-              </EmptyState>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {pendingContent ??
+        (data.connected.length ? (
+          <OverviewDashboard data={data} refresh={refresh} />
+        ) : (
+          <div className="flex flex-col gap-6">
+            {admin && <SetupChecklist steps={data.setup} refresh={refresh} />}
+            <Card>
+              <CardContent>
+                <EmptyState
+                  title={t("noStores.title")}
+                  description={admin ? t("noStores.connectDescription") : t("noStores.askAdmin")}
+                >
+                  {admin && (
+                    <Button
+                      nativeButton={false}
+                      render={<a href="/settings#integrations" aria-label={t("noStores.connect")} />}
+                    >
+                      {t("noStores.connect")}
+                    </Button>
+                  )}
+                </EmptyState>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
     </>
   )
 }

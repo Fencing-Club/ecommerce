@@ -3,7 +3,7 @@
 // inbox and let the email choose its colors.
 export const color = {
   // The deeper orange the site moved to, so white text on it meets contrast (about 5:1).
-  brand: "#c2410c",
+  brand: "#ca3500",
   ink: "#0c0a09",
   body: "#44403c",
   muted: "#78716c",

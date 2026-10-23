@@ -233,3 +233,20 @@ it.each([undefined, null, {}, "invalid", 7, false])(
     }
   }
 )
+
+it.each([null, "DEFERRED", "DEFERRED_RELEASED", "RELEASED"])(
+  "only excludes released copies when multiple originals point at status %j",
+  async (status) => {
+    const orgId = await scope()
+    await database
+      .insert(tables.amazonTransactions)
+      .values([
+        payment(orgId, "original-1", { data: forward }),
+        payment(orgId, "original-2", { data: forward }),
+        payment(orgId, "released", { data: { transactionStatus: status } })
+      ])
+    expect(await counted(orgId)).toEqual(
+      status === "RELEASED" ? ["original-1", "original-2"] : ["original-1", "original-2", "released"]
+    )
+  }
+)

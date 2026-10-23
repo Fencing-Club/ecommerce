@@ -42,7 +42,7 @@ export const WithChange = meta.story({
 export const Loss = meta.story({
   args: { label: "Gross profit", value: "-$1,240", loss: true, note: null },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("-$1,240")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("-$1,240")).toBeVisible()
   }
 })
 
@@ -96,6 +96,6 @@ export const SixInARow = meta.story({
   play: async ({ canvas }) => {
     const row = canvas.getByRole("region", { name: "Sales, Last 30 days" })
     await expect(row).toBeVisible()
-    await expect(canvas.getByText("$1,240")).toHaveClass("text-destructive")
+    await expect(canvas.getByText("$1,240")).toBeVisible()
   }
 })

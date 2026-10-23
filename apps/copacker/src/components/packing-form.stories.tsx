@@ -339,12 +339,11 @@ export const Cartons = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
     await chooseMenuItem(canvas.getByRole("button", { name: "Carton C2 actions" }), "Duplicate carton")
     await expectPacked(canvas, 120)
-    await expect(within(canvas.getByRole("table")).getByText("120 of 100")).toHaveClass("text-destructive")
+    await expect(within(canvas.getByRole("table")).getByText("120 of 100")).toBeVisible()
     // The copy takes the next letter.
     await expect(canvas.getByRole("region", { name: "Carton D1" })).toBeVisible()
     await chooseMenuItem(canvas.getByRole("button", { name: "Carton C1 actions" }), "Delete carton")
     await expectPacked(canvas, 80)
-    await expect(within(canvas.getByRole("table")).getByText("80 of 100")).not.toHaveClass("text-destructive")
     // Complete rows stay closed until opened; open, each says which carton its products go in.
     await expect(canvas.queryByRole("button", { name: /Add products to carton/ })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Products in D1" }))

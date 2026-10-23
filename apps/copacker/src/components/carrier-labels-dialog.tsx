@@ -968,10 +968,10 @@ function LabelText({ label, ...row }: RowProps & { label: CarrierLabel }) {
         <span
           className={cn(
             "flex min-w-0 items-center gap-1.5 text-sm font-medium",
-            row.submitted ? "text-destructive" : "text-warning-foreground"
+            row.submitted ? "text-destructive" : "text-amber-800 dark:text-amber-300"
           )}
         >
-          <TriangleAlert aria-hidden className={cn("size-3.5 shrink-0", !row.submitted && "text-warning")} />
+          <TriangleAlert aria-hidden className={cn("size-3.5 shrink-0", !row.submitted && "text-amber-400")} />
           {label.trackingNumber ? <span className="truncate font-mono">{label.trackingNumber}</span> : t("noTracking")}
         </span>
       ) : (
@@ -1043,14 +1043,14 @@ function TrackingField({ label, name, fieldId, submitted, disabled, onTracking }
       <div id={note} aria-live="polite">
         {error && <FieldError>{error}</FieldError>}
         {!error && carrier && (
-          <p className="flex gap-1.5 text-xs text-success">
+          <p className="flex gap-1.5 text-xs text-green-800 dark:text-green-400">
             <CircleCheck aria-hidden className="mt-px size-3.5 shrink-0" />
             {t("trackingRecognized")}
           </p>
         )}
         {!error && !carrier && warning && (
-          <p className="flex gap-1.5 text-xs text-warning-foreground">
-            <TriangleAlert aria-hidden className="mt-px size-3.5 shrink-0 text-warning" />
+          <p className="flex gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+            <TriangleAlert aria-hidden className="mt-px size-3.5 shrink-0 text-amber-400" />
             {warning}
           </p>
         )}
@@ -1159,7 +1159,7 @@ function CartonRow({
           />
         )}
         {coming ? (
-          <div className={cn(slot, "border-primary bg-primary-tint font-medium text-primary")}>
+          <div className={cn(slot, "border-primary bg-orange-50 dark:bg-orange-950 font-medium text-primary")}>
             <CartonId cartonId={cartonId} />
             <ArrowDownToLine aria-hidden className="size-3.5 shrink-0" />
             <span className="truncate">{t("dropOnCarton", { name: row.title(coming), carton: cartonId })}</span>
@@ -1230,7 +1230,7 @@ function PlacedLabel({
       <AddTracking {...row} label={label} />
       {printed && !fits && (
         <span title={t("doesNotFit", { cartons })} className="shrink-0">
-          <TriangleAlert aria-hidden className="size-4 text-warning" />
+          <TriangleAlert aria-hidden className="size-4 text-amber-400" />
           <span className="sr-only">{t("doesNotFit", { cartons })}</span>
         </span>
       )}

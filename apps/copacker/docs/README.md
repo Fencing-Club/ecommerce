@@ -38,6 +38,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [CLI resource reads: products, stock, orders, purchasing and partners](cli-resource-reads.md)
 - [CLI entity writes: supplier catalogs, products, stock and transfers](cli-entity-writes.md)
 - [CLI restock reports](cli-restock.md): shared planning, report evidence, permissions and current boundaries.
+- [CLI restock draft preparation](cli-restock-drafts.md): shared purchasing services and remaining plan persistence.
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Run Copacker: setup, releases and infrastructure](operations.md)

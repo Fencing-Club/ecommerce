@@ -90,7 +90,7 @@ function Arrived({ units }: { units: string }) {
         <GlassWater className="size-3.5 text-muted-foreground" />
       </span>
       <span className="min-w-0 flex-1 truncate font-medium">Steel Bottle 32 oz</span>
-      <span className="font-semibold text-success tabular-nums">+{units}</span>
+      <span className="font-semibold text-green-800 dark:text-green-400 tabular-nums">+{units}</span>
     </div>
   )
 }
@@ -663,7 +663,7 @@ export function Journey() {
                         <span dir="ltr">{document.file}</span>
                       </span>
                     </span>
-                    <Check className="size-4 shrink-0 text-success" />
+                    <Check className="size-4 shrink-0 text-green-800 dark:text-green-400" />
                   </div>
                 </div>
               </div>
@@ -672,7 +672,7 @@ export function Journey() {
           <p aria-hidden className={cn("mt-4 flex h-5 items-center gap-2 text-sm lg:hidden", quiet)}>
             {latest && (
               <>
-                <Check className="size-4 text-success" />
+                <Check className="size-4 text-green-800 dark:text-green-400" />
                 {t("saved", { name: t(`documents.${latest.key}`) })}
               </>
             )}

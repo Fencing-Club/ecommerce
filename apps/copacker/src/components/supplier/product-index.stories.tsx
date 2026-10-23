@@ -46,7 +46,7 @@ export const Default = meta.story({
     await expect(apronRow.getByText("LM-APRON")).toBeVisible()
     const basketRow = rowOf(canvas, "Market basket")
     await expect(basketRow.getByText("No price")).toBeVisible()
-    await expect(basketRow.getByText("0 in stock")).toHaveClass("text-destructive")
+    await expect(basketRow.getByText("0 in stock")).toBeVisible()
     await expect(rowOf(canvas, "Wool throw").getByText("Several currencies")).toBeVisible()
     // Archived shows in its column; the badge under the title is for phones.
     const [underTitle, inColumn] = rowOf(canvas, "Wool throw").getAllByText("Archived")

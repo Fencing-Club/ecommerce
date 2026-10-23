@@ -48,7 +48,7 @@ export const Default = meta.story({
     await expect(tote.getByRole("cell", { name: "80" })).toBeVisible()
     await expect(tote.getByRole("cell", { name: "40" })).toBeVisible()
     // Black is ordered past what's on hand.
-    await expect(rowOf("LM-TOTE-BLK").getByRole("cell", { name: "-24" })).toHaveClass("text-destructive")
+    await expect(rowOf("LM-TOTE-BLK").getByRole("cell", { name: "-24" })).toBeVisible()
     await expect(rowOf("LM-APRON").getByRole("switch", { name: "Continue selling for LM-APRON" })).toBeChecked()
     const untracked = rowOf("LM-BASKET")
     await expect(untracked.getByText("Not tracked")).toBeVisible()

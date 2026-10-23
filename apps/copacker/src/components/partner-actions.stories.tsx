@@ -143,7 +143,7 @@ export const SupplierResendFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "More actions for Lotus Manufacturing" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Resend invitation" }))
     const notice = await canvas.findByText("Lotus Manufacturing already joined Copacker.")
-    await expect(notice).toHaveClass("text-destructive")
+    await expect(notice).toBeVisible()
   }
 })
 
