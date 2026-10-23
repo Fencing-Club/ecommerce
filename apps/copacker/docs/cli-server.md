@@ -87,5 +87,15 @@ logout and revoked-token rejection. That preview returned no workspaces, so it d
 
 Production promotion of `93aa9f9bba3bffad34916e6d103cc3b132376833` completed on October 22, 2026
 ([release run](https://github.com/Fencing-Club/ecommerce/actions/runs/39879377317)). Health reported that exact commit,
-release smoke tests passed, and signed-out resource reads returned `401 unauthenticated`. Authenticated production
-workspace reads remain pending a production CLI login; these signed-out checks do not establish data correctness.
+release smoke tests passed, and signed-out resource reads returned `401 unauthenticated`.
+
+Authenticated CLI validation then exercised 24 read operations across the buyer workspace and three supplier
+workspaces: account/workspace/schema discovery, products/search/details, inventory/locations, partners, POs,
+shipments, connections/settings, restock channel discovery and catalog lists. Product pagination returned distinct
+pages, and customer-order ID and connection-scoped reference lookups resolved the same record. Both local Copacker
+shipments and external Amazon shipments returned data. No business mutation or report-generation command was run.
+
+Customer orders correctly declared partial summary coverage (`order_summary`). All three supplier catalog lists
+were empty, so `catalog.show` was not qualified against a production record. This acceptance sampled list pages and
+existing details; it is not exhaustive reconciliation of all production records. The temporary CLI grant was revoked
+and its protected local credential cleared after validation.
