@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import { db, withTransaction, type Transaction } from "@/db"
 import {
   catalogProducts,
   catalogs,
@@ -13,7 +13,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { catalogPricing, priceBreakSchema, pricingProblem, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
 import { requireSupplier } from "./authorization"
-import { requestInput } from "./errors"
+import { requestInput, StatusError } from "./errors"
 import { pricingText } from "./text"
 import type { Session } from "./workspace-session"
 
@@ -173,6 +173,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
     throw new LocalizedError("productInCatalogTwice")
   }
   return db().transaction(async (tx) => {
+    await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, s.org.id)).for("update")
     const [clash] = await tx
       .select({ id: catalogs.id })
       .from(catalogs)
@@ -231,7 +232,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
     const customerIds = [...new Set(input.customerIds)]
     const customers = customerIds.length
       ? await tx
-          .select({ id: suppliers.id })
+          .select({ id: suppliers.id, catalogId: suppliers.catalogId })
           .from(suppliers)
           .where(
             and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), inArray(suppliers.id, customerIds))
@@ -246,6 +247,17 @@ export async function saveCatalog(s: Session, raw: unknown) {
       .where(and(eq(suppliers.supplierOrgId, s.org.id), eq(suppliers.catalogId, id)))
     if (customerIds.length) {
       await tx.update(suppliers).set({ catalogId: id }).where(inArray(suppliers.id, customerIds))
+    }
+    const previousCatalogs = [
+      ...new Set(
+        customers.flatMap((customer) => (customer.catalogId && customer.catalogId !== id ? [customer.catalogId] : []))
+      )
+    ]
+    if (previousCatalogs.length) {
+      await tx
+        .update(catalogs)
+        .set({ revision: sql`${catalogs.revision} + 1` })
+        .where(and(eq(catalogs.supplierOrgId, s.org.id), inArray(catalogs.id, previousCatalogs)))
     }
     return saved
   })
@@ -273,7 +285,7 @@ async function writeSettings(
     .where(and(eq(catalogs.id, input.id), eq(catalogs.supplierOrgId, s.org.id), eq(catalogs.revision, input.revision)))
     .returning({ id: catalogs.id, revision: catalogs.revision })
   if (!updated) {
-    throw new LocalizedError("catalogChanged")
+    throw new StatusError("catalogChanged", 409)
   }
   return updated
 }
@@ -293,23 +305,40 @@ export async function deleteCatalog(s: Session, id: string) {
 // Gives a customer one of the supplier's catalogs, or none.
 export async function assignCatalog(s: Session, customerId: string, catalogId: string | null) {
   requireSupplier(s)
-  if (catalogId) {
-    const [catalog] = await db()
-      .select({ id: catalogs.id })
-      .from(catalogs)
-      .where(and(eq(catalogs.id, catalogId), eq(catalogs.supplierOrgId, s.org.id)))
-    if (!catalog) {
-      throw new LocalizedError("chooseYourCatalog")
-    }
-  }
-  const [updated] = await db()
-    .update(suppliers)
-    .set({ catalogId })
-    .where(and(eq(suppliers.id, customerId), eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt)))
-    .returning({ id: suppliers.id })
-  if (!updated) {
-    throw new LocalizedError("customerNotLinked")
-  }
+  return db().transaction((tx) =>
+    withTransaction(tx, async () => {
+      await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, s.org.id)).for("update")
+      const [previous] = await tx
+        .select({ catalogId: suppliers.catalogId })
+        .from(suppliers)
+        .where(and(eq(suppliers.id, customerId), eq(suppliers.supplierOrgId, s.org.id)))
+        .for("update")
+      if (catalogId) {
+        const [catalog] = await db()
+          .select({ id: catalogs.id })
+          .from(catalogs)
+          .where(and(eq(catalogs.id, catalogId), eq(catalogs.supplierOrgId, s.org.id)))
+        if (!catalog) {
+          throw new LocalizedError("chooseYourCatalog")
+        }
+      }
+      const [updated] = await db()
+        .update(suppliers)
+        .set({ catalogId })
+        .where(and(eq(suppliers.id, customerId), eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt)))
+        .returning({ id: suppliers.id })
+      if (!updated) {
+        throw new LocalizedError("customerNotLinked")
+      }
+      const changed = [...new Set([previous?.catalogId, catalogId].filter((id): id is string => !!id))]
+      if (previous?.catalogId !== catalogId && changed.length) {
+        await tx
+          .update(catalogs)
+          .set({ revision: sql`${catalogs.revision} + 1` })
+          .where(and(eq(catalogs.supplierOrgId, s.org.id), inArray(catalogs.id, changed)))
+      }
+    })
+  )
 }
 
 // New products join every catalog set to include them.

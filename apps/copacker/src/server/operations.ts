@@ -23,9 +23,12 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, withTransaction, type Executor } from "@/db"
 import { cliGrants, memberships, operationReceipts, restockReports } from "@/db/schema"
+import { LocalizedError, AccessError } from "@/i18n/errors"
 import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
 import { boundedBody } from "./cli-http"
+import { failureMessage, StatusError } from "./errors"
+import { catalogWriteDefinitions, writeCatalog, writeCatalogAssignment } from "./operation-catalog-writes"
 import {
   connectionSettings,
   operationConnections,
@@ -33,8 +36,18 @@ import {
   connectionInventory,
   updateConnectionInventory
 } from "./operation-connections"
+import { importDefinitions, importFile, readImport, applyImport, exportFile, entityExport } from "./operation-imports"
+import { inventoryUpdateDefinition, updateSupplierInventory } from "./operation-inventory-writes"
 import { readCustomerOrders } from "./operation-order-reads"
+import { partnerWriteDefinitions, createPartner, updatePartner } from "./operation-partner-writes"
 import { readInventory, readProducts } from "./operation-product-reads"
+import {
+  productWriteDefinitions,
+  createCliProduct,
+  updateCliProduct,
+  productSettings,
+  updateCliVariant
+} from "./operation-product-writes"
 import {
   catalogDefinitions,
   poDefinitions,
@@ -119,7 +132,94 @@ type Entry = {
   allowed: (context: Context) => boolean
   execute: (input: unknown, context: Context) => Promise<unknown>
 }
+const catalogEdit = (context: Context) =>
+  catalogsRead(context) &&
+  context.session !== null &&
+  can(context.session, "catalogs", "edit") &&
+  can(context.session, "customers", "edit")
+const partnerEdit = (context: Context) =>
+  context.session?.org.kind === "buyer" && can(context.session, "partners", "edit")
+const productsEdit = (context: Context) =>
+  productsRead(context) &&
+  context.session !== null &&
+  can(context.session, "products", "edit") &&
+  can(context.session, "prices")
+const supplierProductsEdit = (context: Context) => productsEdit(context) && context.session?.org.kind === "supplier"
+const supplierInventoryEdit = (context: Context) =>
+  context.session?.org.kind === "supplier" && can(context.session, "inventory", "edit")
+const supplierProductsRead = (context: Context) =>
+  context.session?.org.kind === "supplier" && can(context.session, "products") && can(context.session, "prices")
+const supplierInventoryRead = (context: Context) =>
+  context.session?.org.kind === "supplier" && can(context.session, "inventory")
 const entries: Entry[] = [
+  entry(
+    productWriteDefinitions["product.settings.show"],
+    (context) => productRead(context) || supplierProductsRead(context),
+    (input, context) => productSettings(session(context), input.id)
+  ),
+  entry(productWriteDefinitions["product.variant.update"], productEdit, (input, context) =>
+    updateCliVariant(session(context), input)
+  ),
+  entry(importDefinitions["product.import"], supplierProductsEdit, (input, context) =>
+    importFile(session(context), input, false)
+  ),
+  entry(importDefinitions["inventory.import"], supplierInventoryEdit, (input, context) =>
+    importFile(session(context), input, true)
+  ),
+  entry(importDefinitions["product.import.apply"], supplierProductsEdit, (input, context) =>
+    applyImport(session(context), input.previewId, false)
+  ),
+  entry(importDefinitions["inventory.import.apply"], supplierInventoryEdit, (input, context) =>
+    applyImport(session(context), input.previewId, true)
+  ),
+  entry(importDefinitions["product.import.show"], supplierProductsRead, (input, context) =>
+    readImport(session(context), input.id, false)
+  ),
+  entry(importDefinitions["inventory.import.show"], supplierInventoryRead, (input, context) =>
+    readImport(session(context), input.id, true)
+  ),
+  entry(
+    importDefinitions["product.export"],
+    (context) => supplierProductsRead(context) && supplierInventoryRead(context),
+    (input, context) => entityExport(session(context), input, false)
+  ),
+  entry(importDefinitions["inventory.export"], supplierInventoryRead, (input, context) =>
+    entityExport(session(context), input, true)
+  ),
+  entry(importDefinitions["product.template"], supplierProductsRead, (input, context) =>
+    exportFile(session(context), input.fileFormat, "template")
+  ),
+  entry(
+    productWriteDefinitions["product.create"],
+    (context) => productsEdit(context) && context.session?.org.kind === "supplier",
+    (input, context) => createCliProduct(session(context), input)
+  ),
+  entry(productWriteDefinitions["product.update"], productsEdit, (input, context) =>
+    updateCliProduct(session(context), input)
+  ),
+  entry(partnerWriteDefinitions["partners.create"], partnerEdit, (input, context) =>
+    createPartner(session(context), input)
+  ),
+  entry(partnerWriteDefinitions["partners.update"], partnerEdit, (input, context) =>
+    updatePartner(session(context), input)
+  ),
+  entry(
+    inventoryUpdateDefinition,
+    (context) => context.session?.org.kind === "supplier" && can(context.session, "inventory", "edit"),
+    (input, context) => updateSupplierInventory(session(context), input)
+  ),
+  entry(catalogWriteDefinitions["catalog.create"], catalogEdit, (input, context) =>
+    writeCatalog(session(context), input)
+  ),
+  entry(catalogWriteDefinitions["catalog.update"], catalogEdit, (input, context) =>
+    writeCatalog(session(context), input)
+  ),
+  entry(catalogWriteDefinitions["partners.catalog.assign"], catalogEdit, (input, context) =>
+    writeCatalogAssignment(session(context), input)
+  ),
+  entry(catalogWriteDefinitions["partners.catalog.remove"], catalogEdit, (input, context) =>
+    writeCatalogAssignment(session(context), { ...input, catalogId: null })
+  ),
   entry(restockDefinitions["report.restock.targets"], restock, async (input, context) => {
     const s = session(context)
     const result = await restockTargetReport(s, input)
@@ -667,7 +767,21 @@ export async function operationResponse(request: Request, operation: string) {
       },
       { headers }
     )
-  } catch (error) {
+  } catch (caught) {
+    let status = 400
+    if (caught instanceof StatusError) {
+      status = caught.status
+    } else if (caught instanceof AccessError) {
+      status = 403
+    }
+    const error =
+      caught instanceof LocalizedError
+        ? new CliError(
+            caught instanceof AccessError ? "forbidden" : "invalid_state",
+            await failureMessage(caught),
+            status
+          )
+        : caught
     const known = error instanceof CliError
     let code = known ? error.code : "internal_error"
     if (known && error.status === 401) {

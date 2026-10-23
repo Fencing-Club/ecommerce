@@ -6,6 +6,7 @@ import { connections, stockSnapshots } from "@/db/schema"
 import { can } from "@/lib/access"
 import { stockScopes } from "./inventory-connectors"
 import { noDefaults, readProductDefaults } from "./product-defaults"
+import { readVariantFields } from "./product-fields"
 import { productList } from "./supplier-products"
 import { committedStock } from "./supplier-stock"
 import type { Session } from "./workspace-session"
@@ -96,6 +97,7 @@ export async function readProducts(s: Session) {
           productId: row.id,
           sku: v.supplierSku,
           supplierSku: v.supplierSku,
+          asin: null,
           title: v.title,
           options: v.options,
           source: null,
@@ -115,6 +117,7 @@ export async function readProducts(s: Session) {
         continue
       }
       const defaults = await readProductDefaults(s.org.id, account.accountId)
+      const fields = await readVariantFields(s.org.id, account.accountId)
       for (const [productId, variants] of Map.groupBy(snapshot.data.rows, (row) => row.productId)) {
         const first = variants[0]!
         const key = scopedReadId(account.id, account.accountId, productId)
@@ -140,7 +143,8 @@ export async function readProducts(s: Session) {
             revision: null,
             productId: key,
             sku: v.buyerSku,
-            supplierSku: v.supplierSku ?? null,
+            supplierSku: fields.get(v.variantId)?.supplierSku ?? null,
+            asin: fields.get(v.variantId)?.asin ?? null,
             title: v.variantTitle,
             options: {},
             source: { ...source, externalId: v.variantId },
@@ -182,7 +186,7 @@ export async function readInventory(s: Session) {
       snapshotId: null,
       observedAt: null,
       quantityStates: ["on_hand", "committed", "available"],
-      writable: false
+      writable: can(s, "inventory", "edit")
     })
     const [products, commitments] = await Promise.all([productList(s.org.id), committedStock(s.org.id)])
     for (const product of products) {
@@ -202,11 +206,11 @@ export async function readInventory(s: Session) {
             quantityState,
             quantity: v.trackInventory ? value : null,
             unit: "piece",
-            revision: null,
+            revision: v.revision,
             snapshotId: null,
             observedAt: null,
             tracking: v.trackInventory,
-            writable: false
+            writable: v.trackInventory && quantityState === "on_hand" && can(s, "inventory", "edit")
           })
         }
       }

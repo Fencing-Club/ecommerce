@@ -17,6 +17,7 @@ const variant = z.strictObject({
   productId: id,
   sku: z.string().nullable(),
   supplierSku: z.string().nullable(),
+  asin: z.string().nullable(),
   title: z.string(),
   options: z.record(z.string(), z.string()),
   source: readSourceSchema.nullable(),
@@ -80,7 +81,7 @@ const balance = z.strictObject({
   snapshotId: id.nullable(),
   observedAt: z.iso.datetime().nullable(),
   tracking: z.boolean().nullable(),
-  writable: z.literal(false)
+  writable: z.boolean()
 })
 const stockFilters = {
   connectionId: id.optional(),
@@ -97,7 +98,7 @@ const location = z.strictObject({
   snapshotId: id.nullable(),
   observedAt: z.iso.datetime().nullable(),
   quantityStates: z.array(z.string()),
-  writable: z.literal(false)
+  writable: z.boolean()
 })
 export const inventoryReadOperations = {
   "inventory.list": defineOperation(

@@ -36,6 +36,7 @@ import { cliTokenResponse } from "../src/server/cli-http"
 import { GET as authorizeResponse } from "../src/server/http/api/cli-authorize"
 import { POST as consentResponse } from "../src/server/http/api/cli-consent"
 import { stockScopes } from "../src/server/inventory-connectors"
+import { cliTransfer } from "../src/server/operation-transfers"
 import { operationResponse } from "../src/server/operations"
 import { restockAllChannels } from "../src/server/restock-page"
 import { amazonShipments } from "../src/server/shipments-page"
@@ -55,6 +56,25 @@ const user = {
 const identity = vi.hoisted(() => ({ getUser: vi.fn<() => Promise<typeof user>>() }))
 vi.mock("@/server/workos", () => ({ workos: () => ({ userManagement: identity }) }))
 vi.mock("@/server/auth", () => ({ signedInUser: () => identity.getUser() }))
+const storedFiles = vi.hoisted(() => new Map<string, { bytes: Uint8Array; contentType: string }>())
+vi.mock("@/server/storage", () => ({
+  putFile: async (key: string, bytes: Uint8Array, contentType: string) => {
+    storedFiles.set(key, { bytes: new Uint8Array(bytes), contentType })
+  },
+  getFile: async (key: string) => {
+    const file = storedFiles.get(key)
+    if (!file) {
+      throw new Error("Missing file")
+    }
+    return file.bytes
+  },
+  readFile: async (key: string) => {
+    const file = storedFiles.get(key)
+    return file
+      ? { body: new Response(new Uint8Array(file.bytes)).body, size: file.bytes.length, contentType: file.contentType }
+      : null
+  }
+}))
 setUpTestDatabase({ truncate: [organizations, cliGrants, cliAuthorizations] })
 const workspaceId = randomUUID(),
   otherId = randomUUID(),
@@ -352,6 +372,298 @@ describe("Real-data operation handlers", () => {
     expect((await call("schema.list", { limit: 2, cursor })).status).toBe(200)
     expect((await call("schema.list", { prefix: "connection", cursor })).status).toBe(409)
     expect((await call("schema.list", { cursor: `${cursor}x` })).status).toBe(409)
+  })
+})
+
+describe("Supplier CLI changes", () => {
+  it("creates partners without invitations and rejects changed partner details", async () => {
+    const input = { data: { type: "supplier", name: "New Factory" }, clientReference: randomUUID() }
+    const created = await call("partners.create", input, workspaceId, "partner")
+    expect(created.status).toBe(200)
+    const id = created.body.data.id
+    expect((await call("partners.create", input, workspaceId, "partner")).body.data.id).toBe(id)
+    const update = {
+      type: "supplier",
+      id,
+      name: "Renamed",
+      leadTimeDays: 12,
+      expected: { name: "New Factory", leadTimeDays: null }
+    }
+    expect((await call("partners.update", update, workspaceId, "rename")).status).toBe(200)
+    expect((await call("partners.update", update, workspaceId, "stale-rename")).status).toBe(409)
+    const [row] = await database.select().from(suppliers).where(eq(suppliers.id, id))
+    expect(row).toMatchObject({ email: null, invitationHash: null })
+  })
+  it("creates supplier products, preserves stock on edit, and imports guarded inventory through protected transfers", async () => {
+    const org = randomUUID()
+    await database.insert(organizations).values({ id: org, name: "Supplier", kind: "supplier" })
+    await database.insert(memberships).values({ orgId: org, userId: user.id, email: user.email, role: "owner" })
+    const data = {
+      clientReference: randomUUID(),
+      title: "Test product",
+      status: "active",
+      category: "",
+      productCode: "",
+      url: "",
+      description: "",
+      optionNames: [],
+      images: [],
+      variants: [
+        {
+          supplierSku: "CLI-1",
+          options: {},
+          currency: "USD",
+          priceMinor: 120,
+          priceBasis: "piece",
+          piecesPerSellablePack: 1,
+          sellablePacksPerCase: null,
+          trackInventory: true,
+          continueSelling: false,
+          priceBreaks: [],
+          quantityRules: { minimum: 1, increment: 1, maximum: null }
+        }
+      ]
+    }
+    const created = await call("product.create", data, org, "product")
+    expect(created.status).toBe(200)
+    const settings = await call("product.settings.show", { id: created.body.data.id }, org)
+    expect(settings.status).toBe(200)
+    expect(settings.body.data).toMatchObject({
+      kind: "supplier",
+      expectedRevision: 1,
+      variants: [{ supplierSku: "CLI-1", expectedRevision: 1 }]
+    })
+    const [variant] = await database
+      .select()
+      .from(supplierProducts)
+      .where(eq(supplierProducts.groupId, created.body.data.id))
+    const locationId = `supplier:${org}`
+    const count = { variantId: variant!.id, locationId, quantity: 20, expectedRevision: 1 }
+    expect(
+      (await call("inventory.update", { ...count, mode: "preview" }, org, "count-preview")).body.data.items[0]
+    ).toMatchObject({ before: 0, quantity: 20 })
+    expect((await call("inventory.show", { id: variant!.id }, org)).body.data.items[0].quantity).toBe(0)
+    expect((await call("inventory.update", count, org, "count")).status).toBe(200)
+    expect((await call("inventory.update", count, org, "count")).status).toBe(200)
+    expect((await call("inventory.update", count, org, "stale-count")).status).toBe(409)
+    const { clientReference: _, ...fields } = data
+    const edit = {
+      ...fields,
+      kind: "supplier",
+      id: created.body.data.id,
+      expectedRevision: 1,
+      variants: [{ ...data.variants[0], id: variant!.id, expectedRevision: 2 }]
+    }
+    expect((await call("product.update", edit, org, "edit")).status).toBe(200)
+    expect((await call("inventory.show", { id: variant!.id }, org)).body.data.items[0]).toMatchObject({
+      quantity: 20,
+      revision: 3
+    })
+    const csv = `variantId,locationId,quantity,expectedRevision\r\n${variant!.id},${locationId},31,3`
+    const bytes = Buffer.from(csv),
+      sha256 = createHash("sha256").update(bytes).digest("hex"),
+      intentId = randomUUID()
+    const prepare = await call(
+      "inventory.import",
+      {
+        phase: "prepare",
+        intentId,
+        file: { filename: "counts.csv", mediaType: "text/csv", size: bytes.length, sha256 }
+      },
+      org,
+      "import/prepare"
+    )
+    expect(prepare.status).toBe(200)
+    const transfer = (token: string, digest = sha256) =>
+      new Request(prepare.body.data.upload.url, {
+        method: "PUT",
+        headers: { authorization: `Bearer ${token}`, "content-type": "text/csv", "x-content-sha256": digest },
+        body: bytes
+      })
+    const id = prepare.body.data.handoffId
+    expect((await cliTransfer(transfer(access, "bad"), id)).status).toBe(400)
+    expect((await cliTransfer(transfer(access), id)).status).toBe(204)
+    const complete = { phase: "complete", intentId, handoffId: id, sha256 }
+    expect((await call("inventory.import", complete, org, "import/complete")).body.data.stockCounts).toBe(1)
+    expect(
+      (await call("inventory.import.apply", { previewId: id, reviewed: true }, org, "apply")).body.data.imported
+    ).toBe(true)
+    expect(
+      (await call("inventory.import.apply", { previewId: id, reviewed: true }, org, "second-apply")).body.data.imported
+    ).toBe(false)
+    expect((await call("inventory.show", { id: variant!.id }, org)).body.data.items[0].quantity).toBe(31)
+    const exported = await call(
+      "inventory.export",
+      { action: "generate", fileFormat: "csv", selection: {} },
+      org,
+      "export"
+    )
+    expect(exported.status).toBe(200)
+    const download = await cliTransfer(
+      new Request(exported.body.data.download.url, { headers: { authorization: `Bearer ${access}` } }),
+      exported.body.data.id
+    )
+    expect(download.status).toBe(200)
+    expect(await download.text()).toContain(`${variant!.id},${locationId},31,4`)
+    const foreignTransfer = new URL(prepare.body.data.upload.url)
+    foreignTransfer.searchParams.set("workspaceId", workspaceId)
+    expect(
+      (await cliTransfer(new Request(foreignTransfer, { headers: { authorization: `Bearer ${access}` } }), id)).status
+    ).toBe(404)
+    expect(
+      (
+        await cliTransfer(
+          new Request(prepare.body.data.upload.url, { headers: { cookie: "session=browser-only" } }),
+          id
+        )
+      ).status
+    ).toBe(401)
+    expect(
+      (
+        await call(
+          "inventory.update",
+          {
+            rows: [
+              { ...count, expectedRevision: 4, quantity: 90 },
+              { ...count, variantId: randomUUID(), expectedRevision: 1 }
+            ]
+          },
+          org,
+          "atomic-failure"
+        )
+      ).status
+    ).toBe(404)
+    expect((await call("inventory.show", { id: variant!.id }, org)).body.data.items[0].quantity).toBe(31)
+    const productsExport = await call("product.export", {}, org, "products-export")
+    expect(productsExport.status).toBe(200)
+    const productFile = await cliTransfer(
+      new Request(productsExport.body.data.download.url, { headers: { authorization: `Bearer ${access}` } }),
+      productsExport.body.data.id
+    )
+    const productBytes = new Uint8Array(await productFile.arrayBuffer())
+    const productDigest = createHash("sha256").update(productBytes).digest("hex")
+    const productIntent = randomUUID()
+    const staged = await call(
+      "product.import",
+      {
+        phase: "prepare",
+        intentId: productIntent,
+        locationId,
+        file: { filename: "products.csv", mediaType: "text/csv", size: productBytes.length, sha256: productDigest }
+      },
+      org,
+      "products-prepare"
+    )
+    expect(staged.status).toBe(200)
+    expect(
+      (
+        await cliTransfer(
+          new Request(staged.body.data.upload.url, {
+            method: "PUT",
+            headers: {
+              authorization: `Bearer ${access}`,
+              "content-type": "text/csv",
+              "x-content-sha256": productDigest
+            },
+            body: productBytes
+          }),
+          staged.body.data.handoffId
+        )
+      ).status
+    ).toBe(204)
+    const productPreview = await call(
+      "product.import",
+      { phase: "complete", intentId: productIntent, handoffId: staged.body.data.handoffId, sha256: productDigest },
+      org,
+      "products-complete"
+    )
+    expect(productPreview.status).toBe(200)
+    expect(productPreview.body.data.changes).toMatchObject({ created: 0, updated: 0, unchanged: 1 })
+    expect(
+      (await call("inventory.update", { ...count, expectedRevision: 4, quantity: 32 }, org, "newer-count")).status
+    ).toBe(200)
+    expect(
+      (
+        await call(
+          "product.import.apply",
+          { previewId: staged.body.data.handoffId, reviewed: true },
+          org,
+          "stale-product-import"
+        )
+      ).status
+    ).toBe(400)
+    expect((await call("inventory.show", { id: variant!.id }, org)).body.data.items[0].quantity).toBe(32)
+    await database.update(memberships).set({ role: "member", access: {} }).where(eq(memberships.orgId, org))
+    expect((await cliTransfer(transfer(access), id)).status).toBe(403)
+  })
+})
+
+describe("Catalog mutations", () => {
+  it("shares catalog saves, guards revisions and assignments, and rolls back failed intents", async () => {
+    const supplierOrg = randomUUID(),
+      customer = randomUUID()
+    await database.insert(organizations).values({ id: supplierOrg, name: "Factory", kind: "supplier" })
+    await database.insert(memberships).values({ orgId: supplierOrg, userId: user.id, email: user.email, role: "owner" })
+    await database
+      .insert(suppliers)
+      .values({ id: customer, buyerOrgId: workspaceId, supplierOrgId: supplierOrg, name: "Factory" })
+    const input = {
+      clientReference: randomUUID(),
+      title: "Trade",
+      status: "draft",
+      adjustmentBasisPoints: 0,
+      includeNewProducts: false,
+      products: [],
+      customerIds: []
+    }
+    const created = await call("catalog.create", input, supplierOrg, "catalog-create")
+    expect(created.status).toBe(200)
+    const id = created.body.data.id
+    expect((await call("catalog.create", input, supplierOrg, "catalog-create")).body.data.id).toBe(id)
+    expect(await database.select().from(catalogs)).toHaveLength(1)
+    const { clientReference: _, ...fields } = input
+    const update = { ...fields, id, expectedRevision: 1, status: "archived" }
+    expect((await call("catalog.update", update, supplierOrg, "archive")).body.data).toMatchObject({
+      revision: 2,
+      status: "archived"
+    })
+    expect((await call("catalog.update", update, supplierOrg, "stale")).status).toBe(409)
+    const assignment = { id: customer, type: "customer", catalogId: id, expectedCatalogId: null }
+    expect((await call("partners.catalog.assign", assignment, supplierOrg, "assign")).status).toBe(200)
+    expect((await call("partners.catalog.assign", assignment, supplierOrg, "assign")).status).toBe(200)
+    expect((await call("partners.catalog.assign", assignment, supplierOrg, "stale-assignment")).status).toBe(409)
+    expect(
+      (
+        await call(
+          "catalog.update",
+          {
+            ...update,
+            expectedRevision: 3,
+            customerIds: [randomUUID()],
+            expectedAssignments: [{ customerId: customer, catalogId: id }]
+          },
+          supplierOrg,
+          "bad-customer"
+        )
+      ).status
+    ).toBe(400)
+    expect((await call("catalog.show", { id }, supplierOrg)).body.data.revision).toBe(3)
+    expect(
+      (
+        await call(
+          "partners.catalog.remove",
+          { id: customer, type: "customer", expectedCatalogId: id },
+          supplierOrg,
+          "remove-assignment"
+        )
+      ).status
+    ).toBe(200)
+    expect((await call("catalog.show", { id }, supplierOrg)).body.data).toMatchObject({ revision: 4, customerIds: [] })
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { catalogs: "view", prices: "view" } })
+      .where(eq(memberships.orgId, supplierOrg))
+    expect((await call("catalog.create", input, supplierOrg, "catalog-create")).status).toBe(404)
   })
 })
 
