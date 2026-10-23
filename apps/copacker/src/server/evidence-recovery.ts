@@ -162,16 +162,19 @@ async function targets(input: Input, only?: Target): Promise<Target[]> {
     return [...ids].sort().map((reference) => ({ id: `order:${reference}`, kind: "order", reference, anchor: null }))
   }
   const account = { orgId: input.orgId, externalAccountId: input.externalAccountId, marketplaceId: usMarketplaceId }
-  const reimbursements = await db()
-    .select()
-    .from(amazonReimbursements)
-    .where(
-      and(
-        eq(amazonReimbursements.orgId, account.orgId),
-        eq(amazonReimbursements.externalAccountId, account.externalAccountId),
-        eq(amazonReimbursements.marketplaceId, account.marketplaceId)
-      )
-    )
+  const reimbursements =
+    only?.kind === "receipt"
+      ? []
+      : await db()
+          .select()
+          .from(amazonReimbursements)
+          .where(
+            and(
+              eq(amazonReimbursements.orgId, account.orgId),
+              eq(amazonReimbursements.externalAccountId, account.externalAccountId),
+              eq(amazonReimbursements.marketplaceId, account.marketplaceId)
+            )
+          )
   const ids = new Set(reimbursements.map((row) => row.reimbursementId))
   const missing = new Map<string, Target>()
   for (const row of reimbursements) {
@@ -246,7 +249,7 @@ async function claim(input: Input, target: Target, now: Date) {
     const prior = row?.state.recovery
     const limit = input.source === "amazon" ? 6 : 3
     if (!recoveryDue(prior, now, limit)) {
-      return null
+      return { kind: "not_due" as const }
     }
     const [budget] = await tx.select().from(analyticsFeeds).where(feedScope(input, "recovery:budget"))
     const used =
@@ -254,20 +257,55 @@ async function claim(input: Input, target: Target, now: Date) {
         ? (budget.state.recovery?.attempts ?? 0)
         : 0
     if (used >= (input.source === "amazon" ? 1 : 5)) {
-      return null
+      return { kind: "budget" as const }
     }
     const state: RecoveryState = {
-      attempts: (prior?.attempts ?? 0) + 1,
+      attempts: prior?.attempts ?? 0,
       status: "pending",
       nextAttemptAt: new Date(now.getTime() + day).toISOString(),
       anchor: prior?.anchor ?? target.anchor,
       searched: prior?.searched ?? [],
       outcome: "claimed"
     }
-    for (const [name, recovery] of [
-      [dataset(target.id), state],
-      ["recovery:budget", { ...state, attempts: used + 1 }]
-    ] as const) {
+    let window: { from: Date; to: Date } | undefined
+    if (target.kind !== "order") {
+      if (!state.anchor) {
+        state.status = "exhausted"
+        state.outcome = "dated_reference_required"
+      } else {
+        const reports = target.kind === "receipt" ? amazonMovementReports : amazonReimbursementReports
+        const coverage = await tx
+          .select()
+          .from(reports)
+          .where(
+            and(
+              eq(reports.orgId, input.orgId),
+              eq(reports.externalAccountId, input.externalAccountId),
+              eq(reports.marketplaceId, usMarketplaceId)
+            )
+          )
+        window = recoveryWindows(state.anchor, now, target.kind === "receipt").find(
+          (candidate) =>
+            !state.searched.includes(candidate.from.toISOString()) &&
+            !coverage.some(
+              (row) =>
+                row.from.getTime() === candidate.from.getTime() &&
+                ((row.coveredTo && row.coveredTo >= candidate.to) ||
+                  (row.status === "unavailable" && row.checkedAt.getTime() > now.getTime() - 30 * day))
+            )
+        )
+        if (!window) {
+          state.status = "exhausted"
+          state.outcome = "bounded_search_exhausted"
+        }
+      }
+    }
+    const writes: [string, RecoveryState][] = [[dataset(target.id), state]]
+    if (state.status !== "exhausted") {
+      state.attempts++
+      writes.push(["recovery:budget", { ...state, attempts: used + 1 }])
+    }
+    for (const [name, recovery] of writes) {
       await tx
         .insert(analyticsFeeds)
         .values({
@@ -288,7 +326,7 @@ async function claim(input: Input, target: Target, now: Date) {
           set: { state: { recovery }, checkedAt: now }
         })
     }
-    return state
+    return state.status === "exhausted" ? { kind: "blocked" as const } : { kind: "claimed" as const, state, window }
   })
 }
 
@@ -361,10 +399,14 @@ export async function evidenceRecoveryJob(input: Input, { assertOwned }: Pick<Jo
   }
   for (const target of pending) {
     await assertOwned()
-    const state = await claim(input, target, now)
-    if (!state) {
+    const claimed = await claim(input, target, now)
+    if (claimed.kind === "budget") {
+      break
+    }
+    if (claimed.kind !== "claimed") {
       continue
     }
+    const { state, window } = claimed
     let data: Record<string, unknown> | undefined
     try {
       if (target.kind === "order") {
@@ -377,46 +419,17 @@ export async function evidenceRecoveryJob(input: Input, { assertOwned }: Pick<Jo
           { recoverParents: true }
         )
         state.outcome = "order_refreshed"
-      } else if (!state.anchor) {
-        state.status = "exhausted"
-        state.outcome = "dated_reference_required"
-      } else {
-        const reports = target.kind === "receipt" ? amazonMovementReports : amazonReimbursementReports
-        const saved = await db()
-          .select()
-          .from(reports)
-          .where(
-            and(
-              eq(reports.orgId, input.orgId),
-              eq(reports.externalAccountId, input.externalAccountId),
-              eq(reports.marketplaceId, usMarketplaceId)
-            )
-          )
-        const window = recoveryWindows(state.anchor, now, target.kind === "receipt").find(
-          (candidate) =>
-            !state.searched.includes(candidate.from.toISOString()) &&
-            !saved.some(
-              (row) =>
-                row.from.getTime() === candidate.from.getTime() &&
-                ((row.coveredTo && row.coveredTo >= candidate.to) ||
-                  (row.status === "unavailable" && row.checkedAt.getTime() > now.getTime() - 30 * day))
-            )
+      } else if (window) {
+        const report =
+          target.kind === "receipt" ? amazonMonthlyReports.inventoryMovements : amazonMonthlyReports.reimbursements
+        const result = await report.recover(
+          { ...input, amazon: await amazonFor(input.orgId, input.externalAccountId) },
+          assertOwned,
+          window
         )
-        if (!window) {
-          state.status = "exhausted"
-          state.outcome = "bounded_search_exhausted"
-        } else {
-          const report =
-            target.kind === "receipt" ? amazonMonthlyReports.inventoryMovements : amazonMonthlyReports.reimbursements
-          const result = await report.recover(
-            { ...input, amazon: await amazonFor(input.orgId, input.externalAccountId) },
-            assertOwned,
-            window
-          )
-          state.outcome = result?.errorCode ?? result?.status ?? "request_not_completed"
-          if (result?.status === "imported" || result?.status === "unavailable") {
-            state.searched.push(window.from.toISOString())
-          }
+        state.outcome = result?.errorCode ?? result?.status ?? "request_not_completed"
+        if (result?.status === "imported" || result?.status === "unavailable") {
+          state.searched.push(window.from.toISOString())
         }
       }
     } catch {

@@ -266,3 +266,24 @@ it("shares the daily budget across targets and revisions", async () => {
   await evidenceRecoveryJob({ ...amazon, revision: 2 }, owned)
   expect(clients.report).toHaveBeenCalledTimes(1)
 })
+
+it("does not spend attempts or the daily request budget on an unsearchable target", async () => {
+  await reversal()
+  await database.insert(tables.amazonReimbursements).values({
+    orgId,
+    externalAccountId: "seller",
+    marketplaceId: "ATVPDKIKX0DER",
+    approvedAt: new Date("2023-08-20"),
+    reimbursementId: "old-reversal",
+    originalReimbursementId: "aaa-old"
+  })
+  clients.report.mockResolvedValue(null)
+  await evidenceRecoveryJob(amazon, owned)
+  expect(await state("original:aaa-old")).toMatchObject({
+    attempts: 0,
+    status: "exhausted",
+    outcome: "bounded_search_exhausted"
+  })
+  expect(await state("original:original")).toMatchObject({ attempts: 1 })
+  expect(clients.report).toHaveBeenCalledTimes(1)
+})
