@@ -51,7 +51,11 @@ export async function syncEbayFinances(
     )
     return
   }
-  if (completed && now.getTime() - completed.checkedAt.getTime() < 86400000) {
+  if (
+    completed &&
+    (now.getTime() - completed.checkedAt.getTime() < 86400000 ||
+      Date.parse(completed.state.retryAt ?? "") > now.getTime())
+  ) {
     return
   }
   if (prior?.state.retryAt && Date.parse(prior.state.retryAt) > now.getTime()) {
@@ -129,6 +133,7 @@ export async function syncEbayFinances(
     )
     .orderBy(sql`${analyticsFeeds.checkedAt} asc nulls first`, asc(analyticsEvidence.sourceId))
     .limit(5)
+  let retryAt: string | undefined
   for (const saved of payouts) {
     const payoutId = ebayPayout.parse(saved.data).payoutId
     const dataset = `payout_reconciliation:${payoutId}`
@@ -143,6 +148,7 @@ export async function syncEbayFinances(
       }
       await publishAnalyticsFeed(feed, dataset, [], { error: "payout_collection_failed" }, assertOwned, now)
       if (error instanceof ProviderError && [401, 403, 429].includes(error.status)) {
+        retryAt = new Date(now.getTime() + Math.max(86400000, error.retryAfterMs ?? 0)).toISOString()
         break
       }
       continue
@@ -166,5 +172,5 @@ export async function syncEbayFinances(
     await publishAnalyticsFeed(feed, dataset, [], { error: null }, assertOwned, now)
     await publishAnalyticsFeed(feed, "payouts", [{ id: payout.payoutId, data: payout }], state, assertOwned, now)
   }
-  await publishAnalyticsFeed(feed, "financial_sync", [], { error: null }, assertOwned, now)
+  await publishAnalyticsFeed(feed, "financial_sync", [], { error: null, retryAt }, assertOwned, now)
 }

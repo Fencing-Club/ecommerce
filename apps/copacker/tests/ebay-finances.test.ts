@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { ProviderError } from "@repo/copacker-marketplaces/amazon"
 import { ebayFinanceScope } from "@repo/copacker-marketplaces/ebay-finances"
 import { beforeEach, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -85,6 +86,21 @@ it("does not query finance endpoints until permission is granted", async () => {
   await syncEbayFinances({ ...input, scopes: "" }, async () => undefined, now)
   expect(context.request).not.toHaveBeenCalled()
   expect((await database.select().from(tables.analyticsFeeds))[0]?.state.error).toBe("finance_permission_required")
+})
+it("honors a payout Retry-After longer than the daily refresh", async () => {
+  context.request.mockImplementation(async (_method, path) => {
+    if (path.includes("/payout/P1")) {
+      throw new ProviderError(429, null, "throttled", 2 * 86400000)
+    }
+    if (path.includes("/payout?")) {
+      return { total: 1, payouts: [payout] }
+    }
+    return { total: 0, transactions: [] }
+  })
+  await syncEbayFinances(input, async () => undefined, now)
+  context.request.mockClear()
+  await syncEbayFinances(input, async () => undefined, new Date(now.getTime() + 25 * 3600000))
+  expect(context.request).not.toHaveBeenCalled()
 })
 it("preserves coverage on failed collection and rejects superseded writes", async () => {
   await database.insert(tables.analyticsFeeds).values({
