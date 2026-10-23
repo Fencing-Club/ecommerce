@@ -582,6 +582,18 @@ describe("Supplier CLI changes", () => {
     expect(
       (await call("inventory.update", { ...count, expectedRevision: 4, quantity: 32 }, org, "newer-count")).status
     ).toBe(200)
+    const completedAgain = await call(
+      "product.import",
+      {
+        phase: "complete",
+        intentId: productIntent,
+        handoffId: staged.body.data.handoffId,
+        sha256: productDigest
+      },
+      org,
+      "products-complete-again"
+    )
+    expect(completedAgain.body.data).toEqual(productPreview.body.data)
     expect(
       (
         await call(

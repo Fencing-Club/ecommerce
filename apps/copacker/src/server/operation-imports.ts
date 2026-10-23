@@ -181,6 +181,12 @@ export async function importFile(s: Session, input: z.infer<typeof importInput>,
   if (data.upload.intentId !== input.intentId || data.upload.file.sha256 !== input.sha256) {
     throw new CliError("invalid_upload", "The completed file belongs to another intent.", 409)
   }
+  // uploadedBytes locks the original prepare receipt until this mutation commits.
+  // A handoff has one immutable preview even when completion uses another execution key.
+  const previous = await findImport(s, input.handoffId, inventory)
+  if (previous) {
+    return previous
+  }
   const summary = inventory ? null : await previewImport(s.org.id, data.products)
   const counts = data.counts ? await saveSupplierCounts(s, data.counts, true) : []
   return {
@@ -198,7 +204,7 @@ export async function importFile(s: Session, input: z.infer<typeof importInput>,
       data.products.flatMap((product) => product.variants).filter((variant) => variant.onHand !== null).length
   }
 }
-export async function readImport(s: Session, id: string, inventory: boolean) {
+async function findImport(s: Session, id: string, inventory: boolean) {
   const [receipt] = await db()
     .select()
     .from(operationReceipts)
@@ -211,10 +217,14 @@ export async function readImport(s: Session, id: string, inventory: boolean) {
       )
     )
     .limit(1)
+  return receipt ? preview.parse(receipt.result) : null
+}
+export async function readImport(s: Session, id: string, inventory: boolean) {
+  const receipt = await findImport(s, id, inventory)
   if (!receipt) {
     throw new CliError("not_found", "Import preview not found.", 404)
   }
-  return preview.parse(receipt.result)
+  return receipt
 }
 export async function applyImport(s: Session, id: string, inventory: boolean) {
   const reviewed = await readImport(s, id, inventory)
