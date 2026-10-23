@@ -345,7 +345,7 @@ export function createProgram(environment: CliEnvironment, completed: (code: num
     .option("--all", "Read every page.")
     .option("--require-complete", "Exit 8 for partial or unavailable data.")
     .option("--wait", "Wait through the entity's status operation.")
-    .option("--timeout <seconds>", "Wait deadline, default 300 seconds.")
+    .option("--timeout <seconds>", "Deadline: login defaults to 600 seconds; --wait defaults to 300 seconds.")
     .option("--dry-run", "Preview supported writes.")
     .option("--preview <id>", "Apply a reviewed immutable preview.")
     .option("--batch-id <id>", "Read this entity operation's retained batch.")

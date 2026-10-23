@@ -68,7 +68,7 @@ An expired retained intent fails instead of silently acquiring a new key; inspec
 starting another execution. Old receipt fingerprints contain no business payload and remain as replay-expiry markers.
 
 Browser sign-in waits ten minutes by default, matching the server approval intent. `login --timeout <seconds>` can
-shorten this to 1–600 seconds. Keep the command running while approving the fresh browser page. After expiry, run
+set this to 1 through 600 seconds. Keep the command running while approving the fresh browser page. After expiry, run
 `copacker login` again; the old callback listener has closed. The callback acknowledges receipt of approval, while
 the terminal confirms successful token exchange and protected credential storage.
 
@@ -117,3 +117,4 @@ initial release additionally requires the application spec's typed domain schema
 handlers, durable idempotency/outbox storage, supplier identity/stock fixes, listing links, controlled Shopify/Amazon
 writes, bulk transactions, entity document handlers and protected credential lifecycle. These have not been replaced
 with raw browser-action forwarding or provider credentials in the CLI. Hosted MCP remains a separate adapter.
+
