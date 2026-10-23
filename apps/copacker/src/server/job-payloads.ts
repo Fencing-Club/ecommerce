@@ -64,6 +64,12 @@ export const jobPayloads = {
       .optional()
   }),
   analytics: z.strictObject({ orgId, externalAccountId: z.string().min(1), revision: positive }),
+  "evidence-recovery": z.strictObject({
+    orgId,
+    source: z.enum(["amazon", "shopify"]),
+    externalAccountId: z.string().min(1),
+    revision: positive
+  }),
   "shopify-event": z.object({ orgId, shop: shopDomainSchema, target: z.enum(["sales", "stock", "uninstalled"]) }),
   "shopify-subscribe": z.object({ orgId }),
   "shopify-compliance": z.discriminatedUnion("topic", [

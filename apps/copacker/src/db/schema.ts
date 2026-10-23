@@ -634,6 +634,7 @@ export const jobs = pgTable(
         "stock",
         "sales",
         "analytics",
+        "evidence-recovery",
         "shopify-event",
         "shopify-subscribe",
         "shopify-compliance",
@@ -1411,6 +1412,15 @@ export const analyticsFeeds = pgTable(
         coveredFrom?: string
         error?: string | null
         scopes?: string
+        recovery?: {
+          attempts: number
+          status: "pending" | "resolved" | "unresolved" | "exhausted"
+          nextAttemptAt: string
+          anchor: string | null
+          searched: string[]
+          outcome: string
+          reconciliation?: { checkedAt: string; blockers: string[] }
+        }
       }>()
       .notNull(),
     checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
