@@ -2832,7 +2832,7 @@
                           "fill": "$muted-foreground",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "The main action in a view and the on state of controls: the default button, checked checkboxes and radios, switches that are on. Darker than shadcn's orange on purpose, for contrast, so don't lighten it.",
+                          "content": "The main action in a view and the on state of controls: the default button, checked checkboxes and radios, switches that are on.",
                           "lineHeight": "$leading-xs",
                           "fontFamily": "$font-sans",
                           "fontSize": "$text-xs",
@@ -4254,7 +4254,7 @@
                       "fill": "$muted-foreground",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Solid accents inside the sidebar.",
+                      "content": "Solid accents inside the sidebar. orange-700, darker than shadcn's on purpose, for contrast, so don't lighten it.",
                       "lineHeight": "$leading-sm",
                       "fontFamily": "$font-sans",
                       "fontSize": "$text-sm",
@@ -70627,11 +70627,11 @@
     },
     "secondary": {
       "type": "color",
-      "value": "$neutral-100"
+      "value": "$zinc-100"
     },
     "secondary-foreground": {
       "type": "color",
-      "value": "$neutral-900"
+      "value": "$zinc-900"
     },
     "neutral-900": {
       "type": "color",
@@ -70659,7 +70659,7 @@
     },
     "ring": {
       "type": "color",
-      "value": "$orange-400"
+      "value": "$neutral-400"
     },
     "orange-400": {
       "type": "color",
@@ -71967,7 +71967,7 @@
     },
     "sidebar-ring": {
       "type": "color",
-      "value": "$orange-400"
+      "value": "$neutral-400"
     }
   },
   "fileToken": "1a4ef06c-4e76-41bf-a242-b52e8f977d0b"
