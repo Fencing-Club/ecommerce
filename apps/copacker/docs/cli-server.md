@@ -1,6 +1,6 @@
 # CLI server
 
-The server implements interactive CLI authentication and twenty-seven operations against Copacker's database and connectors.
+The server implements interactive CLI authentication and the operations below against Copacker's database and connectors.
 It is not the entire planned command inventory. Discovery publishes only implemented, authorized handlers.
 
 ## Available operations
@@ -12,6 +12,9 @@ It is not the entire planned command inventory. Discovery publishes only impleme
 - `restock.channel.list`, `report.restock` ([report behavior and current boundaries](cli-restock.md))
 - Product, inventory/location, customer order, PO, shipment, partner and catalog reads
   ([commands, permissions and current projection limits](cli-resource-reads.md)).
+- Supplier catalog, partner, product, inventory and entity import/export writes with protected transfers
+  ([supported contract and limits](cli-entity-writes.md)).
+- Configurable variant stock targets and location groups ([target model](stock-targets.md)).
 
 Connections include saved Shopify, Amazon, eBay and Amazon Ads accounts. Reads omit provider credentials and do not
 probe providers. `authorization_unchecked` distinguishes a saved connection from freshly verified provider access.
@@ -42,7 +45,7 @@ Copacker's WorkOS sign-in, while CLI access has separate database grants and opa
    current database memberships. They never use the browser's workspace cookie. Removed memberships and reduced roles
    take effect on the next request. Writes also lock/recheck the grant and membership inside their transaction.
 
-Token/revoke/operation routes are narrowly exempted from browser CSRF middleware because they authenticate independently.
+Token/revoke/operation routes and `/api/cli/transfers/<id>` are narrowly exempted from browser CSRF middleware because they authenticate independently.
 They reject browser cookies, Origin and Fetch Metadata headers; token forms also reject Authorization headers.
 Browser consent remains protected by both the middleware and its own exact-origin check. No CORS access is enabled.
 The approval page uses `same-origin` referrer policy so its native form retains the Origin header. Its redirect to
