@@ -1,6 +1,6 @@
 import { validatePacking } from "@repo/copacker-packing-rules"
 import { useState } from "react"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type CartonGroup, expandCartonGroups, groupCartons } from "@/lib/carton-groups"
 import {
@@ -12,7 +12,7 @@ import {
   towelPacking,
   towelPackingDraft
 } from "@/stories/fixtures/packing"
-import { shownDialog, width } from "@/stories/play"
+import { chooseMenuItem, shownDialog, width } from "@/stories/play"
 import { CartonTable } from "./carton-table"
 
 // The table with its rows kept in state, as the packing form keeps them.
@@ -154,12 +154,9 @@ export const AddProductBeforeChecking = meta.story({
 
 export const RowMenu = meta.story({
   play: async ({ canvas, args }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Carton B1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Duplicate carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton B1 actions" }), "Duplicate carton")
     await expect(args.onDuplicate).toHaveBeenCalledWith(1)
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull())
-    await userEvent.click(canvas.getByRole("button", { name: "Carton C1 actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete carton" }))
+    await chooseMenuItem(canvas.getByRole("button", { name: "Carton C1 actions" }), "Delete carton")
     await expect(args.onDelete).toHaveBeenCalledWith(2)
   }
 })

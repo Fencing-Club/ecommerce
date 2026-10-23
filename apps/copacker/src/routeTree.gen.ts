@@ -140,6 +140,7 @@ import { Route as ApiAnalyticsPurchaseCostsIdRouteImport } from './routes/api.an
 import { Route as ApiAnalyticsReceiptsIdRouteImport } from './routes/api.analytics.receipts.$id'
 import { Route as ApiAnalyticsUnitMappingsIdRouteImport } from './routes/api.analytics.unit-mappings.$id'
 import { Route as ApiCatalogsIdExportRouteImport } from './routes/api.catalogs.$id.export'
+import { Route as ApiCliTransfersIdRouteImport } from './routes/api.cli.transfers.$id'
 import { Route as ApiCustomersIdCatalogRouteImport } from './routes/api.customers.$id.catalog'
 import { Route as ApiImportsIdCatalogRouteImport } from './routes/api.imports.$id.catalog'
 import { Route as ApiImportsIdSaveRouteImport } from './routes/api.imports.$id.save'
@@ -841,6 +842,11 @@ const ApiCatalogsIdExportRoute = ApiCatalogsIdExportRouteImport.update({
   path: '/export',
   getParentRoute: () => ApiCatalogsIdRoute,
 } as any)
+const ApiCliTransfersIdRoute = ApiCliTransfersIdRouteImport.update({
+  id: '/api/cli/transfers/$id',
+  path: '/api/cli/transfers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCustomersIdCatalogRoute = ApiCustomersIdCatalogRouteImport.update({
   id: '/api/customers/$id/catalog',
   path: '/api/customers/$id/catalog',
@@ -1051,6 +1057,7 @@ export interface FileRoutesByFullPath {
   '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
   '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
+  '/api/cli/transfers/$id': typeof ApiCliTransfersIdRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
   '/api/imports/$id/save': typeof ApiImportsIdSaveRoute
@@ -1197,6 +1204,7 @@ export interface FileRoutesByTo {
   '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
   '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
+  '/api/cli/transfers/$id': typeof ApiCliTransfersIdRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
   '/api/imports/$id/save': typeof ApiImportsIdSaveRoute
@@ -1346,6 +1354,7 @@ export interface FileRoutesById {
   '/api/analytics/receipts/$id': typeof ApiAnalyticsReceiptsIdRoute
   '/api/analytics/unit-mappings/$id': typeof ApiAnalyticsUnitMappingsIdRoute
   '/api/catalogs/$id/export': typeof ApiCatalogsIdExportRoute
+  '/api/cli/transfers/$id': typeof ApiCliTransfersIdRoute
   '/api/customers/$id/catalog': typeof ApiCustomersIdCatalogRoute
   '/api/imports/$id/catalog': typeof ApiImportsIdCatalogRoute
   '/api/imports/$id/save': typeof ApiImportsIdSaveRoute
@@ -1494,6 +1503,7 @@ export interface FileRouteTypes {
     | '/api/analytics/receipts/$id'
     | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
+    | '/api/cli/transfers/$id'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
     | '/api/imports/$id/save'
@@ -1640,6 +1650,7 @@ export interface FileRouteTypes {
     | '/api/analytics/receipts/$id'
     | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
+    | '/api/cli/transfers/$id'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
     | '/api/imports/$id/save'
@@ -1788,6 +1799,7 @@ export interface FileRouteTypes {
     | '/api/analytics/receipts/$id'
     | '/api/analytics/unit-mappings/$id'
     | '/api/catalogs/$id/export'
+    | '/api/cli/transfers/$id'
     | '/api/customers/$id/catalog'
     | '/api/imports/$id/catalog'
     | '/api/imports/$id/save'
@@ -1880,6 +1892,7 @@ export interface RootRouteChildren {
   ApiAnalyticsAmazonFulfillmentShipmentsRoute: typeof ApiAnalyticsAmazonFulfillmentShipmentsRoute
   ApiAnalyticsAmazonProductMappingsRoute: typeof ApiAnalyticsAmazonProductMappingsRouteWithChildren
   ApiAnalyticsAmazonReconciliationRoute: typeof ApiAnalyticsAmazonReconciliationRoute
+  ApiCliTransfersIdRoute: typeof ApiCliTransfersIdRoute
   ApiCustomersIdCatalogRoute: typeof ApiCustomersIdCatalogRoute
   ApiOrdersIdLabelsRoute: typeof ApiOrdersIdLabelsRouteWithChildren
   ApiOrdersIdPoRoute: typeof ApiOrdersIdPoRoute
@@ -2810,6 +2823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCatalogsIdExportRouteImport
       parentRoute: typeof ApiCatalogsIdRoute
     }
+    '/api/cli/transfers/$id': {
+      id: '/api/cli/transfers/$id'
+      path: '/api/cli/transfers/$id'
+      fullPath: '/api/cli/transfers/$id'
+      preLoaderRoute: typeof ApiCliTransfersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/customers/$id/catalog': {
       id: '/api/customers/$id/catalog'
       path: '/api/customers/$id/catalog'
@@ -3322,6 +3342,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAnalyticsAmazonProductMappingsRoute:
     ApiAnalyticsAmazonProductMappingsRouteWithChildren,
   ApiAnalyticsAmazonReconciliationRoute: ApiAnalyticsAmazonReconciliationRoute,
+  ApiCliTransfersIdRoute: ApiCliTransfersIdRoute,
   ApiCustomersIdCatalogRoute: ApiCustomersIdCatalogRoute,
   ApiOrdersIdLabelsRoute: ApiOrdersIdLabelsRouteWithChildren,
   ApiOrdersIdPoRoute: ApiOrdersIdPoRoute,

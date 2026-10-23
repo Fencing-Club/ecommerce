@@ -31,9 +31,11 @@ Shopify token, so concurrent jobs renew it once.
 - `src/server/order-history.ts`: `recordEvent(executor, orderId, actor, event)` adds to a PO's timeline;
   `reviseOrder(tx, order, data, { actor, reason, set })` saves the PO's next revision with its history row; and
   `queuePoEmail(tx, order, supplier)` emails a revision to a supplier that has joined, once per revision.
-- `src/lib/shipment-states.ts`: the shipment state groups (released, packed, finished) and `canEditPacking` and
-  `canReopenPacking`, shared by the server and the pages. `refusePendingChanges` (`src/server/orders.ts`) keeps
-  packing waiting while a supplier's proposed changes are with the buyer.
+- `@repo/copacker-shipments/states`: the shipment states, their groups (released, packed, finished and the rest), and
+  `canEditPacking` and `canReopenPacking`, shared by the server and the pages; see
+  [shipment states](../../../packages/copacker-shipments/docs/README.md#shipment-states). `src/lib/shipment-states.ts`
+  keeps only the label kinds a released shipment shares (`releasedLabelKinds`). `refusePendingChanges`
+  (`src/server/orders.ts`) keeps packing waiting while a supplier's proposed changes are with the buyer.
 
 ## Sales sync copies
 

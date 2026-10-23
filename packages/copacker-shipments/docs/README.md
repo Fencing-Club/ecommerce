@@ -12,6 +12,13 @@ The carton and pallet rules, and `validatePacking`, live in
 building Amazon's inbound plans (`buildFbaPlan`, `buildAwdRequest`). Each PO line names its `receiver`; import the
 receivers and `orderDestination`, which reads where the PO goes from them, from that package.
 
+## Shipment states
+
+`states` lists every state a shipment can be in (`shipmentStates`, `ShipmentState`) and the groups the app and
+transport check: `openPackingStates`, `amazonRequestStates`, `releasedStates`, `shippedStates`, `packedStates` and
+`finishedStates`. `canEditPacking` and `canReopenPacking` say when packing can still change. The app's database column
+and pages read these rather than listing states themselves. `canConfigureTransport` in `transport` uses them too.
+
 ## Amazon inbound shipments
 
 Naming FBA and AWD shipments, the FBA plan's choices and inbound freight: see [Amazon inbound shipments](amazon-inbound.md).

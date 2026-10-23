@@ -1,3 +1,4 @@
+import { amazonFeeTypes, isAmazonFee } from "@repo/copacker-marketplaces/sales"
 import { z } from "zod"
 import { formatMoney, sumMoney } from "@/lib/financial-money"
 import { type HistoricalProductMapping, historicalProductMatch } from "./amazon-product-mappings"
@@ -6,8 +7,6 @@ import { type ReconciliationPosting, postingAmount, checkPostingTotal, postingEv
 const object = z.record(z.string(), z.unknown())
 const list = z.array(object)
 type Money = NonNullable<ReturnType<typeof postingAmount>>
-const isFee = (path: string[]) =>
-  path.includes("AmazonFees") || ["Commission", "FBAPerUnitFulfillmentFee"].includes(path.at(-1) ?? "")
 // Validate every parent/child sum and return leaves once. Unknown categories remain unclassified.
 function feeLeaves(
   value: unknown,
@@ -43,7 +42,7 @@ function feeLeaves(
         return { valid: false, fees: [] }
       }
       fees.push(...nested.fees)
-    } else if (isFee(next)) {
+    } else if (isAmazonFee(next)) {
       fees.push(amount)
     }
   }
@@ -164,7 +163,7 @@ export function allocateAmazonPosting(posting: ReconciliationPosting, mappings: 
     unallocatedFees: unallocatedFees ? formatMoney(unallocatedFees) : null,
     recognizedFees: balancedFees && reason === null ? formatMoney(feeTotal) : null,
     feeCheck: balancedFees && reason === null ? "balanced" : "unavailable",
-    feeScope: "AmazonFees, Commission, FBAPerUnitFulfillmentFee",
+    feeScope: [...amazonFeeTypes].join(", "),
     allocations
   }
 }

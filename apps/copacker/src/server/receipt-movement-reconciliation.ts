@@ -52,14 +52,17 @@ export function reconcileReceiptMovements(
       if (!Number.isSafeInteger(quantity) || quantity < 0) {
         blockers.push("invalid_net_receipt_quantity")
       }
-      const comparable = blockers.length === 0
-      let status = "requires_review"
-      if (comparable) {
-        status = quantity === row.received ? "quantity_agrees" : "quantity_differs"
+      const observable = blockers.length === 0
+      let observationStatus = "unavailable"
+      if (observable) {
+        observationStatus = quantity === row.received ? "quantity_agrees" : "quantity_differs"
       }
+      // Neither a shipment name nor the first retained movement establishes the start of receiving.
+      blockers.push("receipt_period_unknown")
       return {
         sku: row.sku,
-        status,
+        status: "requires_review",
+        observationStatus,
         blockers,
         movementRows: matched.map((movement) => ({
           id: movement.id,
@@ -67,9 +70,11 @@ export function reconcileReceiptMovements(
           quantity: movement.quantity
         })),
         received: row.received,
-        movementQuantity: comparable ? quantity : null,
-        difference: comparable && row.received !== null ? quantity - row.received : null,
-        differenceMeaning: "stored_movement_units_minus_shipment_received_units",
+        observedMovementQuantity: observable ? quantity : null,
+        observedDifference: observable && row.received !== null ? quantity - row.received : null,
+        observedDifferenceMeaning:
+          "stored_movement_units_minus_shipment_received_units_not_full_receipt_reconciliation",
+        difference: null,
         receiptDate: null,
         lossConfirmed: false
       }

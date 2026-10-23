@@ -272,13 +272,17 @@ describe("products", () => {
     const product = await insertProduct(supplierA, { supplierSku: "SAME", priceMinor: 190 })
     const other = await insertProduct(supplierA, { supplierSku: "OTHER", trackInventory: true, onHand: 5 })
     const stock = (onHand: number) =>
-      saveStock(post("/api/supplier-catalog/stock", { counts: [{ id: product.id, onHand }] }))
+      saveStock(
+        post("/api/supplier-catalog/stock", {
+          counts: [{ id: product.id, onHand, expectedRevision: product.revision }]
+        })
+      )
     // An untracked product is made to order, so it has no count to set, and one bad count saves none.
     expect((await stock(12)).status).toBe(404)
     const both = {
       counts: [
-        { id: other.id, onHand: 9 },
-        { id: product.id, onHand: 12 }
+        { id: other.id, onHand: 9, expectedRevision: other.revision },
+        { id: product.id, onHand: 12, expectedRevision: product.revision }
       ]
     }
     expect((await saveStock(post("/api/supplier-catalog/stock", both))).status).toBe(404)

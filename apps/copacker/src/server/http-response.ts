@@ -122,6 +122,7 @@ const crossSite = [
   /^\/api\/webhooks\//,
   /^\/api\/mailing-list\/unsubscribe$/,
   /^\/api\/cli\/(token|revoke)$/,
+  /^\/api\/cli\/transfers\/[0-9a-f-]{36}$/,
   /^\/api\/operations\/[a-z][a-z0-9.-]*$/
 ]
 

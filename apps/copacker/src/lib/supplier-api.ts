@@ -70,7 +70,10 @@ const supplierApi = api.injectEndpoints({
       query: (body) => ({ url: "supplier-catalog/status", method: "POST", body })
     }),
     // The Inventory page's changed on hand counts, all saved or none.
-    saveStock: build.mutation<{ saved: number }, { counts: Array<{ id: string; onHand: number }> }>({
+    saveStock: build.mutation<
+      { saved: number },
+      { counts: Array<{ id: string; onHand: number; expectedRevision: number }> }
+    >({
       query: (body) => ({ url: "supplier-catalog/stock", method: "POST", body })
     }),
     setTracking: build.mutation<

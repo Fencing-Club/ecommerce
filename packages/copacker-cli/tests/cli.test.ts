@@ -73,6 +73,12 @@ describe("CLI input and output", () => {
       connectionId: workspace
     })
     expect(buildInput(find("po.show"), {}, [workspace]).input).toEqual({ id: workspace })
+    for (const operation of ["product.import.apply", "inventory.import.apply"]) {
+      expect(buildInput(find(operation), { reviewed: true }, [workspace]).input).toEqual({
+        previewId: workspace,
+        reviewed: true
+      })
+    }
     expect(
       buildInput(
         find("inventory.update"),

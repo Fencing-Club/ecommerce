@@ -17,7 +17,9 @@ export const Route = createFileRoute("/_auth/cli/authorize")({
   loader: ({ deps }) => readCliConsent({ data: deps }),
   head: (context) => ({
     ...pageHead(context),
-    meta: [...(pageHead(context).meta ?? []), { name: "referrer", content: "no-referrer" }]
+    // Native form POSTs under no-referrer send Origin: null and fail the consent origin check.
+    // Keep the origin on this same-site POST; the consent response suppresses referrers to the loopback callback.
+    meta: [...(pageHead(context).meta ?? []), { name: "referrer", content: "same-origin" }]
   }),
   component: CliConsentPage
 })

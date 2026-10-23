@@ -82,8 +82,8 @@ export const EditCounts = meta.story({
     await waitFor(() =>
       expect(counted).toHaveBeenCalledWith({
         counts: [
-          { id: natural!.id, onHand: 125 },
-          { id: black!.id, onHand: 30 }
+          { id: natural!.id, onHand: 125, expectedRevision: natural!.revision },
+          { id: black!.id, onHand: 30, expectedRevision: black!.revision }
         ]
       })
     )

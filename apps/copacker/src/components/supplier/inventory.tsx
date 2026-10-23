@@ -143,7 +143,9 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
   const changes = rows.flatMap((row) => {
     const text = edits[row.id]
     const next = text === undefined ? row.onHand : count(text)
-    return row.trackInventory && text !== undefined && next !== row.onHand ? [{ id: row.id, onHand: next }] : []
+    return row.trackInventory && text !== undefined && next !== row.onHand
+      ? [{ id: row.id, onHand: next, expectedRevision: row.revision }]
+      : []
   })
   const invalid = changes.some((change) => change.onHand === null)
   const shown = rows.filter((row) => tests[tab](row) && matches(query, row.title, row.variant, row.supplierSku))
@@ -162,7 +164,9 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     setError("")
     try {
       await saveStock({
-        counts: changes.flatMap(({ id, onHand }) => (onHand === null ? [] : [{ id, onHand }]))
+        counts: changes.flatMap(({ id, onHand, expectedRevision }) =>
+          onHand === null ? [] : [{ id, onHand, expectedRevision }]
+        )
       }).unwrap()
       setEdits({})
       router.invalidate()

@@ -105,7 +105,10 @@ export default {
       headers.set("Cache-Control", "private, no-store")
     }
     headers.set("X-Content-Type-Options", "nosniff")
-    headers.set("Referrer-Policy", "same-origin")
+    // OAuth callbacks may explicitly suppress all referrers; do not weaken that endpoint policy.
+    if (headers.get("Referrer-Policy") !== "no-referrer") {
+      headers.set("Referrer-Policy", "same-origin")
+    }
     if (env.DEPLOYMENT_ENV !== "production") {
       headers.set("X-Robots-Tag", "noindex, nofollow")
     }

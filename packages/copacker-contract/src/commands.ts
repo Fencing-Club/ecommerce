@@ -1,7 +1,7 @@
 export interface CommandDefinition {
   operation: string
   description: string
-  positional?: "id" | "variantId" | "reference" | "query" | "provider" | "operation"
+  positional?: "id" | "variantId" | "previewId" | "reference" | "query" | "provider" | "operation"
   upload?: boolean
   export?: boolean
   write?: boolean
@@ -203,6 +203,7 @@ export const commands: readonly CommandDefinition[] = [
   list("product.list", "List buyer or supplier products.", productFilters),
   read("product.show", "Show variants, listing links and field write destinations.", ["operation-id"]),
   list("product.search", "Search products and exact SKUs.", ["connection", "supplier"], "query"),
+  read("product.settings.show", "Show Copacker-owned product settings and their revision."),
   command("product.create", "Create a supplier-owned product.", [], { write: true }),
   controlled("product.update", "Update permitted product fields or supplier product data.", guarded, "id"),
   controlled("product.variant.update", "Update metadata or a Shopify-owned SKU.", [...guarded, "sku"], "variantId"),
@@ -244,7 +245,7 @@ export const commands: readonly CommandDefinition[] = [
     "connection"
   ]),
   read("product.import.show", "Inspect product import rows and issues.", ["operation-id"]),
-  write("product.import.apply", "Apply a reviewed product import.", [...guarded, "reviewed"]),
+  write("product.import.apply", "Apply a reviewed product import.", ["reviewed"], "previewId"),
   exportCommand("product.export", "Export products and permitted pricing.", productFilters),
   command("product.template", "Download a product import template.", ["kind", "file-format"]),
   read("product.label.show", "Show label settings and uploaded barcode metadata.", ["variant"]),
@@ -257,6 +258,9 @@ export const commands: readonly CommandDefinition[] = [
   list("inventory.list", "List native balances, units and snapshot provenance.", stockFilters),
   read("inventory.show", "Show a product's stock by location.", ["location", "operation-id"]),
   list("inventory.history", "Read available stock-day history.", ["location", ...period], "id"),
+  upload("inventory.import", "Preview a supplier inventory CSV with guarded counts.", []),
+  read("inventory.import.show", "Inspect a supplier inventory import preview."),
+  write("inventory.import.apply", "Apply a reviewed supplier inventory import.", ["reviewed"], "previewId"),
   exportCommand("inventory.export", "Export inventory balances.", stockFilters),
   controlled(
     "inventory.update",

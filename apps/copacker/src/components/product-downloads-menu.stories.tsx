@@ -1,5 +1,6 @@
 import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { chooseMenuItem } from "@/stories/play"
 import { ProductDownloadsMenu } from "./product-downloads-menu"
 const meta = preview.meta({
   title: "Components/Products/Product downloads menu",
@@ -15,14 +16,13 @@ const meta = preview.meta({
 })
 export const Default = meta.story({
   play: async ({ canvas, args }) => {
+    await chooseMenuItem(canvas.getByRole("button", { name: "Product labels" }), "FNSKU labels")
+    await expect(args.onDownload).toHaveBeenCalledWith(["fnsku"])
     await userEvent.click(canvas.getByRole("button", { name: "Product labels" }))
     await expect(await screen.findByRole("menuitem", { name: /Choking hazard labels/ })).toHaveAttribute(
       "aria-disabled",
       "true"
     )
-    await userEvent.click(await screen.findByRole("menuitem", { name: "FNSKU labels" }))
-    await expect(args.onDownload).toHaveBeenCalledWith(["fnsku"])
-    await userEvent.click(canvas.getByRole("button", { name: "Product labels" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Download all product labels" }))
     await expect(args.onDownload).toHaveBeenLastCalledWith(["sku", "fnsku"])
   }

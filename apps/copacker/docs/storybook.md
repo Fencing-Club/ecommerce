@@ -41,6 +41,11 @@ at the stories. A popup still shows from the frame after it opens, so check it w
 `shownDialog` or `chooseOption`, which wait for it. The stories don't retry: one that fails has a problem to fix, not a
 moment it missed.
 
+Test runs also mock each story file's requests inside its own frame. Vitest runs several story files at once, and MSW's
+one service worker for all of them loses track of which frame asked: a frame's requests would get another file's
+answers, or none, and its modules could fail to load. So `.storybook/vitest.setup.ts` hides the Service Worker API, and
+MSW intercepts `fetch` and `XMLHttpRequest` in the page instead. Storybook itself still uses the worker.
+
 Components compile through the React Compiler in Storybook too (`.storybook/main.ts`), as they do in the app, so play
 tests run the memoized code people get. Story files themselves stay uncompiled: a page story's server half is an async
 function its loader calls outside React.
@@ -183,6 +188,9 @@ export const Default = meta.story({
 - `chooseOption(control, option)` opens a select or combobox, picks an option and waits for the list to close, so the
   next step never meets a list that's going away. For a list that stays open, such as a multiple choice, click the
   options directly.
+- `chooseMenuItem(trigger, item)` does the same for a menu. A closing menu keeps its items until it's gone, without
+  taking clicks, so opening a menu with the same items again too soon finds the old one's. `closeMenu()` closes an
+  open menu with Escape and waits for it to go.
 - `settled()` waits a couple of frames for what a component schedules as it mounts. `chooseOption` calls it; call it
   before a play function's first typing or click when that comes before anything else.
 - `width(className)` is a decorator that shows a story in a column of a Tailwind width (`"w-72"`, `"max-w-lg"`): the

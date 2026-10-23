@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks"
 import { PGlite } from "@electric-sql/pglite"
 import { getTableName } from "drizzle-orm"
 import type { PgTable } from "drizzle-orm/pg-core"
@@ -12,8 +13,13 @@ export const pg = new PGlite()
 export const database = drizzle(pg, { schema })
 
 // The app's `db()`, for `vi.mock("@/db", () => import("./test-db"))`.
+type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0]
+const transactionContext = new AsyncLocalStorage<Transaction>()
 export function db() {
-  return database
+  return transactionContext.getStore() ?? database
+}
+export function withTransaction<T>(transaction: Transaction, run: () => Promise<T>) {
+  return transactionContext.run(transaction, run)
 }
 
 // Creates the schema from src/db/schema.ts before the tests and closes the database after them. Call it once per file.

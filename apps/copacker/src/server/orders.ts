@@ -4,6 +4,13 @@ import { approveChanges, commercialChanges, orderInputSchema } from "@repo/copac
 import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
 import { amazonNetworkNames, packingDraftSchema, splitByNetwork } from "@repo/copacker-shipments"
+import {
+  canEditPacking,
+  canReopenPacking,
+  finishedStates,
+  openPackingStates,
+  type ShipmentState
+} from "@repo/copacker-shipments/states"
 import { ne, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Transaction } from "@/db"
@@ -20,14 +27,12 @@ import {
   connections,
   contacts,
   landedCosts,
-  poImports,
-  type ShipmentState
+  poImports
 } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { bundleQuote } from "@/lib/bundle-quote"
 import { quantityProblem } from "@/lib/catalog-pricing"
-import { canEditPacking, canReopenPacking, finishedStates } from "@/lib/shipment-states"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { withJobWake } from "@/server/job-delivery"
 import { accessibleOrder, accessibleShipment } from "./access"
@@ -450,7 +455,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
   const submitted = await withJobWake(
     db().transaction(async (tx) => {
       const { order, supplier, shipment } = await accessibleShipment(s, shipmentId, { executor: tx, lock: true })
-      if (!["packing", "correction"].includes(shipment.status) || shipment.revision !== expectedRevision) {
+      if (!openPackingStates.includes(shipment.status) || shipment.revision !== expectedRevision) {
         throw new LocalizedError("shipmentChangedSubmit")
       }
       await refusePendingChanges(tx, order.id)

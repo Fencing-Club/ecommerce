@@ -30,6 +30,7 @@ import { presetRange } from "@/lib/date-range"
 import { stores, type Store } from "@/lib/stores"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { withJobWake } from "@/server/job-delivery"
+import { countedAmazonTransaction } from "./amazon-counted-transaction"
 import { syncAmazonExtraEvidence } from "./amazon-extra-evidence"
 import { syncAmazonFees } from "./amazon-fees"
 import { amazonMonthlyReports, amazonReportCoverage } from "./amazon-monthly-reports"
@@ -938,7 +939,7 @@ export async function listSalesOrders(
             eq(amazonTransactions.orgId, orgId),
             inArray(amazonTransactions.orderId, amazonIds),
             // A release of a deferred payment repeats that payment's fees.
-            sql`not coalesce(${amazonTransactions.data}->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'`
+            countedAmazonTransaction(sql.identifier("amazon_transactions"))
           )
         )
         .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)
