@@ -393,7 +393,7 @@
     "removeCarton": "Retirer le carton {name}",
     "addCarton": "Ajouter un carton",
     "noCartons": "Aucun carton pour l’instant",
-    "noCartonsDescription": "Ajoutez un carton, puis dupliquez les cartons identiques.",
+    "noCartonsDescription": "Ajoutez un carton et indiquez le Nombre pour les cartons identiques, ou importez une feuille de calcul.",
     "saveDraft": "Enregistrer le brouillon",
     "check": "Vérifier l’emballage",
     "submit": "Envoyer la liste de colisage",
@@ -415,6 +415,9 @@
     "addNewAddress": "Ajouter une adresse",
     "chooseAddress": "Adresse d’enlèvement",
     "packedUnits": "{count} sur {available, plural, one {# unité} other {# unités}}",
+    "productCount": "{products, plural, one {# produit} other {# produits}}",
+    "productsLeft": "{products, plural, one {# produit} other {# produits}}, {count, plural, one {# unité restante} other {# unités restantes}}",
+    "productsPacked": "{products, plural, one {# produit} other {# produits}}, tout est emballé",
     "leftCount": "{count} restant(s)",
     "overCount": "{count} en trop",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} sur {total, plural, one {# carton} other {# cartons}} sur palettes",
     "addPallet": "Ajouter une palette",
     "noPallets": "Aucune palette pour l’instant",
-    "noPalletsDescription": "Ajoutez une palette, puis choisissez les cartons qu’elle porte.",
+    "noPalletsDescription": "Ajoutez une palette et choisissez les cartons qu’elle porte, ou importez une feuille de calcul.",
     "columns": {
       "pallet": "Palette",
       "dimensions": "Dimensions",

@@ -61,7 +61,6 @@
       "title": "供应商资料包已就绪",
       "downloadLabel": "下载货件资料包",
       "incompleteTitle": "供应商资料包不完整",
-      "waitingForLabels": "等待买家的标签",
       "cartonLabels": "外箱标签",
       "unitLabels": "商品标签",
       "carrierLabels": "承运商标签",
@@ -69,15 +68,6 @@
       "backToShipment": "返回货件",
       "document": "货件资料包",
       "documentDescription": "货件的全部文件"
-    },
-    "cartons": {
-      "title": "箱",
-      "carton": "箱",
-      "product": "产品",
-      "units": "件数",
-      "dimensions": "尺寸（cm）",
-      "weight": "重量（kg）",
-      "amazonLabel": "箱标"
     },
     "pickup": {
       "title": "提货",
@@ -110,12 +100,6 @@
       "updateCost": "同时更新 Shopify 单位成本",
       "updateCostDescription": "Shopify 成本须使用采购订单的币种。",
       "submit": "批准修改"
-    },
-    "correction": {
-      "trigger": "申请更正",
-      "submit": "申请更正",
-      "reason": "需要更改什么？",
-      "reasonDescription": "此货件的文件将失效。"
     },
     "reconcile": {
       "submit": "验证并继续",

@@ -393,7 +393,7 @@
     "removeCarton": "Rimuovi cartone {name}",
     "addCarton": "Aggiungi cartone",
     "noCartons": "Ancora nessun cartone",
-    "noCartonsDescription": "Aggiungi un cartone, poi duplica quelli identici.",
+    "noCartonsDescription": "Aggiungi un cartone e imposta il Numero per quelli identici, oppure importa un foglio di calcolo.",
     "saveDraft": "Salva bozza",
     "check": "Verifica imballaggio",
     "submit": "Invia packing list",
@@ -415,6 +415,9 @@
     "addNewAddress": "Aggiungi indirizzo",
     "chooseAddress": "Indirizzo di ritiro",
     "packedUnits": "{count} di {available} unità",
+    "productCount": "{products, plural, one {# prodotto} other {# prodotti}}",
+    "productsLeft": "{products, plural, one {# prodotto} other {# prodotti}}, {count} unità rimanenti",
+    "productsPacked": "{products, plural, one {# prodotto} other {# prodotti}}, tutto imballato",
     "leftCount": "{count} rimanenti",
     "overCount": "{count} in eccesso",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} di {total, plural, one {# cartone} other {# cartoni}} su pallet",
     "addPallet": "Aggiungi pallet",
     "noPallets": "Ancora nessun pallet",
-    "noPalletsDescription": "Aggiungi un pallet, poi scegli i cartoni che porta.",
+    "noPalletsDescription": "Aggiungi un pallet e scegli i cartoni che porta, oppure importa un foglio di calcolo.",
     "columns": {
       "pallet": "Pallet",
       "dimensions": "Dimensioni",

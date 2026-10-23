@@ -7,12 +7,14 @@ import { ShipmentProgress } from "./shipment-progress"
 const meta = preview.meta({
   title: "Components/Shipments/Shipment progress",
   component: ShipmentProgress,
-  args: { processing: false, message: "The forwarder ships it on next." }
+  args: { processing: false, message: "Cancel the existing Amazon shipment before creating a replacement" }
 })
 
 export const NextStep = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("status")).toHaveTextContent("The forwarder ships it on next.")
+    await expect(canvas.getByRole("status")).toHaveTextContent(
+      "Cancel the existing Amazon shipment before creating a replacement"
+    )
     await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })

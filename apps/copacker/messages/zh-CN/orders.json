@@ -393,7 +393,7 @@
     "removeCarton": "移除箱子 {name}",
     "addCarton": "添加箱子",
     "noCartons": "还没有箱子",
-    "noCartonsDescription": "添加一个箱子，然后复制相同的箱子。",
+    "noCartonsDescription": "添加一个箱子并为相同的箱子设置箱数，或导入电子表格。",
     "saveDraft": "保存草稿",
     "check": "检查装箱",
     "submit": "提交装箱单",
@@ -415,6 +415,9 @@
     "addNewAddress": "添加地址",
     "chooseAddress": "提货地址",
     "packedUnits": "{count} / {available} 件",
+    "productCount": "{products} 种商品",
+    "productsLeft": "{products} 种商品，还剩 {count} 件",
+    "productsPacked": "{products} 种商品，已全部装箱",
     "leftCount": "还剩 {count}",
     "overCount": "多出 {count}",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{total, plural, other {# 箱}}中 {count, number} 箱已上托盘",
     "addPallet": "添加托盘",
     "noPallets": "尚无托盘",
-    "noPalletsDescription": "添加托盘，然后选择托盘上的纸箱。",
+    "noPalletsDescription": "添加托盘并选择托盘上的纸箱，或导入电子表格。",
     "columns": {
       "pallet": "托盘",
       "dimensions": "尺寸",

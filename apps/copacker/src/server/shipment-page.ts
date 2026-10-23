@@ -84,9 +84,8 @@ export async function shipmentPage(input: { id: string }) {
   // A purchase order's shipments are numbered oldest first, as on the shipments list.
   const title = t("title", { number: workflow.shipments.findIndex((row) => row.id === id) + 1 })
   const destination = await shipmentDestinations([order.data])
-  // What happens next, where nothing below shows it: the forwarder's leg, or cancelling in Amazon first.
-  const nextStep =
-    step.next.step === "forward" || (isBuyer && step.next.step === "cancellation") ? step.next.message : undefined
+  // What happens next, where nothing below shows it: cancelling in Amazon first.
+  const nextStep = isBuyer && step.next.step === "cancellation" ? step.next.message : undefined
   const labels = await lineLabels({ ...order, data: snapshot })
   // The viewer's next step when it's a single click, beside the title.
   return {

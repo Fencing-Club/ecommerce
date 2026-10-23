@@ -61,7 +61,6 @@
       "title": "سپلائر پیکٹ تیار ہے",
       "downloadLabel": "شپمنٹ پیکٹ ڈاؤن لوڈ کریں",
       "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
-      "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے",
       "cartonLabels": "کارٹن لیبل",
       "unitLabels": "مصنوعات کے لیبل",
       "carrierLabels": "کیریئر لیبل",
@@ -69,15 +68,6 @@
       "backToShipment": "شپمنٹ پر واپس جائیں",
       "document": "شپمنٹ پیکٹ",
       "documentDescription": "شپمنٹ کی تمام دستاویزات"
-    },
-    "cartons": {
-      "title": "کارٹن",
-      "carton": "کارٹن",
-      "product": "پروڈکٹ",
-      "units": "یونٹس",
-      "dimensions": "پیمائش (cm)",
-      "weight": "وزن (kg)",
-      "amazonLabel": "کارٹن لیبل"
     },
     "pickup": {
       "title": "پک اپ",
@@ -110,12 +100,6 @@
       "updateCost": "Shopify میں یونٹ لاگت بھی اپ ڈیٹ کریں",
       "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے۔",
       "submit": "تبدیلیاں منظور کریں"
-    },
-    "correction": {
-      "trigger": "درستگی کی درخواست کریں",
-      "submit": "درستگی کی درخواست کریں",
-      "reason": "کیا تبدیل کرنا ہے؟",
-      "reasonDescription": "اس شپمنٹ کی دستاویزات پرانی ہو جائیں گی۔"
     },
     "reconcile": {
       "submit": "تصدیق کر کے جاری رکھیں",

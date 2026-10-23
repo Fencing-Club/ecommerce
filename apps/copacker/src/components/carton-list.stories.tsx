@@ -1,11 +1,11 @@
 import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { groupCartons } from "@/lib/carton-groups"
 import { towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
 import { CartonList } from "./carton-list"
 
 const packed = groupCartons(towelPacking().cartons)
+const actions = () => ({ onAdd: fn(), onImport: fn(), onExport: fn() })
 
 const meta = preview.meta({
   title: "Components/Shipments/Carton list",
@@ -32,15 +32,16 @@ export const Packing = meta.story({
     cartons: groupCartons(towelPackingDraft().cartons),
     showErrors: true,
     onChange: fn(),
-    actions: (
-      <Button type="button" variant="outline">
-        Add carton
-      </Button>
-    )
+    actions: actions()
   },
   play: async ({ canvas, args }) => {
     const section = within(canvas.getByRole("region", { name: "Cartons" }))
-    await expect(section.getByRole("button", { name: "Add carton" })).toBeVisible()
+    await expect(section.getByRole("button", { name: "Export cartons" })).toBeVisible()
+    await userEvent.click(section.getByRole("button", { name: "Import cartons" }))
+    await expect(args.actions?.onImport).toHaveBeenCalled()
+    await userEvent.click(section.getByRole("button", { name: "Add carton" }))
+    await expect(args.actions?.onAdd).toHaveBeenCalled()
+    await expect(section.getByText(/^\d+ of 540 units$/)).toBeVisible()
     const weight = section.getByRole("spinbutton", { name: "Carton B1: Weight (kg)" })
     await expect(weight).toHaveAttribute("aria-invalid", "true")
     await userEvent.type(weight, "9")
@@ -78,11 +79,46 @@ export const Errors = meta.story({
   }
 })
 
+// With no cartons, Add carton and Import cartons sit in the empty box, and the section's line has no actions until the
+// first carton is added.
 export const Empty = meta.story({
-  args: { readOnly: false, cartons: [] },
+  args: { readOnly: false, cartons: [], actions: actions() },
+  play: async ({ canvas, args }) => {
+    const section = within(canvas.getByRole("region", { name: "Cartons" }))
+    await expect(section.getByText("No cartons yet")).toBeVisible()
+    await expect(
+      section.getByText("Add a carton and set Count for identical ones, or import a spreadsheet.")
+    ).toBeVisible()
+    await expect(section.getByText("0 of 540 units")).toBeVisible()
+    await expect(section.queryByRole("button", { name: "Export cartons" })).toBeNull()
+    await userEvent.click(section.getByRole("button", { name: "Add carton" }))
+    await expect(args.actions?.onAdd).toHaveBeenCalled()
+    await userEvent.click(section.getByRole("button", { name: "Import cartons" }))
+    await expect(args.actions?.onImport).toHaveBeenCalled()
+  }
+})
+
+// Someone who can't change the packing sees that there are no cartons, and nothing to do about it.
+export const EmptyReadOnly = meta.story({
+  args: { cartons: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("No cartons yet")).toBeVisible()
-    await expect(canvas.getByText("0 of 540 units")).toBeVisible()
+    await expect(canvas.queryByText(/import a spreadsheet/)).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Add carton" })).toBeNull()
+  }
+})
+
+// The chevron before the title closes the list, and opens it again; the units stay beside the title.
+export const Collapsed = meta.story({
+  play: async ({ canvas }) => {
+    const toggle = canvas.getByRole("button", { name: "Cartons" })
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
+    await userEvent.click(toggle)
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await expect(canvas.queryByRole("heading", { name: "A1–A10" })).toBeNull()
+    await expect(canvas.getByText("540 of 540 units")).toBeVisible()
+    await userEvent.click(toggle)
+    await expect(canvas.getByRole("heading", { name: "A1–A10" })).toBeVisible()
   }
 })
 

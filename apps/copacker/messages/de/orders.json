@@ -393,7 +393,7 @@
     "removeCarton": "Karton {name} entfernen",
     "addCarton": "Karton hinzufügen",
     "noCartons": "Noch keine Kartons",
-    "noCartonsDescription": "Fügen Sie einen Karton hinzu und duplizieren Sie dann identische.",
+    "noCartonsDescription": "Fügen Sie einen Karton hinzu und legen Sie für identische die Anzahl fest, oder importieren Sie eine Tabelle.",
     "saveDraft": "Entwurf speichern",
     "check": "Packliste prüfen",
     "submit": "Packliste senden",
@@ -415,6 +415,9 @@
     "addNewAddress": "Adresse hinzufügen",
     "chooseAddress": "Abholadresse",
     "packedUnits": "{count} von {available, plural, one {# Einheit} other {# Einheiten}}",
+    "productCount": "{products, plural, one {# Produkt} other {# Produkte}}",
+    "productsLeft": "{products, plural, one {# Produkt} other {# Produkte}}, {count, plural, one {# Einheit} other {# Einheiten}} offen",
+    "productsPacked": "{products, plural, one {# Produkt} other {# Produkte}}, alles gepackt",
     "leftCount": "{count} offen",
     "overCount": "{count} zu viel",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} von {total, plural, one {# Karton} other {# Kartons}} auf Paletten",
     "addPallet": "Palette hinzufügen",
     "noPallets": "Noch keine Paletten",
-    "noPalletsDescription": "Fügen Sie eine Palette hinzu und wählen Sie dann die Kartons darauf aus.",
+    "noPalletsDescription": "Fügen Sie eine Palette hinzu und wählen Sie die Kartons darauf aus, oder importieren Sie eine Tabelle.",
     "columns": {
       "pallet": "Palette",
       "dimensions": "Abmessungen",

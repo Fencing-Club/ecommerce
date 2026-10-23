@@ -1,6 +1,6 @@
 import type { OrderInput } from "@repo/copacker-orders"
 import { Clock3 } from "lucide-react"
-import type { ComponentProps, ReactNode } from "react"
+import type { ComponentProps } from "react"
 import { useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -13,9 +13,8 @@ import {
   piecesLeft,
   totalPiecesLeft
 } from "@/lib/carton-groups"
-import { cn } from "@/lib/utils"
 import { CartonTable } from "./carton-table"
-import { EmptyState } from "./common"
+import { PackingActions, PackingEmpty, type PackingListActions, PackingSection } from "./packing-section"
 
 // The shipment's Cartons section: a row per carton configuration, and how many of the units left to ship they hold.
 // While packing it has its actions (export, import and add), says when Amazon's packing groups can't be checked yet,
@@ -33,7 +32,7 @@ export function CartonList({
   cartons: CartonGroup[]
   // The pieces of each line the purchase order's other shipments hold.
   reserved: Readonly<Record<string, number>>
-  actions?: ReactNode
+  actions?: PackingListActions
   // An FBA packing that Amazon hasn't planned, so the cartons can't be checked against its packing groups.
   groupsUnchecked?: boolean
   error?: string
@@ -43,23 +42,16 @@ export function CartonList({
   const totals = cartonTotals(cartons)
   const packed = packedPieces(physicalCartons(cartons))
   const available = totalPiecesLeft(order.items, reserved)
+  const labels = { add: t("addCarton"), import: importText("title"), export: importText("export") }
   return (
-    <section className="flex flex-col gap-4 max-sm:gap-5" aria-label={t("cartons")}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* On a phone the units move to the line above the bar's button, and the actions keep only icons. */}
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm font-semibold max-sm:text-base">{t("cartons")}</h2>
-          <span
-            className={cn(
-              "text-xs tabular-nums text-muted-foreground max-sm:hidden",
-              totals.pieces === available && "text-green-800 dark:text-green-400"
-            )}
-          >
-            {t("packedUnits", { count: totals.pieces, available })}
-          </span>
-        </div>
-        {actions}
-      </div>
+    <PackingSection
+      title={t("cartons")}
+      summary={t("packedUnits", { count: totals.pieces, available })}
+      done={totals.pieces === available}
+      // On a phone the units move to the line above the bar's button.
+      summaryClassName="max-sm:hidden"
+      actions={actions && cartons.length > 0 && <PackingActions actions={actions} labels={labels} />}
+    >
       {groupsUnchecked && (
         <Alert role="note" className="p-4 has-[>svg]:gap-x-3 *:[svg]:text-muted-foreground">
           <Clock3 aria-hidden className="size-4.5" />
@@ -77,10 +69,12 @@ export function CartonList({
           )}
         />
       ) : (
-        <EmptyState title={t("noCartons")} description={t("noCartonsDescription")} />
+        <PackingEmpty title={t("noCartons")} description={actions && t("noCartonsDescription")}>
+          {actions && <PackingActions empty actions={actions} labels={labels} />}
+        </PackingEmpty>
       )}
       {error && <FormError message={error} />}
       {totals.cartons > maxCartons && <FormError message={importText("errors.limit")} />}
-    </section>
+    </PackingSection>
   )
 }

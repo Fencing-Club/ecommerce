@@ -61,7 +61,6 @@
       "title": "Pacchetto fornitore pronto",
       "downloadLabel": "Scarica il pacchetto della spedizione",
       "incompleteTitle": "Pacchetto fornitore incompleto",
-      "waitingForLabels": "In attesa delle etichette dell’acquirente",
       "cartonLabels": "Etichette cartoni",
       "unitLabels": "Etichette prodotti",
       "carrierLabels": "Etichette del corriere",
@@ -69,15 +68,6 @@
       "backToShipment": "Torna alla spedizione",
       "document": "Pacchetto della spedizione",
       "documentDescription": "Tutti i documenti della spedizione"
-    },
-    "cartons": {
-      "title": "Cartoni",
-      "carton": "Cartone",
-      "product": "Prodotto",
-      "units": "Unità",
-      "dimensions": "Dimensioni (cm)",
-      "weight": "Peso (kg)",
-      "amazonLabel": "Etichetta cartone"
     },
     "pickup": {
       "title": "Ritiro",
@@ -110,12 +100,6 @@
       "updateCost": "Aggiorna anche i costi unitari su Shopify",
       "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto.",
       "submit": "Approva modifiche"
-    },
-    "correction": {
-      "trigger": "Richiedi una correzione",
-      "submit": "Richiedi correzione",
-      "reason": "Cosa deve cambiare?",
-      "reasonDescription": "I documenti di questa spedizione non saranno più validi."
     },
     "reconcile": {
       "submit": "Verifica e riprendi",

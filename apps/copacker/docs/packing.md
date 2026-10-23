@@ -13,6 +13,12 @@ pickup address and ready date (`PackingDetailsFields`), the tables to edit and t
 `usePackingDraft` saves, finishes and links the packing. A packed shipment builds no form: the shipment page fills the
 layout with the same parts, read-only, and the pickup address as `ShipmentOrigin`.
 
+Products, Cartons and Pallets share `PackingSection` (`components/packing-section.tsx`), so they stay alike: a chevron
+before the title that closes and opens the list (Products starts closed), a summary beside the title that turns green
+once everything is in place, and the list's actions at the end of the line. A list with no rows shows `PackingEmpty`,
+which holds Add and Import while packing; once the list has a row they move up to the section's line with Export
+(`PackingActions`). The designs are the empty states in 06 / Carton editor / Shared Storybook components.
+
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the
 cartons' count, units, gross weight and volume, the pallets' when packed on them, as Shipment details shows them).

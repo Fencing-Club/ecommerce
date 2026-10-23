@@ -393,7 +393,7 @@
     "removeCarton": "Видалити коробку {name}",
     "addCarton": "Додати коробку",
     "noCartons": "Коробок ще немає",
-    "noCartonsDescription": "Додайте коробку, а потім дублюйте однакові.",
+    "noCartonsDescription": "Додайте коробку й укажіть Кількість для однакових або імпортуйте таблицю.",
     "saveDraft": "Зберегти чернетку",
     "check": "Перевірити пакування",
     "submit": "Надіслати пакувальний лист",
@@ -415,6 +415,9 @@
     "addNewAddress": "Додати адресу",
     "chooseAddress": "Адреса забору",
     "packedUnits": "{count} з {available, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "productCount": "{products, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}",
+    "productsLeft": "{products, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}, залишилось {count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+    "productsPacked": "{products, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}, усе запаковано",
     "leftCount": "Залишилось {count}",
     "overCount": "На {count} більше",
     "groupsUnchecked": {
@@ -520,7 +523,7 @@
     "onPallets": "{count, number} з {total, plural, one {# коробки} few {# коробок} many {# коробок} other {# коробки}} на палетах",
     "addPallet": "Додати палету",
     "noPallets": "Ще немає палет",
-    "noPalletsDescription": "Додайте палету, а потім виберіть коробки на ній.",
+    "noPalletsDescription": "Додайте палету й виберіть коробки на ній або імпортуйте таблицю.",
     "columns": {
       "pallet": "Палета",
       "dimensions": "Розміри",

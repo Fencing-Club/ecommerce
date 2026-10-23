@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import type { OrderInput } from "@repo/copacker-orders"
 import { checkPallets, palletRules, validatePallets } from "@repo/copacker-packing-rules"
 import type { Packing, PackingDraft } from "@repo/copacker-shipments"
-import { Download, Info, Plus, Upload } from "lucide-react"
+import { Info } from "lucide-react"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { useNow, useTimeZone, useTranslations } from "use-intl"
@@ -108,7 +108,6 @@ export function PackingForm({
   const t = useTranslations("orders.packing")
   const importText = useTranslations("orders.cartonImport")
   const palletImportText = useTranslations("orders.palletImport")
-  const palletText = useTranslations("orders.pallets")
   const packingIssueText = usePackingIssueText()
   const formErrorMap = useFormErrorMap()
   // The zone the supplier's browser reports, so today is the supplier's own; UTC until it has reported one.
@@ -238,6 +237,7 @@ export function PackingForm({
         }
         products={
           <PackedProductsTable
+            progress
             order={order}
             cartons={cartonValues}
             reserved={reserved}
@@ -270,26 +270,12 @@ export function PackingForm({
             reserved={reserved}
             groupsUnchecked={packingGroups === null}
             error={form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message}
-            actions={
-              <div className="flex gap-2">
-                <IconAction
-                  label={importText("export")}
-                  disabled={!cartons.fields.length}
-                  onClick={() =>
-                    void exportSheet("Cartons", () => cartonTemplate(cartonValues), importText("exportFailed"))
-                  }
-                >
-                  <Download />
-                </IconAction>
-                <IconAction label={importText("title")} onClick={() => setImporting(true)}>
-                  <Upload />
-                </IconAction>
-                <Button type="button" variant="outline" className="max-sm:w-[34px] max-sm:px-0" onClick={addCarton}>
-                  <Plus />
-                  <span className="max-sm:sr-only">{t("addCarton")}</span>
-                </Button>
-              </div>
-            }
+            actions={{
+              onAdd: addCarton,
+              onImport: () => setImporting(true),
+              onExport: () =>
+                void exportSheet("Cartons", () => cartonTemplate(cartonValues), importText("exportFailed"))
+            }}
             rowKeys={cartons.fields.map((carton) => carton.id)}
             issues={packingIssues}
             context={context}
@@ -318,44 +304,24 @@ export function PackingForm({
               context={context}
               showErrors={form.formState.submitCount > 0}
               onChange={setPallets}
-              actions={
-                <div className="flex gap-2">
-                  <IconAction
-                    label={palletImportText("export")}
-                    disabled={!pallets.length}
-                    onClick={() =>
-                      void exportSheet("Pallets", () => palletTemplate(pallets), palletImportText("exportFailed"))
+              actions={{
+                onAdd: () =>
+                  setPallets([
+                    ...pallets,
+                    {
+                      palletId: nextPalletId(pallets),
+                      length: blank,
+                      width: blank,
+                      height: blank,
+                      weight: blank,
+                      stackable: true,
+                      cartonIds: []
                     }
-                  >
-                    <Download />
-                  </IconAction>
-                  <IconAction label={palletImportText("title")} onClick={() => setImportingPallets(true)}>
-                    <Upload />
-                  </IconAction>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="max-sm:w-[34px] max-sm:px-0"
-                    onClick={() =>
-                      setPallets([
-                        ...pallets,
-                        {
-                          palletId: nextPalletId(pallets),
-                          length: blank,
-                          width: blank,
-                          height: blank,
-                          weight: blank,
-                          stackable: true,
-                          cartonIds: []
-                        }
-                      ])
-                    }
-                  >
-                    <Plus />
-                    <span className="max-sm:sr-only">{palletText("addPallet")}</span>
-                  </Button>
-                </div>
-              }
+                  ]),
+                onImport: () => setImportingPallets(true),
+                onExport: () =>
+                  void exportSheet("Pallets", () => palletTemplate(pallets), palletImportText("exportFailed"))
+              }}
             />
           )}
         </form>
@@ -412,39 +378,6 @@ export function PackingForm({
         />
       </ShipmentLayout>
     </FormProvider>
-  )
-}
-
-// An icon button of the Cartons or Pallets section, named by its tooltip.
-function IconAction({
-  label,
-  disabled,
-  onClick,
-  children
-}: {
-  label: string
-  disabled?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={label}
-            disabled={disabled}
-            onClick={onClick}
-          />
-        }
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
   )
 }
 

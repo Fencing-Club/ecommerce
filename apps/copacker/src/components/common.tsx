@@ -252,12 +252,13 @@ export function PageHeader({
 
 // An empty list, a page that failed or a menu with nothing in it: an icon, a title, a line on what to do, and the
 // actions that do it. A page whose header already says what happened leaves the title out. `titleAs` makes the title a
-// heading, such as the h1 of a page outside the shell.
+// heading, such as the h1 of a page outside the shell. `className` frames it, such as a packing list's box.
 export function EmptyState({
   title,
   titleAs: Heading,
   description,
   icon = <PackageOpen aria-hidden />,
+  className,
   children
 }: {
   title?: string
@@ -265,10 +266,11 @@ export function EmptyState({
   description?: React.ReactNode
   // In place of the empty box, such as a spinner while the first sync runs.
   icon?: React.ReactNode
+  className?: string
   children?: React.ReactNode
 }) {
   return (
-    <Empty>
+    <Empty className={className}>
       <EmptyHeader>
         <EmptyMedia variant="icon">{icon}</EmptyMedia>
         {title && <EmptyTitle>{Heading ? <Heading>{title}</Heading> : title}</EmptyTitle>}

@@ -78,7 +78,8 @@ Not decided in detail; this is the likely shape.
 - **Editing finished packing:** `reopenPacking` (Edit packing) works today only while packed with no Amazon shipment.
   It extends to every state before shipping and is limited to the packer. The edit works on a draft, so the finished
   packing, labels and Amazon shipment stay as they are until the packer finishes again, and leaving without finishing
-  changes nothing. `correctShipment` and the correction status go away.
+  changes nothing. `correctShipment` and the correction status go away. The shipment page's Request a correction card
+  is already gone (2026-10-22); the `shipment.correct` action stays for the API and CLI until Edit packing replaces it.
 - **Cancelling:** reuses `cancelAmazonShipment`, which already cancels an AWD order or an FBA inbound plan.
 - **The 12-hour check:** a scheduled job reads the Amazon shipment of every booked shipment that hasn't shipped and moves
   any that no longer exists back to Packed.

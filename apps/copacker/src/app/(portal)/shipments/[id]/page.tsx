@@ -1,7 +1,7 @@
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
-import { amazonRequestStates, finishedStates, packedStates } from "@repo/copacker-shipments/states"
+import { amazonRequestStates, packedStates } from "@repo/copacker-shipments/states"
 import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"
@@ -16,7 +16,7 @@ import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
 import { PalletList } from "@/components/pallet-list"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
-import { ApproveInvoice, CorrectionForm, ReconcileShipment } from "@/components/shipment-actions"
+import { ApproveInvoice, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentLayout } from "@/components/shipment-layout"
@@ -59,7 +59,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     changes,
     fba,
     enteringFor,
-    amazon,
     title,
     amazonIds,
     nextStep,
@@ -111,6 +110,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const heldBack = step.issues.filter(
     (issue) => !["missing_shipping_label", "missing_tracking_number", "missing_transport"].includes(issue.code)
   )
+  const reconciling = isBuyer && editsShipments && step.next.step === "reconcile"
   const nextAction: Record<string, React.ReactNode> = {
     prepareAmazon: isBuyer && (
       <ActionButton action="shipment.prepareAmazon" data={{ id, revision: shipment.revision }}>
@@ -169,11 +169,17 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   const notices = (
     <>
       <ShipmentProgress processing={amazonRequestStates.includes(shipment.status)} message={nextStep} />
-      {shipment.issue && (
+      {(shipment.issue || reconciling) && (
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>{t("needsAttention")}</AlertTitle>
-          <AlertDescription>{shipment.issue}</AlertDescription>
+          {shipment.issue && <AlertDescription>{shipment.issue}</AlertDescription>}
+          {/* The Amazon order Copacker didn't hear back about: linking it resumes the shipment. */}
+          {reconciling && (
+            <div className="col-start-2 pt-2 text-foreground">
+              <ReconcileShipment id={id} fba={fba} />
+            </div>
+          )}
         </Alert>
       )}
 
@@ -407,25 +413,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <AlertDescription>{t("creating.description")}</AlertDescription>
             </Alert>
           )}
-
-          {/* A shipment ready for pickup whose packet lacks something, such as a product label the buyer hasn't added. */}
-          {shipment.status === "ready" && !step.packetUrl && (
-            <Alert role="note">
-              <Clock />
-              <AlertTitle>{t("packet.incompleteTitle")}</AlertTitle>
-              <AlertDescription>
-                {isBuyer ? (
-                  <ul className="list-disc ps-5">
-                    {step.issues.map((issue, index) => (
-                      <li key={index}>{issue.message}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  t("packet.waitingForLabels")
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
         </>
       }
       details={
@@ -499,31 +486,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         reserved={reserved}
         // A saved draft's cartons show what they still lack, as they do while packing.
         showErrors
-        renderNote={
-          amazon && shipment.labels.length > 0
-            ? (cartonIds) => (
-                <p className="text-sm text-muted-foreground">
-                  {t("cartons.amazonLabel")}:{" "}
-                  <span className="flex flex-wrap gap-x-6 gap-y-1 font-mono">
-                    {cartonIds.map((cartonId) => (
-                      <span key={cartonId} className="whitespace-nowrap">
-                        {cartonId}: {shipment.labels.find((label) => label.cartonId === cartonId)?.labelNumber ?? "—"}
-                      </span>
-                    ))}
-                  </span>
-                </p>
-              )
-            : undefined
-        }
       />
       {pallets && <PalletList readOnly order={packingOrder} cartons={cartons} pallets={pallets} />}
-      {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
-      {/* A supplier changes finished packing with Edit packing instead. */}
-      {editsShipments &&
-        !finishedStates.includes(shipment.status) &&
-        shipment.status !== "creating" &&
-        step.next.step !== "reconcile" &&
-        !(canReopen && !isBuyer) && <CorrectionForm id={id} />}
     </ShipmentLayout>
   )
 }

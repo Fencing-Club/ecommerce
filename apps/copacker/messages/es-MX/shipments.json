@@ -61,7 +61,6 @@
       "title": "Paquete de documentos listo",
       "downloadLabel": "Descargar paquete del envío",
       "incompleteTitle": "Paquete de documentos incompleto",
-      "waitingForLabels": "Esperando las etiquetas del comprador",
       "cartonLabels": "Etiquetas de cajas",
       "unitLabels": "Etiquetas de productos",
       "carrierLabels": "Etiquetas del transportista",
@@ -69,15 +68,6 @@
       "backToShipment": "Volver al envío",
       "document": "Paquete del envío",
       "documentDescription": "Todos los documentos del envío"
-    },
-    "cartons": {
-      "title": "Cajas",
-      "carton": "Caja",
-      "product": "Producto",
-      "units": "Unidades",
-      "dimensions": "Dimensiones (cm)",
-      "weight": "Peso (kg)",
-      "amazonLabel": "Etiqueta de caja"
     },
     "pickup": {
       "title": "Recolección",
@@ -110,12 +100,6 @@
       "updateCost": "Actualizar también los costos unitarios en Shopify",
       "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra.",
       "submit": "Aprobar cambios"
-    },
-    "correction": {
-      "trigger": "Solicitar una corrección",
-      "submit": "Solicitar corrección",
-      "reason": "¿Qué hay que cambiar?",
-      "reasonDescription": "Los documentos de este envío quedarán desactualizados."
     },
     "reconcile": {
       "submit": "Verificar y reanudar",

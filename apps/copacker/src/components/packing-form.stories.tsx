@@ -231,13 +231,15 @@ export const Empty = meta.story({
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Check packing" })).toBeNull()
     await expect(canvas.queryByRole("textbox", { name: "Supplier SKU" })).toBeNull()
-    const products = canvas.getByRole("button", { name: /^Products \(3\)/ })
+    const products = canvas.getByRole("button", { name: "Products" })
     await userEvent.hover(products)
     await expect(products).toHaveStyle({ textDecorationLine: "none" })
     await userEvent.click(products)
     await expect(canvas.getByRole("columnheader", { name: /Price per unit/ })).toBeVisible()
     await expect(canvas.getByText("No cartons yet")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Export cartons" })).toBeDisabled()
+    // With nothing to export, Add carton and Import cartons sit in the empty box.
+    await expect(canvas.queryByRole("button", { name: "Export cartons" })).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Import cartons" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Finish packing" })).toBeNull()
     await expectPacked(canvas, 0)
     // A new address is entered in the address dialog.
@@ -297,7 +299,7 @@ export const CheckFindsIssues = meta.story({
     await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(northwindFactory.addressLine1)
     await expect(canvas.getAllByText(/88 Harbour Road/)[0]).toBeVisible()
     await expectPacked(canvas, 80)
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await expect(within(canvas.getByRole("table")).getByText("80 of 80")).toBeVisible()
     await expect(canvas.queryByRole("textbox", { name: "Supplier SKU" })).toBeNull()
     await expect(canvas.queryByRole("textbox", { name: /Price per unit/ })).toBeNull()
@@ -336,7 +338,7 @@ export const Cartons = meta.story({
     reserved: leaving({ [tote!.id]: 100 })
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await chooseMenuItem(canvas.getByRole("button", { name: "Carton C2 actions" }), "Duplicate carton")
     await expectPacked(canvas, 120)
     await expect(within(canvas.getByRole("table")).getByText("120 of 100")).toBeVisible()
@@ -374,7 +376,7 @@ export const MixedCarton = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("region", { name: "Carton C1" })).toBeVisible()
     await expectPacked(canvas, 26)
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await expect(canvas.getByText("12 of 120")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Add products to carton C1" }))
     const dialog = await shownDialog("Add products to carton")
@@ -503,7 +505,7 @@ export const ForSupplier = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText("Commercial invoice")).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await expect(canvas.queryByRole("textbox", { name: "Supplier SKU" })).toBeNull()
     await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
     const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
@@ -516,7 +518,7 @@ export const WithoutPrices = meta.story({
   parameters: { permissions: { ...member, access: { ...member.access, shipments: "edit" } } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("columnheader", { name: /Price per unit/ })).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: /^Products \(3\)/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
     await expect(within(canvas.getByRole("table")).queryByRole("textbox")).toBeNull()
   }
 })

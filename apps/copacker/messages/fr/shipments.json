@@ -61,7 +61,6 @@
       "title": "Dossier fournisseur prêt",
       "downloadLabel": "Télécharger le dossier de l’envoi",
       "incompleteTitle": "Dossier fournisseur incomplet",
-      "waitingForLabels": "En attente des étiquettes de l’acheteur",
       "cartonLabels": "Étiquettes de carton",
       "unitLabels": "Étiquettes produit",
       "carrierLabels": "Étiquettes du transporteur",
@@ -69,15 +68,6 @@
       "backToShipment": "Retour à l’expédition",
       "document": "Dossier de l’envoi",
       "documentDescription": "Tous les documents de l’envoi"
-    },
-    "cartons": {
-      "title": "Cartons",
-      "carton": "Carton",
-      "product": "Produit",
-      "units": "Unités",
-      "dimensions": "Dimensions (cm)",
-      "weight": "Poids (kg)",
-      "amazonLabel": "Étiquette de carton"
     },
     "pickup": {
       "title": "Enlèvement",
@@ -110,12 +100,6 @@
       "updateCost": "Mettre aussi à jour les coûts unitaires Shopify",
       "updateCostDescription": "Les coûts Shopify doivent être dans la devise du bon de commande.",
       "submit": "Approuver les modifications"
-    },
-    "correction": {
-      "trigger": "Demander une correction",
-      "submit": "Demander la correction",
-      "reason": "Que faut-il modifier ?",
-      "reasonDescription": "Les documents de cette expédition deviennent obsolètes."
     },
     "reconcile": {
       "submit": "Vérifier et reprendre",
