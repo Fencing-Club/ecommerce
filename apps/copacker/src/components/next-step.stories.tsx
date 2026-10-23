@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { NextStepCard } from "./next-step"
 
 const meta = preview.meta({

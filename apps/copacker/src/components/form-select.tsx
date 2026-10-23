@@ -1,6 +1,13 @@
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useRef } from "react"
 import { FormField, type FormFieldProps, useFormField } from "@/components/form-controls"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 // Select fields, apart from the text fields in form-controls: Base UI's Select is the heaviest control, so a page with

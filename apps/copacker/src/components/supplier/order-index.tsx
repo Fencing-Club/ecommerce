@@ -1,14 +1,15 @@
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
+import { FramedTable } from "@/components/framed-table"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
 import { usePagedRows } from "@/components/list/use-paged-rows"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import { formatDate } from "@/lib/format"
 import type { ListedOrder } from "@/server/supplier-workspace"
@@ -76,7 +77,7 @@ export function SupplierOrderIndex({
         placeholder={t("search")}
       />
       {shown.length ? (
-        <Table>
+        <FramedTable>
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.order")}</TableHead>
@@ -128,7 +129,7 @@ export function SupplierOrderIndex({
               </LinkRow>
             ))}
           </TableBody>
-        </Table>
+        </FramedTable>
       ) : (
         <EmptyState title={t("noneHere")} description={t("noneHereDescription")} />
       )}

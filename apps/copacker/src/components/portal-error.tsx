@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
-import { Button } from "@/components/ui/button"
 
 // Shown in the shell when a portal page fails, so the sidebar and header stay. The header row comes first, beside the
 // sidebar's collapse button, and the empty state below it. Trying again fetches the page afresh (`retry`; `reset` would

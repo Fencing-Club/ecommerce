@@ -1,4 +1,17 @@
 import {
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Kbd,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
+import {
   Bell,
   Box,
   Building2,
@@ -14,11 +27,7 @@ import {
 } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { Status } from "@/components/common"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Kbd } from "@/components/ui/kbd"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FlushCard } from "@/components/flush-card"
 import { navigationGroups, pagesFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
@@ -190,7 +199,7 @@ export function RestockShot() {
           </div>
         </CardContent>
       </Card>
-      <Card flush>
+      <FlushCard>
         <div className="flex items-center gap-3 border-b px-4 py-3">
           <ChevronDown className="size-4 text-muted-foreground" />
           <span className="flex flex-col">
@@ -208,7 +217,7 @@ export function RestockShot() {
           </span>
           <Button>{t("reorder")}</Button>
         </div>
-        <Table framed={false}>
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10" />
@@ -252,7 +261,7 @@ export function RestockShot() {
             ))}
           </TableBody>
         </Table>
-      </Card>
+      </FlushCard>
       <Card className="py-0">
         <div className="flex items-center gap-3 px-4 py-3">
           <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />

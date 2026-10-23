@@ -1,7 +1,7 @@
+import { Badge, InputGroup, InputGroupAddon } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, ExternalLink } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
-import { Badge } from "@/components/ui/badge"
-import { InputGroup, InputGroupAddon, InputGroupNumberInput } from "@/components/ui/input-group"
+import { InputGroupNumberInput } from "@/components/number-input"
 import { cn } from "@/lib/utils"
 
 // A carton or pallet number: blank until entered, with its unit after it.

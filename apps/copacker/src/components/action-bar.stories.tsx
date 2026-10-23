@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { ActionBar } from "./action-bar"
 
 const meta = preview.meta({

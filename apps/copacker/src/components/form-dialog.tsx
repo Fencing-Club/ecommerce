@@ -1,6 +1,6 @@
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@buildkitgg/shadcn-baseui-kit"
 import { useUncontrolled } from "@mantine/hooks"
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { type ActionFormOptions, type FormSchema, useActionForm } from "@/hooks/use-action-form"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./action-form"

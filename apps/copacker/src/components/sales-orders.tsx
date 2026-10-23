@@ -1,3 +1,16 @@
+import {
+  Button,
+  Card,
+  CardFooter,
+  Skeleton,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
 import { ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"
@@ -5,15 +18,11 @@ import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
 import { NoValue } from "@/components/no-value"
 import { OptionSelect } from "@/components/option-select"
-import { Button } from "@/components/ui/button"
-import { Card, CardFooter } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { storeNames, type Store } from "@/lib/stores"
@@ -420,7 +429,7 @@ function OrderList({
     // The first sync is still copying: the orders appear here period by period.
     body = (
       <EmptyState
-        icon={<Spinner className="size-5" />}
+        icon={<Spinner aria-hidden className="size-5" />}
         title={t("syncing")}
         description={typeof firstSync.progress === "number" ? t("copied", { progress: firstSync.progress }) : undefined}
       />
@@ -433,7 +442,7 @@ function OrderList({
         aria-busy={isFetching}
         className={cn("@container transition-opacity", isFetching ? "opacity-60 delay-300" : "delay-0")}
       >
-        <Table framed={false} aria-label={t("label")} className="@max-md:block">
+        <Table aria-label={t("label")} className="@max-md:block">
           <TableHeader className="@max-md:hidden">
             <TableRow>
               <TableHead className="ps-4">{t("order")}</TableHead>
@@ -461,7 +470,7 @@ function OrderList({
     )
   }
   return (
-    <Card flush>
+    <FlushCard>
       <div className="flex flex-wrap items-center gap-2 border-b p-4">
         <SearchField
           label={t("searchLabel")}
@@ -499,7 +508,7 @@ function OrderList({
           )}
         </CardFooter>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -552,7 +561,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   const syncKey = currentData.sources.map((state) => `${state.coveredTo ?? ""}:${state.orders}`).join("|")
   return (
     <div className="flex flex-col gap-4">
-      <Card flush className="@container/sources">
+      <FlushCard className="@container/sources">
         <ul
           aria-label={t("sources")}
           className="grid divide-y @3xl/sources:auto-cols-fr @3xl/sources:grid-flow-col @3xl/sources:divide-x @3xl/sources:divide-y-0"
@@ -561,7 +570,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
             <SourceSummary key={state.source} state={state} />
           ))}
         </ul>
-      </Card>
+      </FlushCard>
       {/* Keyed by the starting search, so a new search from the header replaces the current one. */}
       <OrderList key={initialSearch} sources={currentData.sources} syncKey={syncKey} initialSearch={initialSearch} />
     </div>

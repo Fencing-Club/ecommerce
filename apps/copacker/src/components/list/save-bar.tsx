@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { useWindowEvent } from "@mantine/hooks"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 // Shopify's contextual save bar: while a form has unsaved changes, a bar floats at the bottom with Discard and

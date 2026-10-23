@@ -1,7 +1,5 @@
-import { PanelLeft } from "lucide-react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import {
+  Button,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -14,7 +12,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar
-} from "@/components/ui/sidebar"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { PanelLeft } from "lucide-react"
+import { useTranslations } from "use-intl"
 import { navigationFor, navigationGroups } from "@/lib/navigation"
 import { usePermissions } from "./access"
 import { AccountMenu } from "./account-menu"

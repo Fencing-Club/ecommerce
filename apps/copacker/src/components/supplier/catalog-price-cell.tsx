@@ -1,11 +1,20 @@
+import {
+  Button,
+  Field,
+  FieldDescription,
+  FieldLabel,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Pencil } from "lucide-react"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { moneyText, parseMoney } from "@/components/money-input"
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"

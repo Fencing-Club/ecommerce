@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 import type { productsPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
 import { InventorySync } from "./inventory-sync"

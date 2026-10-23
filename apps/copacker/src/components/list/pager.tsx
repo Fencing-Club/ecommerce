@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
 
 // Previous and next, for a list's pages counted from 1. Each is an arrow named for screen readers; with `words`, a
 // small button that says Previous or Next beside its arrow. The caller lays them out with what goes beside them.

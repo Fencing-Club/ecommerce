@@ -1,6 +1,3 @@
-import { useSyncExternalStore } from "react"
-import { useTranslations } from "use-intl"
-import { z } from "zod"
 import {
   Select,
   SelectContent,
@@ -10,7 +7,10 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from "@/components/ui/select"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useSyncExternalStore } from "react"
+import { useTranslations } from "use-intl"
+import { z } from "zod"
 import { useActionForm } from "@/hooks/use-action-form"
 import type { Locale } from "@/i18n/locales"
 import { localeNames, locales } from "@/i18n/locales"

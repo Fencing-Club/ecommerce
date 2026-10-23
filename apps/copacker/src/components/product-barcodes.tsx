@@ -1,11 +1,9 @@
+import { Button, Spinner, Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 import invariant from "tiny-invariant"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { downloadBlob, fileOrError } from "@/lib/download"
@@ -121,7 +119,7 @@ function IconAction({
           />
         }
       >
-        {busy ? <Spinner /> : children}
+        {busy ? <Spinner aria-hidden /> : children}
       </TooltipTrigger>
       <TooltipContent>{tip}</TooltipContent>
     </Tooltip>

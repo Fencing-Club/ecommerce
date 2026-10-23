@@ -1,9 +1,9 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Wrench } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { DotField } from "@/components/marketing/dot-field"
 import { lift, lit, rise, stage } from "@/components/marketing/site-styles"
-import { Button } from "@/components/ui/button"
 import { useReloadWhenBack } from "@/hooks/use-reload-when-back"
 import { cn } from "@/lib/utils"
 

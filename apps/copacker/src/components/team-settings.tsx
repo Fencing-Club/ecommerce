@@ -1,18 +1,26 @@
+import {
+  Avatar,
+  AvatarFallback,
+  Badge,
+  Button,
+  DialogTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  RadioGroup,
+  RadioGroupItem,
+  Switch
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Mail, UserPlus } from "lucide-react"
 import { useId, useState } from "react"
 import { useController, useFormContext, useFormState, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
+import { FieldError } from "@/components/field-error"
+import { FlushCard } from "@/components/flush-card"
 import { useAction } from "@/hooks/use-action"
 import type { Access } from "@/lib/access"
 import type { Area } from "@/lib/access"
@@ -57,7 +65,7 @@ export function TeamSettings({
   const [sent, setSent] = useState("")
 
   return (
-    <Card flush>
+    <FlushCard>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{t("people", { count: members.length })}</p>
         {admin && (
@@ -99,7 +107,7 @@ export function TeamSettings({
           />
         ))}
       </ul>
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -425,7 +433,7 @@ function MemberRow({
           )}
         </RowActionsMenu>
       )}
-      {admin && !manageable && !transferable && <span aria-hidden className="size-7 shrink-0" />}
+      {admin && !manageable && !transferable && <span aria-hidden className="size-8 shrink-0" />}
       {transferable && (
         <ConfirmDialog
           open={open === "transfer"}

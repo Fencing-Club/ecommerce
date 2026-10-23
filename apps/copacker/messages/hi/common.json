@@ -130,7 +130,8 @@
     "sidebarDescription": "मोबाइल साइडबार दिखाता है।",
     "clear": "साफ़ करें",
     "showOptions": "विकल्प दिखाएं",
-    "remove": "{label} हटाएं"
+    "remove": "{label} हटाएं",
+    "loading": "लोड हो रहा है"
   },
   "pages": {
     "error": {

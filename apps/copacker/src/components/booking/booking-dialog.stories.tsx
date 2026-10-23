@@ -1,8 +1,8 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { useTranslations } from "use-intl"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { bookingDialog, dialogBody } from "@/stories/booking"
 import { BookingDialog, type BookingStepCount, BookingStep } from "./booking-dialog"
 

@@ -1,5 +1,5 @@
+import { Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { useLocale, useTranslations } from "use-intl"
-import { Spinner } from "@/components/ui/spinner"
 
 // When a sync last finished, as "Synced Sep 27, 12:00 AM", with the full date on hover.
 export function SyncedAt({ at }: { at: string }) {
@@ -19,7 +19,7 @@ export function SyncProgress({ progress, children }: { progress?: number | null;
   const t = useTranslations("common.sync")
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Spinner className="size-3.5 shrink-0" />
+      <Spinner aria-hidden className="size-3.5 shrink-0" />
       {children ?? (typeof progress === "number" ? t("syncingProgress", { progress }) : t("syncing"))}
     </span>
   )

@@ -1,18 +1,20 @@
-import { cartonList } from "@repo/copacker-packing-rules"
-import { ChevronDown, ListChecks, Search } from "lucide-react"
-import { useState } from "react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
+  Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+  DialogTrigger,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput
+} from "@buildkitgg/shadcn-baseui-kit"
+import { cartonList } from "@repo/copacker-packing-rules"
+import { ChevronDown, ListChecks, Search } from "lucide-react"
+import { useState } from "react"
+import { useTranslations } from "use-intl"
 import type { PalletCarton, PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { useMeasure } from "./packing-fields"

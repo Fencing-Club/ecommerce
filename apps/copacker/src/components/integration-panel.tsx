@@ -1,8 +1,14 @@
+import {
+  Button,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@buildkitgg/shadcn-baseui-kit"
 import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { Store } from "@/lib/stores"
 import { StatusBadge } from "./common"
 import { InventorySyncRow } from "./inventory-sync"
@@ -30,7 +36,7 @@ export function IntegrationPanel({
   return (
     <DialogContent
       initialFocus={titleRef}
-      className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[600px] [&>[data-slot=dialog-close]]:top-3 [&>[data-slot=dialog-close]]:end-3 [&>[data-slot=dialog-close]]:size-11 sm:[&>[data-slot=dialog-close]]:size-[34px]"
+      className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[600px] [&>[data-slot=dialog-close]]:top-3 [&>[data-slot=dialog-close]]:end-3 [&>[data-slot=dialog-close]]:size-11 sm:[&>[data-slot=dialog-close]]:size-8"
     >
       <DialogHeader className="shrink-0 flex-row items-start gap-4 border-b p-5 pe-14 sm:p-6 sm:pe-14">
         <StoreLogo store={store} className="size-12 shrink-0 shadow-none" />

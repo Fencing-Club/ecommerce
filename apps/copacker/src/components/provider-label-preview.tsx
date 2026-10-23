@@ -1,8 +1,8 @@
 "use client"
 
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Download } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"
 
 export function ProviderLabelPreview({ file, title }: { file: File; title: string }) {

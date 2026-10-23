@@ -1,7 +1,6 @@
+import { Card, CardAction, CardContent, CardHeader, CardTitle, Skeleton } from "@buildkitgg/shadcn-baseui-kit"
 import { isPresent } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
 import { buckets, seriesStep } from "@/lib/series"

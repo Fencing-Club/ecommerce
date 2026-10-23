@@ -1,18 +1,20 @@
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { ArrowDownUp, Columns3, PlusCircle, SlidersHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { SelectControl } from "@/components/form-select"
 import { SearchField } from "@/components/list/search-field"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   columnKeys,
   type FilterKey,
@@ -116,7 +118,7 @@ export function LogisticsToolbar({
         placeholder={k("searchPlaceholder")}
         value={state.query}
         onChange={(query) => dispatch({ type: "search", query })}
-        className="h-[34px] w-full @min-[760px]/list:w-80"
+        className="w-full @min-[760px]/list:w-80"
       />
       <FilterMenu
         label={text.partnerLabel}

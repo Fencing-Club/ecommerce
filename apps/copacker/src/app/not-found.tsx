@@ -1,11 +1,12 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { EmptyState } from "@/components/common"
-import { Button } from "@/components/ui/button"
-// Outside the app's layouts, so it brings the app's stylesheet itself: the theme's colors, then Tailwind.
-import "@/styles/theme.css"
+// Outside the app's layouts, so it brings the app's stylesheet itself: Tailwind with the kit's stylesheet, then the
+// theme's colors, which override the kit's defaults.
 import "./globals.css"
+import "@/styles/theme.css"
 
 // A URL that matches no page, outside the app's shell: Copacker's name along the top, as the app's header has it, and
 // the empty state in the middle. A portal page that can't find a record shows the portal's own not-found page instead.

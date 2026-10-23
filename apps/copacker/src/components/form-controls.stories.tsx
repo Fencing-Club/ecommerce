@@ -1,9 +1,9 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { useFormErrorMap } from "@/hooks/use-error-text"
 import { DateInput, FormCheckbox, FormInput, FormMoney, FormNumber, FormTextarea } from "./form-controls"
 

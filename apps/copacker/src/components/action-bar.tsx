@@ -1,9 +1,8 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import type { LucideIcon } from "lucide-react"
 import { CircleAlert, CircleDot, GitPullRequest, SquareCheck, X } from "lucide-react"
 import { useTranslations } from "use-intl"
-import type { StatusTone } from "@/components/ui/badge"
-import { toneSurface } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { type StatusTone, toneSurface } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 
 type ActionBarTone = Exclude<StatusTone, "success">

@@ -1,7 +1,6 @@
+import { Button, Dialog, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { shownDialog } from "@/stories/play"
 import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
 

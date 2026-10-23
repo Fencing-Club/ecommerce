@@ -1,10 +1,10 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { FileUp, Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
 import { LogisticsList } from "@/components/logistics-list"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
-import { Button } from "@/components/ui/button"
 import type { OrdersSearch } from "@/lib/page-search"
 import type { ordersPage } from "@/server/orders-page"
 

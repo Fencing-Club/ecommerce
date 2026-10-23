@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronDown, Download, FileArchive, FileText } from "lucide-react"
 import type { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 /** The same downloadable file card for stored attachments and generated documents. */

@@ -130,7 +130,8 @@
     "sidebarDescription": "Muestra la barra lateral en celulares.",
     "clear": "Borrar",
     "showOptions": "Mostrar opciones",
-    "remove": "Quitar {label}"
+    "remove": "Quitar {label}",
+    "loading": "Cargando"
   },
   "pages": {
     "error": {

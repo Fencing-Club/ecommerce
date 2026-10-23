@@ -1,9 +1,16 @@
+import {
+  Badge,
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from "@buildkitgg/shadcn-baseui-kit"
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
-import type { StatusTone } from "@/components/ui/badge"
-import { Badge } from "@/components/ui/badge"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import type { Messages } from "@/i18n/messages"
+import { type StatusTone, toneBadge } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
 import { Attachment } from "./attachment"
@@ -90,7 +97,12 @@ export function StatusBadge({
   children: React.ReactNode
 }) {
   return (
-    <Badge tone={tone} data-slot="status" className="gap-1.5 tracking-normal [&>svg]:shrink-0">
+    <Badge
+      variant="secondary"
+      data-slot="status"
+      data-tone={tone}
+      className={cn(toneBadge(tone), "gap-1.5 tracking-normal [&>svg]:shrink-0")}
+    >
       {icon ?? <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", toneDots[tone])} />}
       {children}
     </Badge>
@@ -220,7 +232,7 @@ export function PageHeader({
         </nav>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
-        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 max-md:gap-x-2">
+        <div className="flex min-h-10 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 max-md:gap-x-2">
           <h1 className="min-w-0 text-[22px] leading-8 font-semibold tracking-[-0.3px] md:text-2xl">{title}</h1>
           {badge}
           {viewOnly && (

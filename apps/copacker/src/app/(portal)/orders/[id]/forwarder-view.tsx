@@ -1,15 +1,27 @@
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { orderDestination, receivers } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { Building2, MapPin, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { AddressSummary } from "@/components/partner-address"
 import { ProductIdentity } from "@/components/product-identity"
 import { RoutePill } from "@/components/route-pill"
 import { RouteStops } from "@/components/route-stops"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { insetTable } from "@/lib/controls"
 import type { forwarderPage } from "@/server/forwarder-page"
 
 // What a freight forwarder sees of a PO whose goods pass through it: the route, with the address to ship on to when
@@ -32,7 +44,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
       <div className="flex max-w-4xl flex-col gap-4">
         {/* A small card, so the products table's first and last columns line up with the route above it and with the
             other cards' content. */}
-        <Card flush size="sm">
+        <FlushCard size="sm">
           <RouteStops
             className="border-b"
             supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
@@ -50,7 +62,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
             }
           />
           {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
-          <Table framed={false} inset>
+          <Table className={insetTable}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("detail.columns.products")}</TableHead>
@@ -76,9 +88,9 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </FlushCard>
 
-        <Card flush size="sm">
+        <FlushCard size="sm">
           <CardHeader>
             <CardTitle>{t("detail.shipments")}</CardTitle>
           </CardHeader>
@@ -110,7 +122,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
           ) : (
             <p className="p-3 text-muted-foreground">{t("detail.noShipmentsYet")}</p>
           )}
-        </Card>
+        </FlushCard>
 
         {documentGroups.length > 0 && (
           <Card size="sm">

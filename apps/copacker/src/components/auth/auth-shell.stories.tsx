@@ -1,6 +1,6 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { AuthPage, AuthShell, AuthSwitch } from "./auth-shell"
 
 const meta = preview.meta({

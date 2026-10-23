@@ -1,28 +1,40 @@
+import {
+  Button,
+  CardAction,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Link, useRouter } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
 import { useState, useTransition } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { StatusBadge } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { NoValue } from "@/components/no-value"
-import type { StatusTone } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
+import { insetTable } from "@/lib/controls"
 import { dayDate } from "@/lib/format"
 import { type ProposalReply, useAnswerProposalMutation } from "@/lib/supplier-api"
+import type { StatusTone } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 import type { proposalChanges } from "@/server/order-proposals"
 
@@ -147,7 +159,7 @@ export function ProposalPanel({
   const status = proposalStatus(proposal.status, viewer)
   return (
     // Small, like the purchase order page's other cards.
-    <Card size="sm" flush className="@container">
+    <FlushCard size="sm" className="@container">
       <CardHeader>
         <CardTitle>{viewer === "buyer" ? t("theirChanges", { supplier: supplierName }) : t("yourChanges")}</CardTitle>
         {declined && proposal.reason && (
@@ -166,7 +178,7 @@ export function ProposalPanel({
           </div>
         )}
         {shown.length > 0 && (
-          <Table framed={false} inset>
+          <Table className={insetTable}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("columns.product")}</TableHead>
@@ -305,6 +317,6 @@ export function ProposalPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </FlushCard>
   )
 }

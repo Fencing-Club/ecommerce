@@ -1,9 +1,9 @@
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@buildkitgg/shadcn-baseui-kit"
 import { Check, Eye, EyeOff } from "lucide-react"
 import { useId, useState } from "react"
 import { useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { FormField, fieldControl, useFormField } from "@/components/form-controls"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
 import { passwordMinimum } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
 

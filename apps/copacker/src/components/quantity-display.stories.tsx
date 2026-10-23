@@ -1,6 +1,6 @@
+import { Input } from "@buildkitgg/shadcn-baseui-kit"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Input } from "@/components/ui/input"
 import { width } from "@/stories/play"
 import { QuantityDisplay } from "./quantity-display"
 

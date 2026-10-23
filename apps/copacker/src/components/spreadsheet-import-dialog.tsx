@@ -1,10 +1,17 @@
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  RadioGroup,
+  RadioGroupItem,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, Download } from "lucide-react"
 import { type ReactNode, useId, useReducer } from "react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Spinner } from "@/components/ui/spinner"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { FileDropzone } from "./file-dropzone"
@@ -177,7 +184,7 @@ export function SpreadsheetImportDialog<T>({
         {step === "upload" && (
           <div className="flex flex-col items-start gap-2">
             <Button type="button" variant="outline" disabled={isDownloading || isBusy} onClick={() => void download()}>
-              {isDownloading ? <Spinner /> : <Download aria-hidden />}
+              {isDownloading ? <Spinner aria-hidden /> : <Download aria-hidden />}
               {t("downloadTemplate")}
             </Button>
             {state.template === "failed" && (
@@ -197,7 +204,7 @@ export function SpreadsheetImportDialog<T>({
         />
         {isBusy && (
           <output className="flex items-center gap-3 py-4">
-            <Spinner className="size-5" />
+            <Spinner aria-hidden className="size-5" />
             <span>{isReading ? t("checking") : text.importing}</span>
           </output>
         )}

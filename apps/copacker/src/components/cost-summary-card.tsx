@@ -1,6 +1,5 @@
+import { Card, CardAction, CardContent, CardHeader, CardTitle, Separator } from "@buildkitgg/shadcn-baseui-kit"
 import { useTranslations } from "use-intl"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { useMoney } from "@/hooks/use-money"
 import { adjustmentKeys, knownName } from "@/lib/order-lines"
 

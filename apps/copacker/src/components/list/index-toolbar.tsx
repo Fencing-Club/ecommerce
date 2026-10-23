@@ -1,5 +1,5 @@
+import { Tabs, TabsList, TabsTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { useLocale } from "use-intl"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchField } from "./search-field"
 
 // The tabs and search above an index table, like Shopify's: each tab with its count.

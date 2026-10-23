@@ -1,7 +1,7 @@
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronDown, Package } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Card } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { FlushCard } from "@/components/flush-card"
 import { useMoney } from "@/hooks/use-money"
 
 // One shipment a purchase order's lines become, in the editor and on the PO's page: a card named by where it goes, with
@@ -30,7 +30,7 @@ export function ShipmentGroupCard({
   const t = useTranslations("orders.builder")
   const money = useMoney()
   return (
-    <Collapsible defaultOpen render={<Card flush />}>
+    <Collapsible defaultOpen render={<FlushCard />}>
       <div className="flex items-center gap-3 px-3 py-2">
         {select}
         <CollapsibleTrigger className="group flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-sm text-start focus-visible:outline-ring">

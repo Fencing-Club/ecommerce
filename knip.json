@@ -78,8 +78,5 @@
     "apps/turbo-cache": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     }
-  },
-  "ignoreIssues": {
-    "apps/copacker/src/components/ui/**": ["exports", "types"]
   }
 }

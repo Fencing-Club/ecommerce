@@ -130,7 +130,8 @@
     "sidebarDescription": "موبائل سائیڈبار دکھاتا ہے۔",
     "clear": "صاف کریں",
     "showOptions": "اختیارات دکھائیں",
-    "remove": "{label} ہٹائیں"
+    "remove": "{label} ہٹائیں",
+    "loading": "لوڈ ہو رہا ہے"
   },
   "pages": {
     "error": {

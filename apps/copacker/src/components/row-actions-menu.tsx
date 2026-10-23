@@ -1,7 +1,5 @@
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { Ellipsis } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Spinner } from "@/components/ui/spinner"
 
 // A list row's actions behind its ⋯ button, such as Edit and Remove. While one of them runs, a spinner takes the
 // button's place.
@@ -25,7 +23,7 @@ export function RowActionsMenu({
   if (pending) {
     return (
       <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={pendingLabel}>
-        <Spinner />
+        <Spinner aria-hidden />
       </Button>
     )
   }

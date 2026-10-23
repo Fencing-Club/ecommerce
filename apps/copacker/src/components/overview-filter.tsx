@@ -1,6 +1,13 @@
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Store } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Every channel together, which the URL leaves out.
 const all = "all"

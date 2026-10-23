@@ -1,10 +1,18 @@
+import {
+  Button,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+  Progress,
+  ProgressLabel
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useDropzone } from "@uploadcn/react"
 import { CircleCheck, Upload } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
 import { IssueSummary, type IssueSummaryProps } from "./issues"
 
 // Amazon's box-content template is a spreadsheet.
@@ -47,7 +55,7 @@ export function TemplateSlot({ state, onFile }: { state: TemplateSlotState; onFi
   const browse = () => input.current?.click()
   return (
     // Says what the template became, once checked, without moving focus.
-    <div data-slot="template-slot" data-status={state.status} aria-live="polite" className="shrink-0 *:min-h-18">
+    <div data-slot="template-slot" data-status={state.status} aria-live="polite" className="shrink-0 *:min-h-19">
       <input
         ref={input}
         type="file"

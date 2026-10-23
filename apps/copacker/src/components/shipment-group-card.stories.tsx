@@ -1,6 +1,6 @@
+import { Checkbox } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ShipmentGroupCard } from "./shipment-group-card"
 
 const meta = preview.meta({

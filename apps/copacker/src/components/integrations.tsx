@@ -1,11 +1,6 @@
-import type { AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
-import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
-import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
-import { useId, useState } from "react"
-import { useTranslations } from "use-intl"
-import { StatusBadge } from "@/components/common"
-import { Button, buttonVariants } from "@/components/ui/button"
 import {
+  Button,
+  buttonVariants,
   Dialog,
   DialogClose,
   DialogContent,
@@ -13,11 +8,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+  DialogTrigger,
+  Field,
+  FieldDescription,
+  FieldLabel,
+  Input
+} from "@buildkitgg/shadcn-baseui-kit"
+import type { AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
+import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
+import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
+import { useId, useState } from "react"
+import { useTranslations } from "use-intl"
+import { StatusBadge } from "@/components/common"
+import { FieldError } from "@/components/field-error"
+import { touchButton } from "@/lib/controls"
 import { storeNames, type Store } from "@/lib/stores"
+import { cn } from "@/lib/utils"
 import { AmazonAdsCard } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
@@ -35,7 +41,7 @@ type Connection = {
   health?: AmazonConnectionHealth
 }
 
-const cardAction = buttonVariants({ variant: "outline", size: "responsive" })
+const cardAction = cn(buttonVariants({ variant: "outline" }), touchButton)
 
 // Each card has an explicit Connect or Manage action. Members can inspect connection details without changing them.
 export function Integrations({
@@ -214,7 +220,7 @@ function Connected({
       status={status}
       action={
         admin && (
-          <DialogTrigger render={<Button variant="outline" size="responsive" />}>
+          <DialogTrigger render={<Button variant="outline" className={touchButton} />}>
             {t("manage")}
             <span className="sr-only"> {storeNames[store]}</span>
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />

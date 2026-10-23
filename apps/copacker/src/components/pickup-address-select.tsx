@@ -1,8 +1,5 @@
-import { MapPin, Plus } from "lucide-react"
-import { useId, useState } from "react"
-import { useTranslations } from "use-intl"
-import { Field } from "@/components/ui/field"
 import {
+  Field,
   Select,
   SelectContent,
   SelectGroup,
@@ -10,7 +7,10 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from "@/components/ui/select"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { MapPin, Plus } from "lucide-react"
+import { useId, useState } from "react"
+import { useTranslations } from "use-intl"
 import { FormLabel } from "./form-controls"
 import type { PartnerAddress } from "./partner-address"
 

@@ -1,11 +1,8 @@
-import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
-import { CircleCheck, UploadCloud } from "lucide-react"
-import { useRef, useState } from "react"
-import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
+  Button,
+  Field,
+  FieldLabel,
+  Input,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -13,7 +10,11 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from "@/components/ui/sheet"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
+import { CircleCheck, UploadCloud } from "lucide-react"
+import { useRef, useState } from "react"
+import { useTranslations } from "use-intl"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"

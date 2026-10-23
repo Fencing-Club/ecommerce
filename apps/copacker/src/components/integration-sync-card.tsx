@@ -1,9 +1,10 @@
+import { Button, buttonVariants, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, CircleCheck, Clock3, RefreshCw } from "lucide-react"
 import { useId } from "react"
 import { useFormatter, useTranslations } from "use-intl"
-import type { StatusTone } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
+import { touchButton } from "@/lib/controls"
+import type { StatusTone } from "@/lib/tone"
+import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"
 
 export type IntegrationSyncState =
@@ -58,7 +59,7 @@ export function IntegrationSyncCard({
   const showProgress = status === "syncing" && amount !== null
   let statusIcon: React.ReactNode
   if (status === "syncing" || status === "loading") {
-    statusIcon = <Spinner />
+    statusIcon = <Spinner aria-hidden />
   } else if (status === "queued") {
     statusIcon = <Clock3 />
   } else if (status === "failed" || status === "unavailable") {
@@ -102,17 +103,13 @@ export function IntegrationSyncCard({
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {reconnect ? (
-          <a
-            href={reconnect}
-            className={buttonVariants({ variant: "outline", size: "responsive", className: "flex-1" })}
-          >
+          <a href={reconnect} className={cn(buttonVariants({ variant: "outline" }), touchButton, "flex-1")}>
             {common("reconnect")}
           </a>
         ) : (
           <Button
             variant="outline"
-            size="responsive"
-            className="flex-1"
+            className={cn(touchButton, "flex-1")}
             disabled={disabled || active}
             onClick={onSync}
             aria-label={actionLabel ?? t("syncAction", { label })}

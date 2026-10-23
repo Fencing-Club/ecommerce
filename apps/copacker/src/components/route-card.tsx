@@ -1,3 +1,12 @@
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@buildkitgg/shadcn-baseui-kit"
 import { type Destination, destinationSchema } from "@repo/copacker-orders"
 import { Building2, MapPin, Plus, Warehouse, X } from "lucide-react"
 import { useState } from "react"
@@ -5,10 +14,8 @@ import { useController, useFormContext, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { WarningNote } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { RouteStops } from "@/components/route-stops"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { OrderForm } from "@/lib/order-form"
 
 type Option = { value: string; label: string; disabled?: boolean }
@@ -43,7 +50,7 @@ export function RouteCard({
   const via = useWatch({ control, name: "via" })
   const [addingStop, setAddingStop] = useState(false)
   return (
-    <Card flush>
+    <FlushCard>
       <RouteStops
         supplier={
           <RoutePicker
@@ -111,7 +118,7 @@ export function RouteCard({
             <WarningNote>{t.rich("stopNeedsPhone", { link: forwardersLink })}</WarningNote>
           </p>
         )}
-    </Card>
+    </FlushCard>
   )
 }
 

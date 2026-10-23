@@ -1,3 +1,12 @@
+import {
+  Button,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input
+} from "@buildkitgg/shadcn-baseui-kit"
 import { itemTotal, lineName } from "@repo/copacker-orders"
 import { Ellipsis, Package, X } from "lucide-react"
 import { useState } from "react"
@@ -6,15 +15,12 @@ import { useTranslations } from "use-intl"
 import { WarningNote } from "@/components/common"
 import { FormError } from "@/components/form-feedback"
 import { MoneyInput } from "@/components/money-input"
+import { NumberInput } from "@/components/number-input"
 import { LineLabelMenuItems } from "@/components/order-actions"
 import { PackingRequirementsDialog } from "@/components/packing-requirements-dialog"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
 import { SupplierSkuCell } from "@/components/supplier-sku-cell"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input, NumberInput } from "@/components/ui/input"
 import { useMoney } from "@/hooks/use-money"
 import { quantityProblem } from "@/lib/catalog-pricing"
 import type { OrderForm } from "@/lib/order-form"

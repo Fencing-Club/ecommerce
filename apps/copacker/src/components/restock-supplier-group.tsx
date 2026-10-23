@@ -1,13 +1,23 @@
+import {
+  Button,
+  CardDescription,
+  CardHeader,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useSet } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
 import { ChevronRight } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { FlushCard } from "@/components/flush-card"
 import { NoValue } from "@/components/no-value"
-import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   createPoHref,
   type RestockReportData,
@@ -111,7 +121,7 @@ export function RestockSupplierGroup({
   const leadTime = t("leadTime", { days: text.either(leadTimes.map(text.number)) })
   return (
     <Collapsible open={open} onOpenChange={onOpenChange} render={<section aria-labelledby={headingId} />}>
-      <Card flush>
+      <FlushCard>
         <CardHeader className="flex flex-wrap items-center gap-x-6 gap-y-3">
           {/* The cost and Reorder move under the name when both don't fit on one line. */}
           <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-0.5">
@@ -138,7 +148,7 @@ export function RestockSupplierGroup({
           </div>
         </CardHeader>
         <CollapsibleContent className="@container">
-          <Table framed={false} className="@max-md:block">
+          <Table className="@max-md:block">
             <TableHeader className="@max-md:hidden">
               <TableRow>
                 <TableHead className="w-8 ps-4">
@@ -188,7 +198,7 @@ export function RestockSupplierGroup({
             <p className="border-t px-4 py-3 text-xs text-muted-foreground">{t("lineLimit", { count: poLineLimit })}</p>
           )}
         </CollapsibleContent>
-      </Card>
+      </FlushCard>
     </Collapsible>
   )
 }

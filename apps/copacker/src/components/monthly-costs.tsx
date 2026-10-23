@@ -1,10 +1,8 @@
+import { Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn-baseui-kit"
 import { Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { FlushCard } from "@/components/flush-card"
 import { useAction } from "@/hooks/use-action"
 import { storeNames } from "@/lib/stores"
 import { FormInput, FormMoney } from "./form-controls"
@@ -48,7 +46,7 @@ export function MonthlyCosts({
 }) {
   const t = useTranslations("settings.monthlyCosts")
   return (
-    <Card flush>
+    <FlushCard>
       <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{t("count", { count: costs.length })}</p>
         {admin && <AddMonthlyCost currency={currency} />}
@@ -60,7 +58,7 @@ export function MonthlyCosts({
           ))}
         </ul>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 

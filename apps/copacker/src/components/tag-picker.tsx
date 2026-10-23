@@ -1,9 +1,8 @@
+import { Badge, Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Plus, X } from "lucide-react"
 import type { RefObject } from "react"
 import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 
 const shownSuggestions = 8
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()

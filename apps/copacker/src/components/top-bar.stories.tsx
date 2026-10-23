@@ -1,7 +1,7 @@
+import { SidebarProvider } from "@buildkitgg/shadcn-baseui-kit"
 import { http, HttpResponse } from "msw/http"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { SidebarProvider } from "@/components/ui/sidebar"
 import { searchIndex } from "@/stories/fixtures/shared"
 import { shownDialog } from "@/stories/play"
 import { TopBar } from "./top-bar"
@@ -43,9 +43,9 @@ export const Buyer = meta.story({
     await expect(order).toEqual(order.toSorted((a, b) => a - b))
     await expect(within(header).queryByRole("button", { name: "Alex Rivera, account" })).toBeNull()
     await expect(within(header).queryByRole("button", { name: "Toggle sidebar" })).toBeNull()
-    // The bar is 56px, with 34px controls and a 36px search.
+    // The bar is 56px, with the kit's 36px controls and search.
     await expect(header.getBoundingClientRect().height).toBe(56)
-    await expect(within(header).getByRole("button", { name: "Create" }).getBoundingClientRect().height).toBe(34)
+    await expect(within(header).getByRole("button", { name: "Create" }).getBoundingClientRect().height).toBe(36)
     await expect(within(header).getByRole("button", { name: "Search" }).getBoundingClientRect().height).toBe(36)
     // Search opens its panel with the buyer's pages, Sales among them.
     await userEvent.click(within(header).getByRole("button", { name: "Search" }))

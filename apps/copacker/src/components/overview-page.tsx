@@ -1,7 +1,5 @@
+import { Button, Card, CardContent, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
 import { readPeriod } from "@/lib/date-range"
 import type { OverviewSearch } from "@/lib/page-search"
 import type { OverviewPageData } from "@/server/overview-page"
@@ -34,7 +32,7 @@ export function OverviewPageView({
   const pendingContent = pendingSearch ? (
     <>
       <output className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner />
+        <Spinner aria-hidden />
         {t("updating")}
       </output>
       <OverviewSkeleton />

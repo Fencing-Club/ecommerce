@@ -1,8 +1,15 @@
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@buildkitgg/shadcn-baseui-kit"
 import type { OrderInput } from "@repo/copacker-orders"
 import type { PackingRule, ValidationIssue } from "@repo/copacker-packing-rules"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { issueValues } from "@/lib/packing-messages"
 import { cn } from "@/lib/utils"
 

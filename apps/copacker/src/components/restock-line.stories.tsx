@@ -1,7 +1,7 @@
+import { Table, TableBody } from "@buildkitgg/shadcn-baseui-kit"
 import { useState } from "react"
 import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Table, TableBody } from "@/components/ui/table"
 import type { LineEdit } from "@/lib/restock-selection"
 import { restockLines } from "@/stories/fixtures/catalog"
 import { RestockLineRows } from "./restock-line"
@@ -14,7 +14,7 @@ function Line({ line, onEdit, ...props }: React.ComponentProps<typeof RestockLin
   const [expanded, setExpanded] = useState(props.expanded)
   return (
     <div className="@container">
-      <Table framed={false} className="@max-md:block">
+      <Table className="@max-md:block">
         <TableBody className="@max-md:block">
           <RestockLineRows
             line={line}

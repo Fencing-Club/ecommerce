@@ -1,5 +1,5 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { Info } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // A short explanation behind an info icon, for the few things a card can't show on its face. The kit's tooltip: a dark
 // bubble up to 260px wide.

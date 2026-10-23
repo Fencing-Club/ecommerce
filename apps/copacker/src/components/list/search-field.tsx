@@ -1,5 +1,5 @@
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@buildkitgg/shadcn-baseui-kit"
 import { Search } from "lucide-react"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 
 // A list's search box, with a magnifier before what's typed. `label` names it for screen readers, and is its
 // placeholder unless `placeholder` says more. `ref` and `onKeyDown` reach the input, such as to focus it when it opens

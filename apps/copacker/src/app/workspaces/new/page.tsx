@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
-import { Button } from "@/components/ui/button"
 export default function NewWorkspace({
   page
 }: {

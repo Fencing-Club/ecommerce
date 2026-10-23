@@ -1,8 +1,6 @@
+import { Alert, AlertDescription, Button, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { AlertCircle } from "lucide-react"
 import { useFormState } from "react-hook-form"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { useMessageText } from "@/hooks/use-error-text"
 
 // A form's error, such as the server's. A message that is a full key shows in the person's language. `id` lets a field
@@ -45,7 +43,7 @@ export function SubmitButton({
 }: React.ComponentProps<typeof Button> & { pending: boolean }) {
   return (
     <Button {...props} disabled={pending || props.disabled} aria-busy={pending}>
-      {pending && <Spinner data-icon="inline-start" />}
+      {pending && <Spinner aria-hidden data-icon="inline-start" />}
       {children}
     </Button>
   )

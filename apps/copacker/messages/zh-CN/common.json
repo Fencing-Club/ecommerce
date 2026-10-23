@@ -130,7 +130,8 @@
     "sidebarDescription": "显示移动端侧边栏。",
     "clear": "清除",
     "showOptions": "显示选项",
-    "remove": "移除{label}"
+    "remove": "移除{label}",
+    "loading": "加载中"
   },
   "pages": {
     "error": {

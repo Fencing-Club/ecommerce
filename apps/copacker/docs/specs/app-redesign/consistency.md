@@ -35,8 +35,7 @@ When a concept needs a new shape, change the component, so every screen moves to
 | Tooltip                  | Tooltip Bubble        | Dark bubble                                                                      | What an info tip reveals on hover or focus                   |
 | Optional marker          | Badge / Outline, named Optional | A design annotation, never shipped                                     | Proposed items the specs haven't committed to yet            |
 
-Sizes are base-vega's, as the designs draw them. The app's `components/ui/button.tsx` still has the old 34 px buttons
-(28 small, 36 large) until it moves to base-vega.
+Sizes are base-vega's, as the designs draw them and the app's components (buildkit's Vega kit) have them.
 
 Patterns built from these, with one construction each: page header, filter bar (search field and filter chips at
 34 px), cards (10 px radius, 15/600 title, 14 by 16 header padding), tables (header band `muted`, 9 by 16 padding,

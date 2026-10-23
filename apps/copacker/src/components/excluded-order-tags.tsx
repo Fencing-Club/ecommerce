@@ -1,10 +1,10 @@
+import { Badge, Button, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
 import { Tags } from "lucide-react"
 import { useRef } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { DialogTrigger } from "@/components/ui/dialog"
+import { touchButton } from "@/lib/controls"
+import { cn } from "@/lib/utils"
 import { FormField, useFormField } from "./form-controls"
 import { FormDialog } from "./form-dialog"
 import { DetailRow } from "./inventory-locations"
@@ -39,7 +39,7 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
     <FormDialog
       trigger={
         <DialogTrigger
-          render={<Button variant="outline" size="responsive" className="shrink-0" aria-label={t("editLabel")} />}
+          render={<Button variant="outline" className={cn(touchButton, "shrink-0")} aria-label={t("editLabel")} />}
         >
           {t("edit")}
         </DialogTrigger>

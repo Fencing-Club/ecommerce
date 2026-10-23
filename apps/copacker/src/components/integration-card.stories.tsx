@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { CircleCheck } from "lucide-react"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { StatusBadge } from "./common"
 import { IntegrationCard } from "./integration-card"
 

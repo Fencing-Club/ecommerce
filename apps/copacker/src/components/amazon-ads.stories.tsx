@@ -1,7 +1,7 @@
+import { Dialog } from "@buildkitgg/shadcn-baseui-kit"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Dialog } from "@/components/ui/dialog"
 import { shownAlertDialog } from "@/stories/play"
 import { AmazonAdsSettings } from "./amazon-ads"
 

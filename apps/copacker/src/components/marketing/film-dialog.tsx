@@ -1,6 +1,6 @@
+import { Dialog, DialogContent, DialogTitle } from "@buildkitgg/shadcn-baseui-kit"
 import { useMounted } from "@mantine/hooks"
 import { useTranslations } from "use-intl"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 // The ad, played in a dialog, which ./film loads once the page is idle. The film is served from the copacker-media R2
 // bucket, loads only once it's opened, and has its captions burned in. Closing it puts focus back on the button that

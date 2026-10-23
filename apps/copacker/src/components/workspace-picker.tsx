@@ -1,9 +1,8 @@
+import { Button, Spinner } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { type Workspace, WorkspaceIdentity } from "@/components/workspace-menu"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"
 
@@ -41,7 +40,7 @@ export function WorkspacePicker({
               >
                 <WorkspaceIdentity workspace={workspace} />
                 {switching === workspace.id ? (
-                  <Spinner />
+                  <Spinner aria-hidden />
                 ) : (
                   <ArrowRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
                 )}

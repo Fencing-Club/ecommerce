@@ -1,17 +1,18 @@
-import { CheckCircle2, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Send } from "lucide-react"
-import { useState } from "react"
-import { useTranslations } from "use-intl"
-import { StatusBadge } from "@/components/common"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
+  Avatar,
+  AvatarFallback,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
-import { TableCell } from "@/components/ui/table"
+  DropdownMenuTrigger,
+  TableCell
+} from "@buildkitgg/shadcn-baseui-kit"
+import { CheckCircle2, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Send } from "lucide-react"
+import { useState } from "react"
+import { useTranslations } from "use-intl"
+import { StatusBadge } from "@/components/common"
 import { useAction } from "@/hooks/use-action"
 import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"

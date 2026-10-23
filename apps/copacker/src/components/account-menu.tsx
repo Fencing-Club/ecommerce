@@ -1,7 +1,4 @@
 import { useTheme } from "@buildkitgg/react-theme"
-import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
-import { useId } from "react"
-import { useTranslations } from "use-intl"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +12,10 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
+} from "@buildkitgg/shadcn-baseui-kit"
+import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
+import { useId } from "react"
+import { useTranslations } from "use-intl"
 import { initials } from "@/lib/initials"
 import { themeStore } from "@/lib/theme"
 

@@ -1,13 +1,31 @@
+import {
+  Badge,
+  Button,
+  buttonVariants,
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronRight, Circle, CircleAlert, CircleCheck, Info, Package, TriangleAlert } from "lucide-react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Status } from "@/components/common"
-import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { FlushCard } from "@/components/flush-card"
 import { useRefreshWhile } from "@/hooks/use-refresh-while"
+import { insetTable } from "@/lib/controls"
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -225,7 +243,7 @@ export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh
                   className="focus-ring flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60"
                 >
                   {step.syncing ? (
-                    <Spinner className="size-4 shrink-0 text-muted-foreground" />
+                    <Spinner aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                   ) : (
                     <Circle className="size-4 shrink-0 text-muted-foreground/60" aria-hidden />
                   )}
@@ -265,7 +283,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
   const t = useTranslations("overview.attention")
   const figures = useFigures()
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {t("title")}
@@ -315,7 +333,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
           {t("caughtUp")}
         </div>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -594,7 +612,7 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
     ? t("summaryAtCost", { items: slow.items, units: slow.units, amount: figures.money(slow.value) })
     : t("summary", { items: slow.items, units: slow.units })
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           {t("title")}
@@ -603,7 +621,7 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
         {slow.items > 0 && <CardDescription>{summary}</CardDescription>}
       </CardHeader>
       {slow.items ? (
-        <Table framed={false} inset>
+        <Table className={insetTable}>
           <TableHeader>
             <TableRow>
               <TableHead>{t("product")}</TableHead>
@@ -641,7 +659,7 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
       ) : (
         <CardContent className="py-4 text-sm text-muted-foreground">{t("empty")}</CardContent>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -657,7 +675,7 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
   const t = useTranslations("overview.bestSellers")
   const figures = useFigures()
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction>
@@ -665,7 +683,7 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
         </CardAction>
       </CardHeader>
       {restock.bestSellers.length ? (
-        <Table framed={false} inset>
+        <Table className={insetTable}>
           <TableHeader>
             <TableRow>
               <TableHead>{t("product")}</TableHead>
@@ -703,7 +721,7 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
       ) : (
         <CardContent className="py-4 text-sm text-muted-foreground">{t("empty")}</CardContent>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -713,7 +731,7 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
   const shown = purchasing.bySupplier.slice(0, 5)
   const rest = purchasing.bySupplier.slice(5)
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction>
@@ -721,7 +739,7 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
         </CardAction>
       </CardHeader>
       {shown.length ? (
-        <Table framed={false} inset>
+        <Table className={insetTable}>
           <TableHeader>
             <TableRow>
               <TableHead>{t("supplier")}</TableHead>
@@ -774,7 +792,7 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
           />
         </dl>
       </CardFooter>
-    </Card>
+    </FlushCard>
   )
 }
 

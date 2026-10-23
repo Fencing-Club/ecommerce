@@ -1,16 +1,16 @@
+import { Button, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { expect, fireEvent, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FramedTable } from "@/components/framed-table"
 import { member } from "@/stories/workspace"
 import { LinkRow } from "./link-row"
 
 // A list of purchase orders whose rows open the order, and a row that opens a sheet on the page.
 function OrdersTable({ onRemind, onOpen }: { onRemind: () => void; onOpen: () => void }) {
   return (
-    <Table>
+    <FramedTable>
       <TableHeader>
         <TableRow>
           <TableHead>Purchase order</TableHead>
@@ -47,7 +47,7 @@ function OrdersTable({ onRemind, onOpen }: { onRemind: () => void; onOpen: () =>
           <TableCell />
         </LinkRow>
       </TableBody>
-    </Table>
+    </FramedTable>
   )
 }
 

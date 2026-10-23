@@ -62,11 +62,11 @@ contexts) are listed there instead. An effect that renders nothing is a hook in 
 
 ## The sidebar
 
-Every story file sets an explicit `title` in one of six sections. `tests/stories.test.ts` checks each rule.
+Every story file sets an explicit `title` in one of five sections. `tests/stories.test.ts` checks each rule. The kit's
+components have no stories here: they're buildkit's, tested there.
 
 | Section | Holds | Title |
 | --- | --- | --- |
-| Foundations | The shadcn primitives in `src/components/ui` | `Foundations/<Name>` |
 | Components | App components, grouped by product area | `Components/<Area>/<Name>` |
 | Pages | The real routes in `src/app`, rendered with fixtures | `Pages/<Route>/<View>` |
 | Prototypes | Designs built only in Storybook: in `src/stories`, or beside the route a design is for until it's built (listed in the test) | `Prototypes/<Name>` |

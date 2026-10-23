@@ -1,9 +1,11 @@
+import { Input, Switch, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { arrayIncludes } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
+import { FramedTable } from "@/components/framed-table"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
 import { Pager } from "@/components/list/pager"
@@ -11,9 +13,6 @@ import { SaveBar } from "@/components/list/save-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
 import { NoValue } from "@/components/no-value"
 import { ProductThumb } from "@/components/product-thumb"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveStockMutation, useSetTrackingMutation } from "@/lib/supplier-api"
 import { imageUrl } from "@/lib/supplier-product"
@@ -204,7 +203,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
         placeholder={t("search")}
       />
       {shown.length ? (
-        <Table>
+        <FramedTable>
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.product")}</TableHead>
@@ -282,7 +281,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
               )
             })}
           </TableBody>
-        </Table>
+        </FramedTable>
       ) : (
         <EmptyState title={t("nothingHere")} description={shared("tryAnother")} />
       )}

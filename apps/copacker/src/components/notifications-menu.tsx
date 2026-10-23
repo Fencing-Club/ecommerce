@@ -1,8 +1,14 @@
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Bell, Inbox } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState } from "@/components/common"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 
 // The top bar's Inbox and its dropdown. Its tasks and updates come with the Inbox; until then it's empty, with the bell
 // in place of the empty box. Like the top bar's other buttons it's 44px on a phone.

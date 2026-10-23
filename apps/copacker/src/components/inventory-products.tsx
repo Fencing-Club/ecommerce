@@ -1,3 +1,24 @@
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  Badge,
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
 import { ChevronDown, ChevronRight, CircleAlert, Ellipsis, PackagePlus, Pencil, TriangleAlert, X } from "lucide-react"
@@ -6,6 +27,7 @@ import { useFormatter, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { LinkRow } from "@/components/link-row"
 import { PageButtons } from "@/components/list/pager"
 import { SearchField } from "@/components/list/search-field"
@@ -14,14 +36,6 @@ import { OptionSelect } from "@/components/option-select"
 import { ProductDetails } from "@/components/product-details"
 import { ProductLabelBulk } from "@/components/product-label-bulk"
 import { ProductThumb } from "@/components/product-thumb"
-import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import {
   type DuplicateSku,
@@ -42,7 +56,7 @@ const lastCell = "pe-4"
 // A problem with some products, as a card that opens to list them.
 export function IssuePanel({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <Card flush>
+    <FlushCard>
       <Collapsible>
         <CollapsibleTrigger className="focus-ring group flex w-full items-center gap-3 px-4 py-3 text-start text-sm hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-inset">
           <TriangleAlert className="size-4 shrink-0 text-amber-400" aria-hidden="true" />
@@ -57,7 +71,7 @@ export function IssuePanel({ title, hint, children }: { title: string; hint?: st
         </CollapsibleTrigger>
         <CollapsibleContent className="border-t">{children}</CollapsibleContent>
       </Collapsible>
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -69,7 +83,7 @@ function DuplicateSkus({ duplicates }: { duplicates: DuplicateSku[] }) {
   }
   return (
     <IssuePanel title={t("duplicateSkus", { count: duplicates.length })} hint={t("duplicateSkusHint")}>
-      <Table framed={false}>
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead className={firstCell}>SKU</TableHead>
@@ -110,7 +124,7 @@ function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
     value === null || value === undefined ? <NoValue reason={t("reasons.none")} /> : format.number(value)
   return (
     <IssuePanel title={t("amazonOnly", { count: stock.length })} hint={t("amazonOnlyHint")}>
-      <Table framed={false}>
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead className={firstCell}>{t("amazonSku")}</TableHead>
@@ -458,7 +472,7 @@ function ListFooter({
 export function ProductsSkeleton() {
   const t = useTranslations("inventory.list")
   return (
-    <Card flush aria-busy="true">
+    <FlushCard aria-busy="true">
       <span className="sr-only">{t("loading")}</span>
       <div className="border-b p-4">
         <Skeleton className="h-8 w-full max-w-sm" />
@@ -475,7 +489,7 @@ export function ProductsSkeleton() {
           </div>
         ))}
       </div>
-    </Card>
+    </FlushCard>
   )
 }
 
@@ -535,7 +549,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
   const shown = editing ? (data.products.find((product) => product.productId === editing.productId) ?? editing) : null
   return (
     <>
-      <Card flush>
+      <FlushCard>
         <div className="flex flex-wrap items-center gap-2 border-b p-4">
           {/* A row of its own on a phone, so the filters and actions wrap under it instead of squeezing it. */}
           <SearchField
@@ -547,7 +561,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
               setSearch(value)
               setPage(1)
             }}
-            className="h-[34px] w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1"
+            className="w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1"
           />
           {(data.missingBarcodes > 0 || missingBarcode) && (
             <FilterToggle
@@ -582,7 +596,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
           </p>
         ) : (
           <div className="@container" aria-busy={isFetching}>
-            <Table framed={false}>
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10 pe-0 ps-3">
@@ -618,7 +632,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
             onPage={setPage}
           />
         )}
-      </Card>
+      </FlushCard>
       <DuplicateSkus duplicates={data.duplicateSkus} />
       <AmazonOnly stock={data.amazonOnly} />
       <ProductDetails product={shown} open={detailsOpen} onOpenChange={setDetailsOpen} onSaved={refresh} />

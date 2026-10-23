@@ -1,17 +1,31 @@
+import {
+  Button,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { Ellipsis } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
+import { FlushCard } from "@/components/flush-card"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { LinkRow } from "@/components/link-row"
-import type { StatusTone } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
+import { insetTable } from "@/lib/controls"
 import { formatDate } from "@/lib/format"
+import type { StatusTone } from "@/lib/tone"
 import { fileName, StatusBadge } from "./common"
 import { FileDropzone, pdfFiles } from "./file-dropzone"
 
@@ -69,7 +83,7 @@ export function ImportIntake() {
   const items = imports.data?.items ?? []
   const listError = imports.isError ? errorMessage(imports.error) : changeError
   return (
-    <Card flush className="@container">
+    <FlushCard className="@container">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
@@ -117,7 +131,7 @@ export function ImportIntake() {
       )}
       {imports.isLoading && <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("loading")}</p>}
       {items.length > 0 && (
-        <Table aria-label={t("imports")} framed={false} inset>
+        <Table className={insetTable} aria-label={t("imports")}>
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.file")}</TableHead>
@@ -238,6 +252,6 @@ export function ImportIntake() {
           </TableBody>
         </Table>
       )}
-    </Card>
+    </FlushCard>
   )
 }

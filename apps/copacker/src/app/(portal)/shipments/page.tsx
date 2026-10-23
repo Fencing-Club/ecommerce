@@ -1,10 +1,9 @@
+import { Alert, AlertDescription, AlertTitle, Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
 import { LogisticsList } from "@/components/logistics-list"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import type { ShipmentsSearch } from "@/lib/page-search"
 import type { shipmentsPage } from "@/server/shipments-page"
 

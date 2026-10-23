@@ -1,7 +1,7 @@
+import { Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Building2, MapPin, Warehouse } from "lucide-react"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { RoutePill } from "./route-pill"
 import { RouteStops } from "./route-stops"
 

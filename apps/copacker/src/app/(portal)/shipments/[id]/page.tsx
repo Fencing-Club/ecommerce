@@ -1,3 +1,23 @@
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+  Spinner
+} from "@buildkitgg/shadcn-baseui-kit"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
@@ -23,12 +43,6 @@ import { ShipmentLayout } from "@/components/shipment-layout"
 import { ShipmentOrigin, ShipmentPackingDetails, ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { printableLabelTypes } from "@/lib/printable-labels"
@@ -408,7 +422,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
 
           {amazonRequestStates.includes(shipment.status) && (
             <Alert role="note">
-              <Spinner />
+              <Spinner aria-hidden />
               <AlertTitle>{t("creating.title")}</AlertTitle>
               <AlertDescription>{t("creating.description")}</AlertDescription>
             </Alert>

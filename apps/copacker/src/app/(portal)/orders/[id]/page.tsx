@@ -1,3 +1,19 @@
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { itemTotal, orderCharges, orderTotal, orderUnits, lineName, shipmentGroups } from "@repo/copacker-orders"
 import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
@@ -8,6 +24,7 @@ import { useFormatter, useTranslations } from "use-intl"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
 import { CostSummaryCard } from "@/components/cost-summary-card"
+import { FlushCard } from "@/components/flush-card"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { LandedCosts } from "@/components/landed-costs"
 import { Markdown } from "@/components/markdown"
@@ -21,10 +38,6 @@ import { RouteStops } from "@/components/route-stops"
 import { ShipmentGroupCard } from "@/components/shipment-group-card"
 import { SupplierSkuCell } from "@/components/supplier-sku-cell"
 import { ProposalPanel } from "@/components/supplier/proposal-panel"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import { knownName, paymentTermKeys } from "@/lib/order-lines"
 import type { orderPage } from "@/server/order-page"
@@ -149,7 +162,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
 
       <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Card flush>
+          <FlushCard>
             <RouteStops
               supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
               stop={stop && <RoutePill icon={<Warehouse />}>{stop}</RoutePill>}
@@ -167,7 +180,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 </Button>
               )}
             </RouteStops>
-          </Card>
+          </FlushCard>
           {shipmentGroups(order.data.items).map((group) => (
             <ShipmentGroupCard
               key={group.receiver}
@@ -177,7 +190,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
               total={prices ? orderTotal({ items: group.lines }) : undefined}
               currency={currency}
             >
-              <Table framed={false} className="@max-2xl:block">
+              <Table className="@max-2xl:block">
                 <TableHeader className="@max-2xl:hidden">
                   <TableRow>
                     <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
@@ -262,7 +275,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
             </Card>
           )}
 
-          <Card flush size="sm">
+          <FlushCard size="sm">
             <CardHeader>
               <CardTitle>{t("detail.shipments")}</CardTitle>
             </CardHeader>
@@ -320,7 +333,7 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                 {order.status === "draft" ? t("detail.shipmentsStartOnSend") : t("detail.noShipments")}
               </p>
             )}
-          </Card>
+          </FlushCard>
 
           {documentGroups.length > 0 && (
             <Card size="sm">

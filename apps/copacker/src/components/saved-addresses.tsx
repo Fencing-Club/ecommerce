@@ -1,13 +1,10 @@
+import { Badge, Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn-baseui-kit"
 import type { Address } from "@repo/copacker-orders"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { DialogTrigger } from "@/components/ui/dialog"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { FlushCard } from "@/components/flush-card"
 import { useAction } from "@/hooks/use-action"
 import type { ContactKind } from "@/lib/contacts"
 import { contactKindLabelKeys, contactKinds } from "@/lib/contacts"
@@ -37,7 +34,7 @@ export function SavedAddresses({
   const count = supplier && !contacts.length ? t("noPickupAddresses") : t("count", { count: contacts.length })
 
   return (
-    <Card flush>
+    <FlushCard>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{count}</p>
         {admin && (
@@ -60,7 +57,7 @@ export function SavedAddresses({
           ))}
         </ul>
       )}
-    </Card>
+    </FlushCard>
   )
 }
 

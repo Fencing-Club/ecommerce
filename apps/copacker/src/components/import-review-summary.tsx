@@ -1,8 +1,15 @@
+import {
+  Button,
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input
+} from "@buildkitgg/shadcn-baseui-kit"
 import { Plus, Trash2 } from "lucide-react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { useMoney } from "@/hooks/use-money"
 import type { ImportProposal } from "@/lib/import-proposal"
 import type { importTotals } from "@/lib/import-totals"

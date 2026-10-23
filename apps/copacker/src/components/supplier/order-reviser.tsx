@@ -1,21 +1,36 @@
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  Input,
+  Textarea
+} from "@buildkitgg/shadcn-baseui-kit"
 import { commonPaymentTerms, orderSubtotal } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Plus, Undo2, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageHeader, StatusBadge } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { DateInput } from "@/components/form-controls"
 import { SelectControl } from "@/components/form-select"
 import { matches } from "@/components/list/matches"
 import { SearchField } from "@/components/list/search-field"
 import { MoneyInput } from "@/components/money-input"
-import { Alert, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { useProposeChangesMutation } from "@/lib/supplier-api"
@@ -186,7 +201,7 @@ export function OrderReviser({
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card flush className="@container">
+        <FlushCard className="@container">
           <CardHeader>
             <CardTitle>{t("products")}</CardTitle>
             <CardAction>
@@ -286,7 +301,7 @@ export function OrderReviser({
               )
             })}
           </ul>
-        </Card>
+        </FlushCard>
 
         <div className="flex flex-col gap-4">
           <Card size="sm">

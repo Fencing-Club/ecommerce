@@ -78,6 +78,7 @@ export const Mobile = meta.story({
     const title = canvas.getByRole("heading", { name: "Cartons" })
     const summary = canvas.getByText("300 of 420 units")
     await expect(summary.getBoundingClientRect().top).toBeGreaterThan(title.getBoundingClientRect().top)
-    await expect(canvas.getByRole("button", { name: "Add carton" }).getBoundingClientRect().width).toBe(34)
+    const add = canvas.getByRole("button", { name: "Add carton" }).getBoundingClientRect()
+    await expect(add.width).toBe(add.height)
   }
 })

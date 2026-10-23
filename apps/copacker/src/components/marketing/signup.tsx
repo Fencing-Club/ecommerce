@@ -1,8 +1,7 @@
+import { Button, Input } from "@buildkitgg/shadcn-baseui-kit"
 import { Check } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 // Takes the form's place once it's sent, and its focus with it, so the confirmation is read out rather than lost.

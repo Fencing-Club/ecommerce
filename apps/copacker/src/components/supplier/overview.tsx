@@ -1,17 +1,37 @@
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@buildkitgg/shadcn-baseui-kit"
 import { CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
+import { FlushCard } from "@/components/flush-card"
 import { LinkRow } from "@/components/link-row"
 import { Attention, CardLink } from "@/components/overview-sections"
 import { ProductThumb } from "@/components/product-thumb"
 import { DeltaNote, StatCard, StatGrid } from "@/components/stat-card"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import type { Permissions } from "@/lib/access"
 import { canOpen } from "@/lib/access"
+import { insetTable } from "@/lib/controls"
 import { rangeLabel } from "@/lib/date-range"
 import { formatDate, formatNumber } from "@/lib/format"
 import { imageUrl } from "@/lib/supplier-product"
@@ -350,7 +370,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
         </Card>
       </div>
 
-      <Card flush>
+      <FlushCard>
         <CardHeader>
           <CardTitle>{t("recentOrders")}</CardTitle>
           <CardAction>
@@ -358,7 +378,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
           </CardAction>
         </CardHeader>
         {data.recent.length ? (
-          <Table framed={false} inset>
+          <Table className={insetTable}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("columns.order")}</TableHead>
@@ -395,7 +415,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
         ) : (
           <CardContent className="py-4 text-sm text-muted-foreground">{t("noOrders")}</CardContent>
         )}
-      </Card>
+      </FlushCard>
     </div>
   )
 }

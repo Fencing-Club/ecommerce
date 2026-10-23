@@ -1,6 +1,6 @@
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@buildkitgg/shadcn-baseui-kit"
 import { useId, useState } from "react"
 import { useLocale } from "use-intl"
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { currencySymbol } from "@/lib/currency"
 
 // The marks a locale writes amounts with: "." and "," in English, "," and "." in German, "," and a space in French.

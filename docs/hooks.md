@@ -45,7 +45,7 @@ each hook.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.
-- `useIsMobile` (`use-mobile.ts`): `true` below 768px, `false` on the server. Used by shadcn's sidebar; use it for
+- `useIsMobile` (from `@buildkitgg/shadcn-baseui-kit`, the kit's sidebar's own): `true` below 768px. Use it for
   layout switches that CSS can't handle.
 - Effects a page or layout runs, which render nothing (hooks, never components that return `null`):
   - `useRefreshWhile(active, refresh)` (`use-refresh-while.ts`): calls `refresh` every 5 seconds while `active` and the

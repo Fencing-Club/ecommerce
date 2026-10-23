@@ -1,8 +1,8 @@
-import { useTranslations } from "use-intl"
-import { RequiredMark } from "@/components/form-controls"
-import { OptionSelect } from "@/components/option-select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Combobox,
   ComboboxChip,
   ComboboxChips,
@@ -12,10 +12,18 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxValue,
-  useComboboxAnchor
-} from "@/components/ui/combobox"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
+  useComboboxAnchor,
+  Field,
+  FieldDescription,
+  FieldLabel,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText
+} from "@buildkitgg/shadcn-baseui-kit"
+import { useTranslations } from "use-intl"
+import { RequiredMark } from "@/components/form-controls"
+import { OptionSelect } from "@/components/option-select"
 import { useMoney } from "@/hooks/use-money"
 import { adjustPrice } from "@/lib/catalog-pricing"
 import type { CatalogEditorData } from "@/server/catalogs"

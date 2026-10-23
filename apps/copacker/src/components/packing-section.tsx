@@ -1,8 +1,14 @@
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@buildkitgg/shadcn-baseui-kit"
 import { ChevronRight, Download, Plus, Upload } from "lucide-react"
 import type { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "./common"
 
@@ -123,7 +129,7 @@ export function PackingActions({
       <IconAction label={labels.import} onClick={actions.onImport}>
         <Upload />
       </IconAction>
-      <Button type="button" variant="outline" className="max-sm:w-[34px] max-sm:px-0" onClick={actions.onAdd}>
+      <Button type="button" variant="outline" className="max-sm:w-9 max-sm:px-0" onClick={actions.onAdd}>
         <Plus />
         <span className="max-sm:sr-only">{labels.add}</span>
       </Button>

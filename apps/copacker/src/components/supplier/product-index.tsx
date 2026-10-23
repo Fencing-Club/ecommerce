@@ -1,3 +1,4 @@
+import { Button, Checkbox, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
 import { useSet } from "@mantine/hooks"
 import type { PriceBasis } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
@@ -5,6 +6,7 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, Status, WarningNote } from "@/components/common"
+import { FramedTable } from "@/components/framed-table"
 import { LinkRow } from "@/components/link-row"
 import { IndexToolbar } from "@/components/list/index-toolbar"
 import { matches } from "@/components/list/matches"
@@ -13,9 +15,6 @@ import { SelectionBar } from "@/components/list/selection-bar"
 import { usePagedRows } from "@/components/list/use-paged-rows"
 import { NoValue } from "@/components/no-value"
 import { ProductThumb } from "@/components/product-thumb"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { useSetProductsActiveMutation } from "@/lib/supplier-api"
@@ -189,7 +188,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
       </SelectionBar>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {rows.length ? (
-        <Table>
+        <FramedTable>
           <TableHeader>
             <TableRow>
               {editable && (
@@ -286,7 +285,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
               )
             })}
           </TableBody>
-        </Table>
+        </FramedTable>
       ) : (
         <EmptyState title={t("noneFound")} description={t("noneFoundDescription")} />
       )}

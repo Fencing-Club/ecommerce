@@ -1,6 +1,6 @@
+import { Dialog } from "@buildkitgg/shadcn-baseui-kit"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Dialog } from "@/components/ui/dialog"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import { shownDialog, chooseOption } from "@/stories/play"
 import { AmazonConnect } from "./amazon-connect"

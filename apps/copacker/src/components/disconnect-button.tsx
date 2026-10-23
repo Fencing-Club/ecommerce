@@ -1,10 +1,11 @@
+import { AlertDialogTrigger, Button } from "@buildkitgg/shadcn-baseui-kit"
 import { Unplug } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+import { touchButton, ghostDestructive } from "@/lib/controls"
 import { storeNames, type Store } from "@/lib/stores"
+import { cn } from "@/lib/utils"
 
 // A quiet, red Disconnect that asks first.
 export function DisconnectButton({ provider, account }: { provider: Store; account: string }) {
@@ -17,7 +18,7 @@ export function DisconnectButton({ provider, account }: { provider: Store; accou
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <AlertDialogTrigger render={<Button variant="ghost-destructive" size="responsive" />}>
+        <AlertDialogTrigger render={<Button variant="ghost" className={cn(touchButton, ghostDestructive)} />}>
           <Unplug className="size-4" aria-hidden />
           {t("disconnect")}
         </AlertDialogTrigger>
