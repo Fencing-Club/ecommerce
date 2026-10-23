@@ -149,6 +149,15 @@ export const operationReceipts = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.orgId, t.operation, t.key] })]
 )
+export const connectionSyncRuns = pgTable("connection_sync_runs", {
+  id: uuid().defaultRandom().primaryKey(),
+  orgId: orgRef({ onDelete: "cascade" }),
+  connectionId: uuid().notNull(),
+  accountId: text().notNull(),
+  requestedDatasets: jsonb().$type<string[]>().notNull(),
+  jobIds: jsonb().$type<string[]>().notNull(),
+  createdAt: createdAt()
+})
 export const suppliers = pgTable(
   "suppliers",
   {

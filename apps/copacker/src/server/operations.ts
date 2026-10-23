@@ -28,6 +28,7 @@ import { accessSchema, can, effectiveAccess, isAdmin } from "@/lib/access"
 import { CliError, cliPrincipal } from "./cli-auth"
 import { boundedBody } from "./cli-http"
 import { failureMessage, StatusError } from "./errors"
+import { withDeferredJobWake } from "./job-delivery"
 import { catalogWriteDefinitions, writeCatalog, writeCatalogAssignment } from "./operation-catalog-writes"
 import {
   connectionSettings,
@@ -59,6 +60,7 @@ import {
 } from "./operation-purchasing-reads"
 import { operationRestockChannels, operationRestockReport, restockDefinitions } from "./operation-restock"
 import { readShipments } from "./operation-shipment-reads"
+import { readConnectionSync, startConnectionSync, workspaceSyncStatus } from "./operation-sync"
 import { restockTargetReport } from "./restock-page"
 import { restockPriceFields } from "./restock-plan"
 import { hash, sign, verifySignature } from "./security"
@@ -153,6 +155,13 @@ const supplierProductsRead = (context: Context) =>
 const supplierInventoryRead = (context: Context) =>
   context.session?.org.kind === "supplier" && can(context.session, "inventory")
 const entries: Entry[] = [
+  entry(connectionOperations.status, buyer, (_, context) => workspaceSyncStatus(session(context))),
+  entry(connectionOperations["connection.sync"], buyer, (input, context) =>
+    startConnectionSync(session(context), input)
+  ),
+  entry(connectionOperations["connection.sync.show"], buyer, (input, context) =>
+    readConnectionSync(session(context), input)
+  ),
   entry(
     productWriteDefinitions["product.supplier.assign"],
     (context) => context.session?.org.kind === "buyer" && can(context.session, "products", "edit"),
@@ -663,6 +672,10 @@ async function mutation(
         throw new CliError("idempotency_expired", "This execution expired. Review before starting a new one.", 409)
       }
       if (!retainedReport) {
+        if (context.operation === "connection.sync") {
+          const run = z.object({ connectionId: z.uuid(), runId: z.uuid() }).parse(saved.result)
+          await withTransaction(tx, () => readConnectionSync(fresh.session, { id: run.connectionId, runId: run.runId }))
+        }
         return saved.result
       }
       const reference = z.object({ reportId: z.uuid() }).parse(saved.result)
@@ -743,8 +756,10 @@ export async function operationResponse(request: Request, operation: string) {
     const isRead = isQuery(definition.descriptor, jsonObject.parse(parsed.data))
     const result = isRead
       ? await found.execute(parsed.data, context)
-      : await mutation(context, request.headers.get("idempotency-key"), parsed.data, (fresh) =>
-          found.execute(parsed.data, fresh)
+      : await withDeferredJobWake(() =>
+          mutation(context, request.headers.get("idempotency-key"), parsed.data, (fresh) =>
+            found.execute(parsed.data, fresh)
+          )
         )
     const data = definition.output.parse(result)
     return Response.json(

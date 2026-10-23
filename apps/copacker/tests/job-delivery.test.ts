@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { signalJobs, withJobPublisher, withJobWake } from "../src/server/job-delivery"
+import { signalJobs, withJobPublisher, withJobWake, withDeferredJobWake } from "../src/server/job-delivery"
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -18,6 +18,23 @@ function setup(result: unknown = {}) {
 }
 
 describe("Cloudflare job delivery", () => {
+  it("defers nested producer wakes until the outer commit and discards rolled back wakes", async () => {
+    const fetcher = setup()
+    await withDeferredJobWake(async () => {
+      await withJobWake(Promise.resolve())
+      await withDeferredJobWake(() => withJobWake(Promise.resolve()))
+      expect(fetcher).not.toHaveBeenCalled()
+    })
+    expect(fetcher).toHaveBeenCalledOnce()
+    fetcher.mockClear()
+    await expect(
+      withDeferredJobWake(async () => {
+        await withJobWake(Promise.resolve())
+        throw new Error("rollback")
+      })
+    ).rejects.toThrow("rollback")
+    expect(fetcher).not.toHaveBeenCalled()
+  })
   it("publishes one wake after an administrative commit and reports failure", async () => {
     const fetcher = setup()
     await signalJobs(12)
