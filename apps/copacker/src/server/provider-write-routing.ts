@@ -192,6 +192,13 @@ export async function observeTarget(orgId: string, target: WriteDestination) {
       }
       return current.quantity
     }
+    if (current.amountMinor === null || current.currency !== "USD") {
+      throw new CliError(
+        "unsupported_price",
+        "The listing has no supported live USD price. No price write was dispatched.",
+        409
+      )
+    }
     return current.amountMinor
   }
   const api = await shopifyFor(orgId, target.accountId)
@@ -444,6 +451,9 @@ export async function resolveWrite(s: Session, input: z.infer<typeof writeIntent
         "Amazon merchant offers expose availability, not physical on-hand stock.",
         409
       )
+    }
+    if (change.field === "inventory" && change.quantity < 0) {
+      throw new CliError("invalid_quantity", "Amazon offer availability cannot be negative.")
     }
     targets.push({
       ...base,

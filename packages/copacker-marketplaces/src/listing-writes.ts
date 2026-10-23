@@ -33,7 +33,31 @@ export async function readShopifyWrite(api: Pick<Shopify, "graphql">, domain: st
   }
 }
 
-const money = z.object({ currencyCode: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2}0*)?$/) })
+// Amazon Decimal strings can include exponent notation (notably zero with a scale). Never round sub-cent values.
+function amazonMinor(value: string): number | null {
+  if (value.length > 128) {
+    return null
+  }
+  const match = value.trim().match(/^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d{1,3}))?$/)
+  if (!match) {
+    return null
+  }
+  const digits = BigInt(match[2]! + (match[3] ?? ""))
+  if (match[1] === "-" && digits !== 0n) {
+    return null
+  }
+  const scale = 2 + Number(match[4] ?? 0) - (match[3]?.length ?? 0)
+  const power = 10n ** BigInt(Math.abs(scale))
+  if (scale < 0 && digits % power !== 0n) {
+    return null
+  }
+  const minor = Number(scale >= 0 ? digits * power : digits / power)
+  return Number.isSafeInteger(minor) ? minor : null
+}
+const money = z.object({
+  currencyCode: z.string(),
+  amount: z.string()
+})
 export const amazonListing = z.object({
   sku: z.string().min(1),
   summaries: z
@@ -81,13 +105,7 @@ export function amazonListingValues(item: z.infer<typeof amazonListing>) {
     throw new Error("Amazon listing is ambiguous")
   }
   const offer = offers[0]
-  const decimal = offer?.price.amount.split(".")
-  const amountMinor = decimal
-    ? Number(BigInt(decimal[0]!) * 100n + BigInt((decimal[1] ?? "").slice(0, 2).padEnd(2, "0")))
-    : null
-  if (offer && (offer.price.currencyCode !== "USD" || !Number.isSafeInteger(amountMinor))) {
-    throw new Error("Unsupported Amazon price basis")
-  }
+  const amountMinor = offer?.price.currencyCode === "USD" ? amazonMinor(offer.price.amount) : null
   let fulfillmentMode: "fbm" | "fba" | "other" = "other"
   if (merchant.length && !fba) {
     fulfillmentMode = "fbm"
@@ -101,7 +119,7 @@ export function amazonListingValues(item: z.infer<typeof amazonListing>) {
     asin: summaries[0]!.asin ?? null,
     fulfillmentMode,
     amountMinor,
-    currency: offer?.price.currencyCode ?? null,
+    currency: amountMinor === null ? null : "USD",
     quantity: merchant[0]?.quantity ?? null
   }
 }

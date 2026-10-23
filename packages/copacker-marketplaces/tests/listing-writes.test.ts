@@ -37,12 +37,32 @@ describe("controlled listing adapters", () => {
       offers: [{ marketplaceId: "ATVPDKIKX0DER", offerType: "B2C", price: { currencyCode: "USD", amount: "30.0000" } }]
     })
     expect(amazonListingValues(listing)).toMatchObject({ amountMinor: 3000, currency: "USD" })
-    expect(() =>
-      amazonListing.parse({
-        ...listing,
-        offers: [{ ...listing.offers[0], price: { currencyCode: "USD", amount: "30.001" } }]
-      })
-    ).toThrow(/amount/)
+    for (const [amount, amountMinor] of [
+      ["0E-9", 0],
+      ["1.495E1", 1495],
+      ["1495e-2", 1495],
+      ["+14.9500", 1495],
+      ["-0.000", 0]
+    ] as const) {
+      expect(
+        amazonListingValues(
+          amazonListing.parse({
+            ...listing,
+            offers: [{ ...listing.offers[0], price: { currencyCode: "USD", amount } }]
+          })
+        ).amountMinor
+      ).toBe(amountMinor)
+    }
+    for (const amount of ["30.001", "1.4951E1", "-1", "Infinity", "NaN", "1e999", "1e-999"]) {
+      expect(
+        amazonListingValues(
+          amazonListing.parse({
+            ...listing,
+            offers: [{ ...listing.offers[0], price: { currencyCode: "USD", amount } }]
+          })
+        )
+      ).toMatchObject({ amountMinor: null, currency: null, sellerSku: "SKU" })
+    }
   })
   it("preserves offer selectors and patches only the requested price", async () => {
     const request = vi
