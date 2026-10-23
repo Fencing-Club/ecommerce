@@ -90,6 +90,8 @@ commit, workflow URL and whether documents were reused. The [performance qualifi
 
 Previews start after the shared Storybook build while verification, story tests and end-to-end tests continue.
 Availability is not a successful CI result: `ci-ok` and staging promotion still require every applicable check.
+Preview health checks reuse the bounded release propagation check: both app and Storybook must report the exact
+tested commit, allowing transient old assets to disappear without weakening the identity check.
 Different PRs may provision concurrently. A maintained small fixture baseline remains a separate opportunity.
 
 ### Isolation and lifecycle

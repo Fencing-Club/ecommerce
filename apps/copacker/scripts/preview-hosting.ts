@@ -11,6 +11,7 @@ import { previewResources } from "./preview-config"
 import { copyPreviewDocuments } from "./preview-documents"
 import { publishPreviewStories } from "./preview-stories"
 import { PreviewTimings } from "./preview-timings"
+import { verifyReleaseHealth } from "./release-health"
 import { reconcileResourceTags } from "./resource-tags"
 import { verifyStorybookArtifact } from "./storybook-artifact"
 
@@ -118,13 +119,7 @@ export async function deployHostedPreview(
       ["app-health", `${app}/api/health`],
       ["storybook-health", `${stories}health.json`]
     ] as const) {
-      await timings.measure(phase, async () => {
-        const response = await fetch(url, { signal: AbortSignal.timeout(30000) })
-        invariant(
-          response.ok && z.object({ commit: z.string() }).parse(await response.json()).commit === sha,
-          "Preview did not serve the tested commit"
-        )
-      })
+      await timings.measure(phase, () => verifyReleaseHealth(new URL(url), sha))
     }
     return { app, stories }
   } finally {

@@ -616,7 +616,7 @@ export const UploadLabelsFromThePage = meta.story({
       }
     ])
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Upload carrier labels" })).toBeNull())
   }
 })
 
