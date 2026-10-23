@@ -159,8 +159,8 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
   const health = [
     { key: "short", count: inventory.short, icon: CircleAlert, className: "text-destructive" },
     { key: "out", count: inventory.out, icon: CircleSlash, className: "text-destructive" },
-    { key: "low", count: inventory.low, icon: TriangleAlert, className: "text-warning" },
-    { key: "healthy", count: inventory.healthy, icon: CircleCheck, className: "text-success" }
+    { key: "low", count: inventory.low, icon: TriangleAlert, className: "text-amber-400" },
+    { key: "healthy", count: inventory.healthy, icon: CircleCheck, className: "text-green-800 dark:text-green-400" }
   ] as const
 
   return (

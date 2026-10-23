@@ -46,7 +46,7 @@ export const PasswordRule = meta.story({
     await userEvent.type(canvas.getByLabelText("Password"), "123456789")
     await expect(rule).toHaveClass("text-muted-foreground")
     await userEvent.type(canvas.getByLabelText("Password"), "0")
-    await expect(rule).toHaveClass("text-success")
+    await expect(rule).toHaveClass("text-green-800 dark:text-green-400")
     await expect(canvas.getByLabelText("Password")).toHaveAccessibleDescription("At least 10 characters")
   }
 })

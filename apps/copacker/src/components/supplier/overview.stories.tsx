@@ -34,7 +34,7 @@ export const Default = meta.story({
     await expect(orders.getByText("5,280")).toBeVisible()
     await expect(orders.getByText("+5%")).toBeVisible()
     // The buyer Overview's pill: tinted, with the comparison beside it when the tile has room and always read out.
-    await expect(orders.getByText("+5%")).toHaveClass("bg-success-soft")
+    await expect(orders.getByText("+5%")).toHaveClass("bg-green-50 dark:bg-green-950")
     await expect(orders.getByText("vs previous period")).toBeInTheDocument()
     await expect(card(canvas, "Order value").getByText("$18,420")).toBeVisible()
     await expect(card(canvas, "Order value").getByText("-12%")).toHaveClass("text-destructive")

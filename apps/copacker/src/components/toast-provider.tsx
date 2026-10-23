@@ -12,7 +12,7 @@ export function ToastItem({ toast }: { toast: Toast.Root.ToastObject }) {
       {toast.type === "error" ? (
         <CircleAlert aria-hidden className="size-4 shrink-0 text-destructive" />
       ) : (
-        <CircleCheck aria-hidden className="size-4 shrink-0 text-success" />
+        <CircleCheck aria-hidden className="size-4 shrink-0 text-green-800 dark:text-green-400" />
       )}
       <Toast.Content className="min-w-0 flex-1">
         <Toast.Title className="text-sm font-normal" />

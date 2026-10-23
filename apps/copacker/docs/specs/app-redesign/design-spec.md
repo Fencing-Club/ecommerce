@@ -21,22 +21,25 @@ like (F4) point at the [findings](information-architecture.md#findings).
 
 ## Visual foundations
 
-The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Tokens stay in `src/styles/theme.css.ts`.
+The redesign keeps Copacker's brand and shadcn/ui on Base UI. Colors are shadcn's tokens only, with values from
+Tailwind v4's palette; a color shadcn has no token for is a palette color. Tokens stay in `src/styles/theme.css.ts`,
+and [styling](../../styling.md#theme) maps each palette role. Each value is the Tailwind v4 color named: code writes
+its oklch, and Pen files its sRGB hex.
 
-| Token                  | Value (light)                   | Use                                                                     |
+| Token or role          | Tailwind v4 color (Pen hex)     | Use                                                                     |
 | ---------------------- | ------------------------------- | ----------------------------------------------------------------------- |
-| `primary`              | `#C2410C` (oklch 0.553 0.195 38.4) | One primary action per view, the active nav item's marker, links     |
-| `background`           | `#FFFFFF`                       | Page                                                                    |
-| `sidebar`              | `#FAFAFA`                       | Sidebar and settings navigation                                         |
-| `muted`                | `#F5F5F5`                       | Table header band, inactive segments                                   |
-| `border`               | `#E5E5E5`                       | Card and table rules                                                    |
-| `foreground`           | `#0A0A0A`                       | Text                                                                    |
-| `muted-foreground`     | `#6B6B6B`                       | Secondary text, never below 12 px                                       |
-| `info` (new name for `chart-1`) | `#2A78D6`              | In progress statuses                                                    |
-| `success`              | `#006300`                       | Done statuses                                                           |
-| `warning`              | `#FAB219`                       | Needs action; text on it is `foreground`, never white                   |
-| `destructive`          | `#DC2626`                       | Failed, lost, delete                                                    |
-| Workspace kind accents | Buyer `#C2410C`, Supplier `#0F766E`, Forwarder `#4338CA` | The workspace menu only. Never on actions.       |
+| `primary`              | orange-700 (`#CA3500`)          | One primary action per view, links                                      |
+| `background`           | white (`#FFFFFF`)               | Page                                                                    |
+| `sidebar`              | neutral-50 (`#FAFAFA`)          | Sidebar and settings navigation                                         |
+| `muted`                | neutral-100 (`#F5F5F5`)         | Table header band, inactive segments                                   |
+| `border`               | neutral-200 (`#E5E5E5`)         | Card and table rules                                                    |
+| `foreground`           | neutral-950 (`#0A0A0A`)         | Text                                                                    |
+| `muted-foreground`     | `#6B6B6B`, darker than neutral-500 for contrast | Secondary text, never below 12 px                       |
+| `destructive`          | red-600 (`#E7000B`)             | Failed, lost, delete                                                    |
+| Info                   | sky-700 (`#0069A8`)             | In progress statuses                                                    |
+| Success                | green-800 (`#016630`)           | Done statuses                                                           |
+| Warning                | amber-400 (`#FFB900`), text amber-800 (`#973C00`) | Needs action; text on it is `foreground`, never white |
+| Workspace kind accents | Buyer orange-700, Supplier teal-700 (`#00786F`), Forwarder indigo-700 (`#432DD7`) | The workspace menu only. Never on actions. |
 
 - **Type:** Geist Sans, Geist Mono for SKUs, references and tracking numbers. Page title 24/32 semibold, section
   title 16/24 semibold, body 14/20, meta 12/16. Numbers are tabular.

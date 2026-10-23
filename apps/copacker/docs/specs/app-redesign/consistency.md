@@ -7,34 +7,33 @@ screen on the canvas (56 desktop and phone screens), what was fixed, and the rul
 
 ## The rule
 
-A concept that appears on more than one screen is a **component in the kit** (`Redesign — Kit`) or a **token**, and
-screens use it; they never redraw it. A screen may override an instance's content, state and size, not its styling.
+A concept that appears on more than one screen is a **component** or a **token**, and screens use it; they never redraw
+it. Components come from the CopackerShadcn library (`designs/CopackerShadcn.lib.pen`, shadcn's base-vega), or, for the
+few concepts shadcn has nothing for, from the Copacker kit page, built from library parts. A screen may override an instance's content, state and size, not its styling.
 When a concept needs a new shape, change the component, so every screen moves together.
 
 ## Components
 
 | Concept                  | Component             | Sizes and states                                                                 | Used for                                                    |
 | ------------------------ | --------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| App header               | RD Top Bar            | Inbox count                                                                      | Every desktop screen                                        |
-| Phone header             | RD Mobile Top Bar     | Inbox count                                                                      | Every phone screen                                          |
-| Workspace switcher       | RD Sidebar Workspace  | Kind tile and initials, workspace name (truncated)                               | The top of every sidebar                                    |
-| Workspace menu           | RD Workspace Menu     | Workspaces and their kind, New workspace, Workspace settings                     | The sidebar's workspace switcher                            |
-| Navigation item          | RD Nav Item           | Default, active (fill and marker), count                                         | Sidebars and the settings navigation                        |
-| Status                   | RD Status             | Five tones, below                                                                | Every status and state label                                |
-| Button                   | RD Button             | Primary; icon optional                                                           | The one primary action in a view                            |
-| Secondary button         | RD Button Secondary   | Icon optional; full width in lists (Add carton)                                  | Everything else that's a button with a label                |
-| Icon button              | RD Icon Button        | 34 px (pointer), 44 px (touch: phones and packing), 28 px quiet (row menus)      | ⋯ menus, close, columns, pagination, duplicate, remove      |
-| Tab                      | RD Tab                | Default, active, count                                                           | Views on lists, tabs on records                             |
-| Checkbox                 | RD Checkbox           | 16 px (pointer), 20 px (touch); unchecked, checked                               | Row selection, options                                      |
-| Switch                   | RD Switch             | 32 by 18 px; off, on                                                             | Settings, inventory tracking, catalog options               |
-| Action bar               | RD Action Bar         | Floating (desktop), docked (phone); lead tones; problems; 3 secondary slots       | Unsaved changes, task flows, proposals, bulk selection      |
-| Lifecycle stage          | RD Lifecycle Stage    | Done, current, needs attention, upcoming                                         | Record lifecycle trackers on desktop                        |
-| Lifecycle, compact       | RD Lifecycle Compact  | Up to 8 stages; collapsed or expanded                                            | Record lifecycle trackers on a phone                        |
-| Next step                | RD Next Step          | Your next step (warm) or waiting (quiet); alert, meta, 2 actions; no detail paragraph | Every PO, shipment and leg                                   |
-| Banner                   | RD Banner             | Warning, info or destructive; one line, action, dismiss                          | The only notice on a page, at most one                       |
-| Info tip                 | RD Info Tip           | 14 px info icon; its text is the instance name after "Info Tip: "                 | Definitions beside labels, card titles and column headers    |
-| Tooltip                  | RD Tooltip            | Dark bubble, 260 px                                                              | What an info tip reveals on hover or focus                   |
-| Optional marker          | RD Optional           | Purple pill; a design annotation, never shipped                                  | Proposed items the specs haven't committed to yet            |
+| App header               | Top Bar (kit)         | Inbox count; Create is an outline Button, the count a Badge                      | Every desktop screen                                        |
+| Phone header             | Mobile Top Bar (kit)  | Inbox count; ghost icon Buttons at 44 px                                         | Every phone screen                                          |
+| Workspace switcher       | Sidebar Workspace (kit) | Sidebar Menu Button, size lg: kind tile and initials, workspace name           | The top of every sidebar                                    |
+| Navigation item          | Sidebar Menu Button   | Default, active (`sidebar-accent` fill, weight 500), count                       | Sidebars and the settings navigation                        |
+| Status                   | Status (kit)          | A Badge with a dot; five tones, below                                            | Every status and state label                                |
+| Button                   | Button / Default      | 36 px, sm 32, lg 40; icon optional                                               | The one primary action in a view                            |
+| Secondary button         | Button / Outline      | 36 px, sm 32, lg 40; icon optional                                               | Everything else that's a button with a label                |
+| Icon button              | Button / Outline icon | 36 px, sm 32, lg 40; ghost for quiet row menus                                   | ⋯ menus, close, columns, pagination, duplicate, remove      |
+| Tab                      | Tab Trigger / Line    | Default, active (2 px underline), count                                          | Views on lists, tabs on records                             |
+| Checkbox                 | Checkbox Box          | 16 px; unchecked, checked                                                        | Row selection, options                                      |
+| Switch                   | Switch Track          | 32 by 18.4 px; off, on                                                           | Settings, inventory tracking, catalog options               |
+| Lifecycle stage          | Lifecycle Stage (kit) | Done, current, needs attention, upcoming                                         | Record lifecycle trackers on desktop                        |
+| Lifecycle, compact       | Lifecycle Compact (kit) | Up to 8 stages; collapsed or expanded                                          | Record lifecycle trackers on a phone                        |
+| Next step                | Next Step (kit)       | Your next step (warm) or waiting (quiet); alert, meta, 2 actions; no detail paragraph | Every PO, shipment and leg                                   |
+| Notice                   | Alert                 | Warning, info or destructive tint; one line and an Alert Action, no dismiss      | The only notice on a page, at most one                       |
+| Info tip                 | Info Tip (kit)        | 14 px info icon; its text is the instance name after "Info Tip: "                 | Definitions beside labels, card titles and column headers    |
+| Tooltip                  | Tooltip Bubble        | Dark bubble                                                                      | What an info tip reveals on hover or focus                   |
+| Optional marker          | Badge / Outline, named Optional | A design annotation, never shipped                                     | Proposed items the specs haven't committed to yet            |
 
 Patterns built from these, with one construction each: page header, filter bar (search field and filter chips at
 34 px), cards (10 px radius, 15/600 title, 14 by 16 header padding), tables (header band `muted`, 9 by 16 padding,
@@ -47,19 +46,9 @@ Submit packing list and Ship onward, which share one construction) and the Ship 
 
 ## Tokens
 
-Every color on a screen is a variable. New in this audit:
-
-| Token                                        | Use                                                        |
-| -------------------------------------------- | ---------------------------------------------------------- |
-| `rd-primary-tint`, `rd-primary-border`       | The "Your next step" card                                   |
-| `rd-kind-supplier-soft`, `rd-kind-forwarder-soft` | Workspace marks and avatars for supplier and forwarder |
-| `rd-warning-border`, `rd-danger-border`      | Borders of warning banners and danger zones                |
-| `rd-warning-tint`, `rd-danger-tint`, `rd-success-tint` | Row highlights: changed, failing, added          |
-| `rd-fg-disabled`, `rd-border-strong`         | Disabled text and icons; checkbox and switch outlines       |
-| `rd-chart-1`, `rd-chart-1-soft`, `rd-chart-2`, `rd-chart-3`, `rd-chart-muted` | Charts and channel shares        |
-| `rd-handoff-pickup`, `rd-handoff-forwarder-soft`, `rd-on-light-info` | Lead time handoff bars and their labels |
-| `rd-scrim`                                   | Behind dialogs and sheets                                  |
-| `rd-annotation`, `rd-annotation-soft`, `rd-annotation-border` | The Optional marker; design annotations only |
+Every color on a screen is a variable from the CopackerShadcn library: one of shadcn's tokens, or, for a color shadcn
+has no token for, a Tailwind v4 palette color (`green-800`, `amber-50` and so on). There are no tokens of our own. The
+table in [styling](../../styling.md#theme) lists which palette colors take which role, in the designs and in code.
 
 Allowed literal colors, because they're content, not UI: store logos (Shopify, Amazon, eBay) and product option
 swatches. White is written as `#FFFFFF` on filled buttons and chips.

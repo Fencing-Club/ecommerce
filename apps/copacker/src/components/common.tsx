@@ -72,9 +72,9 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
 // Each tone's dot, in the tone's own color.
 const toneDots: Record<StatusTone, string> = {
   neutral: "bg-muted-foreground",
-  info: "bg-info",
-  success: "bg-success",
-  warning: "bg-warning",
+  info: "bg-sky-700 dark:bg-sky-400",
+  success: "bg-green-800 dark:bg-green-400",
+  warning: "bg-amber-400",
   destructive: "bg-destructive"
 }
 
@@ -284,7 +284,7 @@ export function EmptyState({
 export function WarningNote({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span className={cn("inline-flex items-start gap-1 text-xs font-medium text-foreground", className)}>
-      <AlertTriangle aria-hidden="true" className="mt-px size-3.5 shrink-0 text-warning" />
+      <AlertTriangle aria-hidden="true" className="mt-px size-3.5 shrink-0 text-amber-400" />
       <span>{children}</span>
     </span>
   )

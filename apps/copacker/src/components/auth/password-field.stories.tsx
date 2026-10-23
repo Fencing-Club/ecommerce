@@ -92,7 +92,7 @@ export const NewPassword = meta.story({
     await expect(password).toHaveAccessibleDescription("At least 10 characters")
     await expect(rule).toHaveClass("text-muted-foreground")
     await userEvent.type(password, "abcdefghij")
-    await expect(rule).toHaveClass("text-success")
+    await expect(rule).toHaveClass("text-green-800 dark:text-green-400")
     await userEvent.clear(password)
     await expect(rule).toHaveClass("text-muted-foreground")
   }

@@ -47,7 +47,7 @@ export function AcceptInvitation({
             <FieldLabel
               key={workspace.id}
               htmlFor={`workspace-${workspace.id}`}
-              className="w-full cursor-pointer items-center gap-3 rounded-xl border p-3 has-data-checked:border-primary-border has-data-checked:bg-primary-tint has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+              className="w-full cursor-pointer items-center gap-3 rounded-xl border p-3 has-data-checked:border-orange-200 dark:has-data-checked:border-orange-900 has-data-checked:bg-orange-50 dark:has-data-checked:bg-orange-950 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-xs font-medium">
                 {workspace.id === "new" ? <Plus className="size-4" aria-hidden /> : initials(workspace.name)}

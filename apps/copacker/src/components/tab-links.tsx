@@ -67,7 +67,7 @@ export function TabLinks({
             <span
               className={cn(
                 "rounded-full px-1.5 text-xs font-medium tabular-nums",
-                tab.attention ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground"
+                tab.attention ? "bg-orange-50 dark:bg-orange-950 text-primary" : "bg-muted text-muted-foreground"
               )}
             >
               {tab.count.toLocaleString(locale)}

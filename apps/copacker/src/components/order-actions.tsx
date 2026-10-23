@@ -176,7 +176,7 @@ export function LineMenu({
           <TooltipTrigger
             render={
               <span
-                className="inline-flex p-1.5 text-warning"
+                className="inline-flex p-1.5 text-amber-400"
                 aria-label={t("noLabelFor", { name, problem: label.problem })}
               />
             }

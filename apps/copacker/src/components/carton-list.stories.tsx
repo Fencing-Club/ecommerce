@@ -18,7 +18,7 @@ const meta = preview.meta({
 export const Packed = meta.story({
   play: async ({ canvas }) => {
     const section = within(canvas.getByRole("region", { name: "Cartons" }))
-    await expect(section.getByText("540 of 540 units")).toHaveClass("text-success")
+    await expect(section.getByText("540 of 540 units")).toHaveClass("text-green-800 dark:text-green-400")
     await expect(section.getByRole("heading", { name: "A1–A10" })).toBeVisible()
     await expect(section.queryByRole("spinbutton")).toBeNull()
     await expect(section.queryByRole("note")).toBeNull()
@@ -41,7 +41,7 @@ export const Packing = meta.story({
   play: async ({ canvas, args }) => {
     const section = within(canvas.getByRole("region", { name: "Cartons" }))
     await expect(section.getByRole("button", { name: "Add carton" })).toBeVisible()
-    await expect(section.getByText(/^\d+ of 540 units$/)).not.toHaveClass("text-success")
+    await expect(section.getByText(/^\d+ of 540 units$/)).not.toHaveClass("text-green-800 dark:text-green-400")
     const weight = section.getByRole("spinbutton", { name: "Carton B1: Weight (kg)" })
     await expect(weight).toHaveAttribute("aria-invalid", "true")
     await userEvent.type(weight, "9")
@@ -53,7 +53,7 @@ export const Packing = meta.story({
 export const OtherShipments = meta.story({
   args: { reserved: { [towelOrder.items[0]!.id]: 40 } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/^540 of 500 units$/)).not.toHaveClass("text-success")
+    await expect(canvas.getByText(/^540 of 500 units$/)).not.toHaveClass("text-green-800 dark:text-green-400")
   }
 })
 

@@ -362,7 +362,7 @@ export const EditDraft = meta.story({
     await expect(canvas.getByRole("textbox", { name: "Reference number" })).toHaveValue("PO-1042")
     await expect(canvas.getByText("Needs an uploaded label")).toBeVisible()
     // The warning color is too light for text: only its icon uses it.
-    await expect(canvas.getByText("Needs an uploaded label").closest(".text-warning")).toBeNull()
+    await expect(canvas.getByText("Needs an uploaded label").closest(".text-amber-400")).toBeNull()
     await expect(canvas.getByText("3 variants (420 units)")).toBeVisible()
     const save = canvas.getByRole("button", { name: "Save" })
     await expect(save).toBeDisabled()

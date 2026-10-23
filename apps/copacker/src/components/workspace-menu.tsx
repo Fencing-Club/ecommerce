@@ -17,9 +17,9 @@ export type Workspace = { id: string; name: string; kind: string }
 // Each kind's mark: its soft tile with its initials in the kind's color, and its name under the "navigation" messages'
 // `workspaceMenu.kinds`. The kind colors show here and nowhere else, never on an action.
 const kinds = {
-  buyer: "bg-kind-buyer-soft text-kind-buyer",
-  supplier: "bg-kind-supplier-soft text-kind-supplier",
-  forwarder: "bg-kind-forwarder-soft text-kind-forwarder"
+  buyer: "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-500",
+  supplier: "bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-400",
+  forwarder: "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
 } as const
 
 function isKind(kind: string): kind is keyof typeof kinds {

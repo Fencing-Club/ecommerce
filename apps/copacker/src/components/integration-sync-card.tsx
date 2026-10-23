@@ -92,7 +92,7 @@ export function IntegrationSyncCard({
               aria-label={label}
               value={amount}
               max={1}
-              className="h-1 min-w-0 flex-1 appearance-none overflow-hidden rounded-full bg-muted [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-info [&::-moz-progress-bar]:bg-info"
+              className="h-1 min-w-0 flex-1 appearance-none overflow-hidden rounded-full bg-muted [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-sky-700 dark:[&::-webkit-progress-value]:bg-sky-400 [&::-moz-progress-bar]:bg-sky-700 dark:[&::-moz-progress-bar]:bg-sky-400"
             />
             <span className="text-xs tabular-nums text-muted-foreground">
               {format.number(amount, { style: "percent" })}

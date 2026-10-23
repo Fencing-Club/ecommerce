@@ -18,13 +18,28 @@ export type LifecycleStage = {
 // Each state's bar, icon and label: done is green, current blue, the viewer's move amber and upcoming gray. The stage
 // someone is on reads a little heavier.
 const looks = {
-  done: { icon: CircleCheck, bar: "bg-success", tint: "text-success", label: "font-medium" },
-  current: { icon: CircleDot, bar: "bg-info", tint: "text-info", label: "font-semibold" },
-  attention: { icon: CircleAlert, bar: "bg-warning", tint: "text-warning-foreground", label: "font-semibold" },
+  done: {
+    icon: CircleCheck,
+    bar: "bg-green-800 dark:bg-green-400",
+    tint: "text-green-800 dark:text-green-400",
+    label: "font-medium"
+  },
+  current: {
+    icon: CircleDot,
+    bar: "bg-sky-700 dark:bg-sky-400",
+    tint: "text-sky-700 dark:text-sky-400",
+    label: "font-semibold"
+  },
+  attention: {
+    icon: CircleAlert,
+    bar: "bg-amber-400",
+    tint: "text-amber-800 dark:text-amber-300",
+    label: "font-semibold"
+  },
   upcoming: {
     icon: Circle,
     bar: "bg-border",
-    tint: "text-disabled-foreground",
+    tint: "text-neutral-400 dark:text-neutral-600",
     label: "font-medium text-muted-foreground"
   }
 } satisfies Record<StageState, { icon: React.ElementType; bar: string; tint: string; label: string }>

@@ -110,7 +110,7 @@ export function Agents() {
               </g>
             </svg>
             <div
-              className="absolute flex size-[8.5rem] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-[2rem] bg-[linear-gradient(180deg,#ea580c,#c2410c)] text-white shadow-[0_0_80px_rgb(194_65_12/0.55)]"
+              className="absolute flex size-[8.5rem] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-[2rem] bg-linear-to-b from-orange-600 to-orange-700 text-white shadow-[0_0_80px_color-mix(in_oklab,var(--color-orange-700)_55%,transparent)]"
               style={{ left: hub.x, top: hub.y }}
             >
               <Box className="size-11" strokeWidth={1.8} />

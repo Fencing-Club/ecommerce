@@ -269,7 +269,7 @@ export const BuyerReviewsSupplierChanges = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Revised invoice")).toBeVisible()
     await expect(canvas.getByText("$9.20")).toHaveClass("text-destructive")
-    await expect(canvas.getByText("$9.50")).toHaveClass("text-success")
+    await expect(canvas.getByText("$9.50")).toHaveClass("text-green-800 dark:text-green-400")
   }
 })
 export const SupplierReviewsBuyerChanges = meta.story({
@@ -277,7 +277,7 @@ export const SupplierReviewsBuyerChanges = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Current invoice")).toBeVisible()
     await expect(canvas.getByText("240")).toHaveClass("text-destructive")
-    await expect(canvas.getByText("300")).toHaveClass("text-success")
+    await expect(canvas.getByText("300")).toHaveClass("text-green-800 dark:text-green-400")
     await expect(canvas.getByText("540", { exact: true })).toBeVisible()
     await expect(canvas.getByText("600", { exact: true })).toBeVisible()
     await expect(canvas.getByText("$4,573", { exact: true })).toBeVisible()

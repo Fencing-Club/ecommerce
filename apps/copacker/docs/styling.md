@@ -15,34 +15,40 @@ Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwin
 
 ## Theme
 
-Colors keep shadcn's names (`primary`, `muted-foreground`, `chart-1`, plus `success`, `warning` and `info`). Their light
-and dark values live once, in `src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`.
-`src/app/globals.css` maps those variables into Tailwind's theme (`bg-primary`, `text-muted-foreground`,
-`text-success`), so both systems read the same tokens. Change a color in `theme.css.ts` only.
+The colors are shadcn's tokens and nothing else: `background`, `primary`, `muted-foreground`, `destructive`, `border`,
+`ring`, `chart-1` to `chart-5`, the `sidebar-*` family and the rest. Their light and dark values live once, in
+`src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`. `src/app/globals.css` maps those
+variables into Tailwind's theme (`bg-primary`, `text-muted-foreground`), so both systems read the same tokens. The
+values are shadcn's orange theme on neutral, in Tailwind v4's colors, as in `designs/CopackerShadcn.lib.pen`. Two are
+darker than shadcn's on purpose, for contrast: `primary` and `sidebar-primary` are orange-700, and `muted-foreground`
+is `#6b6b6b`. Don't change them back.
 
-- `info` is in-progress blue, for statuses and current stages; `chart-*` are chart series only.
-- `warning-foreground` is text and icons on a warning surface, where `warning` itself is too light to read.
-- Each tone has a soft fill, for status pills, icon tiles, notices and count pills: `primary-soft`, `info-soft`,
-  `success-soft`, `warning-soft` and `destructive-soft`. Lighter tints and their borders: `primary-tint` and
-  `primary-border` (the "Your next step" card), `warning-` and `destructive-tint` and `-border` (notices, danger
-  zones, failing rows), `success-tint` (added rows). Use these, never a tone at an opacity such as `bg-success/10`.
-- `border-strong` outlines checkboxes and switches; `disabled-foreground` is disabled text and icons.
-- `kind-buyer`, `kind-supplier` and `kind-forwarder`, with their `-soft` tiles, mark a workspace's kind in the
-  workspace menu, never an action.
-- `scrim` is behind dialogs, sheets and the command menu. `chart-1` to `chart-3`, `chart-1-soft` and `chart-muted`
-  are chart series; `handoff-pickup`, `handoff-forwarder-soft` and `on-light-info` are the lead time bars.
+Never add a token of our own. A color shadcn has no token for comes from Tailwind v4's palette, the way shadcn's own
+examples color a status, with a `dark:` pair:
+
+| Role                                                     | Classes                                                     |
+| -------------------------------------------------------- | ----------------------------------------------------------- |
+| Success: done, ready, a rise                             | `text-green-800 dark:text-green-400`, soft fill `bg-green-50 dark:bg-green-950` |
+| Warning: the viewer has to act                           | `bg-amber-400` for marks; text `text-amber-800 dark:text-amber-300`; soft fill `bg-amber-50 dark:bg-amber-950`; border `border-amber-200 dark:border-amber-900` |
+| Info: someone else is working on it                      | `text-sky-700 dark:text-sky-400`, soft fill `bg-sky-50 dark:bg-sky-950` |
+| Primary's soft fill: the next step card, count pills     | `bg-orange-50 dark:bg-orange-950`, border `border-orange-200 dark:border-orange-900` |
+| Destructive's soft fill: failing rows, danger zones      | shadcn's pattern, the token at an opacity: `bg-destructive/10 dark:bg-destructive/20`, lighter `bg-destructive/5`, border `border-destructive/30` |
+| Checkbox and switch outlines; disabled text and icons    | `border-neutral-300 dark:border-neutral-600`; `text-neutral-400 dark:text-neutral-600` |
+| A workspace's kind, in the workspace menu only           | buyer `text-orange-700 bg-orange-50`, supplier `text-teal-700 bg-teal-50`, forwarder `text-indigo-700 bg-indigo-50`, each with its `dark:` pair (`-500` or `-400` text on `-950`) |
+| Behind dialogs, sheets and the command menu              | base-vega's overlay: `bg-black/10 supports-backdrop-filter:backdrop-blur-xs` |
+
+`chart-1` to `chart-5` are chart series only, light to dark; the channel charts draw Amazon, Shopify and eBay as
+`chart-1` to `chart-3`.
+
 - Shadows are for overlays and the action bar only, each its own token: `shadow-menu` (menus, submenus, popovers,
   selects and toasts), `shadow-dialog` (dialogs and side sheets), `shadow-command`, `shadow-sheet` (a bottom sheet),
   `shadow-action-bar` and `shadow-action-bar-docked`, and `shadow-tooltip`.
 - `text-meta` is the 13px small print beside a value: breadcrumbs, a record's meta row, a field's problem. It keeps its
   parent's line height. Write `text-meta`, never `text-[13px]`.
 
-Every color in the app is one of these tokens, never a literal: no hex, `rgb()` or Tailwind palette color such as
-`bg-black`. The exceptions are content, not UI: store and sign-in provider logos, product option swatches, and the
+Every color in the app is a shadcn token or a Tailwind palette color from the table above, never a literal: no hex or
+`rgb()`. The exceptions are content, not UI: store and sign-in provider logos, product option swatches, and the
 marketing site, sign-in, getting started and maintenance pages, which have their own look.
-
-The light values are the design's own, copacker.pen's `rd-*` variables, read from the file rather than approximated.
-The design has no dark values, so the dark theme mixes each tint from its tone and the background.
 
 Controls follow the kit's sizes: buttons, icon buttons and a list's filter controls are 34px, form inputs 36px, touch
 controls on phones and packing 44px, all with an 8px radius (`rounded-md`); cards take 10px (`rounded-lg`).

@@ -50,7 +50,7 @@ export function PalletList({
           <span
             className={cn(
               "text-xs tabular-nums text-muted-foreground",
-              physical.length > 0 && onPallets === physical.length && "text-success"
+              physical.length > 0 && onPallets === physical.length && "text-green-800 dark:text-green-400"
             )}
           >
             {t("onPallets", { count: onPallets, total: physical.length })}

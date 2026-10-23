@@ -88,7 +88,7 @@ export function PackedProductsTable({
                         <span
                           className={cn(
                             "inline-flex items-center gap-1",
-                            available > 0 && count === available && "text-success",
+                            available > 0 && count === available && "text-green-800 dark:text-green-400",
                             count > available && "text-destructive"
                           )}
                         >
