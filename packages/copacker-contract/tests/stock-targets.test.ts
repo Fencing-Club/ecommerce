@@ -35,6 +35,16 @@ const locations: TargetLocation[] = [fba, awd, warehouse].map((ref) => ({
 }))
 
 describe("variant target membership", () => {
+  it("rejects ambiguous connector locations and group identities regardless of their order", () => {
+    const duplicateLocations = [...locations, { ...locations[0]!, role: "mirror" as const }]
+    const duplicateGroups = [group, { ...group, locations: [warehouse] }]
+    for (const values of [duplicateLocations, duplicateLocations.toReversed()]) {
+      expect(() => resolveStockTargets([pooled], [group], values)).toThrow("unique identities")
+    }
+    for (const values of [duplicateGroups, duplicateGroups.toReversed()]) {
+      expect(() => resolveStockTargets([pooled], values, locations)).toThrow("unique identities")
+    }
+  })
   it("allows a pooled Amazon target and a distinct warehouse target without requiring every location", () => {
     const result = resolveStockTargets([pooled, single], [group], locations)
     expect(result.issues).toEqual([])

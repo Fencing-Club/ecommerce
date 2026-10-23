@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
 import { AccessError, LocalizedError, NotFoundError } from "../src/i18n/errors"
 import { loadMessages } from "../src/i18n/messages"
+import { ApiSessionError } from "../src/server/errors"
 import { InvalidRequestError, requestInput, requestJson, StatusError } from "../src/server/errors"
 import { apiHandlers, appOriginPolicy, fallbackResponse, fileResponse, httpResponse } from "../src/server/http-response"
 import { requestLocale, resolveLocalization, withLocalization } from "../src/server/localization"
@@ -12,6 +13,15 @@ const request = new Request("https://copacker.example/api/things/1?format=csv", 
 const answer = (run: () => Response | Promise<Response>) => httpResponse(request, run)
 
 describe("HTTP boundary", () => {
+  it.each([401, 403] as const)("returns API session status %s without a redirect or shared caching", async (status) => {
+    const result = await answer(() => {
+      throw new ApiSessionError(status)
+    })
+    expect(result.status).toBe(status)
+    expect(result.headers.get("Location")).toBeNull()
+    expect(result.headers.get("Cache-Control")).toBe("private, no-store")
+    expect(await result.json()).toHaveProperty("error")
+  })
   it("preserves downloads and cookies while preventing shared caching", async () => {
     const response = await answer(
       () =>

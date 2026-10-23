@@ -68,6 +68,9 @@ export function resolveStockTargets(
 ) {
   const available = new Map(locations.map((location) => [inventoryLocationKey(location.ref), location]))
   const byGroup = new Map(groups.map((group) => [group.id, group]))
+  if (available.size !== locations.length || byGroup.size !== groups.length) {
+    throw new Error("Stock target locations and groups must have unique identities.")
+  }
   const owners = new Map<string, string>()
   const seen = new Set<string>()
   const issues: StockTargetIssue[] = []

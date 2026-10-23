@@ -15,16 +15,16 @@ async function respond(run: () => Promise<unknown>) {
   }
 }
 export async function GET() {
-  const s = await session()
+  const s = await session("api")
   return respond(() => listLocationGroups(s))
 }
 export async function POST(request: Request) {
-  const s = await session()
+  const s = await session("api")
   const input = requestInput(saveLocationGroupSchema, await requestJson(request))
   return respond(() => saveLocationGroup(s, input))
 }
 export async function DELETE(request: Request) {
-  const s = await session()
+  const s = await session("api")
   const input = requestInput(removeLocationGroupSchema, await requestJson(request))
   return respond(() => removeLocationGroup(s, input))
 }

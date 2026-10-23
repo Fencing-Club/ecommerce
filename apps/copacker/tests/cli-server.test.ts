@@ -928,6 +928,88 @@ describe("Restock operations", () => {
       coveredTo: new Date(observedAt)
     })
   }
+  it("guards supplier assignment while preserving product settings and checking current access", async () => {
+    await catalog()
+    const product = (await call("product.list")).body.data.items[0]
+    const settings = (await call("product.settings.show", { id: product.id })).body.data
+    expect(
+      (
+        await call(
+          "product.update",
+          {
+            ...settings,
+            fields: { ...settings.fields, description: "Keep this description", minimumOrder: 12 }
+          },
+          workspaceId,
+          "initial-settings"
+        )
+      ).status
+    ).toBe(200)
+    const supplierId = randomUUID(),
+      foreignSupplier = randomUUID()
+    await database.insert(suppliers).values([
+      { id: supplierId, buyerOrgId: workspaceId, name: "Current maker" },
+      { id: foreignSupplier, buyerOrgId: otherId, name: "Other workspace maker" }
+    ])
+    await database
+      .update(memberships)
+      .set({ role: "member", access: { products: "edit" } })
+      .where(eq(memberships.orgId, workspaceId))
+    const input = { id: product.id, supplierId, expectedRevision: 1 }
+    const saved = await call("product.supplier.assign", input, workspaceId, "assign-supplier")
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toEqual({ id: product.id, revision: 2 })
+    expect((await call("product.supplier.assign", input, workspaceId, "assign-supplier")).body.data).toEqual(
+      saved.body.data
+    )
+    expect((await call("product.settings.show", { id: product.id })).body.data.fields).toMatchObject({
+      supplierId,
+      description: "Keep this description",
+      minimumOrder: 12,
+      expectedRevision: 2
+    })
+    expect((await call("product.supplier.assign", input, workspaceId, "stale-supplier")).status).toBe(409)
+    expect(
+      (
+        await call(
+          "product.supplier.assign",
+          { ...input, expectedRevision: 2, supplierId: foreignSupplier },
+          workspaceId,
+          "foreign-supplier"
+        )
+      ).status
+    ).toBe(409)
+    await database.update(suppliers).set({ removedAt: new Date() }).where(eq(suppliers.id, supplierId))
+    expect(
+      (
+        await call(
+          "product.supplier.assign",
+          { ...input, expectedRevision: 2 },
+          workspaceId,
+          "removed-current-supplier"
+        )
+      ).status
+    ).toBe(409)
+    expect(
+      (
+        await call(
+          "product.supplier.assign",
+          { ...input, expectedRevision: 2, supplierId: null },
+          workspaceId,
+          "clear-supplier"
+        )
+      ).body.data.revision
+    ).toBe(3)
+    expect(
+      (await call("product.supplier.assign", { ...input, expectedRevision: 3 }, workspaceId, "removed-supplier")).status
+    ).toBe(409)
+    await database.update(connections).set({ externalId: "replacement.myshopify.com" })
+    expect(
+      (await call("product.supplier.assign", { ...input, expectedRevision: 3 }, workspaceId, "old-account")).status
+    ).toBe(404)
+    await database.update(memberships).set({ access: { products: "view" } })
+    expect((await call("product.supplier.assign", input, workspaceId, "assign-supplier")).status).toBe(404)
+  })
   it("shares revision-checked target editing with idempotent CLI receipts and current Product permissions", async () => {
     await catalog()
     const selection = { accountId: "shop.myshopify.com", variantId: "gid://shopify/ProductVariant/1" }

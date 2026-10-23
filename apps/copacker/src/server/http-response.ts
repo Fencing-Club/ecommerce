@@ -2,6 +2,7 @@ import { isNotFound, isRedirect } from "@tanstack/react-router"
 import type { CsrfMiddlewareOptions } from "@tanstack/react-start"
 import { z } from "zod"
 import { AccessError, LocalizedError, NotFoundError, type ErrorKey } from "@/i18n/errors"
+import { ApiSessionError } from "./errors"
 import { errorResponse, failureMessage, InvalidRequestError, StatusError } from "./errors"
 import { describeError, logEvent } from "./log"
 import { isAppOrigin } from "./security"
@@ -10,6 +11,9 @@ const isMissing = (error: unknown) => error instanceof NotFoundError || isNotFou
 
 // The status httpResponse answers a failure with, or null for an unexpected one.
 function mappedStatus(error: unknown) {
+  if (error instanceof ApiSessionError) {
+    return error.status
+  }
   if (isMissing(error)) {
     return 404
   }
