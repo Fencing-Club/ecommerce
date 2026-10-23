@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import {
   canonicalJson,
   connectionOperations,
+  listingOperations,
   createRegistry,
   isQuery,
   jsonObject,
@@ -39,6 +40,7 @@ import {
 } from "./operation-connections"
 import { importDefinitions, importFile, readImport, applyImport, exportFile, entityExport } from "./operation-imports"
 import { inventoryUpdateDefinition, updateSupplierInventory } from "./operation-inventory-writes"
+import { readListings, linkListing } from "./operation-listings"
 import { readCustomerOrders } from "./operation-order-reads"
 import { partnerWriteDefinitions, createPartner, updatePartner } from "./operation-partner-writes"
 import { readInventory, readProducts } from "./operation-product-reads"
@@ -155,6 +157,43 @@ const supplierProductsRead = (context: Context) =>
 const supplierInventoryRead = (context: Context) =>
   context.session?.org.kind === "supplier" && can(context.session, "inventory")
 const entries: Entry[] = [
+  entry(listingOperations["product.listing.list"], productRead, async (input, context) => {
+    if (input.unlinked && input.variantId) {
+      throw new CliError("invalid_input", "Use unlinked or variant, not both.")
+    }
+    context.responseMeta.completeness = "partial"
+    context.responseMeta.warnings = [
+      {
+        code: "listing_coverage",
+        message:
+          "Stored Amazon US listing observations; refresh products through connection sync for current coverage.",
+        path: []
+      }
+    ]
+    return page(
+      (await readListings(session(context)))
+        .filter(
+          (row) =>
+            (!input.connectionId || row.source.connectionId === input.connectionId) &&
+            (!input.marketplaceId || row.source.marketplaceId === input.marketplaceId) &&
+            (!input.sellerSku || row.sellerSku === input.sellerSku) &&
+            (!input.unlinked || row.variantId === null) &&
+            (!input.variantId || row.variantId === input.variantId)
+        )
+        .sort((a, b) => a.sellerSku.localeCompare(b.sellerSku) || a.id.localeCompare(b.id)),
+      input,
+      context
+    )
+  }),
+  entry(listingOperations["product.listing.show"], productRead, async (input, context) =>
+    found((await readListings(session(context))).find((row) => row.id === input.id))
+  ),
+  entry(listingOperations["product.listing.link"], productEdit, (input, context) =>
+    linkListing(session(context), input)
+  ),
+  entry(listingOperations["product.listing.unlink"], productEdit, (input, context) =>
+    linkListing(session(context), input)
+  ),
   entry(connectionOperations.status, buyer, (_, context) => workspaceSyncStatus(session(context))),
   entry(connectionOperations["connection.sync"], buyer, (input, context) =>
     startConnectionSync(session(context), input)

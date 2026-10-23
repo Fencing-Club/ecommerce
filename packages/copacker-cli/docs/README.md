@@ -11,7 +11,12 @@ buyer product metadata, supplier inventory and entity import/export handlers are
 ([supported writes](../../../apps/copacker/docs/cli-entity-writes.md)). Provider writes and automation issuance remain
 unfinished. Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
-claim that a server has enabled that capability. The package remains private. Authentication, restock reports and the first resource reads were promoted to production on October 22, 2026; these entity writes await deployment. No npm release has been performed.
+claim that a server has enabled that capability. The package remains private. Authentication, resource reads, restock,
+targets and the documented guarded entity writes have been deployed and accepted against production. See
+[implementation status](../../../apps/copacker/docs/specs/cli/implementation.md) for release evidence and current work.
+[Connection sync/status](../../../apps/copacker/docs/cli-connections.md) and
+[listing discovery/links](../../../apps/copacker/docs/cli-listings.md) require their corresponding server releases. No npm release
+has been performed.
 
 ## Run locally
 

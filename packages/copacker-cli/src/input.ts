@@ -34,6 +34,7 @@ export const booleanFlags = new Set(["unlinked", "joined", "reviewed", "update-c
 export const numberFlags = new Set([
   "limit",
   "revision",
+  "link-revision",
   "po-revision",
   "days",
   "lead-time-days",
@@ -62,6 +63,7 @@ const fieldNames: Record<string, string> = {
   line: "lineId",
   document: "documentId",
   revision: "expectedRevision",
+  "link-revision": "expectedLinkRevision",
   "po-revision": "expectedPoRevision",
   snapshot: "snapshotId",
   "expected-account": "expectedAccountId",

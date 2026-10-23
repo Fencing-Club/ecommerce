@@ -36,6 +36,14 @@ const emailPayload = z.discriminatedUnion("type", [
 ])
 
 export const jobPayloads = {
+  listings: z.object({
+    orgId,
+    connectionId: z.uuid(),
+    accountId: z.string(),
+    generation: z.uuid(),
+    pageToken: z.string().optional(),
+    seenTokens: z.array(z.string()).default([])
+  }),
   // Creates a shipment's AWD order or FBA inbound plan, then fetches its labels. `operationId` is the FBA step waited on.
   amazon: z.object({ shipmentId: z.uuid(), revision: z.number(), operationId: z.string().optional() }),
   email: emailPayload,
