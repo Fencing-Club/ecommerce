@@ -103,7 +103,7 @@ describe("eBay requests", () => {
     await api.user()
     expect(tokens).toHaveLength(1)
     expect(tokens[0]!.get("grant_type")).toBe("refresh_token")
-    expect(tokens[0]!.get("scope")).toBe(ebayScopes.join(" "))
+    expect(tokens[0]!.get("scope")).toBeNull()
     expect(calls[0]!.url.href).toBe("https://apiz.ebay.com/commerce/identity/v1/user/")
     expect(new Headers(calls[0]!.init?.headers).get("authorization")).toBe("Bearer access")
   })

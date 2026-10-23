@@ -17,6 +17,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Overview page](overview.md)
 - [Purchase order and shipment lists: views, waiting on, filters and export](logistics-lists.md)
 - [Amazon Ads expense reporting](amazon-ads.md): ingestion and credential-safe connection diagnostics
+- [eBay financial evidence](ebay-finances.md): bounded transactions, payouts, permissions and reconciliation
 - [Amazon FBA returns ingestion](amazon-returns.md)
 - [Amazon FBA reimbursement ingestion](amazon-reimbursements.md): refresh coverage and reported cash versus inventory recovery
 - [Detailed Amazon inventory movements](amazon-inventory-movements.md)

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { exchangeAmazonCode, ProviderError, sellerIdSchema } from "@repo/copacker-marketplaces/amazon"
 import { amazonConsentUrl, amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
-import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
+import { Ebay, ebayAuthorizeUrl, ebayScopes, exchangeEbayCode } from "@repo/copacker-marketplaces/ebay"
 import { normalizeShopDomain, shopDomainSchema, ShopifyRequestError } from "@repo/copacker-marketplaces/shopify"
 import { exchangeShopifyCode, verifyShopifyHmac } from "@repo/copacker-marketplaces/shopify-auth"
 import { and, eq, gt } from "drizzle-orm"
@@ -146,6 +146,7 @@ export async function GET(request: Request, context: { params: { provider: strin
       token: token.refreshToken,
       ...(token.refreshTokenExpiresAt ? { refreshExpiresAt: token.refreshTokenExpiresAt.getTime() } : {})
     }
+    scopes = ebayScopes.join(" ")
   } else {
     externalId = requestInput(sellerIdSchema, url.searchParams.get("selling_partner_id"))
     const code = requestInput(z.string().min(1), url.searchParams.get("spapi_oauth_code"))

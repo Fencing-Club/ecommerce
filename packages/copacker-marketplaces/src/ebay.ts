@@ -1,6 +1,7 @@
 import { createPublicKey, createVerify } from "node:crypto"
 import { z } from "zod"
 import { ProviderError, retryAfterMs } from "./amazon"
+import { ebayFinanceScope } from "./ebay-finances"
 
 // What Copacker asks a seller to allow: reading their orders, their account's ID and name, and subscribing to their
 // order notifications. api_scope is the base scope every token needs.
@@ -8,7 +9,8 @@ export const ebayScopes = [
   "https://api.ebay.com/oauth/api_scope",
   "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
   "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
-  "https://api.ebay.com/oauth/api_scope/commerce.notification.subscription"
+  "https://api.ebay.com/oauth/api_scope/commerce.notification.subscription",
+  ebayFinanceScope
 ]
 const appScope = "https://api.ebay.com/oauth/api_scope"
 const api = "https://api.ebay.com"
@@ -125,7 +127,7 @@ export class Ebay {
     const token = await requestToken(
       this.credentials,
       "refreshToken" in this.credentials
-        ? { grant_type: "refresh_token", refresh_token: this.credentials.refreshToken, scope: ebayScopes.join(" ") }
+        ? { grant_type: "refresh_token", refresh_token: this.credentials.refreshToken }
         : { grant_type: "client_credentials", scope: appScope },
       this.transport
     )

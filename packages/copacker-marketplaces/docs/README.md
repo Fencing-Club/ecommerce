@@ -9,6 +9,9 @@ Shopify's callback signature (`verifyShopifyHmac`); `exchangeAmazonCode` in `./a
 `./ebay` trade a seller's authorization code for a refresh token. `./shopify` stays free of Node APIs, as the browser
 loads it for the shop-domain schema.
 
+`./ebay-finances` validates bounded transaction/payout pages, excludes buyer/bank/memo fields and follows exact payout
+references. It preserves net amounts and fee components separately. See [eBay financial evidence](../../../apps/copacker/docs/ebay-finances.md).
+
 `./amazon-marketplaces` is the one table of the North American Amazon marketplaces Copacker reads (ID, country,
 channel code, label, Seller Central host and order-report name), with `usMarketplaceId` for the US marketplace that
 holds FBA and AWD stock, and `amazonConsentUrl` for Seller Central's authorization page. It has no Node dependencies,
