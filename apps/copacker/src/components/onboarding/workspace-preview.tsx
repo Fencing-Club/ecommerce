@@ -228,7 +228,7 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
                 )}
                 {street || city || country ? (
                   <span className="truncate text-muted-foreground">
-                    {[street, city, country].filter(Boolean).join(", ")}
+                    <bdi>{[street, city, country].filter(Boolean).join(", ")}</bdi>
                   </span>
                 ) : (
                   <Placeholder className="w-32" />

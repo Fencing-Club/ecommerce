@@ -45,13 +45,18 @@ export const SupplierPickups = meta.story({
   }
 })
 
-// In Urdu the sheet opens from the reading direction's end, the left.
+// In Urdu the sheet opens from the reading direction's end, the left. The address and phone number still read left to
+// right, so the street keeps its number first.
 export const Urdu = meta.story({
   globals: { locale: "ur" },
   play: async () => {
     const sheet = await shownDialog("Lotus Manufacturing")
     await expect(sheet.element).toHaveAttribute("data-side", "left")
     await expect(sheet.element.getBoundingClientRect().left).toBeLessThan(window.innerWidth / 2)
+    await expect(sheet.element.matches(":dir(rtl)")).toBe(true)
+    const street = sheet.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")
+    await expect(street.matches(":dir(ltr)")).toBe(true)
+    await expect(sheet.getByRole("link", { name: "+86 579 8555 1234" }).matches(":dir(ltr)")).toBe(true)
   }
 })
 
@@ -252,7 +257,9 @@ export const Summary = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Factory")).toBeVisible()
     await expect(canvas.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeVisible()
-    await expect(canvas.getByText(/^Mei Chen, \+86/)).toBeVisible()
+    const phone = canvas.getByText("+86 579 8555 1234")
+    await expect(phone.parentElement).toHaveTextContent("Mei Chen, +86 579 8555 1234")
+    await expect(phone).toHaveAttribute("dir", "ltr")
   }
 })
 

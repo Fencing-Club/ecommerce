@@ -148,7 +148,7 @@ function AddressLookup({ path }: { path: string }) {
           <ComboboxList>
             {(item: AddressSuggestion) => (
               <ComboboxItem key={item.id} value={item}>
-                {item.label}
+                <bdi>{item.label}</bdi>
               </ComboboxItem>
             )}
           </ComboboxList>
@@ -216,7 +216,7 @@ function RegionSelect({ name, country }: { name: string; country: string }) {
   // Preserve saved and Google-provided values that don't match the postal dataset.
   const options = value && !match ? [{ value, label: value }, ...regions] : regions
   if (!regions.length) {
-    return <FormInput name={name} label={t("stateOrProvince")} required autoComplete="address-level1" />
+    return <FormInput name={name} label={t("stateOrProvince")} required autoComplete="address-level1" dir="auto" />
   }
   return (
     <FormField {...fieldProps} label={t("stateOrProvince")} required>
@@ -237,7 +237,8 @@ function RegionSelect({ name, country }: { name: string; country: string }) {
 }
 
 // Binds to an address object at `path` in the surrounding form, such as "address" or "origin": the contact, then the
-// address, in two columns from small screens up with the street lines across both.
+// address, in two columns from small screens up with the street lines across both. What's typed reads in its own
+// direction, so in Urdu a street such as 1000 Siji Road keeps its number first.
 export function AddressFields({ path, requirePhone = false }: { path: string; requirePhone?: boolean }) {
   const t = useTranslations("common.address")
   const country: unknown = useWatch({ name: `${path}.countryCode` })
@@ -248,6 +249,7 @@ export function AddressFields({ path, requirePhone = false }: { path: string; re
         label={t("contactName")}
         required
         autoComplete="name"
+        dir="auto"
         className="sm:col-span-2"
       />
       <FormInput
@@ -256,26 +258,29 @@ export function AddressFields({ path, requirePhone = false }: { path: string; re
         type="tel"
         required={requirePhone}
         autoComplete="tel"
+        dir="auto"
         normalizeOnBlur={(value) => formatPhone(value, typeof country === "string" ? country : undefined)}
       />
-      <FormInput name={`${path}.email`} label={t("email")} type="email" autoComplete="email" />
+      <FormInput name={`${path}.email`} label={t("email")} type="email" autoComplete="email" dir="auto" />
       <AddressLookup path={path} />
       <FormInput
         name={`${path}.addressLine1`}
         label={t("streetAddress")}
         required
         autoComplete="address-line1"
+        dir="auto"
         className="sm:col-span-2"
       />
       <FormInput
         name={`${path}.addressLine2`}
         label={t("addressLine2")}
         autoComplete="address-line2"
+        dir="auto"
         className="sm:col-span-2"
       />
-      <FormInput name={`${path}.city`} label={t("city")} required autoComplete="address-level2" />
+      <FormInput name={`${path}.city`} label={t("city")} required autoComplete="address-level2" dir="auto" />
       <RegionSelect name={`${path}.stateOrRegion`} country={typeof country === "string" ? country : ""} />
-      <FormInput name={`${path}.postalCode`} label={t("postalCode")} required autoComplete="postal-code" />
+      <FormInput name={`${path}.postalCode`} label={t("postalCode")} required autoComplete="postal-code" dir="auto" />
       <CountrySelect name={`${path}.countryCode`} regionName={`${path}.stateOrRegion`} />
     </FieldGroup>
   )

@@ -84,6 +84,12 @@ needs room past the line too.
   (`src/server/requirements.ts`) and `server.readiness.packing`; the package's `requirementText` is the English its PDFs
   print, since documents stay in English.
 - Product names, store names, SKUs, addresses and other data people typed stay as they are.
+- Phone numbers read left to right in every language; in Urdu, +86 579 8555 1234 would otherwise read 1234 8555 579
+  86+. Show one with `PhoneLink` from `@/components/common`, or a `<span dir="ltr">` when it isn't a link.
+- An address reads in its own direction: shown, it goes in `<bdi>`, as does a line that joins a contact's name and
+  phone number, and a field for one takes `dir="auto"`. Otherwise a street such as 1000 Siji Road moves its number to
+  the end in Urdu. `<bdi>` is inline, so the address keeps its line's alignment, and one typed in Urdu still reads
+  right to left.
 - File names read left to right in every language; in Urdu, 1043.pdf would otherwise read pdf.1043. Show one with
   `fileName()` from `@/components/common`, an inline `<span dir="ltr">` that keeps its line's alignment. In a message,
   tag the name, `"Uploaded, <file>{name}</file>"`, and pass `file: fileName` to `t.rich`. A tooltip takes the
