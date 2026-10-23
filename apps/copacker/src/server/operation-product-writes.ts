@@ -36,6 +36,19 @@ const variantFields = z.strictObject({
   asin: z.string().max(255).optional()
 })
 export const productWriteDefinitions = {
+  "product.supplier.assign": defineOperation(
+    {
+      ...metadata("product.supplier.assign"),
+      accessPolicy: { ...metadata("product.supplier.assign").accessPolicy, workspaceKinds: ["buyer"] }
+    },
+    z.strictObject({
+      id: z.string().min(1),
+      supplierId: z.uuid().nullable(),
+      expectedRevision: z.number().int().nonnegative(),
+      mode: z.literal("direct").default("direct")
+    }),
+    saved
+  ),
   "product.settings.show": defineOperation(
     readMetadata("product.settings.show", ["products:read"], ["buyer", "supplier"]),
     z.strictObject({ id: z.string() }),
@@ -195,6 +208,22 @@ export async function productSettings(s: Session, id: string) {
   const { revision, ...defaults } =
     (await readProductDefaults(s.org.id, product.source.accountId)).get(product.source.externalId) ?? noDefaults
   return { kind: "buyer" as const, id, fields: { ...defaults, expectedRevision: revision } }
+}
+export async function assignCliProductSupplier(
+  s: Session,
+  input: z.infer<(typeof productWriteDefinitions)["product.supplier.assign"]["input"]>
+) {
+  const settings = await productSettings(s, input.id)
+  if (settings.kind !== "buyer") {
+    throw new CliError("forbidden", "Supplier assignment requires a buyer workspace.", 403)
+  }
+  // The same guarded product save validates the current supplier relationship and preserves other settings.
+  return updateCliProduct(s, {
+    kind: "buyer",
+    id: input.id,
+    mode: "direct",
+    fields: { ...settings.fields, supplierId: input.supplierId, expectedRevision: input.expectedRevision }
+  })
 }
 export async function updateCliVariant(
   s: Session,

@@ -14,6 +14,7 @@ business changes commit together; replaying the same execution key returns the s
 | `product settings show` | Read editable supplier product fields or buyer product defaults. |
 | `product create` / `product update` | Supplier product creation/full saves; buyer-owned product defaults. Supplier edits preserve current stock counts. |
 | `product variant update` | Copacker-owned supplier SKU and ASIN metadata for a connected Shopify variant. |
+| `product supplier assign` | Assign or clear a buyer product's supplier, preserving other settings. Requires product-edit access and the current settings revision. |
 | `inventory update` | Supplier on-hand pieces at an explicit supplier location, individually or as one atomic batch; `--dry-run` checks without changing counts. |
 | `product import`, `product import show`, `product import apply` | Upload CSV/XLSX, inspect the retained preview, then explicitly apply it. |
 | `inventory import`, `inventory import show`, `inventory import apply` | The same workflow for revision-guarded inventory CSVs. |
@@ -22,6 +23,10 @@ business changes commit together; replaying the same execution key returns the s
 Use `schema show <operation>` for the exact deployed input and output. Complex saves use `--input` JSON. For a supplier
 product, `product settings show <id> --json` returns the fields accepted by `product update`; use the envelope's `data`
 as input. Buyer settings also carry `kind`, `id` and revision-guarded `fields`.
+
+Supplier assignment takes `{id, supplierId, expectedRevision, mode: "direct"}`. Use the scoped product ID and revision
+from `product settings show`; `supplierId: null` clears an assignment. The supplier must be a current relationship in
+this buyer workspace. This single-product command has no provider effect and does not create a purchase order.
 
 Catalog updates require `expectedRevision`. Every affected customer (selected or previously assigned) must have an
 `expectedAssignments` entry containing its current `catalogId`, including null. Standalone assignment uses

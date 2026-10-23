@@ -46,6 +46,7 @@ import {
   createCliProduct,
   updateCliProduct,
   productSettings,
+  assignCliProductSupplier,
   updateCliVariant
 } from "./operation-product-writes"
 import {
@@ -152,6 +153,11 @@ const supplierProductsRead = (context: Context) =>
 const supplierInventoryRead = (context: Context) =>
   context.session?.org.kind === "supplier" && can(context.session, "inventory")
 const entries: Entry[] = [
+  entry(
+    productWriteDefinitions["product.supplier.assign"],
+    (context) => context.session?.org.kind === "buyer" && can(context.session, "products", "edit"),
+    (input, context) => assignCliProductSupplier(session(context), input)
+  ),
   entry(
     productWriteDefinitions["product.settings.show"],
     (context) => productRead(context) || supplierProductsRead(context),

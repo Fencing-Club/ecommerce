@@ -15,12 +15,12 @@ async function respond(run: () => Promise<unknown>) {
   }
 }
 export async function GET(request: Request) {
-  const s = await session()
+  const s = await session("api")
   const input = requestInput(stockTargetSelectionSchema, Object.fromEntries(new URL(request.url).searchParams))
   return respond(() => readStockTargets(s, input))
 }
 export async function PATCH(request: Request) {
-  const s = await session()
+  const s = await session("api")
   const input = requestInput(saveStockTargetsSchema, await requestJson(request))
   return respond(() => saveStockTargets(s, input))
 }

@@ -6,6 +6,12 @@ import { LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
 import { localization } from "@/server/localization"
 
+export class ApiSessionError extends Error {
+  constructor(readonly status: 401 | 403) {
+    super("API session unavailable")
+  }
+}
+
 type Values = Record<string, string | number>
 
 // The saved authorization can no longer be used; only reconnecting in Settings fixes it.

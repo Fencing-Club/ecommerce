@@ -6,6 +6,7 @@ import type { Grant } from "@/lib/access"
 import type { Permissions } from "@/lib/access"
 import { can } from "@/lib/access"
 import { authentication } from "./auth-session"
+import { ApiSessionError } from "./errors"
 import { appUrl, returnPath } from "./security"
 import { workspaceCookie, workspaceRecoveryPath, workspaceSession } from "./workspace-session"
 
@@ -26,11 +27,6 @@ export async function identity(returnTo?: string) {
     throw redirect({ href: `/login?next=${encodeURIComponent(requested)}` })
   }
   return user
-}
-export class ApiSessionError extends Error {
-  constructor(readonly status: 401 | 403) {
-    super("API session unavailable")
-  }
 }
 // Resolve current membership for each operation; API callers receive errors, never page redirects.
 export async function session(mode: "page" | "api" = "page") {

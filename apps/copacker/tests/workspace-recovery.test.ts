@@ -18,7 +18,8 @@ vi.mock("@tanstack/react-start/server", () => ({
   getRequestUrl: () => new URL("http://localhost:3000/orders/deleted-order")
 }))
 
-import { ApiSessionError, session } from "../src/server/auth"
+import { session } from "../src/server/auth"
+import { ApiSessionError } from "../src/server/errors"
 import { POST as postAction } from "../src/server/http/api/action"
 import { GET as workspaceRoute } from "../src/server/http/api/workspace"
 import { readWorkspacesData, recoverWorkspace as recover } from "../src/server/workspace-recovery"

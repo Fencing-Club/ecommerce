@@ -1,5 +1,6 @@
 import { effectiveAccess } from "../src/lib/access"
 import type * as Auth from "../src/server/auth"
+import { ApiSessionError } from "../src/server/errors"
 import type { Session } from "../src/server/workspace-session"
 
 // The session workspaceSession builds for a workspace's owner, or for a role and its page access. The workspace is
@@ -49,7 +50,7 @@ export async function mockAuth(importOriginal: <T>() => Promise<T>) {
     ...auth,
     session: async () => {
       if (!signedIn.actor) {
-        throw new auth.ApiSessionError(401)
+        throw new ApiSessionError(401)
       }
       return signedIn.actor
     }
