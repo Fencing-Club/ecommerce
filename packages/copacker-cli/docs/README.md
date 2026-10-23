@@ -6,10 +6,12 @@ vocabulary in [the application spec](../../../apps/copacker/docs/specs/cli/comma
 **Integration status:** the executable and command adapters exist, together with the first
 [server authentication and real-data handlers](../../../apps/copacker/docs/cli-server.md). Account/workspace/schema
 discovery, connection reads/settings and restock are implemented, along with the first
-[resource reads](../../../apps/copacker/docs/cli-resource-reads.md). Business writes and automation issuance remain
+[resource reads](../../../apps/copacker/docs/cli-resource-reads.md). Supplier catalogs, partner edits, supplier products,
+buyer product metadata, supplier inventory and entity import/export handlers are implemented
+([supported writes](../../../apps/copacker/docs/cli-entity-writes.md)). Provider writes and automation issuance remain
 unfinished. Availability depends on the selected deployment. Local help works without a server. The CLI checks deployed
 schemas and fails before a business write when the server contract is absent or incompatible; command help is not a
-claim that a server has enabled that capability. No npm release or production deployment has been performed.
+claim that a server has enabled that capability. The package remains private; these entity writes have not been deployed to production.
 
 ## Run locally
 
@@ -20,7 +22,7 @@ pnpm --filter @repo/copacker-cli build
 node packages/copacker-cli/dist/bin.js --version
 ```
 
-After the first server slice is deployed:
+On a deployment containing the corresponding handlers:
 
 ```sh
 copacker login
@@ -31,6 +33,7 @@ copacker connection settings show <connection-id> --json
 copacker report restock --json
 copacker product list --json
 copacker inventory list --json
+copacker inventory update --input reviewed-counts.json --json
 copacker order show "#1043" --connection <connection-id> --json
 copacker po show <po-id> --json
 copacker shipment list --json
@@ -41,7 +44,6 @@ The remaining planned workflows require their resource handlers before they can 
 ```sh
 copacker product price update <variant-id> --amount 19.95 --currency USD --dry-run --json
 copacker product price update <variant-id> --preview <preview-id> --wait --json
-copacker inventory update --input reviewed-counts.json --json
 copacker order export --file-format csv --wait --output ./orders.csv --json
 ```
 

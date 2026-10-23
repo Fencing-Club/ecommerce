@@ -172,6 +172,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
       router.invalidate()
     } catch (caught) {
       setError(errorMessage(caught, shared("couldNotSave")))
+      router.invalidate()
     }
   }
 

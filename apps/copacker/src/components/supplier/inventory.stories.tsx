@@ -132,9 +132,9 @@ export const SaveFails = meta.story({
     await userEvent.type(count, "90")
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await expect(await saveBar().findByText("LM-TOTE-NAT changed since you opened this page.")).toBeVisible()
-    // The count stays as typed, to save again.
+    // Keep the intended count while fetching current revisions for another save.
     await expect(count).toHaveValue(90)
-    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
