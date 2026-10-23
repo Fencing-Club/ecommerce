@@ -42,8 +42,8 @@ export function prepareUpload(
     upload: { url: transferUrl(s, handoffId), method: "PUT" as const, authentication: "required" as const }
   }
 }
-export async function transferReceipt(s: Session, id: string, operation?: string) {
-  const [receipt] = await db()
+export async function transferReceipt(s: Session, id: string, operation?: string, lock = false) {
+  const query = db()
     .select()
     .from(operationReceipts)
     .where(
@@ -56,13 +56,14 @@ export async function transferReceipt(s: Session, id: string, operation?: string
     )
     .orderBy(operationReceipts.createdAt)
     .limit(1)
+  const [receipt] = await (lock ? query.for("update") : query)
   if (!receipt || !transferOperations.includes(receipt.operation)) {
     throw new CliError("not_found", "Transfer not found.", 404)
   }
   return receipt
 }
 export async function uploadedBytes(s: Session, id: string, operation: string) {
-  const receipt = await transferReceipt(s, id, operation)
+  const receipt = await transferReceipt(s, id, operation, true)
   const upload = uploadReceipt.parse(receipt.result)
   if (Date.parse(upload.expiresAt) <= Date.now()) {
     throw new CliError("transfer_expired", "Start a new import; this upload expired.", 409)
