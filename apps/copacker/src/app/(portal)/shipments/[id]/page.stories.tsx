@@ -10,6 +10,8 @@ import invariant from "tiny-invariant"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
+import { startingAddress } from "@/components/shipment-packing-details"
+import type { ShipmentPlaces } from "@/hooks/use-shipment-route"
 import { can, type Permissions } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
 import { releasedLabelKinds } from "@/lib/shipment-states"
@@ -35,7 +37,7 @@ import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
 import { closeMenu, shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
-import { shipmentDestinations } from "../destination"
+import { shipmentDestinations, shipmentNetwork } from "../destination"
 import ShipmentPageView from "./page"
 
 // The shipment's step as orderWorkflow reports it: what happens next, what its packet lacks, and its packet once the
@@ -102,26 +104,45 @@ const amazonWarehouses: Record<AmazonNetwork, Address> = {
   }
 }
 
-// The next stop as shipmentDelivery reads it: the forwarder until the goods move on from it, the buyer's warehouse, or
-// the Amazon warehouse once Amazon has the shipment. Amazon gives an FBA shipment's warehouse only once its inbound
-// plan's shipments are confirmed.
-function nextStop(order: OrderInput, shipment: ShipmentRow): { addresses: Address[]; pending: boolean } {
-  const data = shipment.snapshot ?? order
-  if (data.via && !["forwarded", "received"].includes(shipment.status)) {
-    return { addresses: [baylineWarehouse], pending: false }
-  }
+// Where the shipment ends up, as shipmentPlaces reads it: the buyer's warehouse, or the Amazon warehouse once Amazon has
+// the shipment. Amazon gives an FBA shipment's warehouse only once its inbound plan's shipments are confirmed.
+function finalAddresses(data: OrderInput, shipment: ShipmentRow): Address[] {
   if (orderDestination(data) === "warehouse") {
     const places = buyerContacts.filter((contact) => contact.id === data.deliveryId)
-    return { addresses: places.map((place) => ({ ...place.address, name: place.name })), pending: false }
-  }
-  if (!(shipment.amazonShipmentId ?? shipment.linkedAmazonShipmentId)) {
-    return { addresses: [], pending: true }
+    return places.map((place) => ({ ...place.address, name: place.name }))
   }
   const network = shipment.amazonNetwork
-  if (network === "awd_us" || (network === "fba" && shipment.amazonOrderId)) {
-    return { addresses: [amazonWarehouses[network]], pending: false }
+  const booked = shipment.amazonShipmentId ?? shipment.linkedAmazonShipmentId
+  return booked && (network === "awd_us" || (network === "fba" && shipment.amazonOrderId))
+    ? [amazonWarehouses[network]]
+    : []
+}
+
+// Where the shipment's goods stop, as shipmentPlaces reads them: the pickup address, Bayline Freight's Ningbo warehouse
+// when the PO goes by way of it, AGL when it books the transport, and where the goods end up.
+function places(
+  order: OrderInput,
+  shipment: ShipmentRow,
+  supplier: string,
+  addresses: PartnerAddress[]
+): ShipmentPlaces {
+  const data = shipment.snapshot ?? order
+  const origin = (shipment.packing ?? shipment.packingDraft)?.origin
+  const start = startingAddress(addresses, origin)
+  const warehouse = orderDestination(data) === "warehouse"
+  return {
+    supplier,
+    pickup: start ? { name: start.name, address: start.address } : origin && { address: origin },
+    forwarder: data.via
+      ? { company: "Bayline Freight", place: { name: "Ningbo warehouse", address: baylineWarehouse } }
+      : undefined,
+    agl: shipment.transport?.service === "agl",
+    destination: {
+      company: warehouse ? "Harbor Goods" : "Amazon",
+      receiver: warehouse ? "warehouse" : shipmentNetwork(data, shipment.amazonNetwork),
+      addresses: finalAddresses(data, shipment)
+    }
   }
-  return { addresses: [], pending: false }
 }
 
 // A shipment's page (page.tsx) with what the database and the workflow would return.
@@ -191,7 +212,8 @@ async function ShipmentPage({
             )
           }
         }),
-        delivery: nextStop(order.data, shipment),
+        route: places(order.data, shipment, supplier.name, addresses),
+        buyer: "Harbor Goods",
         destinationName: destination(order.data, shipment.amazonNetwork),
         editsShipments,
         seesOrder,
@@ -348,7 +370,7 @@ export const PackingSupplier = meta.story({
     await expect(canvas.getByRole("heading", { name: /Shipment 1/ })).toBeVisible()
     const breadcrumb = canvas.getByRole("navigation", { name: "Breadcrumb" })
     await expect(within(breadcrumb).getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders")
-    await expect(canvas.getAllByText("Portland warehouse")[0]).toBeVisible()
+    await expect(canvas.getByText(/^Portland warehouse, /)).toBeVisible()
     await expect(canvas.getAllByText("Packing").length).toBeGreaterThan(0)
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
@@ -477,16 +499,18 @@ export const DraftPacking = meta.story({
   }
 })
 
-// Board 06.06: the same draft on a phone. The route lists its stops one under another, the carton actions keep only their
+// Board 06.06: the same draft on a phone. The route's stops sit one under another, the carton actions keep only their
 // icons, and the cartons and units sit above the Save draft button, with the documents and details below.
 export const DraftPackingOnAPhone = meta.story({
   ...supplier,
   args: DraftPacking.input.args,
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
-    const stops = ["Northwind Textiles", "Bayline Freight", "Amazon AWD US"].map((stop) =>
-      canvas.getAllByText(stop)[0]!.getBoundingClientRect()
-    )
+    const stops = [
+      canvas.getByRole("combobox", { name: "Ship from" }),
+      canvas.getByText("Bayline Freight"),
+      canvas.getByText("Amazon AWD US")
+    ].map((stop) => stop.getBoundingClientRect())
     await expect(stops.map((stop) => stop.left)).toEqual(Array(3).fill(stops[0]!.left))
     await expect(stops[1]!.top).toBeGreaterThan(stops[0]!.bottom)
     await expect(stops[2]!.top).toBeGreaterThan(stops[1]!.bottom)
@@ -579,11 +603,18 @@ export const Packed = meta.story({
     await expect(canvas.getByRole("heading", { level: 1, name: "Shipment 1" })).toBeVisible()
     await expect(within(canvas.getByRole("navigation", { name: "Breadcrumb" })).getByText("Shipment 1")).toBeVisible()
     await expect(canvas.getAllByText("Packed").length).toBeGreaterThan(0)
-    // The packed shipment reads like the packing page: the route and how the cartons travel, then the cartons as
-    // packed, with the documents and totals beside them.
-    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
-    await expect(canvas.getByText("Mei Chen")).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
+    // The packed shipment reads like the packing page: the route, closed to its stops, then the cartons as packed, with
+    // the documents and totals beside them. Opened, the route shows where the cartons leave from and how they travel.
+    const route = canvas.getByRole("list", { name: "Route" })
+    await expect([...route.querySelectorAll("li")].map((stop) => stop.textContent)).toEqual([
+      "Northwind Textiles",
+      "Bayline Freight",
+      "Amazon Global Logistics (AGL)",
+      "Amazon AWD US"
+    ])
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(canvas.getByText(/^Northwind Textiles \/ Main factory, 88 Harbour Road/)).toBeVisible()
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("540 of 540 units")).toBeVisible()
@@ -623,7 +654,7 @@ export const FbaMixedCartons = meta.story({
     })
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Amazon FBA")).toBeVisible()
+    await expect(canvas.getByText("Amazon FBA US")).toBeVisible()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("180 of 180 units")).toBeVisible()
     // One carton holds a bag in each color and a tea towel; a bag without a supplier SKU shows a dash.
@@ -894,9 +925,12 @@ export const Creating = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Creating the Amazon shipment")).toBeVisible()
-    await expect(canvas.getByText("Amazon FBA")).toBeVisible()
+    await expect(canvas.getByText("Amazon FBA US")).toBeVisible()
     // Amazon picks the warehouse as it creates the shipment.
-    await expect(canvas.getByText("Amazon assigns the delivery address after shipment creation.")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await expect(
+      await canvas.findByText("Amazon picks the fulfillment centers when the shipment is created")
+    ).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Shipment details" })).getByText("2")).toBeVisible()
     await expect(canvas.getByRole("region", { name: "Cartons" })).toBeVisible()
   }
@@ -935,8 +969,8 @@ export const WaitingForLabels = meta.story({
       "https://sellercentral.amazon.com/awd/inbound-shipment/STAR-8KQ2M7-1"
     )
     // The cartons go to the AWD warehouse Amazon chose, each with Amazon's label.
-    await expect(canvas.getByText("Amazon IUSP")).toBeVisible()
-    await expect(canvas.getByText("200 Distribution Road, Hesperia, CA 92344, US")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await expect(await canvas.findByText("Amazon IUSP, 200 Distribution Road, Hesperia, CA 92344, US")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Products" })).toBeVisible()
     await expect(canvas.queryByText(/201952611540373988/)).toBeNull()
   }
@@ -1052,8 +1086,8 @@ export const ReadySupplier = meta.story({
     // The packet is the first of the documents, with no banner.
     await expect(canvas.queryByText("Supplier packet ready")).toBeNull()
     // The cartons go to the FBA warehouse their labels name.
-    await expect(canvas.getByText("Amazon ONT8")).toBeVisible()
-    await expect(canvas.getByText("100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await expect(await canvas.findByText("Amazon ONT8, 100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     // Each carton's label number is on its label, not in the carton rows.
     await expect(canvas.queryByText(/FBA18ABCD123U000002/)).toBeNull()
@@ -1061,8 +1095,6 @@ export const ReadySupplier = meta.story({
       "href",
       expect.stringContaining("?bundle=true")
     )
-    await expect(canvas.getByText("Mei Chen")).toBeVisible()
-    await expect(canvas.getByRole("link", { name: /\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     await waitFor(() => expect(sent).toEqual([{ action: "shipment.ship", data: { id: shipmentId } }]))
     // Until it ships, a correction can still be asked for.
@@ -1102,10 +1134,13 @@ export const ShippedToForwarder = meta.story({
     })
   },
   play: async ({ canvas }) => {
-    // Until the forwarder sends the goods on, its warehouse is the next stop. The route says so, with no line about it.
-    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    // The forwarder's warehouse is a stop on the route, with no line about the forwarder's step.
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
     await expect(canvas.queryByText(/The forwarder ships the goods on/)).toBeNull()
-    await expect(canvas.getByText("18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, CN")).toBeVisible()
+    await expect(
+      canvas.getByText("Ningbo warehouse, 18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, CN")
+    ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
   }
 })

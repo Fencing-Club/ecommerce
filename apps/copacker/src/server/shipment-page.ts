@@ -1,9 +1,10 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { canEditPacking, canReopenPacking, releasedStates } from "@repo/copacker-shipments/states"
 import { and, eq } from "drizzle-orm"
-import { shipmentDestinations, shipmentDelivery } from "@/app/(portal)/shipments/destination"
+import { shipmentDestinations, shipmentPlaces } from "@/app/(portal)/shipments/destination"
+import { startingAddress } from "@/components/shipment-packing-details"
 import { db } from "@/db"
-import { documents, shipments } from "@/db/schema"
+import { documents, organizations, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { printableLabels } from "@/lib/printable-labels"
@@ -49,15 +50,19 @@ export async function shipmentPage(input: { id: string }) {
     orderDestination(order.data) === "amazon" && packingOrder.items.some((item) => item.receiver === "fba")
       ? (knownPackingGroups(rows, shipment) ?? null)
       : undefined
-  const [docs, addresses] = await Promise.all([
+  const [docs, addresses, [buyer]] = await Promise.all([
     db()
       .select()
       .from(documents)
       .where(and(eq(documents.shipmentId, id), eq(documents.outdated, false))),
     // Cartons leave from the supplier's pickup addresses: its own once it has joined Copacker, and until then the ones
     // the buyer saved for it.
-    supplierPickupAddresses(supplier)
+    supplierPickupAddresses(supplier),
+    db().select({ name: organizations.name }).from(organizations).where(eq(organizations.id, order.buyerOrgId))
   ])
+  // The address the cartons leave from: the saved one the packing's is, or the packing's as entered.
+  const origin = (shipment.packing ?? shipment.packingDraft)?.origin
+  const start = startingAddress(addresses, origin)
   // Packing waits while the supplier's changes to the purchase order are with the buyer.
   const { latest } = await proposalState(order.id)
   const awaitingChanges = latest?.status === "pending"
@@ -100,7 +105,13 @@ export async function shipmentPage(input: { id: string }) {
           .map((row) => ({ ...row, problem: row.state === "missing" ? row.problem : undefined }))
       )
     })),
-    delivery: await shipmentDelivery(order, shipment),
+    route: await shipmentPlaces(order, shipment, {
+      supplier: supplier.name,
+      buyer: buyer?.name ?? "",
+      pickup: start ? { name: start.name, address: start.address } : origin && { address: origin }
+    }),
+    // The buyer, who books AGL in Seller Central.
+    buyer: buyer?.name ?? "",
     destinationName: destination(order.data, shipment.amazonNetwork),
     editsShipments,
     seesOrder,

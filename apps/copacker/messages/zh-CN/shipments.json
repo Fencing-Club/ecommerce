@@ -188,6 +188,14 @@
     "shipFrom": "发货地",
     "shipTo": "收货地",
     "finalDestination": "最终目的地",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "在 Seller Central 中预订"
+      },
+      "fba": "创建货件时由 Amazon 选择运营中心",
+      "awd_us": "确认入库订单时由 Amazon 选择仓库"
+    },
     "remove": "移除",
     "removeStop": "移除 {name}",
     "addStop": "添加站点",

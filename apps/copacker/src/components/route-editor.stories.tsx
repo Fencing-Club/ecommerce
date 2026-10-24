@@ -71,7 +71,7 @@ function Packing(props: React.ComponentProps<typeof RouteEditor>) {
 }
 
 const meta = preview.meta({
-  title: "Unused/Shipments/Route editor",
+  title: "Components/Shipments/Route editor",
   component: RouteEditor,
   decorators: [width("max-w-3xl")],
   args: { route: throughForwarder, buyer: "Harbor Goods", readyDate: "2026-10-27" },

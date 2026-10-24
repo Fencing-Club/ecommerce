@@ -61,7 +61,7 @@ export type RouteStop = RuleStop & { name: string; detail?: string }
 export type RouteChoices = { label: string; stops: RouteStop[] }[]
 
 // The route as a timeline: each stop with its node on a rail, and between two stops, who moves the goods there. Read
-// only, it lists them. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
+// only, it lists them, and a leg nobody has chosen yet is just the rail. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
 // allow there, the last can be removed and a stop added after it, and each leg is chosen from who can move it; changes
 // go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
 // ready date and pallets (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
@@ -107,18 +107,24 @@ export function RouteEditor({
       {stops.map((stop, index) => {
         const isLast = index === stops.length - 1
         const network = stopNetwork(stop)
+        const leg = legs[index - 1]
         return (
           <Fragment key={`${index}-${stop.id}`}>
-            {index > 0 && (
-              <Leg
-                from={stops[index - 1]!}
-                to={stop}
-                leg={legs[index - 1]!}
-                buyer={buyer}
-                editing={editing}
-                onChange={(leg) => change(setLeg(route, index - 1, leg))}
-              />
-            )}
+            {index > 0 &&
+              (leg ? (
+                <Leg
+                  from={stops[index - 1]!}
+                  to={stop}
+                  leg={leg}
+                  buyer={buyer}
+                  editing={editing}
+                  onChange={(next) => change(setLeg(route, index - 1, next))}
+                />
+              ) : (
+                <li aria-hidden className="flex h-4 gap-3">
+                  <Rail line />
+                </li>
+              ))}
             <li className="flex gap-3">
               <Rail line={!isLast || editing}>
                 <StopIcon index={index} stop={stop} />

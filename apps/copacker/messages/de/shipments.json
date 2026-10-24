@@ -188,6 +188,14 @@
     "shipFrom": "Versand ab",
     "shipTo": "Versand an",
     "finalDestination": "Endziel",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "In Seller Central gebucht"
+      },
+      "fba": "Amazon wählt die Versandzentren, wenn die Sendung erstellt wird",
+      "awd_us": "Amazon wählt das Lager, wenn die Einlagerungsbestellung bestätigt wird"
+    },
     "remove": "Entfernen",
     "removeStop": "{name} entfernen",
     "addStop": "Stopp hinzufügen",

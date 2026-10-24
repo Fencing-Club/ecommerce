@@ -188,6 +188,14 @@
     "shipFrom": "یہاں سے بھیجیں",
     "shipTo": "یہاں بھیجیں",
     "finalDestination": "آخری منزل",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Seller Central میں بک کیا گیا"
+      },
+      "fba": "شپمنٹ بننے پر Amazon فلفلمنٹ سینٹرز چنتا ہے",
+      "awd_us": "ان باؤنڈ آرڈر کی تصدیق ہونے پر Amazon گودام چنتا ہے"
+    },
     "remove": "ہٹائیں",
     "removeStop": "{name} ہٹائیں",
     "addStop": "اسٹاپ شامل کریں",
