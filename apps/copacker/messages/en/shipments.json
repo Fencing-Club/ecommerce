@@ -180,6 +180,53 @@
     "save": "Save transport",
     "unconfirmed": "Transport not confirmed"
   },
+  "route": {
+    "title": "Route",
+    "editRoute": "Edit route",
+    "cancel": "Cancel",
+    "save": "Save route",
+    "shipFrom": "Ship from",
+    "shipTo": "Ship to",
+    "finalDestination": "Final destination",
+    "remove": "Remove",
+    "removeStop": "Remove {name}",
+    "addStop": "Add stop",
+    "chooseStop": "Choose a stop",
+    "endsRoute": "{name} ends the route. Remove it to add a stop before it.",
+    "needsDestination": "Add the final destination to save the route.",
+    "ready": "Ready {date}",
+    "legs": {
+      "label": "Shipping, {from} to {to}",
+      "senderArranges": "{company} arranges shipping",
+      "receiverArranges": "{company} arranges shipping",
+      "senderMoves": "{company} delivers",
+      "receiverMoves": "{company} picks up",
+      "booksCarrier": "Books the carrier",
+      "ownVehicle": "In their own vehicle",
+      "arrangesNote": "{company} books the carrier and adds the tracking code and cost.",
+      "movesNote": "In their own vehicle.",
+      "amazon": "Amazon arranges shipping",
+      "aglCollects": "AGL collects the cartons from {company}. {buyer} books it in Seller Central and links the shipment.",
+      "aglShips": "AGL ships the cartons on to {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon stores your stock, then picks, packs and ships each order and handles returns. Use it to offer Prime shipping."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Amazon’s bulk storage, which refills FBA automatically as stock sells. Use it to save up to 80% on storage fees compared with FBA’s peak season."
+      }
+    },
+    "about": "About {name}",
+    "requirements": "{name} requirements",
+    "cartons": "Cartons",
+    "pallets": "Pallets",
+    "documentation": "Documentation",
+    "website": "Website",
+    "opensInNewTab": "opens in a new tab"
+  },
   "documentPreview": {
     "settings": "Download settings",
     "language": "Language",

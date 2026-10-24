@@ -19,6 +19,16 @@ once everything is in place, and the list's actions at the end of the line. A li
 which holds Add and Import while packing; once the list has a row they move up to the section's line with Export
 (`PackingActions`). The designs are the empty states in 06 / Carton editor / Shared Storybook components.
 
+The route heads the card today as one line of stops (`RoutePreview`). Its redesign is copacker.pen's section 11,
+"11 / Shipment route editor": a Route section like Products and Cartons, closed by default since the route was set up
+on the purchase order, with the stops as its summary (`RouteSection`). Open, it's a timeline of stops and, between
+them, who moves the goods (`RouteEditor`). Ship from carries the packing's own fields while packing (the pickup address
+with Add new address, then the ready date and Packed on pallets, `ReadyDateAndPallets`), and an Amazon network's About
+link shows the rules' `summary` lines and the receiver's pages. Whoever may change the route gets Edit route, which
+turns the stops and legs into menus: Amazon moves the goods to and from AGL, only the sender ships into an Amazon
+network, and a route has to end at a final destination to save. Neither is on the page yet: saving a route and who
+moves each leg need the shipment's data first. Their components are in Storybook under Unused / Shipments.
+
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the
 cartons' count, units, gross weight and volume, the pallets' when packed on them, as Shipment details shows them).

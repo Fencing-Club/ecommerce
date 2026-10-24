@@ -180,6 +180,53 @@
     "save": "Зберегти транспорт",
     "unconfirmed": "Транспорт не підтверджено"
   },
+  "route": {
+    "title": "Маршрут",
+    "editRoute": "Змінити маршрут",
+    "cancel": "Скасувати",
+    "save": "Зберегти маршрут",
+    "shipFrom": "Відправити з",
+    "shipTo": "Відправити до",
+    "finalDestination": "Кінцевий пункт",
+    "remove": "Прибрати",
+    "removeStop": "Прибрати {name}",
+    "addStop": "Додати зупинку",
+    "chooseStop": "Виберіть зупинку",
+    "endsRoute": "Маршрут закінчується в {name}. Приберіть його, щоб додати зупинку перед ним.",
+    "needsDestination": "Додайте кінцевий пункт, щоб зберегти маршрут.",
+    "ready": "Готово {date}",
+    "legs": {
+      "label": "Доставка, з {from} до {to}",
+      "senderArranges": "{company} організовує доставку",
+      "receiverArranges": "{company} організовує доставку",
+      "senderMoves": "{company} доставляє",
+      "receiverMoves": "{company} забирає",
+      "booksCarrier": "Замовляє перевізника",
+      "ownVehicle": "Власним транспортом",
+      "arrangesNote": "{company} замовляє перевізника та додає номер відстеження й вартість.",
+      "movesNote": "Власним транспортом.",
+      "amazon": "Amazon організовує доставку",
+      "aglCollects": "AGL забирає коробки в {company}. {buyer} замовляє його в Seller Central і пов’язує відправлення.",
+      "aglShips": "AGL везе коробки далі до {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon зберігає ваші запаси, а потім збирає, пакує й відправляє кожне замовлення та обробляє повернення. Використовуйте його, щоб пропонувати доставку Prime."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Оптовий склад Amazon, який автоматично поповнює FBA, коли товар продається. Використовуйте його, щоб заощадити до 80% на зберіганні порівняно з піковим сезоном FBA."
+      }
+    },
+    "about": "Про {name}",
+    "requirements": "Вимоги {name}",
+    "cartons": "Коробки",
+    "pallets": "Палети",
+    "documentation": "Документація",
+    "website": "Вебсайт",
+    "opensInNewTab": "відкривається в новій вкладці"
+  },
   "documentPreview": {
     "settings": "Налаштування завантаження",
     "language": "Мова",

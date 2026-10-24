@@ -180,6 +180,53 @@
     "save": "保存运输设置",
     "unconfirmed": "运输尚未确认"
   },
+  "route": {
+    "title": "路线",
+    "editRoute": "编辑路线",
+    "cancel": "取消",
+    "save": "保存路线",
+    "shipFrom": "发货地",
+    "shipTo": "收货地",
+    "finalDestination": "最终目的地",
+    "remove": "移除",
+    "removeStop": "移除 {name}",
+    "addStop": "添加站点",
+    "chooseStop": "选择站点",
+    "endsRoute": "路线在 {name} 结束。移除它才能在它之前添加站点。",
+    "needsDestination": "添加最终目的地后才能保存路线。",
+    "ready": "{date} 备好",
+    "legs": {
+      "label": "运输，{from} 至 {to}",
+      "senderArranges": "{company} 安排运输",
+      "receiverArranges": "{company} 安排运输",
+      "senderMoves": "{company} 送货",
+      "receiverMoves": "{company} 取货",
+      "booksCarrier": "预订承运商",
+      "ownVehicle": "使用自有车辆",
+      "arrangesNote": "{company} 预订承运商，并填写追踪号和费用。",
+      "movesNote": "使用自有车辆。",
+      "amazon": "Amazon 安排运输",
+      "aglCollects": "AGL 从 {company} 提取纸箱。{buyer} 在 Seller Central 中预订并关联货件。",
+      "aglShips": "AGL 将纸箱继续运往 {name}。"
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon 存放你的库存，再为每个订单拣货、包装和发货，并处理退货。用它来提供 Prime 配送。"
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Amazon 的批量仓储，会在库存售出时自动补充 FBA。与 FBA 旺季相比，最多可节省 80% 的仓储费。"
+      }
+    },
+    "about": "关于 {name}",
+    "requirements": "{name} 要求",
+    "cartons": "纸箱",
+    "pallets": "托盘",
+    "documentation": "文档",
+    "website": "网站",
+    "opensInNewTab": "在新标签页中打开"
+  },
   "documentPreview": {
     "settings": "下载设置",
     "language": "语言",
