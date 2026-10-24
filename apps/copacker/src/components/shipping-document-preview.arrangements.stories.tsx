@@ -24,6 +24,19 @@ export const FbaAglPickup = meta.story({ args: { data: scenario("agl-fba") }, pl
 
 export const AwdAglPickup = meta.story({ args: { data: scenario("agl-awd") }, play: ready })
 
+// Sent before Amazon has the shipment, so the supplier packs first: no carton labels or warehouse address yet.
+export const AwdBeforeAmazon = meta.story({
+  args: {
+    data: {
+      ...scenario("agl-awd"),
+      amazonPending: true,
+      destination: { name: "Amazon AWD US", address: [] },
+      cartons: scenario("agl-awd").cartons.map(({ amazonLabel: _, ...carton }) => carton)
+    }
+  },
+  play: ready
+})
+
 export const OwnWarehouse = meta.story({ args: { data: scenario("warehouse") }, play: ready })
 
 export const SupplierToForwarder = meta.story({ args: { data: scenario("supplier-transfer") }, play: ready })

@@ -53,7 +53,7 @@
     "preview:deploy": "node --import tsx scripts/preview.ts deploy",
     "preview:remove": "node --import tsx scripts/preview.ts remove",
     "preview:discover": "node --import tsx scripts/preview.ts discover",
-    "export:shipment-packet": "node --import tsx scripts/export-shipment-packet.ts",
+    "export:shipment-packet": "node --env-file-if-exists=.env --import tsx scripts/export-shipment-packet.ts",
     "carrier-label-examples": "node --import tsx scripts/carrier-label-examples.ts"
   },
   "dependencies": {
