@@ -27,7 +27,19 @@ export function useShipmentRoute({ supplier, pickup, forwarder, agl, destination
   const network = isAmazonNetwork(destination.receiver) ? destination.receiver : undefined
   const addresses = destination.addresses.map((address) => placeLine({ name: address.name, address }))
   const stops: RouteStop[] = [
-    { id: "supplier", company: supplier, kind: "supplier", name: supplier, detail: pickup && placeLine(pickup) },
+    {
+      id: "supplier",
+      company: supplier,
+      kind: "supplier",
+      name: supplier,
+      detail: pickup && placeLine(pickup),
+      // Who to call about the pickup.
+      contact: pickup && {
+        name: pickup.address.name,
+        phone: pickup.address.phoneNumber,
+        countryCode: pickup.address.countryCode
+      }
+    },
     ...(forwarder
       ? [
           {

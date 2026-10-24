@@ -615,6 +615,7 @@ export const Packed = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
     await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
     await expect(canvas.getByText(/^Northwind Textiles \/ Main factory, 88 Harbour Road/)).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
     await expect(within(cartons).getByText("540 of 540 units")).toBeVisible()
@@ -1088,6 +1089,7 @@ export const ReadySupplier = meta.story({
     // The cartons go to the FBA warehouse their labels name.
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
     await expect(await canvas.findByText("Amazon ONT8, 100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
+    await expect(canvas.getByRole("link", { name: /\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
     await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     // Each carton's label number is on its label, not in the carton rows.
     await expect(canvas.queryByText(/FBA18ABCD123U000002/)).toBeNull()

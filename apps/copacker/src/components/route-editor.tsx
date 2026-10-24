@@ -51,10 +51,15 @@ import {
 import { Fragment, type ReactNode, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
+import { PhoneLink } from "./common"
 
 // A stop as the route rules read it (`@repo/copacker-packing-rules/routes`), with what its line shows: its name, such as
-// "Northwind Textiles / Main factory", and its address or what happens there.
-export type RouteStop = RuleStop & { name: string; detail?: string }
+// "Northwind Textiles / Main factory", its address or what happens there, and who to call there.
+export type RouteStop = RuleStop & {
+  name: string
+  detail?: string
+  contact?: { name?: string; phone?: string; countryCode?: string }
+}
 
 // The places a stop can be chosen from, in its menu's groups, such as Forwarders and Amazon. The route rules pick which
 // fit each position.
@@ -250,12 +255,22 @@ function StopIcon({ index, stop }: { index: number; stop: RouteStop }) {
 }
 
 function StopLines({ stop }: { stop: RouteStop }) {
+  const { name, phone, countryCode } = stop.contact ?? {}
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-sm">{stop.name}</span>
       {stop.detail && (
         <span className="text-xs text-muted-foreground">
           <bdi>{stop.detail}</bdi>
+        </span>
+      )}
+      {(name || phone) && (
+        <span className="text-xs text-muted-foreground">
+          <bdi>
+            {name}
+            {name && phone && ", "}
+            {phone && <PhoneLink number={phone} countryCode={countryCode} />}
+          </bdi>
         </span>
       )}
     </div>
