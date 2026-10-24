@@ -7,8 +7,8 @@ import { db } from "../src/db/index"
 import { contacts, forwarders, orders, organizations, shipments, suppliers } from "../src/db/schema"
 
 // A packed shipment's supplier packet input, read from the database: the same JSON the exporter takes, to render or to
-// print and edit first. It reads the shipment's accepted PO and packing, never prices, and calls no provider, so an
-// Amazon shipment exports before Amazon has it, without its labels or warehouse address.
+// print and edit first. It holds the shipment's accepted PO and packing, prices included, though the packet prints none.
+// It calls no provider, so an Amazon shipment exports before Amazon has it, without its labels or warehouse address.
 export async function packetFromDatabase(id: string) {
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!shipment) {
@@ -50,9 +50,11 @@ export async function packetFromDatabase(id: string) {
     }
     return { name: place.name, address: addressLines(place.address) }
   }
-  const amazon = shipment.amazonNetwork && {
-    name: `Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`,
-    address: []
+  const amazon = () => {
+    if (!shipment.amazonNetwork) {
+      throw new Error("Choose the shipment's Amazon network first")
+    }
+    return { name: `Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`, address: [] }
   }
   let destination
   let onward
@@ -74,11 +76,11 @@ export async function packetFromDatabase(id: string) {
     }
     destination = { name: stop.name, address: addressLines(stop.address) }
     onward = {
-      destination: orderDestination(data) === "warehouse" ? await delivery() : amazon,
+      destination: orderDestination(data) === "warehouse" ? await delivery() : amazon(),
       service: "forwarder"
     }
   } else {
-    destination = orderDestination(data) === "warehouse" ? await delivery() : amazon
+    destination = orderDestination(data) === "warehouse" ? await delivery() : amazon()
   }
   return {
     company: buyer.name,
