@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils"
 
 // A route on one line: the supplier, any stops on the way, then where the goods end up, an arrow between each. In a
 // narrow column the stops go one per line, each after the first led in by a corner arrow from the one above. It's the
-// Route section's summary while the section is closed.
+// Route section's summary while the section is closed. A container that measures its own width takes none from its
+// stops, so in a row it starts at the width it needs for one line and grows, and wraps to its own line when less is left.
 export function RoutePreview({ stops, className }: { stops: string[]; className?: string }) {
   const t = useTranslations("shipments.route")
   return (
-    <div className={cn("@container/route-preview min-w-0", className)}>
+    <div className={cn("@container/route-preview min-w-0 grow basis-md", className)}>
       <ol
         aria-label={t("title")}
         className="flex flex-wrap items-center gap-x-2.5 gap-y-2 text-meta leading-[17px] font-medium @max-md/route-preview:flex-col @max-md/route-preview:items-start @max-md/route-preview:gap-2.5"
