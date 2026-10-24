@@ -21,7 +21,8 @@ See the
 
 Copacker's pages and components live in Storybook 10 (`@storybook/react-vite`), each story beside its source:
 `src/app/**/page.stories.tsx` for pages and `src/components/**/<name>.stories.tsx` for components. Every story has a
-`play` function, and Vitest runs them all in Chromium, at the toolbar's Desktop size (see [Screen sizes](#screen-sizes)).
+`play` function, and Vitest runs them all in Chromium, at the toolbar's Desktop size unless a story sets its own (see
+[Screen sizes](#screen-sizes)).
 
 The preview records ordinary internal anchor clicks through the navigation mock without leaving the story iframe.
 Route-controlled filters, refreshes and search navigation receive explicit callbacks in their component stories.
@@ -135,7 +136,7 @@ without it. The packet's stories also carry `documents`, since they render PDFs.
 ### Screen sizes
 
 One story covers every screen size. To see a story on a phone or tablet, pick Mobile or Tablet in the toolbar; don't
-add a copy of the story for a size. Story tests run every story at Desktop.
+add a copy of the story for a size. Story tests run a story at Desktop unless it sets its own viewport.
 
 A story sets its own viewport, `globals: { viewport: { value: "mobile", isRotated: false } }`, only when its play
 function tests something that only happens at that size: opening the sidebar from the phone's menu button, a section
