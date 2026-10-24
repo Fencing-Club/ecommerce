@@ -7,6 +7,8 @@ way, and another receiver (GWD, a 3PL, a special arrangement) is a new policy ra
 - `carton-policies`: each receiver's carton rules (`cartonPolicies`) and `checkCarton`. See [carton rules](carton-rules.md).
 - `pallet-policies`: each receiver's pallet rules (`palletPolicies`) and `checkPallet`. See [pallet rules](pallet-rules.md).
 - `receivers`: where a PO line's goods end up (see [Receivers](#receivers)).
+- `routes`: a shipment's stops from the supplier to its receiver, and who moves the goods between them. See
+  [route rules](route-rules.md).
 - The package root: `validatePacking`, `validatePallets` and `checkPallets`, the issues they report
   (`ValidationIssue`, `PackingRule`), what each rule that holds everywhere asks for (`packingRuleDescriptions`),
   the receivers, the carton ID runs packing lists print (`cartonList`, `cartonRuns`) and read back (`readCartonIds`),

@@ -1,15 +1,16 @@
 import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, FieldError } from "@buildkitgg/shadcn-baseui-kit"
+import { type Route, routeIssues } from "@repo/copacker-packing-rules"
 import { ChevronRight, Pencil } from "lucide-react"
 import { type ReactNode, useState } from "react"
 import { useTranslations } from "use-intl"
-import { type Route, type RouteChoices, RouteEditor, routeComplete } from "./route-editor"
+import { type RouteChoices, RouteEditor, type RouteStop } from "./route-editor"
 import { RoutePreview } from "./route-preview"
 
 // The shipment's route, as a section like Products and Cartons. It starts closed, since the route was set up on the
 // purchase order, with the stops on one line as its summary. Open, the route is a timeline. Whoever may change it
-// (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save route; a route has to end
-// at a final destination to save. The packing's own Ship from field, ready date and pallets (`shipFrom`, `packing`)
-// show while packing, whether or not the route is being edited.
+// (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save route. A route the route
+// rules find an issue with doesn't save, and its first issue shows. The packing's own Ship from field, ready date and
+// pallets (`shipFrom`, `packing`) show while packing, whether or not the route is being edited.
 export function RouteSection({
   route,
   buyer,
@@ -20,10 +21,10 @@ export function RouteSection({
   readyDate,
   defaultOpen = false
 }: {
-  route: Route
+  route: Route<RouteStop>
   buyer: string
-  choices?: { stops: RouteChoices; destinations: RouteChoices }
-  onSave?: (route: Route) => void
+  choices?: RouteChoices
+  onSave?: (route: Route<RouteStop>) => void
   shipFrom?: ReactNode
   packing?: ReactNode
   readyDate?: string
@@ -31,9 +32,10 @@ export function RouteSection({
 }) {
   const t = useTranslations("shipments.route")
   const [open, setOpen] = useState(defaultOpen)
-  const [draft, setDraft] = useState<Route | null>(null)
+  const [draft, setDraft] = useState<Route<RouteStop> | null>(null)
   const [tried, setTried] = useState(false)
   const shown = draft ?? route
+  const issue = draft && routeIssues(draft)[0]
   const cancel = () => {
     setDraft(null)
     setTried(false)
@@ -78,7 +80,7 @@ export function RouteSection({
         />
         {draft && (
           <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-            {tried && !routeComplete(draft) && <FieldError className="me-auto">{t("needsDestination")}</FieldError>}
+            {tried && issue && <FieldError className="me-auto">{t(`issues.${issue.code}`)}</FieldError>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={cancel}>
                 {t("cancel")}
@@ -87,7 +89,7 @@ export function RouteSection({
                 type="button"
                 onClick={() => {
                   setTried(true)
-                  if (routeComplete(draft)) {
+                  if (!issue) {
                     onSave?.(draft)
                     cancel()
                   }

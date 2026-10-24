@@ -1,5 +1,6 @@
 import { addressLine } from "@repo/copacker-orders"
-import type { Route, RouteChoices, RouteStop } from "@/components/route-editor"
+import type { Route } from "@repo/copacker-packing-rules"
+import type { RouteChoices, RouteStop } from "@/components/route-editor"
 import { baylineShenzhen, baylineWarehouse, harborWarehouse, northwindFactory } from "./parties"
 
 // The stops a shipment's route can make, from Northwind Textiles' factory by way of Bayline Freight or AGL to Harbor
@@ -7,74 +8,74 @@ import { baylineShenzhen, baylineWarehouse, harborWarehouse, northwindFactory } 
 export const northwindStop: RouteStop = {
   id: "northwind-factory",
   company: "Northwind Textiles",
+  kind: "supplier",
   name: "Northwind Textiles / Main factory",
   detail: addressLine(northwindFactory)
 }
 export const baylineStop: RouteStop = {
   id: "bayline-ningbo",
   company: "Bayline Freight",
+  kind: "forwarder",
   name: "Bayline Freight",
   detail: addressLine(baylineWarehouse)
 }
 export const baylineShenzhenStop: RouteStop = {
   id: "bayline-shenzhen",
   company: "Bayline Freight",
+  kind: "forwarder",
   name: "Bayline Freight / Shenzhen",
   detail: addressLine(baylineShenzhen)
 }
 export const aglStop: RouteStop = {
   id: "agl",
   company: "Amazon",
+  kind: "agl",
   name: "Amazon Global Logistics (AGL)",
-  detail: "Booked in Seller Central",
-  agl: true
+  detail: "Booked in Seller Central"
 }
 export const harborStop: RouteStop = {
   id: "harbor-portland",
   company: "Harbor Goods",
+  kind: "receiver",
+  receiver: "warehouse",
   name: "Harbor Goods / Portland warehouse",
-  detail: addressLine(harborWarehouse),
-  final: true
+  detail: addressLine(harborWarehouse)
 }
 export const fbaStop: RouteStop = {
   id: "fba",
   company: "Amazon",
+  kind: "receiver",
+  receiver: "fba",
   name: "Amazon FBA US",
-  detail: "Amazon picks the fulfillment centers when the shipment is created",
-  final: true,
-  network: "fba"
+  detail: "Amazon picks the fulfillment centers when the shipment is created"
 }
 export const awdStop: RouteStop = {
   id: "awd_us",
   company: "Amazon",
+  kind: "receiver",
+  receiver: "awd_us",
   name: "Amazon AWD US",
-  detail: "Amazon picks the warehouse when the inbound order is confirmed",
-  final: true,
-  network: "awd_us"
+  detail: "Amazon picks the warehouse when the inbound order is confirmed"
 }
 
-export const routeChoices: { stops: RouteChoices; destinations: RouteChoices } = {
-  stops: [
-    { label: "Forwarders", stops: [baylineStop, baylineShenzhenStop] },
-    { label: "Amazon", stops: [aglStop] }
-  ],
-  destinations: [
-    { label: "Harbor Goods", stops: [harborStop] },
-    { label: "Amazon", stops: [fbaStop, awdStop] }
-  ]
-}
+// Every place a stop can be, in its menu's groups. The route rules pick the ones that fit each position.
+export const routeChoices: RouteChoices = [
+  { label: "Forwarders", stops: [baylineStop, baylineShenzhenStop] },
+  { label: "Harbor Goods", stops: [harborStop] },
+  { label: "Amazon", stops: [aglStop, fbaStop, awdStop] }
+]
 
 // Northwind Textiles ships to Bayline Freight, which takes the cartons on to AWD.
-export const throughForwarder: Route = {
+export const throughForwarder: Route<RouteStop> = {
   stops: [northwindStop, baylineStop, awdStop],
   legs: ["receiverArranges", "senderArranges"]
 }
 
 // Straight from the factory to Harbor Goods' warehouse, in Northwind Textiles' own truck.
-export const direct: Route = { stops: [northwindStop, harborStop], legs: ["senderMoves"] }
+export const direct: Route<RouteStop> = { stops: [northwindStop, harborStop], legs: ["senderMoves"] }
 
 // AGL collects the cartons from the factory and ships them on to FBA.
-export const throughAgl: Route = {
+export const throughAgl: Route<RouteStop> = {
   stops: [northwindStop, aglStop, fbaStop],
   legs: ["senderArranges", "senderArranges"]
 }

@@ -21,7 +21,21 @@ import {
   TooltipContent,
   TooltipTrigger
 } from "@buildkitgg/shadcn-baseui-kit"
-import { type AmazonNetwork, receivers } from "@repo/copacker-packing-rules"
+import {
+  type AmazonNetwork,
+  appendStop,
+  endsRoute,
+  type LegArrangement,
+  legChoices,
+  receivers,
+  removeLastStop,
+  replaceStop,
+  type Route,
+  type RouteStop as RuleStop,
+  setLeg,
+  stopChoices,
+  stopNetwork
+} from "@repo/copacker-packing-rules"
 import {
   Building2,
   CalendarDays,
@@ -38,68 +52,35 @@ import { Fragment, type ReactNode, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
-// A place a shipment stops on its way: the supplier's address it leaves from, a forwarder's warehouse or AGL on the way,
-// and where the goods end up.
-export type RouteStop = {
-  id: string
-  // Who is there, as a leg names it, such as "Bayline Freight".
-  company: string
-  // The stop as its line shows it, such as "Northwind Textiles / Main factory".
-  name: string
-  // Its address, or what happens there.
-  detail?: string
-  // Where the goods end up, such as an Amazon network or the buyer's warehouse: nothing can follow it.
-  final?: boolean
-  // The Amazon network it is, whose requirements its About link shows. Only the sender ships into one.
-  network?: AmazonNetwork
-  // Amazon Global Logistics, which moves the goods to and from it.
-  agl?: boolean
-}
+// A stop as the route rules read it (`@repo/copacker-packing-rules/routes`), with what its line shows: its name, such as
+// "Northwind Textiles / Main factory", and its address or what happens there.
+export type RouteStop = RuleStop & { name: string; detail?: string }
 
-// Who moves the goods between two stops: the one sending or the one receiving, either booking a carrier (arranges) or
-// in their own vehicle (moves).
-export const legArrangements = ["senderArranges", "senderMoves", "receiverArranges", "receiverMoves"] as const
-export type LegArrangement = (typeof legArrangements)[number]
-
-// A route's stops in order, and between each two, who moves the goods.
-export type Route = { stops: RouteStop[]; legs: LegArrangement[] }
-
-// What a stop can be chosen from, in its menu's groups, such as Forwarders and Amazon.
+// The places a stop can be chosen from, in its menu's groups, such as Forwarders and Amazon. The route rules pick which
+// fit each position.
 export type RouteChoices = { label: string; stops: RouteStop[] }[]
 
-// A route ends where it should: at a final destination.
-export const routeComplete = (route: Route) => route.stops.at(-1)?.final === true
-
-// Who can move the goods from one stop to the next. Amazon moves them to and from AGL, and only the sender ships into
-// an Amazon network.
-export function legChoices(from: RouteStop, to: RouteStop): readonly LegArrangement[] {
-  if (from.agl || to.agl) {
-    return []
-  }
-  return to.network ? ["senderArranges", "senderMoves"] : legArrangements
-}
-
 // The route as a timeline: each stop with its node on a rail, and between two stops, who moves the goods there. Read
-// only, it lists them. While editing (`editing`), each stop after the first is chosen from `choices`, the last can be
-// removed and a stop added after it, and each leg is chosen from who can move it; changes go to `onChange`. Ship from is
-// the packing's own field: `shipFrom` replaces its line while packing, with the packing's ready date and pallets
-// (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
+// only, it lists them. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
+// allow there, the last can be removed and a stop added after it, and each leg is chosen from who can move it; changes
+// go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
+// ready date and pallets (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
 export function RouteEditor({
   route,
   buyer,
   editing = false,
-  choices,
+  choices = [],
   onChange,
   shipFrom,
   packing,
   readyDate
 }: {
-  route: Route
+  route: Route<RouteStop>
   // The buyer, who books AGL in Seller Central.
   buyer: string
   editing?: boolean
-  choices?: { stops: RouteChoices; destinations: RouteChoices }
-  onChange?: (route: Route) => void
+  choices?: RouteChoices
+  onChange?: (route: Route<RouteStop>) => void
   shipFrom?: ReactNode
   packing?: ReactNode
   readyDate?: string
@@ -107,37 +88,29 @@ export function RouteEditor({
   const t = useTranslations("shipments.route")
   const format = useFormatter()
   const [adding, setAdding] = useState(false)
+  // A stop being added goes when editing ends, so it isn't back the next time.
+  if (!editing && adding) {
+    setAdding(false)
+  }
   const { stops, legs } = route
   const last = stops.at(-1)
-  const change = (next: Route) => onChange?.(next)
-  // A stop chosen in place of another keeps its legs, unless the one into it can't be moved that way any more.
-  const replace = (index: number, stop: RouteStop) => {
-    const nextStops = stops.map((current, at) => (at === index ? stop : current))
-    change({
-      stops: nextStops,
-      legs: legs.map((leg, at) => {
-        const allowed = legChoices(nextStops[at]!, nextStops[at + 1]!)
-        return allowed.length === 0 || allowed.includes(leg) ? leg : allowed[0]!
-      })
-    })
-  }
-  const append = (stop: RouteStop) => {
-    setAdding(false)
-    change({ stops: [...stops, stop], legs: [...legs, legChoices(last!, stop)[0] ?? "senderArranges"] })
-  }
-  const remove = () => change({ stops: stops.slice(0, -1), legs: legs.slice(0, -1) })
+  const change = (next: Route<RouteStop>) => onChange?.(next)
+  // Each group's places that fit the position, leaving out groups with none.
+  const fitting = (index: number) =>
+    choices
+      .map((group) => ({ ...group, stops: stopChoices(route, index, group.stops) }))
+      .filter((group) => group.stops.length > 0)
   const label = (stop: RouteStop, index: number) => {
     if (index === 0) {
       return t("shipFrom")
     }
-    return stop.final ? t("finalDestination") : t("shipTo")
+    return endsRoute(stop) ? t("finalDestination") : t("shipTo")
   }
-  const allChoices = choices ? [...choices.stops, ...choices.destinations] : []
   return (
     <ol aria-label={t("title")} className="flex flex-col">
       {stops.map((stop, index) => {
         const isLast = index === stops.length - 1
-        const stopChoices = stop.final ? choices?.destinations : choices?.stops
+        const network = stopNetwork(stop)
         return (
           <Fragment key={`${index}-${stop.id}`}>
             {index > 0 && (
@@ -147,9 +120,7 @@ export function RouteEditor({
                 leg={legs[index - 1]!}
                 buyer={buyer}
                 editing={editing}
-                onChange={(leg) =>
-                  change({ stops, legs: legs.map((current, at) => (at === index - 1 ? leg : current)) })
-                }
+                onChange={(leg) => change(setLeg(route, index - 1, leg))}
               />
             )}
             <li className="flex gap-3">
@@ -170,19 +141,19 @@ export function RouteEditor({
                           size="xs"
                           className="text-muted-foreground"
                           aria-label={t("removeStop", { name: stop.name })}
-                          onClick={remove}
+                          onClick={() => change(removeLastStop(route))}
                         >
                           <Trash2 />
                           {t("remove")}
                         </Button>
                       )}
                     </div>
-                    {editing && index > 0 && stopChoices ? (
+                    {editing && index > 0 ? (
                       <StopSelect
                         label={label(stop, index)}
                         value={stop}
-                        choices={stopChoices}
-                        onChange={(next) => replace(index, next)}
+                        choices={fitting(index)}
+                        onChange={(next) => change(replaceStop(route, index, next))}
                       />
                     ) : (
                       <StopLines stop={stop} />
@@ -202,7 +173,7 @@ export function RouteEditor({
                     })}
                   </p>
                 )}
-                {stop.network && <NetworkInfo network={stop.network} />}
+                {network && <NetworkInfo network={network} />}
               </div>
             </li>
           </Fragment>
@@ -216,11 +187,20 @@ export function RouteEditor({
           </li>
           <li className="flex gap-3">
             <Rail line={false}>
-              <StopIcon index={stops.length} stop={{ id: "", company: "", name: "", final: true }} />
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-background">
+                <Plus aria-hidden className="size-3.5" />
+              </span>
             </Rail>
             <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
-              <span className="text-sm font-medium">{t("finalDestination")}</span>
-              <StopSelect label={t("finalDestination")} choices={allChoices} onChange={append} />
+              <span className="text-sm font-medium">{t("newStop")}</span>
+              <StopSelect
+                label={t("newStop")}
+                choices={fitting(stops.length)}
+                onChange={(next) => {
+                  setAdding(false)
+                  change(appendStop(route, next))
+                }}
+              />
             </div>
           </li>
         </>
@@ -229,7 +209,7 @@ export function RouteEditor({
         <li className="flex items-end gap-3">
           <AddStop
             label={t("addStop")}
-            reason={last.final ? t("endsRoute", { name: last.name }) : undefined}
+            reason={endsRoute(last) ? t("endsRoute", { name: last.name }) : undefined}
             onAdd={() => setAdding(true)}
           />
         </li>
@@ -252,7 +232,7 @@ function StopIcon({ index, stop }: { index: number; stop: RouteStop }) {
   let Icon = Warehouse
   if (index === 0) {
     Icon = Building2
-  } else if (stop.final) {
+  } else if (endsRoute(stop)) {
     Icon = MapPin
   }
   return (
@@ -366,10 +346,10 @@ function Leg({
   const arranges = (arrangement: LegArrangement) => arrangement.endsWith("Arranges")
   let heading = title(leg)
   let note = arranges(leg) ? t("arrangesNote", { company: company(leg) }) : t("movesNote")
-  if (to.agl) {
+  if (to.kind === "agl") {
     heading = t("amazon")
     note = t("aglCollects", { company: from.company, buyer })
-  } else if (from.agl) {
+  } else if (from.kind === "agl") {
     heading = t("amazon")
     note = t("aglShips", { name: to.name })
   }
