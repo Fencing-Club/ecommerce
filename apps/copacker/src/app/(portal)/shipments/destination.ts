@@ -7,6 +7,7 @@ import { formatDestination } from "@/components/common"
 import { db } from "@/db"
 import { type orders, type shipments, contacts } from "@/db/schema"
 import type { ShipmentPlaces } from "@/hooks/use-shipment-route"
+import type { ForwarderAddress } from "@/server/forwarders"
 import { localization } from "@/server/localization"
 
 type Destination = Pick<OrderInput, "deliveryId" | "items">
@@ -81,29 +82,50 @@ async function finalDestination(
   }
 }
 
-// Where the shipment's goods stop on their way, for its Route section: the supplier's pickup address, the PO's forwarder,
-// AGL when it carries the goods into Amazon, and where they end up, which is the buyer's own warehouse or Amazon's.
-export async function shipmentPlaces(
-  order: typeof orders.$inferSelect,
-  shipment: typeof shipments.$inferSelect,
-  { supplier, buyer, pickup }: { supplier: string; buyer: string; pickup?: ShipmentPlaces["pickup"] }
-): Promise<ShipmentPlaces> {
+// What a shipment's Route section is made from, as the database and Amazon give it: the PO's forwarder stop, and where
+// the goods end up.
+export async function shipmentPlaceRows(order: typeof orders.$inferSelect, shipment: typeof shipments.$inferSelect) {
   const data = shipment.snapshot ?? order.data
   const { forwarderAddress } = await import("@/server/forwarders")
-  const [stop, final] = await Promise.all([
+  const [forwarder, final] = await Promise.all([
     data.via ? forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId) : undefined,
     finalDestination(order, shipment)
   ])
+  return { forwarder, finalAddresses: final.addresses }
+}
+
+// Where the shipment's goods stop on their way, for its Route section: the supplier's pickup address, the PO's forwarder,
+// AGL when it carries the goods into Amazon, and where they end up, which is the buyer's own warehouse or Amazon's.
+export function shipmentPlaces(
+  data: OrderInput,
+  shipment: Pick<typeof shipments.$inferSelect, "transport" | "amazonNetwork">,
+  {
+    supplier,
+    buyer,
+    pickup,
+    forwarder,
+    finalAddresses
+  }: {
+    supplier: string
+    buyer: string
+    pickup?: ShipmentPlaces["pickup"]
+    forwarder?: Pick<ForwarderAddress, "forwarderName" | "addressName" | "address">
+    finalAddresses: Address[]
+  }
+): ShipmentPlaces {
   const warehouse = orderDestination(data) === "warehouse"
   return {
     supplier,
     pickup,
-    forwarder: stop && { company: stop.forwarderName, place: { name: stop.addressName, address: stop.address } },
+    forwarder: forwarder && {
+      company: forwarder.forwarderName,
+      place: { name: forwarder.addressName, address: forwarder.address }
+    },
     agl: shipment.transport?.service === "agl",
     destination: {
       company: warehouse ? buyer : "Amazon",
       receiver: warehouse ? "warehouse" : shipmentNetwork(data, shipment.amazonNetwork),
-      addresses: final.addresses
+      addresses: finalAddresses
     }
   }
 }
