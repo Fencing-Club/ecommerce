@@ -5,7 +5,6 @@ import { setupWorker } from "msw/browser"
 import { NuqsTestingAdapter } from "nuqs/adapters/testing"
 import { useEffect } from "react"
 import { configure } from "storybook/test"
-import { INITIAL_VIEWPORTS } from "storybook/viewport"
 import { IntlProvider } from "use-intl"
 import { getStoryRouter } from "#.storybook/router"
 import { AccessProvider } from "@/components/access"
@@ -20,6 +19,7 @@ import { prepareIntl, storyTimeZone } from "./intl"
 import { mockRows } from "./mocks/db"
 import { handlers } from "./mocks/handlers"
 import { prepareStoryRouter, StoryRouter } from "./router"
+import { viewports } from "./viewports"
 // The app's stylesheet, as the root route brings it: Tailwind with the kit's stylesheet, then the theme's colors, which
 // override the kit's defaults.
 import "@/app/globals.css"
@@ -141,7 +141,7 @@ export default definePreview({
       storySort: { method: "alphabetical", order: ["Components", "Pages", "Prototypes", "Unused"] }
     },
     router: {},
-    viewport: { options: INITIAL_VIEWPORTS },
+    viewport: { options: viewports },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
     // Accessibility checks report in the panel only. In test runs they failed nothing and took a third of the time, so
     // tests skip them until the stories pass them and they can fail instead.

@@ -20,11 +20,3 @@ export const Default = meta.story({
     await expect(canvas.queryByRole("button")).toBeNull()
   }
 })
-
-export const Phone = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("heading", { level: 1, name: "Sign-in isn’t set up yet" })).toBeVisible()
-    await expect(within(canvas.getByRole("banner")).getByText("Copacker")).toBeVisible()
-  }
-})

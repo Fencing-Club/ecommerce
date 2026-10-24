@@ -99,7 +99,7 @@ export const ReducedMotion = meta.story({
 
 // A phone shows the latest document saved under the words, in place of the list.
 export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
+  globals: { viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Pack" }))
     await waitFor(() => expect(current(canvas)).toHaveTextContent("Pack"), { timeout: 10000 })

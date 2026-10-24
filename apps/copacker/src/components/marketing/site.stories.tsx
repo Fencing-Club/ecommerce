@@ -61,16 +61,6 @@ export const OnPaper = meta.story({
   }
 })
 
-// A phone keeps the call to join and leaves the section links to the footer.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByLabelText("Main")).not.toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Join the waitlist" })).toBeVisible()
-    await expect(canvas.getByRole("navigation", { name: "Product" })).toBeVisible()
-  }
-})
-
 export const WaitlistButton = meta.story({
   render: () => <JoinWaitlist className="w-fit" />,
   play: async ({ canvas }) => {

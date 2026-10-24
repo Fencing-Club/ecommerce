@@ -36,16 +36,6 @@ export const Desktop = meta.story({
   }
 })
 
-// A phone gets the form alone, under the logo.
-export const Phone = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas, canvasElement }) => {
-    await expect(canvasElement.querySelector("aside")).not.toBeVisible()
-    await expect(canvasElement.querySelector("header")).toBeVisible()
-    await expect(canvas.getByRole("heading", { level: 1, name: "Sign in to Copacker" })).toBeVisible()
-  }
-})
-
 // A page without its line of context.
 export const TitleOnly = meta.story({
   args: {

@@ -401,7 +401,6 @@ export function PurchaseOrderFlow({
   initialPaid = false,
   initialPaymentDialog = false,
   timelineExample = false,
-  mobileRoutes = false,
   initialPacking,
   forwarderPickup = false,
   mixedFba = false,
@@ -416,7 +415,6 @@ export function PurchaseOrderFlow({
   initialPaid?: boolean
   initialPaymentDialog?: boolean
   timelineExample?: boolean
-  mobileRoutes?: boolean
   initialPacking?: "editing" | "ready" | "packed"
   forwarderPickup?: boolean
   mixedFba?: boolean
@@ -443,7 +441,7 @@ export function PurchaseOrderFlow({
     return item
   })
   const [shipments, setShipments] = useState<Shipment[]>(
-    (viaForwarder || mixedFba) && !mobileRoutes
+    viaForwarder || mixedFba
       ? [
           {
             id: "1",

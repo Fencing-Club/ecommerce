@@ -164,7 +164,7 @@ export const Collapsed = meta.story({
 // On a phone the sidebar is a sheet, in the kit's width, with the page still showing beside it (Create stays on
 // desktop; each list page has its own primary action). It closes once a page is chosen.
 export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
+  globals: { viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))

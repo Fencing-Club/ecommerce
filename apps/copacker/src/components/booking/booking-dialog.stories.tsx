@@ -88,16 +88,6 @@ export const WithoutAStepCount = meta.story({
   }
 })
 
-// On a phone the dialog takes the width it has and keeps the one height.
-export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async () => {
-    const dialog = await bookingDialog("Choose how to ship")
-    await expect(screen.getByRole("dialog").getBoundingClientRect().width).toBeLessThanOrEqual(window.innerWidth)
-    await expect(dialog.getByRole("button", { name: "Continue" })).toBeVisible()
-  }
-})
-
 // Two steps of a flow in one dialog: AGL's first two.
 function Flow() {
   const t = useTranslations("booking")

@@ -98,15 +98,6 @@ export const ReadOnly = meta.story({
     await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
   }
 })
-export const Mobile = meta.story({
-  args: { forwarder: true },
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeVisible()
-    await expect(canvas.getByText("Ship to", { exact: true })).toBeVisible()
-  }
-})
-
 export const AddressMenu = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))

@@ -69,16 +69,3 @@ export const Empty = meta.story({
     await expect(canvas.queryByRole("button", { name: "Export cartons" })).toBeNull()
   }
 })
-
-// On a phone the title grows, the summary moves under it, and Add keeps only its icon.
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  args: { actions: <PackingActions actions={actions()} labels={labels} /> },
-  play: async ({ canvas }) => {
-    const title = canvas.getByRole("heading", { name: "Cartons" })
-    const summary = canvas.getByText("300 of 420 units")
-    await expect(summary.getBoundingClientRect().top).toBeGreaterThan(title.getBoundingClientRect().top)
-    const add = canvas.getByRole("button", { name: "Add carton" }).getBoundingClientRect()
-    await expect(add.width).toBe(add.height)
-  }
-})

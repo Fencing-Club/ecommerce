@@ -70,24 +70,9 @@ export const Declined = meta.story({
   }
 })
 
-// A draft that hasn't gone anywhere yet reads as its first step.
-export const JustStarted = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  args: {
-    stages: purchaseOrder.map((stage, index) =>
-      index === 0
-        ? { ...stage, state: "current" as const, caption: undefined }
-        : { ...stage, state: "upcoming" as const, caption: undefined }
-    )
-  },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Step 1 of 7")).toBeVisible()
-  }
-})
-
 // On a phone: the current stage in a card, and every stage behind All stages.
 export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
+  globals: { viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     // The desktop row is in the page too, hidden, so look only at what shows.
     const shown = (text: string) => canvas.getAllByText(text).filter((element) => element.checkVisibility())

@@ -84,7 +84,7 @@ export const Default = meta.story({
 
 // A phone folds the contents above the text, to open when wanted.
 export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
+  globals: { viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     const toggle = canvas.getByText("Contents", { selector: "summary" })
     const folded = toggle.closest("details")

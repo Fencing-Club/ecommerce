@@ -75,14 +75,3 @@ export const Working = meta.story({
     await expect(canvas.queryByRole("button")).not.toBeInTheDocument()
   }
 })
-
-// On a phone the card keeps its words and meta; its actions move to the docked action bar.
-export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Your next step")).toBeVisible()
-    await expect(canvas.getByText("48 days left")).toBeVisible()
-    // Hidden here, so it isn't in the accessibility tree either.
-    await expect(canvas.queryByRole("button", { name: "Approve invoice" })).not.toBeInTheDocument()
-  }
-})

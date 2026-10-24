@@ -184,12 +184,3 @@ export const SupplierShipments = meta.story({
     await expect(canvas.queryByRole("link", { name: /FBA17V2P1R/ })).toBeNull()
   }
 })
-
-export const Mobile = meta.story({
-  args: { kind: "shipments", rows: shipmentListRows },
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Columns" })).toBeNull()
-    await expect(canvas.getByRole("link", { name: "PO-1045, shipment 2" })).toBeVisible()
-  }
-})

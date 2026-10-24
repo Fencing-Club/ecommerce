@@ -87,7 +87,7 @@ export const RetryAndCancel = meta.story({
 
 // On a phone, Retry is in the row's menu, so file names keep room to be read, even with Urdu's longer labels.
 export const Phone = meta.story({
-  globals: { locale: "ur", viewport: { value: "iphone12", isRotated: false } },
+  globals: { locale: "ur", viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     const name = await canvas.findByText("blurry-scan.pdf")
     await expect(name.parentElement!.clientWidth).toBeGreaterThan(100)

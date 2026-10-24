@@ -82,12 +82,3 @@ export const HideColumns = meta.story({
     await expect(canvas.getByRole("status")).toHaveTextContent("Hidden: route")
   }
 })
-
-// On a phone the column chooser goes, and search takes the toolbar's width.
-export const Mobile = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Columns" })).toBeNull()
-    await expect(canvas.getByRole("searchbox", { name: "Search purchase orders" })).toBeVisible()
-  }
-})

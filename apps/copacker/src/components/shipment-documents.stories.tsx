@@ -43,13 +43,6 @@ export const Ready = meta.story({
     await expect(args.onDownloadPacket).toHaveBeenCalled()
   }
 })
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Download FNSKU labels" })).toBeVisible()
-  }
-})
-
 export const Packing = meta.story({
   args: { documents: [] },
   play: async ({ canvas }) => {

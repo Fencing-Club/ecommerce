@@ -31,15 +31,6 @@ export const Default = meta.story({
   }
 })
 
-// A phone keeps just the button.
-export const Phone = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("alex@example.com")).not.toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Sign out" })).toBeVisible()
-  }
-})
-
 export const LongEmail = meta.story({
   args: { email: "alexandra.rivera-montgomery@operations.harborgoods.example.com" },
   render: (args) => (

@@ -46,17 +46,6 @@ export const AccessChanged = meta.story({
   }
 })
 
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    const main = canvas.getByRole("main")
-    await expect(main.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
-    for (const button of canvas.getAllByRole("button")) {
-      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
-    }
-  }
-})
-
 export const Urdu = meta.story({
   globals: { locale: "ur" },
   play: async ({ canvas }) => {

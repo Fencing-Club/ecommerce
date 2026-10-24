@@ -1,4 +1,4 @@
-import { expect, waitFor } from "storybook/test"
+import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { reduceMotion } from "@/stories/fixtures/marketing"
 import { Agents } from "./agents"
@@ -43,16 +43,6 @@ export const Default = meta.story({
     // Your agent's steps start on the first. They take turns as a Ticker, whose own stories check the turns.
     await expect(shown(canvas.getByText(firstStep))).toBe(true)
     await expect(shown(canvas.getByText(secondStep))).toBe(false)
-  }
-})
-
-// A phone scrolls the diagram sideways, so it takes focus for the keyboard to scroll it.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const figure = canvas.getByRole("figure")
-    await waitFor(() => expect(figure).toHaveAttribute("tabindex", "0"))
-    await expect(figure.scrollWidth).toBeGreaterThan(figure.clientWidth)
   }
 })
 

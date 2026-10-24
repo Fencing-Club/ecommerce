@@ -21,7 +21,7 @@ See the
 
 Copacker's pages and components live in Storybook 10 (`@storybook/react-vite`), each story beside its source:
 `src/app/**/page.stories.tsx` for pages and `src/components/**/<name>.stories.tsx` for components. Every story has a
-`play` function, and Vitest runs them all in Chromium.
+`play` function, and Vitest runs them all in Chromium, at the toolbar's Desktop size (see [Screen sizes](#screen-sizes)).
 
 The preview records ordinary internal anchor clicks through the navigation mock without leaving the story iframe.
 Route-controlled filters, refreshes and search navigation receive explicit callbacks in their component stories.
@@ -130,7 +130,17 @@ without it. The packet's stories also carry `documents`, since they render PDFs.
   ([styling](styling.md#theme)).
 - **Language**: every locale in `src/i18n/locales.ts`, with Urdu right to left. Messages load with the app's own
   `loadMessages`, so a missing translation falls back to English as in the app.
-- **Viewport**: Storybook's device sizes.
+- **Viewport**: Desktop, Tablet and Mobile, from `.storybook/viewports.ts`.
+
+### Screen sizes
+
+One story covers every screen size. To see a story on a phone or tablet, pick Mobile or Tablet in the toolbar; don't
+add a copy of the story for a size. Story tests run every story at Desktop.
+
+A story sets its own viewport, `globals: { viewport: { value: "mobile", isRotated: false } }`, only when its play
+function tests something that only happens at that size: opening the sidebar from the phone's menu button, a section
+that folds on a phone, a row menu that takes a button's place. A layout that only looks different at another size,
+such as hidden columns or stacked fields, gets no story of its own and no phone checks in the desktop story.
 
 ## Writing stories
 
@@ -245,5 +255,5 @@ or a replacement for localized runtime copy.
 Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
 `PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
 and required ready date; a packed shipment shows its pickup address with `ShipmentOrigin`, without a form. The
-standalone shipment-packing-details stories cover editing, read-only, forwarder, and mobile layouts; the prototype
+standalone shipment-packing-details stories cover editing, read-only and forwarder layouts; the prototype
 sidebar reads the date from the live form.

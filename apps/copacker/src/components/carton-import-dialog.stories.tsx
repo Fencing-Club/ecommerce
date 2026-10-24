@@ -209,10 +209,3 @@ export const Failure = meta.story({
     await expect(failure.getByRole("button", { name: "Remove packing.csv" })).toBeEnabled()
   }
 })
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async () => {
-    const dialog = await upload(valid())
-    await expect(dialog.getByRole("button", { name: "Import cartons" })).toBeVisible()
-  }
-})

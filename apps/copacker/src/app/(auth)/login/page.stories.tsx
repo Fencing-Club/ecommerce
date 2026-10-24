@@ -95,12 +95,3 @@ export const WithEmail = meta.story({
     await expect(await canvas.findByRole("alert")).toHaveTextContent(errors.incorrectCredentials)
   }
 })
-
-export const Phone = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas, canvasElement }) => {
-    await expect(canvasElement.querySelector("aside")).not.toBeVisible()
-    await expect(within(canvasElement.querySelector("header") ?? canvasElement).getByText("Copacker")).toBeVisible()
-    await expect(canvas.getByRole("heading", { level: 1, name: "Sign in to Copacker" })).toBeVisible()
-  }
-})

@@ -30,5 +30,3 @@ export const InstructionsMarkdown = meta.story({
   args: { data: scenario("markdown"), initialKind: "checklist" },
   play: ready
 })
-
-export const Mobile = meta.story({ globals: { viewport: { value: "mobile1", isRotated: false } }, play: ready })

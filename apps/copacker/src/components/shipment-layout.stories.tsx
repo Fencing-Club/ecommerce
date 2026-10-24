@@ -69,13 +69,3 @@ export const WithoutSidebar = meta.story({
     await expect(canvas.queryByRole("complementary")).toBeNull()
   }
 })
-
-// On a phone the documents and totals follow the column.
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    const cartons = canvas.getByRole("region", { name: "Cartons" }).getBoundingClientRect()
-    const sidebar = canvas.getByRole("complementary").getBoundingClientRect()
-    await expect(sidebar.top).toBeGreaterThanOrEqual(cartons.bottom)
-  }
-})

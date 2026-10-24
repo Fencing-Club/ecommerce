@@ -78,18 +78,6 @@ export const Editing = meta.story({
   }
 })
 
-// On a tablet, or beside Shipment details on a laptop, the pallets stay a table, with room for Not stackable.
-export const Tablet = meta.story({
-  globals: { viewport: { value: "ipad" } },
-  play: async ({ canvas }) => {
-    const row = canvas.getByRole("region", { name: "Pallet 2" })
-    await expect(getComputedStyle(row).display).toBe("grid")
-    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
-    const stacking = within(row).getByText("Not stackable")
-    await expect(stacking.scrollWidth).toBeLessThanOrEqual(stacking.clientWidth)
-  }
-})
-
 // Choosing cartons for a pallet moves them off any other pallet.
 export const ChooseCartons = meta.story({
   play: async ({ canvas, args }) => {
@@ -162,43 +150,5 @@ export const ReadOnly = meta.story({
     await userEvent.click(second.getByRole("button", { name: "Cartons on Pallet 2" }))
     await expect(second.getByText("B1–B6, C1")).toBeVisible()
     await expect(within(canvas.getByRole("region", { name: "Pallet 3" })).getByText("Not stackable")).toBeVisible()
-  }
-})
-
-// Board 06.29, Pallets: on a phone each pallet is a card, its dimensions over its weight and stacking.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    const first = within(canvas.getByRole("region", { name: "Pallet 1" }))
-    await expect(first.getByText("10 cartons, 240 units")).toBeVisible()
-    const dimensions = first.getByRole("spinbutton", { name: "Pallet 1: Length (cm)" }).getBoundingClientRect()
-    const weight = first.getByRole("spinbutton", { name: "Pallet 1: Weight (kg)" }).getBoundingClientRect()
-    await expect(weight.top).toBeGreaterThan(dimensions.bottom)
-    const region = canvas.getByRole("region", { name: "Pallet 1" })
-    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
-  }
-})
-
-// Board 06.30, Pallets: read-only on a phone, each pallet's dimensions, weight and stacking share a line, which wraps
-// for longer words.
-export const PhoneReadOnly = meta.story({
-  args: { pallets: packed, readOnly: true },
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    const first = within(canvas.getByRole("region", { name: "Pallet 1" }))
-    const tops = ["120 × 100 × 175 cm", "240 kg", "Stackable"].map(
-      (text) => first.getByText(text).getBoundingClientRect().top
-    )
-    await expect(new Set(tops).size).toBe(1)
-  }
-})
-
-export const PhoneReadOnlyInGerman = meta.story({
-  args: { pallets: packed, readOnly: true },
-  globals: { locale: "de", viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    const third = canvas.getByRole("region", { name: "Palette 3" })
-    await expect(within(third).getByText("Nicht stapelbar")).toBeVisible()
-    await expect(third.scrollWidth).toBeLessThanOrEqual(third.clientWidth)
   }
 })

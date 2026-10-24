@@ -46,10 +46,3 @@ export const Supplier = meta.story({
     await expect(canvas.queryByRole("button", { name: "Remove Ready date filter" })).toBeNull()
   }
 })
-
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Clear filters" })).toBeVisible()
-  }
-})

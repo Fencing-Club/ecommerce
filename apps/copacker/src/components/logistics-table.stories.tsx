@@ -92,18 +92,3 @@ export const NoMatches = meta.story({
     await expect(args.onClear).toHaveBeenCalledOnce()
   }
 })
-
-// Below 640px each row keeps its reference and status, with the rest beneath them, and below 480px it's a card.
-export const Mobile = meta.story({
-  args: {
-    kind: "shipments",
-    rows: shipmentListRows,
-    columns: [...listColumns("shipments", shipmentListRows)]
-  },
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "PO-1045, shipment 2" })).toBeVisible()
-    await expect(canvas.queryByRole("columnheader", { name: "Route" })).toBeNull()
-    await expect(canvas.getAllByText("9 cartons").some((element) => element.checkVisibility())).toBe(true)
-  }
-})

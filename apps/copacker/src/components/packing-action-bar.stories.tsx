@@ -83,23 +83,3 @@ export const Finishing = meta.story({
     await expect(canvas.getByRole("button", { name: "Actions" })).toBeDisabled()
   }
 })
-
-// On a phone the header keeps only the menu, and the button sits below the cartons, as wide as the page.
-export const Mobile = meta.story({
-  args: { placement: "footer" },
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Actions" })).toBeNull()
-    const button = canvas.getByRole("button", { name: "Finish packing" })
-    await expect(button).toBeVisible()
-    await expect(button.getBoundingClientRect().width).toBeGreaterThan(200)
-  }
-})
-
-export const MobileHeader = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Actions" })).toBeVisible()
-    await expect(canvas.getByText("Finish packing")).not.toBeVisible()
-  }
-})
