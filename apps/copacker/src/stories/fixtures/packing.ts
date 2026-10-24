@@ -100,7 +100,7 @@ export const bagOrder: OrderInput = orderData({
   ]
 })
 
-// PO39 sent to Amazon AWD US or FBA, for the carton editor errors board (06.17).
+// PO39 sent to Amazon AWD US or FBA, for the carton editor errors board (10.17).
 const errorsOrder = (network: AmazonNetwork): OrderInput =>
   orderData({
     reference: "PO39",

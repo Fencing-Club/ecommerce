@@ -185,7 +185,7 @@ async function dropShipment() {
   await within(cartonList()).findByText("18 of 24 have a label")
 }
 
-// 10.11 states: before any PDF, Not placed is where they go, and each carton waits for a label.
+// 09.11 states: before any PDF, Not placed is where they go, and each carton waits for a label.
 export const Empty = meta.story({
   play: async () => {
     const dialog = await shown()
@@ -202,7 +202,7 @@ export const Empty = meta.story({
   }
 })
 
-// 10.11 states: PDFs held over Not placed say what dropping them does.
+// 09.11 states: PDFs held over Not placed say what dropping them does.
 export const DraggingPdfs = meta.story({
   play: async () => {
     await shown()
@@ -212,7 +212,7 @@ export const DraggingPdfs = meta.story({
   }
 })
 
-// 10.12: 24 labels in four PDFs from FedEx, USPS, DHL and UPS. The 18 whose printed weight or size fit only one carton
+// 09.12: 24 labels in four PDFs from FedEx, USPS, DHL and UPS. The 18 whose printed weight or size fit only one carton
 // configuration go on its cartons in order of file and page. The six that give neither wait in Not placed: the UPS
 // labels, pictures whose tracking numbers come from their barcodes, and the FedEx Ground Economy label. Each label
 // shows its tracking number, and below it the weight and size it prints, written as the cartons' are, or else its file
@@ -297,7 +297,7 @@ export const FillCartonsInOrder = meta.story({
   }
 })
 
-// 10.12: a label picked up leaves Not placed, which has nothing to say about it, and moves with the pointer. Dropped
+// 09.12: a label picked up leaves Not placed, which has nothing to say about it, and moves with the pointer. Dropped
 // on a carton it goes on it, and one dropped on a carton with a label sends that label back to Not placed. A label
 // whose weight and size don't fit its carton's configuration says so. A carton is as tall with a label as without
 // one. Ends with a label held over A14.
@@ -378,7 +378,7 @@ export const TakeLabelOff = meta.story({
   }
 })
 
-// 10.11: a label with nothing to read its tracking number from, such as a UPS picture scanned too faintly for its
+// 09.11: a label with nothing to read its tracking number from, such as a UPS picture scanned too faintly for its
 // barcodes, says it has no tracking number, with Add beside it. It can't go on a carton until it has one: its grip is
 // dimmed, dragging it doesn't lift it, and Fill cartons in order leaves it. Ends with it in Not placed, beside a label
 // that went on its carton.
@@ -480,7 +480,7 @@ export const ReadTextFromPicture = meta.story({
   }
 })
 
-// 10.13: a label's picture opens it at the dialog's full height, with what was read from it. The arrows step through
+// 09.13: a label's picture opens it at the dialog's full height, with what was read from it. The arrows step through
 // the list it's in, and the Carton field puts it on a carton without dragging.
 export const Preview = meta.story({
   play: async () => {

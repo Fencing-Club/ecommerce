@@ -294,7 +294,7 @@ export function UploadCarrierLabels({
   )
 }
 
-// The buyer's carrier labels from the PDFs their own carrier gave them (10.11 to 10.13). PDFs dropped on Not placed are
+// The buyer's carrier labels from the PDFs their own carrier gave them (09.11 to 09.13). PDFs dropped on Not placed are
 // split into labels that wait there until they're on a carton: dragged onto one, put on the empty cartons in order, or
 // given a carton in the preview. A label's tracking number is read from its page, or typed when it can't be. Nothing is
 // saved until Save labels, which keeps the labels that are on cartons.
@@ -1254,7 +1254,7 @@ function PlacedLabel({
   )
 }
 
-// One label at full size, with what was read from it and a Carton field that places it without dragging (10.13).
+// One label at full size, with what was read from it and a Carton field that places it without dragging (09.13).
 function LabelPreview({
   label,
   list,

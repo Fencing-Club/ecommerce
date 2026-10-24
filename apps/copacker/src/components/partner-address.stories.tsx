@@ -256,8 +256,10 @@ export const Summary = meta.story({
   render: () => <AddressSummary name="Factory" address={lotusFactory} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Factory")).toBeVisible()
-    await expect(canvas.getByText("1000 Siji Road, Building 3, Yiwu, Zhejiang 322000, CN")).toBeVisible()
-    const phone = canvas.getByText("+86 579 8555 1234")
+    for (const line of ["1000 Siji Road", "Building 3", "Yiwu, Zhejiang 322000, CN"]) {
+      await expect(canvas.getByText(line)).toBeVisible()
+    }
+    const phone = canvas.getByRole("link", { name: "+86 579 8555 1234" })
     await expect(phone.parentElement).toHaveTextContent("Mei Chen, +86 579 8555 1234")
     await expect(phone).toHaveAttribute("dir", "ltr")
   }
@@ -267,7 +269,8 @@ export const Summary = meta.story({
 export const SummaryStreetOnly = meta.story({
   render: () => <AddressSummary address={{ addressLine1: "2400 NW Front Ave", city: "Portland", countryCode: "US" }} />,
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("2400 NW Front Ave, Portland, US")).toBeVisible()
+    await expect(canvas.getByText("2400 NW Front Ave")).toBeVisible()
+    await expect(canvas.getByText("Portland, US")).toBeVisible()
     await expect(canvas.queryByText(/Mei Chen/)).toBeNull()
   }
 })

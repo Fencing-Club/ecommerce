@@ -57,7 +57,7 @@ export const OtherShipments = meta.story({
   }
 })
 
-// Board 06.15: an FBA packing Amazon hasn't planned can't be checked against its packing groups yet.
+// Board 10.15: an FBA packing Amazon hasn't planned can't be checked against its packing groups yet.
 export const GroupsUnchecked = meta.story({
   args: { readOnly: false, groupsUnchecked: true },
   play: async ({ canvas }) => {

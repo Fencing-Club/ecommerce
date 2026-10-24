@@ -18,9 +18,9 @@ import { z } from "zod"
 import { useAction } from "@/hooks/use-action"
 import type { ActionFormOptions, FormSchema } from "@/hooks/use-action-form"
 import { useEdge } from "@/hooks/use-edge"
-import { formatPhone } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { AddressFields, emptyAddress } from "./address-fields"
+import { AddressText } from "./address-text"
 import { PhoneLink } from "./common"
 import { FormInput } from "./form-controls"
 import { FormDialog } from "./form-dialog"
@@ -36,7 +36,7 @@ export const namedAddressSchema = z.object({ name: z.string().trim().min(1).max(
 // Amazon needs a phone number to schedule a pickup.
 const pickupSchema = namedAddressSchema.extend({ address: originSchema })
 
-// An address in brief: its name when it has one, its street, and who to call there.
+// An address in brief: its name when it has one, its lines, and who to call there.
 export function AddressSummary({
   name,
   address,
@@ -46,24 +46,12 @@ export function AddressSummary({
   address: Partial<Address>
   className?: string
 }) {
-  const phone = address.phoneNumber && formatPhone(address.phoneNumber)
   return (
     <div className={cn("flex min-w-0 items-start gap-3 text-sm", className)}>
       <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="flex min-w-0 flex-col">
         {name && <span className="font-medium">{name}</span>}
-        <span className={cn(name && "text-muted-foreground")}>
-          <bdi>{addressLine(address)}</bdi>
-        </span>
-        {(address.name || phone) && (
-          <span className="text-xs text-muted-foreground">
-            <bdi>
-              {address.name}
-              {address.name && phone && ", "}
-              {phone && <span dir="ltr">{phone}</span>}
-            </bdi>
-          </span>
-        )}
+        <AddressText address={address} contact className={cn(name && "text-muted-foreground")} />
       </div>
     </div>
   )

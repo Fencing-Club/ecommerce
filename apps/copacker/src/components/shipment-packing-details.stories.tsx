@@ -1,4 +1,3 @@
-import { addressLine } from "@repo/copacker-orders"
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
@@ -122,7 +121,7 @@ export const SupplierShipsToBuyer = meta.story({
   args: { buyerWarehouse: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Supplier ships to Harbor Goods / Portland warehouse.")).toBeVisible()
-    await expect(canvas.getByText(addressLine(harborWarehouse))).toBeVisible()
+    await expect(canvas.getByText(harborWarehouse.addressLine1)).toBeVisible()
     await expect(canvas.queryByText(/Amazon picks/)).toBeNull()
   }
 })

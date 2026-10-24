@@ -1,4 +1,3 @@
-import { addressLine } from "@repo/copacker-orders"
 import type { Route } from "@repo/copacker-packing-rules"
 import type { RouteChoices, RouteStop } from "@/components/route-editor"
 import { baylineShenzhen, baylineWarehouse, harborWarehouse, northwindFactory } from "./parties"
@@ -10,21 +9,21 @@ export const northwindStop: RouteStop = {
   company: "Northwind Textiles",
   kind: "supplier",
   name: "Northwind Textiles / Main factory",
-  detail: addressLine(northwindFactory)
+  places: [{ address: northwindFactory }]
 }
 export const baylineStop: RouteStop = {
   id: "bayline-ningbo",
   company: "Bayline Freight",
   kind: "forwarder",
   name: "Bayline Freight",
-  detail: addressLine(baylineWarehouse)
+  places: [{ address: baylineWarehouse }]
 }
 export const baylineShenzhenStop: RouteStop = {
   id: "bayline-shenzhen",
   company: "Bayline Freight",
   kind: "forwarder",
   name: "Bayline Freight / Shenzhen",
-  detail: addressLine(baylineShenzhen)
+  places: [{ address: baylineShenzhen }]
 }
 export const aglStop: RouteStop = {
   id: "agl",
@@ -39,7 +38,7 @@ export const harborStop: RouteStop = {
   kind: "receiver",
   receiver: "warehouse",
   name: "Harbor Goods / Portland warehouse",
-  detail: addressLine(harborWarehouse)
+  places: [{ address: harborWarehouse }]
 }
 export const fbaStop: RouteStop = {
   id: "fba",

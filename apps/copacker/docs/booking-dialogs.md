@@ -1,7 +1,7 @@
 # Amazon booking dialogs
 
-The redesigned AGL and FBA booking flows from `copacker.pen`, in `src/components/booking`: frame group 10 / Amazon booking,
-10.02 (Book FBA shipping) and 10.03 (Book Amazon Global Logistics). They're UI only. Nothing calls the server or Amazon
+The redesigned AGL and FBA booking flows from `copacker.pen`, in `src/components/booking`: frame group 09 / Amazon booking,
+09.02 (Book FBA shipping) and 09.03 (Book Amazon Global Logistics). They're UI only. Nothing calls the server or Amazon
 yet, and the shipment page still books through its earlier actions.
 
 ## The pieces

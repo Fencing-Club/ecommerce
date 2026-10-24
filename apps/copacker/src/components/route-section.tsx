@@ -12,7 +12,8 @@ import { RoutePreview } from "./route-preview"
 // Whoever may change it (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save
 // route. A route the route rules find an issue with doesn't save, and its first issue shows. The packing's own Ship
 // from field, ready date and pallets (`shipFrom`, `packing`) show while packing, whether or not the route is being
-// edited; the packing form keeps the section open (`open`) while they need fixing.
+// edited; the packing form keeps the section open (`open`) while they need fixing. Its lines stop at a readable width
+// rather than running across the page.
 export function RouteSection({
   route,
   buyer,
@@ -58,7 +59,7 @@ export function RouteSection({
       open={open}
       onOpenChange={setOpen}
       render={<section aria-label={t("title")} />}
-      className="flex flex-col gap-4 max-sm:gap-5"
+      className="flex max-w-prose flex-col gap-4 max-sm:gap-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">

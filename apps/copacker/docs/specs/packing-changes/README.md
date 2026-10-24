@@ -18,7 +18,7 @@ Made on 2026-10-21.
 | Edit notice | **None.** Edit packing opens the packing straight away, with no confirmation dialog. Nothing is undone until the packer finishes again, and the timeline records what Copacker did. |
 | When | **From packed until the shipment ships.** Not while packing, where the cartons can already be changed, and not after shipping, where differences go in Mark received. |
 | The Amazon shipment | When the packer finishes an edited packing and the shipment has an Amazon shipment, **Copacker cancels it** and the shipment goes back to Packed. The buyer books shipping again. |
-| Booking | **Book shipping is one step.** It creates or links the Amazon shipment and gets the labels (designs 10.02 for FBA and 10.03 for Amazon Global Logistics). There's no separate Create Amazon shipment step. |
+| Booking | **Book shipping is one step.** It creates or links the Amazon shipment and gets the labels (designs 09.02 for FBA and 09.03 for Amazon Global Logistics). There's no separate Create Amazon shipment step. |
 | Missing Amazon shipments | A shipment whose Amazon shipment no longer exists **goes back to Packed**. Copacker updates it at once when it cancels the shipment itself, and a **check every 12 hours** catches shipments cancelled outside Copacker. Amazon has no notification for FBA inbound shipments or AWD orders, so this can't use webhooks. |
 | Labels | **Printing the new packet is enough.** There's no separate relabel step. |
 | History | Every finished packing is stored as a **revision**: who finished it, when, and its cartons and pallets. The timeline shows each one, and any revision's documents can be made again. |

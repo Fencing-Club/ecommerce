@@ -21,6 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from "@buildkitgg/shadcn-baseui-kit"
+import { type Address, addressLine } from "@repo/copacker-orders"
 import {
   type AmazonNetwork,
   appendStop,
@@ -51,15 +52,24 @@ import {
 import { Fragment, type ReactNode, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
-import { PhoneLink } from "./common"
+import { AddressText } from "./address-text"
 
 // A stop as the route rules read it (`@repo/copacker-packing-rules/routes`), with what its line shows: its name, such as
-// "Northwind Textiles / Main factory", its address or what happens there, and who to call there.
+// "Northwind Textiles / Main factory", then where it is (`places`, such as the Amazon warehouses a shipment goes to) or,
+// for a stop with no address of its own, what happens there (`detail`).
 export type RouteStop = RuleStop & {
   name: string
+  places?: RoutePlace[]
   detail?: string
-  contact?: { name?: string; phone?: string; countryCode?: string }
 }
+// A place a stop is at: a name for it, such as "Main factory", its address, and whether to say who to call there
+// (`contact`, the address's name and phone).
+export type RoutePlace = { name?: string; address: Partial<Address>; contact?: boolean }
+
+// A stop's places on one line each, for its menu: "Main factory, 88 Harbour Road, Ningbo, CN"; or what happens there.
+const summary = (stop: RouteStop) =>
+  stop.places?.map((place) => [place.name, addressLine(place.address)].filter(Boolean).join(", ")).join("; ") ||
+  stop.detail
 
 // The places a stop can be chosen from, in its menu's groups, such as Forwarders and Amazon. The route rules pick which
 // fit each position.
@@ -254,24 +264,23 @@ function StopIcon({ index, stop }: { index: number; stop: RouteStop }) {
   )
 }
 
+// A stop's name, then each of its places as an address label, or what happens there.
 function StopLines({ stop }: { stop: RouteStop }) {
-  const { name, phone, countryCode } = stop.contact ?? {}
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-sm">{stop.name}</span>
-      {stop.detail && (
-        <span className="text-xs text-muted-foreground">
-          <bdi>{stop.detail}</bdi>
-        </span>
-      )}
-      {(name || phone) && (
-        <span className="text-xs text-muted-foreground">
-          <bdi>
-            {name}
-            {name && phone && ", "}
-            {phone && <PhoneLink number={phone} countryCode={countryCode} />}
-          </bdi>
-        </span>
+      {stop.places?.length ? (
+        <div className="flex flex-col gap-2">
+          {stop.places.map((place, index) => (
+            <AddressText
+              key={`${index}-${place.name ?? place.address.addressLine1}`}
+              {...place}
+              className="text-xs text-muted-foreground"
+            />
+          ))}
+        </div>
+      ) : (
+        stop.detail && <p className="text-xs text-muted-foreground">{stop.detail}</p>
       )}
     </div>
   )
@@ -309,9 +318,9 @@ function StopSelect({
             return chosen ? (
               <span className="flex min-w-0 flex-col gap-0.5 text-start whitespace-normal">
                 <span>{chosen.name}</span>
-                {chosen.detail && (
+                {summary(chosen) && (
                   <span className="text-xs text-muted-foreground">
-                    <bdi>{chosen.detail}</bdi>
+                    <bdi>{summary(chosen)}</bdi>
                   </span>
                 )}
               </span>
@@ -329,9 +338,9 @@ function StopSelect({
               <SelectItem key={stop.id} value={stop.id} className="items-start py-2">
                 <span className="flex min-w-0 flex-col gap-0.5 whitespace-normal">
                   <span>{stop.name}</span>
-                  {stop.detail && (
+                  {summary(stop) && (
                     <span className="text-xs text-muted-foreground">
-                      <bdi>{stop.detail}</bdi>
+                      <bdi>{summary(stop)}</bdi>
                     </span>
                   )}
                 </span>

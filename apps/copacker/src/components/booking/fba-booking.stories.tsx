@@ -5,7 +5,7 @@ import { fba } from "@/stories/fixtures/booking"
 import { chooseOption } from "@/stories/play"
 import { FbaBookingDialog } from "./fba-booking"
 
-// Booking FBA transport through Amazon, as copacker.pen's 10.02 draws it: every step and every problem, each in the one
+// Booking FBA transport through Amazon, as copacker.pen's 09.02 draws it: every step and every problem, each in the one
 // dialog height AGL's booking keeps. Each story is a booking from the fixtures and the step it opens on, in a dialog
 // held open as the shipment page holds it.
 const meta = preview.meta({

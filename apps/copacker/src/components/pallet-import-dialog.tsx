@@ -11,7 +11,7 @@ import { type ImportMode, scrollList, SpreadsheetImportDialog } from "./spreadsh
 // Issues with the file's columns, the file itself or a number say the same as the carton import's.
 const sharedIssues = ["missingColumns", "duplicateColumns", "unknownColumns", "unreadable", "number"] as const
 
-// Boards 07.13 to 07.15: a shipment's pallets from a spreadsheet, a row to a pallet with its size, gross weight,
+// Boards 11.13 to 11.15: a shipment's pallets from a spreadsheet, a row to a pallet with its size, gross weight,
 // stacking and cartons by their IDs. They're checked against the shipment's cartons, and against the pallets already
 // there when they're added to them.
 export function PalletImportDialog({
@@ -122,7 +122,7 @@ export function PalletImportDialog({
   )
 }
 
-// Board 07.14: the pallets a file holds, with their totals, a row to a pallet.
+// Board 11.14: the pallets a file holds, with their totals, a row to a pallet.
 function PalletReview({ pallets }: { pallets: Pallet[] }) {
   const t = useTranslations("orders.palletImport")
   const cartonText = useTranslations("orders.cartonImport")
