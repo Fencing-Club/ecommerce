@@ -68,7 +68,7 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         unit: "in",
         exceptOneUnit: true,
         description:
-          "A box may be up to 36 inches long, 25 inches wide and 25 inches high. Only a box of one oversize unit may be larger.",
+          "A box may be up to 36in long, 25in wide and 25in high. Only a box of one oversize unit may be larger.",
         summary: "Up to 91.44 × 63.5 × 63.5 cm (36 × 25 × 25 in), unless it holds one larger unit",
         source: amazonSources.fbaShipping
       },
@@ -128,7 +128,7 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         type: "maxSize",
         sides: [25, 25, 25],
         unit: "in",
-        description: "A box may be at most 25 inches on any side.",
+        description: "A box may be at most 25in on any side.",
         summary: "Up to 63.5 cm (25 in) on each side",
         source: amazonSources.awdShipping
       },

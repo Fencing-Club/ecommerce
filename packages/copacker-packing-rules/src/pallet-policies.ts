@@ -44,7 +44,7 @@ const amazonPallet = [
     unit: "in",
     gmaGrade: "B",
     description:
-      "Use 48 × 40 inch wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
+      "Use 48 × 40in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
     summary: "121.9 × 101.6 cm (48 × 40 in) wooden pallets with four-way entry",
     source
   },
@@ -59,8 +59,7 @@ const amazonPallet = [
     height: 72,
     stackable: 50,
     unit: "in",
-    description:
-      "A pallet may be up to 72 inches tall, including the pallet. A pallet another may stand on, up to 50 inches.",
+    description: "A pallet may be up to 72in tall, including the pallet. A pallet another may stand on, up to 50in.",
     summary: "Up to 182.9 cm (72 in) tall, or 127 cm (50 in) if another pallet stands on it",
     source
   },
