@@ -203,9 +203,11 @@
     "newStop": "Nouvelle étape",
     "endsRoute": "L’itinéraire se termine à {name}. Retirez-le pour ajouter une étape avant.",
     "issues": {
+      "supplierNotFirst": "L’itinéraire doit commencer chez le fournisseur.",
       "noFinalDestination": "Ajoutez la destination finale pour enregistrer l’itinéraire.",
       "stopAfterFinalDestination": "Rien ne peut suivre la destination finale. Retirez les étapes après elle.",
       "aglNotIntoAmazon": "AGL livre uniquement dans un réseau Amazon. Choisissez ensuite Amazon FBA US ou AWD US.",
+      "legMissing": "Choisissez qui expédie chaque étape pour enregistrer l’itinéraire.",
       "legNotAllowed": "Seul l’expéditeur peut expédier vers un réseau Amazon."
     },
     "ready": "Prêt le {date}",

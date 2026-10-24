@@ -203,9 +203,11 @@
     "newStop": "نیا اسٹاپ",
     "endsRoute": "روٹ {name} پر ختم ہوتا ہے۔ اس سے پہلے اسٹاپ شامل کرنے کے لیے اسے ہٹائیں۔",
     "issues": {
+      "supplierNotFirst": "روٹ سپلائر سے شروع ہونا چاہیے۔",
       "noFinalDestination": "روٹ محفوظ کرنے کے لیے آخری منزل شامل کریں۔",
       "stopAfterFinalDestination": "آخری منزل کے بعد کچھ نہیں آ سکتا۔ اس کے بعد کے اسٹاپ ہٹائیں۔",
       "aglNotIntoAmazon": "AGL صرف Amazon نیٹ ورک میں پہنچاتا ہے۔ اس کے بعد Amazon FBA US یا AWD US منتخب کریں۔",
+      "legMissing": "روٹ محفوظ کرنے کے لیے ہر مرحلے کے لیے چنیں کہ کون بھیجتا ہے۔",
       "legNotAllowed": "صرف بھیجنے والا ہی Amazon نیٹ ورک میں بھیج سکتا ہے۔"
     },
     "ready": "{date} کو تیار",

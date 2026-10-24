@@ -203,9 +203,11 @@
     "newStop": "Neuer Stopp",
     "endsRoute": "Die Route endet bei {name}. Entferne es, um davor einen Stopp hinzuzufügen.",
     "issues": {
+      "supplierNotFirst": "Die Route muss beim Lieferanten beginnen.",
       "noFinalDestination": "Füge das Endziel hinzu, um die Route zu speichern.",
       "stopAfterFinalDestination": "Nach dem Endziel kann nichts mehr folgen. Entferne die Stopps danach.",
       "aglNotIntoAmazon": "AGL liefert nur in ein Amazon-Netzwerk. Wähle danach Amazon FBA US oder AWD US.",
+      "legMissing": "Wähle für jede Etappe, wer versendet, um die Route zu speichern.",
       "legNotAllowed": "Nur der Absender kann in ein Amazon-Netzwerk versenden."
     },
     "ready": "Bereit am {date}",

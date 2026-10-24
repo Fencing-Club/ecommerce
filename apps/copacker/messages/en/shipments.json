@@ -203,9 +203,11 @@
     "newStop": "New stop",
     "endsRoute": "{name} ends the route. Remove it to add a stop before it.",
     "issues": {
+      "supplierNotFirst": "The route has to start at the supplier.",
       "noFinalDestination": "Add the final destination to save the route.",
       "stopAfterFinalDestination": "Nothing can follow the final destination. Remove the stops after it.",
       "aglNotIntoAmazon": "AGL delivers only into an Amazon network. Choose Amazon FBA US or AWD US after it.",
+      "legMissing": "Choose who ships each leg to save the route.",
       "legNotAllowed": "Only the sender can ship into an Amazon network."
     },
     "ready": "Ready {date}",
