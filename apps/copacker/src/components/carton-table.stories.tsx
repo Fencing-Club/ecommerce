@@ -48,7 +48,7 @@ const meta = preview.meta({
   }
 })
 
-// Board 06.27: a row per carton configuration. Complete rows stay closed; B1–B6, still to be weighed, opens with its
+// Board 10.27: a row per carton configuration. Complete rows stay closed; B1–B6, still to be weighed, opens with its
 // error under the row and its weight outlined.
 export const Editing = meta.story({
   play: async ({ canvas }) => {
@@ -155,7 +155,7 @@ export const ClosedWithIssues = meta.story({
   }
 })
 
-// Board 06.17 (Carton editor errors): the rules a carton breaks, as validatePacking reports them.
+// Board 10.17 (Carton editor errors): the rules a carton breaks, as validatePacking reports them.
 const checked = (order: typeof awdBagOrder) => (carton: CartonGroup) => ({
   cartons: [carton],
   products: order.items,
@@ -218,7 +218,7 @@ export const AwdMixedSkus = meta.story({
   }
 })
 
-// Board 06.14 (Longer translations): German's longer errors wrap beneath their fields.
+// Board 10.14 (Longer translations): German's longer errors wrap beneath their fields.
 export const AwdLimitsInGerman = meta.story({
   ...AwdLimits.input,
   name: "AWD limits in German",
@@ -243,7 +243,7 @@ export const AwdLimitsInGerman = meta.story({
   }
 })
 
-// Board 06.15 (Additional validation states and design rules): carton C2 packs 100 Ivory tea towels where the SKU's
+// Board 10.15 (Additional validation states and design rules): carton C2 packs 100 Ivory tea towels where the SKU's
 // first carton holds 120, so AWD's packing template doesn't match. The error sits under the product and outlines no
 // field.
 const ivory = { ...awdIvory!, cartonId: "C2", cartonIds: ["C2"], items: [{ ...awdIvory!.items[0]!, pieces: 100 }] }
@@ -330,7 +330,7 @@ export const FbaCompatibleProducts = meta.story({
 
 const packed = groupCartons(towelPacking().cartons)
 
-// Board 06.28: read-only, the numbers are text, and an open row lists its products and units.
+// Board 10.28: read-only, the numbers are text, and an open row lists its products and units.
 export const ReadOnly = meta.story({
   args: { cartons: packed, readOnly: true },
   play: async ({ canvas }) => {

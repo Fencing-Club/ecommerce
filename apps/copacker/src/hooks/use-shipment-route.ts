@@ -1,10 +1,10 @@
-import { type Address, addressLine } from "@repo/copacker-orders"
+import type { Address } from "@repo/copacker-orders"
 import { isAmazonNetwork, type ReceiverId, type Route } from "@repo/copacker-packing-rules"
 import { useTranslations } from "use-intl"
-import type { RouteStop } from "@/components/route-editor"
+import type { RoutePlace, RouteStop } from "@/components/route-editor"
 
 // A place on the route: its name, such as "Main factory", and its address.
-type Place = { name?: string; address: Partial<Address> }
+type Place = Omit<RoutePlace, "contact">
 
 // Where a shipment's goods stop on their way, as the shipment page loads them: the supplier's pickup address, the
 // purchase order's forwarder, whether AGL carries them into Amazon, and where they end up, with the addresses known so
@@ -17,28 +17,19 @@ export type ShipmentPlaces = {
   destination: { company: string; receiver?: ReceiverId; addresses: Address[] }
 }
 
-// A place on one line, its name first: "Main factory, 1000 Siji Road, Yiwu, Zhejiang 322000, CN".
-const placeLine = ({ name, address }: Place) => [name, addressLine(address)].filter(Boolean).join(", ") || undefined
-
 // The shipment's route as the Route section shows it, each stop named by its company with its place under it. Who moves
 // each leg isn't kept with the shipment yet, so the route has no legs and the section shows the transport under it.
 export function useShipmentRoute({ supplier, pickup, forwarder, agl, destination }: ShipmentPlaces): Route<RouteStop> {
   const t = useTranslations("shipments.route")
   const network = isAmazonNetwork(destination.receiver) ? destination.receiver : undefined
-  const addresses = destination.addresses.map((address) => placeLine({ name: address.name, address }))
   const stops: RouteStop[] = [
     {
       id: "supplier",
       company: supplier,
       kind: "supplier",
       name: supplier,
-      detail: pickup && placeLine(pickup),
-      // Who to call about the pickup.
-      contact: pickup && {
-        name: pickup.address.name,
-        phone: pickup.address.phoneNumber,
-        countryCode: pickup.address.countryCode
-      }
+      // With who to call about the pickup.
+      places: pickup && [{ ...pickup, contact: true }]
     },
     ...(forwarder
       ? [
@@ -47,7 +38,7 @@ export function useShipmentRoute({ supplier, pickup, forwarder, agl, destination
             company: forwarder.company,
             kind: "forwarder" as const,
             name: forwarder.company,
-            detail: placeLine(forwarder.place)
+            places: [forwarder.place]
           }
         ]
       : []),
@@ -69,7 +60,8 @@ export function useShipmentRoute({ supplier, pickup, forwarder, agl, destination
       receiver: destination.receiver,
       name: network ? t(`networks.${network}.name`) : destination.company,
       // Amazon names its warehouses only once it has the shipment; until then, when it does.
-      detail: addresses.length ? addresses.join("; ") : network && t(`stops.${network}`)
+      places: destination.addresses.map((address) => ({ name: address.name, address })),
+      detail: network && t(`stops.${network}`)
     }
   ]
   return { stops, legs: [] }

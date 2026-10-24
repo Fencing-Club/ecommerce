@@ -175,7 +175,7 @@ function PalletRow({
         ))}
       </div>
     )
-  // Captions and field labels, as 06.27 to 06.30 set them: 12px medium, a shade darker than muted text.
+  // Captions and field labels, as 10.27 to 10.30 set them: 12px medium, a shade darker than muted text.
   const caption = "text-xs font-medium text-neutral-600 dark:text-neutral-400"
   const stacking = (stackable: boolean) => t(stackable ? "stackable" : "notStackable")
 

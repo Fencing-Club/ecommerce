@@ -34,14 +34,14 @@ What choosing case packs changes:
   ([choose inventory to send](https://sellercentral.amazon.com/help/hub/reference/GZLL7RYU2FJRN9BU?locale=en-US)).
   Copacker's AWD rules already hold every carton to that (see [carton rules](../../../packages/copacker-packing-rules/docs/carton-rules.md)).
 - **AGL** is booked in Seller Central from an upload file, so case packs there would skip the box-content template
-  step. The AGL booking design (board 10.03) has a "Single-SKU case packs" variation for this.
+  step. The AGL booking design (board 09.03) has a "Single-SKU case packs" variation for this.
 
 ## Why Copacker doesn't support them yet
 
 Copacker knows every carton's contents and sends them to Amazon itself, so the work case packs save in Seller Central
 is already done. Through the API, case-packed and individual-unit boxes look the same. Supporting case packs would add
 three rules (one SKU and condition, the same count in every box, 150 units at most) for little gain, so they were left
-out, and the case-pack column of board 06.17 (Carton editor errors) became plain FBA.
+out, and the case-pack column of board 10.17 (Carton editor errors) became plain FBA.
 
 ## Later: ordering by the case
 
@@ -54,5 +54,5 @@ cases with them. Supporting case packs could:
   line's cartons under it.
 - Fill the case-pack columns of AGL's upload file.
 
-Board 06.17 (Carton editor errors) first designed the errors for case-packed FBA cartons: the 150-unit limit, FBA's
+Board 10.17 (Carton editor errors) first designed the errors for case-packed FBA cartons: the 150-unit limit, FBA's
 size limit, and one SKU and condition per carton.

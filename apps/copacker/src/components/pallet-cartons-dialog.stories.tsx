@@ -27,7 +27,7 @@ const meta = preview.meta({
   args: { pallet: pallets[1]!, pallets, cartons, context: "PO38 / Shipment 1", onSave: fn() }
 })
 
-// Board 06.10 B1: a row per carton configuration with the pallet it's on. One split across pallets opens onto its
+// Board 10.10 B1: a row per carton configuration with the pallet it's on. One split across pallets opens onto its
 // cartons; choosing a carton on another pallet moves it here.
 export const ChooseCartons = meta.story({
   play: async ({ canvas, args }) => {

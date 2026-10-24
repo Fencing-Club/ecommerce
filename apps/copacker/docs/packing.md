@@ -1,8 +1,8 @@
 # Packing: the ready date, cartons and pallets
 
 The supplier's packing page lists a shipment's cartons, and its pallets when the cartons ship on pallets
-(`components/packing-form.tsx`). The designs are copacker.pen's section 06: 06.27 to 06.30 for the tables, 06.10 B
-for pallets and 06.10 B1 for choosing a pallet's cartons.
+(`components/packing-form.tsx`). The designs are copacker.pen's section 10: 10.27 to 10.30 for the tables, 10.10 B
+for pallets and 10.10 B1 for choosing a pallet's cartons.
 
 ## The page's parts
 
@@ -110,7 +110,7 @@ gives the reasons it lists in general: "Products: FBA can't take Cotton drawstri
 Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different
 warehouses. Move one of them to another carton." Before
 Amazon has planned any of the PO's shipments, the Cartons section says "Products that can share a carton aren't checked
-yet" (06.15, and in place on 06.18). The groups aren't fetched live, so it has no Retry button.
+yet" (10.15, and in place on 10.18). The groups aren't fetched live, so it has no Retry button.
 
 ## Pallets
 
@@ -139,8 +139,8 @@ When packed on pallets, Shipment details' gross weight and volume are the pallet
 
 ## Importing cartons and pallets
 
-The upload buttons beside **Add carton** and **Add pallet** open a spreadsheet import (copacker.pen section 07: 07.01
-to 07.12 for cartons, 07.13 to 07.15 for pallets). Both use `SpreadsheetImportDialog`: download the template, upload an
+The upload buttons beside **Add carton** and **Add pallet** open a spreadsheet import (copacker.pen section 11: 11.01
+to 11.12 for cartons, 11.13 to 11.15 for pallets). Both use `SpreadsheetImportDialog`: download the template, upload an
 XLSX or CSV file, review what it holds ("Review carton import", "Review pallet import"), then add it to what's there or
 replace it. The file's own issues (by row) hide that choice, since the other mode won't fix them; issues from adding to
 what's there, such as a repeated pallet ID, keep it so **Replace** can clear them. A long list of issues, pallets or
@@ -225,5 +225,5 @@ shipment's pallets stops the job.
 Documents name labels by what they go on, not who issues them: Carton labels, Carrier labels and Pallet labels, since
 other 3PLs can ask for them too.
 
-Pen: 10.04 B (documents after booking, packed on pallets), 08.01 P03 (FBA pallet freight pickup) and P04 (AWD pallet
-freight pickup), 08.03 C06 (FBA pallet freight checklist) and 09.01 L04 (FBA carton and pallet label reference).
+Pen: 09.04 B (documents after booking, packed on pallets), 12.01 P03 (FBA pallet freight pickup) and P04 (AWD pallet
+freight pickup), 12.03 C06 (FBA pallet freight checklist) and 13.01 L04 (FBA carton and pallet label reference).

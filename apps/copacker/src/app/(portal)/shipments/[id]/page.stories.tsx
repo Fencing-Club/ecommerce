@@ -370,14 +370,14 @@ export const PackingSupplier = meta.story({
     await expect(canvas.getByRole("heading", { name: /Shipment 1/ })).toBeVisible()
     const breadcrumb = canvas.getByRole("navigation", { name: "Breadcrumb" })
     await expect(within(breadcrumb).getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders")
-    await expect(canvas.getByText(/^Portland warehouse, /)).toBeVisible()
+    await expect(canvas.getByText("Portland warehouse")).toBeVisible()
     await expect(canvas.getAllByText("Packing").length).toBeGreaterThan(0)
     // The packing form replaces the cartons and documents.
     await expect(canvas.queryByText("No documents yet")).toBeNull()
   }
 })
 
-// Board 06.05: the supplier's draft of an AWD shipment by way of a forwarder, with one carton group still missing its
+// Board 10.05: the supplier's draft of an AWD shipment by way of a forwarder, with one carton group still missing its
 // weight and 36 units left to pack.
 export const DraftPacking = meta.story({
   ...supplier,
@@ -432,6 +432,8 @@ export const DraftPacking = meta.story({
 
     // The documents beside the cartons start with the label types the packing details ask for.
     const documents = canvas.getByRole("region", { name: "Documents" })
+    // Measured once the page's font has loaded, since the fallback font wraps some lines differently.
+    await document.fonts.ready
     const summaryTop = summary.offsetTop
     await userEvent.click(within(documents).getByRole("button", { name: "Product labels" }))
     const menu = within(await screen.findByRole("menu"))
@@ -499,7 +501,7 @@ export const DraftPacking = meta.story({
   }
 })
 
-// Board 06.07: every unit is packed and every carton weighed, so the supplier can finish packing.
+// Board 10.07: every unit is packed and every carton weighed, so the supplier can finish packing.
 export const ReadyToFinishPacking = meta.story({
   ...supplier,
   args: {
@@ -521,7 +523,7 @@ export const ReadyToFinishPacking = meta.story({
   }
 })
 
-// Board 06.08: the supplier finished packing, and the buyer prepares the Amazon shipment next.
+// Board 10.08: the supplier finished packing, and the buyer prepares the Amazon shipment next.
 export const Packed = meta.story({
   ...supplier,
   args: {
@@ -581,7 +583,8 @@ export const Packed = meta.story({
     ])
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
     await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
-    await expect(canvas.getByText(/^Northwind Textiles \/ Main factory, 88 Harbour Road/)).toBeVisible()
+    await expect(canvas.getByText("Northwind Textiles / Main factory")).toBeVisible()
+    await expect(canvas.getByText("88 Harbour Road")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
     await expect(canvas.queryByRole("spinbutton")).toBeNull()
     const cartons = canvas.getByRole("region", { name: "Cartons" })
@@ -608,7 +611,7 @@ export const Packed = meta.story({
   }
 })
 
-// Board 06.09: an FBA shipment of individual units, where each carton mixes products and every unit is packed.
+// Board 10.09: an FBA shipment of individual units, where each carton mixes products and every unit is packed.
 export const FbaMixedCartons = meta.story({
   ...supplier,
   args: {
@@ -646,7 +649,7 @@ export const FbaMixedCartons = meta.story({
   }
 })
 
-// Board 06.15 (Additional validation states): packed again after Amazon refused the PO's earlier shipment, whose plan put
+// Board 10.15 (Additional validation states): packed again after Amazon refused the PO's earlier shipment, whose plan put
 // the bags and the tea towel in different packing groups, each mixed carton shows the groups it holds, so packing
 // can't finish until they're apart.
 export const FbaPackingGroups = meta.story({
@@ -938,13 +941,14 @@ export const WaitingForLabels = meta.story({
     )
     // The cartons go to the AWD warehouse Amazon chose, each with Amazon's label.
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
-    await expect(await canvas.findByText("Amazon IUSP, 200 Distribution Road, Hesperia, CA 92344, US")).toBeVisible()
+    await expect(await canvas.findByText("Amazon IUSP")).toBeVisible()
+    await expect(canvas.getByText("200 Distribution Road")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Products" })).toBeVisible()
     await expect(canvas.queryByText(/201952611540373988/)).toBeNull()
   }
 })
 
-// 10.05: an FBA parcel shipment booked with the buyer's own carrier. Upload labels is the page's one action, and the
+// 09.05: an FBA parcel shipment booked with the buyer's own carrier. Upload labels is the page's one action, and the
 // dialog opens with the labels saved so far; the page shows no other label status.
 export const WaitingForCarrierLabels = meta.story({
   ...buyer,
@@ -1055,7 +1059,9 @@ export const ReadySupplier = meta.story({
     await expect(canvas.queryByText("Supplier packet ready")).toBeNull()
     // The cartons go to the FBA warehouse their labels name.
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
-    await expect(await canvas.findByText("Amazon ONT8, 100 Warehouse Road, Moreno Valley, CA 92551, US")).toBeVisible()
+    await expect(await canvas.findByText("Amazon ONT8")).toBeVisible()
+    await expect(canvas.getByText("100 Warehouse Road")).toBeVisible()
+    await expect(canvas.getByText("Moreno Valley, CA 92551, US")).toBeVisible()
     await expect(canvas.getByRole("link", { name: /\+86/ })).toHaveAttribute("href", "tel:+8657985551234")
     await expect(canvas.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute("href", packet)
     // Each carton's label number is on its label, not in the carton rows.
@@ -1107,9 +1113,8 @@ export const ShippedToForwarder = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
     await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
     await expect(canvas.queryByText(/The forwarder ships the goods on/)).toBeNull()
-    await expect(
-      canvas.getByText("Ningbo warehouse, 18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, CN")
-    ).toBeVisible()
+    await expect(canvas.getByText("Ningbo warehouse")).toBeVisible()
+    await expect(canvas.getByText("18 Gangqiao Road")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
   }
 })

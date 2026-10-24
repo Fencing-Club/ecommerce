@@ -115,6 +115,11 @@ One component per concept, from the redesign's kit ([consistency](specs/app-rede
 
 `ActionBar`, `LifecycleTracker` and `NextStepCard` are prototypes for now: only their stories use them.
 
+A section that's mostly sentences and addresses, such as a shipment's Route, caps its own width at `max-w-prose`, so its
+lines stay readable on a wide page. The components inside it fill what the section gives them and set no width of their
+own: `AddressText` (`components/address-text.tsx`) lays an address out a line each, as a label prints it, wherever it
+goes. Tables, card lists and forms keep the page's full width.
+
 ## Where things live
 
 | Module                    | Use it for                                                                                   |

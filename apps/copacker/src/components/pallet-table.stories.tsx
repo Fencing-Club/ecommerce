@@ -46,7 +46,7 @@ const meta = preview.meta({
   args: { pallets: editing, cartons, context: "PO38 / Shipment 1", onChange: fn() }
 })
 
-// Board 06.27, Pallets: a row per pallet with its size, gross weight and stacking. A closed pallet says how many
+// Board 10.27, Pallets: a row per pallet with its size, gross weight and stacking. A closed pallet says how many
 // cartons and units it holds; an open one lists its cartons as runs, each removable.
 export const Editing = meta.story({
   play: async ({ canvas, args }) => {
@@ -138,7 +138,7 @@ const packed = [
   pallet("3", ["C2"], 285, false)
 ]
 
-// Board 06.28, Pallets: read-only, the values are text and an open pallet lists its cartons.
+// Board 10.28, Pallets: read-only, the values are text and an open pallet lists its cartons.
 export const ReadOnly = meta.story({
   args: { pallets: packed, readOnly: true },
   play: async ({ canvas }) => {

@@ -1,7 +1,7 @@
 import type { AglBooking, AglShipment, AglTemplateIssue } from "@/components/booking/agl-booking"
 import type { FbaBooking, FbaPlacement } from "@/components/booking/fba-booking"
 
-// The Amazon booking dialogs' data, as copacker.pen draws it in 10 / Amazon booking (10.02 FBA, 10.03 AGL): the second
+// The Amazon booking dialogs' data, as copacker.pen draws it in 09 / Amazon booking (09.02 FBA, 09.03 AGL): the second
 // shipment of purchase order 36, 100 chest protectors in 5 cartons, from Zhangjiagang. Every state the designs draw is
 // one booking here, so a state's story is that booking and the step it opens on.
 
@@ -77,7 +77,7 @@ const linked = {
   customsUrl: "https://sellercentral.amazon.com/fba/inbound-shipment/summary/FBA18Z4K2QRL/customs"
 } satisfies AglBooking["linked"]
 
-// 10.03, booking Amazon Global Logistics.
+// 09.03, booking Amazon Global Logistics.
 export const agl = {
   // The three steps, then the linked shipment.
   start: aglStart,
@@ -241,7 +241,7 @@ const booked = {
   carrierLabels: { carrier: "Amass", labels: { status: "ready", href: "/api/shipments/ship_2/carrier-labels" } }
 } satisfies FbaBooking["booked"]
 
-// 10.02, booking FBA transport through Amazon.
+// 09.02, booking FBA transport through Amazon.
 export const fba = {
   // Choosing, reviewing and booking start from the same options.
   choose: fbaChoose,

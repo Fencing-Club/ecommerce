@@ -56,7 +56,7 @@ const meta = preview.meta({
 function csv(rows: string[]) {
   return new File([[palletColumns.join(","), ...rows].join("\n")], "Pallets-PO38.csv", { type: "text/csv" })
 }
-// The three pallets of board 07.14, which hold every carton.
+// The three pallets of board 11.14, which hold every carton.
 const valid = () =>
   csv([
     "1,120,100,75,68,Stackable,A1–A6",
@@ -78,7 +78,7 @@ async function upload(file: File) {
   return shownDialog("Review pallet import")
 }
 
-// Board 07.13: download the template, then choose a file.
+// Board 11.13: download the template, then choose a file.
 export const Upload = meta.story({
   play: async () => {
     const dialog = await shownDialog("Import pallets")
@@ -106,7 +106,7 @@ export const DownloadTemplate = meta.story({
   }
 })
 
-// Board 07.14: the file's pallets with their totals, to add to the pallets there or replace them.
+// Board 11.14: the file's pallets with their totals, to add to the pallets there or replace them.
 export const Review = meta.story({
   args: { existing },
   play: async () => {
@@ -186,7 +186,7 @@ export const AddConflicts = meta.story({
   }
 })
 
-// Board 07.15: each row's issues, by row and pallet. The file's own issues hide the choice to add or replace.
+// Board 11.15: each row's issues, by row and pallet. The file's own issues hide the choice to add or replace.
 export const RowErrors = meta.story({
   args: { existing },
   play: async () => {
