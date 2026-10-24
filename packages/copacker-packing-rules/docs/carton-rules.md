@@ -10,7 +10,8 @@ cartons the same way and every message, checklist and requirement states the sam
   Its `description` states the rule as the receiver does, so a policy reads as its own documentation, `summary` says
   it in a few words for compact lists such as a receiver's requirements, and `source` is the page where the receiver
   states it: each issue carries it, and the editor's error links to it. A test fails when a limit changes and its
-  description or summary doesn't say so. Limits are kept in
+  description or summary doesn't say so. A description writes out a single inch measurement ("25 inches") and writes
+  several without a space ("36in long, 25in wide"), so "in" never reads as the word. Limits are kept in
   the units the receiver states them in and converted where they're shown. A converted weight is rounded down to the
   hundredth, so the limit shown is one a carton can meet, and cartons are checked against it: 50 lb is 22.6796185 kg,
   shown and checked as 22.67 kg, because 22.68 kg is over 50 lb. Sizes convert exactly (36 in is 91.44 cm).

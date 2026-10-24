@@ -128,7 +128,7 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         type: "maxSize",
         sides: [25, 25, 25],
         unit: "in",
-        description: "A box may be at most 25in on any side.",
+        description: "A box may be at most 25 inches on any side.",
         summary: "Up to 63.5 cm (25 in) on each side",
         source: amazonSources.awdShipping
       },
