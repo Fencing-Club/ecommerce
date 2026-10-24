@@ -145,12 +145,13 @@ describe("Cloudflare preview teardown", () => {
     expect(hyperdrives).toEqual([{ id: "production", name: "copacker" }])
   })
 
-  it("reports Cloudflare's error code without any value it was sent, such as the database password", () => {
+  it.each([
+    "postgresql://neondb_owner:s3cret-pass@ep-preview.aws.neon.tech/neondb?sslmode=verify-full",
+    "postgresql://neondb_owner@ep-preview.aws.neon.tech/neondb?sslmode=verify-full"
+  ])("reports Cloudflare's error code without any value it was sent, such as the password in %s", (url) => {
     fail = "hyperdrive create"
     hyperdrives = []
-    const database = new URL(
-      "postgresql://neondb_owner:s3cret-pass@ep-preview.aws.neon.tech/neondb?sslmode=verify-full"
-    )
+    const database = new URL(url)
     const failure = (() => {
       try {
         provisionHostedPreview(config, "42", database)

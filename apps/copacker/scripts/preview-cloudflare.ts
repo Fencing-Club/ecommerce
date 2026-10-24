@@ -34,7 +34,9 @@ function strings(value: unknown): string[] {
 // cf prints API errors as "[code] message" lines. Report only those, with every request value redacted.
 function apiErrors(error: unknown, body: unknown) {
   const stderr = error && typeof error === "object" && "stderr" in error ? String(error.stderr) : ""
-  const values = strings(body).sort((a, b) => b.length - a.length)
+  const values = strings(body)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
   const lines = [...new Set(stderr.match(/\[\d+\][^\r\n]*/g))].map((line) =>
     values.reduce((text, value) => text.replaceAll(value, "[redacted]"), line.trim()).slice(0, 300)
   )
