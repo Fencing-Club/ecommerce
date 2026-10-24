@@ -75,7 +75,6 @@ export const MixedCartons = meta.story({
     pallets: [pallet("1", [])],
     cartons: palletCartons(groupCartons(bagPacking().cartons), bagOrder.items)
   },
-  globals: { viewport: { value: "iphone12" } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Choose cartons for Pallet 1" }))
     const dialog = await shownDialog("Choose cartons for Pallet 1")

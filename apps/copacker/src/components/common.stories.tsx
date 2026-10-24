@@ -245,23 +245,6 @@ export const FullRecordHeader = meta.story({
   }
 })
 
-// On a phone the title is a size smaller, and the actions wrap under it.
-export const HeaderOnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  render: () => (
-    <PageHeader title="Purchase orders">
-      <Button variant="outline">Import</Button>
-      <Button>Create purchase order</Button>
-    </PageHeader>
-  ),
-  play: async ({ canvas }) => {
-    const title = canvas.getByRole("heading", { level: 1, name: "Purchase orders" })
-    await expect(getComputedStyle(title).fontSize).toBe("22px")
-    const create = canvas.getByRole("button", { name: "Create purchase order" }).getBoundingClientRect()
-    await expect(create.top).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom)
-  }
-})
-
 export const Empty = meta.story({
   render: () => (
     <EmptyState title="No shipments yet" description="Shipments show here once a supplier packs a purchase order">

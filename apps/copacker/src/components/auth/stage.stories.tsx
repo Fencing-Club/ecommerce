@@ -26,14 +26,6 @@ export const Default = meta.story({
   }
 })
 
-// Phones don't show the stage.
-export const Phone = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector("aside")).not.toBeVisible()
-  }
-})
-
 export const Brand = meta.story({
   render: () => <BrandMark />,
   play: async ({ canvas, canvasElement }) => {

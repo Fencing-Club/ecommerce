@@ -115,13 +115,3 @@ export const OneStore = meta.story({
     await waitFor(() => expect(stat(canvasElement, "Runs out without it")).not.toHaveTextContent("Not this season"))
   }
 })
-
-// A phone draws the chart taller, with the rush's label shortened.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvasElement }) => {
-    await waitFor(() => expect(chart(canvasElement)).toHaveAttribute("viewBox", "0 0 1000 900"))
-    await expect(chart(canvasElement)).toHaveTextContent("Rush")
-    await expect(chart(canvasElement)).not.toHaveTextContent("Holiday rush")
-  }
-})

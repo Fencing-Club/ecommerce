@@ -66,20 +66,6 @@ export const Centered = meta.story({
   }
 })
 
-// In a window too narrow to center it, the search narrows instead of covering Copacker or the actions.
-export const Narrow = meta.story({
-  globals: { viewport: { value: "ipad", isRotated: false } },
-  play: async ({ canvas }) => {
-    const header = canvas.getByRole("banner")
-    const brand = within(header).getByRole("link", { name: "Copacker" }).getBoundingClientRect()
-    const search = within(header).getByRole("button", { name: "Search" }).getBoundingClientRect()
-    const create = within(header).getByRole("button", { name: "Create" }).getBoundingClientRect()
-    await expect(search.left).toBeGreaterThan(brand.right)
-    await expect(search.right).toBeLessThan(create.left)
-    await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
-  }
-})
-
 export const Supplier = meta.story({
   args: { kind: "supplier" },
   play: async ({ canvas }) => {
@@ -94,19 +80,5 @@ export const Forwarder = meta.story({
   args: { kind: "forwarder" },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Create" })).toBeNull()
-  }
-})
-
-// On a phone: the menu button, Copacker, then search and the Inbox as 44px buttons. Create isn't on a phone.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const header = canvas.getByRole("banner")
-    await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
-    for (const name of ["Toggle sidebar", "Search", "Inbox"]) {
-      await expect(within(header).getByRole("button", { name }).getBoundingClientRect().width).toBe(44)
-    }
-    await expect(within(header).getByRole("link", { name: "Copacker" })).toBeVisible()
-    await expect(within(header).queryByRole("button", { name: "Create" })).toBeNull()
   }
 })

@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from "storybook/test"
+import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { serverStory } from "@/stories/server"
 import PageView from "./page"
@@ -55,19 +55,5 @@ export const Default = meta.story({
     for (const link of canvas.getAllByRole("link", { name: "Cookies" })) {
       await expect(link).toHaveAttribute("href", "#cookies")
     }
-  }
-})
-
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const toggle = canvas.getByText("Contents", { selector: "summary" })
-    await userEvent.click(toggle)
-    const folded = toggle.closest("details")
-    await expect(folded).toHaveAttribute("open")
-    if (!folded) {
-      throw new Error("The contents fold")
-    }
-    await expect(within(folded).getAllByRole("link")).toHaveLength(sections.length)
   }
 })

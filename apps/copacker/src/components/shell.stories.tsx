@@ -161,7 +161,7 @@ export const Collapsed = meta.story({
 // from the top bar.
 export const Phone = meta.story({
   args: { actions: true },
-  globals: { viewport: { value: "iphone12", isRotated: false } },
+  globals: { viewport: { value: "mobile", isRotated: false } },
   play: async ({ canvas }) => {
     const main = byId("main-content")
     const title = within(main).getByRole("heading", { level: 1, name: "Shipments" }).getBoundingClientRect()

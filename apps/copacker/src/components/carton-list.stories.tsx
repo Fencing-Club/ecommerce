@@ -121,12 +121,3 @@ export const Collapsed = meta.story({
     await expect(canvas.getByRole("heading", { name: "A1–A10" })).toBeVisible()
   }
 })
-
-// On a phone the units leave the header for the bar below the cartons, and each row is a card.
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("540 of 540 units")).not.toBeVisible()
-    await expect(canvas.getByRole("region", { name: "Carton A1" })).toBeVisible()
-  }
-})

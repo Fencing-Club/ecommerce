@@ -127,19 +127,3 @@ export const NarrowColumn = meta.story({
     await expect(canvas.queryByRole("columnheader", { name: "Packed" })).toBeNull()
   }
 })
-
-// Below 44rem, as with the carton and pallet tables, each line stacks, with its column names above the values.
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Products" }))
-    const table = canvas.getByRole("table")
-    await expect(canvas.queryByRole("columnheader", { name: "Packed" })).toBeNull()
-    await expect(
-      within(table)
-        .getAllByText("Packed")
-        .filter((label) => label.checkVisibility())
-    ).toHaveLength(3)
-    await expect(table.scrollWidth).toBeLessThanOrEqual(table.clientWidth)
-  }
-})

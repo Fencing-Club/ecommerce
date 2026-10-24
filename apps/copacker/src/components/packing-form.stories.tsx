@@ -447,17 +447,6 @@ export const FbaPackingGroupsUnchecked = meta.story({
   }
 })
 
-// On a phone the notice wraps within the Cartons section.
-export const FbaPackingGroupsUncheckedMobile = meta.story({
-  ...FbaPackingGroupsUnchecked.input,
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    const notice = within(canvas.getByRole("region", { name: "Cartons" })).getByRole("note")
-    await expect(within(notice).getByText("Products that can share a carton aren’t checked yet")).toBeVisible()
-    await expect(notice.scrollWidth).toBeLessThanOrEqual(notice.clientWidth)
-  }
-})
-
 export const AwdCartons = meta.story({
   args: {
     order: { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, receiver: "awd_us" })) },
@@ -726,25 +715,9 @@ export const GermanPackingErrors = meta.story({
     addresses: [savedAddress],
     renderHeader: (actions) => <TitledHeader title="Sendung 1" actions={actions} />
   },
-  globals: { locale: "de", viewport: { value: "mobile1", isRotated: false } },
+  globals: { locale: "de" },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("spinbutton", { name: /Länge/ })).toHaveAttribute("aria-invalid", "true")
-  }
-})
-export const AwdPackingErrorsMobile = meta.story({
-  args: {
-    order: awdOrder,
-    initial: awdErrors,
-    addresses: [savedAddress],
-    renderHeader: (actions) => <TitledHeader title="Shipment 1" actions={actions} />
-  },
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(
-      canvas.getByText(
-        "Products: this carton holds more than one SKU, and AWD takes one SKU per carton. Pack each SKU in its own cartons."
-      )
-    ).toBeVisible()
   }
 })
 

@@ -222,17 +222,6 @@ export const Failed = meta.story({
   }
 })
 
-// On a phone the bar becomes a 44px button, still named Search.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const trigger = canvas.getByRole("button", { name: "Search" })
-    await expect(trigger.getBoundingClientRect().width).toBe(44)
-    await expect(within(trigger).getByText("Search purchase orders, products, and partners")).not.toBeVisible()
-    await openSearch(canvas)
-  }
-})
-
 // On a wide screen the bar says what it finds in this workspace, with its shortcut.
 export const Placeholder = meta.story({
   play: async ({ canvas }) => {

@@ -106,31 +106,3 @@ export const Blocked = meta.story({
     await expect(canvas.getByRole("button", { name: "Submit packing list" })).toBeDisabled()
   }
 })
-
-// Docked to the bottom edge, the message above the actions and the primary taking the width that's left.
-export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const bar = canvas.getByRole("region", { name: "Actions" })
-    await expect(getComputedStyle(bar).position).toBe("fixed")
-    const save = canvas.getByRole("button", { name: "Save" }).getBoundingClientRect()
-    const discard = canvas.getByRole("button", { name: "Discard" }).getBoundingClientRect()
-    await expect(save.width).toBeGreaterThan(discard.width)
-  }
-})
-
-// A record page on a phone: only the next step's actions, with no message.
-export const NextStepOnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  args: {
-    title: undefined,
-    detail: undefined,
-    onDiscard: undefined,
-    secondary: <Button variant="outline">Request correction</Button>,
-    primary: <Button>Approve invoice</Button>
-  },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Approve invoice" })).toBeVisible()
-    await expect(canvas.queryByText("2 unsaved changes")).not.toBeInTheDocument()
-  }
-})

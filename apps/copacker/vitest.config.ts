@@ -41,8 +41,15 @@ export default defineConfig({
       {
         extends: true,
         // Stories tagged "simulator" are for trying the rules and documents by hand, and stories tagged "documents"
-        // render real PDFs to look at; test runs leave both out.
-        plugins: [storybookTest({ configDir: `${dirname}.storybook`, tags: { exclude: ["simulator", "documents"] } })],
+        // render real PDFs to look at; test runs leave both out. Every story runs at the toolbar's Desktop size, unless
+        // it sets its own viewport to test what only a phone or tablet does.
+        plugins: [
+          storybookTest({
+            configDir: `${dirname}.storybook`,
+            tags: { exclude: ["simulator", "documents"] },
+            initialGlobals: { viewport: { value: "desktop", isRotated: false } }
+          })
+        ],
         test: {
           name: "storybook",
           sequence: { groupOrder: 1 },

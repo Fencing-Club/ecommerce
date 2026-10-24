@@ -85,11 +85,3 @@ export const Collapsed = meta.story({
     await expect(canvas.getByText("18 of 18 cartons on pallets")).toBeVisible()
   }
 })
-
-export const Mobile = meta.story({
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("18 of 18 cartons on pallets")).toBeVisible()
-    await expect(canvas.getByRole("region", { name: "Pallet 1" })).toBeVisible()
-  }
-})

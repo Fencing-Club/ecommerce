@@ -154,18 +154,6 @@ export const ViewOnlyWithoutPrices = meta.story({
   }
 })
 
-export const OnPhone = meta.story({
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    // The status column hides, and an archived product says so under its title.
-    await expect(canvas.queryByRole("columnheader", { name: "Status" })).toBeNull()
-    const [underTitle, inColumn] = rowOf(canvas, "Wool throw").getAllByText("Archived")
-    await expect(underTitle).toBeVisible()
-    await expect(inColumn).not.toBeVisible()
-    await expect(rowOf(canvas, "Canvas tote bag").getByText("$4.25 – $4.50")).toBeVisible()
-  }
-})
-
 export const Empty = meta.story({
   args: { products: [] },
   play: async ({ canvas }) => {

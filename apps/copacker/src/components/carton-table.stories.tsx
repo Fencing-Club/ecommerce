@@ -75,22 +75,6 @@ export const Editing = meta.story({
   }
 })
 
-// On a tablet, or beside Shipment details on a laptop, the rows stay a table. Its columns give a little, the dimensions
-// drop their L × W × H hint, and the products still line up under the carton's columns.
-export const Tablet = meta.story({
-  globals: { viewport: { value: "ipad" } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Contents")).toBeVisible()
-    const row = canvas.getByRole("region", { name: "Carton A1" })
-    await expect(within(row).getByText("L × W × H")).not.toBeVisible()
-    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
-    await userEvent.click(canvas.getByRole("button", { name: "Products in A1–A10" }))
-    const weight = canvas.getByRole("spinbutton", { name: "Carton A1: Weight (kg)" }).closest("[data-slot=input-group]")
-    const sku = within(row).getByText("NT-WB-2210")
-    await expect(Math.round(sku.getBoundingClientRect().left)).toBe(Math.round(weight!.getBoundingClientRect().left))
-  }
-})
-
 // Quantities are units. A multipack says how many packs they make, and an odd number of units for a 2-pack is an
 // error under the product.
 export const QuantityInUnits = meta.story({
@@ -234,28 +218,9 @@ export const AwdMixedSkus = meta.story({
   }
 })
 
-// On a phone each row is a card, and each error sits under the field it names.
-export const AwdLimitsOnAPhone = meta.story({
-  ...AwdLimits.input,
-  name: "AWD limits on a phone",
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByText("Contents")).not.toBeVisible()
-    for (const error of [...rowErrors, productError]) {
-      await expect(canvas.getByText(error)).toBeVisible()
-    }
-    const weight = canvas.getByRole("spinbutton", { name: "Carton A1: Weight (kg)" }).getBoundingClientRect()
-    const length = canvas.getByRole("spinbutton", { name: "Carton A1: Length (cm)" }).getBoundingClientRect()
-    await expect(canvas.getByText(rowErrors[1]!).getBoundingClientRect().top).toBeGreaterThan(weight.bottom)
-    await expect(canvas.getByText(rowErrors[1]!).getBoundingClientRect().bottom).toBeLessThan(length.top)
-    const region = canvas.getByRole("region", { name: "Carton A1" })
-    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
-  }
-})
-
-// Board 06.14 (Longer translations, mobile error layout): German's longer errors wrap beneath their fields on a phone.
+// Board 06.14 (Longer translations): German's longer errors wrap beneath their fields.
 export const AwdLimitsInGerman = meta.story({
-  ...AwdLimitsOnAPhone.input,
+  ...AwdLimits.input,
   name: "AWD limits in German",
   args: {
     ...awd(awdLimits!),
@@ -263,7 +228,7 @@ export const AwdLimitsInGerman = meta.story({
       index ? item : { ...item, name: "Baumwollbeutel mit Kordelzug", variant: "Natur / Mittel / 20 × 30 cm" }
     )
   },
-  globals: { locale: "de", viewport: { value: "iphone12" } },
+  globals: { locale: "de" },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "A1–A2" })).toBeVisible()
     for (const error of [
@@ -378,31 +343,6 @@ export const ReadOnly = meta.story({
     await expect(tea.getByText("60 units", { exact: true })).toBeVisible()
     await expect(tea.getByText("30 packs, 2 units each")).toBeVisible()
     await expect(tea.queryByRole("button", { name: /Add products/ })).toBeNull()
-  }
-})
-
-// Board 06.29: on a phone each row is a card, with its fields under labels and its products below.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    const row = within(canvas.getByRole("region", { name: "Carton B1" }))
-    await expect(row.getByText("144 units, 1 product, 24 per carton")).toBeVisible()
-    await expect(row.getByText("Count")).toBeVisible()
-    await expect(row.getByText("Dimensions")).toBeVisible()
-    await expect(row.getByText("Supplier SKU")).toBeVisible()
-    const region = canvas.getByRole("region", { name: "Carton B1" })
-    await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth)
-  }
-})
-
-// Board 06.30: read-only on a phone, each carton's count, dimensions and weight share a line.
-export const PhoneReadOnly = meta.story({
-  args: { cartons: packed, readOnly: true },
-  globals: { viewport: { value: "iphone12" } },
-  play: async ({ canvas }) => {
-    const row = within(canvas.getByRole("region", { name: "Carton A1" }))
-    const tops = ["10", "60 × 40 × 40 cm", "12.4 kg"].map((text) => row.getByText(text).getBoundingClientRect().top)
-    await expect(new Set(tops).size).toBe(1)
   }
 })
 

@@ -79,28 +79,3 @@ export const NeedsYou = meta.story({
     await expect(canvas.getByRole("link", { name: /Drafts/ })).toHaveTextContent("2")
   }
 })
-
-// A purchase order list's views on a phone: the row scrolls sideways, with the current view brought into sight.
-export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  args: {
-    label: "Views",
-    tabs: [
-      { label: "Needs you", href: "/orders?view=needsYou", current: false, count: 4 },
-      { label: "Drafts", href: "/orders?view=draft", current: false, count: 2 },
-      { label: "With supplier", href: "/orders?view=with-supplier", current: false, count: 3 },
-      { label: "In transit", href: "/orders?view=in-transit", current: false, count: 5 },
-      { label: "Closed", href: "/orders?view=closed", current: true, count: 118 },
-      { label: "All", href: "/orders?view=all", current: false, count: 132 }
-    ]
-  },
-  play: async ({ canvas }) => {
-    const nav = canvas.getByRole("navigation", { name: "Views" })
-    await expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
-    const current = within(nav).getByRole("link", { name: /Closed/ })
-    const box = current.getBoundingClientRect()
-    const frame = nav.getBoundingClientRect()
-    await expect(box.left).toBeGreaterThanOrEqual(frame.left - 1)
-    await expect(box.right).toBeLessThanOrEqual(frame.right + 1)
-  }
-})

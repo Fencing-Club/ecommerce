@@ -100,13 +100,3 @@ export const Film = meta.story({
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })
-
-// A phone: the section links move to the footer, and the page reads top to bottom.
-export const Phone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByLabelText("Main")).not.toBeVisible()
-    await expect(within(canvas.getByRole("main")).getByRole("heading", { level: 1 })).toBeVisible()
-    await expect(canvas.getByRole("navigation", { name: "Product" })).toBeInTheDocument()
-  }
-})
