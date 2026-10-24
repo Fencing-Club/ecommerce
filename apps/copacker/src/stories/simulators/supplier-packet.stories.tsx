@@ -40,6 +40,7 @@ export const EveryChecklistLine = meta.story({
     }
     await expect(table.getAllByRole("row").length).toBeGreaterThan(20)
     await expect(table.getByText("Pallet labels")).toBeVisible()
+    await expect(table.getByText("Heavy cartons")).toBeVisible()
   }
 })
 
@@ -73,11 +74,21 @@ export const FbaPallets = meta.story({
   }
 })
 
+// AWD asks for four labels on each pallet too, which the buyer gets from Seller Central.
 export const AwdPallets = meta.story({
   name: "AWD on pallets",
   args: { dataSet: "awdPallets" },
   play: async ({ canvas }) => {
-    await expect(checklist(canvas).queryByText("Pallet labels")).not.toBeInTheDocument()
+    await expect(checklist(canvas).getByText("Pallet labels")).toBeVisible()
+  }
+})
+
+// One unit over 50 lb may go to FBA in a carton of its own, with “Team Lift” labels.
+export const FbaHeavyUnit = meta.story({
+  name: "FBA heavy unit",
+  args: { dataSet: "fbaHeavy" },
+  play: async ({ canvas }) => {
+    await expect(checklist(canvas).getByText("Heavy cartons")).toBeVisible()
   }
 })
 

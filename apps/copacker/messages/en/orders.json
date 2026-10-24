@@ -505,7 +505,6 @@
       "packingGroups": "Products: {receiver} can’t take {product} and {other} in one carton. Amazon handles them differently, for example for dangerous goods, prep or labels, and may send them to different warehouses. Move one of them to another carton.",
       "samePacking": "{difference, select, units {Quantity: {sku}’s other cartons hold {units, number} units each.} other {Dimensions: {sku}’s other cartons are {length, number} × {width, number} × {height, number} cm at {weight, number} kg.}} {receiver} needs every carton of a SKU to match in units, size and weight. Match them, or ship this carton in another shipment.",
       "incompletePacks": "Quantity: {sku} is sold in packs of {pack, number}. Enter a multiple of {pack, number}.",
-      "missingAsin": "Products: {sku} has no ASIN, which {receiver} needs to receive it. The buyer adds it on the purchase order.",
       "missingFnsku": "Products: {sku} has no FNSKU, which {receiver} needs to label it. The buyer adds it on the purchase order.",
       "duplicateCarton": "Carton ID: {carton} is already used by another carton. Give each carton its own ID.",
       "repeatedProduct": "Products: {sku} is listed more than once in this carton. List it once, with all its units.",

@@ -175,8 +175,9 @@ stop an import; the Pallets section lists them as usual.
   cartons travel on, identical pallets as one entry with their count, and `freightInformation`: the goods' value at the
   PO's prices, freight class `NONE`. A pallet whose cartons Amazon sends to two warehouses stops the booking with an
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
-- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only. Amazon issues no pallet
-  labels for them; with the seller's own carrier, AWD needs only the carton labels.
+- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only, and it issues no pallet
+  labels. AWD still asks for four pallet labels on each pallet, which the buyer gets from Seller Central. Uploading
+  them to the shipment isn't built yet.
 
 ## Pallet labels
 
@@ -203,8 +204,9 @@ shipment's pallets stops the job.
   40 × 48 in wooden pallets with four-way entry, GMA grade B or better; cartons flush, labels out, nothing over the
   edge; at most 72 in tall including the pallet and 1,500 lb, and 50 in for a stackable pallet; clear stretch wrap
   marked “Do not break stretch wrap”; and the **Pallet labels** step, one of each pallet's four labels on each side,
-  at the top center, outside the stretch wrap, each carton keeping its own label. AWD and other shipments on pallets
-  get the same pallet rules, with no pallet label step. Each line comes from the pallet policy
+  at the top center, outside the stretch wrap, each carton keeping its own label. AWD pallets get the same rules and
+  the same **Pallet labels** step, though the packet doesn't carry AWD's labels yet. Pallets to the buyer's own
+  warehouse or a forwarder get general loading and securing steps. Each line comes from the pallet policy
   ([pallet rules](../../../packages/copacker-packing-rules/docs/pallet-rules.md)).
 - **Pallet table**: the pallet editor checks the footprint, height and weight as they're entered, against the policy
   of where the pallet's cartons go, under the field each names, with a link to the receiver's own rule.

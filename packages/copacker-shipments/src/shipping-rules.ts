@@ -1,4 +1,10 @@
-import { type CartonPolicy, cartonPolicies, sizeLimit, weightLimit } from "@repo/copacker-packing-rules/carton-policies"
+import {
+  type CartonPolicy,
+  cartonPolicies,
+  liftLimits,
+  sizeLimit,
+  weightLimit
+} from "@repo/copacker-packing-rules/carton-policies"
 import {
   footprintLimit,
   heightLimit,
@@ -18,7 +24,9 @@ export type ShippingCheck = {
 
 // What the supplier checks for each of a policy's carton rules, in the policy's order. Amazon's product identifiers
 // are the buyer's to add, and Amazon confirms its packing groups before it labels the cartons, so neither has a check.
-export function policyChecks(policy: CartonPolicy) {
+// `heaviestKg` is the shipment's heaviest carton, for checks only heavy cartons need, such as lift labels; without it,
+// every rule that has a check lists it.
+export function policyChecks(policy: CartonPolicy, heaviestKg = Number.POSITIVE_INFINITY) {
   return policy.rules.flatMap((rule): ShippingCheck[] => {
     switch (rule.type) {
       case "oneSku":
@@ -45,7 +53,23 @@ export function policyChecks(policy: CartonPolicy) {
           }
         ]
       }
-      case "asin":
+      case "liftLabels": {
+        const { teamLift, mechanicalLift } = liftLimits(rule)
+        return heaviestKg > teamLift.maxKg
+          ? [
+              {
+                title: "heavyCartons",
+                detail: "heavyCartonsText",
+                values: {
+                  kg: teamLift.maxKg,
+                  lb: teamLift.maxLb,
+                  heavyKg: mechanicalLift.maxKg,
+                  heavyLb: mechanicalLift.maxLb
+                }
+              }
+            ]
+          : []
+      }
       case "fnsku":
       case "packingGroups":
         return []
@@ -81,11 +105,11 @@ export function productChecks(product: ShippingProduct, language: DocumentLangua
 }
 
 // Composable policies, not a template per shipping permutation. Receiving rules are independent of transport.
-const receivingChecks: Record<ShippingDocumentData["network"], ShippingCheck[]> = {
-  fba: policyChecks(cartonPolicies.fba),
-  awd: policyChecks(cartonPolicies.awd_us),
-  warehouse: [],
-  forwarder: []
+const receivingPolicies: Record<ShippingDocumentData["network"], CartonPolicy | null> = {
+  fba: cartonPolicies.fba,
+  awd: cartonPolicies.awd_us,
+  warehouse: null,
+  forwarder: null
 }
 // What the supplier checks for each of a pallet policy's rules, in the policy's order.
 export function palletPolicyChecks(policy: PalletPolicy) {
@@ -141,10 +165,12 @@ const handoffChecks: Record<ShippingDocumentData["transport"]["collection"], Shi
 
 export function shipmentDocumentChecks(data: ShippingDocumentData) {
   const amazon = data.network === "fba" || data.network === "awd"
+  const policy = receivingPolicies[data.network]
+  const heaviest = Math.max(...data.cartons.map((carton) => carton.weight))
   const cartons: ShippingCheck[] =
     data.receiving && !data.receiving.repack
       ? []
-      : [{ title: "record", detail: "recordText" }, ...receivingChecks[data.network]]
+      : [{ title: "record", detail: "recordText" }, ...(policy ? policyChecks(policy, heaviest) : [])]
   if (data.receiving?.repack) {
     cartons.splice(1, 0, { title: "quantityCheck", detail: "quantityCheckText" })
   }

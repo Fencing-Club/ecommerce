@@ -7,7 +7,8 @@ import { centimetresPerInch } from "./units"
 // the rest say how to build the pallet, which the supplier's checklist states and nothing measures. So a 3PL, or an
 // arrangement with its own limits such as AWD's West Coast palletizable region, is a new policy, and only a new kind of
 // rule needs code. Limits are in the units the receiver states them in. Each rule describes itself, as the receiver
-// states it, and `source` is the page where it does, which its errors link to.
+// states it, `summary` says it in a few words for compact lists, and `source` is the page where the receiver states
+// it, which its errors link to.
 export type PalletRule =
   // The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
   // four-way entry the receiver asks for, if any.
@@ -23,7 +24,7 @@ export type PalletRule =
     | { type: "stretchWrap" }
     // The receiver's four pallet labels, one on each side.
     | { type: "palletLabels" }
-  ) & { description: string; source?: string }
+  ) & { description: string; summary: string; source?: string }
 
 export type PalletPolicy = {
   // Who receives the pallets, as messages name it, such as "FBA pallets may be up to 182.9 cm tall".
@@ -33,8 +34,8 @@ export type PalletPolicy = {
 }
 
 // Amazon's US rules for pallets on LTL and FTL deliveries, checked October 20, 2026 (see the package's
-// docs/pallet-rules.md). AWD's shipping requirements send sellers to the same rules; it asks for pallet labels only on
-// Amazon's partnered carriers, which copacker doesn't book.
+// docs/pallet-rules.md). AWD's shipping requirements send sellers to the same rules, and ask for its own four pallet
+// labels, checked October 23, 2026.
 const source = amazonSources.freight
 const amazonPallet = [
   {
@@ -43,12 +44,14 @@ const amazonPallet = [
     unit: "in",
     gmaGrade: "B",
     description:
-      "Use 48 × 40 in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
+      "Use 48 × 40in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
+    summary: "121.9 × 101.6 cm (48 × 40 in) wooden pallets, GMA grade B or better, with four-way entry",
     source
   },
   {
     type: "stacking",
     description: "Stack the cartons flush and stable, heaviest at the bottom, with their labels facing out.",
+    summary: "Cartons stacked flush, with nothing over the edges",
     source
   },
   {
@@ -56,7 +59,8 @@ const amazonPallet = [
     height: 72,
     stackable: 50,
     unit: "in",
-    description: "A pallet may be up to 72 in tall, including the pallet. A pallet another may stand on, up to 50 in.",
+    description: "A pallet may be up to 72in tall, including the pallet. A pallet another may stand on, up to 50in.",
+    summary: "Up to 182.9 cm (72 in) tall, or 127 cm (50 in) if another pallet stands on it",
     source
   },
   {
@@ -64,11 +68,13 @@ const amazonPallet = [
     weight: 1500,
     unit: "lb",
     description: "A pallet may weigh up to 1,500 lb, including the pallet.",
+    summary: "Up to 680 kg (1,500 lb)",
     source
   },
   {
     type: "stretchWrap",
     description: "Wrap the load in clear stretch wrap, marked “Do not break stretch wrap”.",
+    summary: "Pallet wrapped with clear stretch wrap",
     source
   }
 ] as const satisfies readonly PalletRule[]
@@ -81,11 +87,24 @@ export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
         type: "palletLabels",
         description:
           "Put one of each pallet's four labels on each side, at the top center, outside the stretch wrap. Each carton keeps its own label.",
+        summary: "Pallet label placed on all four sides",
         source
       }
     ]
   },
-  awd_us: { receiver: "AWD", rules: amazonPallet }
+  awd_us: {
+    receiver: "AWD",
+    rules: [
+      ...amazonPallet,
+      {
+        type: "palletLabels",
+        description:
+          "Put one of each pallet's four labels on each side, at the top center. Each carton keeps its own label.",
+        summary: "Pallet label placed on all four sides",
+        source: amazonSources.awdShipping
+      }
+    ]
+  }
 }
 
 // Drops floating-point noise from a conversion, and keeps a tenth of a centimetre: 48 in is 121.9 cm.

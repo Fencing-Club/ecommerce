@@ -15,7 +15,6 @@ const item = (id: string, receiver: PackingItem["receiver"]): PackingItem => ({
   buyerSku: id,
   pieces: 10,
   piecesPerSet: 1,
-  asin: "B000000001",
   fnsku: "X000000001",
   receiver
 })
@@ -34,6 +33,11 @@ describe("receivers", () => {
     expect(groupReceivers("warehouse")).toEqual(["warehouse"])
     expect(receiverIds.filter(isAmazonNetwork)).toEqual(["fba", "awd_us"])
     expect(receivers.warehouse).not.toHaveProperty("cartonPolicy")
+    // Amazon's networks link to where they state their requirements, and to what each is.
+    for (const network of ["fba", "awd_us"] as const) {
+      expect(receivers[network].documentation).toMatch(/^https:\/\/sellercentral\.amazon\.com\//)
+      expect(receivers[network].website).toMatch(/^https:\/\/sell\.amazon\.com\//)
+    }
   })
 
   it("reads where a PO goes from its lines", () => {

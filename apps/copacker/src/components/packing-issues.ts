@@ -89,7 +89,6 @@ export function useCartonIssueErrors() {
           })
         }
       }
-      case "missingAsin":
       case "missingFnsku":
         return { place: product, outlines: [], message: t(`rules.${issue.code}`, issue.values) }
       case "duplicateCarton":

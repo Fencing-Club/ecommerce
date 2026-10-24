@@ -94,11 +94,11 @@ export const AwdPackingTemplate = meta.story({
   }
 })
 
-export const MissingIdentifiers = meta.story({
-  name: "Missing ASIN and FNSKU",
+export const MissingFnsku = meta.story({
+  name: "Missing FNSKU",
   args: { dataSet: "identifiers" },
   play: async ({ canvasElement }) => {
-    await expect(reportedCodes(canvasElement)).toEqual(["missingAsin", "missingFnsku"])
+    await expect(reportedCodes(canvasElement)).toEqual(["missingFnsku"])
   }
 })
 

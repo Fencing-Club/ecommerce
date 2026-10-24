@@ -23,7 +23,6 @@
       "unknownProduct": "Quita los productos que no están en esta orden de compra",
       "incompletePacks": "{sku}: usa un múltiplo de {pack} unidades",
       "unitsPerCarton": "{sku}: empaca hasta {max, number} unidades vendibles por caja de {receiver}",
-      "missingAsin": "{sku}: agrega el ASIN de Amazon",
       "missingFnsku": "{sku}: agrega el FNSKU de Amazon",
       "samePacking": "{sku}: dale a todas las cajas el mismo contenido, medidas y peso, o divídelas en envíos separados",
       "overQuantity": "{sku}: las cajas superan la cantidad pendiente de la orden de compra",
