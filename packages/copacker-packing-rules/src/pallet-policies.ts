@@ -33,8 +33,8 @@ export type PalletPolicy = {
 }
 
 // Amazon's US rules for pallets on LTL and FTL deliveries, checked October 20, 2026 (see the package's
-// docs/pallet-rules.md). AWD's shipping requirements send sellers to the same rules; it asks for pallet labels only on
-// Amazon's partnered carriers, which copacker doesn't book.
+// docs/pallet-rules.md). AWD's shipping requirements send sellers to the same rules, and ask for its own four pallet
+// labels, checked October 23, 2026.
 const source = amazonSources.freight
 const amazonPallet = [
   {
@@ -85,7 +85,18 @@ export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
       }
     ]
   },
-  awd_us: { receiver: "AWD", rules: amazonPallet }
+  awd_us: {
+    receiver: "AWD",
+    rules: [
+      ...amazonPallet,
+      {
+        type: "palletLabels",
+        description:
+          "Put one of each pallet's four labels on each side, at the top center. Each carton keeps its own label.",
+        source: amazonSources.awdShipping
+      }
+    ]
+  }
 }
 
 // Drops floating-point noise from a conversion, and keeps a tenth of a centimetre: 48 in is 121.9 cm.

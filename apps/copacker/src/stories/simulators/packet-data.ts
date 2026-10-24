@@ -73,6 +73,13 @@ export const packetDataSets = {
     cartons: [bags, mixed],
     arrangement: agl
   },
+  fbaHeavy: {
+    name: "FBA heavy unit",
+    receiver: "fba",
+    note: "C1 holds one floor cushion at 26 kg, over 50 lb, so it takes “Team Lift” labels.",
+    cartons: [cartonGroup(["C1"], [110, 105, 30], 26, [["cushion", 1]])],
+    arrangement: parcel
+  },
   fbaPallets: {
     name: "FBA on pallets",
     receiver: "fba",
@@ -91,7 +98,7 @@ export const packetDataSets = {
   awdPallets: {
     name: "AWD on pallets",
     receiver: "awd_us",
-    note: "Twelve cartons on two pallets, by freight. AWD asks for pallet labels only from its partnered carriers.",
+    note: "Twelve cartons on two pallets, by freight. AWD asks for four labels on each pallet, which the buyer gets from Seller Central.",
     cartons: palletCartonSet,
     pallets: palletDataSets.withinLimits.pallets,
     arrangement: freight

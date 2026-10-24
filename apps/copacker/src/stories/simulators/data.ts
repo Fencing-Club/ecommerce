@@ -31,8 +31,8 @@ const product = (overrides: Partial<OrderItem>) =>
     ...overrides
   })
 
-// The PO's products, each with the units the PO orders. The napkins have no ASIN yet and the table runners no FNSKU, the
-// tea towel 3-packs come in sets of three, and a floor cushion is one large, heavy unit.
+// The PO's products, each with the units the PO orders. The table runners have no FNSKU yet, the tea towel 3-packs come
+// in sets of three, and a floor cushion is one large, heavy unit.
 const products = {
   natural: product({
     name: "Cotton drawstring bag",
@@ -81,7 +81,7 @@ const products = {
     variant: "Oat",
     buyerSku: "LN-4000",
     pieces: 60,
-    asin: "",
+    asin: "B0LN400000",
     fnsku: "X0LN400000"
   }),
   runner: product({
@@ -227,9 +227,9 @@ export const cartonDataSets = {
     ]
   },
   identifiers: {
-    name: "Missing ASIN and FNSKU",
+    name: "Missing FNSKU",
     receiver: "fba",
-    note: "The napkins in D1 have no ASIN on the PO, and the table runners in D2 no FNSKU.",
+    note: "The napkins in D1 have their FNSKU on the PO, and the table runners in D2 don't.",
     cartons: [
       cartonGroup(["D1"], [50, 40, 30], 8, [["napkin", 60]]),
       cartonGroup(["D2"], [50, 40, 30], 8, [["runner", 60]])

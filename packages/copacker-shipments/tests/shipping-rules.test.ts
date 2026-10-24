@@ -30,13 +30,38 @@ describe("cartons", () => {
 
   it("lets one oversize or overweight unit go in a carton of its own only where the network allows it", () => {
     const fba = policyChecks(cartonPolicies.fba)
-    expect(fba.map((check) => check.detail)).toEqual(["oneUnitDimensionsText", "oneUnitWeightText"])
+    // Without cartons to weigh, the policy's every check is listed, lift labels too.
+    expect(fba.map((check) => check.detail)).toEqual(["oneUnitDimensionsText", "oneUnitWeightText", "heavyCartonsText"])
     const awd = policyChecks(cartonPolicies.awd_us)
     expect(awd.find((check) => check.title === "dimensions")!.detail).toBe("dimensionsText")
     expect(awd.find((check) => check.title === "weightLimit")!).toMatchObject({
       detail: "weightLimitText",
       values: { kg: 22.67, lb: 50 }
     })
+  })
+
+  it("asks for lift labels only when an FBA carton is over 50 lb", () => {
+    const heavy = { ...parcelShipment.cartons[0]!, id: "C1", weight: 26 }
+    const checks = shipmentDocumentChecks({ ...parcelShipment, cartons: [...parcelShipment.cartons, heavy] }).cartons
+    expect(titles(checks)).toEqual([
+      "record",
+      "dimensions",
+      "weightLimit",
+      "heavyCartons",
+      "amazonLabel",
+      "carrierLabel",
+      "placement"
+    ])
+    expect(checks.find((check) => check.title === "heavyCartons")!.values).toEqual({
+      kg: 22.67,
+      lb: 50,
+      heavyKg: 45.35,
+      heavyLb: 100
+    })
+    // AWD takes no carton over 50 lb, so it has no lift labels.
+    expect(
+      titles(shipmentDocumentChecks({ ...parcelShipment, network: "awd", cartons: [heavy] }).cartons)
+    ).not.toContain("heavyCartons")
   })
 })
 
@@ -70,7 +95,7 @@ describe("pallets", () => {
   const fba = palletFreight("fba")
   const awd = palletFreight("awd")
 
-  it("gives FBA and AWD pallets Amazon's type, height, weight and wrap, and only FBA's the four labels", () => {
+  it("gives FBA and AWD pallets Amazon's type, height, weight, wrap and four labels", () => {
     // AWD's shipping requirements send sellers to the same LTL and FTL pallet rules.
     for (const shipment of [fba, awd]) {
       const checks = shipmentDocumentChecks(shipment).pallets
@@ -83,7 +108,7 @@ describe("pallets", () => {
       expect(checks.find((check) => check.title === "weightLimit")!.values).toMatchObject({ kg: 680, lb: 1500 })
     }
     expect(titles(shipmentDocumentChecks(fba).pallets)).toContain("palletLabel")
-    expect(titles(shipmentDocumentChecks(awd).pallets)).not.toContain("palletLabel")
+    expect(titles(shipmentDocumentChecks(awd).pallets)).toContain("palletLabel")
   })
 
   it("gives pallets to the buyer's own location the general steps", () => {

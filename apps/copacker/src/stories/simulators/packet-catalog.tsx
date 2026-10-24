@@ -25,15 +25,19 @@ function packetHref(dataSet: PacketDataSetId, arrangement: Arrangement) {
 // One way a shipment can travel: a data set's cartons, and pallets if any, shipped as arranged. Pallets go by freight,
 // and only to Amazon by AGL.
 type Shipment = { dataSet: PacketDataSetId; arrangement: Arrangement }
-// One data set for each kind of packing: cartons or pallets, to each receiver.
-const packings = Object.keys(packetDataSets)
+// One data set for each kind of packing: the carton and pallet checks it gets, to each receiver, such as a carton heavy
+// enough for lift labels. Product requirements have their own rows.
+const freight: Arrangement = { service: "freight", handoff: "supplier", collection: "pickup", carrierLabels: "none" }
+const kind = (id: PacketDataSetId) => {
+  const set = packetDataSets[id]
+  const { cartons, pallets } = shipmentDocumentChecks(simulatePacket(set, freight).data)
+  return JSON.stringify([set.receiver, cartons, pallets])
+}
+const candidates = Object.keys(packetDataSets)
   .filter(isPacketDataSet)
-  .filter((id, index, ids) => {
-    const set = packetDataSets[id]
-    const kind = (other: PacketDataSetId) =>
-      `${packetDataSets[other].receiver}-${"pallets" in packetDataSets[other]}-${"requirements" in packetDataSets[other]}`
-    return !("requirements" in set) && ids.findIndex((other) => kind(other) === kind(id)) === index
-  })
+  .filter((id) => !("requirements" in packetDataSets[id]))
+const kinds = candidates.map(kind)
+const packings = candidates.filter((_, index) => kinds.indexOf(kinds[index]!) === index)
 const shipments: Shipment[] = packings.flatMap((dataSet) =>
   arrangementOptions.service.flatMap(({ value: service }) => {
     const set = packetDataSets[dataSet]

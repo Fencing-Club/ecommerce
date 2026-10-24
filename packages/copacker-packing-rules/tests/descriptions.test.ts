@@ -14,6 +14,8 @@ function limits(rule: CartonRule | PalletRule): number[] {
       return [rule.units]
     case "maxHeight":
       return [rule.height, ...(rule.stackable === undefined ? [] : [rule.stackable])]
+    case "liftLabels":
+      return [rule.teamLift, rule.mechanicalLift]
     default:
       return []
   }

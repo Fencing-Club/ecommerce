@@ -21,7 +21,6 @@ const codeSimulators = {
   unitsPerCarton: "carton",
   oneSku: "carton",
   samePacking: "carton",
-  missingAsin: "carton",
   missingFnsku: "carton",
   packingGroups: "carton",
   incompletePacks: "carton",

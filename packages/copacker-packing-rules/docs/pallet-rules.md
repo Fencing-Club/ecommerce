@@ -48,7 +48,8 @@ carton mixing their products (`mixedNetworks`). Booking splits a shipment's cart
 
 ## Amazon's US rules
 
-Checked against Amazon's Seller Central help on October 20, 2026. FBA and AWD share them.
+Checked against Amazon's Seller Central help on October 20, 2026, and AWD's pallet labels on October 23, 2026. FBA and
+AWD share them.
 
 | Rule                     | Limit                                                                                  |
 | ------------------------ | -------------------------------------------------------------------------------------- |
@@ -57,15 +58,15 @@ Checked against Amazon's Seller Central help on October 20, 2026. FBA and AWD sh
 | Height (`maxHeight`)     | 72 in (182.9 cm) with the pallet; 50 in (127 cm) for a pallet another may stand on      |
 | Weight (`maxWeight`)     | 1,500 lb (680 kg) with the pallet                                                       |
 | Wrap (`stretchWrap`)     | Clear stretch wrap, marked “Do not break stretch wrap”                                  |
-| Labels (`palletLabels`)  | FBA only: one of each pallet's four labels on each side, top center, outside the wrap   |
+| Labels (`palletLabels`)  | One of each pallet's four labels on each side, top center, outside the wrap             |
 
 - [Seller requirements for LTL, FTL and FCL deliveries](https://sellercentral.amazon.com/help/hub/reference/external/G200978400):
   the pallet, stacking, height, weight and wrap rules, and the four pallet labels. Every pallet rule links here.
 - [AWD shipping requirements](https://sellercentral.amazon.com/help/hub/reference/external/GVEPW8A7PZ3YGPJE): sends
-  AWD sellers to the same LTL and FTL rules, and describes the West Coast palletizable region, which copacker doesn't
-  model yet.
-- [Send shipments to AWD: Print pallet labels](https://sellercentral.amazon.com/help/hub/reference/G6SSGPBBXX7N8YBB):
-  AWD asks for pallet labels only on shipments with an Amazon partnered carrier, which copacker doesn't book, so AWD's
-  policy has no `palletLabels` rule.
+  AWD sellers to the same LTL and FTL rules, asks for four AWD pallet labels on each pallet, one on each side, and
+  describes the West Coast palletizable region, which copacker doesn't model yet. AWD's `palletLabels` rule links here.
+- AWD's pallet labels come from Seller Central: Amazon's AWD API issues box labels only. The buyer will upload them to
+  the shipment, which isn't built yet, so for now the supplier's checklist asks for them and the packet doesn't carry
+  them.
 - [Shipping and routing requirements](https://sellercentral.amazon.com/help/hub/reference/external/G200141510): FBA's
   carton rules, which every carton on a pallet still follows, each keeping its own label.

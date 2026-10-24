@@ -6,13 +6,14 @@ import {
   cartonLimits,
   cartonPolicies,
   checkCarton,
+  liftLimits,
   type PolicyCarton,
   sizeLimit,
   weightLimit
 } from "../src/carton-policies"
 import type { PackingItem } from "../src/index"
 
-const item = (buyerSku: string, piecesPerSet = 1, ids = { asin: "B000000001", fnsku: "X000000001" }): PackingItem => ({
+const item = (buyerSku: string, piecesPerSet = 1, ids = { fnsku: "X000000001" }): PackingItem => ({
   id: randomUUID(),
   buyerSku,
   ...ids,
@@ -63,6 +64,10 @@ describe("carton policies", () => {
     })
     expect(sizeLimit({ sides: [60, 40, 40], unit: "cm" })).toMatchObject({ lengthIn: 23.6220472441 })
     expect(weightLimit({ weight: 20, unit: "kg" })).toEqual({ maxKg: 20, maxLb: 44.09 })
+    expect(liftLimits({ teamLift: 50, mechanicalLift: 100, unit: "lb" })).toEqual({
+      teamLift: { maxKg: 22.67, maxLb: 50 },
+      mechanicalLift: { maxKg: 45.35, maxLb: 100 }
+    })
   })
 
   it("lets an FBA carton fit its limit in any orientation, and outlines the sides that don't", () => {
@@ -113,11 +118,13 @@ describe("carton policies", () => {
     expect(codes(cartonPolicies.fba, carton([60, 40, 41], 12, [[bag, 90]]), [first])).toEqual([])
   })
 
-  it("requires Amazon's product identifiers", () => {
-    const unlisted = item("DB-2032", 1, { asin: "", fnsku: "X000000002" })
+  it("requires each product's FNSKU, and leaves lift labels to the checklist", () => {
+    const unlisted = item("DB-2032", 1, { fnsku: "" })
     expect(checkCarton(cartonPolicies.fba, carton([60, 40, 40], 12, [[unlisted, 10]]), [])).toEqual([
-      { issue: { code: "missingAsin", values: { receiver: "FBA", sku: "DB-2032" } } }
+      { issue: { code: "missingFnsku", values: { receiver: "FBA", sku: "DB-2032" } } }
     ])
+    // A box of one heavy unit may weigh over 50 lb; its Team Lift labels break nothing.
+    expect(codes(cartonPolicies.fba, carton([120, 70, 40], 50, [[bag, 1]]))).toEqual([])
   })
 
   it("keeps an FBA carton to one of Amazon's packing groups, once Amazon has set them", () => {
@@ -146,7 +153,7 @@ describe("carton policies", () => {
         { type: "maxUnits", units: 48, description: "Up to 48 units a box." }
       ]
     }
-    const unlisted = item("DB-2032", 1, { asin: "", fnsku: "" })
+    const unlisted = item("DB-2032", 1, { fnsku: "" })
     expect(codes(warehouse, carton([60, 40, 40], 20, [[unlisted, 48]]))).toEqual([])
     expect(codes(warehouse, carton([61, 40, 40], 21, [[unlisted, 49]]))).toEqual([
       ["cartonSize", "length"],

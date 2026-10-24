@@ -505,7 +505,6 @@
       "packingGroups": "商品：{receiver} 不接受 {product} 和 {other} 装在同一箱。Amazon 对它们的处理方式不同，例如危险品、预处理或标签，并可能将它们送往不同的仓库。请将其中一个移到另一个箱子。",
       "samePacking": "{difference, select, units {数量：{sku} 的其他纸箱每箱 {units, number} 件。} other {尺寸：{sku} 的其他纸箱为 {length, number} × {width, number} × {height, number} 厘米、{weight, number} 千克。}}{receiver} 要求同一 SKU 的所有纸箱件数、尺寸和重量一致。请调整一致，或将此纸箱放入另一批发货。",
       "incompletePacks": "数量：{sku} 按 {pack, number} 件一包出售。请输入 {pack, number} 的倍数。",
-      "missingAsin": "商品：{sku} 没有 ASIN，{receiver} 需要它才能收货。买家会在采购订单中添加。",
       "missingFnsku": "商品：{sku} 没有 FNSKU，{receiver} 需要它来贴标。买家会在采购订单中添加。",
       "duplicateCarton": "纸箱编号：{carton} 已被另一个纸箱使用。请为每个纸箱设置不同的编号。",
       "repeatedProduct": "商品：{sku} 在此纸箱中出现了多次。请只列一次，并填写全部数量。",

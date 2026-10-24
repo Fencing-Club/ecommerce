@@ -1,4 +1,4 @@
-import { type CartonPolicy, cartonPolicies } from "./carton-policies"
+import { amazonSources, type CartonPolicy, cartonPolicies } from "./carton-policies"
 import { type PalletPolicy, palletPolicies } from "./pallet-policies"
 
 // Where a purchase order line's goods end up: a receiver. Each PO line names one, and the receiver brings the rules its
@@ -19,13 +19,30 @@ export type Receiver = {
   // The rules its cartons and pallets follow. A receiver without them takes any carton or pallet.
   cartonPolicy?: CartonPolicy
   palletPolicy?: PalletPolicy
+  // The receiver's own pages: where it states its requirements, and what it is, for someone choosing it.
+  documentation?: string
+  website?: string
 }
 
 // In order from the most lenient rules to the strictest: a carton or pallet that wrongly mixes receivers follows the
 // strictest of their rules.
 export const receivers = {
-  fba: { name: "FBA", group: "amazon", cartonPolicy: cartonPolicies.fba, palletPolicy: palletPolicies.fba },
-  awd_us: { name: "AWD US", group: "amazon", cartonPolicy: cartonPolicies.awd_us, palletPolicy: palletPolicies.awd_us },
+  fba: {
+    name: "FBA",
+    group: "amazon",
+    cartonPolicy: cartonPolicies.fba,
+    palletPolicy: palletPolicies.fba,
+    documentation: amazonSources.fbaShipping,
+    website: "https://sell.amazon.com/fulfillment-by-amazon"
+  },
+  awd_us: {
+    name: "AWD US",
+    group: "amazon",
+    cartonPolicy: cartonPolicies.awd_us,
+    palletPolicy: palletPolicies.awd_us,
+    documentation: amazonSources.awdShipping,
+    website: "https://sell.amazon.com/programs/warehousing"
+  },
   warehouse: { name: "Warehouse", group: "warehouse" }
 } as const satisfies Record<ReceiverId, Receiver>
 

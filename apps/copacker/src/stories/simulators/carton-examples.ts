@@ -15,7 +15,8 @@ import { type CartonDataSet, cartonGroup, unknownItemId } from "./data"
 
 // One way to break each kind of carton rule, from the rule's own limits. Each rule type needs a case, or this stops
 // type checking, so a new kind of rule can't reach the table unbroken. Two units of one product keep the single-unit
-// exception and the one-SKU rule out of the way.
+// exception and the one-SKU rule out of the way. Rules on how to label a carton, which nothing measures, have no error
+// to show.
 function breakRule(rule: CartonRule): CartonGroup[] {
   switch (rule.type) {
     case "maxSize": {
@@ -38,8 +39,6 @@ function breakRule(rule: CartonRule): CartonGroup[] {
         cartonGroup(["P1"], [40, 30, 30], 5, [["ivory", 10]]),
         cartonGroup(["P2"], [40, 30, 30], 5, [["ivory", 12]])
       ]
-    case "asin":
-      return [cartonGroup(["I1"], [40, 30, 30], 5, [["napkin", 10]])]
     case "fnsku":
       return [cartonGroup(["I2"], [40, 30, 30], 5, [["runner", 10]])]
     case "packingGroups":
@@ -49,6 +48,8 @@ function breakRule(rule: CartonRule): CartonGroup[] {
           ["stripe", 10]
         ])
       ]
+    case "liftLabels":
+      return []
   }
 }
 
@@ -133,16 +134,23 @@ export function useCartonExamples(): Example[] {
   const policies = Object.entries(cartonPolicies) as [AmazonNetwork, CartonPolicy][]
   const examples = [
     ...policies.flatMap(([network, policy]) =>
-      policy.rules.map((rule) => ({
-        id: `${network}-${rule.type}`,
-        group: policy.receiver,
-        rule: rule.description,
-        checklist: checklist(policy, rule),
-        receiver: network,
-        plenty: true,
-        cartons: breakRule(rule),
-        ...(rule.type === "packingGroups" && { packingGroups })
-      }))
+      policy.rules.flatMap((rule) => {
+        const cartons = breakRule(rule)
+        return cartons.length
+          ? [
+              {
+                id: `${network}-${rule.type}`,
+                group: policy.receiver,
+                rule: rule.description,
+                checklist: checklist(policy, rule),
+                receiver: network,
+                plenty: true,
+                cartons,
+                ...(rule.type === "packingGroups" && { packingGroups })
+              }
+            ]
+          : []
+      })
     ),
     ...everywhere.map(({ code, ...example }) => ({
       ...example,

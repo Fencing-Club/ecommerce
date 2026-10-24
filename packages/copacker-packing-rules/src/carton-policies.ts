@@ -16,9 +16,11 @@ export type CartonRule =
     | { type: "oneSku" }
     // Every carton of a SKU holds the same units and has the same size and weight as its first.
     | { type: "samePacking" }
-    // Every product has its ASIN, and every product has its FNSKU: two rules, so each error names its field.
-    | { type: "asin" }
+    // Every product has its FNSKU.
     | { type: "fnsku" }
+    // Lift labels on a heavy box: "Team Lift" over the first weight, "Mechanical Lift" over the second. The supplier's
+    // checklist states it when a shipment has such a box, and nothing breaks it.
+    | { type: "liftLabels"; teamLift: number; mechanicalLift: number; unit: "kg" | "lb" }
     // Products of one of the packing groups Amazon sets when it plans an FBA shipment, by SKU. Checked once Amazon has set
     // them; until then nothing breaks it.
     | { type: "packingGroups" }
@@ -46,15 +48,14 @@ export const amazonSources = {
   packingGroups: "https://developer-docs.amazon.com/sp-api/docs/create-an-inbound-shipment"
 }
 
-const asin = { type: "asin", description: "Every product has its ASIN, which Amazon receives it by." } as const
 const fnsku = {
   type: "fnsku",
   description: "Every product has its FNSKU, the barcode Amazon labels it with."
 } as const
 
 // Amazon's US carton rules for each network, checked October 19, 2026 (see the package's docs/carton-rules.md). Every FBA carton is
-// treated as individual units: copacker doesn't send case packs. No one page states that products need their ASIN and
-// FNSKU; Amazon can't receive a product without them.
+// treated as individual units: copacker doesn't send case packs. No one page states that products need their FNSKU;
+// Amazon can't label a product without it.
 export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
   fba: {
     receiver: "FBA",
@@ -77,12 +78,20 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         source: amazonSources.fbaShipping
       },
       {
+        type: "liftLabels",
+        teamLift: 50,
+        mechanicalLift: 100,
+        unit: "lb",
+        description:
+          "A box over 50 lb has a “Team Lift” label on its top and each side. Over 100 lb, the labels say “Mechanical Lift”.",
+        source: amazonSources.fbaShipping
+      },
+      {
         type: "packingGroups",
         description:
           "A box holds products of one packing group. Amazon sets the groups when it plans the shipment, keeping apart products it receives separately, such as dangerous goods.",
         source: amazonSources.packingGroups
       },
-      asin,
       fnsku
     ]
   },
@@ -120,7 +129,6 @@ export const cartonPolicies: Record<AmazonNetwork, CartonPolicy> = {
         description: "A box may weigh at most 50 lb.",
         source: amazonSources.awdShipping
       },
-      asin,
       fnsku
     ]
   }
@@ -153,6 +161,16 @@ export function weightLimit(rule: Pick<Extract<CartonRule, { type: "maxWeight" }
   return {
     maxKg: rule.unit === "kg" ? rule.weight : hundredthsDown(rule.weight * kilogramsPerPound),
     maxLb: rule.unit === "lb" ? rule.weight : hundredthsDown(rule.weight / kilogramsPerPound)
+  }
+}
+
+// The weights over which a box takes each lift label, in both units.
+export function liftLimits(
+  rule: Pick<Extract<CartonRule, { type: "liftLabels" }>, "teamLift" | "mechanicalLift" | "unit">
+) {
+  return {
+    teamLift: weightLimit({ weight: rule.teamLift, unit: rule.unit }),
+    mechanicalLift: weightLimit({ weight: rule.mechanicalLift, unit: rule.unit })
   }
 }
 
@@ -197,7 +215,7 @@ export type CartonRuleIssue =
         weight: number
       }
     }
-  | { code: "missingAsin" | "missingFnsku"; values: { receiver: string; sku: string } }
+  | { code: "missingFnsku"; values: { receiver: string; sku: string } }
   // Two of the carton's products the receiver put in different packing groups.
   | { code: "packingGroups"; values: { receiver: string; sku: string; other: string } }
 
@@ -300,10 +318,6 @@ export function checkCarton(
             ? []
             : [{ issue: { code: "samePacking", values: { receiver, sku: content.item.buyerSku, ...template } } }]
         })
-      case "asin":
-        return carton.contents
-          .filter((content) => !content.item.asin)
-          .map((content) => ({ issue: { code: "missingAsin", values: { receiver, sku: content.item.buyerSku } } }))
       case "fnsku":
         return carton.contents
           .filter((content) => !content.item.fnsku)
@@ -320,6 +334,8 @@ export function checkCarton(
           ? [{ issue: { code: "packingGroups", values: { receiver, sku: first.sku, other: other.sku } } }]
           : []
       }
+      case "liftLabels":
+        return []
     }
   }
   return policy.rules.flatMap((rule) =>
