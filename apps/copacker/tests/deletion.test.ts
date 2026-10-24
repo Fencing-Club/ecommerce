@@ -124,7 +124,22 @@ beforeEach(async () => {
       uploadedBy: "user_kim"
     }
   ])
-  await database.insert(tables.events).values({ orderId, actor: owner.id, message: "Created" })
+  await database.insert(tables.events).values([
+    { orderId, actor: owner.id, message: "Created" },
+    // Unic's own note on Fencing Club's purchase order.
+    { orderId, actor: owner.id, kind: "comment", message: "Check the blades", internalOrgId: supplierId }
+  ])
+  const location = { provider: "shopify", accountId: "club.myshopify.com", scope: "location", externalId: "1" }
+  const [group] = await database
+    .insert(tables.inventoryLocationGroups)
+    .values({ orgId: buyerId, name: "Warehouses", locations: [location] })
+    .returning({ id: tables.inventoryLocationGroups.id })
+  await database.insert(tables.variantStockTargetSets).values({
+    orgId: buyerId,
+    shopifyDomain: "club.myshopify.com",
+    variantId: "gid://shopify/ProductVariant/1",
+    targets: [{ id: randomUUID(), quantity: 20, destination: { kind: "group", groupId: group!.id } }]
+  })
   await database.insert(tables.connections).values({
     orgId: buyerId,
     provider: "shopify",
@@ -158,6 +173,8 @@ describe("deleting a workspace", () => {
     expect((await database.select().from(tables.orders)).map((order) => order.id)).toStrictEqual([otherOrderId])
     expect(await count("shipments")).toBe(0)
     expect(await count("events")).toBe(0)
+    expect(await count("inventory_location_groups")).toBe(0)
+    expect(await count("variant_stock_target_sets")).toBe(0)
     expect(await count("team_invitations")).toBe(0)
     expect(await count("connections")).toBe(0)
     expect((await database.select().from(tables.memberships)).map((row) => row.orgId).toSorted()).toStrictEqual(
@@ -171,7 +188,7 @@ describe("deleting a workspace", () => {
     expect(remote.deleteOrganization).toHaveBeenCalledWith("org_club")
   })
 
-  it("unlinks a supplier from its buyers, who keep their purchase orders from it", async () => {
+  it("unlinks a supplier from its buyers, who keep their purchase orders from it but not its internal comments", async () => {
     await deleteWorkspace({ id: supplierId, name: "Unic", workosId: null }, { name: "Unic" })
     const links = await database.select().from(tables.suppliers)
     expect(links.map((row) => [row.id, row.supplierOrgId, row.catalogId]).toSorted()).toStrictEqual(
@@ -181,6 +198,7 @@ describe("deleting a workspace", () => {
       ].toSorted()
     )
     expect(await count("orders")).toBe(2)
+    expect((await database.select().from(tables.events)).map((event) => event.message)).toStrictEqual(["Created"])
     expect(await count("catalogs")).toBe(0)
     expect(remote.deleteOrganization).not.toHaveBeenCalled()
   })
