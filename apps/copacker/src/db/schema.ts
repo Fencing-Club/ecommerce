@@ -611,7 +611,7 @@ export const shipments = pgTable(
 )
 // A shipment's route, a stop to a row in order from the supplier to where the goods end up, and who moves them on from
 // each stop to the next (`@repo/copacker-shipments/route`). A shipment without stops hasn't saved its route and follows
-// its purchase order's (defaultShipmentRoute). A forwarder stop is one of the forwarder's addresses; the supplier's
+// its purchase order's (followedRoute). A forwarder stop is one of the forwarder's addresses; the supplier's
 // pickup address is the packing's, and the receiver is where the shipment's goods go (shipmentReceiver).
 export const shipmentStops = pgTable(
   "shipment_stops",

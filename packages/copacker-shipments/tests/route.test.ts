@@ -2,6 +2,7 @@ import { routeIssues } from "@repo/copacker-packing-rules"
 import { describe, expect, it } from "vitest"
 import {
   defaultShipmentRoute,
+  followedRoute,
   routeTransport,
   ruleRoute,
   type ShipmentRoute,
@@ -23,6 +24,13 @@ describe("default shipment route", () => {
 
   it("leaves the last leg unchosen", () => {
     expect(defaultShipmentRoute({})).toEqual({ stops: [{ kind: "supplier" }, { kind: "receiver" }], legs: [null] })
+  })
+
+  it("goes by the PO's forwarder only while its address is kept", () => {
+    expect(followedRoute({ via }, [via])).toEqual(defaultShipmentRoute({ via }))
+    expect(followedRoute({ via }, [{ ...via, addressId: "4c2b8e1a-7d6f-4e3b-9a0c-5f1e8d2b7a64" }])).toEqual(
+      defaultShipmentRoute({})
+    )
   })
 })
 

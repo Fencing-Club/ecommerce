@@ -31,7 +31,8 @@ forwarder's stop (foreign keys, so an address a route stops at can't be deleted)
 stop. The supplier's pickup address is the packing's, and the receiver is where the shipment goes (`shipmentReceiver`),
 so neither is stored with the stop. Until the buyer saves a route, the shipment follows its purchase order's: the
 supplier, the PO's forwarder, which the supplier ships to, and the final destination, with nobody chosen for the last
-leg (`defaultShipmentRoute`). `server/shipment-routes.ts` reads and writes the stops. How the goods travel on the last
+leg (`followedRoute`). A PO forwarder address that's no longer kept isn't a stop; the page and the server leave it out
+alike, so a save checks the route the page showed. `server/shipment-routes.ts` reads and writes the stops. How the goods travel on the last
 leg, which readiness, carrier labels, the packing list and the packet read, isn't stored either: `routeTransport` works
 it out from the route. AGL collects the cartons from the stop before it; otherwise the stop the last leg leaves from
 hands them over, collected unless it delivers them; the buyer adds a carrier label to each carton when it books the

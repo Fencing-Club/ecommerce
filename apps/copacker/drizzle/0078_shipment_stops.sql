@@ -18,9 +18,10 @@ CREATE INDEX "shipment_stops_address" ON "shipment_stops" USING btree ("addressI
 CREATE INDEX "shipment_stops_forwarder" ON "shipment_stops" USING btree ("forwarderId");--> statement-breakpoint
 -- Each shipment's saved transport becomes its route: from the supplier by way of its PO's forwarder and AGL, when it
 -- went by them, to where its goods end up. The supplier ships to the forwarder. The last leg follows the transport: the
--- stop before it delivers when it dropped the cartons off, and otherwise the buyer arranges a warehouse shipment it took a
--- carrier label for each carton for, and the sender arranges the rest. A forwarder address that's no longer kept isn't a
--- stop.
+-- stop before it delivers when it dropped the cartons off; with a carrier label on each carton, the buyer arranges a
+-- warehouse shipment and the sender an Amazon one; and without, the sender arranges a warehouse shipment. An Amazon
+-- shipment without labels that it didn't drop off has no leg that says so, so the buyer chooses its last leg again. A
+-- forwarder address that's no longer kept isn't a stop.
 WITH saved AS (
 	SELECT
 		s."id",
@@ -44,8 +45,9 @@ WITH saved AS (
 		routed.*,
 		CASE
 			WHEN "transport"->>'collection' = 'dropoff' THEN 'senderMoves'
-			WHEN warehouse AND "transport"->>'carrierLabels' = 'per_carton' THEN 'receiverArranges'
-			ELSE 'senderArranges'
+			WHEN "transport"->>'carrierLabels' = 'per_carton' THEN
+				CASE WHEN warehouse THEN 'receiverArranges' ELSE 'senderArranges' END
+			WHEN warehouse THEN 'senderArranges'
 		END AS last_leg,
 		"transport"->>'service' = 'agl' AS agl
 	FROM routed

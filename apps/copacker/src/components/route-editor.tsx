@@ -79,12 +79,13 @@ export type RouteChoices = { label: string; stops: RouteStop[] }[]
 // only, it lists them, and a leg nobody has chosen yet is just the rail, apart from Amazon's to and from AGL. While
 // editing (`editing`), each stop after the first is chosen from the `choices` the route rules allow there, the last can
 // be removed and a stop added after it, and each leg is chosen from who can move it, one nobody has chosen yet too;
-// changes go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
+// changes go to `onChange`, unless the menus are off while the route saves (`disabled`). Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
 // ready date and pallets (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
 export function RouteEditor({
   route,
   buyer,
   editing = false,
+  disabled = false,
   choices = [],
   onChange,
   shipFrom,
@@ -95,6 +96,7 @@ export function RouteEditor({
   // The buyer, who books AGL in Seller Central.
   buyer: string
   editing?: boolean
+  disabled?: boolean
   choices?: RouteChoices
   onChange?: (route: Route<RouteStop>) => void
   shipFrom?: ReactNode
@@ -139,6 +141,7 @@ export function RouteEditor({
                   leg={leg}
                   buyer={buyer}
                   editing={editing}
+                  disabled={disabled}
                   onChange={(next) => change(setLeg(route, index - 1, next))}
                 />
               ) : (
@@ -164,6 +167,7 @@ export function RouteEditor({
                           size="xs"
                           className="text-muted-foreground"
                           aria-label={t("removeStop", { name: stop.name })}
+                          disabled={disabled}
                           onClick={() => change(removeLastStop(route))}
                         >
                           <Trash2 />
@@ -175,6 +179,7 @@ export function RouteEditor({
                       <StopSelect
                         label={label(stop, index)}
                         value={stop}
+                        disabled={disabled}
                         choices={fitting(index)}
                         onChange={(next) => change(replaceStop(route, index, next))}
                       />
@@ -218,6 +223,7 @@ export function RouteEditor({
               <span className="text-sm font-medium">{t("newStop")}</span>
               <StopSelect
                 label={t("newStop")}
+                disabled={disabled}
                 choices={fitting(stops.length)}
                 onChange={(next) => {
                   setAdding(false)
@@ -233,6 +239,7 @@ export function RouteEditor({
           <AddStop
             label={t("addStop")}
             reason={endsRoute(last) ? t("endsRoute", { name: last.name }) : undefined}
+            disabled={disabled}
             onAdd={() => setAdding(true)}
           />
         </li>
@@ -291,11 +298,13 @@ function StopLines({ stop }: { stop: RouteStop }) {
 function StopSelect({
   label,
   value,
+  disabled,
   choices,
   onChange
 }: {
   label: string
   value?: RouteStop
+  disabled: boolean
   choices: RouteChoices
   onChange: (stop: RouteStop) => void
 }) {
@@ -304,6 +313,7 @@ function StopSelect({
   return (
     <Select
       value={value?.id ?? null}
+      disabled={disabled}
       items={all.map((stop) => ({ value: stop.id, label: stop.name }))}
       onValueChange={(id) => {
         const next = all.find((stop) => stop.id === id)
@@ -362,6 +372,7 @@ function Leg({
   leg,
   buyer,
   editing,
+  disabled,
   onChange
 }: {
   from: RouteStop
@@ -369,6 +380,7 @@ function Leg({
   leg?: LegArrangement
   buyer: string
   editing: boolean
+  disabled: boolean
   onChange: (leg: LegArrangement) => void
 }) {
   const t = useTranslations("shipments.route.legs")
@@ -394,6 +406,7 @@ function Leg({
           {editing && allowed.length > 0 ? (
             <Select
               value={leg ?? null}
+              disabled={disabled}
               items={allowed.map((value) => ({ value, label: title(value) }))}
               onValueChange={(value) => {
                 const next = allowed.find((option) => option === value)
@@ -440,7 +453,17 @@ function Leg({
 
 // Adds a stop after the last one. When that one ends the route, it's off, and its tooltip says why: it stays focusable
 // (aria-disabled), since a disabled button would show no tooltip.
-function AddStop({ label, reason, onAdd }: { label: string; reason?: string; onAdd: () => void }) {
+function AddStop({
+  label,
+  reason,
+  disabled,
+  onAdd
+}: {
+  label: string
+  reason?: string
+  disabled: boolean
+  onAdd: () => void
+}) {
   const button = (
     <Button
       type="button"
@@ -448,6 +471,7 @@ function AddStop({ label, reason, onAdd }: { label: string; reason?: string; onA
       size="sm"
       className="-ms-2 aria-disabled:opacity-50"
       aria-disabled={!!reason || undefined}
+      disabled={disabled}
       onClick={reason ? undefined : onAdd}
     >
       {label}

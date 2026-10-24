@@ -124,5 +124,8 @@ export const Saving = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Edit route" }))
     await expect(canvas.getByRole("button", { name: "Save route" })).toBeDisabled()
     await expect(canvas.getByRole("button", { name: "Cancel" })).toBeDisabled()
+    for (const menu of canvas.getAllByRole("combobox")) {
+      await expect(menu).toBeDisabled()
+    }
   }
 })

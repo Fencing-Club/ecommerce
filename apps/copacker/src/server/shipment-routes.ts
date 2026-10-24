@@ -1,6 +1,6 @@
 import type { OrderInput } from "@repo/copacker-orders"
 import {
-  defaultShipmentRoute,
+  followedRoute,
   routeTransport,
   type SavedStop,
   type ShipmentRoute,
@@ -10,6 +10,7 @@ import { asc, eq, inArray } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import type { Executor, Transaction } from "@/db"
 import { shipmentStops, type shipments } from "@/db/schema"
+import { stopForwarders } from "./forwarders"
 
 type Shipment = typeof shipments.$inferSelect
 type StopRow = typeof shipmentStops.$inferSelect
@@ -44,16 +45,18 @@ export async function savedRoutes(executor: Executor, ids: readonly string[]) {
   )
 }
 
-// A shipment's route: the one it saved, or until it saves one, its purchase order's. With where its goods end up, and how
-// they travel on the last leg, which documents, readiness and carrier labels read.
-export function shipmentRoute(
+// A shipment's route: the one it saved, or until it saves one, its purchase order's, by way of the PO's forwarder while
+// its address is kept (`kept`). With where its goods end up, and how they travel on the last leg, which documents,
+// readiness and carrier labels read.
+function shipmentRoute(
   shipment: Pick<Shipment, "snapshot" | "amazonNetwork">,
   order: OrderInput,
-  saved: ShipmentRoute | undefined
+  saved: ShipmentRoute | undefined,
+  kept: Parameters<typeof followedRoute>[1]
 ) {
   const data = shipment.snapshot ?? order
   const receiver = shipmentReceiver(data, shipment.amazonNetwork)
-  const route = saved ?? defaultShipmentRoute(data)
+  const route = saved ?? followedRoute(data, kept)
   return { route, saved: saved !== undefined, receiver, transport: routeTransport(route, receiver) }
 }
 
@@ -63,7 +66,15 @@ export async function withRoutes<T extends Shipment>(executor: Executor, rows: r
     executor,
     rows.map((row) => row.id)
   )
-  return rows.map((row) => ({ ...row, ...shipmentRoute(row, order, saved.get(row.id)) }))
+  // The PO forwarder addresses still kept, which the routes not yet saved go by.
+  const kept = await stopForwarders(
+    rows.flatMap((row) => {
+      const { via } = row.snapshot ?? order
+      return via && !saved.has(row.id) ? [via] : []
+    }),
+    executor
+  )
+  return rows.map((row) => ({ ...row, ...shipmentRoute(row, order, saved.get(row.id), kept) }))
 }
 
 // One shipment with its route.

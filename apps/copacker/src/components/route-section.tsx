@@ -11,8 +11,9 @@ import { RoutePreview } from "./route-preview"
 // The shipment's route, as a section like Products and Cartons. It starts closed, since the route was set up on the
 // purchase order, with the stops on one line as its summary. Open, the route is a timeline, with any `notes` under it.
 // Whoever may change it (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save
-// route. A route the route rules find an issue with doesn't save, and its first issue shows. Saving keeps the menus open
-// until `onSave` resolves, and when it resolves false, with its `error`, so the route can be fixed or cancelled. The packing's own Ship
+// route. A route the route rules find an issue with doesn't save, and its first issue shows. Saving keeps the menus open,
+// though off (`saving`), until `onSave` resolves, and when it resolves false, with its `error`, so the route can be fixed
+// or cancelled. The packing's own Ship
 // from field, ready date and pallets (`shipFrom`, `packing`) show while packing, whether or not the route is being
 // edited; the packing form keeps the section open (`open`) while they need fixing. Its lines stop at a readable width
 // rather than running across the page.
@@ -106,6 +107,7 @@ export function RouteSection({
           route={shown}
           buyer={buyer}
           editing={!!draft}
+          disabled={saving}
           choices={choices}
           onChange={setDraft}
           shipFrom={shipFrom}

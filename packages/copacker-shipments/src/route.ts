@@ -74,6 +74,18 @@ export function defaultShipmentRoute(order: { via?: OrderInput["via"] }): Shipme
     : { stops: [{ kind: "supplier" }, { kind: "receiver" }], legs: [null] }
 }
 
+// The route a shipment follows until it saves its own: its PO's, by way of the PO's forwarder only while that forwarder
+// address is still kept (`kept`). The server and the shipment page both read it here, so the route a page shows is the
+// one its save is checked against.
+export function followedRoute(
+  order: { via?: OrderInput["via"] },
+  kept: readonly { forwarderId: string; addressId: string }[]
+): ShipmentRoute {
+  const { via } = order
+  const known = kept.some((stop) => stop.forwarderId === via?.forwarderId && stop.addressId === via.addressId)
+  return defaultShipmentRoute({ via: known ? via : undefined })
+}
+
 // How the goods travel on the last leg, as documents, readiness and carrier labels read it, all from the route. AGL
 // collects them where they wait for it. Otherwise the stop the last leg leaves from hands them over: collected unless
 // it delivers them itself. The buyer adds a carrier label to each carton when it books the carrier: into Amazon, where

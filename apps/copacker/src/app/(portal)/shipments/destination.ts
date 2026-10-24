@@ -1,7 +1,7 @@
 import { type Address, type OrderInput } from "@repo/copacker-orders"
 import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
-import { defaultShipmentRoute, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
+import { followedRoute, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
 import { and, eq, inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
@@ -129,12 +129,8 @@ export function shipmentPlaces(
   }
 ): ShipmentPlaces {
   const warehouse = orderDestination(data) === "warehouse"
-  // The PO's forwarder is a stop of the route that follows it while its address is still kept.
-  const known = forwarders.some(
-    (row) => row.forwarderId === data.via?.forwarderId && row.addressId === data.via.addressId
-  )
   return {
-    route: saved ?? defaultShipmentRoute({ via: known ? data.via : undefined }),
+    route: saved ?? followedRoute(data, forwarders),
     supplier,
     pickup,
     forwarders: forwarders.map((row) => ({
