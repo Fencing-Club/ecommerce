@@ -40,7 +40,7 @@
       "palletWeight": "Palette {pallet}: {receiver}-Paletten höchstens {maxLb, number} lb ({maxKg, number} kg), einschließlich Palette"
     },
     "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken.",
-    "missingTransport": "Transport nicht bestätigt",
+    "routeIncomplete": "Wähle für jede Etappe der Route, wer versendet",
     "missingTrackingNumber": "Fügen Sie die Sendungsnummer des Versandetiketts von Karton {carton} hinzu"
   },
   "workflow": {

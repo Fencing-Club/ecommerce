@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { type Address, orderInputSchema } from "@repo/copacker-orders"
 import { buildAwdRequest, packingSchema } from "@repo/copacker-shipments"
+import { defaultShipmentRoute, type ShipmentRoute } from "@repo/copacker-shipments/route"
 import { and, eq } from "drizzle-orm"
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterEach, beforeEach, vi } from "vitest"
@@ -132,22 +133,53 @@ export async function withGroup<T extends Omit<typeof tables.supplierProducts.$i
   return { ...values, groupId: group!.id }
 }
 
+// Routes as Save route keeps them: AGL from the supplier into Amazon, or a carrier the buyer books from the supplier,
+// which puts a label on each carton.
+export const routes = {
+  agl: { stops: [{ kind: "supplier" }, { kind: "agl" }, { kind: "receiver" }], legs: [null, null] },
+  parcel: { stops: [{ kind: "supplier" }, { kind: "receiver" }], legs: ["senderArranges"] }
+} satisfies Record<string, ShipmentRoute>
+
+// Saves a shipment's route as its stops, in place of any it had.
+export async function saveStops(shipmentId: string, route: ShipmentRoute) {
+  await database.delete(tables.shipmentStops).where(eq(tables.shipmentStops.shipmentId, shipmentId))
+  await database.insert(tables.shipmentStops).values(
+    route.stops.map((stop, position) => ({
+      shipmentId,
+      position,
+      kind: stop.kind,
+      forwarderId: stop.kind === "forwarder" ? stop.forwarderId : null,
+      addressId: stop.kind === "forwarder" ? stop.addressId : null,
+      leg: route.legs[position] ?? null
+    }))
+  )
+}
+
+// A shipment's stops, as kinds and legs.
+export async function savedStops(shipmentId: string) {
+  return database
+    .select({ kind: tables.shipmentStops.kind, leg: tables.shipmentStops.leg })
+    .from(tables.shipmentStops)
+    .where(eq(tables.shipmentStops.shipmentId, shipmentId))
+    .orderBy(tables.shipmentStops.position)
+}
+
+// Save route's input for a shipment that follows its PO's route: the buyer books a carrier for each leg.
+export async function bookedRoute(shipmentId: string) {
+  const [row] = await database
+    .select({ snapshot: tables.shipments.snapshot })
+    .from(tables.shipments)
+    .where(eq(tables.shipments.id, shipmentId))
+  const expected = defaultShipmentRoute(row!.snapshot!)
+  return { expected, route: { ...expected, legs: expected.legs.map(() => "senderArranges" as const) } }
+}
+
+// A shipment being packed, whose buyer books a carrier from the supplier.
 export async function preparation(pieces = 160) {
   const id = randomUUID(),
     invoiceId = randomUUID()
-  await database.insert(tables.shipments).values({
-    id,
-    orderId,
-    orderRevision: 1,
-    snapshot: orderData,
-    transport: {
-      service: "parcel",
-      handoff: "supplier",
-      collection: "pickup",
-      carrierLabels: "per_carton",
-      instructions: ""
-    }
-  })
+  await database.insert(tables.shipments).values({ id, orderId, orderRevision: 1, snapshot: orderData })
+  await saveStops(id, routes.parcel)
   await database.insert(tables.documents).values({
     id: invoiceId,
     orderId,

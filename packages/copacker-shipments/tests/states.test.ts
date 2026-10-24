@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { canEditRoute } from "../src/route"
 import {
   canEditPacking,
   canReopenPacking,
@@ -8,7 +9,6 @@ import {
   shippedStates,
   shipmentStates
 } from "../src/states"
-import { canConfigureTransport } from "../src/transport"
 
 const idle = { operation: "none", amazonOrderId: null }
 
@@ -33,19 +33,18 @@ describe("shipment states", () => {
     expect(canReopenPacking({ status: "ready", ...idle })).toBe(false)
   })
 
-  it("lets a released shipment confirm a missing transport arrangement once", () => {
-    expect(canConfigureTransport("shipped", "none", null)).toBe(true)
+  it("lets a released shipment choose who moves its last leg once", () => {
+    expect(canEditRoute("shipped", "none", null)).toBe(true)
     expect(
-      canConfigureTransport("shipped", "none", {
+      canEditRoute("shipped", "none", {
         service: "parcel",
         handoff: "supplier",
         collection: "pickup",
-        carrierLabels: "per_carton",
-        instructions: ""
+        carrierLabels: "per_carton"
       })
     ).toBe(false)
-    expect(canConfigureTransport("packed", "create", null)).toBe(false)
-    expect(canConfigureTransport("waiting_labels", "labels", null)).toBe(true)
-    expect(canConfigureTransport("cancelled", "none", null)).toBe(false)
+    expect(canEditRoute("packed", "create", null)).toBe(false)
+    expect(canEditRoute("waiting_labels", "labels", null)).toBe(true)
+    expect(canEditRoute("cancelled", "none", null)).toBe(false)
   })
 })

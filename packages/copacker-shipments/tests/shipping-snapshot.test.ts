@@ -169,7 +169,7 @@ describe("accepted shipment document snapshot", () => {
     expect(data.cartons.map((carton) => carton.carrierLabel)).toEqual(["TRACK-1", "TRACK-2"])
   })
 
-  it("collects the PO's notes, the transport's instructions and each product's own", () => {
+  it("collects the PO's notes and each product's own instructions", () => {
     const data = shippingDocumentSnapshot({
       ...input,
       order: {
@@ -178,10 +178,9 @@ describe("accepted shipment document snapshot", () => {
         items: [
           { ...product, packingRequirements: { ...product.packingRequirements!, instructions: "Fold in thirds." } }
         ]
-      },
-      transport: { ...input.transport, instructions: "Call the dock first." }
+      }
     })
-    expect(data.instructions).toBe("Ship before the holiday.\n\nCall the dock first.\n\nSUP-2:\nFold in thirds.")
+    expect(data.instructions).toBe("Ship before the holiday.\n\nSUP-2:\nFold in thirds.")
   })
 
   it("makes a document for the buyer's own location without Amazon's labels", () => {

@@ -5,6 +5,7 @@
   "addTitle": "Add a title",
   "addVariant": "Add a variant",
   "addressAlreadyRemoved": "This address was already removed",
+  "addressOnRoute": "This address can't be removed while a shipment's route stops at it.",
   "addressRemoved": "This address was removed",
   "addressRemovedRefresh": "This address was removed. Refresh the page and try again.",
   "adminsOnly": "Only admins can do this",
@@ -351,8 +352,8 @@
   "linkAwdOnly": "Only an AWD packing draft can link an existing AWD shipment.",
   "awdProductsDiffer": "The Amazon shipment contains products or quantities outside this AWD order.",
   "awdAlreadyLinked": "This Amazon shipment is already linked to a purchase order.",
-  "transportChanged": "Transport changed or is already released. Reload the shipment.",
-  "transportForwarderMissing": "Add a freight forwarder stop to the order first.",
+  "routeChanged": "Route changed or the shipment is already released. Reload the shipment.",
+  "routeNotAllowed": "This route can't be saved. Reload the shipment and try again.",
   "packetDestinationUnavailable": "Confirm the shipment’s delivery address before downloading the packet.",
   "packetNoLabelsRequired": "No labels of this type are required for this shipment.",
   "shipmentHasNoLabels": "This shipment has no product labels"

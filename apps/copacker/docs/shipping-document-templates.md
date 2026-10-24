@@ -121,9 +121,9 @@ persisted carrier label numbers for each carton before a shipment with carrier l
 handoff is prepared as its own leg. It rejects missing information instead of inferring it from PDF order. Multiple
 Amazon destinations must be represented separately.
 
-Transport configuration records the service, pickup/drop-off, handoff party, carrier-label requirement and instructions.
-Selecting a service proposes defaults; it does not book transport. Confirming AGL pickup does not create a new Amazon
-shipment or notify the supplier. FBA booking is independent of document generation.
+The documents' service, pickup or drop-off, handoff party and carrier-label requirement come from the shipment's
+route (`routeTransport`, see [Packing](packing.md)). Saving a route books nothing. Choosing AGL does not create a new
+Amazon shipment or notify the supplier. FBA booking is independent of document generation.
 
 ## Acceptance
 

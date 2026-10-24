@@ -87,12 +87,6 @@
       "units": "Одиниці",
       "grossWeight": "Вага брутто",
       "volume": "Об’єм"
-    },
-    "legs": {
-      "shipsTo": "Постачальник відправляє до {place}.",
-      "amazonPickup": "Amazon забирає з {place}.",
-      "carrierPickup": "Перевізник забирає з {place}.",
-      "dropoff": "{place} передає коробки перевізнику."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Наклейте на кожен поліетиленовий пакет етикетку з попередженням про ризик задушення.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Транспорт",
-    "service": "Послуга",
-    "parcel": "Посилковий перевізник",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Вантажний перевізник",
-    "handoff": "Місце передачі",
-    "supplier": "Постачальник",
-    "forwarder": "Експедитор",
-    "collection": "Спосіб передачі",
-    "pickup": "Забір перевізником",
-    "dropoff": "Доставка перевізнику",
-    "carrierLabels": "Етикетки перевізника",
-    "perCarton": "Одна на коробку",
-    "none": "Не потрібні",
-    "instructions": "Інструкції з передачі",
-    "save": "Зберегти транспорт",
-    "unconfirmed": "Транспорт не підтверджено"
-  },
   "route": {
     "title": "Маршрут",
     "editRoute": "Змінити маршрут",
@@ -200,6 +175,7 @@
     "removeStop": "Прибрати {name}",
     "addStop": "Додати зупинку",
     "chooseStop": "Виберіть зупинку",
+    "forwarders": "Експедитори",
     "newStop": "Нова зупинка",
     "endsRoute": "Маршрут закінчується в {name}. Приберіть його, щоб додати зупинку перед ним.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Готово {date}",
     "legs": {
       "label": "Доставка, з {from} до {to}",
+      "choose": "Виберіть, хто відправляє",
       "senderArranges": "{company} організовує доставку",
       "receiverArranges": "{company} організовує доставку",
       "senderMoves": "{company} доставляє",

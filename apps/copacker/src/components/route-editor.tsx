@@ -76,9 +76,10 @@ const summary = (stop: RouteStop) =>
 export type RouteChoices = { label: string; stops: RouteStop[] }[]
 
 // The route as a timeline: each stop with its node on a rail, and between two stops, who moves the goods there. Read
-// only, it lists them, and a leg nobody has chosen yet is just the rail, apart from Amazon's to and from AGL. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
-// allow there, the last can be removed and a stop added after it, and each leg is chosen from who can move it; changes
-// go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
+// only, it lists them, and a leg nobody has chosen yet is just the rail, apart from Amazon's to and from AGL. While
+// editing (`editing`), each stop after the first is chosen from the `choices` the route rules allow there, the last can
+// be removed and a stop added after it, and each leg is chosen from who can move it, one nobody has chosen yet too;
+// changes go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
 // ready date and pallets (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
 export function RouteEditor({
   route,
@@ -131,7 +132,7 @@ export function RouteEditor({
         return (
           <Fragment key={`${index}-${stop.id}`}>
             {from &&
-              (leg || legChoices(from, stop).length === 0 ? (
+              (leg || editing || legChoices(from, stop).length === 0 ? (
                 <Leg
                   from={from}
                   to={stop}
@@ -353,8 +354,8 @@ function StopSelect({
   )
 }
 
-// How the goods get from one stop to the next: who moves them, and what that means. While editing it's a menu of who
-// can, unless Amazon moves them, which needs no choice (`leg`).
+// How the goods get from one stop to the next: who moves them (`leg`), and what that means. While editing it's a menu of
+// who can, unless Amazon moves them, which needs no choice.
 function Leg({
   from,
   to,
@@ -390,9 +391,9 @@ function Leg({
       <div className="flex min-w-0 flex-1 gap-2 py-3">
         <Truck aria-hidden className="mt-1.5 size-4 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 flex-col items-start gap-1">
-          {editing && leg && allowed.length > 0 ? (
+          {editing && allowed.length > 0 ? (
             <Select
-              value={leg}
+              value={leg ?? null}
               items={allowed.map((value) => ({ value, label: title(value) }))}
               onValueChange={(value) => {
                 const next = allowed.find((option) => option === value)
@@ -406,7 +407,11 @@ function Leg({
                 aria-label={t("label", { from: from.company, to: to.company })}
                 className="border-transparent bg-muted font-medium hover:bg-muted/80 dark:bg-muted"
               >
-                <SelectValue />
+                <SelectValue>
+                  {(value: LegArrangement | null) =>
+                    value ? title(value) : <span className="text-muted-foreground">{t("choose")}</span>
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false} align="start">
                 <SelectGroup>

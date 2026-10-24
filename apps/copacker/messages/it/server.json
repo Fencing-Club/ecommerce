@@ -40,7 +40,7 @@
       "palletWeight": "Pallet {pallet}: i pallet {receiver} devono pesare al massimo {maxLb, number} lb ({maxKg, number} kg), pallet compreso"
     },
     "networkMismatch": "Imballa solo prodotti assegnati alla rete Amazon di questa spedizione.",
-    "missingTransport": "Trasporto non confermato",
+    "routeIncomplete": "Scegli chi spedisce ogni tratta del percorso",
     "missingTrackingNumber": "Aggiungi il numero di tracking dell’etichetta del corriere del cartone {carton}"
   },
   "workflow": {

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm"
-import { shipmentDestinations, shipmentPlaceRows } from "@/app/(portal)/shipments/destination"
+import { shipmentPlaceRows } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
@@ -7,6 +7,7 @@ import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { shipmentPageData } from "@/server/shipment-page-data"
+import { savedRoutes } from "@/server/shipment-routes"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
@@ -27,7 +28,8 @@ export async function shipmentPage(input: { id: string }) {
   const { order, supplier } = await accessibleOrder(s, shipment.orderId)
   const workflow = await orderWorkflow(s, order.id)
   const snapshot = shipment.snapshot ?? order.data
-  const [rows, docs, addresses, [buyer], { latest }, labels, places, destination] = await Promise.all([
+  const saved = (await savedRoutes(db(), [id])).get(id)
+  const [rows, docs, addresses, [buyer], { latest }, labels, places] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, order.id)),
     db()
       .select()
@@ -37,8 +39,7 @@ export async function shipmentPage(input: { id: string }) {
     db().select({ name: organizations.name }).from(organizations).where(eq(organizations.id, order.buyerOrgId)),
     proposalState(order.id),
     lineLabels({ ...order, data: snapshot }),
-    shipmentPlaceRows(order, shipment),
-    shipmentDestinations([order.data])
+    shipmentPlaceRows(order, shipment, saved)
   ])
   return shipmentPageData(
     {
@@ -55,8 +56,8 @@ export async function shipmentPage(input: { id: string }) {
       buyer: buyer?.name ?? "",
       awaitingChanges: latest?.status === "pending",
       labels,
-      ...places,
-      destinationName: destination(order.data, shipment.amazonNetwork)
+      savedRoute: saved,
+      ...places
     },
     (number) => t("title", { number })
   )

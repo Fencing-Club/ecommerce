@@ -17,7 +17,16 @@ receivers and `orderDestination`, which reads where the PO goes from them, from 
 `states` lists every state a shipment can be in (`shipmentStates`, `ShipmentState`) and the groups the app and
 transport check: `openPackingStates`, `amazonRequestStates`, `releasedStates`, `shippedStates`, `packedStates` and
 `finishedStates`. `canEditPacking` and `canReopenPacking` say when packing can still change. The app's database column
-and pages read these rather than listing states themselves. `canConfigureTransport` in `transport` uses them too.
+and pages read these rather than listing states themselves. `canEditRoute` in `route` uses them too.
+
+## Routes
+
+`route` is a shipment's route as the app keeps it: its stops (the supplier, a forwarder's address by id, AGL, and the
+receiver) and who moves the goods on each leg (`shipmentRouteSchema`), checked by the route rules in
+[`@repo/copacker-packing-rules`](../../copacker-packing-rules/docs/README.md) (`ruleRoute`). Until a shipment saves one
+it follows its purchase order's (`defaultShipmentRoute`). `routeTransport` works out how the goods travel on the last
+leg, which `transport` describes (`ShipmentTransport`) and documents, readiness and carrier labels read; nothing stores
+it.
 
 ## Amazon inbound shipments
 

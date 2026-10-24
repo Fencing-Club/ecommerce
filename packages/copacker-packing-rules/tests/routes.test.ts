@@ -91,6 +91,21 @@ describe("route changes", () => {
     expect(setLeg(throughForwarder, 0, "receiverMoves").legs).toEqual(["receiverMoves", "senderArranges"])
     expect(setLeg(throughForwarder, 1, "receiverMoves")).toBe(throughForwarder)
   })
+
+  it("leaves a leg nobody has chosen unchosen when a stop changes or one is added", () => {
+    const unchosen = { stops: [supplier, forwarder], legs: [undefined] }
+    expect(appendStop(unchosen, fba).legs).toEqual([undefined, "senderArranges"])
+    expect(replaceStop(unchosen, 1, otherForwarder).legs).toEqual([undefined])
+  })
+
+  it("sets a leg nobody has chosen yet, leaving the others unchosen", () => {
+    const unchosen = { stops: throughForwarder.stops, legs: [undefined, undefined] }
+    expect(setLeg(unchosen, 1, "senderMoves").legs).toEqual([undefined, "senderMoves"])
+    expect(setLeg({ stops: throughForwarder.stops, legs: [] }, 0, "receiverMoves").legs).toEqual([
+      "receiverMoves",
+      undefined
+    ])
+  })
 })
 
 describe("routeIssues", () => {

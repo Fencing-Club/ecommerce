@@ -13,6 +13,7 @@
     "./markdown": "./src/markdown.ts",
     "./states": "./src/states.ts",
     "./transport": "./src/transport.ts",
+    "./route": "./src/route.ts",
     "./countries": "./src/countries.ts",
     "./shipping-model": "./src/shipping-model.ts",
     "./shipping-rules": "./src/shipping-rules.ts",

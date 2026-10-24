@@ -17,8 +17,8 @@ import {
   cancelAtAmazon,
   reconcileShipment,
   retryShipment,
-  saveTransport,
-  transportInputSchema
+  routeInputSchema,
+  saveRoute
 } from "@/server/shipment-operations"
 import { defineAction, type Guard } from "./define"
 
@@ -115,11 +115,11 @@ export const shipmentActions = {
       return ok
     }
   }),
-  "shipment.transport": defineAction({
+  "shipment.route": defineAction({
     guard: buyerEditsShipments,
-    input: transportInputSchema,
+    input: routeInputSchema,
     run: async (input, s) => {
-      await saveTransport(s, input)
+      await saveRoute(s, input)
       return ok
     }
   }),

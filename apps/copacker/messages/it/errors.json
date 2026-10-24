@@ -5,6 +5,7 @@
   "addTitle": "Aggiungi un titolo",
   "addVariant": "Aggiungi una variante",
   "addressAlreadyRemoved": "Questo indirizzo è già stato rimosso",
+  "addressOnRoute": "Impossibile rimuovere questo indirizzo finché il percorso di una spedizione vi fa tappa.",
   "addressRemoved": "Questo indirizzo è stato rimosso",
   "addressRemovedRefresh": "Questo indirizzo è stato rimosso. Aggiorna la pagina e riprova.",
   "adminsOnly": "Solo gli amministratori possono farlo",
@@ -351,8 +352,8 @@
   "linkAwdOnly": "Solo una bozza di imballaggio AWD può collegare una spedizione AWD esistente.",
   "awdProductsDiffer": "La spedizione Amazon contiene prodotti o quantità estranei a questo ordine AWD.",
   "awdAlreadyLinked": "Questa spedizione Amazon è già collegata a un ordine di acquisto.",
-  "transportChanged": "Trasporto modificato o già rilasciato. Ricarica la spedizione.",
-  "transportForwarderMissing": "Aggiungi prima una tappa presso uno spedizioniere.",
+  "routeChanged": "Percorso modificato o spedizione già rilasciata. Ricarica la spedizione.",
+  "routeNotAllowed": "Impossibile salvare questo percorso. Ricarica la spedizione e riprova.",
   "packetDestinationUnavailable": "Conferma l’indirizzo di consegna della spedizione prima di scaricare i documenti.",
   "packetNoLabelsRequired": "Questa spedizione non richiede etichette di questo tipo.",
   "shipmentHasNoLabels": "Questa spedizione non ha etichette prodotto"

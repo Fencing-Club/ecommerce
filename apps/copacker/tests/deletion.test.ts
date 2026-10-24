@@ -203,6 +203,60 @@ describe("deleting a workspace", () => {
     expect(remote.deleteOrganization).not.toHaveBeenCalled()
   })
 
+  it("hands a forwarder's addresses back to the buyers whose POs and shipment routes stop at them", async () => {
+    const forwarderOrg = randomUUID(),
+      forwarderId = randomUUID(),
+      addressId = randomUUID(),
+      otherShipmentId = randomUUID()
+    await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+    await database
+      .insert(tables.forwarders)
+      .values({ id: forwarderId, buyerOrgId: otherBuyerId, forwarderOrgId: forwarderOrg, name: "Yiwu Logistics" })
+    const address = {
+      name: "Lisa Yao",
+      addressLine1: "1000 Siji Road",
+      addressLine2: "",
+      city: "Yiwu",
+      stateOrRegion: "Zhejiang",
+      postalCode: "322000",
+      countryCode: "CN",
+      phoneNumber: "",
+      email: ""
+    }
+    await database
+      .insert(tables.contacts)
+      .values({ id: addressId, orgId: forwarderOrg, kind: "delivery", name: "Yiwu warehouse", address })
+    const via = { forwarderId, addressId }
+    await database
+      .update(tables.orders)
+      .set({ data: { ...data, via } })
+      .where(eq(tables.orders.id, otherOrderId))
+    await database.insert(tables.shipments).values({ id: otherShipmentId, orderId: otherOrderId, orderRevision: 1 })
+    await database.insert(tables.shipmentStops).values([
+      { shipmentId: otherShipmentId, position: 0, kind: "supplier", leg: "senderArranges" },
+      { shipmentId: otherShipmentId, position: 1, kind: "forwarder", forwarderId, addressId, leg: "senderArranges" },
+      { shipmentId: otherShipmentId, position: 2, kind: "receiver" }
+    ])
+
+    await deleteWorkspace({ id: forwarderOrg, name: "Yiwu Logistics", workosId: null }, { name: "Yiwu Logistics" })
+
+    const [copy, ...more] = await database
+      .select()
+      .from(tables.contacts)
+      .where(and(eq(tables.contacts.orgId, otherBuyerId), eq(tables.contacts.forwarderId, forwarderId)))
+    expect(more).toHaveLength(0)
+    expect(copy).toMatchObject({ kind: "forwarder", name: "Yiwu warehouse", address })
+    const [order] = await database.select().from(tables.orders).where(eq(tables.orders.id, otherOrderId))
+    expect(order?.data.via).toStrictEqual({ forwarderId, addressId: copy!.id })
+    const [stop] = await database
+      .select()
+      .from(tables.shipmentStops)
+      .where(and(eq(tables.shipmentStops.shipmentId, otherShipmentId), eq(tables.shipmentStops.kind, "forwarder")))
+    expect(stop?.addressId).toBe(copy!.id)
+    const [forwarder] = await database.select().from(tables.forwarders).where(eq(tables.forwarders.id, forwarderId))
+    expect(forwarder?.forwarderOrgId).toBeNull()
+  })
+
   it("asks for the workspace's name first", async () => {
     await expect(deleteWorkspace(buyer, { name: "Fencing" })).rejects.toThrow("Enter the workspace’s name to confirm")
     expect(await count("orders")).toBe(2)

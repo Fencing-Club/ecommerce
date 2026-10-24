@@ -547,6 +547,13 @@
       "when": 1792740319979,
       "tag": "0077_dry_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1792876255415,
+      "tag": "0078_shipment_stops",
+      "breakpoints": true
     }
   ]
 }

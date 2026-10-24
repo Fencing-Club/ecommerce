@@ -87,12 +87,6 @@
       "units": "یونٹس",
       "grossWeight": "مجموعی وزن",
       "volume": "حجم"
-    },
-    "legs": {
-      "shipsTo": "سپلائر {place} کو بھیجتا ہے۔",
-      "amazonPickup": "Amazon {place} سے وصول کرتا ہے۔",
-      "carrierPickup": "کیریئر {place} سے وصول کرتا ہے۔",
-      "dropoff": "{place} کارٹن کیریئر کے حوالے کرتا ہے۔"
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "ہر پولی بیگ پر دم گھٹنے کی وارننگ کا لیبل لگائیں۔",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "نقل و حمل",
-    "service": "سروس",
-    "parcel": "پارسل کیریئر",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "مال بردار کیریئر",
-    "handoff": "حوالگی کی جگہ",
-    "supplier": "سپلائر",
-    "forwarder": "فریٹ فارورڈر",
-    "collection": "حوالگی کا طریقہ",
-    "pickup": "کیریئر پک اپ",
-    "dropoff": "کیریئر تک پہنچائیں",
-    "carrierLabels": "کیریئر لیبل",
-    "perCarton": "فی کارٹن ایک",
-    "none": "ضروری نہیں",
-    "instructions": "حوالگی کی ہدایات",
-    "save": "نقل و حمل محفوظ کریں",
-    "unconfirmed": "نقل و حمل کی تصدیق نہیں ہوئی"
-  },
   "route": {
     "title": "روٹ",
     "editRoute": "روٹ میں ترمیم کریں",
@@ -200,6 +175,7 @@
     "removeStop": "{name} ہٹائیں",
     "addStop": "اسٹاپ شامل کریں",
     "chooseStop": "اسٹاپ منتخب کریں",
+    "forwarders": "فریٹ فارورڈرز",
     "newStop": "نیا اسٹاپ",
     "endsRoute": "روٹ {name} پر ختم ہوتا ہے۔ اس سے پہلے اسٹاپ شامل کرنے کے لیے اسے ہٹائیں۔",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "{date} کو تیار",
     "legs": {
       "label": "ترسیل، {from} سے {to}",
+      "choose": "چنیں کہ کون بھیجتا ہے",
       "senderArranges": "{company} ترسیل کا انتظام کرتا ہے",
       "receiverArranges": "{company} ترسیل کا انتظام کرتا ہے",
       "senderMoves": "{company} پہنچاتا ہے",

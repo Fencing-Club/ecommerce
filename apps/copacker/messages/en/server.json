@@ -40,7 +40,7 @@
       "palletWeight": "Pallet {pallet}: keep {receiver} pallets to {maxLb, number} lb ({maxKg, number} kg) or less, including the pallet"
     },
     "networkMismatch": "Pack only products assigned to this shipment’s Amazon network.",
-    "missingTransport": "Transport not confirmed",
+    "routeIncomplete": "Choose who ships each leg of the route",
     "missingTrackingNumber": "Add the tracking number of carton {carton}’s carrier label"
   },
   "workflow": {

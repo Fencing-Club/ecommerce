@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { releasedStates, type ShipmentState } from "./states"
 
 // Receiving requirements belong to the destination; transport requirements belong to the booked service.
 // These defaults are suggestions in the form, never evidence that transport has been booked.
@@ -14,20 +13,9 @@ export const transportSchema = z.object({
   service: z.enum(transportServices),
   handoff: z.enum(["supplier", "forwarder"]),
   collection: z.enum(["pickup", "dropoff"]),
-  carrierLabels: z.enum(["per_carton", "none"]),
-  instructions: z.string().trim().max(2000).default("")
+  carrierLabels: z.enum(["per_carton", "none"])
 })
 export type ShipmentTransport = z.infer<typeof transportSchema>
-
-const transportStates: readonly ShipmentState[] = ["packing", "packed", "correction", "waiting_labels"]
-
-export function canConfigureTransport(status: ShipmentState, operation: string, transport: ShipmentTransport | null) {
-  return (
-    (transportStates.includes(status) && (status === "waiting_labels" || operation === "none")) ||
-    // A previously released shipment can confirm its missing arrangement once, without reopening its packing.
-    (!transport && releasedStates.includes(status))
-  )
-}
 
 export function shipmentLabelRequirements(destination: string, transport?: ShipmentTransport | null) {
   return {
@@ -50,7 +38,6 @@ export function transportInstructions(transport?: ShipmentTransport | null): str
     `${service}: ${transport.collection === "pickup" ? `pickup from the ${location}` : `the ${location} delivers to the carrier`}.`,
     transport.carrierLabels === "per_carton"
       ? "Apply one assigned carrier label to each carton, in addition to its receiving label."
-      : "No separate carrier label per carton for this transport arrangement.",
-    ...(transport.instructions ? [transport.instructions] : [])
+      : "No separate carrier label per carton for this transport arrangement."
   ]
 }

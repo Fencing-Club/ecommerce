@@ -87,12 +87,6 @@
       "units": "件数",
       "grossWeight": "毛重",
       "volume": "体积"
-    },
-    "legs": {
-      "shipsTo": "供应商发货至{place}。",
-      "amazonPickup": "Amazon 从{place}提货。",
-      "carrierPickup": "承运商从{place}提货。",
-      "dropoff": "{place}将箱子交给承运商。"
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "在每个塑料袋上贴窒息警告标签。",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "运输",
-    "service": "服务",
-    "parcel": "包裹承运商",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "货运承运商",
-    "handoff": "交接地点",
-    "supplier": "供应商",
-    "forwarder": "货运代理",
-    "collection": "交接方式",
-    "pickup": "承运商提货",
-    "dropoff": "送货至承运商",
-    "carrierLabels": "承运商标签",
-    "perCarton": "每箱一张",
-    "none": "不需要",
-    "instructions": "交接说明",
-    "save": "保存运输设置",
-    "unconfirmed": "运输尚未确认"
-  },
   "route": {
     "title": "路线",
     "editRoute": "编辑路线",
@@ -200,6 +175,7 @@
     "removeStop": "移除 {name}",
     "addStop": "添加站点",
     "chooseStop": "选择站点",
+    "forwarders": "货代",
     "newStop": "新站点",
     "endsRoute": "路线在 {name} 结束。移除它才能在它之前添加站点。",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "{date} 备好",
     "legs": {
       "label": "运输，{from} 至 {to}",
+      "choose": "选择由谁发运",
       "senderArranges": "{company} 安排运输",
       "receiverArranges": "{company} 安排运输",
       "senderMoves": "{company} 送货",

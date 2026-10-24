@@ -3,11 +3,11 @@ import type { AdsProfile } from "@repo/copacker-marketplaces/amazon-ads"
 import type { AmazonSale, EbaySale, ShopifySale } from "@repo/copacker-marketplaces/sales"
 import type { Shopify } from "@repo/copacker-marketplaces/shopify"
 import { type Address, type OrderInput, prepCategories, priceBases } from "@repo/copacker-orders"
-import { amazonNetworks } from "@repo/copacker-packing-rules"
+import { amazonNetworks, legArrangements } from "@repo/copacker-packing-rules"
 import { type Packing, type PackingDraft } from "@repo/copacker-shipments"
 import type { CartonLabel } from "@repo/copacker-shipments/labels"
+import { stopKinds } from "@repo/copacker-shipments/route"
 import type { ShipmentState } from "@repo/copacker-shipments/states"
-import type { ShipmentTransport } from "@repo/copacker-shipments/transport"
 import { sql } from "drizzle-orm"
 import {
   pgTable,
@@ -600,7 +600,6 @@ export const shipments = pgTable(
     // accepted. A correction puts them back.
     stockTaken: jsonb().$type<Record<string, number>>(),
     bookingReference: text(),
-    transport: jsonb().$type<ShipmentTransport>(),
     // The carrier and tracking or booking number the forwarder shipped on with.
     forwarderCarrier: text(),
     forwarderReference: text(),
@@ -609,6 +608,36 @@ export const shipments = pgTable(
     updatedAt: updatedAt()
   },
   (t) => [index("shipments_order").on(t.orderId)]
+)
+// A shipment's route, a stop to a row in order from the supplier to where the goods end up, and who moves them on from
+// each stop to the next (`@repo/copacker-shipments/route`). A shipment without stops hasn't saved its route and follows
+// its purchase order's (defaultShipmentRoute). A forwarder stop is one of the forwarder's addresses; the supplier's
+// pickup address is the packing's, and the receiver is where the shipment's goods go (shipmentReceiver).
+export const shipmentStops = pgTable(
+  "shipment_stops",
+  {
+    shipmentId: uuid()
+      .notNull()
+      .references(() => shipments.id, { onDelete: "cascade" }),
+    position: integer().notNull(),
+    kind: text({ enum: stopKinds }).notNull(),
+    forwarderId: uuid().references(() => forwarders.id),
+    addressId: uuid().references(() => contacts.id),
+    // Who moves the goods from this stop to the next. Null at the last stop, to and from AGL, and until someone is
+    // chosen.
+    leg: text({ enum: legArrangements }),
+    createdAt: createdAt()
+  },
+  (t) => [
+    primaryKey({ columns: [t.shipmentId, t.position] }),
+    index("shipment_stops_address").on(t.addressId),
+    index("shipment_stops_forwarder").on(t.forwarderId),
+    check("shipment_stops_position", sql`${t.position} >= 0`),
+    check(
+      "shipment_stops_forwarder_address",
+      sql`(${t.kind} = 'forwarder') = (${t.forwarderId} is not null) and (${t.forwarderId} is null) = (${t.addressId} is null)`
+    )
+  ]
 )
 export const documents = pgTable(
   "documents",

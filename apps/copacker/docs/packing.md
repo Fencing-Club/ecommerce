@@ -24,11 +24,25 @@ The route is copacker.pen's section 11, "11 / Shipment route editor": a Route se
 stops and, between them, who moves the goods (`RouteEditor`). Ship from carries the packing's own fields while packing
 (the pickup address with Add new address, then the ready date and Packed on pallets, `ReadyDateAndPallets`), so the
 section starts open then and stays open while one of them needs fixing; a packed shipment's starts closed. An Amazon
-network's About link shows the rules' `summary` lines and the receiver's pages. The page builds the route from where
-the shipment stops (`shipmentPlaces` in `app/(portal)/shipments/destination.ts`, `useShipmentRoute`): the supplier's
-pickup address, the purchase order's forwarder, AGL when the transport books it, and the final destination. Shipments
-don't keep who moves each leg yet, so the timeline has no legs and the transport's own lines show under it. Edit route
-(`onSave`), which turns the stops and legs into menus checked by the route rules, waits for a saved route.
+network's About link shows the rules' `summary` lines and the receiver's pages.
+
+A shipment keeps its route as rows of `shipment_stops`, one per stop in order: its kind, the forwarder and address for a
+forwarder's stop (foreign keys, so an address a route stops at can't be deleted), and who moves the goods on to the next
+stop. The supplier's pickup address is the packing's, and the receiver is where the shipment goes (`shipmentReceiver`),
+so neither is stored with the stop. Until the buyer saves a route, the shipment follows its purchase order's: the
+supplier, the PO's forwarder, which the supplier ships to, and the final destination, with nobody chosen for the last
+leg (`defaultShipmentRoute`). `server/shipment-routes.ts` reads and writes the stops. How the goods travel on the last
+leg, which readiness, carrier labels, the packing list and the packet read, isn't stored either: `routeTransport` works
+it out from the route. AGL collects the cartons from the stop before it; otherwise the stop the last leg leaves from
+hands them over, collected unless it delivers them; the buyer adds a carrier label to each carton when it books the
+carrier into Amazon, or arranges the shipping to its own warehouse.
+
+The page builds the route section from the saved route and the places its stops are (`shipmentPlaces` in
+`app/(portal)/shipments/destination.ts`, `useShipmentRoute`). The buyer gets Edit route until Amazon has the shipment,
+and once after release while nobody has chosen who moves the last leg (`canEditRoute`). The editor's menus offer the
+purchase order's forwarder, AGL on the way into Amazon, and the final destination; a leg nobody has chosen asks who
+ships it. Save route sends `shipment.route` with the route it started from, and keeps the menus open with the server's
+reason when it fails. The section opens by itself while the buyer still has a leg to choose.
 
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the
@@ -132,7 +146,7 @@ panel's, so there's no summary bar.
 
 Each draft save moves the shipment to its next revision. The form stays pending until the page has read the shipment
 again (`router.invalidate({ sync: true })`), so the next save, a link to an existing AWD shipment and the buyer's
-transport settings beside the form all send the new revision. The form keeps no copy of the revision or the link
+Save route all send the new revision. The form keeps no copy of the revision or the link
 (`usePackingDraft`).
 
 When packed on pallets, Shipment details' gross weight and volume are the pallets', not the cartons'.

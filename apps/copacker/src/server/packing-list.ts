@@ -9,6 +9,7 @@ import { accessibleOrder } from "./access"
 import { requireAccess } from "./authorization"
 import { StatusError } from "./errors"
 import { logEvent } from "./log"
+import { withRoute } from "./shipment-routes"
 import { serverTranslator } from "./translation"
 import type { Session } from "./workspace-session"
 
@@ -17,11 +18,12 @@ import type { Session } from "./workspace-session"
 // prints before Amazon's labels or the supplier packet exist. The browser renders the PDF from it.
 export async function packingList(s: Session, id: string) {
   requireAccess(s, "shipments")
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
-  if (!shipment) {
+  const [row] = await db().select().from(shipments).where(eq(shipments.id, id))
+  if (!row) {
     throw new NotFoundError()
   }
-  const { order, supplier } = await accessibleOrder(s, shipment.orderId)
+  const { order, supplier } = await accessibleOrder(s, row.orderId)
+  const shipment = await withRoute(db(), row, order.data)
   if (!shipment.packing || !packedStates.includes(shipment.status)) {
     throw new StatusError("packingListUnavailable", 409)
   }
