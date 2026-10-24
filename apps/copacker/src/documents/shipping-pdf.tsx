@@ -406,7 +406,7 @@ function Handoff({ shipment }: { shipment: ShippingDocumentData }) {
 }
 
 function Address({ label, party }: { label: string; party: ShippingDocumentData["origin"] }) {
-  const { ltr } = useDocumentLayout()
+  const { data, t, ltr } = useDocumentLayout()
   return (
     <View style={styles.column}>
       <Text style={styles.label}>{label}</Text>
@@ -416,6 +416,9 @@ function Address({ label, party }: { label: string; party: ShippingDocumentData[
           {line}
         </Text>
       ))}
+      {data.amazonPending && party === data.destination && (
+        <Text style={[styles.small, styles.muted]}>{t.amazonPendingText}</Text>
+      )}
     </View>
   )
 }

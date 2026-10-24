@@ -75,18 +75,34 @@ to make a document fit or subset these fonts only to the fixture text.
 All previews and exports use `renderShippingDocument`. It serializes rendering and registers fresh fonts per document:
 reusing renderer font objects across exports can shift Unicode punctuation and word boundaries in later PDFs.
 
-## Audited local exports
+## Local packet exports
 
-`pnpm --filter copacker export:shipment-packet <snapshot.json> <output-directory>` exports an audited AWD shipment
-with a direct supplier handoff and no separate carrier labels. The input contains the accepted PO, packing,
-explicit product tasks, transport, verified destination, original Amazon label file, language/paper settings,
-and verification provenance. It never accesses a database or books transport.
+`pnpm --filter copacker export:shipment-packet` renders a supplier packet locally from JSON, so a packet can go to the
+supplier before Copacker can release one: before Amazon has the shipment, or for the supplier's leg to a forwarder.
+It never books transport, calls a provider, uploads or sends anything.
+
+- `export:shipment-packet <packet.json | -> <output-directory>` renders the JSON in a file, or on stdin with `-`.
+- `export:shipment-packet --shipment <id> <output-directory>` reads a packed shipment from the database in `.env`.
+- `export:shipment-packet --shipment <id> --json` prints that shipment's JSON instead, to edit and render.
+
+The JSON holds the accepted PO with each line's packing requirements, the packing, transport, destination, the company
+and supplier names, revision, shipment name and language/paper settings. Its optional fields:
+
+- `amazonPending`: an Amazon shipment before Amazon has it. The packet has no carton labels, and the destination shows
+  that Amazon assigns the warehouse and labels after the supplier sends the packing list.
+- `onward`: for a PO through a forwarder, where the forwarder takes the cartons next. The destination is the
+  forwarder's address, and the documents are the forwarder leg's.
+- `originalLabels`: an AWD shipment's original Amazon carton labels PDF, relative to the JSON file. The exporter matches
+  its labels to cartons by SKU, FNSKU and quantity, keeps the PDF's bytes, and adds the carton reference and labels.
+- `evidence`: where the input came from, for the verification manifest.
+
+Reading from the database refuses a shipment that already has Amazon's labels: its packet comes from the app.
 
 `shippingDocumentSnapshot` validates packing with the same rules as the app and requires one explicit label assignment
-per carton. The exporter matches original PDF labels by SKU, FNSKU and quantity, preserves the original PDF bytes,
-and creates the packing list, checklist, carton reference, and combined packet (in the app's packet order). A verification manifest records
-the assignments, source page numbers, totals, hashes and verification timestamp. Incomplete product tasks, missing
-supplier SKUs, unmatched labels and unsupported handoffs stop export. The provider PDF retains its original page size.
+per carton unless Amazon is pending. The exporter writes the packing list, the checklist, the carton reference when
+there are labels, the combined packet in the app's packet order, and a verification manifest of totals, hashes, any
+label assignments and their source pages. Unconfirmed packing requirements, missing supplier SKUs, unmatched labels
+and unsupported handoffs stop export. The provider PDF retains its original page size.
 
 `amazonCartonPolicies` in `@repo/copacker-shipments` supplies numeric limits to validation and these templates. Transport
 requirements stay in `@repo/copacker-shipments/transport`.
