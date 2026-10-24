@@ -148,9 +148,15 @@ describe("carton policies", () => {
     const warehouse: CartonPolicy = {
       receiver: "Bayline",
       rules: [
-        { type: "maxSize", sides: [60, 40, 40], unit: "cm", description: "Boxes up to 60 × 40 × 40 cm." },
-        { type: "maxWeight", weight: 20, unit: "kg", description: "Boxes up to 20 kg." },
-        { type: "maxUnits", units: 48, description: "Up to 48 units a box." }
+        {
+          type: "maxSize",
+          sides: [60, 40, 40],
+          unit: "cm",
+          description: "Boxes up to 60 × 40 × 40 cm.",
+          summary: "Up to 60 × 40 × 40 cm"
+        },
+        { type: "maxWeight", weight: 20, unit: "kg", description: "Boxes up to 20 kg.", summary: "Up to 20 kg" },
+        { type: "maxUnits", units: 48, description: "Up to 48 units a box.", summary: "Up to 48 units" }
       ]
     }
     const unlisted = item("DB-2032", 1, { fnsku: "" })

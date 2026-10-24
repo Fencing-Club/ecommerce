@@ -119,8 +119,20 @@ describe("pallets", () => {
     const checks = palletPolicyChecks({
       receiver: "Warehouse",
       rules: [
-        { type: "footprint", sides: [120, 100], unit: "cm", description: "Use 120 × 100 cm pallets." },
-        { type: "maxHeight", height: 150, unit: "cm", description: "Pallets may be up to 150 cm tall." }
+        {
+          type: "footprint",
+          sides: [120, 100],
+          unit: "cm",
+          description: "Use 120 × 100 cm pallets.",
+          summary: "120 × 100 cm pallets"
+        },
+        {
+          type: "maxHeight",
+          height: 150,
+          unit: "cm",
+          description: "Pallets may be up to 150 cm tall.",
+          summary: "Up to 150 cm tall"
+        }
       ]
     })
     expect(checks).toEqual([

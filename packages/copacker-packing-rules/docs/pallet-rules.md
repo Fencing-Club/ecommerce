@@ -6,8 +6,8 @@ cartons, so the pallet editor, readiness checks and the supplier's checklist sta
 
 ## How it works
 
-- **A rule** is one typed entry with its `description` and `source`, such as
-  `{ type: "maxHeight", height: 72, stackable: 50, unit: "in", description, source }`. Limits are kept in the units the
+- **A rule** is one typed entry with its `description`, short `summary` and `source`, such as
+  `{ type: "maxHeight", height: 72, stackable: 50, unit: "in", description, summary, source }`. Limits are kept in the units the
   receiver states them in. Sizes convert to a tenth of a centimetre (48 in is 121.9 cm); a weight is shown in whole
   kilograms (1,500 lb is 680 kg) but checked against the exact conversion, so 680.38 kg passes and 681 kg doesn't.
 - **A policy** is a receiver's name and its rules (`palletPolicies`, one per Amazon network today).

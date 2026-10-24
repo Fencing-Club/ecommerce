@@ -7,7 +7,8 @@ import { centimetresPerInch } from "./units"
 // the rest say how to build the pallet, which the supplier's checklist states and nothing measures. So a 3PL, or an
 // arrangement with its own limits such as AWD's West Coast palletizable region, is a new policy, and only a new kind of
 // rule needs code. Limits are in the units the receiver states them in. Each rule describes itself, as the receiver
-// states it, and `source` is the page where it does, which its errors link to.
+// states it, `summary` says it in a few words for compact lists, and `source` is the page where the receiver states
+// it, which its errors link to.
 export type PalletRule =
   // The pallet's footprint, longer side first, which the load may not overhang, and the grade of wooden pallet with
   // four-way entry the receiver asks for, if any.
@@ -23,7 +24,7 @@ export type PalletRule =
     | { type: "stretchWrap" }
     // The receiver's four pallet labels, one on each side.
     | { type: "palletLabels" }
-  ) & { description: string; source?: string }
+  ) & { description: string; summary: string; source?: string }
 
 export type PalletPolicy = {
   // Who receives the pallets, as messages name it, such as "FBA pallets may be up to 182.9 cm tall".
@@ -44,11 +45,13 @@ const amazonPallet = [
     gmaGrade: "B",
     description:
       "Use 48 × 40 in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
+    summary: "121.9 × 101.6 cm (48 × 40 in) wooden pallets with four-way entry",
     source
   },
   {
     type: "stacking",
     description: "Stack the cartons flush and stable, heaviest at the bottom, with their labels facing out.",
+    summary: "Cartons stacked flush, with nothing over the edges",
     source
   },
   {
@@ -57,6 +60,7 @@ const amazonPallet = [
     stackable: 50,
     unit: "in",
     description: "A pallet may be up to 72 in tall, including the pallet. A pallet another may stand on, up to 50 in.",
+    summary: "Up to 182.9 cm (72 in) tall, or 127 cm (50 in) if another pallet stands on it",
     source
   },
   {
@@ -64,11 +68,13 @@ const amazonPallet = [
     weight: 1500,
     unit: "lb",
     description: "A pallet may weigh up to 1,500 lb, including the pallet.",
+    summary: "Up to 680 kg (1,500 lb)",
     source
   },
   {
     type: "stretchWrap",
     description: "Wrap the load in clear stretch wrap, marked “Do not break stretch wrap”.",
+    summary: "Pallet wrapped with clear stretch wrap",
     source
   }
 ] as const satisfies readonly PalletRule[]
@@ -81,6 +87,7 @@ export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
         type: "palletLabels",
         description:
           "Put one of each pallet's four labels on each side, at the top center, outside the stretch wrap. Each carton keeps its own label.",
+        summary: "Pallet label placed on all four sides",
         source
       }
     ]
@@ -93,6 +100,7 @@ export const palletPolicies: Record<AmazonNetwork, PalletPolicy> = {
         type: "palletLabels",
         description:
           "Put one of each pallet's four labels on each side, at the top center. Each carton keeps its own label.",
+        summary: "Pallet label placed on all four sides",
         source: amazonSources.awdShipping
       }
     ]

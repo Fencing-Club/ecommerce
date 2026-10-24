@@ -86,7 +86,7 @@ export function PolicyRules({
 }: {
   title: string
   receiver?: string
-  rules?: readonly { type: string; description: string; source?: string }[]
+  rules?: readonly { type: string; description: string; summary: string; source?: string }[]
 }) {
   return (
     <section aria-label={title} className="rounded-lg border bg-card p-4 text-sm">
@@ -95,7 +95,7 @@ export function PolicyRules({
         <>
           <p className="mt-1 text-muted-foreground">Receiver: {receiver}</p>
           <ul className="mt-3 flex flex-col gap-3">
-            {rules.map(({ description, source, ...data }) => (
+            {rules.map(({ description, summary, source, ...data }) => (
               <li key={JSON.stringify(data) + description}>
                 <p>
                   {description}
@@ -108,6 +108,7 @@ export function PolicyRules({
                     </>
                   )}
                 </p>
+                <p className="mt-0.5 text-muted-foreground">In short: {summary}</p>
                 <p className="mt-0.5 font-mono text-xs text-muted-foreground">{JSON.stringify(data)}</p>
               </li>
             ))}

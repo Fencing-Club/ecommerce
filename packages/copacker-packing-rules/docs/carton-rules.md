@@ -7,9 +7,10 @@ cartons the same way and every message, checklist and requirement states the sam
 ## How it works
 
 - **A rule** is one typed entry, such as `{ type: "maxSize", sides: [36, 25, 25], unit: "in", description, source }`.
-  Its `description` states the rule as the receiver does, so a policy reads as its own documentation, and `source` is
-  the page where the receiver states it: each issue carries it, and the editor's error links to it. A test fails when
-  a limit changes and its description doesn't say so. Limits are kept in
+  Its `description` states the rule as the receiver does, so a policy reads as its own documentation, `summary` says
+  it in a few words for compact lists such as a receiver's requirements, and `source` is the page where the receiver
+  states it: each issue carries it, and the editor's error links to it. A test fails when a limit changes and its
+  description or summary doesn't say so. Limits are kept in
   the units the receiver states them in and converted where they're shown. A converted weight is rounded down to the
   hundredth, so the limit shown is one a carton can meet, and cartons are checked against it: 50 lb is 22.6796185 kg,
   shown and checked as 22.67 kg, because 22.68 kg is over 50 lb. Sizes convert exactly (36 in is 91.44 cm).
