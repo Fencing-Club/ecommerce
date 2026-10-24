@@ -152,6 +152,13 @@ stories (`Components/Purchase orders/Logistics list`) use the fictional rows fro
 `src/stories/fixtures/logistics-lists.ts`. The page stories build their rows with the server's own
 `orderListRows` and `shipmentListRows`, so a change to how rows are worked out changes the stories too.
 
+### Shipment page
+
+The shipment page's loader (`src/server/shipment-page.ts`) only reads: the shipment, its purchase order, documents,
+addresses and the rest. `shipmentPageData` (`src/server/shipment-page-data.ts`) makes the page's data from those rows,
+and the `Pages/Shipments/Detail` stories call it with fixture rows. The stories run the same code as the app between the
+database and the page, so a change there shows in them, and only the rows are made up.
+
 Stories use CSF Next: import the preview and build the meta and stories from it.
 
 ```tsx

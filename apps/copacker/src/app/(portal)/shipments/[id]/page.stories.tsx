@@ -2,7 +2,6 @@ import { type Address, type OrderInput, type OrderItem } from "@repo/copacker-or
 import { type AmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
-import { canEditPacking, canReopenPacking, releasedStates } from "@repo/copacker-shipments/states"
 import { http, HttpResponse } from "msw/http"
 import { PDFDocument } from "pdf-lib"
 import { expect, mocked, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
@@ -10,14 +9,8 @@ import invariant from "tiny-invariant"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
-import { startingAddress } from "@/components/shipment-packing-details"
-import type { ShipmentPlaces } from "@/hooks/use-shipment-route"
-import { can, type Permissions } from "@/lib/access"
-import { printableLabels } from "@/lib/printable-labels"
-import { releasedLabelKinds } from "@/lib/shipment-states"
-import { amazonShipmentLinks } from "@/server/amazon-shipments"
-import { unpricedDraft, unpricedOrder } from "@/server/prices"
-import { knownPackingGroups } from "@/server/readiness"
+import type { Permissions } from "@/lib/access"
+import { shipmentPageData } from "@/server/shipment-page-data"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
   buyerContacts,
@@ -37,7 +30,7 @@ import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
 import { closeMenu, shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
-import { shipmentDestinations, shipmentNetwork } from "../destination"
+import { shipmentDestinations } from "../destination"
 import ShipmentPageView from "./page"
 
 // The shipment's step as orderWorkflow reports it: what happens next, what its packet lacks, and its packet once the
@@ -58,8 +51,6 @@ type Args = {
   step: Step
   // Its place among the purchase order's shipments, oldest first.
   number: number
-  // Pieces of each line other shipments already hold.
-  reserved: Record<string, number>
   // The purchase order's other shipments, whose packing groups an FBA draft is checked against (knownPackingGroups).
   others?: ShipmentRow[]
   docs: DocumentRow[]
@@ -118,43 +109,16 @@ function finalAddresses(data: OrderInput, shipment: ShipmentRow): Address[] {
     : []
 }
 
-// Where the shipment's goods stop, as shipmentPlaces reads them: the pickup address, Bayline Freight's Ningbo warehouse
-// when the PO goes by way of it, AGL when it books the transport, and where the goods end up.
-function places(
-  order: OrderInput,
-  shipment: ShipmentRow,
-  supplier: string,
-  addresses: PartnerAddress[]
-): ShipmentPlaces {
-  const data = shipment.snapshot ?? order
-  const origin = (shipment.packing ?? shipment.packingDraft)?.origin
-  const start = startingAddress(addresses, origin)
-  const warehouse = orderDestination(data) === "warehouse"
-  return {
-    supplier,
-    pickup: start ? { name: start.name, address: start.address } : origin && { address: origin },
-    forwarder: data.via
-      ? { company: "Bayline Freight", place: { name: "Ningbo warehouse", address: baylineWarehouse } }
-      : undefined,
-    agl: shipment.transport?.service === "agl",
-    destination: {
-      company: warehouse ? "Harbor Goods" : "Amazon",
-      receiver: warehouse ? "warehouse" : shipmentNetwork(data, shipment.amazonNetwork),
-      addresses: finalAddresses(data, shipment)
-    }
-  }
-}
-
-// A shipment's page (page.tsx) with what the database and the workflow would return.
+// A shipment's page (page.tsx) made from what the database, the workflow and Amazon would return, by the same
+// shipmentPageData the page's loader uses.
 async function ShipmentPage({
   kind,
-  permissions: s,
+  permissions,
   shipment,
   order,
   supplier,
   step,
   number,
-  reserved,
   others = [],
   docs,
   addresses,
@@ -162,130 +126,43 @@ async function ShipmentPage({
   lineLabels
 }: Args) {
   const t = await translateStory("shipments.detail")
-  const editsShipments = can(s, "shipments", "edit")
-  const seesOrder = can(s, "orders")
-  const prices = can(s, "prices")
-  const id = shipment.id
+  const data = shipment.snapshot ?? order.data
   const packingOrder = shipment.amazonNetwork
-    ? { ...order.data, items: order.data.items.filter((item) => item.receiver === shipment.amazonNetwork) }
-    : order.data
-  const packingGroups =
-    orderDestination(order.data) === "amazon" && packingOrder.items.some((item) => item.receiver === "fba")
-      ? (knownPackingGroups([...others, shipment], shipment) ?? null)
-      : undefined
-  const snapshot = shipment.snapshot ?? order.data
-  const editable = editsShipments && canEditPacking(shipment) && !awaitingChanges
-  const canReopen = editsShipments && canReopenPacking(shipment)
-  const isBuyer = kind === "buyer"
-  const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
-  const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
-  const visibleDocs = docs.filter(
-    (d) =>
-      (isBuyer || releasedStates.includes(shipment.status) || !releasedLabelKinds.includes(d.kind)) &&
-      !["invoice", "packing_list", "checklist"].includes(d.kind)
-  )
-  const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
-    const item = snapshot.items.find((i) => i.id === change.itemId)!
-    return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
-  })
-  const fba = shipment.amazonNetwork === "fba"
-  const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
-  const amazon = orderDestination(order.data) === "amazon"
-  const title = t("title", { number })
+    ? data.items.filter((item) => item.receiver === shipment.amazonNetwork)
+    : data.items
   const destination = await shipmentDestinations([order.data])
-  const nextStep = isBuyer && step.next.step === "cancellation" ? step.next.message : undefined
   return (
     <ShipmentPageView
-      page={{
-        id,
-        lineLabels: packingOrder.items.map((item) => {
-          const given = lineLabels?.filter((row) => row.itemId === item.id) ?? []
-          return {
-            itemId: item.id,
-            labels: printableLabels(
-              item,
-              given.length
-                ? given
-                : (item.packingRequirements?.labels ?? [item.fnsku ? "fnsku" : "sku"]).flatMap((type) =>
-                    type === "sku" || type === "fnsku" ? [{ type, state: "standard" as const }] : []
-                  )
-            )
-          }
-        }),
-        route: places(order.data, shipment, supplier.name, addresses),
-        buyer: "Harbor Goods",
-        destinationName: destination(order.data, shipment.amazonNetwork),
-        editsShipments,
-        seesOrder,
-        prices,
-        editsPartners: can(s, "partners", "edit"),
-        order: { id: order.id, revision: order.revision, data: prices ? order.data : unpricedOrder(order.data) },
-        packingOrder: prices ? packingOrder : unpricedOrder(packingOrder),
-        supplier: { id: supplier.id, name: supplier.name },
-        shipment: {
-          amazonNetwork: shipment.amazonNetwork,
-          transport: shipment.transport,
-          operation: shipment.operation,
-          linkedAmazonShipmentId: shipment.linkedAmazonShipmentId,
-          status: shipment.status,
-          revision: shipment.revision,
-          issue: shipment.issue,
-          packing: shipment.packing
-            ? {
-                ...shipment.packing,
-                changes: shipment.packing.changes.map((change) => ({
-                  ...change,
-                  unitPrice: prices ? change.unitPrice : 0
-                }))
-              }
-            : null,
-          packingDraft: prices ? shipment.packingDraft : unpricedDraft(shipment.packingDraft),
-          labels: shipment.labels.map((label) => ({ cartonId: label.cartonId, labelNumber: label.labelNumber }))
+      page={shipmentPageData(
+        {
+          viewer: { permissions, kind },
+          shipment,
+          shipments: [...others, shipment],
+          order,
+          supplier,
+          step,
+          number,
+          docs,
+          addresses,
+          buyer: "Harbor Goods",
+          awaitingChanges,
+          // By default every barcode label a line's packing details ask for is made from the standard template.
+          labels:
+            lineLabels ??
+            packingOrder.flatMap((item) =>
+              (item.packingRequirements?.labels ?? [item.fnsku ? "fnsku" : "sku"]).flatMap((type) =>
+                type === "sku" || type === "fnsku" ? [{ itemId: item.id, type, state: "standard" as const }] : []
+              )
+            ),
+          // Bayline Freight's Ningbo warehouse when the PO goes by way of it.
+          forwarder: data.via
+            ? { forwarderName: "Bayline Freight", addressName: "Ningbo warehouse", address: baylineWarehouse }
+            : undefined,
+          finalAddresses: finalAddresses(data, shipment),
+          destinationName: destination(order.data, shipment.amazonNetwork)
         },
-        step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl },
-        carrierLabels: isBuyer
-          ? docs.flatMap((doc) =>
-              doc.kind === "shipping_label" && doc.cartonId
-                ? [
-                    {
-                      cartonId: doc.cartonId,
-                      documentId: doc.id,
-                      trackingNumber: doc.trackingNumber,
-                      sourceName: doc.sourceName,
-                      sourcePage: doc.sourcePage
-                    }
-                  ]
-                : []
-            )
-          : [],
-        reserved,
-        packingGroups,
-        snapshot: prices ? snapshot : unpricedOrder(snapshot),
-        addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),
-        awaitingChanges,
-        editable,
-        canReopenPacking: canReopen,
-        isBuyer,
-        amazonLinks,
-        visibleDocs: visibleDocs.map((doc) => ({ id: doc.id, name: doc.name, kind: doc.kind, cartonId: doc.cartonId })),
-        changes: changes
-          .filter(({ item, change }) => prices || change.supplierSku !== item.supplierSku)
-          .map(({ item, change }) => ({
-            item: {
-              name: item.name,
-              variant: item.variant,
-              supplierSku: item.supplierSku,
-              unitPrice: prices ? item.unitPrice : 0
-            },
-            change: { itemId: change.itemId, supplierSku: change.supplierSku, unitPrice: prices ? change.unitPrice : 0 }
-          })),
-        fba,
-        enteringFor,
-        amazon,
-        title,
-        amazonIds,
-        nextStep
-      }}
+        (shipmentNumber) => t("title", { number: shipmentNumber })
+      )}
     />
   )
 }
@@ -345,7 +222,6 @@ const meta = preview.meta({
     supplier: { id: supplierRecordId, name: "Lotus Manufacturing", supplierOrgId: "org_supplier" },
     step: step("ship", "Print the packet, pack the cartons, and mark them shipped", { packetUrl: packet }),
     number: 2,
-    reserved: {},
     docs: [invoice, packingList, cartonLabel],
     addresses: [partnerAddresses.factory],
     awaitingChanges: false
