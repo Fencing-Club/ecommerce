@@ -11,6 +11,7 @@ import {
   documents,
   events,
   forwarders,
+  inventoryLocationGroups,
   inventoryLocationMappings,
   jobs,
   landedCosts,
@@ -37,7 +38,8 @@ import {
   supplierProfiles,
   suppliers,
   teamInvitations,
-  variantFields
+  variantFields,
+  variantStockTargetSets
 } from "@/db/schema"
 
 // A workspace's records, which deleting the workspace removes. Kept apart from deletion.ts, which also signs people
@@ -51,11 +53,15 @@ export async function deleteWorkspaceRecords(tx: Transaction, orgId: string) {
   await withdrawInvitations(tx, orgId)
   await deleteJobs(tx, orgId)
   await deleteOrders(tx, orgId)
+  // Its internal comments on other workspaces' purchase orders, which only it could read.
+  await tx.delete(events).where(eq(events.internalOrgId, orgId))
   for (const table of [
     productDefaults,
     contacts,
     oauthStates,
     inventoryLocationMappings,
+    inventoryLocationGroups,
+    variantStockTargetSets,
     variantFields,
     shopifyFieldImports,
     productBarcodes,

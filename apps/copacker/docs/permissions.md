@@ -82,7 +82,8 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
 - **Delete workspace** (the owner, typing the workspace's name) deletes it and everything in it, for everyone: its
   team, invitations, settings, addresses, store connections and stored files, and a buyer's purchase orders and
   shipments or a supplier's products and catalogs. Its stores are disconnected first. A deleted supplier or forwarder
-  shows as not on Copacker again to the buyers it worked with, who keep their purchase orders.
+  shows as not on Copacker again to the buyers it worked with, who keep their purchase orders but not its internal
+  comments on them.
 - **Delete account** (anyone, typing their email) deletes their sign-in, their place in every workspace and their
   profile, and signs them out. An owner transfers ownership of any workspace others use first. A workspace only they
   use closes with the account: its stores are disconnected, its partners unlinked and its invitations withdrawn. Its
